@@ -10,8 +10,8 @@
 // Output matrix is generated as: Aout = diag(d) * Ain * diag(e),
 void SinkhornKnopp(const gsl_matrix *Ain, gsl_matrix *Aout, gsl_vector *d,
                    gsl_vector *e) {
-  gsl_matrix_memcpy(Aout, Ain);
   unsigned int kNumItr = 10;
+  gsl_matrix_memcpy(Aout, Ain);
   gsl_vector_set_all(d, 1.0);
 
   // A := |A| -- elementwise

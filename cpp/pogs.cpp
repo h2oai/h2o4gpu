@@ -129,8 +129,8 @@ void Pogs(PogsData<double, double*> *pogs_data) {
              k, nrm_r, eps_pri, nrm_s, eps_dual, obj);
     }
 
-   if (converged)
-     break;
+    if (converged)
+      break;
 
     // Rescale rho.
     if (nrm_r > 10.0 * nrm_s / rho) {

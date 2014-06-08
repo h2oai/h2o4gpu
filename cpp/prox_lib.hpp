@@ -246,9 +246,9 @@ __DEVICE__ inline T ProxEval(const FunctionObj<T> &f_obj, T x, T rho) {
       return ProxMaxPos0(x, a, b, c, d, rho);
     case kNegLog:
       return ProxNegLog(x, a, b, c, d, rho);
-   case kRecipr:
+    case kRecipr:
       return ProxRecipr(x, a, b, c, d, rho);
-   case kSquare:
+    case kSquare:
       return ProxSquare(x, a, b, c, d, rho);
     case kZero: default:
       return ProxZero(x, a, b, c, d, rho);

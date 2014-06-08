@@ -1,4 +1,5 @@
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
 #include <thrust/transform.h>
 
 #include <algorithm>
@@ -22,9 +23,9 @@ extern "C" int mexPrintf(const char* fmt, ...);
 template <typename T, typename Op>
 struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
   Op binary_op;
-  ApplyOp(Op binary_op) : binary_op(binary_op) { } 
+  ApplyOp(Op binary_op) : binary_op(binary_op) { }
   __device__ FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
-    h.a = binary_op(h.a, x); h.d = binary_op(h.d, x); 
+    h.a = binary_op(h.a, x); h.d = binary_op(h.d, x);
     return h;
   }
 };
@@ -39,7 +40,7 @@ void Pogs(PogsData<T, M> *pogs_data) {
 
   const T kOne = static_cast<T>(1);
   const T kZero = static_cast<T>(0);
-  
+
   // Create cuBLAS handle.
   cublasHandle_t handle;
   cublasCreate(&handle);

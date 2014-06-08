@@ -67,9 +67,9 @@ end
 % Initialize Variables.
 rng(0, 'twister')
 
-n_half = floor(0.9 *  n);
+n_half = floor(2/3 *  n);
 A = 2 / n * rand(m, n);
-b = A * [ones(n_half, 1); -ones(n - n_half, 1)] + randn(m, 1);
+b = A * [ones(n_half, 1); -ones(n - n_half, 1)] + 0.01 * randn(m, 1);
 
 % Export Matrices
 if save_mat

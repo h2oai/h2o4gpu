@@ -77,7 +77,7 @@ real_t test2() {
   for (unsigned int i = 0; i < (m - n) * n; ++i)
     A[i] = -static_cast<real_t>(1) / static_cast<real_t>(n) * u_dist(generator);
   for (unsigned int i = static_cast<unsigned int>((m - n) * n); i < m * n; ++i)
-    A[i] = (i - (m - n) * n) % (n + 1) == 0 ? static_cast<real_t>(-1) : static_cast<real_t>(0);
+    A[i] = (i - (m - n) * n) % (n + 1) == 0 ? -1 : 0;
 
   PogsData<real_t, real_t*> pogs_data(A.data(), m, n);
   pogs_data.x = x.data();
@@ -125,10 +125,10 @@ real_t test3() {
                                                 static_cast<real_t>(1));
 
   // Generate A and c according to:
-  //   A = rand(m, n)
+  //   A = 4 / n * rand(m, n)
   //   c = rand(n, 1)
   for (unsigned int i = 0; i < (m + 1) * n; ++i)
-    A[i] = u_dist(generator);
+    A[i] = u_dist(generator) / static_cast<real_t>(n);
 
   PogsData<real_t, real_t*> pogs_data(A.data(), m + 1, n);
   pogs_data.x = x.data();

@@ -2,7 +2,10 @@
 #define SINKHORN_KNOPP_HPP_
 
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
 #include <thrust/transform.h>
+
+#include <algorithm>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_matrix.cuh"
@@ -20,7 +23,7 @@ struct ReciprF : thrust::unary_function<T, T> {
   __device__ T operator()(T x) { return static_cast<T>(1) / x; }
 };
 
-// Sinkhorn Knopp algorithm for matrix equilibration. 
+// Sinkhorn Knopp algorithm for matrix equilibration.
 // The following approx. holds: diag(d) * Ai * e =  1, diag(e) * Ai' * d = 1
 // Output matrix is generated as: Ao = diag(d) * Ai * diag(e),
 template <typename T>
@@ -34,8 +37,8 @@ void SinkhornKnopp(cublasHandle_t handle, const T *Ai, cml::matrix<T> *Ao,
   thrust::transform(thrust::device_pointer_cast(Ao->data),
       thrust::device_pointer_cast(Ao->data + Ao->size2 * Ao->tda),
       thrust::device_pointer_cast(Ao->data), AbsF<T>());
-  
-  // e := 1 ./ A' * d; d := 1 ./ A * e; -- k times. 
+
+  // e := 1 ./ A' * d; d := 1 ./ A * e; -- k times.
   for (unsigned int k = 0; k < kNumItr; ++k) {
     cml::blas_gemv(handle, CUBLAS_OP_T, static_cast<T>(1), Ao, d,
         static_cast<T>(0), e);
