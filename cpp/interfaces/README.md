@@ -39,7 +39,7 @@ Compiling
 To compile wrapper type
 
 ```
->> pogs_setup
+pogs_setup
 ```
 
 in the MATLAB console.  
