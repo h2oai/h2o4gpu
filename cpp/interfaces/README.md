@@ -38,7 +38,8 @@ Compiling
 ---------
 To compile the POGS type
 
-```>> pogs_setup
+```
+>> pogs_setup
 ```
 
 in the MATLAB console.  
