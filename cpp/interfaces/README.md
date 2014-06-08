@@ -14,7 +14,7 @@ Example
 The Lasso problem
 
 ```
-min. ||A x - b||_2^2 + \lambda ||x||_1
+min. (1/2)||A x - b||_2^2 + \lambda ||x||_1
 ```
 can be specified using these five lines
 
