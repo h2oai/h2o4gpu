@@ -111,7 +111,9 @@ y = zeros(m, 1);     yt = zeros(m, 1);
 z = zeros(n + m, 1); zt = zeros(n + m, 1);
 
 % Start timer.
-total_time = tic;
+if ~quiet
+  total_time = tic;
+end
 
 % Normalize A
 if isempty(e) || isempty(d)
@@ -201,7 +203,6 @@ for iter = 0:MAXITR-1
   xt = xt + x12 - x;
   yt = yt + y12 - y;
   zt = [xt; yt];
- 
 end
 
 % Set factors for output.
