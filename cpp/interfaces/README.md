@@ -36,7 +36,7 @@ kZero    = 15;
 
 Compiling
 ---------
-To compile the POGS type
+To compile wrapper type
 
 ```
 >> pogs_setup
