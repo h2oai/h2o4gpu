@@ -145,19 +145,34 @@ if isempty(AA) && ~issparse(A)
 end
 
 if ~quiet
-  fprintf('iter :\t%8s\t%8s\t%8s\t%8s\t%8s\n', 'r', 'eps_pri', 's', ...
-      'eps_dual', 'objective');
+  fprintf('iter :\t%8s\t%8s\t%8s\t%8s\t%8s\t%8s\t%8s\n', ...
+     'r', 'eps_pri', 's', 'eps_dual', 'primal', 'dual', 'gap');
 end
 
 for iter = 0:MAXITR-1
+  
+%   rho_ = exp(linspace(log(0.01), log(1000), 100));
+%   gap = nan(length(rho_), 1);
+%   for r = 1:length(rho_)
+%     y12 = eval_prox(prox_f, y - yt, rho_(r), 1 ./ d);
+%     x12 = eval_prox(prox_g, x - xt, rho_(r), e);
+%     z12 = [x12; y12];
+%     gap(r) = rho_(r) * (z - zt - z12)' * z12;
+%   end
+%   [~,r] = min(abs(gap));
+%   rho = rho_(r);
+%   disp(rho)
+%   semilogx(rho_, gap)
+  
   % Evaluate proximal operators of f and g.
   %   y^{k+1/2} = prox(y^k - \tilde y^k)
   %   x^{k+1/2} = prox(x^k - \tilde x^k)
   y12 = eval_prox(prox_f, y - yt, rho, 1 ./ d);
   x12 = eval_prox(prox_g, x - xt, rho, e);
   z12 = [x12; y12];
+  gap = rho * (z - zt - z12)' * z12;
 
-  zprev = z; 
+  zprev = z;
 
   if ~quiet && iter == 0
     factor_time = tic;
@@ -174,28 +189,6 @@ for iter = 0:MAXITR-1
 
   x = z(1:n);
   y = z(n + 1:n + m);
-
-  % Check stopping ckriteria.
-  eps_pri  = sqrt(n) * ABSTOL + RELTOL * max(norm(z12), norm(z));
-  eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(rho * zt);
-  prires = norm(z12 - z);
-  duares = rho * norm(z - zprev);
-
-  converged = iter > 1 && prires < eps_pri && duares < eps_dual;
-  if ~quiet && (mod(iter, 1) == 0 || converged)
-    fprintf('%4d :\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\n', ...
-        iter, prires, eps_pri, duares, eps_dual, obj_fn(x .* e, y ./ d));
-  end
-  
-  if norm(z12 - z) > 10 * norm(z - zprev)
-    rho = rho * 10; xt = xt / 10; yt = yt / 10;
-  elseif norm(z12 - z) < 0.1 * norm(z - zprev)
-    rho = rho / 10; xt = xt * 10; yt = yt * 10;
-  end
-
-  if converged
-    break
-  end
   
   % Update dual variables.
   %   \tilde x^{k+1} = \tilde x^{k} + x^{k+1/2} - x^k
@@ -203,6 +196,30 @@ for iter = 0:MAXITR-1
   xt = xt + x12 - x;
   yt = yt + y12 - y;
   zt = [xt; yt];
+
+  % Check stopping criteria.
+  eps_pri  = sqrt(n) * ABSTOL + RELTOL * max(norm(z12), norm(z));
+  eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(rho * zt);
+  prires = norm(z12 - z);
+  duares = rho * norm(z - zprev);
+
+  converged = iter > 1 && prires < eps_pri && duares < eps_dual;
+  if ~quiet && (mod(iter, 1) == 0 || converged)
+    primal = obj_fn(x12 .* e, y12 ./ d);
+    dual = primal - gap;
+    fprintf('%4d :\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\n', ...
+        iter, prires, eps_pri, duares, eps_dual, primal, dual, gap);
+  end
+
+  if converged
+    break
+  end
+    
+%   if log(prires) > 2 * log(abs(gap)) && iter > 20
+%     rho = rho * 10; xt = xt / 10; yt = yt / 10;
+%   elseif log(prires) < 0.1 * log(abs(gap)) && iter > 20
+%     rho = rho / 10; xt = xt * 10; yt = yt * 10;
+%   end
 end
 
 % Set factors for output.
@@ -299,17 +316,19 @@ end
 function [A, d, e] = sk_equil(A)
 
 A1 = abs(A);
-
+[m, n] = size(A);
 max_it = 10;
 
-d = ones(size(A1, 1), 1);
-e = ones(size(A1, 2), 1);
+d = ones(m, 1);
+e = ones(n, 1);
 
 for i = 1:max_it
+%   d = n ./ (A1 * e);
+%   e = m ./ (A1' * d);
   e = 1 ./ (A1' * d);
   d = 1 ./ (A1 * e);
-  nd = norm(d) / sqrt(size(A1, 1));
-  ne = norm(e) / sqrt(size(A1, 2));
+  nd = norm(d) / sqrt(m);
+  ne = norm(e) / sqrt(n);
   d = d * sqrt(ne / nd);
   e = e * sqrt(nd / ne);
 end

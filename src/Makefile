@@ -1,6 +1,5 @@
 # User Vars
 GSLROOT=/usr/local
-CMLROOT=cml
 
 # C++ Flags
 CXX=g++
@@ -22,16 +21,10 @@ CULDFLAGS_=-L/cm/shared/apps/cuda55/toolkit/current/lib64 $(CULDFLAGS)
 endif
 
 # CPU
-cpu: test.cpp pogs.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o test
-
 pogs.o: pogs.cpp pogs.hpp prox_lib.hpp
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $< -c -o $@
 
 # GPU
-gpu: test.cpp pogs_cu.o pogs_cu_link.o
-	$(CXX) $(CXXFLAGS) $(CULDFLAGS_) $^ -o test
-
 pogs_cu_link.o: pogs_cu.o
 	$(CUXX) $(CUFLAGS) $< -dlink -o $@
 
@@ -39,6 +32,6 @@ pogs_cu.o: pogs.cu pogs.hpp prox_lib.hpp
 	$(CUXX) $(CUFLAGS) $(IFLAGS) $< -dc -o $@
 
 clean:
-	rm -f *.o *~ *~ test
+	rm -f *.o *~ *~
 	rm -rf *.dSYM
 

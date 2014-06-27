@@ -244,7 +244,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Function g must be a struct.");
     return;
   }
-  if (nrhs == 4 && mxGetClassID(prhs[3]) != mxSTRUCT_CLASS) {
+  if (nrhs == 4 && mxIsEmpty(prhs[3])) {
+    nrhs = 3;
+  } else if (nrhs == 4 && mxGetClassID(prhs[3]) != mxSTRUCT_CLASS) {
     mexErrMsgIdAndTxt("MATLAB:pogs:inputNotStruct",
         "Parameters must be a struct.");
     return;
