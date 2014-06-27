@@ -24,24 +24,26 @@ where `a, b` and `d` take on real values, `c` is a non-negative real and `h` is 
 
 The enumerated function types are:
 
-| enum      | Mathematical Function |
-| --------- |:----------------------| 
-| kAbs      | h(x) = &#124;x&#124;  |
-| kEntr     | h(x) = x log(x)       |
-| kExp      | h(x) = exp(x)         |
-| kHuber    | h(x) = huber(x)       |
-| kIdentity | h(x) = x              |  
-| kIndBox01 | h(x) = I(0 <= x <= 1) |
-| kIndEq0   | h(x) = I(x = 0)       |
-| kIndGe0   | h(x) = I(x >= 0)      |
-| kIndLe0   | h(x) = I(x <= 0)      |
-| kLogistic | h(x) = log(1 + e^x)   |
-| kMaxNeg0  | h(x) = max(0, -x)     |
-| kMaxPos0  | h(x) = max(0, x)      |
-| kNegLog   | h(x) = -log(x)        |
-| kSquare   | h(x) = (1/2) x^2      |
-| kRecipr   | h(x) = 1/x            |
-| kZero     | h(x) = 0              |
+| enum      | Mathematical Function | Domain  |
+| --------- |:----------------------|:--------|
+| kAbs      | h(x) = &#124;x&#124;  |R        |
+| kEntr     | h(x) = x log(x)       |[0, inf) |
+| kExp      | h(x) = exp(x)         |R        |
+| kHuber    | h(x) = huber(x)       |R        |
+| kIdentity | h(x) = x              |R        |
+| kIndBox01 | h(x) = I(0 <= x <= 1) |[0, 1]   |
+| kIndEq0   | h(x) = I(x = 0)       |{0}      |
+| kIndGe0   | h(x) = I(x >= 0)      |[0, inf) |
+| kIndLe0   | h(x) = I(x <= 0)      |(-inf, 0]|
+| kLogistic | h(x) = log(1 + e^x)   |R        |
+| kMaxNeg0  | h(x) = max(0, -x)     |R        |
+| kMaxPos0  | h(x) = max(0, x)      |R        |
+| kNegLog   | h(x) = -log(x)        |(0, inf) |
+| kSquare   | h(x) = (1/2) x^2      |R        |
+| kRecipr   | h(x) = 1/x            |(0, inf) |
+| kZero     | h(x) = 0              |R        |
+
+Notice that some functions have an implicitly constrained domain.
 
 Examples
 --------
