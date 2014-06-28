@@ -44,6 +44,8 @@ void Pogs(PogsData<T, M> *pogs_data) {
   thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
   thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
 
+  printf("using gpu\n");
+
   // Create cuBLAS handle.
   cublasHandle_t handle;
   cublasCreate(&handle);
