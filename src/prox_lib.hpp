@@ -366,7 +366,7 @@ __DEVICE__ inline T FuncExp(T x) {
 template <typename T>
 __DEVICE__ inline T FuncHuber(T x) {
   T xabs = Abs(x);
-  T xabs2 = Abs(x);
+  T xabs2 = xabs * xabs;
   return xabs < static_cast<T>(1) ? xabs2 / 2 : xabs - static_cast<T>(0.5);
 }
 
