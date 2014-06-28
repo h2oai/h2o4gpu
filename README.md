@@ -36,14 +36,14 @@ The following functions are currently supported
   + `f(x) = (1/2) x^2`
   + `f(x) = 0`
   
-More functions can be added by modifying the proximal operator header file: `<pogs>/cpp/prox_lib.hpp`.
+More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.hpp`.
 
 Languages / Frameworks
 ======================
 Three different implementations of the solver are either planned or already supported:
 
   1. MATLAB: A MATLAB implementation along with examples can be found in the `<pogs>/matlab` directory.
-  2. C++/BLAS/GSL/OpenMP: A multithreaded `C++` version can be found in the `<pogs>/cpp` directory. For best performance it's important to link to  a tuned BLAS or LAPACK library, such as ATLAS or Accelerate Framework.
+  2. C++/BLAS/GSL/OpenMP: A multithreaded `C++` version can be found in the `<pogs>/src` directory. For best performance it's important to link to  a tuned BLAS or LAPACK library, such as ATLAS or Accelerate Framework.
   3. C++/cuBLAS/CUDA: A GPU implementation is planned.
 
 
