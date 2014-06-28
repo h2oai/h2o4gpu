@@ -37,9 +37,12 @@ void Pogs(PogsData<T, M> *pogs_data) {
   size_t n = pogs_data->n;
   size_t m = pogs_data->m;
   size_t min_dim = std::min(m, n);
-
   const T kOne = static_cast<T>(1);
   const T kZero = static_cast<T>(0);
+
+  // Copy f and g to device
+  thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
+  thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
 
   // Create cuBLAS handle.
   cublasHandle_t handle;
@@ -56,16 +59,6 @@ void Pogs(PogsData<T, M> *pogs_data) {
   cml::matrix<T> AA = cml::matrix_alloc<T>(min_dim, min_dim);
   cml::matrix<T> A = cml::matrix_alloc<T>(m, n);
 
-  // Copy A to device (assume input row-major).
-  T *Acm = new T[m * n];
-  RowToColMajor(pogs_data->A, m, n, Acm);
-  SinkhornKnopp(handle, Acm, &A, &d, &e);
-  delete [] Acm;
-
-  // Copy f and g to device
-  thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
-  thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
-
   // Create views for x and y components.
   cml::vector<T> x = cml::vector_subvector(&z, 0, n);
   cml::vector<T> y = cml::vector_subvector(&z, n, m);
@@ -73,6 +66,12 @@ void Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> yt = cml::vector_subvector(&zt, n, m);
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
+
+  // Copy A to device (assume input row-major).
+  T *Acm = new T[m * n];
+  RowToColMajor(pogs_data->A, m, n, Acm);
+  SinkhornKnopp(handle, Acm, &A, &d, &e);
+  delete [] Acm;
 
   // Compuate A^TA or AA^T.
   cublasOperation_t mult_type = m >= n? CUBLAS_OP_T : CUBLAS_OP_N;

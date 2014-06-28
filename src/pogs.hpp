@@ -14,7 +14,7 @@ struct PogsData {
   size_t m, n;
 
   // Output.
-  T *x, *y, *x_dual, *y_dual, optval;
+  T *x, *y, optval;
 
   // Parameters.
   T rho;
