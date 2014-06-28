@@ -110,8 +110,8 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
       }
     }
 
-    f_pogs->emplace_back(func_param, real_params[0], real_params[1],
-                         real_params[2], real_params[3]);
+    f_pogs->push_back(FunctionObj<T>(func_param, real_params[0], real_params[1],
+                                     real_params[2], real_params[3]));
   }
   return 0;
 }
