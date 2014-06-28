@@ -1,18 +1,13 @@
 function pogs_setup(platform)
 %% Setup script for pogs
 
-gsl_path = '/usr/local/include';
-gsl_lib = '/usr/local/lib';
-
 cuda_bin = '/usr/local/cuda/bin';
 cuda_lib = '/usr/local/cuda/lib';
 
 if nargin == 0 || ~strcmp(platform, 'gpu')
   unix(sprintf('make pogs.o -f Makefile -C .. IFLAGS=-D__MEX__'));
-  mex('-largeArrayDims', ...
-      '-I..', ['-I' gsl_path], ...
-      '-lgsl', '-lm', ['-L' gsl_lib], ...
-      '../pogs.o', 'pogs_mex.cpp');
+  mex -largeArrayDims -I.. LDFLAGS='\$LDFLAGS -framework Accelerate' ...
+      ../pogs.o pogs_mex.cpp
 else
   unix(sprintf(['export PATH=$PATH:%s;' ...
                 'export DYLD_LIBRARY_PATH=%s:$DYLD_LIBRARY_PATH;' ...

@@ -11,7 +11,7 @@ CUFLAGS=-arch=sm_20 -lineinfo
 
 # CPU
 pogs.o: pogs.cpp pogs.hpp prox_lib.hpp
-	$(CXX) $(CXXFLAGS) $(IFLAGS) $< -c -o $@
+	$(CXX) $(CXXFLAGS) $(IFLAGS) -framework Accelerate $< -c -o $@
 
 # GPU
 pogs_cu_link.o: pogs_cu.o

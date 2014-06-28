@@ -18,11 +18,6 @@
 #define __DEVICE__
 #endif
 
-#ifdef __MEX__
-#define printf mexPrintf
-extern "C" int mexPrintf(const char* fmt, ...);
-#endif  // __MEX__
-
 // List of functions supported by the proximal operator library.
 enum Function { kAbs,       // f(x) = |x|
                 kNegEntr,   // f(x) = x log(x)
