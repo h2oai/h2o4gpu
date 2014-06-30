@@ -1,4 +1,4 @@
-MATLAB implementation of POGS. 
+MATLAB implementation of POGS (to use the MATLAB/MEX interface see `pogs/src/interfaces` or `pogs/examples/matlab`). 
 
 Type `help pogs` in the MATLAB console for instructions or see examples:
 
