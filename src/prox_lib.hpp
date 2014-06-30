@@ -200,7 +200,7 @@ __DEVICE__ inline T LambertW(T x) {
   }
 }
 
-// Find the root of a cubic x^3 + px^2 + qx + r = 0 with a single real root.
+// Find the root of a cubic x^3 + px^2 + qx + r = 0 with a single positive root.
 template <typename T>
 __DEVICE__ inline T CubicSolve(T p, T q, T r) {
   T s = p / 3, s2 = s * s, s3 = s2 * s;
