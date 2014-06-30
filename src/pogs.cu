@@ -44,8 +44,6 @@ void Pogs(PogsData<T, M> *pogs_data) {
   thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
   thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
 
-  printf("using gpu\n");
-
   // Create cuBLAS handle.
   cublasHandle_t handle;
   cublasCreate(&handle);
@@ -76,9 +74,8 @@ void Pogs(PogsData<T, M> *pogs_data) {
   delete [] Acm;
 
   // Compuate A^TA or AA^T.
-  cublasOperation_t mult_type = m >= n? CUBLAS_OP_T : CUBLAS_OP_N;
-  cml::blas_syrk(handle, CUBLAS_FILL_MODE_LOWER, mult_type, kOne, &A, kZero,
-                 &AA);
+  cublasOperation_t op_type = m >= n? CUBLAS_OP_T : CUBLAS_OP_N;
+  cml::blas_syrk(handle, CUBLAS_FILL_MODE_LOWER, op_type, kOne, &A, kZero, &AA);
 
   // Scale A.
   cml::vector<T> diag_AA = cml::matrix_diagonal(&AA);

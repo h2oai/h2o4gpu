@@ -20,7 +20,6 @@
 
 // List of functions supported by the proximal operator library.
 enum Function { kAbs,       // f(x) = |x|
-                kNegEntr,   // f(x) = x log(x)
                 kExp,       // f(x) = e^x
                 kHuber,     // f(x) = huber(x)
                 kIdentity,  // f(x) = x
@@ -31,6 +30,7 @@ enum Function { kAbs,       // f(x) = |x|
                 kLogistic,  // f(x) = log(1 + e^x)
                 kMaxNeg0,   // f(x) = max(0, -x)
                 kMaxPos0,   // f(x) = max(0, x)
+                kNegEntr,   // f(x) = x log(x)
                 kNegLog,    // f(x) = -log(x)
                 kRecipr,    // f(x) = 1/x
                 kSquare,    // f(x) = (1/2) x^2
@@ -76,6 +76,22 @@ template <>
 __DEVICE__ inline double Abs(double x) { return fabs(x); }
 template <>
 __DEVICE__ inline float Abs(float x) { return fabsf(x); }
+
+//  Evaluate acos(x)
+template <typename T>
+__DEVICE__ inline T Acos(T x);
+template <>
+__DEVICE__ inline double Acos(double x) { return acos(x); }
+template <>
+__DEVICE__ inline float Acos(float x) { return acosf(x); }
+
+//  Evaluate cos(x)
+template <typename T>
+__DEVICE__ inline T Cos(T x);
+template <>
+__DEVICE__ inline double Cos(double x) { return cos(x); }
+template <>
+__DEVICE__ inline float Cos(float x) { return cosf(x); }
 
 //  Evaluate e^x
 template <typename T>
@@ -184,21 +200,23 @@ __DEVICE__ inline T LambertW(T x) {
   }
 }
 
-// Find the root of a cubic x^3 + ax^2 + bx + c = 0 with a single real root.
+// Find the root of a cubic x^3 + px^2 + qx + r = 0 with a single real root.
 template <typename T>
-__DEVICE__ inline T CubicSolve(T a, T b, T c) {
-  T q = a * a - 3 * b;
-  T r = 2 * a * a * a - 9 * a * b + 27 * c;
-
-  T Q = q / 9;
-  T R = r / 54;
-
-  T Q3 = Q * Q * Q;
-  T R2 = R * R;
-
-  T A = -Sign(R) * Pow(Abs(R) + Sqrt(R2 - Q3), static_cast<T>(1) / 3);
-  T B = Q / A;
-  return A + B - a / 3;
+__DEVICE__ inline T CubicSolve(T p, T q, T r) {
+  T s = p / 3, s2 = s * s, s3 = s2 * s;
+  T a = -s2 + q / 3;
+  T b = s3 - s * q / 2 + r / 2;
+  T a3 = a * a * a;
+  T b2 = b * b;
+  if (a3 + b2 >= 0) {
+    T A = Pow(Sqrt(a3 + b2) - b, static_cast<T>(1) / 3);
+    return -s - a / A + A;
+  } else {
+    T A = Sqrt(-a3);
+    T B = Acos(-b / A);
+    T C = Pow(A, static_cast<T>(1) / 3);
+    return -s + (C - a / C) * Cos(B / 3);
+  }
 }
 }  // namespace
 
@@ -218,7 +236,6 @@ __DEVICE__ inline T ProxAbs(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxNegEntr(T v, T rho) {
-  v = Max(v, static_cast<T>(0));
   return LambertW(Exp(rho * v - 1) * rho) / rho;
 }
 
@@ -349,8 +366,7 @@ __DEVICE__ inline T FuncAbs(T x) {
 
 template <typename T>
 __DEVICE__ inline T FuncNegEntr(T x) {
-  x = Max(static_cast<T>(0), x);
-  return x == 0 ? 0 : x * Log(x);
+  return x <= 0 ? 0 : x * Log(x);
 }
 
 template <typename T>

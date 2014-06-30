@@ -259,13 +259,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs >= 3)
     plhs[2] = mxCreateNumericMatrix(1, 1, class_id_A, mxREAL);
 
-  if (class_id_A == mxDOUBLE_CLASS) {
+  if (class_id_A == mxDOUBLE_CLASS)
     SolverWrap<double>(nlhs, plhs, nrhs, prhs);
-  } else if (class_id_A == mxSINGLE_CLASS) {
-    // SolverWrap<float>(nlhs, plhs, nrhs, prhs);
-    mexErrMsgIdAndTxt("MATLAB:pogs:inputSinglePrecision",
-        "No single precision support yet.");
-
-  }
+  else if (class_id_A == mxSINGLE_CLASS)
+    SolverWrap<float>(nlhs, plhs, nrhs, prhs);
 }
 

@@ -1,6 +1,6 @@
 % Definitions
-kAbs      = 0; kNegEntr  = 1; kExp     = 2; kHuber = 3;   kIdentity = 4; 
-kIndBox01 = 5; kIndEq0   = 6; kIndGe0  = 7; kIndLe0 = 8;  kLogistic = 9;
-kMaxNeg0 = 10; kMaxPos0 = 11; kNegLog = 12; kRecipr = 13; kSquare  = 14;
+kAbs      = 0; kExp      = 1; kHuber   = 2; kIdentity = 3; kIndBox01 = 4;
+kIndEq0   = 5; kIndGe0   = 6; kIndLe0  = 7; kLogistic = 8; kMaxNeg0  = 9;
+kMaxPos0 = 10; kNegEntr = 11; kNegLog = 12; kRecipr  = 13; kSquare  = 14;
 kZero    = 15;
 
