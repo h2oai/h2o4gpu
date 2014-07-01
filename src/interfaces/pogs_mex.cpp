@@ -50,7 +50,7 @@ inline T GetVal(const void *pr, size_t idx, mxClassID id) {
 // while f is required. Each field (if present) is a vector of length n.
 template <typename T>
 int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
-                        unsigned int n, std::vector<FunctionObj<T>> *f_pogs) {
+                        unsigned int n, std::vector<FunctionObj<T> > *f_pogs) {
   const unsigned int kNumParam = 5u;
   char alpha[] = "h\0a\0b\0c\0d\0";
 
