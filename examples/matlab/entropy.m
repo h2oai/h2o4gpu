@@ -2,7 +2,7 @@ function pogs_time = entropy(m, n, params)
 %ENTROPY
 
 if nargin == 2
-  params.rho = 1e4;
+  params.rho = 1e3;
   params.rel_tol = 1e-6;
   params.abs_tol = 1e-6;
 end
@@ -23,14 +23,7 @@ g.h = kNegEntr;
 
 % Solve
 tic
-x_pogs = pogs(A, f, g, params);
+pogs(A, f, g, params);
 pogs_time = toc;
-
-cvx_begin
-    variable x(n)
-    minimize(-sum(entr(x)))
-    F * x <= b
-    sum(x) == 1
-cvx_end
 
 end
