@@ -17,17 +17,17 @@ Proximal Operator Library
 The heart of the solver is the proximal operator library (`prox_lib.hpp`), which defines proximal operators for a variety of functions. Each function is described by a function object (`FunctionObj`) and a function object is in turn parameterized by five values: `h, a, b, c` and `d`. These correspond to the equation
 
 ```
-	c * h(a * x - b) + d * x,
+	c * h(a * x - b) + d * x + e * x ^ 2,
 ```
 
-where `a, b` and `d` take on real values, `c` is a non-negative real and `h` is one of (currently) 16 enumumerated values (see below). To instantiate a `FunctionObj` you must specify all of these values, however `a` and `c` default to 1 and `b` and `d` default to 0. 
+where `a, b` and `d` take on real values, `c, d` are non-negative real and `h` is one of (currently) 16 enumumerated values (see below). To instantiate a `FunctionObj` you must specify all of these values, however `a` and `c` default to 1 and `b` and `d` default to 0. 
 
 The enumerated function types are:
 
 | enum      | Mathematical Function | Domain  |
 | --------- |:----------------------|:--------|
 | kAbs      | h(x) = &#124;x&#124;  |R        |
-| kEntr     | h(x) = x log(x)       |[0, inf) |
+| kNegEntr  | h(x) = x log(x)       |[0, inf) |
 | kExp      | h(x) = exp(x)         |R        |
 | kHuber    | h(x) = huber(x)       |R        |
 | kIdentity | h(x) = x              |R        |
