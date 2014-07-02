@@ -1,10 +1,10 @@
 %RUN Runs all examples.
 
 % Build interface
-cd([pwd '/../../src/interfaces/'])
+cd([pwd '/../../src/interface_matlab/'])
 pogs_setup % Alternatively `pogs_setup gpu`
 cd([pwd '/../../examples/matlab/'])
-addpath([pwd '/../../src/interfaces'])
+addpath([pwd '/../../src/interface_matlab'])
 
 %% Run examples
 fprintf('\nEntropy\n')
