@@ -5,9 +5,6 @@ if nargin == 2
   params = [];
 end
 
-% Load function definitions.
-pogs_defs
-
 % Generate data.
 rng(0, 'twister');
 

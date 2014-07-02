@@ -7,9 +7,6 @@ if nargin == 2
   params.abs_tol = 1e-6;
 end
 
-% Load function definitions.
-pogs_defs
-
 % Generate data.
 rng(0, 'twister');
 
@@ -17,7 +14,7 @@ F = randn(m, n) / n;
 b = F * rand(n, 1) + rand(m, 1);
 A = [F; ones(1, n)];
 
-f.h = [kIndLe0 * ones(m, 1); kIndEq0];
+f.h = [kIndLe0(m); kIndEq0];
 f.b = [b; 1];
 g.h = kNegEntr;
 

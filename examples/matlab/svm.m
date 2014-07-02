@@ -5,9 +5,6 @@ if nargin == 2
   params = [];
 end
 
-% Load function definitions.
-pogs_defs
-
 % Generate data.
 rng(0, 'twister')
 
@@ -21,7 +18,7 @@ A = [(-y * ones(1, n)) .* x, -y];
 f.h = kMaxPos;
 f.b = -1;
 f.c = lambda;
-g.h = [kSquare * ones(n, 1); 0];
+g.h = [kSquare(n); 0];
 
 % Solve.
 tic
