@@ -51,8 +51,8 @@ inline T GetVal(const void *pr, size_t idx, mxClassID id) {
 template <typename T>
 int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
                         unsigned int n, std::vector<FunctionObj<T> > *f_pogs) {
-  const unsigned int kNumParam = 5u;
-  char alpha[] = "h\0a\0b\0c\0d\0";
+  const unsigned int kNumParam = 6u;
+  char alpha[] = "h\0a\0b\0c\0d\0e\0";
 
   int param_idx[kNumParam];
   #pragma unroll
@@ -69,8 +69,8 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
   mxClassID param_id[kNumParam];
   mxArray *param_arr[kNumParam];
   Function func_param;
-  T real_params[] = {static_cast<T>(1), static_cast<T>(0),
-                     static_cast<T>(1), static_cast<T>(0)};
+  T real_params[] = { static_cast<T>(1), static_cast<T>(0), static_cast<T>(1),
+                      static_cast<T>(0), static_cast<T>(0) };
 
   // Find index and pointer to data of (h, a, b, c, d) in struct if present.
   #pragma unroll
@@ -111,7 +111,7 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
     }
 
     f_pogs->push_back(FunctionObj<T>(func_param, real_params[0], real_params[1],
-                                     real_params[2], real_params[3]));
+        real_params[2], real_params[3], real_params[4]));
   }
   return 0;
 }
@@ -187,8 +187,8 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   // Initialize Pogs data structure
   PogsData<T, T*> pogs_data(A, m, n);
-  pogs_data.f.reserve(mxGetM(prhs[0]));
-  pogs_data.g.reserve(mxGetN(prhs[0]));
+  pogs_data.f.reserve(m);
+  pogs_data.g.reserve(n);
   pogs_data.x = reinterpret_cast<T*>(mxGetPr(plhs[0]));
   if (nlhs >= 2)
     pogs_data.y = reinterpret_cast<T*>(mxGetPr(plhs[1]));
