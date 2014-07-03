@@ -1,0 +1,9 @@
+Package: pogs
+Type: Package
+Title: Solver for graph form problems
+Version: 1.0
+Date: 2014-07-02
+Author: Chris Fougner
+Maintainer: Chris Fougner <fougner@stanford.edu>
+Description: Does stuff
+License: GPL
