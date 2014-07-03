@@ -130,6 +130,29 @@ void blas_trsv(CBLAS_UPLO_t Uplo, CBLAS_TRANSPOSE_t TransA,
       A->data, static_cast<int>(A->tda), x->data, static_cast<int>(x->stride));
 }
 
+// Trsm.
+template <typename T>
+void blas_trsm(CBLAS_SIDE_t Side, CBLAS_UPLO_t Uplo, CBLAS_TRANSPOSE_t TransA,
+               CBLAS_DIAG_t Diag, T alpha, const matrix<T> *A, matrix<T> *B);
+
+template <>
+void blas_trsm(CBLAS_SIDE_t Side, CBLAS_UPLO_t Uplo, CBLAS_TRANSPOSE_t TransA,
+               CBLAS_DIAG_t Diag, double alpha, const matrix<double> *A,
+               matrix<double> *B) {
+  cblas_dtrsm(CblasRowMajor, Side, Uplo, TransA, Diag,
+      static_cast<int>(B->size1), static_cast<int>(B->size2), alpha, A->data,
+      static_cast<int>(A->tda), B->data, static_cast<int>(B->tda));
+}
+
+template <>
+void blas_trsm(CBLAS_SIDE_t Side, CBLAS_UPLO_t Uplo, CBLAS_TRANSPOSE_t TransA,
+               CBLAS_DIAG_t Diag, float alpha, const matrix<float> *A,
+               matrix<float> *B) {
+  cblas_strsm(CblasRowMajor, Side, Uplo, TransA, Diag,
+      static_cast<int>(B->size1), static_cast<int>(B->size2), alpha, A->data,
+      static_cast<int>(A->tda), B->data, static_cast<int>(B->tda));
+}
+
 // Scal.
 template <typename T>
 void blas_scal(const T alpha, vector<T> *x);
