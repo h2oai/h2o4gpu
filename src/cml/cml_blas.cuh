@@ -271,6 +271,7 @@ cublasStatus_t blas_scal(cublasHandle_t handle, const float *alpha,
   return err;
 }
 
+// Asum.
 template <typename T>
 cublasStatus_t blas_asum(cublasHandle_t handle, const vector<T> *x, T *result);
 
@@ -295,6 +296,29 @@ T blas_asum(cublasHandle_t handle, const vector<T> *x) {
   T result;
   blas_asum(handle, x, &result);
   return result;
+}
+
+// Asum.
+template <typename T>
+cublasStatus_t blas_dot(cublasHandle_t handle, const vector<T> *x,
+                        const vector<T> *y, T *result);
+
+template <>
+cublasStatus_t blas_dot(cublasHandle_t handle, const vector<double> *x,
+                        const vector<double> *y, double *result) {
+  cublasStatus_t err = cublasDdot(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), y->data, static_cast<int>(y->stride), result);
+  CublasCheckError(err);
+  return err;
+}
+
+template <>
+cublasStatus_t blas_dot(cublasHandle_t handle, const vector<float> *x,
+                        const vector<float> *y, float *result) {
+  cublasStatus_t err = cublasSdot(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), y->data, static_cast<int>(y->stride), result);
+  CublasCheckError(err);
+  return err;
 }
 
 }  // namespace cml

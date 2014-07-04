@@ -1,11 +1,11 @@
-#ifndef SOLVER_HPP_
-#define SOLVER_HPP_
+#ifndef POGS_HPP_
+#define POGS_HPP_
 
 #include <vector>
 
 #include "prox_lib.hpp"
 
-// Data structure for input to Solver().
+// Data structure for input to Pogs().
 template <typename T, typename M>
 struct PogsData {
   // Input.
@@ -32,5 +32,5 @@ struct PogsData {
 template <typename T, typename M>
 void Pogs(PogsData<T, M> *pogs_data);
 
-#endif /* SOLVER_HPP_ */
+#endif /* POGS_HPP_ */
 

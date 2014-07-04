@@ -34,11 +34,8 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 template <typename T, typename M>
 void Pogs(PogsData<T, M> *pogs_data) {
   // Extract values from pogs_data
-  size_t n = pogs_data->n;
-  size_t m = pogs_data->m;
-  size_t min_dim = std::min(m, n);
-  const T kOne = static_cast<T>(1);
-  const T kZero = static_cast<T>(0);
+  size_t m = pogs_data->m, n = pogs_data->n, min_dim = std::min(m, n);
+  const T kOne = static_cast<T>(1), kZero = static_cast<T>(0);
 
   // Copy f and g to device
   thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
@@ -74,7 +71,7 @@ void Pogs(PogsData<T, M> *pogs_data) {
   delete [] Acm;
 
   // Compuate A^TA or AA^T.
-  cublasOperation_t op_type = m >= n? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t op_type = m >= n ? CUBLAS_OP_T : CUBLAS_OP_N;
   cml::blas_syrk(handle, CUBLAS_FILL_MODE_LOWER, op_type, kOne, &A, kZero, &AA);
 
   // Scale A.
@@ -100,8 +97,8 @@ void Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    printf("%4s %12s %10s %10s %10s %10s\n",
-           "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective");
+    printf("%4s %12s %10s %10s %10s %10s %10s\n",
+           "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective", "gap");
 
   T rho = pogs_data->rho;
   T sqrtn_atol = sqrt(static_cast<T>(n)) * pogs_data->abs_tol;
@@ -111,6 +108,11 @@ void Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_axpy(handle, -kOne, &zt, &z);
     ProxEval(g, rho, x.data, x12.data);
     ProxEval(f, rho, y.data, y12.data);
+
+    // Compute Gap.
+    cml::blas_axpy(handle, -kOne, &z12, &z);
+    T gap;
+    cml::blas_dot(handle, &z, &z12, &gap);
 
     // Project and Update Dual Variables
     cml::blas_axpy(handle, kOne, &z12, &zt);
@@ -137,18 +139,19 @@ void Pogs(PogsData<T, M> *pogs_data) {
     T eps_pri = sqrtn_atol + pogs_data->rel_tol * std::max(nrm_z12, nrm_z);
     T eps_dual = sqrtn_atol + pogs_data->rel_tol * rho * nrm_zt;
 
-    // Compute ||r^k||_2 and ||s^k||_2.
-    cml::blas_axpy(handle, -kOne, &z, &z12);
+    // Compute ||r^k||_2 and ||s^k||_2 (use z_prev for temp storage).
     cml::blas_axpy(handle, -kOne, &z, &z_prev);
-    T nrm_r = cml::blas_nrm2(handle, &z12);
     T nrm_s = rho * cml::blas_nrm2(handle, &z_prev);
+    cml::vector_memcpy(&z_prev, &z12);
+    cml::blas_axpy(handle, -kOne, &z, &z_prev);
+    T nrm_r = cml::blas_nrm2(handle, &z_prev);
 
     // Evaluate stopping criteria.
     bool converged = nrm_r <= eps_pri && nrm_s <= eps_dual;
     if (!pogs_data->quiet && (k % 10 == 0 || converged)) {
       T optval = FuncEval(f, y.data) + FuncEval(g, x.data);
-      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-             k, nrm_r, eps_pri, nrm_s, eps_dual, optval);
+      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e %.3e\n",
+             k, nrm_r, eps_pri, nrm_s, eps_dual, optval, std::abs(gap));
     }
 
     if (converged)

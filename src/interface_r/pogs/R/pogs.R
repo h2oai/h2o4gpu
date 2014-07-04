@@ -53,16 +53,17 @@ pogs <- function(A, f, g, params=list()) {
     if (!any(name == c("a", "b", "c", "d", "e", "h"))) {
       stop(cat("pogs(): field f$", name, " unknown!", sep=""))
     }
-    if (!is.vector(f[[name]])) {
-      stop(cat("pogs(): field f$", name, " must be a vector!", sep=""))
-    }
     if (!is.numeric(f[[name]])) {
       stop(cat("pogs(): field f$", name, " must be numeric!", sep=""))
+    }
+    # Convert to double (in case it's a matrix).
+    f[[name]] = as.double(f[[name]])
+    if (!is.vector(f[[name]])) {
+      stop(cat("pogs(): field f$", name, " must be a vector!", sep=""))
     }
     if (length(f[[name]]) != nrow(A) && length(f[[name]]) != 1) {
       stop(cat("pogs(): field f$", name, " must must have length nrow(A) or 1!", sep=""))
     }
-    f[[name]] = as.double(f[[name]])
   }
 
   # Check fields in g.
@@ -70,11 +71,13 @@ pogs <- function(A, f, g, params=list()) {
     if (!any(name == c("a", "b", "c", "d", "e", "h"))) {
       stop(cat("pogs(): field g$", name, " unknown!", sep=""))
     }
-    if (!is.vector(g[[name]])) {
-      stop(cat("pogs(): field g$", name, " must be a vector!", sep=""))
-    }
     if (!is.numeric(g[[name]])) {
       stop(cat("pogs(): field g$", name, " must be numeric!", sep=""))
+    }
+    # Convert to double (in case it's a matrix).
+    g[[name]] = as.double(g[[name]])
+    if (!is.vector(g[[name]])) {
+      stop(cat("pogs(): field g$", name, " must be a vector!", sep=""))
     }
     if (length(g[[name]]) != ncol(A) && length(g[[name]]) != 1) {
       stop(cat("pogs(): field g$", name, " must must have length ncol(A) or 1!", sep=""))

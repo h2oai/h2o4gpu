@@ -19,14 +19,12 @@ extern "C" int mexPrintf(const char* fmt, ...);
 template<typename T, typename M>
 void Pogs(PogsData<T, M> *pogs_data) {
   // Extract values from pogs_data
-  size_t n = pogs_data->n;
-  size_t m = pogs_data->m;
-  size_t min_dim = std::min(m, n);
-  const T kOne = static_cast<T>(1);
-  const T kZero = static_cast<T>(0);
+  size_t m = pogs_data->m, n = pogs_data->n, min_dim = std::min(m, n);
+  const T kOne = static_cast<T>(1), kZero = static_cast<T>(0);
 
-  std::vector<FunctionObj<T>> f = pogs_data->f;
-  std::vector<FunctionObj<T>> g = pogs_data->g;
+  // Copy f and g to device
+  std::vector<FunctionObj<T> > f = pogs_data->f;
+  std::vector<FunctionObj<T> > g = pogs_data->g;
 
   // Allocate data for ADMM variables.
   gsl::vector<T> d = gsl::vector_calloc<T>(m);
@@ -82,8 +80,8 @@ void Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    printf("%4s %12s %10s %10s %10s %10s\n",
-           "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective");
+    printf("%4s %12s %10s %10s %10s %10s %9s\n",
+           "#", "r norm", "eps_pri", "s norm", "eps_dual", "objective", "gap");
 
   T rho = pogs_data->rho;
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * pogs_data->abs_tol;
@@ -92,6 +90,11 @@ void Pogs(PogsData<T, M> *pogs_data) {
     gsl::vector_sub(&z, &zt);
     ProxEval(g, rho, x.data, x12.data);
     ProxEval(f, rho, y.data, y12.data);
+
+    // Compute Gap.
+    gsl::vector_sub(&z, &z12);
+    T gap;
+    gsl::blas_dot(&z, &z12, &gap);
 
     // Project and Update Dual Variables.
     gsl::vector_add(&zt, &z12);
@@ -118,18 +121,19 @@ void Pogs(PogsData<T, M> *pogs_data) {
     T eps_pri = sqrtn_atol + pogs_data->rel_tol * std::max(nrm_z12, nrm_z);
     T eps_dual = sqrtn_atol + pogs_data->rel_tol * rho * nrm_zt;
 
-    // Compute ||r^k||_2 and ||s^k||_2.
-    gsl::vector_sub(&z12, &z);
+    // Compute ||r^k||_2 and ||s^k||_2 (use z_prev for temp storage).
     gsl::vector_sub(&z_prev, &z);
-    T nrm_r = gsl::blas_nrm2(&z12);
     T nrm_s = rho * gsl::blas_nrm2(&z_prev);
+    gsl::vector_memcpy(&z_prev, &z12);
+    gsl::vector_sub(&z_prev, &z);
+    T nrm_r = gsl::blas_nrm2(&z_prev);
 
     // Evaluate stopping criteria.
     bool converged = nrm_r <= eps_pri && nrm_s <= eps_dual;
     if (!pogs_data->quiet && (k % 10 == 0 || converged)) {
-      T obj = FuncEval(f, y.data) + FuncEval(g, x.data);
-      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-             k, nrm_r, eps_pri, nrm_s, eps_dual, obj);
+      T obj = FuncEval(f, y12.data) + FuncEval(g, x12.data);
+      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e %.3e\n",
+             k, nrm_r, eps_pri, nrm_s, eps_dual, obj, std::abs(gap));
     }
 
     if (converged)
@@ -150,10 +154,10 @@ void Pogs(PogsData<T, M> *pogs_data) {
 
   // Copy results to output and scale.
   for (unsigned int i = 0; i < m && pogs_data->y != 0; ++i)
-    pogs_data->y[i] = gsl::vector_get(&y, i) / gsl::vector_get(&d, i);
+    pogs_data->y[i] = gsl::vector_get(&y12, i) / gsl::vector_get(&d, i);
   for (unsigned int j = 0; j < n && pogs_data->x != 0; ++j)
-    pogs_data->x[j] = gsl::vector_get(&x, j) * gsl::vector_get(&e, j);
-  pogs_data->optval = FuncEval(f, y.data) + FuncEval(g, x.data);
+    pogs_data->x[j] = gsl::vector_get(&x12, j) * gsl::vector_get(&e, j);
+  pogs_data->optval = FuncEval(f, y12.data) + FuncEval(g, x12.data);
 
   // Free up memory.
   gsl::matrix_free(&A);
