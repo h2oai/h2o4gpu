@@ -1,1 +1,1 @@
-cp -rf ../../gsl ../../matrix_util.hpp ../../pogs.cpp ../../pogs.hpp ../../prox_lib.hpp ../../sinkhorn_knopp.hpp src/
+cp -rf ../../gsl ../../interface_defs.h ../../matrix_util.h ../../pogs.cpp ../../pogs.h ../../prox_lib.h ../../sinkhorn_knopp.h src/
