@@ -36,7 +36,7 @@ The following functions are currently supported
   + `f(x) = (1/2) x^2`
   + `f(x) = 0`
   
-More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.h`.
+where `I(.)` is the indicator function, taking on the value 0 if the condition is satisfied and infinity otherwise. More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.h`.
 
 Languages / Frameworks
 ======================
