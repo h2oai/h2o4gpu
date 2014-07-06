@@ -8,13 +8,13 @@ A graph form problem can be expressed as
 
 ```
 minimize        f(y) + g(x)
-subject to      y = A * x
+subject to      y = Ax
 ```
 where `f` and `g` are convex and can take on the values `R \cup {∞}`. The solver requires that the [proximal operators][prox_algs] of `f` and `g` are known and that `f` and `g` are separable, meaning that they can be written as
 
 ```
-f(y) = \sum_i f_i(y_i)
-g(x) = \sum_i g_i(x_i)
+f(y) = sum_{i=1}^m f_i(y_i)
+g(x) = sum_{i=1}^n g_i(x_i)
 ```
 
 The following functions are currently supported
@@ -36,15 +36,15 @@ The following functions are currently supported
   + `f(x) = (1/2) x^2`
   + `f(x) = 0`
   
-More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.hpp`.
+More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.h`.
 
 Languages / Frameworks
 ======================
 Three different implementations of the solver are either planned or already supported:
 
   1. MATLAB: A MATLAB implementation along with examples can be found in the `<pogs>/matlab` directory.
-  2. C++/BLAS/GSL/OpenMP: A multithreaded `C++` version can be found in the `<pogs>/src` directory. For best performance it's important to link to  a tuned BLAS or LAPACK library, such as ATLAS or Accelerate Framework.
-  3. C++/cuBLAS/CUDA: A GPU implementation is planned.
+  2. C++/BLAS/OpenMP: A CPU version can be found in the file `<pogs>/src/pogs.cpp`. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
+  3. C++/cuBLAS/CUDA: The GPU version is located in the file `<pogs>/src/pogs.cu`.
 
 
 Problem Classes
