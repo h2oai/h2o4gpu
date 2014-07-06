@@ -1,5 +1,5 @@
-#ifndef PROX_LIB_HPP_
-#define PROX_LIB_HPP_
+#ifndef PROX_LIB_H_
+#define PROX_LIB_H_
 
 #include <algorithm>
 #include <cmath>
@@ -58,9 +58,9 @@ struct FunctionObj {
 
   void CheckConsts() {
     if (c < static_cast<T>(0))
-      fprintf(stderr, "WARNING c < 0. Function not convex. Using c = 0");
+      printf("WARNING c < 0. Function not convex. Using c = 0");
     if (e < static_cast<T>(0))
-      fprintf(stderr, "WARNING e < 0. Function not convex. Using e = 0");
+      printf("WARNING e < 0. Function not convex. Using e = 0");
     c = std::max(c, static_cast<T>(0));
     e = std::max(e, static_cast<T>(0));
   }
@@ -247,7 +247,7 @@ __DEVICE__ inline T ProxExp(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxHuber(T v, T rho) {
-  return Abs(v) < 1 + 1 / rho ? v * rho / (1 + rho) : v - Sign(v) * rho;
+  return Abs(v) < 1 + 1 / rho ? v * rho / (1 + rho) : v - Sign(v) / rho;
 }
 
 template <typename T>
@@ -534,7 +534,7 @@ T FuncEval(const thrust::device_vector<FunctionObj<T> > &f_obj, const T *x_in) {
                                static_cast<T>(0), thrust::plus<T>(),
                                FuncEvalF<T>());
 }
-#endif /* __CUDACC__ */
+#endif  // __CUDACC__
 
-#endif /* PROX_LIB_HPP_ */
+#endif  // PROX_LIB_H_
 
