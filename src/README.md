@@ -14,7 +14,7 @@ The fist step is to formulate the problem in such a way that `A`, `f` and `g` ar
 
 Proximal Operator Library
 -------------------------
-The heart of the solver is the proximal operator library (`prox_lib.hpp`), which defines proximal operators for a variety of functions. Each function is described by a function object (`FunctionObj`) and a function object is in turn parameterized by five values: `h, a, b, c` and `d`. These correspond to the equation
+The heart of the solver is the proximal operator library (`prox_lib.h`), which defines proximal operators for a variety of functions. Each function is described by a function object (`FunctionObj`) and a function object is in turn parameterized by five values: `h, a, b, c` and `d`. These correspond to the equation
 
 ```
 	c * h(a * x - b) + d * x + e * x ^ 2,
