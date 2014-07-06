@@ -7,8 +7,16 @@ cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 
 %% Run examples
+fprintf('\nBasis Pursuit\n')
+t = basis_pursuit(200, 2000);
+fprintf('Solver Time: %e sec\n', t)
+
 fprintf('\nEntropy\n')
 t = entropy(200, 2000);
+fprintf('Solver Time: %e sec\n', t)
+
+fprintf('\nHuber\n')
+t = huber_fit(2000, 200);
 fprintf('Solver Time: %e sec\n', t)
 
 fprintf('\nLasso\n')
@@ -31,6 +39,14 @@ fprintf('\nNon-Negative Least Squares\n')
 t = lasso(1000, 200);
 fprintf('Solver Time: %e sec\n', t)
 
+fprintf('\nPortfolio Optimization\n')
+t = portfolio(200, 2000);
+fprintf('Solver Time: %e sec\n', t)
+
+fprintf('\nPiecewise Linear Fitting\n')
+t = pwl(2000, 200);
+fprintf('Solver Time: %e sec\n', t)
+
 fprintf('\nSupport Vector Machine\n')
-t = lasso(1000, 200);
+t = lasso(2000, 200);
 fprintf('Solver Time: %e sec\n', t)

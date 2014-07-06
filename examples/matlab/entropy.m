@@ -3,8 +3,8 @@ function pogs_time = entropy(m, n, params)
 
 if nargin == 2
   params.rho = 1e3;
-  params.rel_tol = 1e-6;
-  params.abs_tol = 1e-6;
+  params.rel_tol = 1e-5;
+  params.abs_tol = 1e-5;
 end
 
 % Generate data.
