@@ -43,7 +43,7 @@ The enumerated function types are:
 | kRecipr   | h(x) = 1/x            |(0, inf) |
 | kZero     | h(x) = 0              |R        |
 
-Notice that some functions have an implicitly constrained domain.
+The function `I(.)` is the indicator function, taking on the value 0 if the condition is satisfied and infinity otherwise. Notice that some functions have an implicitly constrained domain.
 
 Examples
 --------
