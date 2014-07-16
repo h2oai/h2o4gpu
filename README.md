@@ -1,7 +1,7 @@
 [POGS](http://foges.github.com/pogs)
 ====
 
-POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers][admm_distr_stats] (ADMM).
+POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers][admm_distr_stats] (ADMM). Head over to the GitHub.io page for complete [Documentation](http://foges.github.com/pogs).
 
 ----
 A graph form problem can be expressed as
