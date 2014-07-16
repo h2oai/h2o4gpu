@@ -19,23 +19,7 @@ g(x) = sum_{i=1}^n g_i(x_i)
 
 The following functions are currently supported
 
-![alt tag](https://raw.github.com/foges/pogs/master/img/eqs.pdf)
-  + `f(x) = |x|`
-  + `f(x) = x log(x)`
-  + `f(x) = e^x`
-  + `f(x) = huber(x)`
-  + `f(x) = x`
-  + `f(x) = I(0 <= x <= 1)`
-  + `f(x) = I(x = 0)`
-  + `f(x) = I(x >= 0)`
-  + `f(x) = I(x <= 0)`
-  + `f(x) = log(1 + e^x)`
-  + `f(x) = max(0, -x)`
-  + `f(x) = max(0, x)`
-  + `f(x) = -log(x)`
-  + `f(x) = 1/x`
-  + `f(x) = (1/2) x^2`
-  + `f(x) = 0`
+![Supported Equations](https://github.com/foges/pogs/raw/master/img/eqs.png)
 
 where `I(.)` is the indicator function, taking on the value 0 if the condition is satisfied and infinity otherwise. More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.h`.
 
