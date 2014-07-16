@@ -1,7 +1,7 @@
-[POGS](http://foges.github.com/pogs)
+[POGS](http://foges.github.io/pogs)
 ====
 
-POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers][admm_distr_stats] (ADMM). Head over to the GitHub.io page for complete [Documentation](http://foges.github.com/pogs).
+POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). Head over to the GitHub.io page for complete [Documentation](http://foges.github.io/pogs).
 
 ----
 A graph form problem can be expressed as
@@ -10,7 +10,7 @@ A graph form problem can be expressed as
 minimize        f(y) + g(x)
 subject to      y = Ax
 ```
-where `f` and `g` are convex and can take on the values `R \cup {∞}`. The solver requires that the [proximal operators][prox_algs] of `f` and `g` are known and that `f` and `g` are separable, meaning that they can be written as
+where `f` and `g` are convex and can take on the values `R \cup {∞}`. The solver requires that the [proximal operators](http://foges.github.io/pogs/ref/admm) of `f` and `g` are known and that `f` and `g` are separable, meaning that they can be written as
 
 ```
 f(y) = sum_{i=1}^m f_i(y_i)
@@ -43,9 +43,9 @@ Languages / Frameworks
 ======================
 Three different implementations of the solver are either planned or already supported:
 
-  1. MATLAB: A MATLAB implementation along with examples can be found in the `<pogs>/matlab` directory.
-  2. C++/BLAS/OpenMP: A CPU version can be found in the file `<pogs>/src/pogs.cpp`. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
-  3. C++/cuBLAS/CUDA: The GPU version is located in the file `<pogs>/src/pogs.cu`.
+  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<pogs>/src/pogs.cpp`. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
+  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<pogs>/src/pogs.cu`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
+  3. MATLAB: A MATLAB implementation along with examples can be found in the `<pogs>/matlab` directory. The code is heavily documented and primarily intended for pedagogical purposes.
 
 
 Problem Classes
@@ -53,10 +53,9 @@ Problem Classes
 
 Among others, the solver can be used for the following classes of (linearly constrained) problems
 
-  + Least Squares
-  + Lasso, Ridge Regression, Logistic Regression, Huber Fitting and Elastic Net Regulariation 
-  + Linear Programs and Quadratic Programs
-  + Analytic Centering
+  + Lasso, Ridge Regression, Logistic Regression, Huber Fitting and Elastic Net Regulariation,
+  + Total Variation Denoising, Optimal Control,
+  + Linear Programs and Quadratic Programs.
 
 
 References
@@ -77,5 +76,5 @@ Author
 ------
 Chris Fougner (fougner@stanford.edu)
 
-Acknowledgement: Much of this is based on work by Neal Parikh.
+Acknowledgement: POGS is partially based on work by Neal Parikh. In particular the term _graph form_ and many of the derivations are taken from ["Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd"][block_splitting].
 
