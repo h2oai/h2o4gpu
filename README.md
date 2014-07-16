@@ -19,6 +19,7 @@ g(x) = sum_{i=1}^n g_i(x_i)
 
 The following functions are currently supported
 
+![alt tag](https://raw.github.com/foges/pogs/master/img/eqs.pdf)
   + `f(x) = |x|`
   + `f(x) = x log(x)`
   + `f(x) = e^x`
