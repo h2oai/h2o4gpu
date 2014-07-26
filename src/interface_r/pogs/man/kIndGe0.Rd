@@ -5,6 +5,9 @@
 \usage{
 kIndGe0(m = 1)
 }
+\arguments{
+\item{m}{Number of times that the function should be repeated.}
+}
 \description{
 \deqn{h(x) = I(x >= 0)}
 }

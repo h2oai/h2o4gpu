@@ -3,21 +3,21 @@
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 #-fopenmp
+CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -fopenmp
 
 # CUDA Flags
 CUXX=nvcc
 CUFLAGS=-arch=sm_20 -lineinfo
 
 # CPU
-pogs.o: pogs.cpp pogs.hpp prox_lib.hpp
+pogs.o: pogs.cpp pogs.h prox_lib.h
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $< -c -o $@
 
 # GPU
 pogs_cu_link.o: pogs_cu.o
 	$(CUXX) $(CUFLAGS) $< -dlink -o $@
 
-pogs_cu.o: pogs.cu pogs.hpp prox_lib.hpp
+pogs_cu.o: pogs.cu pogs.h prox_lib.h
 	$(CUXX) $(CUFLAGS) $(IFLAGS) $< -dc -o $@
 
 clean:

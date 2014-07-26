@@ -1,9 +1,9 @@
-#ifndef GSL_BLAS_H_
-#define GSL_BLAS_H_
+#ifndef GSL_BLAS_HPP_
+#define GSL_BLAS_HPP_
 
-#include "gsl_cblas.h"
-#include "gsl_matrix.h"
-#include "gsl_vector.h"
+#include "gsl_cblas.hpp"
+#include "gsl_matrix.hpp"
+#include "gsl_vector.hpp"
 
 // Gnu Scientific Library
 namespace gsl {
@@ -32,39 +32,6 @@ void blas_syrk(CBLAS_UPLO_t Uplo, CBLAS_TRANSPOSE_t Trans, float alpha,
 
   cblas_ssyrk(CblasRowMajor, Uplo, Trans, static_cast<int>(N),
       static_cast<int>(K), alpha, A->data, static_cast<int>(A->tda), beta,
-      C->data, static_cast<int>(C->tda));
-}
-
-// Gemm
-template <typename T>
-void blas_gemm(CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, T alpha,
-               const matrix<T> *A, const matrix<T> *B, T beta, matrix<T> *C);
-
-template <>
-void blas_gemm(CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, double alpha,
-               const matrix<double> *A, const matrix<double> *B, double beta,
-               matrix<double> *C) {
-  const size_t M = C->size1;
-  const size_t N = C->size2;
-  const size_t NA = (TransA == CblasNoTrans) ? A->size2 : A->size1;
-
-  cblas_dgemm(CblasRowMajor, TransA, TransB, static_cast<int>(M),
-      static_cast<int>(N), static_cast<int>(NA), alpha, A->data,
-      static_cast<int>(A->tda), B->data, static_cast<int>(B->tda), beta,
-      C->data, static_cast<int>(C->tda));
-}
-
-template <>
-void blas_gemm(CBLAS_TRANSPOSE_t TransA, CBLAS_TRANSPOSE_t TransB, float alpha,
-               const matrix<float> *A, const matrix<float> *B, float beta,
-               matrix<float> *C) {
-  const size_t M = C->size1;
-  const size_t N = C->size2;
-  const size_t NA = (TransA == CblasNoTrans) ? A->size2 : A->size1;
-
-  cblas_sgemm(CblasRowMajor, TransA, TransB, static_cast<int>(M),
-      static_cast<int>(N), static_cast<int>(NA), alpha, A->data,
-      static_cast<int>(A->tda), B->data, static_cast<int>(B->tda), beta,
       C->data, static_cast<int>(C->tda));
 }
 
@@ -238,5 +205,5 @@ void blas_dot(const vector<float> *x, const vector<float> *y,
 
 }  // namespace gsl
 
-#endif  // GSL_BLAS_H_
+#endif  // GSL_BLAS_HPP_
 

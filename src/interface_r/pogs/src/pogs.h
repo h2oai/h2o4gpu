@@ -21,7 +21,7 @@ struct PogsData {
   unsigned int max_iter;
   bool quiet, adaptive_rho;
 
-  // Factors (dim = 1 + 3(m+n) + min(m,n)^2).
+  // Factors (dim = 1 + 2(m+n) + min(m,n)^2).
   T *factors;
 
   // Constructor.

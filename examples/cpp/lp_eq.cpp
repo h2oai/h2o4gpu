@@ -1,8 +1,8 @@
 #include <random>
 #include <vector>
 
-#include "pogs.hpp"
-#include "timer.hpp"
+#include "pogs.h"
+#include "timer.h"
 
 // Linear program in equality form.
 //   minimize    c^T * x
@@ -49,7 +49,7 @@ T LpEq(size_t m, size_t n) {
   pogs_data.g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
     pogs_data.g.emplace_back(kIndGe0);
-  
+
   T t = timer<T>();
   Pogs(&pogs_data);
 
@@ -57,5 +57,5 @@ T LpEq(size_t m, size_t n) {
 }
 
 template double LpEq<double>(size_t m, size_t n);
-//template float LpEq<float>(size_t m, size_t n);
+template float LpEq<float>(size_t m, size_t n);
 

@@ -4,8 +4,8 @@
 #include <limits>
 #include <vector>
 
-#include "matrix_util.hpp"
-#include "pogs.hpp"
+#include "matrix_util.h"
+#include "pogs.h"
 
 // Returns value of pr[idx], with appropriate casting from id to T.
 // If id is not a numeric type, then it returns nan.
@@ -50,19 +50,20 @@ inline T GetVal(const void *pr, size_t idx, mxClassID id) {
 // while f is required. Each field (if present) is a vector of length n.
 template <typename T>
 int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
-                        unsigned int n, std::vector<FunctionObj<T> > *f_pogs) {
+                        unsigned int field_idx, unsigned int n,
+                        std::vector<FunctionObj<T> > *f_pogs) {
   const unsigned int kNumParam = 6u;
   char alpha[] = "h\0a\0b\0c\0d\0e\0";
 
   int param_idx[kNumParam];
-  #pragma unroll
+#pragma unroll
   for (unsigned int i = 0; i < kNumParam; ++i)
-    param_idx[i] = mxGetFieldNumber(f_mex, &alpha[i * 2]);
+    param_idx[i] = mxGetFieldNumber(f_mex, &alpha[2 * i]);
 
   if (param_idx[0] == -1) {
-      mexErrMsgIdAndTxt("MATLAB:pogs:missingParam",
-          "Field %s.h is required.", fn_name);
-      return 1;
+    mexErrMsgIdAndTxt("MATLAB:pogs:missingParam",
+        "Field %s.h is required.", fn_name);
+    return 1;
   }
 
   void *param_data[kNumParam] = {0};
@@ -73,11 +74,11 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
                       static_cast<T>(0), static_cast<T>(0) };
 
   // Find index and pointer to data of (h, a, b, c, d) in struct if present.
-  #pragma unroll
+#pragma unroll
   for (unsigned int i = 0; i < kNumParam; ++i) {
     if (param_idx[i] != -1) {
-      mxArray *arr = mxGetFieldByNumber(f_mex, 0, param_idx[i]);
-      param_data[i] = mxGetPr(arr);
+      mxArray *arr = mxGetFieldByNumber(f_mex, field_idx, param_idx[i]);
+      param_data[i] = static_cast<T*>(mxGetData(arr));
       param_id[i] = mxGetClassID(arr);
 
       // If parameter is scalar, then repeat it.
@@ -88,18 +89,25 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
           real_params[i - 1] = GetVal<T>(param_data[i], 0, param_id[i]);
         }
         param_data[i] = 0;
+      } else if (i > 0 && mxIsEmpty(arr)) {
+        param_data[i] = 0;
+      } else if (i == 0 && mxIsEmpty(arr)) {
+        mexErrMsgIdAndTxt("MATLAB:pogs:missingParam",
+            "Field %s.h is required.", fn_name);
+        return 1;
       } else if (!(mxGetM(arr) == n && mxGetN(arr) == 1) &&
                  !(mxGetN(arr) == n && mxGetM(arr) == 1)) {
         mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
-            "Dimensions of %s.%s and A must match.", fn_name, alpha[2 * i]);
+            "Dimensions of %s.%s and A must match.", fn_name, &alpha[2 * i]);
         return 1;
       }
     }
   }
 
   // Populate f_pogs.
+#pragma omp parellel for
   for (unsigned int i = 0; i < n; ++i) {
-    #pragma unroll
+#pragma unroll
     for (unsigned int j = 0; j < kNumParam; ++j) {
       if (param_data[j] != 0) {
         if (j == 0) {
@@ -129,7 +137,7 @@ int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
           "Parameter rel_tol must have dimension (1,1)");
       return 1;
     }
-    pogs_data->rel_tol = GetVal<T>(mxGetPr(arr), 0, mxGetClassID(arr));
+    pogs_data->rel_tol = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
   }
   int abs_tol_idx = mxGetFieldNumber(params, "abs_tol");
   if (abs_tol_idx != -1) {
@@ -139,7 +147,7 @@ int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
           "Parameter abs_tol must have dimension (1,1)");
       return 1;
     }
-    pogs_data->abs_tol = GetVal<T>(mxGetPr(arr), 0, mxGetClassID(arr));
+    pogs_data->abs_tol = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
   }
   int rho_idx = mxGetFieldNumber(params, "rho");
   if (rho_idx != -1) {
@@ -149,7 +157,7 @@ int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
           "Parameter rho must have dimension (1,1)");
       return 1;
     }
-    pogs_data->rho = GetVal<T>(mxGetPr(arr), 0, mxGetClassID(arr));
+    pogs_data->rho = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
   }
   int max_iter_idx = mxGetFieldNumber(params, "max_iter");
   if (max_iter_idx != -1) {
@@ -160,7 +168,7 @@ int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
       return 1;
     }
     pogs_data->max_iter =
-        GetVal<unsigned int>(mxGetPr(arr), 0, mxGetClassID(arr));
+        GetVal<unsigned int>(mxGetData(arr), 0, mxGetClassID(arr));
   }
   int quiet_idx = mxGetFieldNumber(params, "quiet");
   if (quiet_idx != -1) {
@@ -170,7 +178,17 @@ int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
           "Parameter quiet must have dimension (1,1)");
       return 1;
     }
-    pogs_data->quiet = GetVal<bool>(mxGetPr(arr), 0, mxGetClassID(arr));
+    pogs_data->quiet = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
+  }
+  int adaptive_rho_idx = mxGetFieldNumber(params, "adaptive_rho");
+  if (adaptive_rho_idx != -1) {
+    mxArray *arr = mxGetFieldByNumber(params, 0, adaptive_rho_idx);
+    if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
+      mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+          "Parameter adaptive_rho must have dimension (1,1)");
+      return 1;
+    }
+    pogs_data->adaptive_rho = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
   }
   return 0;
 }
@@ -183,34 +201,50 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   // Convert column major (matlab) to row major (c++).
   T* A = new T[m * n];
-  ColToRowMajor(reinterpret_cast<T*>(mxGetPr(prhs[0])), m, n, A);
+  ColToRowMajor(reinterpret_cast<T*>(mxGetData(prhs[0])), m, n, A);
 
   // Initialize Pogs data structure
   PogsData<T, T*> pogs_data(A, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
-  pogs_data.x = reinterpret_cast<T*>(mxGetPr(plhs[0]));
-  if (nlhs >= 2)
-    pogs_data.y = reinterpret_cast<T*>(mxGetPr(plhs[1]));
 
-  // Populate parameters.
+  unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
+  if (num_obj > 1) {
+    size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
+    pogs_data.factors = new T[flen]();
+  }
+
   int err = 0;
+  // Populate parameters.
   if (nrhs == 4)
     err = PopulateParams(prhs[3], &pogs_data);
 
-  // Populate function objects.
-  if (err == 0)
-    err = PopulateFunctionObj("f", prhs[1], m, &pogs_data.f);
-  if (err == 0)
-    err = PopulateFunctionObj("g", prhs[2], n, &pogs_data.g);
+  for (unsigned int i = 0; i < num_obj && err == 0; ++i) {
+    pogs_data.x = reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n;
+    if (nlhs >= 2)
+      pogs_data.y = reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m;
+    if (nlhs >= 3)
+      pogs_data.l = reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m;
 
-  // Run solver.
-  if (err == 0)
+    // Populate function objects.
+    pogs_data.f.clear();
+    pogs_data.g.clear();
+    err = PopulateFunctionObj("f", prhs[1], i, m, &pogs_data.f);
+    if (err != 0)
+      break;
+    err = PopulateFunctionObj("g", prhs[2], i, n, &pogs_data.g);
+    if (err != 0)
+      break;
+    
+    // Run solver.
     Pogs(&pogs_data);
 
-  if (nlhs >= 3)
-    reinterpret_cast<T*>(mxGetPr(plhs[2]))[0] = pogs_data.optval;
+    if (nlhs >= 4)
+      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
+  }
 
+  if (num_obj > 1)
+    delete [] pogs_data.factors;
   delete [] A;
 }
 
@@ -218,12 +252,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check number of arguments.
   if (nrhs < 3 || nrhs > 4) {
     mexErrMsgIdAndTxt("MATLAB:pogs:insufficientInputArgs",
-        "Usage: [x, y, optval] = pogs(A, f, g, [params])");
+        "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
     return;
   }
-  if (nlhs > 3) {
+  if (nlhs > 4) {
     mexErrMsgIdAndTxt("MATLAB:pogs:extraneousOutputArgs",
-        "Usage: [x, y, optval] = pogs(A, f, g, [params])");
+        "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
     return;
   }
 
@@ -251,13 +285,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Parameters must be a struct.");
     return;
   }
+  if (std::max(mxGetN(prhs[1]), mxGetM(prhs[1])) !=
+      std::max(mxGetN(prhs[2]), mxGetM(prhs[2])) || 
+      std::min(mxGetN(prhs[1]), mxGetM(prhs[1])) != 1 ||
+      std::min(mxGetN(prhs[2]), mxGetM(prhs[2])) != 1) {
+    mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+        "Dimension of f and g must match");
+    return;
+  }
+  unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
+  unsigned int m = mxGetM(prhs[0]);
+  unsigned int n = mxGetN(prhs[0]);
 
   // Allocate memory for output.
-  plhs[0] = mxCreateNumericMatrix(mxGetN(prhs[0]), 1, class_id_A, mxREAL);
+  plhs[0] = mxCreateNumericMatrix(n, num_obj, class_id_A, mxREAL);
   if (nlhs >= 2)
-    plhs[1] = mxCreateNumericMatrix(mxGetM(prhs[0]), 1, class_id_A, mxREAL);
+    plhs[1] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
   if (nlhs >= 3)
-    plhs[2] = mxCreateNumericMatrix(1, 1, class_id_A, mxREAL);
+    plhs[2] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
+  if (nlhs >= 4)
+    plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
   if (class_id_A == mxDOUBLE_CLASS)
     SolverWrap<double>(nlhs, plhs, nrhs, prhs);

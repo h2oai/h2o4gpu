@@ -20,7 +20,11 @@ t = huber_fit(2000, 200);
 fprintf('Solver Time: %e sec\n', t)
 
 fprintf('\nLasso\n')
-t = lasso(1000, 500);
+t = lasso(100, 1000);
+fprintf('Solver Time: %e sec\n', t)
+
+fprintf('\nLasso Path\n')
+t = lasso_path(100, 1000);
 fprintf('Solver Time: %e sec\n', t)
 
 fprintf('\nLinear Program in Equality Form\n')

@@ -5,6 +5,9 @@
 \usage{
 kIdentity(m = 1)
 }
+\arguments{
+\item{m}{Number of times that the function should be repeated.}
+}
 \description{
 \deqn{h(x) = x}
 }

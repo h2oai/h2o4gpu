@@ -2,7 +2,7 @@ function pogs_time = entropy(m, n, params)
 %ENTROPY
 
 if nargin == 2
-  params.rho = 1e3;
+  params.rho = 5e3;
   params.rel_tol = 1e-5;
   params.abs_tol = 1e-5;
 end
@@ -20,7 +20,7 @@ g.h = kNegEntr;
 
 % Solve
 tic
-pogs(A, f, g, params);
+x = pogs(A, f, g, params);
 pogs_time = toc;
 
 end

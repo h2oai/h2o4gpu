@@ -14,13 +14,13 @@ optional and each field which is specified must be a vector of length 1 or nrow(
 \item{g}{List with fields a, b, c, d, e, and h. All fields except h are
 optional and each field which is specified must be a vector of length 1 or ncol(A).}
 
-\item{params}{List of parameters (rel_tol=1e-4, abs_tol=1e-4, rho=1.0,
-max_iter=1000, quiet=FALSE). All parameters are optional and take on a
-default value if not specified.}
+\item{params}{List of parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
+max_iter=1000, quiet=FALSE, adaptive_rho=TRUE).
+All parameters are optional and take on a default value if not specified.}
 }
 \description{
 Solver for convex optimization problems in the form
-\deqn{\min. f(y) + g(x), \text{ s.t. } y = Ax}{min. f(y) + g(x),  s.t. y = Ax,}
+\deqn{\min. f(y) + g(x), \textrm{ s.t. } y = Ax}{min. f(y) + g(x),  s.t. y = Ax,}
 where \eqn{f} and \eqn{g} are convex, separable, and take the form
 \deqn{c h(a x - b) + d x + e x^2,} where \eqn{a}, \eqn{b} and
 \eqn{d} are real, \eqn{c} and \eqn{d} are non-negative and \eqn{h} is one

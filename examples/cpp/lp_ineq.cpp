@@ -1,8 +1,8 @@
 #include <random>
 #include <vector>
 
-#include "pogs.hpp"
-#include "timer.hpp"
+#include "pogs.h"
+#include "timer.h"
 
 // Linear program in inequality form.
 //   minimize    c^T * x
@@ -53,5 +53,5 @@ T LpIneq(size_t m, size_t n) {
 }
 
 template double LpIneq<double>(size_t m, size_t n);
-//template float LpIneq<float>(size_t m, size_t n);
+template float LpIneq<float>(size_t m, size_t n);
 

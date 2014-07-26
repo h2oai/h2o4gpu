@@ -1,8 +1,8 @@
 #include <random>
 #include <vector>
 
-#include "pogs.hpp"
-#include "timer.hpp"
+#include "pogs.h"
+#include "timer.h"
 
 // Support Vector Machine.
 //   minimize    (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
@@ -55,5 +55,5 @@ T Svm(size_t m, size_t n) {
 }
 
 template double Svm<double>(size_t m, size_t n);
-//template float Svm<float>(size_t m, size_t n);
+template float Svm<float>(size_t m, size_t n);
 

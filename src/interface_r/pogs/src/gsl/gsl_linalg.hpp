@@ -1,11 +1,11 @@
-#ifndef GSL_LINALG_H_
-#define GSL_LINALG_H_
+#ifndef GSL_LINALG_HPP_
+#define GSL_LINALG_HPP_
 
 #include <cmath>
 
-#include "gsl_blas.h"
-#include "gsl_matrix.h"
-#include "gsl_vector.h"
+#include "gsl_blas.hpp"
+#include "gsl_matrix.hpp"
+#include "gsl_vector.hpp"
 
 namespace gsl {
 
@@ -59,5 +59,5 @@ void linalg_cholesky_svx(const matrix<T> *LLT, vector<T> *x) {
 
 }  // namespace gsl
 
-#endif  // GSL_LINALG_H_
+#endif  // GSL_LINALG_HPP_
 

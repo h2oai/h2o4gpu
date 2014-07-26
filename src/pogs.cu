@@ -10,14 +10,10 @@
 #include "cml/cml_matrix.cuh"
 #include "cml/cml_vector.cuh"
 
-#include "matrix_util.hpp"
-#include "pogs.hpp"
+#include "interface_defs.h"
+#include "matrix_util.h"
+#include "pogs.h"
 #include "sinkhorn_knopp.cuh"
-
-#ifdef __MEX__
-#define printf mexPrintf
-extern "C" int mexPrintf(const char* fmt, ...);
-#endif  // __MEX__
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>

@@ -3,11 +3,11 @@ GSLROOT=/usr/local
 POGSROOT=../../src
 
 # Example Files
-EXSRC=examples.hpp lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC=examples.h lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) #-fopenmp
+CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
 
 # CUDA Flags
 CULDFLAGS=-lcudart -lcublas

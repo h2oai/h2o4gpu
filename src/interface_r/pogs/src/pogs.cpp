@@ -116,7 +116,6 @@ void Pogs(PogsData<T, M> *pogs_data) {
   // Initialize scalars.
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * pogs_data->abs_tol;
   T sqrtm_atol = std::sqrt(static_cast<T>(m)) * pogs_data->abs_tol;
-  T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * pogs_data->abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
 
@@ -137,7 +136,7 @@ void Pogs(PogsData<T, M> *pogs_data) {
     T obj = FuncEval(f, y12.data) + FuncEval(g, x12.data);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&z12);
     T eps_dual = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&cz0);
-    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::abs(obj);
+    T eps_gap = pogs_data->abs_tol + pogs_data->rel_tol * std::abs(obj);
 
     // Store dual variable
     if (pogs_data->l != 0)
@@ -178,7 +177,7 @@ void Pogs(PogsData<T, M> *pogs_data) {
     gsl::blas_axpy(-kOne, &z, &zt);
 
     // Evaluate stopping criteria.
-    bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
+    bool converged = nrm_r < eps_pri && nrm_s < eps_dual;// && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
              k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, obj);

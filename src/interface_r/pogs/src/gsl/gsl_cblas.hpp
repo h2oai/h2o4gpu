@@ -1,5 +1,5 @@
-#ifndef GSL_CBLAS_H_
-#define GSL_CBLAS_H_
+#ifndef GSL_CBLAS_HPP_
+#define GSL_CBLAS_HPP_
 
 extern "C" {
 enum CBLAS_ORDER {CblasRowMajor = 101, CblasColMajor = 102};
@@ -568,5 +568,5 @@ void cblas_zher2k(const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo,
 void cblas_xerbla(int p, const char *rout, const char *form, ...);
 }
 
-#endif  // GSL_CBLAS_H_
+#endif  // GSL_CBLAS_HPP_
 

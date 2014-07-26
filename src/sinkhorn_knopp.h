@@ -1,11 +1,11 @@
-#ifndef SINKHORN_KNOPP_HPP_
-#define SINKHORN_KNOPP_HPP_
+#ifndef SINKHORN_KNOPP_H_
+#define SINKHORN_KNOPP_H_
 
 #include <cmath>
 
-#include "gsl/gsl_blas.hpp"
-#include "gsl/gsl_matrix.hpp"
-#include "gsl/gsl_vector.hpp"
+#include "gsl/gsl_blas.h"
+#include "gsl/gsl_matrix.h"
+#include "gsl/gsl_vector.h"
 
 // Sinkhorn Knopp algorithm for matrix equilibration.
 // The following approx. holds: diag(d) * Ain * e =  1, diag(e) * Ain' * d = 1
@@ -53,5 +53,37 @@ void SinkhornKnopp(const gsl::matrix<T> *Ain, gsl::matrix<T> *Aout,
   }
 }
 
-#endif  // SINKHORN_KNOPP_HPP_
+template <typename T>
+void Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
+                 bool compute_scaling) {
+  T *dpr = d->data, *epr = e->data;
+  if (compute_scaling) {
+    if (A->size1 < A->size2) {
+      gsl::vector_set_all(e, static_cast<T>(1));
+      gsl::vector_set_all(d, static_cast<T>(0));
+#pragma omp parallel for
+      for (unsigned int i = 0; i < A->size1; ++i)
+        for (unsigned int j = 0; j < A->size2; ++j)
+          dpr[i] += std::fabs(gsl::matrix_get(A, i, j));
+      for (unsigned int i = 0; i < A->size1; ++i)
+        dpr[i] = 1 / dpr[i];
+    } else {
+      gsl::vector_set_all(e, static_cast<T>(0));
+      gsl::vector_set_all(d, static_cast<T>(1));
+      for (unsigned int i = 0; i < A->size1; ++i)
+        for (unsigned int j = 0; j < A->size2; ++j)
+          epr[j] += std::fabs(gsl::matrix_get(A, i, j));
+      for (unsigned int j = 0; j < A->size2; ++j)
+        epr[j] = 1 / epr[j];
+    }
+  }
+#pragma omp parallel for
+  for (unsigned int i = 0; i < A->size1; ++i) {
+    for (unsigned int j = 0; j < A->size2; ++j) {
+      gsl::matrix_set(A, i, j, gsl::matrix_get(A, i, j) * epr[j] * dpr[i]);
+    }
+  }
+}
+
+#endif  // SINKHORN_KNOPP_H_
 

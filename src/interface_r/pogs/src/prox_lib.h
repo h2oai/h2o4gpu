@@ -513,7 +513,7 @@ __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
 template <typename T>
 void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
               T* x_out) {
-#pragma omp parallel for
+  //  #pragma omp parallel for
   for (unsigned int i = 0; i < f_obj.size(); ++i)
     x_out[i] = ProxEval(f_obj[i], x_in[i], rho);
 }
@@ -528,7 +528,7 @@ void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
 template <typename T>
 T FuncEval(const std::vector<FunctionObj<T> > &f_obj, const T* x_in) {
   T sum = 0;
-#pragma omp parallel for reduction(+:sum)
+  //  #pragma omp parallel for reduction(+:sum)
   for (unsigned int i = 0; i < f_obj.size(); ++i)
     sum += FuncEval(f_obj[i], x_in[i]);
   return sum;

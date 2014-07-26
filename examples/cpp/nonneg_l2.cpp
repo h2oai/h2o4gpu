@@ -1,8 +1,8 @@
 #include <random>
 #include <vector>
 
-#include "pogs.hpp"
-#include "timer.hpp"
+#include "pogs.h"
+#include "timer.h"
 
 // Non-Negative Least Squares.
 //   minimize    (1/2) ||Ax - b||_2^2
@@ -53,5 +53,5 @@ T NonNegL2(size_t m, size_t n) {
 }
 
 template double NonNegL2<double>(size_t m, size_t n);
-//template float NonNegL2<float>(size_t m, size_t n);
+template float NonNegL2<float>(size_t m, size_t n);
 

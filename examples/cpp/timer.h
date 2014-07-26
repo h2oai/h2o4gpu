@@ -1,5 +1,5 @@
-#ifndef TIMER_HPP_ 
-#define TIMER_HPP_ 
+#ifndef TIMER_H_ 
+#define TIMER_H_ 
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -12,5 +12,5 @@ T timer() {
       static_cast<T>(tv.tv_usec) / static_cast<T>(1e6);
 }
 
-#endif /* TIMER_HPP_ */
+#endif  // TIMER_H_
 

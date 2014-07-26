@@ -1,8 +1,8 @@
 #include <random>
 #include <vector>
 
-#include "pogs.hpp"
-#include "timer.hpp"
+#include "pogs.h"
+#include "timer.h"
 
 // Lasso
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
@@ -47,7 +47,7 @@ T Lasso(size_t m, size_t n) {
   pogs_data.g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
     pogs_data.g.emplace_back(kAbs, lambda);
-  
+
   T t = timer<T>();
   Pogs(&pogs_data);
 
@@ -55,5 +55,5 @@ T Lasso(size_t m, size_t n) {
 }
 
 template double Lasso<double>(size_t m, size_t n);
-//template float Lasso<float>(size_t m, size_t n);
+template float Lasso<float>(size_t m, size_t n);
 

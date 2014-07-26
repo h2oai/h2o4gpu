@@ -1,13 +1,13 @@
 #include <cstdio>
 
-#include "examples.hpp"
+#include "examples.h"
 
 typedef double real_t;
 
 int main() {
   real_t t;
   printf("\nLasso.\n");
-  t = Lasso<real_t>(1000, 500);
+  t = Lasso<real_t>(2000, 200);
   printf("Solver Time: %e sec\n", t);
 
   printf("\nLinear Program in Equality Form.\n");

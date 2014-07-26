@@ -23,4 +23,3 @@ pogs(A, f, g, params);
 pogs_time = toc;
 
 end
-

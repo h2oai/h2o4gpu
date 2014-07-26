@@ -1,12 +1,16 @@
 #include <R.h>
 #include <Rdefines.h>
 #include <Rinternals.h>
+#include <R_ext/BLAS.h>
 
 #include <algorithm>
+#include <cstring>
 #include <vector>
 
-#include "matrix_util.hpp"
-#include "pogs.hpp"
+#define printf Rprintf
+
+#include "matrix_util.h"
+#include "pogs.h"
 
 SEXP getListElement(SEXP list, const char *str) {
   SEXP elmt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
@@ -49,6 +53,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   }
 
   // Populate f_pogs.
+  #pragma omp parellel for
   for (unsigned int i = 0; i < n; ++i) {
     #pragma unroll
     for (unsigned int j = 0; j < kNumParam; ++j) {
@@ -89,12 +94,18 @@ void PopulateParams(SEXP params, PogsData<double, double*> *pogs_data) {
   SEXP quiet = getListElement(params, "quiet");
   if (quiet != R_NilValue)
     pogs_data->quiet = LOGICAL(quiet)[0];
+
+  SEXP adaptive_rho = getListElement(params, "adaptive_rho");
+  if (adaptive_rho != R_NilValue)
+    pogs_data->adaptive_rho = LOGICAL(adaptive_rho)[0];
 }
 
-void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP opt) {
+void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP l,
+                SEXP opt) {
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
+  unsigned int num_obj = length(f);
 
   double* Arm = new double[m * n];
   ColToRowMajor(REAL(A), m, n, Arm);
@@ -103,53 +114,75 @@ void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP opt) {
   PogsData<double, double*> pogs_data(Arm, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
-  pogs_data.x = REAL(x);
-  pogs_data.y = REAL(y);
 
   // Populate parameters.
   PopulateParams(params, &pogs_data);
 
-  // Populate function objects.
-  PopulateFunctionObj(f, m, &pogs_data.f);
-  PopulateFunctionObj(g, n, &pogs_data.g);
+  // Allocate space for factors if more than one objective.
+  if (num_obj > 1) {
+    size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
+    pogs_data.factors = new double[flen]();
+  }
 
-  // Run solver.
-  Pogs(&pogs_data);
+  for (unsigned int i = 0; i < num_obj; ++i) {
+    pogs_data.x = REAL(x) + i * n;
+    pogs_data.y = REAL(y) + i * m;
+    pogs_data.l = REAL(l) + i * m;
 
-  REAL(opt)[0] = pogs_data.optval;
+    // Populate function objects.
+    pogs_data.f.clear();
+    pogs_data.g.clear();
+    PopulateFunctionObj(VECTOR_ELT(f, i), m, &pogs_data.f);
+    PopulateFunctionObj(VECTOR_ELT(g, i), n, &pogs_data.g);
+
+    // Run solver.
+    Pogs(&pogs_data);
+
+    REAL(opt)[i] = pogs_data.optval;
+  }
+
+  if (num_obj > 1)
+    delete [] pogs_data.factors;
+  delete [] Arm;
 }
 
 extern "C" {
 SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   // Setup output.
-  SEXP x, y, opt, ans, retnames;
+  SEXP x, y, l, opt, ans, retnames;
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
+  unsigned int num_obj = length(f);
 
   // Create output list.
-  PROTECT(ans = NEW_LIST(3));
-  PROTECT(retnames = NEW_CHARACTER(3));
+  PROTECT(ans = NEW_LIST(4));
+  PROTECT(retnames = NEW_CHARACTER(4));
   SET_NAMES(ans, retnames);
 
   // Allocate x.
-  PROTECT(x = NEW_NUMERIC(n));
+  PROTECT(x = allocMatrix(REALSXP, n, num_obj));
   SET_STRING_ELT(retnames, 0, mkChar("x"));
   SET_VECTOR_ELT(ans, 0, x);
 
   // Allocate y.
-  PROTECT(y = NEW_NUMERIC(m));
+  PROTECT(y = allocMatrix(REALSXP, m, num_obj));
   SET_STRING_ELT(retnames, 1, mkChar("y"));
   SET_VECTOR_ELT(ans, 1, y);
 
-  // Allocate opt.
-  PROTECT(opt = NEW_NUMERIC(1));
-  SET_STRING_ELT(retnames, 2, mkChar("optval"));
-  SET_VECTOR_ELT(ans, 2, opt);
+  // Allocate l.
+  PROTECT(l = allocMatrix(REALSXP, m, num_obj));
+  SET_STRING_ELT(retnames, 2, mkChar("l"));
+  SET_VECTOR_ELT(ans, 2, l);
 
-  SolverWrap(A, f, g, params, x, y, opt);
-  
-  UNPROTECT(5);
+  // Allocate opt.
+  PROTECT(opt = NEW_NUMERIC(num_obj));
+  SET_STRING_ELT(retnames, 3, mkChar("optval"));
+  SET_VECTOR_ELT(ans, 3, opt);
+
+  SolverWrap(A, f, g, params, x, y, l, opt);
+
+  UNPROTECT(6);
   return ans;
 }
 }

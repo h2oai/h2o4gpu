@@ -15,7 +15,7 @@ x = 1 / n * [randn(N, n) + ones(N, n); randn(N, n) - ones(N, n)];
 y = [ones(N, 1); -ones(N, 1)];
 A = [(-y * ones(1, n)) .* x, -y];
 
-f.h = kMaxPos;
+f.h = kMaxPos0;
 f.b = -1;
 f.c = lambda;
 g.h = [kSquare(n); 0];
@@ -26,4 +26,3 @@ pogs(A, f, g, params);
 pogs_time = toc;
 
 end
-

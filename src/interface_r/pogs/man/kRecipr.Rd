@@ -5,6 +5,9 @@
 \usage{
 kRecipr(m = 1)
 }
+\arguments{
+\item{m}{Number of times that the function should be repeated.}
+}
 \description{
 \deqn{h(x) = 1 / x}
 }

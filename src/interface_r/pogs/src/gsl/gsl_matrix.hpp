@@ -1,11 +1,11 @@
-#ifndef GSL_MATRIX_H_
-#define GSL_MATRIX_H_
+#ifndef GSL_MATRIX_HPP_
+#define GSL_MATRIX_HPP_
 
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
 
-#include "gsl_vector.h"
+#include "gsl_vector.hpp"
 
 // Gnu Scientific Library
 namespace gsl {
@@ -79,70 +79,36 @@ const matrix<T> matrix_const_view_array(const T *base, size_t n1, size_t n2) {
 }
 
 template <typename T>
-matrix<T> matrix_view_array(T *base, size_t n1, size_t n2) {
-  matrix<T> mat;
-  mat.size1 = n1;
-  mat.size2 = n2;
-  mat.tda = n2;
-  mat.data = base;
-  return mat;
-}
-
-template <typename T>
-inline T matrix_get(const matrix<T> *A, size_t i, size_t j) {
+T matrix_get(matrix<T> *A, size_t i, size_t j) {
   return A->data[i * A->tda + j];
 }
 
 template <typename T>
-inline void matrix_set(const matrix<T> *A, size_t i, size_t j, T x) {
+void matrix_set(matrix<T> *A, size_t i, size_t j, T x) {
   A->data[i * A->tda + j] = x;
 }
 
-template<typename T>
-void matrix_set_all(matrix<T> *A, T x) {
-  for (unsigned int i = 0; i < A->size1; ++i)
-    for (unsigned int j = 0; j < A->size2; ++j)
-      matrix_set(A, i, j, x);
-}
-
+// TODO: Take tda into account properly
 template <typename T>
 void matrix_memcpy(matrix<T> *A, const matrix<T> *B) {
-  if (A->tda == A->size2 && B->tda == B->size2) {
-    memcpy(A->data, B->data, A->size1 * A->size2 * sizeof(T));
-  } else {
-    for (unsigned int i = 0; i < A->size1; ++i) 
-      for (unsigned int j = 0; j < A->size2; ++j) 
-        matrix_set(A, i, j, matrix_get(B, i, j));
-  }
+  memcpy(A->data, B->data, A->tda * A->size1 * sizeof(T));
 }
 
 template <typename T>
 void matrix_memcpy(matrix<T> *A, const T *B) {
-  if (A->tda == A->size2) {
-    memcpy(A->data, B, A->size1 * A->size2 * sizeof(T));
-  } else {
-    for (unsigned int i = 0; i < A->size1; ++i) 
-      for (unsigned int j = 0; j < A->size2; ++j) 
-        matrix_set(A, i, j, B[i * A->size2 + j]);
-  }
+  memcpy(A->data, B, A->tda * A->size1 * sizeof(T));
 }
 
 template <typename T>
 void matrix_memcpy(T *A, const matrix<T> *B) {
-  if (B->tda == B->size2) {
-    memcpy(A, B->data, B->size1 * B->size2 * sizeof(T));
-  } else {
-    for (unsigned int i = 0; i < B->size1; ++i) 
-      for (unsigned int j = 0; j < B->size2; ++j) 
-        A[i * B->size2 + j] = matrix_get(B, i, j);
-  }
+  memcpy(A, B->data, B->tda * B->size1 * sizeof(T));
 }
 
 template <typename T>
-void matrix_print(const matrix<T> *A) {
-  for (unsigned int i = 0; i < A->size1; ++i) {
-    for (unsigned int j = 0; j < A->size2; ++j)
-      printf("%e ", matrix_get(A, i, j));
+void matrix_print(const matrix<T> &A) {
+  for (unsigned int i = 0; i < A.size1; ++i) {
+    for (unsigned int j = 0; j < A.size2; ++j)
+      printf("%e ", A.data[i * A.tda + j]);
     printf("\n");
   }
   printf("\n");
@@ -166,5 +132,5 @@ void matrix_scale(matrix<T> *A, T x) {
 
 }  // namespace gsl
 
-#endif  // GSL_MATRIX_H_
+#endif  // GSL_MATRIX_HPP_
 

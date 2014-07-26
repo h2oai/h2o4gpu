@@ -1,5 +1,5 @@
-#ifndef EXAMPLES_HPP_
-#define EXAMPLES_HPP_
+#ifndef EXAMPLES_H_
+#define EXAMPLES_H_
 
 #include <cstdlib>
 
@@ -18,5 +18,5 @@ T NonNegL2(size_t m, size_t n);
 template <typename T>
 T Svm(size_t m, size_t n);
 
-#endif  // EXAMPLES_HPP_
+#endif  // EXAMPLES_H_
 
