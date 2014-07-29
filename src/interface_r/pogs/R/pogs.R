@@ -283,15 +283,16 @@ kZero <- function(m=1) {
 #' @param penalty.factor Separate penalty factors can be applied to each coefficient.
 #' @param intercept Should intercept be fitted.
 #' @param params Pass list of parameters to solver
+#' @param cutoff Discard values of lambda for which beta remains unchanged.
 #' @export
 pogsnet <- function(x, y, family=c("gaussian", "binomial"),
                     weights, alpha=1, nlambda=100,
                     lambda.min.ratio=ifelse(nobs < nvars, 0.01, 0.0001), lambda=NULL,
-                    penalty.factor=rep(1, nvars), intercept=TRUE, params=list(quiet=TRUE)) {
+                    penalty.factor=rep(1, nvars), intercept=TRUE, params=list(quiet=TRUE),
+                    cutoff=TRUE) {
 
-  # Check Family and Call
+  # Check Family
   family = match.arg(family)
-  this.call = match.call()
   
   # Check Matrix x
   y = drop(y)
@@ -379,7 +380,7 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
              lambda = rep(0, nlambda),
              dev.ratio = rep(0, nlambda))
   last = nlambda
-  if (nlambda > 1) {
+  if (cutoff && nlambda > 1) {
     for (i in 2:nlambda) {
       if (max(abs(soln$x[, i] - soln$x[, i - 1])) < 1e-4 * sum(abs(soln$x[, i]))) {
         last = i
@@ -388,8 +389,10 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
     }
   }
   fit$beta = Matrix(soln$x[,1:last], sparse=TRUE)
-  fit$df = apply(soln$x[,1:last], 2, function(x) { sum(x != 0) })
+  fit$df = apply(soln$x[-1,1:last], 2, function(x) { sum(x != 0) })
   fit$lambda = lambda[1:last]
+  fit$call = match.call()
+  fit$dev.ratio = fit$dev.ratio[1:last]
   class(fit) = c("pogsnet", family)
   fit
 }
@@ -425,20 +428,20 @@ lambda.interp <- function(lambda, s){
 #' @param ... Not used. Other arguments to predict.
 #' @export
 predict.pogsnet <- function(object, newx, s=NULL, type=c("link", "response", "class"), ...) {
-  type=match.arg(type)
+  type = match.arg(type)
   if (is.null(s)) {
-    beta = fit$beta
+    beta = object$beta
   } else {
-    lamlist = lambda.interp(fit$lambda, s)
-    beta = fit$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
-      fit$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
+    lamlist = lambda.interp(object$lambda, s)
+    beta = object$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
+      object$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
   }
   fitted = as.matrix(cbind2(1, newx) %*% beta)
-  if (any(class(fit.po) == "binomial")) {
+  if (any(class(object) == "binomial")) {
     if (type == "response") {
-      fitted = 1 / (1 + exp(-lin))
+      fitted = 1 / (1 + exp(-fitted))
     } else if (type == "class") {
-      fitted = 1 / (1 + exp(-lin)) > 1/2
+      fitted = 1 / (1 + exp(-fitted)) > 1/2
     }
   }
   fitted
@@ -458,8 +461,161 @@ coef.pogsnet <- function(object, s=NULL, ...) {
     coefs = fit$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
       fit$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
   }
-  rownames(coefs) = c("(Intercept)", paste("V",seq(1, nrow(coefs) - 1), sep=""))
+  rownames(coefs) = c("(Intercept)", paste("V", seq(1, nrow(coefs) - 1), sep=""))
   coefs
 }
 
+#' @title pogsnet coefficient plot.
+#' @description Plots coefficients
+#' @param x pogsnet object.
+#' @param xvar x-variable to plot coefficient against.
+#' @param ... Extra parameters for matplot.
+#' @export
+plot.pogsnet <- function(x, xvar=c("norm","lambda","dev"), ...) {
+  xvar = match.arg(xvar)
+  if (xvar == "norm") {
+    index = apply(abs(x$beta[-1,]), 2, sum)
+    iname = "L1 Norm"
+    approx.f = 1
+  } else if (xvar == "lambda") { 
+    index = log(x$lambda)
+    iname = "Log Lambda"
+    approx.f = 0
+  } else {
+    index = x$dev
+    iname = "Fraction Deviance Explained"
+    approx.f = 1
+  }
+  matplot(index, t(x$beta[-1,]), lty=1, xlab=iname, ylab="Coefficients", type="l", ...)
+  atdf = pretty(index)
+  prettydf = approx(x=index, y=x$df, xout=atdf, rule=2, method="constant", f=approx.f)$y
+  axis(3, at=atdf, labels=prettydf, tcl=NA)
+}
 
+#' @title Prints pogsnet summary
+#' @description Prings pogsnet summary
+#' @param x pogsnet object
+#' @param digits Number of digits to display
+#' @param ... Not used.
+#' @usage \method{print}{pogsnet}(x, digits = max(3, getOption("digits") - 3), ...)
+#' @export
+print.pogsnet <- function(x, digits = max(3, getOption("digits") - 3), ...){
+  cat("\nCall: ", deparse(x$call), "\n\n")
+  print(cbind(Df=x$df, "%Dev"=signif(x$dev.ratio, digits), Lambda=signif(x$lambda, digits)))
+}
+
+# Copy from glmnet
+getmin <- function(lambda, cvm, cvsd) {
+  cvmin = min(cvm, na.rm=TRUE)
+  idmin = (cvm <= cvmin)
+  lambda.min = max(lambda[idmin], na.rm=TRUE)
+  idmin = match(lambda.min, lambda)
+  semin = (cvm + cvsd)[idmin]
+  idmin = (cvm <= semin)
+  lambda.1se = max(lambda[idmin], na.rm=TRUE)
+  list(lambda.min=lambda.min, lambda.1se=lambda.1se)
+}
+
+#' @title CV
+#' @export
+cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid, ...) {
+  # Check input data
+  if(!is.null(lambda) && length(lambda) < 2) {
+    stop("Need more than one value of lambda for cv.pogsnet")
+  }
+  N = nrow(x)
+  y = drop(y)
+  if(missing(weights)) {
+    weights = rep(1.0, N)
+  } else {
+    weights = as.double(weights)
+  }
+  if(missing(foldid)) {
+    foldid = sample(rep(seq(nfolds), length=N))
+  } else {
+    nfolds = max(foldid)
+  }
+  if(nfolds < 3) {
+    stop("nfolds must be bigger than 3; nfolds=10 recommended")
+  }
+  
+  # Create initial pogsnet call (mostly for sequence of lambdas)
+  pogsnet.call = match.call(expand.dots=TRUE)
+  pogsnet.call[[1]] = as.name("pogsnet") 
+  pogsnet.object = pogsnet(x, y, weights=weights, lambda=lambda, ...)
+  pogsnet.object$call = pogsnet.call
+  lambda = pogsnet.object$lambda
+
+  # Containers for prediction result
+  predmat = matrix(NA, length(y), length(lambda))
+  nlams = double(nfolds)
+  
+  # Begin CV
+  for(i in seq(nfolds)) {
+    which = (foldid == i)
+    if(is.matrix(y)) {
+      y_sub = y[!which,] 
+    } else {
+      y_sub = y[!which]
+    }
+    pogsnet.fit = pogsnet(x[!which, , drop=FALSE], y_sub, lambda=lambda, weights=weights[!which], cutoff=FALSE, ...)
+    nlami = length(pogsnet.fit$lambda)
+    predmat[which, seq(nlami)] = predict(pogsnet.fit, x[which, , drop=FALSE], type="response")
+  }
+  N = length(y) - apply(is.na(predmat), 2, sum)
+  
+  # Process CV results
+  cvraw = (y - predmat) ^ 2
+  cvm = apply(cvraw, 2, weighted.mean, w=weights, na.rm=TRUE)
+  cvsd = sqrt(apply(scale(cvraw, cvm, FALSE) ^ 2, 2, weighted.mean, w=weights, na.rm=TRUE) / (N - 1))
+  
+  # Prepare output
+  out = list(lambda=lambda, cvm=cvm, cvsd=cvsd, cvup=cvm + cvsd, cvlo=cvm - cvsd,
+            nzero=pogsnet.object$df, name="Mean-Squared Error", pogsnet.fit=pogsnet.object)
+  obj = c(out,as.list(getmin(lambda, cvm, cvsd)))
+  class(obj) = "cv.pogsnet"
+  obj
+}
+
+# Copy from glmnet
+error.bars <- function(x, upper, lower, width=0.02, ...) {
+  xlim <- range(x)
+  barw <- diff(xlim) * width
+  segments(x, upper, x, lower, ...)
+  segments(x - barw, upper, x + barw, upper, ...)
+  segments(x - barw, lower, x + barw, lower, ...)
+  range(upper, lower)
+}
+
+#' @title Plot pogsnet CV 
+#' @description Plots results of pogsnet CV
+#' @param x pogsnet.cv object
+#' @param sign.lambda Either plot against log(lambda) (default) or its negative if sign.lambda=-1.
+#' @param Other graphical parameters to plot.
+#' @usage \method{plot}{cv.pogsnet}(x, sign.lambda, ...)
+#' @export
+plot.cv.pogsnet <- function(x, sign.lambda=1, ...) {
+  # Set up plotting arguments
+  cvobj = x
+  xlab = "log(Lambda)"
+  if(sign.lambda < 0) {
+    xlab = paste("-", xlab, sep="")
+  }
+  plot.args = list(x=sign.lambda * log(cvobj$lambda), y=cvobj$cvm, ylim=range(cvobj$cvup, cvobj$cvlo), 
+                   xlab=xlab, ylab=cvobj$name, type="n")
+  new.args = list(...)
+  if(length(new.args)) {
+    plot.args[names(new.args)] = new.args
+  }
+  
+  # Call plot function
+  do.call("plot", plot.args)
+  
+  # Add error bars
+  error.bars(sign.lambda * log(cvobj$lambda), cvobj$cvup, cvobj$cvlo, width=0.01, col="darkgrey")
+  points(sign.lambda * log(cvobj$lambda), cvobj$cvm, pch=20, col="red")
+  axis(side=3, at=sign.lambda * log(cvobj$lambda), labels=paste(cvobj$nz), tick=FALSE, line=0)
+  abline(v=sign.lambda * log(cvobj$lambda.min), lty=3)
+  abline(v=sign.lambda * log(cvobj$lambda.1se), lty=3)
+  invisible()
+}

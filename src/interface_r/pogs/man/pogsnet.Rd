@@ -6,7 +6,7 @@
 pogsnet(x, y, family = c("gaussian", "binomial"), weights, alpha = 1,
   nlambda = 100, lambda.min.ratio = ifelse(nobs < nvars, 0.01, 1e-04),
   lambda = NULL, penalty.factor = rep(1, nvars), intercept = TRUE,
-  params = list(quiet = TRUE))
+  params = list(quiet = TRUE), cutoff = TRUE)
 }
 \arguments{
 \item{x}{Input matrix.}
@@ -31,6 +31,8 @@ is defined as \deqn{(1-\alpha)/2||\beta||_2^2 + \alpha ||\beta||_1.}}
 \item{intercept}{Should intercept be fitted.}
 
 \item{params}{Pass list of parameters to solver}
+
+\item{cutoff}{Discard values of lambda for which beta remains unchanged.}
 }
 \description{
 Fit a generalized linear model via penalized maximum likelihood.
