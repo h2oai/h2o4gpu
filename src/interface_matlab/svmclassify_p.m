@@ -1,12 +1,12 @@
-function y_new = svmclassify_p(X, svmstruct)
+function y_new = svmclassify_p(svmstruct, X)
 %SVMCLASSIFY_P Classification function for SVMTRAIN_P
 %
-%   y_new = svmclassify_p(X, svmstruct)
+%   y_new = svmclassify_p(svmstruct, X)
 %
 %   Inputs:
-%   X         - Data matrix for prediction.
-%
 %   svmstruct - Output of SVMTRAIN_P
+%
+%   X         - Data matrix for prediction.
 %
 %   Outputs:
 %   y_new     - Predicted class.
