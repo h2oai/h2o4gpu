@@ -63,7 +63,7 @@ end
 
 A = [X ones(m, 1)];
 f = repmat(struct('a', -y, 'b', -1, 'c', C, 'h', kMaxPos0), length(lambda), 1);
-g = struct('c', num2cell(lambda), 'e', [ones(n, 1); kZero], 'h', [kAbs(n); kZero]);
+g = struct('c', num2cell(lambda), 'e', [ones(n, 1); 0], 'h', [kAbs(n); kZero]);
 
 x = pogs(A, f, g, params);
 svmstruct.w = x(1:n, :);
