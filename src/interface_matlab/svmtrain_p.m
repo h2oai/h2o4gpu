@@ -1,11 +1,11 @@
 function svmstruct = svmtrain_p(X, y, C, lambda, params)
-%SVMTRAIN_P Use POGS to solve penalized svm primal problem
+%SVMTRAIN_P Use POGS to solve penalized linear svm primal problem
 %   Solves the probem
 %
-%     minimize    ||w||_2 + C \sum (1 - y_i [x_i^T 1] [w; b])_+ + lambda ||w||_1
+%     minimize    (1/2)||w||_2 + C \sum (1 - y_i [x_i^T 1] [w; b])_+ + lambda ||w||_1
 %
 %   svmstruct = svmtrain_p(X, y)
-%   svmstruct = svmtrain_p(X, y, C, lambda)
+%   svmstruct = svmtrain_p(X, y, C, lambda, params)
 %
 %   Optional Inputs: C, lambda
 %
@@ -20,7 +20,7 @@ function svmstruct = svmtrain_p(X, y, C, lambda, params)
 %   lambda    - Sparsity regularizer. Can be vector to solve for multiple
 %               values of lambda.
 % 
-%   params    - Parameters to POGS
+%   params    - Parameters to POGS.
 %
 %   Outputs:
 %   svmstruct - Use as input to SVMCLASSIFY_P.
@@ -36,10 +36,10 @@ function svmstruct = svmtrain_p(X, y, C, lambda, params)
 %       y_test = [ones(N_test, 1); -ones(N_test, 1)];
 %       y_pred = svmclassify_p(X_test, svmstruct);
 %       % Plot
-%       xx = linspace(min(X_test(:, 1)), max(X_test(:, 1)));
+%       xx = linspace(min(X_test(:, 1)), max(X_test(:, 1)))';
 %       plot(X_test(1:N_test, 1), X_test(1:N_test, 2), 'o',  ...
 %            X_test(N_test+1:2*N_test, 1), X_test(N_test+1:2*N_test, 2), 'x', ...
-%            xx, -(svmstruct.b + svmstruct.w(1) * xx) / svmstruct.w(2))
+%            xx, -(svmstruct.b + xx * svmstruct.w(1)) / svmstruct.w(2))
 %       fprintf('Error %e\n', mean(y_test ~= y_pred))
 %
 %   See also SVMCLASSIFY_P
@@ -58,9 +58,8 @@ end
 [m, n] = size(X);
 
 A = [X ones(m, 1)];
-f = repmat(struct('a', -y, 'b', -1, 'h', kMaxPos0), length(lambda), 1);
+f = repmat(struct('a', -y, 'b', -1, 'c', C, 'h', kMaxPos0), length(lambda), 1);
 g = struct('c', num2cell(lambda), 'e', [ones(n, 1); kZero], 'h', [kAbs(n); kZero]);
-
 
 x = pogs(A, f, g, params);
 svmstruct.w = x(1:n, :);
