@@ -55,6 +55,10 @@ if nargin < 5
   params = [];
 end
 
+if any(y ~= 1 & y ~= -1)
+  error('All entries in y must be in {-1, 1}')
+end
+
 [m, n] = size(X);
 
 A = [X ones(m, 1)];
