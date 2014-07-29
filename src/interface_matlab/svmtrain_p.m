@@ -1,5 +1,5 @@
-function svmstruct = svmtrain_p(X, y, C, lambda)
-%SVMTRAIN_P Use POGS to solve svm primal problem
+function svmstruct = svmtrain_p(X, y, C, lambda, params)
+%SVMTRAIN_P Use POGS to solve penalized svm primal problem
 %   Solves the probem
 %
 %     minimize    ||w||_2 + C \sum (1 - y_i [x_i^T 1] [w; b])_+ + lambda ||w||_1
@@ -17,7 +17,10 @@ function svmstruct = svmtrain_p(X, y, C, lambda)
 %   Optional Inputs
 %   C         - Soft margin parameter.
 %
-%   lambda    - Sparsity regularizer.
+%   lambda    - Sparsity regularizer. Can be vector to solve for multiple
+%               values of lambda.
+% 
+%   params    - Parameters to POGS
 %
 %   Outputs:
 %   svmstruct - Use as input to SVMCLASSIFY_P.
@@ -38,32 +41,29 @@ function svmstruct = svmtrain_p(X, y, C, lambda)
 %            X_test(N_test+1:2*N_test, 1), X_test(N_test+1:2*N_test, 2), 'x', ...
 %            xx, -(svmstruct.b + svmstruct.w(1) * xx) / svmstruct.w(2))
 %       fprintf('Error %e\n', mean(y_test ~= y_pred))
-%      
 %
 %   See also SVMCLASSIFY_P
 %
 
-if nargin < 3
+if nargin < 3 || isempty(C)
   C = 1;
 end
-if nargin < 4
+if nargin < 4 || isempty(lambda)
   lambda = 0;
+end
+if nargin < 5
+  params = [];
 end
 
 [m, n] = size(X);
 
 A = [X ones(m, 1)];
-f.h = kMaxPos0;
-f.a = -y;
-f.b = -1;
-f.c = C;
-g.h = [kAbs(n); kZero];
-g.c = lambda;
-g.e = [ones(n, 1); kZero];
+f = repmat(struct('a', -y, 'b', -1, 'h', kMaxPos0), length(lambda), 1);
+g = struct('c', num2cell(lambda), 'e', [ones(n, 1); kZero], 'h', [kAbs(n); kZero]);
 
-x = pogs(A, f, g);
 
-svmstruct.w = x(1:n);
-svmstruct.b = x(n + 1);
+x = pogs(A, f, g, params);
+svmstruct.w = x(1:n, :);
+svmstruct.b = x(n + 1, :);
 
 end

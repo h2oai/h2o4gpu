@@ -13,6 +13,6 @@ function y_new = svmclassify_p(X, svmstruct)
 %
 %   See also SVMTRAIN_P
 
-y_new = sign(X * svmstruct.w + svmstruct.b);
+y_new = sign(X * svmstruct.w + repmat(svmstruct.b, size(X, 1), 1));
 
 end
