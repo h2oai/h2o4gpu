@@ -1,0 +1,11 @@
+Package: pogsgpu
+Type: Package
+Title: Proximal Operator Graph Solver
+Version: 1.0
+Date: 2014-07-02
+Author: Chris Fougner
+Maintainer: Chris Fougner <fougner@stanford.edu>
+Description: Solver for convex optimizaation problems in the form f(Ax) + g(x).
+License: GPL
+Depends:
+    Matrix

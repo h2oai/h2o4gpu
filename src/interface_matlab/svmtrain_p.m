@@ -34,7 +34,7 @@ function svmstruct = svmtrain_p(X, y, C, lambda, params)
 %       svmstruct = svmtrain_p(X, y, 100);
 %       X_test = [randn(N_test, n) + 2 * ones(N_test, n); randn(N_test, n)];
 %       y_test = [ones(N_test, 1); -ones(N_test, 1)];
-%       y_pred = svmclassify_p(X_test, svmstruct);
+%       y_pred = svmclassify_p(svmstruct, X_test);
 %       % Plot
 %       xx = linspace(min(X_test(:, 1)), max(X_test(:, 1)))';
 %       plot(X_test(1:N_test, 1), X_test(1:N_test, 2), 'o',  ...

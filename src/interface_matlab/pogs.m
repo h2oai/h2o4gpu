@@ -25,7 +25,7 @@
 %               factorization caching).
 %
 %   g         - Same as f, except that it corresponds to function g in
-%               objetive
+%               objetive.
 %
 %   Optional Inputs:
 %   params    - Structure of parameters, containing any of the following
@@ -60,7 +60,7 @@
 %   http://www.stanford.edu/~boyd/papers/block_splitting.html 
 %     Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd
 %
-%   http://www.stanford.edu/~boyd/papers/block_splitting.html
+%   http://www.stanford.edu/~boyd/papers/admm_distr_stats.html
 %     Distributed Optimization and Statistical Learning via the Alternating
 %     Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu,
 %     B. Peleato, and J. Eckstein

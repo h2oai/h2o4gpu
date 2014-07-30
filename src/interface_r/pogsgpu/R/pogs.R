@@ -27,7 +27,7 @@
 #' f = list(h = kSquare(), b = b)
 #' g = list(h = kAbs(), c = lambda)
 #' pogs(A, f, g)
-#' @useDynLib pogs
+#' @useDynLib pogsgpu
 #' @import Matrix
 #' @export  
 pogs <- function(A, f, g, params=list()) {

@@ -208,15 +208,14 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
-  unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
-  if (num_obj > 1) {
-    size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
-    pogs_data.factors = new T[flen]();
-  }
-
   int err = 0;
+
+  unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
+  if (num_obj > 1)
+    err = AllocFactors(&pogs_data);
+
   // Populate parameters.
-  if (nrhs == 4)
+  if (err == 0 && nrhs == 4)
     err = PopulateParams(prhs[3], &pogs_data);
 
   for (unsigned int i = 0; i < num_obj && err == 0; ++i) {
@@ -244,7 +243,7 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   if (num_obj > 1)
-    delete [] pogs_data.factors;
+    FreeFactors(&pogs_data);
   delete [] A;
 }
 
