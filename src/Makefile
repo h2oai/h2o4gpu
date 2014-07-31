@@ -10,7 +10,7 @@ CUXX=nvcc
 CUFLAGS=-arch=sm_20
 
 # CPU
-pogs.o: pogs.cpp pogs.h prox_lib.h
+pogs.o: pogs.cpp pogs.h prox_lib.h _interface_defs.h sinkhorn_knopp.h
 	$(CXX) $(CXXFLAGS) $(IFLAGS) $< -c -o $@
 
 # GPU
