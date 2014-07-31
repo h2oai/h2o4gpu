@@ -193,13 +193,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // Rescale rho.
     if (pogs_data->adaptive_rho) {
       if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
-          static_cast<unsigned int>(kTau * k) > kd) {
+          kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
         gsl::blas_scal(1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
       } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
-          static_cast<unsigned int>(kTau * k) > ku) {
+          kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         gsl::blas_scal(delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);

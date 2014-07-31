@@ -217,13 +217,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
     // Rescale rho.
     if (pogs_data->adaptive_rho) {
-      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri && kTau * k > kd) {
+      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
+          kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
         cml::blas_scal(hdl, 1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
       } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
-          kTau * k > ku) {
+          kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         cml::blas_scal(hdl, delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
