@@ -4,35 +4,41 @@ function pogs_setup(varargin)
 % Parse input
 opt_gpu = any(strcmp(varargin, '-gpu'));
 opt_omp = any(strcmp(varargin, '-omp'));
+opt_clb = any(strcmp(varargin, '-cuda_lib'));
+opt_cbn = any(strcmp(varargin, '-cuda_bin'));
 
 omp_flag = '';
 if opt_omp
   omp_flag = '-fopenmp';
 end
 
-% Change paths as necessary.
-cuda_bin = '/usr/local/cuda/bin';
 cuda_lib = '/usr/local/cuda/lib';
+if opt_clb
+  idx_lib = find(strcmp(varargin, '-cuda_lib')) + 1;
+  cuda_lib = varargin{idx_lib};
+end
+
+cuda_bin = '/usr/local/cuda/bin';
+if opt_cbn
+  idx_bin = find(strcmp(varargin, '-cuda_bin')) + 1;
+  cuda_bin = varargin{idx_bin};
+end
 
 if ~opt_gpu
-  % Make CBLAS interface library.
-  unix('make all -f Makefile -C ../gsl/cblas/src &> /dev/null');
-  unix('make clean -f Makefile -C ../gsl/cblas/src &> /dev/null');
   try
     unix(['make pogs.o -f Makefile -C .. IFLAGS="-D__MEX__ ' omp_flag '"']);
-    mex -largeArrayDims -I.. ...
+    mex -v -largeArrayDims -I.. ...
         LDFLAGS='\$LDFLAGS' -lmwblas ...
-        ../pogs.o pogs_mex.cpp ../gsl/cblas/lib/cblas.a ...
+        ../pogs.o pogs_mex.cpp blas2cblas.cpp ...
         -output pogs
-
   catch
     fprintf('Linking to standard library failed, trying another.\n')
     unix(['make pogs.o -f Makefile -C .. IFLAGS="-D__MEX__ -stdlib=libstdc++ ' ...
           omp_flag '"']);
     mex -largeArrayDims -I.. ...
-        LDFLAGS='\$LDFLAGS -L../gsl/cblas/lib -stdlib=libstdc++' ...
+        LDFLAGS='\$LDFLAGS -stdlib=libstdc++' ...
         CXXFLAGS='\$CXXFLAGS -stdlib=libstdc++' ...
-        ../pogs.o pogs_mex.cpp ...
+        ../pogs.o pogs_mex.cpp blas2cblas.cpp...
         -output pogs &> /dev/null
 
   end

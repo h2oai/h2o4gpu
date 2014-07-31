@@ -107,27 +107,6 @@ void blas_gemv(CBLAS_TRANSPOSE_t TransA, float alpha, matrix<float> *A,
       static_cast<int>(y->stride));
 }
 
-// Symv.
-template <typename T>
-void blas_symv(CBLAS_UPLO_t Uplo, T alpha, matrix<T> *A, const vector<T> *x,
-               T beta, vector<T> *y);
-
-template <>
-void blas_symv(CBLAS_UPLO_t Uplo, double alpha, matrix<double> *A,
-               const vector<double> *x, double beta, vector<double> *y) {
-  cblas_dsymv(CblasRowMajor, Uplo, static_cast<int>(A->size1), alpha, A->data,
-      static_cast<int>(A->tda), x->data, static_cast<int>(x->stride),
-      beta, y->data, static_cast<int>(y->stride));
-}
-
-template <>
-void blas_symv(CBLAS_UPLO_t Uplo, float alpha, matrix<float> *A,
-               const vector<float> *x, float beta, vector<float> *y) {
-  cblas_ssymv(CblasRowMajor, Uplo, static_cast<int>(A->size1), alpha, A->data,
-      static_cast<int>(A->tda), x->data, static_cast<int>(x->stride),
-      beta, y->data, static_cast<int>(y->stride));
-}
-
 // Nrm2.
 template <typename T>
 T blas_nrm2(vector<T> *x);

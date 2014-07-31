@@ -3,7 +3,7 @@
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -fopenmp
+CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11
 
 # CUDA Flags
 CUXX=nvcc

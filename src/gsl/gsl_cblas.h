@@ -52,6 +52,7 @@ float  cblas_sasum(const int N, const float *X, const int incX);
 double cblas_dnrm2(const int N, const double *X, const int incX);
 double cblas_dasum(const int N, const double *X, const int incX);
 
+
 float  cblas_scnrm2(const int N, const void *X, const int incX);
 float  cblas_scasum(const int N, const void *X, const int incX);
 

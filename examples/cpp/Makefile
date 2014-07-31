@@ -3,7 +3,7 @@ GSLROOT=/usr/local
 POGSROOT=../../src
 
 # Example Files
-EXSRC=examples.h lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC=lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp ../../src/gsl/cblas/lib/cblas.a
 
 # C++ Flags
 CXX=g++
@@ -23,13 +23,13 @@ CULDFLAGS_=-L/cm/shared/apps/cuda55/toolkit/current/lib64 $(CULDFLAGS)
 endif
 
 # CPU
-cpu: run_all.cpp $(EXSRC)
+cpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) -C $(POGSROOT) pogs.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OOFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.o
 
 # GPU
-gpu: run_all.cpp $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
+gpu: run_all.cpp examples.h $(EXSRC)
+	#$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
 	$(CXX) $(CXXFLAGS) $(CULDFLAGS_) -o run \
 	$(EXSRC) $< $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o
 

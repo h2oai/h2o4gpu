@@ -81,7 +81,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::matrix<T> Ain = gsl::matrix_const_view_array(pogs_data->A, m, n);
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
-
     if (!err) {
       // Compute A^TA or AA^T.
       CBLAS_TRANSPOSE_t mult_type = m >= n ? CblasTrans : CblasNoTrans;
@@ -104,7 +103,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
   }
 
-  // Scale f and g to account for diagonal scaling e and d.
+  // Scale f and g to account++ for diagonal scaling e and d.
   for (unsigned int i = 0; i < m && !err; ++i) {
     f[i].a /= gsl::vector_get(&d, i);
     f[i].d /= gsl::vector_get(&d, i);
