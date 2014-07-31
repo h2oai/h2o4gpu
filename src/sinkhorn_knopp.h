@@ -63,7 +63,9 @@ int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
     if (A->size1 < A->size2) {
       gsl::vector_set_all(e, static_cast<T>(1));
       gsl::vector_set_all(d, static_cast<T>(0));
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
       for (unsigned int i = 0; i < A->size1; ++i)
         for (unsigned int j = 0; j < A->size2; ++j)
           dpr[i] += std::fabs(gsl::matrix_get(A, i, j));
@@ -83,7 +85,10 @@ int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
       }
     }
   }
+
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
   for (unsigned int i = 0; i < A->size1; ++i) {
     for (unsigned int j = 0; j < A->size2; ++j) {
       gsl::matrix_set(A, i, j, gsl::matrix_get(A, i, j) * epr[j] * dpr[i]);
