@@ -2,14 +2,20 @@
 #define INTERFACE_DEFS_H_
 
 #ifdef __MEX__
-#define printf mexPrintf
-extern "C" int mexPrintf(const char* fmt, ...);
-#endif  // __MEX__
 
-#ifdef __R__
-#define printf Rprintf
+#define Printf mexPrintf
+extern "C" int mexPrintf(const char* fmt, ...);
+
+#elif __R__
+
+#define Printf Rprintf
 extern "C" int Rprintf(const char* fmt, ...);
-#endif  // __R__
+
+#else
+
+#define Printf printf
+
+#endif
 
 #endif  // INTERFACE_DEFS_H_
 

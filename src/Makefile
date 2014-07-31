@@ -3,11 +3,11 @@
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11
+CXXFLAGS=-g -O3 -Wall -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=-arch=sm_20 -lineinfo
+CUFLAGS=-arch=sm_20
 
 # CPU
 pogs.o: pogs.cpp pogs.h prox_lib.h

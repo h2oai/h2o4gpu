@@ -115,7 +115,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    printf("   #      res_pri    eps_pri   res_dual   eps_dual"
+    Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
            "        gap    eps_gap  objective\n");
 
   // Initialize scalars.
@@ -185,7 +185,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // Evaluate stopping criteria.
     bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
-      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
+      Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
              k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, obj);
     if (converged)
       break;

@@ -90,7 +90,7 @@ int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
     }
   }
   if (err)
-    printf("Error: Zero column/row in A\n");
+    Printf("Error: Zero column/row in A\n");
   return err;
 }
 

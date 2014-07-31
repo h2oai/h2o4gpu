@@ -7,8 +7,6 @@
 #include <cstring>
 #include <vector>
 
-#define printf Rprintf
-
 #include "matrix_util.h"
 #include "pogs.h"
 
