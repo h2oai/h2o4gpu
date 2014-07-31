@@ -81,7 +81,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::matrix<T> Ain = gsl::matrix_const_view_array(pogs_data->A, m, n);
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
-
     if (!err) {
       // Compute A^TA or AA^T.
       CBLAS_TRANSPOSE_t mult_type = m >= n ? CblasTrans : CblasNoTrans;
@@ -104,7 +103,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
   }
 
-  // Scale f and g to account for diagonal scaling e and d.
+  // Scale f and g to account++ for diagonal scaling e and d.
   for (unsigned int i = 0; i < m && !err; ++i) {
     f[i].a /= gsl::vector_get(&d, i);
     f[i].d /= gsl::vector_get(&d, i);
@@ -116,7 +115,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    printf("   #      res_pri    eps_pri   res_dual   eps_dual"
+    Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
            "        gap    eps_gap  objective\n");
 
   // Initialize scalars.
@@ -186,20 +185,21 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // Evaluate stopping criteria.
     bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
-      printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
+      Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
              k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, obj);
     if (converged)
       break;
 
     // Rescale rho.
     if (pogs_data->adaptive_rho) {
-      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri && kTau * k > kd) {
+      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
+          static_cast<unsigned int>(kTau * k) > kd) {
         rho *= delta;
         gsl::blas_scal(1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
       } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
-          kTau * k > ku) {
+          static_cast<unsigned int>(kTau * k) > ku) {
         rho /= delta;
         gsl::blas_scal(delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);

@@ -114,7 +114,7 @@ int Equilibrate(T *A, cml::vector<T> *d, cml::vector<T> *e) {
   delete [] dpr;
   delete [] epr;
   if (err)
-    printf("Error: Zero column/row in A\n");
+    Printf("Error: Zero column/row in A\n");
   return err;
 }
 

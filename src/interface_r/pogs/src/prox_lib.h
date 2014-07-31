@@ -18,6 +18,8 @@
 #define __DEVICE__
 #endif
 
+#include "_interface_defs.h"
+
 // List of functions supported by the proximal operator library.
 enum Function { kAbs,       // f(x) = |x|
                 kExp,       // f(x) = e^x
@@ -58,9 +60,9 @@ struct FunctionObj {
 
   void CheckConsts() {
     if (c < static_cast<T>(0))
-      printf("WARNING c < 0. Function not convex. Using c = 0");
+      Printf("WARNING c < 0. Function not convex. Using c = 0");
     if (e < static_cast<T>(0))
-      printf("WARNING e < 0. Function not convex. Using e = 0");
+      Printf("WARNING e < 0. Function not convex. Using e = 0");
     c = std::max(c, static_cast<T>(0));
     e = std::max(e, static_cast<T>(0));
   }
