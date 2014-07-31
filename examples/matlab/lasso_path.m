@@ -15,14 +15,8 @@ N = 100;
 
 lambda_max = norm(A' * b, inf);
 lambdas = exp(linspace(log(lambda_max), log(lambda_max * 1e-2), N));
-f = repmat(struct, N, 1);
-g = repmat(struct, N, 1);
-for i = 1:N
-  f(i).h = kSquare;
-  f(i).b = b;
-  g(i).h = kAbs;
-  g(i).c = lambdas(i);
-end
+f = repmat(struct('h', kSquare, 'b', b), N, 1);
+g = struct('c', num2cell(lambdas), 'h', kAbs);
 
 % Solve
 tic
