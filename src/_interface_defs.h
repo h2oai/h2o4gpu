@@ -9,7 +9,7 @@ extern "C" int mexPrintf(const char* fmt, ...);
 #elif __R__
 
 #define Printf Rprintf
-extern "C" int Rprintf(const char* fmt, ...);
+extern "C" void Rprintf(const char* fmt, ...);
 
 #else
 

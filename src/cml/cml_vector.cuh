@@ -29,6 +29,14 @@ __global__ void __set_vector(T *data, T val, size_t stride, size_t size) {
     data[i * stride] = val;
 }
 
+template <typename T>
+__global__ void __strided_memcpy(T *x, size_t stride_x, const T *y,
+                                 size_t stride_y, size_t size) {
+  uint tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (uint i = tid; i < size; i += gridDim.x * blockDim.x)
+    x[i * stride_x] = y[i * stride_y];
+}
+
 }  // namespace
 
 template <typename T>
@@ -82,27 +90,48 @@ vector<T> vector_view_array(T *base, size_t n) {
   return vec;
 }
 
-// TODO: Take stride into account.
 template <typename T>
 void vector_memcpy(vector<T> *x, const vector<T> *y) {
-  cudaError_t err = cudaMemcpy(reinterpret_cast<void*>(x->data),
-      reinterpret_cast<const void*>(y->data), x->size * sizeof(T),
-      cudaMemcpyDefault);
-  CudaCheckError(err);
+  cudaError_t err;
+  if (x->stride == 1 && y->stride == 1) {
+    err = cudaMemcpy(reinterpret_cast<void*>(x->data),
+        reinterpret_cast<const void*>(y->data), x->size * sizeof(T),
+        cudaMemcpyDefault);
+    CudaCheckError(err);
+  } else {
+    uint grid_dim = calc_grid_dim(x->size, kBlockSize);
+    __strided_memcpy<<<grid_dim, kBlockSize>>>(x->data, x->stride, y->data,
+        y->stride, x->size);
+  }
 }
 
 template <typename T>
 void vector_memcpy(vector<T> *x, const T *y) {
-  cudaError_t err = cudaMemcpy(reinterpret_cast<void*>(x->data),
-      reinterpret_cast<const void*>(y), x->size * sizeof(T), cudaMemcpyDefault);
+  cudaError_t err;
+  if (x->stride == 1)
+     err = cudaMemcpy(reinterpret_cast<void*>(x->data),
+         reinterpret_cast<const void*>(y), x->size * sizeof(T),
+         cudaMemcpyDefault);
+  else
+    for (unsigned int i = 0; i < x->size; ++i)
+      err = cudaMemcpy(reinterpret_cast<void*>(x->data + i),
+          reinterpret_cast<const void*>(y + i), sizeof(T),
+          cudaMemcpyDefault);
   CudaCheckError(err);
 }
 
 template <typename T>
 void vector_memcpy(T *x, const vector<T> *y) {
-  cudaError_t err = cudaMemcpy(reinterpret_cast<void*>(x),
-      reinterpret_cast<const void*>(y->data), y->size * sizeof(T),
-      cudaMemcpyDefault);
+  cudaError_t err;
+  if (y->stride == 1)
+     err = cudaMemcpy(reinterpret_cast<void*>(x),
+         reinterpret_cast<const void*>(y->data), y->size * sizeof(T),
+         cudaMemcpyDefault);
+  else
+    for (unsigned int i = 0; i < y->size; ++i)
+      err = cudaMemcpy(reinterpret_cast<void*>(x + i),
+          reinterpret_cast<const void*>(y->data + i), sizeof(T),
+          cudaMemcpyDefault);
   CudaCheckError(err);
 }
 

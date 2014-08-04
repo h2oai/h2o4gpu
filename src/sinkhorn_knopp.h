@@ -11,8 +11,8 @@
 // Sinkhorn Knopp algorithm for matrix equilibration.
 // The following approx. holds: diag(d) * Ain * e =  1, diag(e) * Ain' * d = 1
 // Output matrix is generated as: Aout = diag(d) * Ain * diag(e),
-template <typename T>
-void SinkhornKnopp(const gsl::matrix<T> *Ain, gsl::matrix<T> *Aout,
+template <typename T, CBLAS_ORDER O>
+void SinkhornKnopp(const gsl::matrix<T, O> *Ain, gsl::matrix<T, O> *Aout,
                    gsl::vector<T> *d, gsl::vector<T> *e) {
   unsigned int kNumItr = 10;
   const T kOne = static_cast<T>(1);
@@ -55,8 +55,8 @@ void SinkhornKnopp(const gsl::matrix<T> *Ain, gsl::matrix<T> *Aout,
 }
 
 template <typename T>
-int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
-                 bool compute_scaling) {
+int Equilibrate(gsl::matrix<T, CblasRowMajor> *A, gsl::vector<T> *d,
+                gsl::vector<T> *e, bool compute_scaling) {
   int err = 0;
   T *dpr = d->data, *epr = e->data;
   if (compute_scaling) {
@@ -77,6 +77,9 @@ int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
       gsl::vector_set_all(e, static_cast<T>(0));
       gsl::vector_set_all(d, static_cast<T>(1));
       for (unsigned int i = 0; i < A->size1; ++i)
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
         for (unsigned int j = 0; j < A->size2; ++j)
           epr[j] += std::fabs(gsl::matrix_get(A, i, j));
       for (unsigned int j = 0; j < A->size2; ++j) {
@@ -89,11 +92,54 @@ int Equilibrate(gsl::matrix<T> *A, gsl::vector<T> *d, gsl::vector<T> *e,
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-  for (unsigned int i = 0; i < A->size1; ++i) {
-    for (unsigned int j = 0; j < A->size2; ++j) {
+  for (unsigned int i = 0; i < A->size1; ++i)
+    for (unsigned int j = 0; j < A->size2; ++j)
       gsl::matrix_set(A, i, j, gsl::matrix_get(A, i, j) * epr[j] * dpr[i]);
+  if (err)
+    Printf("Error: Zero column/row in A\n");
+  return err;
+}
+
+template <typename T>
+int Equilibrate(gsl::matrix<T, CblasColMajor> *A, gsl::vector<T> *d,
+                gsl::vector<T> *e, bool compute_scaling) {
+  int err = 0;
+  T *dpr = d->data, *epr = e->data;
+  if (compute_scaling) {
+    if (A->size1 < A->size2) {
+      gsl::vector_set_all(e, static_cast<T>(1));
+      gsl::vector_set_all(d, static_cast<T>(0));
+      for (unsigned int j = 0; j < A->size2; ++j)
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+        for (unsigned int i = 0; i < A->size1; ++i)
+          dpr[i] += std::fabs(gsl::matrix_get(A, i, j));
+      for (unsigned int i = 0; i < A->size1; ++i) {
+        err += dpr[i] == 0;
+        dpr[i] = 1 / dpr[i];
+      }
+    } else {
+      gsl::vector_set_all(e, static_cast<T>(0));
+      gsl::vector_set_all(d, static_cast<T>(1));
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+      for (unsigned int j = 0; j < A->size2; ++j)
+        for (unsigned int i = 0; i < A->size1; ++i)
+          epr[j] += std::fabs(gsl::matrix_get(A, i, j));
+      for (unsigned int j = 0; j < A->size2; ++j) {
+        err += epr[j] == 0;
+        epr[j] = 1 / epr[j];
+      }
     }
   }
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+  for (unsigned int j = 0; j < A->size2; ++j)
+    for (unsigned int i = 0; i < A->size1; ++i)
+      gsl::matrix_set(A, i, j, gsl::matrix_get(A, i, j) * epr[j] * dpr[i]);
   if (err)
     Printf("Error: Zero column/row in A\n");
   return err;
