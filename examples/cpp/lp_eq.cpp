@@ -11,7 +11,7 @@
 //
 // See <pogs>/matlab/examples/lp_eq.m for detailed description.
 template <typename T>
-T LpEq(size_t m, size_t n) {
+double LpEq(size_t m, size_t n) {
   std::vector<T> A((m + 1) * n);
   std::vector<T> x(n);
   std::vector<T> y(m + 1);
@@ -50,12 +50,12 @@ T LpEq(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     pogs_data.g.emplace_back(kIndGe0);
 
-  T t = timer<T>();
+  double t = timer<double>();
   Pogs(&pogs_data);
 
-  return timer<T>() - t;
+  return timer<double>() - t;
 }
 
 template double LpEq<double>(size_t m, size_t n);
-template float LpEq<float>(size_t m, size_t n);
+template double LpEq<float>(size_t m, size_t n);
 

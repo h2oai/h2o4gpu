@@ -3,14 +3,14 @@ GSLROOT=/usr/local
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp ../../src/gsl/cblas/lib/cblas.a
+EXSRC=lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
+CXXFLAGS=-g -p -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
 
 # CUDA Flags
-CULDFLAGS=-lcudart -lcublas
+CULDFLAGS=-lcudart -lcublas -p
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -29,7 +29,7 @@ cpu: run_all.cpp examples.h $(EXSRC)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	#$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
+	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
 	$(CXX) $(CXXFLAGS) $(CULDFLAGS_) -o run \
 	$(EXSRC) $< $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o
 

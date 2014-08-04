@@ -9,7 +9,7 @@
 //
 // See <pogs>/matlab/examples/lasso.m for detailed description.
 template <typename T>
-T Lasso(size_t m, size_t n) {
+double Lasso(size_t m, size_t n) {
   std::vector<T> A(m * n);
   std::vector<T> b(m);
   std::vector<T> x(n);
@@ -22,11 +22,11 @@ T Lasso(size_t m, size_t n) {
                                      static_cast<T>(1));
 
   for (unsigned int i = 0; i < m * n; ++i)
-    A[i] = 1 / static_cast<T>(n) * n_dist(generator);
+    A[i] = n_dist(generator);
 
   std::vector<T> x_true(n);
   for (unsigned int i = 0; i < n; ++i)
-    x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator);
+    x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator) / n;
 
   for (unsigned int i = 0; i < m; ++i) {
     for (unsigned int j = 0; j < n; ++j)
@@ -48,12 +48,12 @@ T Lasso(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     pogs_data.g.emplace_back(kAbs, lambda);
 
-  T t = timer<T>();
+  double t = timer<double>();
   Pogs(&pogs_data);
 
-  return timer<T>() - t;
+  return timer<double>() - t;
 }
 
 template double Lasso<double>(size_t m, size_t n);
-template float Lasso<float>(size_t m, size_t n);
+template double Lasso<float>(size_t m, size_t n);
 
