@@ -31,10 +31,12 @@ T Lasso(size_t m, size_t n) {
   for (unsigned int i = 0; i < m; ++i) {
     for (unsigned int j = 0; j < n; ++j)
       b[i] += A[i * n + j] * x_true[j];
+      // b[i] += A[i + j * m] * x_true[j];
     b[i] += static_cast<T>(0.5) * n_dist(generator);
   }
 
-  PogsData<T, T*> pogs_data(A.data(), m, n);
+  Dense<T, CblasRowMajor> A_(A.data());
+  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m, n);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 

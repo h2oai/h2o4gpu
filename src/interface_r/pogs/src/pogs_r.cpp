@@ -69,7 +69,8 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   }
 }
 
-void PopulateParams(SEXP params, PogsData<double, double*> *pogs_data) {
+template <typename M>
+void PopulateParams(SEXP params, PogsData<double, M> *pogs_data) {
   // Check if parameter exists in params, and set the corresponding
   // value in pogs_data.
   
@@ -105,11 +106,10 @@ void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP l,
   size_t n = INTEGER(Adim)[1];
   unsigned int num_obj = length(f);
 
-  double* Arm = new double[m * n];
-  ColToRowMajor(REAL(A), m, n, Arm);
+  Dense<double, CblasColMajor> A_dense(REAL(A));
 
   // Initialize Pogs data structure
-  PogsData<double, double*> pogs_data(Arm, m, n);
+  PogsData<double, Dense<double, CblasColMajor> > pogs_data(A_dense, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
@@ -119,9 +119,9 @@ void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP l,
   // Allocate space for factors if more than one objective.
   int err = 0;
   if (num_obj > 1)
-    err = AllocFactors(&pogs_data);
+    err = AllocDenseFactors(&pogs_data);
 
-  for (unsigned int i = 0; i < num_obj && err == 0; ++i) {
+  for (unsigned int i = 0; i < num_obj && !err; ++i) {
     pogs_data.x = REAL(x) + i * n;
     pogs_data.y = REAL(y) + i * m;
     pogs_data.l = REAL(l) + i * m;
@@ -139,8 +139,7 @@ void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP l,
   }
 
   if (num_obj > 1)
-    FreeFactors(&pogs_data);
-  delete [] Arm;
+    FreeDenseFactors(&pogs_data);
 }
 
 extern "C" {

@@ -26,7 +26,8 @@ T NonNegL2(size_t m, size_t n) {
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = static_cast<T>(1) / static_cast<T>(n) * u_dist(generator);
 
-  PogsData<T, T*> pogs_data(A.data(), m, n);
+  Dense<T, CblasRowMajor> A_(A.data());
+  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m, n);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 
