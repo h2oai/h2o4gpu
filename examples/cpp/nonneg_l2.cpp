@@ -10,7 +10,7 @@
 //
 // See <pogs>/matlab/examples/nonneg_l2.m for detailed description.
 template <typename T>
-T NonNegL2(size_t m, size_t n) {
+double NonNegL2(size_t m, size_t n) {
   std::vector<T> A(m * n);
   std::vector<T> x(n);
   std::vector<T> y(m);
@@ -47,12 +47,12 @@ T NonNegL2(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     pogs_data.g.emplace_back(kIndGe0);
 
-  T t = timer<T>();
+  double t = timer<double>();
   Pogs(&pogs_data);
 
-  return timer<T>() - t;
+  return timer<double>() - t;
 }
 
 template double NonNegL2<double>(size_t m, size_t n);
-template float NonNegL2<float>(size_t m, size_t n);
+template double NonNegL2<float>(size_t m, size_t n);
 

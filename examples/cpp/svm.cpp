@@ -9,7 +9,7 @@
 //
 // See <pogs>/matlab/examples/svm.m for detailed description.
 template <typename T>
-T Svm(size_t m, size_t n) {
+double Svm(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
   std::vector<T> x(n + 1);
   std::vector<T> y(m);
@@ -50,11 +50,11 @@ T Svm(size_t m, size_t n) {
     pogs_data.g.emplace_back(kSquare);
   pogs_data.g.emplace_back(kZero);
 
-  T t = timer<T>();
+  double t = timer<double>();
   Pogs(&pogs_data);
-  return timer<T>() - t;
+  return timer<double>() - t;
 }
 
 template double Svm<double>(size_t m, size_t n);
-template float Svm<float>(size_t m, size_t n);
+template double Svm<float>(size_t m, size_t n);
 

@@ -9,7 +9,7 @@ T timer() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return static_cast<T>(tv.tv_sec) +
-      static_cast<T>(tv.tv_usec) / static_cast<T>(1e6);
+      static_cast<T>(tv.tv_usec) * static_cast<T>(1e-6);
 }
 
 #endif  // TIMER_H_

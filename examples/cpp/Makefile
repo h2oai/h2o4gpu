@@ -7,10 +7,10 @@ EXSRC=lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
+CXXFLAGS=-g -p -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
 
 # CUDA Flags
-CULDFLAGS=-lcudart -lcublas
+CULDFLAGS=-lcudart -lcublas -p
 
 # Check System Args.
 UNAME = $(shell uname -s)
