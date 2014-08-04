@@ -1,12 +1,9 @@
 #ifndef GSL_CBLAS_H_
 #define GSL_CBLAS_H_
 
+#include "cblas_def.h"
+
 extern "C" {
-enum CBLAS_ORDER {CblasRowMajor = 101, CblasColMajor = 102};
-enum CBLAS_TRANSPOSE {CblasNoTrans = 111, CblasTrans = 112, CblasConjTrans = 113};
-enum CBLAS_UPLO {CblasUpper = 121, CblasLower = 122};
-enum CBLAS_DIAG {CblasNonUnit = 131, CblasUnit = 132};
-enum CBLAS_SIDE {CblasLeft = 141, CblasRight = 142};
 
 typedef size_t CBLAS_INDEX_t;
 typedef enum CBLAS_ORDER CBLAS_ORDER_t;

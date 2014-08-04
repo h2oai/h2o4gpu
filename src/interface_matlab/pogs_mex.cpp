@@ -125,8 +125,8 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
 }
 
 // Populate parameters (rel_tol, abs_tol, max_iter, rho and quiet) in PogsData.
-template <typename T>
-int PopulateParams(const mxArray *params, PogsData<T, T*> *pogs_data) {
+template <typename T, typename M>
+int PopulateParams(const mxArray *params, PogsData<T, M> *pogs_data) {
   // Check if parameter exists in params, then make sure that it has
   // dimension 1x1 and finally set the corresponding value in pogs_data.
   int rel_tol_idx = mxGetFieldNumber(params, "rel_tol");
@@ -198,13 +198,10 @@ template <typename T>
 void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
-
-  // Convert column major (matlab) to row major (c++).
-  T* A = new T[m * n];
-  ColToRowMajor(reinterpret_cast<T*>(mxGetData(prhs[0])), m, n, A);
+  Dense<T, CblasColMajor> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
 
   // Initialize Pogs data structure
-  PogsData<T, T*> pogs_data(A, m, n);
+  PogsData<T, Dense<T, CblasColMajor> > pogs_data(A, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
@@ -212,13 +209,13 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
   if (num_obj > 1)
-    err = AllocFactors(&pogs_data);
+    err = AllocDenseFactors(&pogs_data);
 
   // Populate parameters.
-  if (err == 0 && nrhs == 4)
+  if (!err && nrhs == 4)
     err = PopulateParams(prhs[3], &pogs_data);
 
-  for (unsigned int i = 0; i < num_obj && err == 0; ++i) {
+  for (unsigned int i = 0; i < num_obj && !err; ++i) {
     pogs_data.x = reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n;
     if (nlhs >= 2)
       pogs_data.y = reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m;
@@ -229,10 +226,10 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     pogs_data.f.clear();
     pogs_data.g.clear();
     err = PopulateFunctionObj("f", prhs[1], i, m, &pogs_data.f);
-    if (err != 0)
+    if (err)
       break;
     err = PopulateFunctionObj("g", prhs[2], i, n, &pogs_data.g);
-    if (err != 0)
+    if (err)
       break;
     
     // Run solver.
@@ -243,8 +240,7 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   if (num_obj > 1)
-    FreeFactors(&pogs_data);
-  delete [] A;
+    FreeDenseFactors(&pogs_data);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

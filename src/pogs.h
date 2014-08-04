@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "cblas_def.h"
 #include "prox_lib.h"
 
 // Data structure for input to Pogs().
@@ -21,8 +22,8 @@ struct PogsData {
   unsigned int max_iter;
   bool quiet, adaptive_rho;
 
-  // Factors (dim = 1 + 3(m+n) + min(m,n)^2).
-  T *factors;
+  // Factors
+  M factors;
 
   // Constructor.
   PogsData(const M &A, size_t m, size_t n)
@@ -31,14 +32,38 @@ struct PogsData {
         max_iter(2000), quiet(false), adaptive_rho(true), factors(0) { }
 };
 
+// Pogs solver.
 template <typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data);
 
-template <typename T, typename M>
-int AllocFactors(PogsData<T, M> *pogs_data);
+// Dense matrix type.
+template <typename T, CBLAS_ORDER O>
+struct Dense {
+  static const CBLAS_ORDER Ord = O;
+  T *val;
+  Dense(T *val) : val(val) { }; 
+};
 
-template <typename T, typename M>
-void FreeFactors(PogsData<T, M> *pogs_data);
+// Sparse matrix type.
+template <typename T>
+struct CSC {
+  T *val;
+  size_t *col_ptr;
+  size_t *row_ind;
+};
+
+// Factor allocation and freeing.
+template <typename T, CBLAS_ORDER O>
+int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
+
+template <typename T, CBLAS_ORDER O>
+void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
+
+template <typename T>
+int AllocSparseFactors(PogsData<T, CSC<T> > *pogs_data);
+
+template <typename T>
+void FreeSparseFactors(PogsData<T, CSC<T> > *pogs_data);
 
 #endif  // POGS_H_
 

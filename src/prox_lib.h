@@ -514,12 +514,12 @@ __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
 // @param x_out Array to which result will be written.
 template <typename T>
 void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
-              T* x_out) {
+              size_t stride_in, T* x_out, size_t stride_out) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
   for (unsigned int i = 0; i < f_obj.size(); ++i)
-    x_out[i] = ProxEval(f_obj[i], x_in[i], rho);
+    x_out[i * stride_out] = ProxEval(f_obj[i], x_in[i * stride_in], rho);
 }
 
 
@@ -530,17 +530,56 @@ void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
 // @param x_out Array to which result will be written.
 // @returns Evaluation of sum of functions.
 template <typename T>
-T FuncEval(const std::vector<FunctionObj<T> > &f_obj, const T* x_in) {
+T FuncEval(const std::vector<FunctionObj<T> > &f_obj, const T* x_in,
+           size_t stride) {
   T sum = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+:sum)
 #endif
   for (unsigned int i = 0; i < f_obj.size(); ++i)
-    sum += FuncEval(f_obj[i], x_in[i]);
+    sum += FuncEval(f_obj[i], x_in[i * stride]);
   return sum;
 }
 
 #ifdef __CUDACC__
+// Strided iterator from thrust examples.
+template <typename It>
+class strided_range {
+ public:
+  typedef typename thrust::iterator_difference<It>::type diff_t;
+
+  struct StrideF : public thrust::unary_function<diff_t, diff_t> {
+    diff_t stride;
+    StrideF(diff_t stride) : stride(stride) { }
+    __host__ __device__
+    diff_t operator()(const diff_t& i) const { 
+      return stride * i;
+    }
+  };
+
+  typedef typename thrust::counting_iterator<diff_t> CountingIt;
+  typedef typename thrust::transform_iterator<StrideF, CountingIt> TransformIt;
+  typedef typename thrust::permutation_iterator<It, TransformIt> PermutationIt;
+  typedef PermutationIt strided_iterator_t;
+
+  // Construct strided_range for the range [first,last).
+  strided_range(It first, It last, diff_t stride)
+      : first(first), last(last), stride(stride) { }
+ 
+  strided_iterator_t begin() const {
+    return PermutationIt(first, TransformIt(CountingIt(0), StrideF(stride)));
+  }
+
+  strided_iterator_t end() const {
+    return begin() + ((last - first) + (stride - 1)) / stride;
+  }
+  
+ protected:
+  It first;
+  It last;
+  diff_t stride;
+};
+
 template <typename T>
 struct ProxEvalF : thrust::binary_function<FunctionObj<T>, T, T> {
   T rho;
@@ -552,10 +591,17 @@ struct ProxEvalF : thrust::binary_function<FunctionObj<T>, T, T> {
 
 template <typename T>
 void ProxEval(const thrust::device_vector<FunctionObj<T> > &f_obj, T rho,
-              const T *x_in, T *x_out) {
+              const T *x_in, size_t stride_in, T *x_out, size_t stride_out) {
+  size_t N = f_obj.size();
+  strided_range<thrust::device_ptr<T> > x_in_strided(
+      thrust::device_pointer_cast(const_cast<T*>(x_in)),
+      thrust::device_pointer_cast(const_cast<T*>(x_in) + stride_in * N),
+      stride_in);
+  strided_range<thrust::device_ptr<T> > x_out_strided(
+      thrust::device_pointer_cast(x_out),
+      thrust::device_pointer_cast(x_out + stride_out * N), stride_out);
   thrust::transform(thrust::device, f_obj.cbegin(), f_obj.cend(),
-                    thrust::device_pointer_cast(x_in),
-                    thrust::device_pointer_cast(x_out), ProxEvalF<T>(rho));
+       x_in_strided.begin(), x_out_strided.begin(), ProxEvalF<T>(rho));
 }
 
 template <typename T>
@@ -566,12 +612,17 @@ struct FuncEvalF : thrust::binary_function<FunctionObj<T>, T, T> {
 };
 
 template <typename T>
-T FuncEval(const thrust::device_vector<FunctionObj<T> > &f_obj, const T *x_in) {
+T FuncEval(const thrust::device_vector<FunctionObj<T> > &f_obj, const T *x_in,
+           size_t stride) {
+  strided_range<thrust::device_ptr<T> > x_in_strided(
+      thrust::device_pointer_cast(const_cast<T*>(x_in)),
+      thrust::device_pointer_cast(const_cast<T*>(x_in) + stride * f_obj.size()),
+      stride);
   return thrust::inner_product(f_obj.cbegin(), f_obj.cend(),
-                               thrust::device_pointer_cast(x_in),
-                               static_cast<T>(0), thrust::plus<T>(),
-                               FuncEvalF<T>());
+      x_in_strided.begin(), static_cast<T>(0), thrust::plus<T>(),
+      FuncEvalF<T>());
 }
+
 #endif  // __CUDACC__
 
 #endif  // PROX_LIB_H_

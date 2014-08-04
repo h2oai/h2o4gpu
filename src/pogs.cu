@@ -55,28 +55,27 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
   cml::vector<T> l = cml::vector_calloc<T>(m);
-  cml::matrix<T> A, L;
-  cml::matrix<T> C = cml::matrix_alloc<T>(m + n, 2);
-  if (pogs_data->factors != 0) {
-    cudaMemcpy(&rho, pogs_data->factors, sizeof(T), cudaMemcpyDeviceToHost);
-    if (rho > 0) {
-      compute_factors = false;
-    } else {
+  cml::matrix<T, M::Ord> A, L;
+  cml::matrix<T, M::Ord> C = cml::matrix_calloc<T, M::Ord>(m + n, 2);
+  if (pogs_data->factors.val != 0) {
+    cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
+    compute_factors = rho == 0;
+    if (compute_factors)
       rho = pogs_data->rho;
-    }
-    de = cml::vector_view_array(pogs_data->factors + 1, m + n);
-    z = cml::vector_view_array(pogs_data->factors + 1 + m + n, m + n);
-    zt = cml::vector_view_array(pogs_data->factors + 1 + 2 * (m + n), m + n);
-    L = cml::matrix_view_array(pogs_data->factors + 1 + 3 * (m + n), min_dim,
-                               min_dim);
-    A = cml::matrix_view_array(pogs_data->factors + 1 + 3 * (m + n) +
-                               min_dim * min_dim, m, n);
+    de = cml::vector_view_array(pogs_data->factors.val + 1, m + n);
+    z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
+    zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
+        m + n);
+    L = cml::matrix_view_array<T, M::Ord>(
+        pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
+    A = cml::matrix_view_array<T, M::Ord>(
+        pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
     zt = cml::vector_calloc<T>(m + n);
-    L = cml::matrix_alloc<T>(min_dim, min_dim);
-    A = cml::matrix_alloc<T>(m, n);
+    L = cml::matrix_alloc<T, M::Ord>(min_dim, min_dim);
+    A = cml::matrix_alloc<T, M::Ord>(m, n);
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
@@ -84,8 +83,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     err = 1;
 
   // Create views for x and y components.
-  cml::matrix<T> Cx = cml::matrix_submatrix(&C, 0, 0, n, 2);
-  cml::matrix<T> Cy = cml::matrix_submatrix(&C, n, 0, m, 2);
+  cml::matrix<T, M::Ord> Cx = cml::matrix_submatrix(&C, 0, 0, n, 2);
+  cml::matrix<T, M::Ord> Cy = cml::matrix_submatrix(&C, n, 0, m, 2);
   cml::vector<T> d = cml::vector_subvector(&de, 0, m);
   cml::vector<T> e = cml::vector_subvector(&de, m, n);
   cml::vector<T> x = cml::vector_subvector(&z, 0, n);
@@ -101,11 +100,11 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
-    T *Acm = new T[m * n];
-    RowToColMajor(pogs_data->A, m, n, Acm);
-    err = Equilibrate(Acm, &d, &e);
-    cml::matrix_memcpy(&A, Acm);
-    delete [] Acm;
+    T *Acp = new T[m * n];
+    memcpy(Acp, pogs_data->A.val, m * n * sizeof(T));
+    err = Equilibrate<T, M::Ord>(Acp, &d, &e);
+    cml::matrix_memcpy(&A, Acp);
+    delete [] Acp;
 
     if (!err) {
       // Compuate A^TA or AA^T.
@@ -148,26 +147,25 @@ int Pogs(PogsData<T, M> *pogs_data) {
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * pogs_data->abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
-
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
     cml::vector_memcpy(&cz0, &z);
     cml::blas_axpy(hdl, -kOne, &zt, &cz0);
-    ProxEval(g, rho, cx0.data, x12.data);
-    ProxEval(f, rho, cy0.data, y12.data);
+    ProxEval(g, rho, cx0.data, cx0.stride, x12.data, 1);
+    ProxEval(f, rho, cy0.data, cy0.stride, y12.data, 1);
 
     // Compute Gap.
     T gap, nrm_r, nrm_s;
     cml::blas_axpy(hdl, -kOne, &z12, &cz0);
     cml::blas_dot(hdl, &cz0, &z12, &gap);
     gap = fabs(gap * rho);
-    T obj = FuncEval(f, y12.data) + FuncEval(g, x12.data);
+    pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(hdl, &z12);
     T eps_dual = sqrtn_atol +
         pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &cz0);
-    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(obj);
+    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(pogs_data->optval);
 
     // Store dual variable
     if (pogs_data->l != 0)
@@ -211,7 +209,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-             k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, obj);
+          k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, pogs_data->optval);
     if (converged)
       break;
 
@@ -236,9 +234,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
   }
-
-  pogs_data->optval = FuncEval(f, y12.data) + FuncEval(g, x12.data);
-
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
@@ -254,8 +249,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_memcpy(pogs_data->l, &l);
 
   // Store rho and free memory.
-  if (pogs_data->factors != 0 && !err) {
-    cudaMemcpy(pogs_data->factors, &rho, sizeof(T), cudaMemcpyHostToDevice);
+  if (pogs_data->factors.val != 0 && !err) {
+    cudaMemcpy(pogs_data->factors.val, &rho, sizeof(T), cudaMemcpyHostToDevice);
   } else {
     cml::vector_free(&de);
     cml::vector_free(&z);
@@ -270,42 +265,49 @@ int Pogs(PogsData<T, M> *pogs_data) {
   return err;
 }
 
-template <>
-int AllocFactors(PogsData<double, double*> *pogs_data) {
+template <typename T, CBLAS_ORDER O>
+int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n;
   size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
-  cudaError_t err = cudaMalloc(&pogs_data->factors, flen * sizeof(double));
-  if (err == cudaSuccess) {
-    cudaMemset(pogs_data->factors, 0, flen * sizeof(double));
+  cudaError_t err = cudaMalloc(&pogs_data->factors.val, flen * sizeof(T));
+  if (err == cudaSuccess)
+    err = cudaMemset(pogs_data->factors.val, 0, flen * sizeof(T));
+  if (err == cudaSuccess)
     return 0;
-  } else {
+  else
     return 1;
-  }
 }
 
-template <>
-int AllocFactors(PogsData<float, float*> *pogs_data) {
-  size_t m = pogs_data->m, n = pogs_data->n;
-  size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
-  cudaError_t err = cudaMalloc(&pogs_data->factors, flen * sizeof(float));
-  if (err == cudaSuccess) {
-    cudaMemset(pogs_data->factors, 0, flen * sizeof(float));
-    return 0;
-  } else {
-    return 1;
-  }
+template <typename T, CBLAS_ORDER O>
+void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
+  cudaFree(pogs_data->factors.val);
 }
 
-template <>
-void FreeFactors(PogsData<double, double*> *pogs_data) {
-  cudaFree(pogs_data->factors);
-}
+// Declarations.
+template int Pogs<double, Dense<double, CblasRowMajor> >
+    (PogsData<double, Dense<double, CblasRowMajor> > *);
+template int Pogs<double, Dense<double, CblasColMajor> >
+    (PogsData<double, Dense<double, CblasColMajor> > *);
+template int Pogs<float, Dense<float, CblasRowMajor> >
+    (PogsData<float, Dense<float, CblasRowMajor> > *);
+template int Pogs<float, Dense<float, CblasColMajor> >
+    (PogsData<float, Dense<float, CblasColMajor> > *);
 
-template <>
-void FreeFactors(PogsData<float, float*> *pogs_data) {
-  cudaFree(pogs_data->factors);
-}
+template int AllocDenseFactors<double, CblasRowMajor>
+    (PogsData<double, Dense<double, CblasRowMajor> > *);
+template int AllocDenseFactors<double, CblasColMajor>
+    (PogsData<double, Dense<double, CblasColMajor> > *);
+template int AllocDenseFactors<float, CblasRowMajor>
+    (PogsData<float, Dense<float, CblasRowMajor> > *);
+template int AllocDenseFactors<float, CblasColMajor>
+    (PogsData<float, Dense<float, CblasColMajor> > *);
 
-template int Pogs<double>(PogsData<double, double*> *);
-template int Pogs<float>(PogsData<float, float*> *);
+template void FreeDenseFactors<double, CblasRowMajor>
+    (PogsData<double, Dense<double, CblasRowMajor> > *);
+template void FreeDenseFactors<double, CblasColMajor>
+    (PogsData<double, Dense<double, CblasColMajor> > *);
+template void FreeDenseFactors<float, CblasRowMajor>
+    (PogsData<float, Dense<float, CblasRowMajor> > *);
+template void FreeDenseFactors<float, CblasColMajor>
+    (PogsData<float, Dense<float, CblasColMajor> > *);
 
