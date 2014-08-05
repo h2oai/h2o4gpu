@@ -3,7 +3,11 @@
 
 #include <vector>
 
-#include "cblas_def.h"
+#ifdef __CUDACC__
+#include "cml/cblas.h"
+#else
+#include "gsl/cblas.h"
+#endif
 #include "prox_lib.h"
 
 // Data structure for input to Pogs().
