@@ -1,7 +1,7 @@
 #ifndef GSL_BLAS_H_
 #define GSL_BLAS_H_
 
-#include "gsl_cblas.h"
+#include "cblas.h"
 #include "gsl_matrix.h"
 #include "gsl_vector.h"
 

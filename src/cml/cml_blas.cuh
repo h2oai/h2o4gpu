@@ -6,7 +6,6 @@
 #include <thrust/functional.h>
 #include <thrust/transform_reduce.h>
 
-#include "cblas_def.h"
 #include "cml_matrix.cuh"
 #include "cml_utils.cuh"
 #include "cml_vector.cuh"

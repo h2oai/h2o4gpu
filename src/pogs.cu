@@ -57,9 +57,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
-  cml::vector<T> l = cml::vector_calloc<T>(m);
   cml::matrix<T, M::Ord> A, L;
-  cml::matrix<T, M::Ord> C = cml::matrix_calloc<T, M::Ord>(m + n, 2);
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
     compute_factors = rho == 0;
@@ -82,24 +80,18 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
-      z12.data == 0 || l.data == 0 || A.data == 0 || L.data == 0 || C.data == 0)
+      z12.data == 0 || A.data == 0 || L.data == 0)
     err = 1;
 
   // Create views for x and y components.
-  cml::matrix<T, M::Ord> Cx = cml::matrix_submatrix(&C, 0, 0, n, 2);
-  cml::matrix<T, M::Ord> Cy = cml::matrix_submatrix(&C, n, 0, m, 2);
   cml::vector<T> d = cml::vector_subvector(&de, 0, m);
   cml::vector<T> e = cml::vector_subvector(&de, m, n);
   cml::vector<T> x = cml::vector_subvector(&z, 0, n);
   cml::vector<T> y = cml::vector_subvector(&z, n, m);
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
-  cml::vector<T> cz0 = cml::matrix_column(&C, 0);
-  cml::vector<T> cx0 = cml::vector_subvector(&cz0, 0, n);
-  cml::vector<T> cy0 = cml::vector_subvector(&cz0, n, m);
-  cml::vector<T> cz1 = cml::matrix_column(&C, 1);
-  cml::vector<T> cx1 = cml::vector_subvector(&cz1, 0, n);
-  cml::vector<T> cy1 = cml::vector_subvector(&cz1, n, m);
+  cml::vector<T> xprev = cml::vector_subvector(&zprev, 0, n);
+  cml::vector<T> yprev = cml::vector_subvector(&zprev, n, m);
 
 
   printf("init %f\n", stop_timer(&ep));
@@ -180,54 +172,44 @@ int Pogs(PogsData<T, M> *pogs_data) {
   unsigned int kd = 0, ku = 0;
   printf("transf %f\n", stop_timer(&ep));
   start_timer(&ep);
+  bool converged;
 
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
-    cml::vector_memcpy(&cz0, &z);
-    cml::blas_axpy(hdl, -kOne, &zt, &cz0);
-    ProxEval(g, rho, cx0.data, cx0.stride, x12.data, 1);
-    ProxEval(f, rho, cy0.data, cy0.stride, y12.data, 1);
+    cml::blas_axpy(hdl, -kOne, &zt, &z);
+    ProxEval(g, rho, x.data, x.stride, x12.data, x12.stride);
+    ProxEval(f, rho, y.data, y.stride, y12.data, y12.stride);
 
     // Compute Gap.
-    T gap, nrm_r, nrm_s;
-    cml::blas_axpy(hdl, -kOne, &z12, &cz0);
-    cml::blas_dot(hdl, &cz0, &z12, &gap);
-    gap = fabs(gap * rho);
+    T gap, nrm_r = 0, nrm_s = 0;
+    cml::blas_axpy(hdl, -kOne, &z12, &z);
+    cml::blas_dot(hdl, &z, &z12, &gap);
+    gap = rho * fabs(gap);
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(hdl, &z12);
     T eps_dual = sqrtn_atol +
-        pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &cz0);
+        pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(pogs_data->optval);
 
-    // Store dual variable
-    if (pogs_data->l != 0)
-      cml::vector_memcpy(&l, &cy0);
+    if (converged)
+      break;
 
     // Project and Update Dual Variables
     if (m >= n) {
-      cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &cy0, kOne, &cx0);
-      nrm_s = rho * cml::blas_nrm2(hdl, &cx0);
-      cml::linalg_cholesky_svx(hdl, &L, &cx0);
-      cml::vector_memcpy(&cy0, &y);
-      cml::vector_memcpy(&cz1, &z12);
-      cml::blas_gemm(hdl, CUBLAS_OP_N, CUBLAS_OP_N, -kOne, &A, &Cx, kOne, &Cy);
-      nrm_r = cml::blas_nrm2(hdl, &cy1);
-      cml::vector_memcpy(&y, &cy0);
-      cml::blas_axpy(hdl, -kOne, &cx0, &x);
+      cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &y, -kOne, &x);
+      nrm_s = rho * cml::blas_nrm2(hdl, &x);
+      cml::linalg_cholesky_svx(hdl, &L, &x);
+      cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
+      cml::blas_axpy(hdl, kOne, &zprev, &z);
     } else {
       cml::vector_memcpy(&z, &z12);
       cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, -kOne, &y);
       nrm_r = cml::blas_nrm2(hdl, &y);
       cml::linalg_cholesky_svx(hdl, &L, &y);
-      cml::vector_memcpy(&cy1, &y);
-      cml::vector_memcpy(&cx1, &x12);
-      cml::blas_scal(hdl, -kOne, &cy0);
-      cml::blas_gemm(hdl, CUBLAS_OP_T, CUBLAS_OP_N, -kOne, &A, &Cy, kOne, &Cx);
-      nrm_s = rho * cml::blas_nrm2(hdl, &cx0);
-      cml::vector_memcpy(&x, &cx1);
-      cml::blas_axpy(hdl, kOne, &y12, &y);
+      cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &y, kZero, &x);
+      cml::blas_axpy(hdl, kOne, &z12, &z);
     }
 
     // Apply over relaxation.
@@ -239,16 +221,31 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
 
+    if (nrm_s < eps_dual && m >= n) {
+      cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
+      nrm_r = nrm_r = cml::blas_nrm2(hdl, &y12);
+      printf("a");
+    } else if (nrm_r < eps_pri && m < n) {
+      cml::blas_axpy(hdl, -kOne, &zprev, &z12);
+      cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
+      nrm_s = nrm_s = rho * cml::blas_nrm2(hdl, &x12);
+      printf("b\n");
+    } else {
+      // Compute upper bounds on residuals
+      cml::blas_axpy(hdl, -kOne, &z, &z12);
+      cml::blas_axpy(hdl, -kOne, &z, &zprev);
+      nrm_r = cml::blas_nrm2(hdl, &z12);
+      nrm_s = rho * cml::blas_nrm2(hdl, &zprev);
+    }
+
     // Evaluate stopping criteria.
-    bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
+    converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, pogs_data->optval);
-    if (converged)
-      break;
 
     // Rescale rho.
-    if (pogs_data->adaptive_rho) {
+    if (pogs_data->adaptive_rho && !converged) {
       if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
@@ -274,8 +271,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
-  cml::vector_mul(&l, &d);
-  cml::blas_scal(hdl, rho, &l);
+  cml::vector_mul(&y, &d);
+  cml::blas_scal(hdl, rho, &y);
 
   // Copy results to output.
   if (pogs_data->y != 0 && !err)
@@ -283,7 +280,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   if (pogs_data->x != 0 && !err)
     cml::vector_memcpy(pogs_data->x, &x12);
   if (pogs_data->l != 0 && !err)
-    cml::vector_memcpy(pogs_data->l, &l);
+    cml::vector_memcpy(pogs_data->l, &y);
 
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
@@ -295,10 +292,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::matrix_free(&L);
     cml::matrix_free(&A);
   }
-  cml::matrix_free(&C);
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
-  cml::vector_free(&l);
   printf("outp %f\n", stop_timer(&ep));
   start_timer(&ep);
 

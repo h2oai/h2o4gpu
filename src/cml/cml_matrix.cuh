@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cstdio>
 
-#include "cblas_def.h"
+#include "cblas.h"
 #include "cml_defs.cuh"
 #include "cml_utils.cuh"
 #include "cml_vector.cuh"
