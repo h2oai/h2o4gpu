@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "cblas_def.h"
+#include "cblas.h"
 #include "gsl_vector.h"
 
 // Gnu Scientific Library
