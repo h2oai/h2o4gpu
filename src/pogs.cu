@@ -13,6 +13,7 @@
 #include "matrix_util.h"
 #include "pogs.h"
 #include "sinkhorn_knopp.cuh"
+#include "mp1-util.h"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -28,6 +29,8 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 // Proximal Operator Graph Solver.
 template <typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data) {
+  event_pair ep;
+  start_timer(&ep);
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kDeltaMax = static_cast<T>(2);
@@ -98,19 +101,41 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> cx1 = cml::vector_subvector(&cz1, 0, n);
   cml::vector<T> cy1 = cml::vector_subvector(&cz1, n, m);
 
+
+  printf("init %f\n", stop_timer(&ep));
+  start_timer(&ep);
+
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
+    printf("equi1 %f\n", stop_timer(&ep));
+    start_timer(&ep);
+
     T *Acp = new T[m * n];
+    printf("equi2 %f\n", stop_timer(&ep));
+    start_timer(&ep);
+
     memcpy(Acp, pogs_data->A.val, m * n * sizeof(T));
+    printf("equi3 %f\n", stop_timer(&ep));
+    start_timer(&ep);
+
     err = Equilibrate<T, M::Ord>(Acp, &d, &e);
+    printf("equi4 %f\n", stop_timer(&ep));
+    start_timer(&ep);
+
     cml::matrix_memcpy(&A, Acp);
+    printf("equi5 %f\n", stop_timer(&ep));
+    start_timer(&ep);
+
     delete [] Acp;
+    printf("equi6 %f\n", stop_timer(&ep));
+    start_timer(&ep);
 
     if (!err) {
       // Compuate A^TA or AA^T.
       cublasOperation_t op_type = m >= n ? CUBLAS_OP_T : CUBLAS_OP_N;
       cml::blas_syrk(hdl, CUBLAS_FILL_MODE_LOWER, op_type, kOne, &A, kZero, &L);
-
+      printf("syrk %f\n", stop_timer(&ep));
+      start_timer(&ep);
       // Scale A.
       cml::vector<T> diag_L = cml::matrix_diagonal(&L);
       T mean_diag = cml::blas_asum(hdl, &diag_L) / static_cast<T>(min_dim);
@@ -121,10 +146,15 @@ int Pogs(PogsData<T, M> *pogs_data) {
                      (cml::blas_nrm2(hdl, &e) * sqrt(static_cast<T>(m))));
       cml::blas_scal(hdl, kOne / (factor * sqrt(sqrt_mean_diag)), &d);
       cml::blas_scal(hdl, factor / sqrt(sqrt_mean_diag), &e);
+      printf("scaling %f\n", stop_timer(&ep));
+      start_timer(&ep);
 
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T)
       cml::vector_add_constant(&diag_L, kOne);
       cml::linalg_cholesky_decomp(hdl, &L);
+      printf("chol %f\n", stop_timer(&ep));
+      start_timer(&ep);
+
     }
   }
 
@@ -135,6 +165,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
         g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   }
+
 
   // Signal start of execution.
   if (!pogs_data->quiet)
@@ -147,6 +178,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * pogs_data->abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
+  printf("transf %f\n", stop_timer(&ep));
+  start_timer(&ep);
+
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
@@ -234,6 +268,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
   }
+  printf("iter %f\n", stop_timer(&ep));
+  start_timer(&ep);
+
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
@@ -262,6 +299,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
   cml::vector_free(&l);
+  printf("outp %f\n", stop_timer(&ep));
+  start_timer(&ep);
+
   return err;
 }
 
