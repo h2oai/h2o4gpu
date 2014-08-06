@@ -98,7 +98,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
     cml::matrix_memcpy(&A, pogs_data->A.val);
-    err = Equilibrate(hdl, &A, &d, &e);
+    printf("memcpy %f\n", stop_timer(&ep));
+    start_timer(&ep);
+    err = Equilibrate(&A, &d, &e);
     printf("equi %f\n", stop_timer(&ep));
     start_timer(&ep);
 
