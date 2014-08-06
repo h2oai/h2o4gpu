@@ -90,8 +90,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> y = cml::vector_subvector(&z, n, m);
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
-  cml::vector<T> xprev = cml::vector_subvector(&zprev, 0, n);
-  cml::vector<T> yprev = cml::vector_subvector(&zprev, n, m);
 
 
   printf("init %f\n", stop_timer(&ep));
@@ -99,27 +97,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
-    printf("equi1 %f\n", stop_timer(&ep));
-    start_timer(&ep);
-
-    T *Acp = new T[m * n];
-    printf("equi2 %f\n", stop_timer(&ep));
-    start_timer(&ep);
-
-    memcpy(Acp, pogs_data->A.val, m * n * sizeof(T));
-    printf("equi3 %f\n", stop_timer(&ep));
-    start_timer(&ep);
-
-    err = Equilibrate<T, M::Ord>(Acp, &d, &e);
-    printf("equi4 %f\n", stop_timer(&ep));
-    start_timer(&ep);
-
-    cml::matrix_memcpy(&A, Acp);
-    printf("equi5 %f\n", stop_timer(&ep));
-    start_timer(&ep);
-
-    delete [] Acp;
-    printf("equi6 %f\n", stop_timer(&ep));
+    cml::matrix_memcpy(&A, pogs_data->A.val);
+    err = Equilibrate(hdl, &A, &d, &e);
+    printf("equi %f\n", stop_timer(&ep));
     start_timer(&ep);
 
     if (!err) {
@@ -161,7 +141,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
+    Printf("   #      res_pri    eps_pri   res_dual   eps_dua"
            "        gap    eps_gap  objective\n");
 
   // Initialize scalars.
@@ -189,8 +169,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gap = rho * fabs(gap);
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(hdl, &z12);
-    T eps_dual = sqrtn_atol +
-        pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
+    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(pogs_data->optval);
 
     if (converged)
@@ -221,14 +200,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
 
-    if (nrm_s < eps_dual && m >= n) {
+    if (nrm_s < eps_dua && m >= n) {
       cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
-      nrm_r = nrm_r = cml::blas_nrm2(hdl, &y12);
+      nrm_r = cml::blas_nrm2(hdl, &y12);
       printf("a");
     } else if (nrm_r < eps_pri && m < n) {
       cml::blas_axpy(hdl, -kOne, &zprev, &z12);
       cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
-      nrm_s = nrm_s = rho * cml::blas_nrm2(hdl, &x12);
+      nrm_s = rho * cml::blas_nrm2(hdl, &x12);
       printf("b\n");
     } else {
       // Compute upper bounds on residuals
@@ -239,26 +218,26 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
 
     // Evaluate stopping criteria.
-    converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
+    converged = nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-          k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, pogs_data->optval);
+          k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);
 
     // Rescale rho.
     if (pogs_data->adaptive_rho && !converged) {
-      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
+      if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
         cml::blas_scal(hdl, 1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
-      } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
+      } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         cml::blas_scal(hdl, delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
-      } else if (nrm_s < xi * eps_dual && nrm_r < xi * eps_pri) {
+      } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {
         delta = std::max(delta / kGamma, kDeltaMin);

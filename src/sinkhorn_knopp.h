@@ -68,10 +68,10 @@ int Equilibrate(gsl::matrix<T, CblasRowMajor> *A, gsl::vector<T> *d,
 #endif
       for (unsigned int i = 0; i < A->size1; ++i)
         for (unsigned int j = 0; j < A->size2; ++j)
-          dpr[i] += std::fabs(gsl::matrix_get(A, i, j));
+          dpr[i] += gsl::matrix_get(A, i, j) * gsl::matrix_get(A, i, j);
       for (unsigned int i = 0; i < A->size1; ++i) {
         err += dpr[i] == 0;
-        dpr[i] = 1 / dpr[i];
+        dpr[i] = 1 / std::sqrt(dpr[i]);
       }
     } else {
       gsl::vector_set_all(e, static_cast<T>(0));
@@ -81,10 +81,10 @@ int Equilibrate(gsl::matrix<T, CblasRowMajor> *A, gsl::vector<T> *d,
 #pragma omp parallel for
 #endif
         for (unsigned int j = 0; j < A->size2; ++j)
-          epr[j] += std::fabs(gsl::matrix_get(A, i, j));
+          epr[j] += gsl::matrix_get(A, i, j) * gsl::matrix_get(A, i, j);
       for (unsigned int j = 0; j < A->size2; ++j) {
         err += epr[j] == 0;
-        epr[j] = 1 / epr[j];
+        epr[j] = 1 / std::sqrt(epr[j]);
       }
     }
   }
@@ -114,10 +114,10 @@ int Equilibrate(gsl::matrix<T, CblasColMajor> *A, gsl::vector<T> *d,
 #pragma omp parallel for
 #endif
         for (unsigned int i = 0; i < A->size1; ++i)
-          dpr[i] += std::fabs(gsl::matrix_get(A, i, j));
+          dpr[i] += gsl::matrix_get(A, i, j) * gsl::matrix_get(A, i, j);
       for (unsigned int i = 0; i < A->size1; ++i) {
         err += dpr[i] == 0;
-        dpr[i] = 1 / dpr[i];
+        dpr[i] = 1 / std::sqrt(dpr[i]);
       }
     } else {
       gsl::vector_set_all(e, static_cast<T>(0));
@@ -127,10 +127,10 @@ int Equilibrate(gsl::matrix<T, CblasColMajor> *A, gsl::vector<T> *d,
 #endif
       for (unsigned int j = 0; j < A->size2; ++j)
         for (unsigned int i = 0; i < A->size1; ++i)
-          epr[j] += std::fabs(gsl::matrix_get(A, i, j));
+          epr[j] += gsl::matrix_get(A, i, j) * gsl::matrix_get(A, i, j);
       for (unsigned int j = 0; j < A->size2; ++j) {
         err += epr[j] == 0;
-        epr[j] = 1 / epr[j];
+        epr[j] = 1 / std::sqrt(epr[j]);
       }
     }
   }

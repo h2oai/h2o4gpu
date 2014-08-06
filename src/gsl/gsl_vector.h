@@ -99,12 +99,12 @@ void vector_memcpy(T *x, const vector<T> *y) {
   }
 }
 
-// template <typename T>
-// void vector_print(const vector<T> *x) {
-//   for (unsigned int i = 0; i < x->size; ++i)
-//     Printf("%e ", vector_get(x, i));
-//   Printf("\n");
-// }
+template <typename T>
+void vector_print(const vector<T> *x) {
+  for (unsigned int i = 0; i < x->size; ++i)
+    printf("%e ", vector_get(x, i));
+  printf("\n");
+}
 
 template <typename T>
 void vector_scale(vector<T> *a, T x) {

@@ -7,7 +7,7 @@ typedef double real_t;
 int main() {
   double t;
   printf("\nLasso.\n");
-  t = Lasso<real_t>(1000, 100000);
+  t = Lasso<real_t>(100, 1000);
   printf("Solver Time: %e sec\n", t);
 
 //   printf("\nLinear Program in Equality Form.\n");
