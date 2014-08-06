@@ -249,20 +249,26 @@ int AnyIsZeroOp(cml::vector<T> *x) {
 }
 
 template <typename T>
-int Equilibrate(cublasHandle_t handle, cml::matrix<T, CblasRowMajor> *A,
+int Equilibrate(cml::matrix<T, CblasRowMajor> *A,
                 cml::vector<T> *d, cml::vector<T> *e) {
   int err;
   if (A->size1 < A->size2) {
+    unsigned int num_h = 4;
+    cublasHandle_t h[num_h];
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasCreate(h + i);
     T *dpr = new T[A->size1];
     cml::vector_set_all(e, static_cast<T>(1));
     for (unsigned int i = 0; i < A->size1; ++i) {
       cml::vector<T> v = cml::matrix_row(A, i);
-      dpr[i] = cml::blas_nrm2(handle, &v);
+      dpr[i] = cml::blas_nrm2(h[i % num_h], &v);
     }
     cml::vector_memcpy(d, dpr);
     ReciprOp(d);
     DiagOp<T, CblasRowMajor, CblasLeft>(A, d);
     delete [] dpr;
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasDestroy(h[i]);
     err = AnyIsZeroOp(d);
   } else {
     cml::vector_set_all(d, static_cast<T>(1));
@@ -274,7 +280,7 @@ int Equilibrate(cublasHandle_t handle, cml::matrix<T, CblasRowMajor> *A,
 }
 
 template <typename T>
-int Equilibrate(cublasHandle_t handle, cml::matrix<T, CblasColMajor> *A,
+int Equilibrate(cml::matrix<T, CblasColMajor> *A,
                 cml::vector<T> *d, cml::vector<T> *e) {
   int err;
   if (A->size1 < A->size2) {
@@ -283,16 +289,22 @@ int Equilibrate(cublasHandle_t handle, cml::matrix<T, CblasColMajor> *A,
     DiagOp<T, CblasColMajor, CblasLeft>(A, d);
     err = AnyIsZeroOp(d);
   } else {
+    unsigned int num_h = 4;
+    cublasHandle_t h[num_h];
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasCreate(h + i);
     T *epr = new T[A->size2];
     cml::vector_set_all(d, static_cast<T>(1));
     for (unsigned int j = 0; j < A->size2; ++j) {
       cml::vector<T> v = cml::matrix_column(A, j);
-      epr[j] = cml::blas_nrm2(handle, &v);
+      epr[j] = cml::blas_nrm2(h[j % num_h], &v);
     }
     cml::vector_memcpy(e, epr);
     ReciprOp(e);
     DiagOp<T, CblasColMajor, CblasRight>(A, e);
     delete [] epr;
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasDestroy(h[i]);
     err = AnyIsZeroOp(e);
   }
   return err;

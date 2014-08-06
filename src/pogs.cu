@@ -91,7 +91,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
     cml::matrix_memcpy(&A, pogs_data->A.val);
-    err = Equilibrate(hdl, &A, &d, &e);
+    err = Equilibrate(&A, &d, &e);
 
     if (!err) {
       // Compuate A^TA or AA^T.
