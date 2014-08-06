@@ -184,15 +184,15 @@ void matrix_memcpy(T *A, const matrix<T, O> *B) {
         A[i + j * B->size1] = matrix_get(B, i, j);
 }
 
-// template <typename T, CBLAS_ORDER O>
-// void matrix_print(const matrix<T, O> *A) {
-//   for (unsigned int i = 0; i < A->size1; ++i) {
-//     for (unsigned int j = 0; j < A->size2; ++j)
-//       Printf("%e ", matrix_get(A, i, j));
-//     Printf("\n");
-//   }
-//   Printf("\n");
-// }
+template <typename T, CBLAS_ORDER O>
+void matrix_print(const matrix<T, O> *A) {
+  for (unsigned int i = 0; i < A->size1; ++i) {
+    for (unsigned int j = 0; j < A->size2; ++j)
+      printf("%e ", matrix_get(A, i, j));
+    printf("\n");
+  }
+  printf("\n");
+}
 
 template <typename T, CBLAS_ORDER O>
 vector<T> matrix_diagonal(matrix<T, O> *A) {

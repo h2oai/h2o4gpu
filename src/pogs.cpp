@@ -83,6 +83,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
         pogs_data->A.val, m, n);
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
+
     if (!err) {
       // Compute A^TA or AA^T.
       CBLAS_TRANSPOSE_t mult_type = m >= n ? CblasTrans : CblasNoTrans;

@@ -136,11 +136,11 @@ void vector_memcpy(T *x, const vector<T> *y) {
 }
 
 template <typename T>
-void print_vector(const vector<T> &x) {
-  T* x_ = new T[x.size * x.stride];
-  vector_memcpy(x_, &x);
-  for (unsigned int i = 0; i < x.size; ++i)
-    printf("%e ", x_[i * x.stride]);
+void vector_print(const vector<T> *x) {
+  T* x_ = new T[x->size * x->stride];
+  vector_memcpy(x_, x);
+  for (unsigned int i = 0; i < x->size; ++i)
+    printf("%e ", x_[i * x->stride]);
   printf("\n");
   delete [] x_;
 }
