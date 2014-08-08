@@ -201,12 +201,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
         gsl::blas_scal(1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
+        printf("+rho %e\n", rho);
       } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         gsl::blas_scal(delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
+        printf("-rho %e\n", rho);
       } else if (nrm_s < xi * eps_dual && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {

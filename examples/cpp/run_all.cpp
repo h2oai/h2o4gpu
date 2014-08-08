@@ -10,6 +10,14 @@ int main() {
   t = Lasso<real_t>(100, 1000);
   printf("Solver Time: %e sec\n", t);
 
+  printf("\nLasso Path.\n");
+  t = LassoPath<real_t>(100, 1000);
+  printf("Solver Time: %e sec\n", t);
+
+  printf("\nLogistic Regression.\n");
+  t = LogisticRegression<real_t>(1000, 100);
+  printf("Solver Time: %e sec\n", t);
+
 //   printf("\nLinear Program in Equality Form.\n");
 //   t = LpEq<real_t>(200, 1000);
 //   printf("Solver Time: %e sec\n", t);

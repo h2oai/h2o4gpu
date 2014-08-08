@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__CUDA)
 #include "cml/cblas.h"
 #else
 #include "gsl/cblas.h"
@@ -50,7 +50,7 @@ struct Dense {
 
 // Sparse matrix type.
 template <typename T>
-struct CSC {
+struct Sparse {
   T *val;
   size_t *col_ptr;
   size_t *row_ind;
@@ -64,10 +64,10 @@ template <typename T, CBLAS_ORDER O>
 void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
 
 template <typename T>
-int AllocSparseFactors(PogsData<T, CSC<T> > *pogs_data);
+int AllocSparseFactors(PogsData<T, Sparse<T> > *pogs_data);
 
 template <typename T>
-void FreeSparseFactors(PogsData<T, CSC<T> > *pogs_data);
+void FreeSparseFactors(PogsData<T, Sparse<T> > *pogs_data);
 
 #endif  // POGS_H_
 

@@ -125,7 +125,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   // Signal start of execution.
   if (!pogs_data->quiet)
-    Printf("   #      res_pri    eps_pri   res_dual   eps_dua"
+    Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
            "        gap    eps_gap  objective\n");
 
   // Initialize scalars.
@@ -134,7 +134,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * pogs_data->abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
-  bool converged;
+  bool converged = false;
 
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
@@ -182,25 +182,31 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
 
-    if (nrm_s < eps_dua && m >= n) {
-      cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
-      nrm_r = cml::blas_nrm2(hdl, &y12);
-      printf("a");
-    } else if (nrm_r < eps_pri && m < n) {
-      cml::blas_axpy(hdl, -kOne, &zprev, &z12);
-      cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
-      nrm_s = rho * cml::blas_nrm2(hdl, &x12);
-      printf("b\n");
-    } else {
-      // Compute upper bounds on residuals
-      cml::blas_axpy(hdl, -kOne, &z, &z12);
+    bool exact = false;
+    if (m >= n) {
+      cml::vector_memcpy(&zprev, &z12);
       cml::blas_axpy(hdl, -kOne, &z, &zprev);
-      nrm_r = cml::blas_nrm2(hdl, &z12);
+      nrm_r = cml::blas_nrm2(hdl, &zprev);
+      if (nrm_s < eps_dua && nrm_r < eps_pri) {
+        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
+        nrm_r = cml::blas_nrm2(hdl, &y12);
+        exact = true;
+        printf("a\n");
+      }
+    } else {
+      cml::blas_axpy(hdl, -kOne, &zprev, &z12);
+      cml::blas_axpy(hdl, -kOne, &z, &zprev);
       nrm_s = rho * cml::blas_nrm2(hdl, &zprev);
+      if (nrm_r < eps_pri && nrm_s < eps_dua) {
+        cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
+        nrm_s = rho * cml::blas_nrm2(hdl, &x12);
+        exact = true;
+        printf("b\n");
+      }
     }
 
     // Evaluate stopping criteria.
-    converged = nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
+    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);
@@ -213,12 +219,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
         cml::blas_scal(hdl, 1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
+        printf("+rho %e\n", rho);
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         cml::blas_scal(hdl, delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
+        printf("-rho %e\n", rho);
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {
@@ -243,6 +251,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
     cudaMemcpy(pogs_data->factors.val, &rho, sizeof(T), cudaMemcpyHostToDevice);
+    cml::vector_memcpy(&z, &zprev);
   } else {
     cml::vector_free(&de);
     cml::vector_free(&z);

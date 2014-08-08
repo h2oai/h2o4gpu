@@ -3,7 +3,7 @@ GSLROOT=/usr/local
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC=lasso.cpp lasso_path.cpp logistic_regression.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
