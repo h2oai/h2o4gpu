@@ -44,6 +44,7 @@ function [x, y, factors, n_iter] = pogs(prox_f, prox_g, obj_fn, A, params, facto
 %                   output to console.
 %                 + adaptive_rho (default true): Adaptively choose rho.
 %                 + indirect (default false): Uses LSQR instead of LDL (not implemented yet).
+%                 + approx_res (default false): Use approximate residuals for stopping.
 %
 %   factors   - Structure containing pre-computed factors. If any
 %               one field is missing, then all of them will be re-computed.
@@ -88,13 +89,13 @@ if nargin < 6
   factors = [];
 end
 
-ABSTOL  = get_or_default(params, 'ABSTOL', 1e-4);
-RELTOL  = get_or_default(params, 'RELTOL', 1e-3);
-MAXITR  = get_or_default(params, 'MAXITR', 10000);
-rho     = get_or_default(params, 'rho', 1.0);
-quiet   = get_or_default(params, 'quiet', false);
-norml   = get_or_default(params, 'norml', true);
+ABSTOL = get_or_default(params, 'ABSTOL', 1e-4);
+RELTOL = get_or_default(params, 'RELTOL', 1e-3);
+MAXITR = get_or_default(params, 'MAXITR', 10000);
+quiet = get_or_default(params, 'quiet', false);
+norml = get_or_default(params, 'norml', true);
 ada_rho = get_or_default(params, 'adaptive_rho', true);
+approx_res = get_or_default(params, 'approx_res', false);
 
 L   = get_or_default(factors, 'L', []);
 D   = get_or_default(factors, 'D', []);
@@ -163,10 +164,18 @@ for iter = 0:MAXITR-1
   
   % Check stopping criteria.
   obj = obj_fn(x12 .* e, y12 ./ d);
-  eps_pri  = sqrt(m) * ABSTOL + RELTOL * norm(z12);
-  eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(v12);
-  eps_gap = sqrt(m + n) * ABSTOL + RELTOL * abs(obj); 
-  r = A * x12 - y12; s = A' * v12(n + 1:end) + v12(1:n);
+  if approx_res
+    eps_pri  = sqrt(m + n) * ABSTOL + RELTOL * norm(z12);
+    eps_dual = sqrt(m + n) * ABSTOL + RELTOL * norm(v12);
+    r = z12 - z;
+    s = rho * (z - zprev);
+  else
+    eps_pri  = sqrt(m) * ABSTOL + RELTOL * norm(z12);
+    eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(v12);
+    r = A * x12 - y12;
+    s = A' * v12(n + 1:end) + v12(1:n);
+  end
+  eps_gap = sqrt(m + n) * ABSTOL + RELTOL * abs(obj);
   prires = norm(r);
   duares = norm(s);
   absgap = abs(v12' * z12);
@@ -185,12 +194,11 @@ for iter = 0:MAXITR-1
   if ~quiet && iter == 0
     factor_time = tic;
   end
- 
-  xprev = x; yprev = y; zprev = z;
   
   % Project onto graph of {(x, y) \in R^{n + m} | y = Ax}, updating
   %   (x^{k+1}, y^{k+1}) = Pi_A(x^{k+1/2} + \tilde x^k, 
   %                             y^{k+1/2} + \tilde y^k)
+  xprev = x; yprev = y; zprev = z;
   [z, L, D, P] = project_graph(z12, A, L, D, P);
   z = alpha * z + (1 - alpha) * zprev;
 
