@@ -1,5 +1,4 @@
 # User Vars
-GSLROOT=/usr/local
 POGSROOT=../../src
 
 # Example Files
@@ -7,19 +6,20 @@ EXSRC=lasso.cpp lasso_path.cpp logistic_regression.cpp lp_eq.cpp lp_ineq.cpp non
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -p -O3 -Wall -Wconversion -std=c++11 -I$(GSLROOT)/include -I$(POGSROOT) -fopenmp
+CXXFLAGS=-g -O3 -I$(POGSROOT) -fopenmp -std=c++11 -Wall -Wconversion  
 
 # CUDA Flags
-CULDFLAGS=-lcudart -lcublas -p
+CULDFLAGS_=-lcudart -lcublas
 
 # Check System Args.
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
-CULDFLAGS_=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS)
+CULDFLAGS=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS_)
 else
 LDFLAGS=-lm
-CULDFLAGS_=-L/cm/shared/apps/cuda55/toolkit/current/lib64 $(CULDFLAGS)
+#CULDFLAGS=-L/cm/shared/apps/cuda55/toolkit/current/lib64 $(CULDFLAGS_)
+CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
 # CPU
@@ -30,8 +30,7 @@ cpu: run_all.cpp examples.h $(EXSRC)
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
-	$(CXX) $(CXXFLAGS) $(CULDFLAGS_) -o run \
-	$(EXSRC) $< $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o
+	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run
