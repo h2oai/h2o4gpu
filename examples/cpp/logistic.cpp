@@ -4,14 +4,14 @@
 #include "pogs.h"
 #include "timer.h"
 
-// LogisticRegression 
+// Logistic
 //   minimize    \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
 //   subject to  y = Ax
 //
 // for 50 values of \lambda.
 // See <pogs>/matlab/examples/logistic_regression.m for detailed description.
 template <typename T>
-double LogisticRegression(size_t m, size_t n) {
+double Logistic(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
   std::vector<T> d(m);
   std::vector<T> x(n + 1);
@@ -24,9 +24,9 @@ double LogisticRegression(size_t m, size_t n) {
                                      static_cast<T>(1));
 
   for (unsigned int i = 0; i < m; ++i) {
-    for (unsigned int i = 0; i < n; ++i)
-      A[i] = n_dist(generator);
-    A[n] = 1;
+    for (unsigned int j = 0; j < n; ++j)
+      A[i * (n + 1) + j] = n_dist(generator);
+    A[i * (n + 1) + n] = 1;
   }
 
   std::vector<T> x_true(n + 1);
@@ -74,6 +74,6 @@ double LogisticRegression(size_t m, size_t n) {
   return timer<double>() - t;
 }
 
-template double LogisticRegression<double>(size_t m, size_t n);
-template double LogisticRegression<float>(size_t m, size_t n);
+template double Logistic<double>(size_t m, size_t n);
+template double Logistic<float>(size_t m, size_t n);
 
