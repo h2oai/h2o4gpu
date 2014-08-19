@@ -154,6 +154,9 @@ kappa = 0.9;
 tau = 0.8;
 
 for iter = 0:MAXITR-1
+  % Previous state varibles.
+  xprev = x; yprev = y; zprev = z;
+  
   % Evaluate proximal operators of f and g.
   %   y^{k+1/2} = prox(y^k - \tilde y^k)
   %   x^{k+1/2} = prox(x^k - \tilde x^k)
@@ -198,7 +201,6 @@ for iter = 0:MAXITR-1
   % Project onto graph of {(x, y) \in R^{n + m} | y = Ax}, updating
   %   (x^{k+1}, y^{k+1}) = Pi_A(x^{k+1/2} + \tilde x^k, 
   %                             y^{k+1/2} + \tilde y^k)
-  xprev = x; yprev = y; zprev = z;
   [z, L, D, P] = project_graph(z12, A, L, D, P);
   z = alpha * z + (1 - alpha) * zprev;
 
