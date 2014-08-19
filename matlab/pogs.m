@@ -42,6 +42,8 @@ function [x, y, factors, n_iter] = pogs(prox_f, prox_g, obj_fn, A, params, facto
 %                   operator.
 %                 + quiet (default false): Set flag to true, to disable
 %                   output to console.
+%                 + adaptive_rho (default true): Adaptively choose rho.
+%                 + indirect (default false): Uses LSQR instead of LDL (not implemented yet).
 %
 %   factors   - Structure containing pre-computed factors. If any
 %               one field is missing, then all of them will be re-computed.
@@ -86,29 +88,35 @@ if nargin < 6
   factors = [];
 end
 
-ABSTOL = get_or_default(params, 'ABSTOL', 1e-4);
-RELTOL = get_or_default(params, 'RELTOL', 1e-2);
-MAXITR = get_or_default(params, 'MAXITR', 10000);
-rho    = get_or_default(params, 'rho', 1.0);
-quiet  = get_or_default(params, 'quiet', false);
-norml  = get_or_default(params, 'norml', true);
+ABSTOL  = get_or_default(params, 'ABSTOL', 1e-4);
+RELTOL  = get_or_default(params, 'RELTOL', 1e-3);
+MAXITR  = get_or_default(params, 'MAXITR', 10000);
+rho     = get_or_default(params, 'rho', 1.0);
+quiet   = get_or_default(params, 'quiet', false);
+norml   = get_or_default(params, 'norml', true);
+ada_rho = get_or_default(params, 'adaptive_rho', true);
 
-L  = get_or_default(factors, 'L', []);
-D  = get_or_default(factors, 'D', []);
-P  = get_or_default(factors, 'P', []);
-AA = get_or_default(factors, 'AA', []);
-e  = get_or_default(factors, 'e', []);
-d  = get_or_default(factors, 'd', []);
+L   = get_or_default(factors, 'L', []);
+D   = get_or_default(factors, 'D', []);
+P   = get_or_default(factors, 'P', []);
+e   = get_or_default(factors, 'e', []);
+d   = get_or_default(factors, 'd', []);
+rho = get_or_default(factors, 'rho', 0);
 
-if isempty(L) || isempty(AA) || isempty(e) || isempty(d)
-  L = []; D = []; P = []; AA = []; e = []; d = [];
+if isempty(L) || isempty(e) || isempty(d)
+  L = []; D = []; P = []; e = []; d = [];
 end
 
-% Initialize x^k and \tilde x^k.
+if rho == 0 || ~ada_rho
+  rho = get_or_default(params, 'rho', 1.0);
+end
+
+% Initialize z^k, \tilde z^k and xi.
 [m, n] = size(A);
 x = zeros(n, 1);     xt = zeros(n, 1);
 y = zeros(m, 1);     yt = zeros(m, 1);
 z = zeros(n + m, 1); zt = zeros(n + m, 1);
+xi = 1.0;
 
 % Start timer.
 if ~quiet
@@ -117,16 +125,10 @@ end
 
 % Normalize A
 if isempty(e) || isempty(d)
-  if norml 
-    [A, d, e] = sk_equil(A);
-    if m < n
-      sms = sqrt(mean(sum(A.^2,2)));
-    else
-      sms = sqrt(mean(sum(A.^2,1)));
-    end
-    d = d / sqrt(sms);
-    e = e / sqrt(sms);
-    A = A / sms;
+  if norml
+    [A, d, e] = equil(A, 2);
+    ff = sqrt(norm(d) * sqrt(n) / (norm(e) * sqrt(m)));
+    d = d / ff; e = e * ff;
   else
     d = ones(m, 1);
     e = ones(n, 1);
@@ -135,100 +137,106 @@ else
   A = bsxfun(@times, bsxfun(@times, A, d), e');
 end
 
-% Precompute AAt or AtA.
-if isempty(AA) && ~issparse(A)
-  if m < n
-    AA = A * A';
-  else
-    AA = A' * A;
-  end
-end
-
 if ~quiet
   fprintf('iter :\t%8s\t%8s\t%8s\t%8s\t%8s\t%8s\t%8s\n', ...
-     'r', 'eps_pri', 's', 'eps_dual', 'primal', 'dual', 'gap');
+     'r', 'eps_pri', 's', 'eps_dual', 'gap', 'eps_gap', 'primal');
 end
 
+% Constants.
+alpha = 1.7;
+delta_min = 1.05;
+delta = 1.05;
+gamma = 1.01;
+last_up = 0;
+last_dn = 0;
+kappa = 0.9;
+tau = 0.8;
+
 for iter = 0:MAXITR-1
-  
-%   rho_ = exp(linspace(log(0.01), log(1000), 100));
-%   gap = nan(length(rho_), 1);
-%   for r = 1:length(rho_)
-%     y12 = eval_prox(prox_f, y - yt, rho_(r), 1 ./ d);
-%     x12 = eval_prox(prox_g, x - xt, rho_(r), e);
-%     z12 = [x12; y12];
-%     gap(r) = rho_(r) * (z - zt - z12)' * z12;
-%   end
-%   [~,r] = min(abs(gap));
-%   rho = rho_(r);
-%   disp(rho)
-%   semilogx(rho_, gap)
-  
   % Evaluate proximal operators of f and g.
   %   y^{k+1/2} = prox(y^k - \tilde y^k)
   %   x^{k+1/2} = prox(x^k - \tilde x^k)
   y12 = eval_prox(prox_f, y - yt, rho, 1 ./ d);
   x12 = eval_prox(prox_g, x - xt, rho, e);
   z12 = [x12; y12];
-  gap = rho * (z - zt - z12)' * z12;
+  v12 = rho * (z - zt - z12);
+  
+  % Check stopping criteria.
+  obj = obj_fn(x12 .* e, y12 ./ d);
+  eps_pri  = sqrt(m) * ABSTOL + RELTOL * norm(z12);
+  eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(v12);
+  eps_gap = sqrt(m + n) * ABSTOL + RELTOL * abs(obj); 
+  r = A * x12 - y12; s = A' * v12(n + 1:end) + v12(1:n);
+  prires = norm(r);
+  duares = norm(s);
+  absgap = abs(v12' * z12);
 
-  zprev = z;
+  converged = iter > 1 && prires < eps_pri && duares < eps_dual && absgap < eps_gap;
+  if ~quiet && (mod(iter, 10) == 0 || converged)
+    primal = obj_fn(x12 .* e, y12 ./ d);
+    fprintf('%4d :\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\n', ...
+        iter, prires, eps_pri, duares, eps_dual, absgap, eps_gap, primal);
+  end
 
+  if converged
+    break
+  end
+  
   if ~quiet && iter == 0
     factor_time = tic;
   end
-
+ 
+  xprev = x; yprev = y; zprev = z;
+  
   % Project onto graph of {(x, y) \in R^{n + m} | y = Ax}, updating
   %   (x^{k+1}, y^{k+1}) = Pi_A(x^{k+1/2} + \tilde x^k, 
   %                             y^{k+1/2} + \tilde y^k)
-  [z, L, D, P] = project_graph(z12 + zt, A, AA, L, D, P);
+  [z, L, D, P] = project_graph(z12, A, L, D, P);
+  z = alpha * z + (1 - alpha) * zprev;
 
   if ~quiet && iter == 0
     factor_time = toc(factor_time);
   end
-
+  
   x = z(1:n);
   y = z(n + 1:n + m);
   
   % Update dual variables.
   %   \tilde x^{k+1} = \tilde x^{k} + x^{k+1/2} - x^k
   %   \tilde y^{k+1} = \tilde y^{k} + y^{k+1/2} - y^k
-  xt = xt + x12 - x;
-  yt = yt + y12 - y;
-  zt = [xt; yt];
-
-  % Check stopping criteria.
-  eps_pri  = sqrt(n) * ABSTOL + RELTOL * max(norm(z12), norm(z));
-  eps_dual = sqrt(n) * ABSTOL + RELTOL * norm(rho * zt);
-  prires = norm(z12 - z);
+  xt = xt + alpha * x12 + (1 - alpha) * xprev - x;
+  yt = yt + alpha * y12 + (1 - alpha) * yprev - y;
+  
+  prires = norm(z - z12);
   duares = rho * norm(z - zprev);
 
-  converged = iter > 1 && prires < eps_pri && duares < eps_dual;
-  if ~quiet && (mod(iter, 1) == 0 || converged)
-    primal = obj_fn(x12 .* e, y12 ./ d);
-    dual = primal - gap;
-    fprintf('%4d :\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\t%.2e\n', ...
-        iter, prires, eps_pri, duares, eps_dual, primal, dual, gap);
+  % Update rho
+  if ada_rho
+    if prires > xi * eps_pri && duares < xi * eps_dual && iter * tau > last_dn
+      rho = rho * delta; xt = xt / delta; yt = yt / delta;
+      delta = delta * gamma;
+      last_up = iter;
+    elseif prires < xi * eps_pri && duares > xi * eps_dual && iter * tau > last_up
+      rho = rho / delta; xt = xt * delta; yt = yt * delta;
+      delta = delta * gamma;
+      last_dn = iter;
+    elseif prires < xi * eps_pri && duares < xi * eps_dual
+      xi = xi * kappa;
+    else
+      delta = max(delta / gamma, delta_min);
+    end
   end
 
-  if converged
-    break
-  end
-    
-%   if log(prires) > 2 * log(abs(gap)) && iter > 20
-%     rho = rho * 10; xt = xt / 10; yt = yt / 10;
-%   elseif log(prires) < 0.1 * log(abs(gap)) && iter > 20
-%     rho = rho / 10; xt = xt * 10; yt = yt * 10;
-%   end
+  zt = [xt; yt];
 end
 
 % Set factors for output.
 factors.L = L;
 factors.D = D;
 factors.P = P;
-factors.AA = AA;
 factors.d = d;
 factors.e = e;
+factors.rho = rho;
 n_iter = iter;
 
 % Scale output
@@ -258,7 +266,7 @@ end
 
 end
 
-function [z, L, D, P] = project_graph(v, A, AA, L, D, P)
+function [z, L, D, P] = project_graph(v, A, L, D, P)
 % Project v onto the graph of A. This is equivalent to solving
 %
 %    minimize    (1/2) ||x - c||_2^2 + (1/2) ||y - d||_2^2,
@@ -273,25 +281,25 @@ d = v(n + 1:end);
 if issparse(A)
   if isempty(P) || isempty(L) || isempty(D)
     % Solve KKT system.
-    K = [ speye(n) A' ; A -speye(m) ];
+    K = [speye(n) A' ; A -speye(m)];
     [L, D, P] = ldl(K);
   end
 
-  z = P * (L' \ (D \ (L \ (P' * sparse([ c + A' * d ; zeros(m, 1) ])))));
+  z = P * (L' \ (D \ (L \ (P' * sparse([c + A' * d; zeros(m, 1)])))));
 else
   % Project fat/skinny matrices onto the graph of A, by forming the normal
   % equations, and taking Cholesky decomposition.
   if m < n
     % Fat matrices.
     if isempty(L)
-      L = chol(eye(m) + AA);
+      L = chol(eye(m) + A * A');
     end
-    y = L \ (L' \ (A * c + AA * d));
+    y = d + L \ (L' \ (A * c - d));
     x = c + A' * (d - y);
   else
     % Skinny matrices. Use matrix inversion lemma.
     if isempty(L)
-      L = chol(eye(n) + AA);
+      L = chol(eye(n) + A' * A);
     end
     x = L \ (L' \ (c + A' * d));
     y = A * x;
@@ -313,24 +321,16 @@ end
 
 end
 
-function [A, d, e] = sk_equil(A)
-
-A1 = abs(A);
+function [A, d, e] = equil(A, nrm)
 [m, n] = size(A);
-max_it = 10;
 
 d = ones(m, 1);
 e = ones(n, 1);
 
-for i = 1:max_it
-%   d = n ./ (A1 * e);
-%   e = m ./ (A1' * d);
-  e = 1 ./ (A1' * d);
-  d = 1 ./ (A1 * e);
-  nd = norm(d) / sqrt(m);
-  ne = norm(e) / sqrt(n);
-  d = d * sqrt(ne / nd);
-  e = e * sqrt(nd / ne);
+if m > n
+  e = 1 ./ norms(A, nrm, 1)';
+else
+  d = 1 ./ norms(A, nrm, 2);
 end
 
 A = bsxfun(@times, bsxfun(@times, A, d), e');
