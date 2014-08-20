@@ -1,8 +1,8 @@
 function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
 
 % CRLS Conjugate-Residual Method for LS problems.
-% [X,INFORM,RESVEC,LSVEC] = CRLS(A,B,TOL,MAXIT) attempts to solve
-% min ||AX - B|| for X, where A is square or rectangular.
+% [X,INFORM,RESVEC,LSVEC] = CRLS(A,B,SHIFT,TOL,MAXIT,QUIET) attempts to 
+% solve min ||AX - B|| for X, where A is square or rectangular.
 %
 % On exit,
 % INFORM = 1   if X solves AX = B to within TOL (e.g. TOL = 1e-8),
@@ -15,13 +15,14 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
 
 % Authors:     David Fong and Michael Saunders, ICME, Stanford University.
 % 21 Nov 2011: First version derived from cr.m.
+% 20 Aug 2014: Added shift and quiet arguments.
 
   inform = 3;
   n      = size(A,2);
   x      = zeros(n,1);
   r      = b;
-  s      = A'*r;         % s   = A'r
-  w      = A*s;          % w   = As
+  s      = A'*r;                       % s   = A'r
+  w      = A*s;                        % w   = As
   rho    = norm(w)^2 + shift*norm(s)^2;
   p      = s;
   q      = w;
@@ -29,7 +30,7 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
   bnorm  = norm(b);
   snorm  = norm(s);
   Anorm  = snorm/bnorm;
-  resvec = [bnorm; zeros(maxit,1)];     % Preallocate vector
+  resvec = [bnorm; zeros(maxit,1)];    % Preallocate vector
   lsvec  = [snorm; zeros(maxit,1)];
 
   if ~quiet
@@ -38,11 +39,11 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
   end
 
   for itn = 1:maxit
-    v     = A'*q + shift*p;                       % v = A'q
+    v     = A'*q + shift*p;            % v = A'q
     pnorm = norm(p);
     vnorm = norm(v);
 
-    if vnorm <= Anorm*pnorm*eps         % A seems to be singular
+    if vnorm <= Anorm*pnorm*eps        % A seems to be singular
        inform = 4;
        break
     end
@@ -51,7 +52,7 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
     x     = x + alpha*p;
     r     = r - alpha*q;
     s     = s - alpha*v;
-    w     = A*s;                        % w = As
+    w     = A*s;                       % w = As
    
     snorm = norm(s);
     xnorm = norm(x);
@@ -63,18 +64,19 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
 
     test1 = rnorm/(Anorm*xnorm + bnorm);
     test2 = snorm/(Anorm*rnorm + 1e-99);
-    str1  = sprintf('%6g %12.5e %13.3e', itn,x(1),test1);
-    str2  = sprintf('%13.1e %10.1e %10.1e', test2,Anorm,xnorm);
-    str   = [str1 str2];
+
     if ~quiet
+       str1 = sprintf('%6g %12.5e %13.3e', itn,x(1),test1);
+       str2 = sprintf('%13.1e %10.1e %10.1e', test2,Anorm,xnorm);
+       str  = [str1 str2];
       fprintf('\n %s', str)
     end
     
-    if test1 <= tol   % We have solved Ax = b
+    if test1 <= tol                    % We have solved Ax = b
        inform = 1;
        break
     end
-    if test2 <= tol   % We have solved singular min ||Ax - b||
+    if test2 <= tol                    % We have solved min ||Ax - b||
        inform = 2;
        break
     end
@@ -86,8 +88,8 @@ function [x,inform,resvec,lsvec] = crls(A,b,shift,tol,maxit,quiet)
     q      = w + beta*q;               % q = Ap
   end
 
-  resvec = resvec(1:itn+1);            % resvec(itn+2:end) = [];
-  lsvec  =  lsvec(1:itn+1);            %  lsvec(itn+2:end) = [];
+  resvec = resvec(1:itn+1);
+  lsvec  =  lsvec(1:itn+1);
   if ~quiet
     disp(' ')
   end
