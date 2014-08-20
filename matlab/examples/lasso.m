@@ -63,7 +63,7 @@ end
 % Initialize Data.
 rng(0, 'twister')
 
-A = randn(m, n);% + 100 * randn(m, n) .* (rand(m, n) > 0.9);
+A = randn(m, n);
 b = A * ((rand(n, 1) > 0.8) .* randn(n, 1)) + 0.1 * randn(m, 1);
 lambda = 1 / 3 * max(abs(A' * b));
 
@@ -78,10 +78,11 @@ params.quiet = quiet;
 params.MAXITR = 1000;
 params.RELTOL = 1e-3;
 params.ABSTOL = 1e-4;
+params.indirect = true;
 
 % Solve using POGS.
 tic
-[x_pogs, y, ~, n_iter] = pogs(prox_f, prox_g, obj_fn, sparse(A), params);
+[x_pogs, y, ~, n_iter] = pogs(prox_f, prox_g, obj_fn, (A), params);
 time_pogs = toc;
 
 % Solve using CVX.
