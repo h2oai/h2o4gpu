@@ -28,8 +28,6 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 // Proximal Operator Graph Solver.
 template <typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data) {
-  event_pair ep;
-  start_timer(&ep);
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kDeltaMax = static_cast<T>(2);
