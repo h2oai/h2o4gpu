@@ -13,7 +13,6 @@
 #include "matrix_util.h"
 #include "pogs.h"
 #include "sinkhorn_knopp.cuh"
-#include "mp1-util.h"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -91,25 +90,15 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
 
-
-  printf("init %f\n", stop_timer(&ep));
-  start_timer(&ep);
-
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
     cml::matrix_memcpy(&A, pogs_data->A.val);
-    printf("memcpy %f\n", stop_timer(&ep));
-    start_timer(&ep);
     err = Equilibrate(&A, &d, &e);
-    printf("equi %f\n", stop_timer(&ep));
-    start_timer(&ep);
 
     if (!err) {
       // Compuate A^TA or AA^T.
       cublasOperation_t op_type = m >= n ? CUBLAS_OP_T : CUBLAS_OP_N;
       cml::blas_syrk(hdl, CUBLAS_FILL_MODE_LOWER, op_type, kOne, &A, kZero, &L);
-      printf("syrk %f\n", stop_timer(&ep));
-      start_timer(&ep);
       // Scale A.
       cml::vector<T> diag_L = cml::matrix_diagonal(&L);
       T mean_diag = cml::blas_asum(hdl, &diag_L) / static_cast<T>(min_dim);
@@ -120,15 +109,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
                      (cml::blas_nrm2(hdl, &e) * sqrt(static_cast<T>(m))));
       cml::blas_scal(hdl, kOne / (factor * sqrt(sqrt_mean_diag)), &d);
       cml::blas_scal(hdl, factor / sqrt(sqrt_mean_diag), &e);
-      printf("scaling %f\n", stop_timer(&ep));
-      start_timer(&ep);
 
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T)
       cml::vector_add_constant(&diag_L, kOne);
       cml::linalg_cholesky_decomp(hdl, &L);
-      printf("chol %f\n", stop_timer(&ep));
-      start_timer(&ep);
-
     }
   }
 
@@ -139,9 +123,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
     thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
         g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   }
-
-  printf("transf %f\n", stop_timer(&ep));
-  start_timer(&ep);
 
   // Signal start of execution.
   if (!pogs_data->quiet)
@@ -211,7 +192,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
         cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
         nrm_r = cml::blas_nrm2(hdl, &y12);
         exact = true;
-        printf("a\n");
       }
     } else {
       cml::blas_axpy(hdl, -kOne, &zprev, &z12);
@@ -221,7 +201,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
         cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
         nrm_s = rho * cml::blas_nrm2(hdl, &x12);
         exact = true;
-        printf("b\n");
       }
     }
 
@@ -239,14 +218,12 @@ int Pogs(PogsData<T, M> *pogs_data) {
         cml::blas_scal(hdl, 1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
-        printf("+rho %e\n", rho);
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         cml::blas_scal(hdl, delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
-        printf("-rho %e\n", rho);
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {
@@ -254,8 +231,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
   }
-  printf("iter %f\n", stop_timer(&ep));
-  start_timer(&ep);
 
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);
@@ -284,8 +259,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
-  printf("outp %f\n", stop_timer(&ep));
-  start_timer(&ep);
 
   return err;
 }
