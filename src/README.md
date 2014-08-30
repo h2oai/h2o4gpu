@@ -47,10 +47,11 @@ The function `I(.)` is the indicator function, taking on the value 0 if the cond
 
 Examples
 --------
-See `test.cpp` for examples of how to use the solver. We have included five classes of problems:
+See the `<pogs>/examples/cpp/` directory for examples of how to use the solver. We have included six classes of problems:
 
   + Non-negative least squares
   + Inequality constrained linear program
   + Equality constrained linear program
   + Support vector machine
   + Lasso
+  + Logistic regression

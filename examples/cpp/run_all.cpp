@@ -15,7 +15,7 @@ int main() {
 //  printf("Solver Time: %e sec\n", t);
 
   printf("\nLogistic Regression.\n");
-  t = LogisticRegression<real_t>(1000000, 2000);
+  t = Logistic<real_t>(1000, 100);
   printf("Solver Time: %e sec\n", t);
 
 //  printf("\nLinear Program in Equality Form.\n");

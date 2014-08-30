@@ -95,6 +95,7 @@ MAXITR = get_or_default(params, 'MAXITR', 10000);
 quiet = get_or_default(params, 'quiet', false);
 norml = get_or_default(params, 'norml', true);
 ada_rho = get_or_default(params, 'adaptive_rho', true);
+indirect = get_or_default(params, 'indirect', false);
 approx_res = get_or_default(params, 'approx_res', false);
 
 L   = get_or_default(factors, 'L', []);
@@ -201,7 +202,20 @@ for iter = 0:MAXITR-1
   % Project onto graph of {(x, y) \in R^{n + m} | y = Ax}, updating
   %   (x^{k+1}, y^{k+1}) = Pi_A(x^{k+1/2} + \tilde x^k, 
   %                             y^{k+1/2} + \tilde y^k)
-  [z, L, D, P] = project_graph(z12, A, L, D, P);
+  if indirect
+    if iter == 0
+      maxit = 100;
+    else
+      maxit = 5;
+    end
+    if approx_res
+      r = A * x12 - y12;
+    end
+    x = x12 + crls(A, -r, 1, 1e-4, maxit, quiet);
+    z = [x; A * x];
+  else
+    [z, L, D, P] = project_graph(z12, A, L, D, P);
+  end
   z = alpha * z + (1 - alpha) * zprev;
 
   if ~quiet && iter == 0
