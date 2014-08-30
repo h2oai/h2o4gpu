@@ -10,6 +10,8 @@
 #endif
 #include "prox_lib.h"
 
+enum SP_FORMAT{ CSR, CSC };
+
 // Data structure for input to Pogs().
 template <typename T, typename M>
 struct PogsData {
@@ -49,11 +51,13 @@ struct Dense {
 };
 
 // Sparse matrix type.
-template <typename T>
+template <typename T, SP_FORMAT F>
 struct Sparse {
+  static const SP_FORMAT Fmt = F;
   T *val;
-  size_t *col_ptr;
-  size_t *row_ind;
+  int *ptr;
+  int *ind;
+  Sparse(T *val, int *ptr, int *ind) : val(val), ptr(ptr), ind(ind) { };
 };
 
 // Factor allocation and freeing.
@@ -63,11 +67,11 @@ int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
 template <typename T, CBLAS_ORDER O>
 void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
 
-template <typename T>
-int AllocSparseFactors(PogsData<T, Sparse<T> > *pogs_data);
+template <typename T, SP_FORMAT F>
+int AllocSparseFactors(PogsData<T, Sparse<T, F> > *pogs_data);
 
-template <typename T>
-void FreeSparseFactors(PogsData<T, Sparse<T> > *pogs_data);
+template <typename T, SP_FORMAT F>
+void FreeSparseFactors(PogsData<T, Sparse<T, F> > *pogs_data);
 
 #endif  // POGS_H_
 
