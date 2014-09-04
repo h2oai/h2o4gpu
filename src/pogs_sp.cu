@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "_interface_defs.h"
+#include "cml/cgls.h"
 #include "cml/cml_blas.h"
 #include "cml/cml_linalg.h"
 #include "cml/cml_csrmat.h"
@@ -31,8 +32,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
 
   // Create cuBLAS hdl.
-  cublasHandle_t hdl;
+  cublasHandle_t b_hdl;
   cublasCreate(&hdl);
+  cusparseHandle_t s_hdl;
+  cusparseCreate(&shdl);
 
   // Allocate data for ADMM variables.
   bool pre_process = true;
@@ -42,16 +45,16 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::spmat<T, M::Fmt> A;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
-    pre_process = rho == 0;
+    pre_process = (rho == 0);
     if (pre_process)
       rho = pogs_data->rho;
     de = cml::vector_view_array(pogs_data->factors.val + 1, m + n);
     z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    A = cml::spmat_view_array<T, M::Fmt>(
-        pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, 
-        pogs_data->factors.ptr, pogs_data->factors.ind, m, n);
+    A = cml::spmat<T, M::Fmt>(pogs_data->factors.val + 1 + 3 * (m + n),
+        pogs_data->factors.ind, pogs_data->factors.ptr, m, n,
+        pogs_data->factors.nnz);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
@@ -60,7 +63,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
-      z12.data == 0 || A.data == 0 || A.ind == 0 || A.ptr == 0)
+      z12.data == 0 || A.val == 0 || A.ind == 0 || A.ptr == 0)
     err = 1;
 
   // Create views for x and y components.
@@ -76,12 +79,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::spmat_memcpy(&A, pogs_data->A.val, pogs_data->A.ind, pogs_data->A.ptr);
     err = Equilibrate(&A, &d, &e);
 
-  // Scale f and g to account for diagonal scaling e and d.
-  if (!err) {
-    thrust::transform(f.begin(), f.end(), thrust::device_pointer_cast(d.data),
-        f.begin(), ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
-    thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
-        g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
+    // Scale f and g to account for diagonal scaling e and d.
+    if (!err) {
+      thrust::transform(f.begin(), f.end(), thrust::device_pointer_cast(d.data),
+          f.begin(), ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
+      thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
+          g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
+    }
   }
 
   // Signal start of execution.
@@ -100,17 +104,17 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
-    cml::blas_axpy(hdl, -kOne, &zt, &z);
+    cml::blas_axpy(b_hdl, -kOne, &zt, &z);
     ProxEval(g, rho, x.data, x.stride, x12.data, x12.stride);
     ProxEval(f, rho, y.data, y.stride, y12.data, y12.stride);
 
     // Compute dual variable.
     T nrm_r = 0, nrm_s = 0;
-    cml::blas_axpy(hdl, -kOne, &z12, &z);
-    cml::blas_dot(hdl, &z, &z12, &gap);
+    cml::blas_axpy(b_hdl, -kOne, &z12, &z);
+    cml::blas_dot(b_hdl, &z, &z12, &gap);
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
-    T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(hdl, &z12);
-    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
+    T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(b_hdl, &z12);
+    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(b_hdl, &z);
 
     if (converged)
       break;
@@ -119,31 +123,31 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
 
     // Apply over relaxation.
-    cml::blas_scal(hdl, kAlpha, &z);
-    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
+    cml::blas_scal(b_hdl, kAlpha, &z);
+    cml::blas_axpy(b_hdl, kOne - kAlpha, &zprev, &z);
 
     // Update dual variable.
-    cml::blas_axpy(hdl, kAlpha, &z12, &zt);
-    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
-    cml::blas_axpy(hdl, -kOne, &z, &zt);
+    cml::blas_axpy(b_hdl, kAlpha, &z12, &zt);
+    cml::blas_axpy(b_hdl, kOne - kAlpha, &zprev, &zt);
+    cml::blas_axpy(b_hdl, -kOne, &z, &zt);
 
     bool exact = false;
     if (m >= n) {
       cml::vector_memcpy(&zprev, &z12);
-      cml::blas_axpy(hdl, -kOne, &z, &zprev);
-      nrm_r = cml::blas_nrm2(hdl, &zprev);
+      cml::blas_axpy(b_hdl, -kOne, &z, &zprev);
+      nrm_r = cml::blas_nrm2(b_hdl, &zprev);
       if (nrm_s < eps_dua && nrm_r < eps_pri) {
-        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
-        nrm_r = cml::blas_nrm2(hdl, &y12);
+        cml::blas_gemv(b_hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
+        nrm_r = cml::blas_nrm2(b_hdl, &y12);
         exact = true;
       }
     } else {
-      cml::blas_axpy(hdl, -kOne, &zprev, &z12);
-      cml::blas_axpy(hdl, -kOne, &z, &zprev);
-      nrm_s = rho * cml::blas_nrm2(hdl, &zprev);
+      cml::blas_axpy(b_hdl, -kOne, &zprev, &z12);
+      cml::blas_axpy(b_hdl, -kOne, &z, &zprev);
+      nrm_s = rho * cml::blas_nrm2(b_hdl, &zprev);
       if (nrm_r < eps_pri && nrm_s < eps_dua) {
-        cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
-        nrm_s = rho * cml::blas_nrm2(hdl, &x12);
+        cml::blas_gemv(b_hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
+        nrm_s = rho * cml::blas_nrm2(b_hdl, &x12);
         exact = true;
       }
     }
@@ -159,13 +163,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
-        cml::blas_scal(hdl, 1 / delta, &zt);
+        cml::blas_scal(b_hdl, 1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
-        cml::blas_scal(hdl, delta, &zt);
+        cml::blas_scal(b_hdl, delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {

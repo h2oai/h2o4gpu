@@ -10,7 +10,8 @@
 #endif
 #include "prox_lib.h"
 
-enum SP_FORMAT{ CSR, CSC };
+enum SP_FORMAT { CSC, CSR };
+typedef int INT;
 
 // Data structure for input to Pogs().
 template <typename T, typename M>
@@ -51,13 +52,15 @@ struct Dense {
 };
 
 // Sparse matrix type.
-template <typename T, SP_FORMAT F>
+template <typename T, typename I, SP_FORMAT F>
 struct Sparse {
   static const SP_FORMAT Fmt = F;
   T *val;
-  int *ptr;
-  int *ind;
-  Sparse(T *val, int *ptr, int *ind) : val(val), ptr(ptr), ind(ind) { };
+  I *ptr;
+  I *ind;
+  I nnz;
+  Sparse(T *val, I *ptr, I *ind, I nnz)
+      : val(val), ptr(ptr), ind(ind), nnz(nnz) { };
 };
 
 // Factor allocation and freeing.

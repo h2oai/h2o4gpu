@@ -3,7 +3,6 @@
 #include <thrust/transform.h>
 
 #include <algorithm>
-#include <vector>
 
 #include "_interface_defs.h"
 #include "cml/cml_blas.cuh"
