@@ -47,8 +47,8 @@ double Lasso(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  Dense<T, CblasRowMajor> A_(A.data());
-  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m, n);
+  Dense<T, ROW> A_(A.data());
+  PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 

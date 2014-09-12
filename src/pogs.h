@@ -2,16 +2,9 @@
 #define POGS_H_
 
 #include <vector>
-
-#if defined(__CUDACC__) || defined(__CUDA)
-#include "cml/cblas.h"
-#else
-#include "gsl/cblas.h"
-#endif
 #include "prox_lib.h"
 
-enum SP_FORMAT { CSC, CSR };
-typedef int INT;
+enum POGS_ORD { COL, ROW };
 
 // Data structure for input to Pogs().
 template <typename T, typename M>
@@ -44,17 +37,17 @@ template <typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data);
 
 // Dense matrix type.
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 struct Dense {
-  static const CBLAS_ORDER Ord = O;
+  static const POGS_ORD Ord = O;
   T *val;
   Dense(T *val) : val(val) { }; 
 };
 
 // Sparse matrix type.
-template <typename T, typename I, SP_FORMAT F>
+template <typename T, typename I, POGS_ORD O>
 struct Sparse {
-  static const SP_FORMAT Fmt = F;
+  static const POGS_ORD Ord = O;
   T *val;
   I *ptr;
   I *ind;
@@ -64,17 +57,17 @@ struct Sparse {
 };
 
 // Factor allocation and freeing.
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
 
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data);
 
-template <typename T, SP_FORMAT F>
-int AllocSparseFactors(PogsData<T, Sparse<T, F> > *pogs_data);
+template <typename T, typename I, POGS_ORD O>
+int AllocSparseFactors(PogsData<T, Sparse<T, I, O> > *pogs_data);
 
-template <typename T, SP_FORMAT F>
-void FreeSparseFactors(PogsData<T, Sparse<T, F> > *pogs_data);
+template <typename T, typename I, POGS_ORD O>
+void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data);
 
 #endif  // POGS_H_
 

@@ -34,6 +34,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kTau = static_cast<T>(0.8);
   const T kAlpha = static_cast<T>(1.7);
   const T kKappa = static_cast<T>(0.9);
+  const CBLAS_ORDER Ord = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
 
@@ -53,7 +54,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
-  cml::matrix<T, M::Ord> A, L;
+  cml::matrix<T, Ord> A, L;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
     compute_factors = rho == 0;
@@ -63,16 +64,16 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    L = cml::matrix_view_array<T, M::Ord>(
+    L = cml::matrix_view_array<T, Ord>(
         pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
-    A = cml::matrix_view_array<T, M::Ord>(
+    A = cml::matrix_view_array<T, Ord>(
         pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
     zt = cml::vector_calloc<T>(m + n);
-    L = cml::matrix_alloc<T, M::Ord>(min_dim, min_dim);
-    A = cml::matrix_alloc<T, M::Ord>(m, n);
+    L = cml::matrix_alloc<T, Ord>(min_dim, min_dim);
+    A = cml::matrix_alloc<T, Ord>(m, n);
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
@@ -260,7 +261,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   return err;
 }
 
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n;
   size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
@@ -273,36 +274,36 @@ int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
     return 1;
 }
 
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   cudaFree(pogs_data->factors.val);
 }
 
 // Declarations.
-template int Pogs<double, Dense<double, CblasRowMajor> >
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template int Pogs<double, Dense<double, CblasColMajor> >
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template int Pogs<float, Dense<float, CblasRowMajor> >
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template int Pogs<float, Dense<float, CblasColMajor> >
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template int Pogs<double, Dense<double, ROW> >
+    (PogsData<double, Dense<double, ROW> > *);
+template int Pogs<double, Dense<double, COL> >
+    (PogsData<double, Dense<double, COL> > *);
+template int Pogs<float, Dense<float, ROW> >
+    (PogsData<float, Dense<float, ROW> > *);
+template int Pogs<float, Dense<float, COL> >
+    (PogsData<float, Dense<float, COL> > *);
 
-template int AllocDenseFactors<double, CblasRowMajor>
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template int AllocDenseFactors<double, CblasColMajor>
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template int AllocDenseFactors<float, CblasRowMajor>
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template int AllocDenseFactors<float, CblasColMajor>
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template int AllocDenseFactors<double, ROW>
+    (PogsData<double, Dense<double, ROW> > *);
+template int AllocDenseFactors<double, COL>
+    (PogsData<double, Dense<double, COL> > *);
+template int AllocDenseFactors<float, ROW>
+    (PogsData<float, Dense<float, ROW> > *);
+template int AllocDenseFactors<float, COL>
+    (PogsData<float, Dense<float, COL> > *);
 
-template void FreeDenseFactors<double, CblasRowMajor>
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template void FreeDenseFactors<double, CblasColMajor>
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template void FreeDenseFactors<float, CblasRowMajor>
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template void FreeDenseFactors<float, CblasColMajor>
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template void FreeDenseFactors<double, ROW>
+    (PogsData<double, Dense<double, ROW> > *);
+template void FreeDenseFactors<double, COL>
+    (PogsData<double, Dense<double, COL> > *);
+template void FreeDenseFactors<float, ROW>
+    (PogsData<float, Dense<float, ROW> > *);
+template void FreeDenseFactors<float, COL>
+    (PogsData<float, Dense<float, COL> > *);
 

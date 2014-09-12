@@ -33,8 +33,8 @@ double Svm(size_t m, size_t n) {
     A[i * (n + 1) + n] = -sign_yi;
   }
 
-  Dense<T, CblasRowMajor> A_(A.data());
-  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m, n + 1);
+  Dense<T, ROW> A_(A.data());
+  PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n + 1);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 

@@ -25,8 +25,8 @@ double LpIneq(size_t m, size_t n) {
   for (unsigned int i = static_cast<unsigned int>((m - n) * n); i < m * n; ++i)
     A[i] = (i - (m - n) * n) % (n + 1) == 0 ? -1 : 0;
 
-  Dense<T, CblasRowMajor> A_(A.data());
-  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m, n);
+  Dense<T, ROW> A_(A.data());
+  PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 

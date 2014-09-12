@@ -26,8 +26,8 @@ double LpEq(size_t m, size_t n) {
   for (unsigned int i = 0; i < (m + 1) * n; ++i)
     A[i] = u_dist(generator) / static_cast<T>(n);
 
-  Dense<T, CblasRowMajor> A_(A.data());
-  PogsData<T, Dense<T, CblasRowMajor>> pogs_data(A_, m + 1, n);
+  Dense<T, ROW> A_(A.data());
+  PogsData<T, Dense<T, ROW>> pogs_data(A_, m + 1, n);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 

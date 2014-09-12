@@ -21,6 +21,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kTau = static_cast<T>(0.8);
   const T kAlpha = static_cast<T>(1.7);
   const T kKappa = static_cast<T>(0.9);
+  const CBLAS_ORDER Ord = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
 
@@ -36,8 +37,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
   gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
-  gsl::matrix<T, M::Ord> A, L;
-  gsl::matrix<T, M::Ord> C = gsl::matrix_calloc<T, M::Ord>(m + n, 2);
+  gsl::matrix<T, Ord> A, L;
   if (pogs_data->factors.val != 0) {
     compute_factors = pogs_data->factors.val[0] == 0;
     if (!compute_factors)
@@ -46,40 +46,32 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = gsl::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = gsl::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    L = gsl::matrix_view_array<T, M::Ord>(
+    L = gsl::matrix_view_array<T, Ord>(
         pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
-    A = gsl::matrix_view_array<T, M::Ord>(
+    A = gsl::matrix_view_array<T, Ord>(
         pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = gsl::vector_calloc<T>(m + n);
     z = gsl::vector_calloc<T>(m + n);
     zt = gsl::vector_calloc<T>(m + n);
-    L = gsl::matrix_calloc<T, M::Ord>(min_dim, min_dim);
-    A = gsl::matrix_calloc<T, M::Ord>(m, n);
+    L = gsl::matrix_calloc<T, Ord>(min_dim, min_dim);
+    A = gsl::matrix_calloc<T, Ord>(m, n);
   }
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
-      z12.data == 0 || A.data == 0 || L.data == 0 || C.data == 0)
+      z12.data == 0 || A.data == 0 || L.data == 0)
     err = 1;
 
   // Create views for x and y components.
-  gsl::matrix<T, M::Ord> Cx = gsl::matrix_submatrix(&C, 0, 0, n, 2);
-  gsl::matrix<T, M::Ord> Cy = gsl::matrix_submatrix(&C, n, 0, m, 2);
   gsl::vector<T> d = gsl::vector_subvector(&de, 0, m);
   gsl::vector<T> e = gsl::vector_subvector(&de, m, n);
   gsl::vector<T> x = gsl::vector_subvector(&z, 0, n);
   gsl::vector<T> y = gsl::vector_subvector(&z, n, m);
   gsl::vector<T> x12 = gsl::vector_subvector(&z12, 0, n);
   gsl::vector<T> y12 = gsl::vector_subvector(&z12, n, m);
-  gsl::vector<T> cz0 = gsl::matrix_column(&C, 0);
-  gsl::vector<T> cx0 = gsl::vector_subvector(&cz0, 0, n);
-  gsl::vector<T> cy0 = gsl::vector_subvector(&cz0, n, m);
-  gsl::vector<T> cz1 = gsl::matrix_column(&C, 1);
-  gsl::vector<T> cx1 = gsl::vector_subvector(&cz1, 0, n);
-  gsl::vector<T> cy1 = gsl::vector_subvector(&cz1, n, m);
   
   if (compute_factors && !err) {
     // Equilibrate A.
-    gsl::matrix<T, M::Ord> Ain = gsl::matrix_view_array<T, M::Ord>(
+    gsl::matrix<T, Ord> Ain = gsl::matrix_view_array<T, Ord>(
         pogs_data->A.val, m, n);
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
@@ -127,53 +119,43 @@ int Pogs(PogsData<T, M> *pogs_data) {
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * pogs_data->abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
+  bool converged = false;
 
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     gsl::vector_memcpy(&zprev, &z);
 
     // Evaluate proximal operators.
-    gsl::vector_memcpy(&cz0, &z);
-    gsl::blas_axpy(-kOne, &zt, &cz0);
-    ProxEval(g, rho, cx0.data, cx0.stride, x12.data, 1);
-    ProxEval(f, rho, cy0.data, cy0.stride, y12.data, 1);
+    gsl::blas_axpy(-kOne, &zt, &z);
+    ProxEval(g, rho, x.data, x.stride, x12.data, x12.stride);
+    ProxEval(f, rho, y.data, y.stride, y12.data, y12.stride);
 
     // Compute gap, objective and tolerances.
-    T gap, nrm_r, nrm_s;
-    gsl::blas_axpy(-kOne, &z12, &cz0);
-    gsl::blas_dot(&cz0, &z12, &gap);
-    gap = std::abs(gap * rho);
+    T gap, nrm_r = 0, nrm_s = 0;
+    gsl::blas_axpy(-kOne, &z12, &z);
+    gsl::blas_dot(&z, &z12, &gap);
+    gap = rho * std::fabs(gap);
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&z12);
-    T eps_dual = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&cz0);
-    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::abs(pogs_data->optval);
+    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
+    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
 
-    // Store dual variable
-    if (pogs_data->l != 0)
-      gsl::vector_memcpy(pogs_data->l, &cy0);
+    if (converged)
+      break;
 
     // Project and Update Dual Variables.
     if (m >= n) {
-      gsl::blas_gemv(CblasTrans, kOne, &A, &cy0, kOne, &cx0);
-      nrm_s = rho * gsl::blas_nrm2(&cx0);
-      gsl::linalg_cholesky_svx(&L, &cx0);
-      gsl::vector_memcpy(&cy0, &y);
-      gsl::vector_memcpy(&cz1, &z12);
-      gsl::blas_gemm(CblasNoTrans, CblasNoTrans, -kOne, &A, &Cx, kOne, &Cy);
-      nrm_r = gsl::blas_nrm2(&cy1);
-      gsl::vector_memcpy(&y, &cy0);
-      gsl::blas_axpy(-kOne, &cx0, &x);
+      gsl::blas_gemv(CblasTrans, -kOne, &A, &y, -kOne, &x);
+      nrm_s = rho * gsl::blas_nrm2(&x);
+      gsl::linalg_cholesky_svx(&L, &x);
+      gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
+      gsl::blas_axpy(kOne, &zprev, &z);
     } else {
       gsl::vector_memcpy(&z, &z12);
       gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, -kOne, &y);
       nrm_r = gsl::blas_nrm2(&y);
       gsl::linalg_cholesky_svx(&L, &y);
-      gsl::vector_memcpy(&cy1, &y);
-      gsl::vector_memcpy(&cx1, &x12);
-      gsl::blas_scal(-kOne, &cy0);
-      gsl::blas_gemm(CblasTrans, CblasNoTrans, -kOne, &A, &Cy, kOne, &Cx);
-      nrm_s = rho * gsl::blas_nrm2(&cx0);
-      gsl::vector_memcpy(&x, &cx1);
-      gsl::blas_axpy(kOne, &y12, &y);
+      gsl::blas_gemv(CblasTrans, -kOne, &A, &y, kZero, &x);
+      gsl::blas_axpy(kOne, &z12, &z);
     }
 
     // Apply over relaxation.
@@ -185,48 +167,72 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::blas_axpy(kOne - kAlpha, &zprev, &zt);
     gsl::blas_axpy(-kOne, &z, &zt);
 
+    bool exact = false;
+    if (m >= n) {
+      gsl::vector_memcpy(&zprev, &z12);
+      gsl::blas_axpy(-kOne, &z, &zprev);
+      nrm_r = gsl::blas_nrm2(&zprev);
+      if (nrm_s < eps_dua && nrm_r < eps_pri) {
+        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x12, -kOne, &y12);
+        nrm_r = gsl::blas_nrm2(&y12);
+        exact = true;
+      }
+    } else {
+      gsl::blas_axpy(-kOne, &zprev, &z12);
+      gsl::blas_axpy(-kOne, &z, &zprev);
+      nrm_s = rho * gsl::blas_nrm2(&zprev);
+      if (nrm_r < eps_pri && nrm_s < eps_dua) {
+        gsl::blas_gemv(CblasTrans, kOne, &A, &y12, kOne, &x12);
+        nrm_s = rho * gsl::blas_nrm2(&x12);
+        exact = true;
+      }
+    }
+
     // Evaluate stopping criteria.
-    bool converged = nrm_r < eps_pri && nrm_s < eps_dual && gap < eps_gap;
+    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-          k, nrm_r, eps_pri, nrm_s, eps_dual, gap, eps_gap, pogs_data->optval);
-    if (converged)
-      break;
+          k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);
 
     // Rescale rho.
-    if (pogs_data->adaptive_rho) {
-      if (nrm_s < xi * eps_dual && nrm_r > xi * eps_pri &&
+    if (pogs_data->adaptive_rho && !converged) {
+      if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
         gsl::blas_scal(1 / delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         ku = k;
-        printf("+rho %e\n", rho);
-      } else if (nrm_s > xi * eps_dual && nrm_r < xi * eps_pri &&
+      } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         gsl::blas_scal(delta, &zt);
         delta = std::min(kGamma * delta, kDeltaMax);
         kd = k;
-        printf("-rho %e\n", rho);
-      } else if (nrm_s < xi * eps_dual && nrm_r < xi * eps_pri) {
+      } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {
         delta = std::max(delta / kGamma, kDeltaMin);
       }
     }
   }
-  // Copy results to output and scale.
-  for (unsigned int i = 0; i < m && pogs_data->y != 0 && !err; ++i)
-    pogs_data->y[i] = gsl::vector_get(&y12, i) / gsl::vector_get(&d, i);
-  for (unsigned int j = 0; j < n && pogs_data->x != 0 && !err; ++j)
-    pogs_data->x[j] = gsl::vector_get(&x12, j) * gsl::vector_get(&e, j);
-  for (unsigned int i = 0; i < m && pogs_data->l != 0 && !err; ++i)
-    pogs_data->l[i] = rho * pogs_data->l[i] * gsl::vector_get(&d, i);
+  // Scale x, y and l for output.
+  gsl::vector_div(&y12, &d);
+  gsl::vector_mul(&x12, &e);
+  gsl::vector_mul(&y, &d);
+  gsl::blas_scal(rho, &y);
+
+  // Copy results to output.
+  if (pogs_data->y != 0 && !err)
+    gsl::vector_memcpy(pogs_data->y, &y12);
+  if (pogs_data->x != 0 && !err)
+    gsl::vector_memcpy(pogs_data->x, &x12);
+  if (pogs_data->l != 0 && !err)
+    gsl::vector_memcpy(pogs_data->l, &y);
 
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
     pogs_data->factors.val[0] = rho;
+    gsl::vector_memcpy(&z, &zprev);
   } else {
     gsl::vector_free(&de);
     gsl::vector_free(&z);
@@ -234,13 +240,12 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::matrix_free(&L);
     gsl::matrix_free(&A);
   }
-  gsl::matrix_free(&C);
   gsl::vector_free(&z12);
   gsl::vector_free(&zprev);
   return err;
 }
 
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n;
   size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
@@ -251,36 +256,36 @@ int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
     return 1;
 }
 
-template <typename T, CBLAS_ORDER O>
+template <typename T, POGS_ORD O>
 void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   delete [] pogs_data->factors.val;
 }
 
 // Declarations.
-template int Pogs<double, Dense<double, CblasRowMajor> >
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template int Pogs<double, Dense<double, CblasColMajor> >
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template int Pogs<float, Dense<float, CblasRowMajor> >
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template int Pogs<float, Dense<float, CblasColMajor> >
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template int Pogs<double, Dense<double, ROW> >
+    (PogsData<double, Dense<double, ROW> > *);
+template int Pogs<double, Dense<double, COL> >
+    (PogsData<double, Dense<double, COL> > *);
+template int Pogs<float, Dense<float, ROW> >
+    (PogsData<float, Dense<float, ROW> > *);
+template int Pogs<float, Dense<float, COL> >
+    (PogsData<float, Dense<float, COL> > *);
 
-template int AllocDenseFactors<double, CblasRowMajor>
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template int AllocDenseFactors<double, CblasColMajor>
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template int AllocDenseFactors<float, CblasRowMajor>
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template int AllocDenseFactors<float, CblasColMajor>
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template int AllocDenseFactors<double, ROW>
+    (PogsData<double, Dense<double, ROW> > *);
+template int AllocDenseFactors<double, COL>
+    (PogsData<double, Dense<double, COL> > *);
+template int AllocDenseFactors<float, ROW>
+    (PogsData<float, Dense<float, ROW> > *);
+template int AllocDenseFactors<float, COL>
+    (PogsData<float, Dense<float, COL> > *);
 
-template void FreeDenseFactors<double, CblasRowMajor>
-    (PogsData<double, Dense<double, CblasRowMajor> > *);
-template void FreeDenseFactors<double, CblasColMajor>
-    (PogsData<double, Dense<double, CblasColMajor> > *);
-template void FreeDenseFactors<float, CblasRowMajor>
-    (PogsData<float, Dense<float, CblasRowMajor> > *);
-template void FreeDenseFactors<float, CblasColMajor>
-    (PogsData<float, Dense<float, CblasColMajor> > *);
+template void FreeDenseFactors<double, ROW>
+    (PogsData<double, Dense<double, ROW> > *);
+template void FreeDenseFactors<double, COL>
+    (PogsData<double, Dense<double, COL> > *);
+template void FreeDenseFactors<float, ROW>
+    (PogsData<float, Dense<float, ROW> > *);
+template void FreeDenseFactors<float, COL>
+    (PogsData<float, Dense<float, COL> > *);
 
