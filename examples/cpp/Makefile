@@ -9,7 +9,7 @@ CXX=g++
 CXXFLAGS=-g -O3 -I$(POGSROOT) -fopenmp -std=c++11 -Wall -Wconversion  
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas
+CULDFLAGS_=-lcudart -lcublas -lcusparse
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -29,8 +29,10 @@ cpu: run_all.cpp examples.h $(EXSRC)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
-	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o $(CULDFLAGS)
+	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_sp_cu.o pogs_cu_link.o
+	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $< \
+	$(POGSROOT)/pogs_sp_cu.o $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o $(POGSROOT)/cml.o \
+	$(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run
