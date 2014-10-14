@@ -4,10 +4,27 @@
 #include <cublas_v2.h>
 
 #include "cml_blas.cuh"
-#include "cml_math.cuh"
 #include "cml_matrix.cuh"
 #include "cml_utils.cuh"
 #include "cml_vector.cuh"
+
+namespace {
+__device__ double math_sqrt(double x) {
+  return sqrt(x);
+}
+
+__device__ float math_sqrt(float x) {
+  return sqrtf(x);
+}
+
+__device__ double math_rsqrt(double x) {
+  return rsqrt(x);
+}
+
+__device__ float math_rsqrt(float x) {
+  return rsqrtf(x);
+}
+}  // namespace
 
 namespace cml {
 

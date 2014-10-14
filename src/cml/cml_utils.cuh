@@ -2,6 +2,7 @@
 #define CML_UTILS_CUH_
 
 #include <cublas_v2.h>
+#include <cusparse.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -12,10 +13,12 @@
 
 #define CudaCheckError(val) __CudaCE((val), __func__, __FILE__, __LINE__)
 #define CublasCheckError(val) __CublasCE((val), __func__, __FILE__, __LINE__)
+#define CusparseCheckError(val) __CuspCE((val), __func__, __FILE__, __LINE__)
 
 namespace cml {
 
 static const char* cublasGetErrorString(cublasStatus_t error);
+static const char* cusparseGetErrorString(cusparseStatus_t error);
 
 template<typename T>
 void __CudaCE(T err, const char* const func, const char* const file,
@@ -53,6 +56,40 @@ static const char* cublasGetErrorString(cublasStatus_t error) {
       return "CUBLAS_STATUS_EXECUTION_FAILED";
     case CUBLAS_STATUS_INTERNAL_ERROR:
       return "CUBLAS_STATUS_INTERNAL_ERROR";
+    default:
+      return "<unknown>";
+  }
+}
+
+template<typename T>
+void __CuspCE(T err, const char* const func, const char* const file,
+              const int line) {
+  if (err != CUSPARSE_STATUS_SUCCESS) {
+    printf("CUSPARSE error at: %s : %d\n", file, line);
+    printf("%s %s\n", cusparseGetErrorString(err), func);
+  }
+}
+
+static const char* cusparseGetErrorString(cusparseStatus_t error) {
+  switch (error) {
+    case CUSPARSE_STATUS_SUCCESS:
+      return "CUSPARSE_STATUS_SUCCESS";
+    case CUSPARSE_STATUS_NOT_INITIALIZED:
+      return "CUSPARSE_STATUS_NOT_INITIALIZED";
+    case CUSPARSE_STATUS_ALLOC_FAILED:
+      return "CUSPARSE_STATUS_ALLOC_FAILED";
+    case CUSPARSE_STATUS_INVALID_VALUE:
+      return "CUSPARSE_STATUS_INVALID_VALUE";
+    case CUSPARSE_STATUS_ARCH_MISMATCH:
+      return "CUSPARSE_STATUS_ARCH_MISMATCH";
+    case CUSPARSE_STATUS_MAPPING_ERROR:
+      return "CUSPARSE_STATUS_MAPPING_ERROR";
+    case CUSPARSE_STATUS_EXECUTION_FAILED:
+      return "CUSPARSE_STATUS_EXECUTION_FAILED";
+    case CUSPARSE_STATUS_INTERNAL_ERROR:
+      return "CUSPARSE_STATUS_INTERNAL_ERROR";
+    case CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
+      return "CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
     default:
       return "<unknown>";
   }
