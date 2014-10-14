@@ -29,7 +29,7 @@ struct PogsData {
   PogsData(const M &A, size_t m, size_t n)
       : A(A), m(m), n(n), x(0), y(0), l(0), rho(1),
         abs_tol(static_cast<T>(1e-4)), rel_tol(static_cast<T>(1e-3)),
-        max_iter(2000), quiet(false), adaptive_rho(true), factors(0) { }
+        max_iter(2000), quiet(false), adaptive_rho(true) { }
 };
 
 // Pogs solver.
@@ -41,19 +41,22 @@ template <typename T, POGS_ORD O>
 struct Dense {
   static const POGS_ORD Ord = O;
   T *val;
-  Dense(T *val) : val(val) { }; 
+  Dense(T *val) : val(val) { }
+  Dense() : val(0) { }
 };
 
 // Sparse matrix type.
 template <typename T, typename I, POGS_ORD O>
 struct Sparse {
+  typedef I I_t;
   static const POGS_ORD Ord = O;
   T *val;
   I *ptr;
   I *ind;
   I nnz;
   Sparse(T *val, I *ptr, I *ind, I nnz)
-      : val(val), ptr(ptr), ind(ind), nnz(nnz) { };
+      : val(val), ptr(ptr), ind(ind), nnz(nnz) { }
+  Sparse() : val(0), ptr(0), ind(0), nnz(0) { } 
 };
 
 // Factor allocation and freeing.

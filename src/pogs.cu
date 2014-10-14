@@ -34,7 +34,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kTau = static_cast<T>(0.8);
   const T kAlpha = static_cast<T>(1.7);
   const T kKappa = static_cast<T>(0.9);
-  const CBLAS_ORDER Ord = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
+  const CBLAS_ORDER kOrd = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
 
@@ -54,7 +54,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
-  cml::matrix<T, Ord> A, L;
+  cml::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
     compute_factors = rho == 0;
@@ -64,16 +64,16 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    L = cml::matrix_view_array<T, Ord>(
+    L = cml::matrix_view_array<T, kOrd>(
         pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
-    A = cml::matrix_view_array<T, Ord>(
+    A = cml::matrix_view_array<T, kOrd>(
         pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
     zt = cml::vector_calloc<T>(m + n);
-    L = cml::matrix_alloc<T, Ord>(min_dim, min_dim);
-    A = cml::matrix_alloc<T, Ord>(m, n);
+    L = cml::matrix_alloc<T, kOrd>(min_dim, min_dim);
+    A = cml::matrix_alloc<T, kOrd>(m, n);
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
