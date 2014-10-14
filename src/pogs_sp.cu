@@ -1,15 +1,28 @@
+#include <cusparse.h>
+#include <cublas_v2.h>
+
 #include <cmath>
 #include <algorithm>
 #include <vector>
 
 #include "_interface_defs.h"
-#include "cml/cgls.h"
-#include "cml/cml_blas.h"
-#include "cml/cml_linalg.h"
-#include "cml/cml_csrmat.h"
-#include "cml/cml_vector.h"
+#include "cml/cml_linalg.cuh"
+#include "cml/cml_spblas.cuh"
+#include "cml/cml_spmat.cuh"
+#include "cml/cml_vector.cuh"
 #include "pogs.h"
-#include "sinkhorn_knopp.h"
+#include "sinkhorn_knopp.cuh"
+
+// Apply operator to h.a and h.d.
+template <typename T, typename Op>
+struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
+  Op binary_op;
+  ApplyOp(Op binary_op) : binary_op(binary_op) { }
+  __device__ FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
+    h.a = binary_op(h.a, x); h.d = binary_op(h.d, x);
+    return h;
+  }
+};
 
 // Proximal Operator Graph Solver.
 template<typename T, typename M>
@@ -22,27 +35,32 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kKappa = static_cast<T>(0.9);
   const T kOne = static_cast<T>(1);
   const T kZero = static_cast<T>(0);
+  const T kTol = static_cast<T>(1e-4);
+  const CBLAS_ORDER kOrd = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
 
   // Extract values from pogs_data
-  size_t m = pogs_data->m, n = pogs_data->n, min_dim = std::min(m, n);
+  int m = pogs_data->m, n = pogs_data->n, min_dim = std::min(m, n);
+  int nnz = pogs_data->A.nnz;
   T rho = pogs_data->rho;
   thrust::device_vector<FunctionObj<T> > f = pogs_data->f;
   thrust::device_vector<FunctionObj<T> > g = pogs_data->g;
 
   // Create cuBLAS hdl.
   cublasHandle_t b_hdl;
-  cublasCreate(&hdl);
+  cublasCreate(&b_hdl);
   cusparseHandle_t s_hdl;
-  cusparseCreate(&shdl);
+  cusparseCreate(&s_hdl);
+  cusparseMatDescr_t descr;
+  cusparseCreateMatDescr(&descr);
 
   // Allocate data for ADMM variables.
   bool pre_process = true;
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
-  cml::spmat<T, M::Fmt> A;
+  cml::spmat<T, typename M::I_t, kOrd> A;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
     pre_process = (rho == 0);
@@ -52,19 +70,21 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    A = cml::spmat<T, M::Fmt>(pogs_data->factors.val + 1 + 3 * (m + n),
+    A = cml::spmat<T, typename M::I_t, kOrd>(
+        pogs_data->factors.val + 1 + 3 * (m + n),
         pogs_data->factors.ind, pogs_data->factors.ptr, m, n,
         pogs_data->factors.nnz);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
     zt = cml::vector_calloc<T>(m + n);
-    A = cml::spmat_alloc<T, M::Fmt>(m, n);
+    A = cml::spmat_alloc<T, typename M::I_t, kOrd>(m, n, nnz);
   }
 
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
-      z12.data == 0 || A.val == 0 || A.ind == 0 || A.ptr == 0)
+      z12.data == 0 || A.val == 0 || A.ind == 0 || A.ptr == 0) {
     err = 1;
+  }
 
   // Create views for x and y components.
   cml::vector<T> d = cml::vector_subvector(&de, 0, m);
@@ -76,16 +96,18 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   if (pre_process && !err) {
     // Copy A to device (assume input row-major).
-    cml::spmat_memcpy(&A, pogs_data->A.val, pogs_data->A.ind, pogs_data->A.ptr);
-    err = Equilibrate(&A, &d, &e);
+    cml::spmat_memcpy(s_hdl, &A, pogs_data->A.val, pogs_data->A.ind,
+        pogs_data->A.ptr);
+    cml::vector_set_all(&de, kOne);
+    // err = Equilibrate(&A, &d, &e);
+  }
 
-    // Scale f and g to account for diagonal scaling e and d.
-    if (!err) {
-      thrust::transform(f.begin(), f.end(), thrust::device_pointer_cast(d.data),
-          f.begin(), ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
-      thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
-          g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
-    }
+  // Scale f and g to account for diagonal scaling e and d.
+  if (!err) {
+    thrust::transform(f.begin(), f.end(), thrust::device_pointer_cast(d.data),
+        f.begin(), ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
+    thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e.data),
+        g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   }
 
   // Signal start of execution.
@@ -109,18 +131,30 @@ int Pogs(PogsData<T, M> *pogs_data) {
     ProxEval(f, rho, y.data, y.stride, y12.data, y12.stride);
 
     // Compute dual variable.
-    T nrm_r = 0, nrm_s = 0;
+    T nrm_r = 0, nrm_s = 0, gap;
     cml::blas_axpy(b_hdl, -kOne, &z12, &z);
     cml::blas_dot(b_hdl, &z, &z12, &gap);
+    gap = std::abs(gap);
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
+    T eps_gap = pogs_data->abs_tol + pogs_data->rel_tol *
+        cml::blas_nrm2(b_hdl, &z) * cml::blas_nrm2(b_hdl, &z12);
     T eps_pri = sqrtm_atol + pogs_data->rel_tol * cml::blas_nrm2(b_hdl, &z12);
-    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(b_hdl, &z);
+    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * 
+        cml::blas_nrm2(b_hdl, &z);
 
     if (converged)
       break;
 
     // Project and Update Dual Variables
-
+    cml::vector_memcpy(&y, &y12);
+    cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, -kOne, &A,
+        &x12, kOne, &y);
+    nrm_r = cml::blas_nrm2(b_hdl, &y);
+    cml::vector_set_all(&x, kZero);
+    cml::spblas_solve(s_hdl, b_hdl, descr, &A, kOne, &y, &x, kTol, 10, true);
+    cml::blas_axpy(b_hdl, kOne, &x12, &x);
+    cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne, &A,
+        &x, kZero, &y);
 
     // Apply over relaxation.
     cml::blas_scal(b_hdl, kAlpha, &z);
@@ -132,24 +166,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_axpy(b_hdl, -kOne, &z, &zt);
 
     bool exact = false;
-    if (m >= n) {
-      cml::vector_memcpy(&zprev, &z12);
-      cml::blas_axpy(b_hdl, -kOne, &z, &zprev);
-      nrm_r = cml::blas_nrm2(b_hdl, &zprev);
-      if (nrm_s < eps_dua && nrm_r < eps_pri) {
-        cml::blas_gemv(b_hdl, CUBLAS_OP_N, kOne, &A, &x12, -kOne, &y12);
-        nrm_r = cml::blas_nrm2(b_hdl, &y12);
-        exact = true;
-      }
-    } else {
-      cml::blas_axpy(b_hdl, -kOne, &zprev, &z12);
-      cml::blas_axpy(b_hdl, -kOne, &z, &zprev);
-      nrm_s = rho * cml::blas_nrm2(b_hdl, &zprev);
-      if (nrm_r < eps_pri && nrm_s < eps_dua) {
-        cml::blas_gemv(b_hdl, CUBLAS_OP_T, kOne, &A, &y12, kOne, &x12);
-        nrm_s = rho * cml::blas_nrm2(b_hdl, &x12);
-        exact = true;
-      }
+    cml::blas_axpy(b_hdl, -kOne, &zprev, &z12);
+    cml::blas_axpy(b_hdl, -kOne, &z, &zprev);
+    nrm_s = rho * cml::blas_nrm2(b_hdl, &zprev);
+    if (nrm_r < eps_pri && nrm_s < eps_dua) {
+      cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_TRANSPOSE, descr, kOne, &A,
+          &y12, kOne, &x12);
+      nrm_s = rho * cml::blas_nrm2(b_hdl, &x12);
+      exact = true;
     }
 
     // Evaluate stopping criteria.
@@ -164,13 +188,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         rho *= delta;
         cml::blas_scal(b_hdl, 1 / delta, &zt);
-        delta = std::min(kGamma * delta, kDeltaMax);
+        delta = kGamma * delta;
         ku = k;
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         rho /= delta;
         cml::blas_scal(b_hdl, delta, &zt);
-        delta = std::min(kGamma * delta, kDeltaMax);
+        delta = kGamma * delta;
         kd = k;
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
@@ -180,4 +204,43 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
   }
 
+  // Scale x, y and l for output.
+  cml::vector_div(&y12, &d);
+  cml::vector_mul(&x12, &e);
+  cml::vector_mul(&y, &d);
+  cml::blas_scal(b_hdl, rho, &y);
+
+  // Copy results to output.
+  if (pogs_data->y != 0 && !err)
+    cml::vector_memcpy(pogs_data->y, &y12);
+  if (pogs_data->x != 0 && !err)
+    cml::vector_memcpy(pogs_data->x, &x12);
+  if (pogs_data->l != 0 && !err)
+    cml::vector_memcpy(pogs_data->l, &y);
+
+  // Store rho and free memory.
+  if (pogs_data->factors.val != 0 && !err) {
+    cudaMemcpy(pogs_data->factors.val, &rho, sizeof(T), cudaMemcpyHostToDevice);
+    cml::vector_memcpy(&z, &zprev);
+  } else {
+    cml::vector_free(&de);
+    cml::vector_free(&z);
+    cml::vector_free(&zt);
+    cml::spmat_free(&A);
+  }
+  cml::vector_free(&z12);
+  cml::vector_free(&zprev);
+
+  return err;
 }
+
+// Declarations.
+template int Pogs<double, Sparse<double, int, COL> >
+    (PogsData<double, Sparse<double, int, COL> > *);
+template int Pogs<double, Sparse<double, int, ROW> >
+    (PogsData<double, Sparse<double, int, ROW> > *);
+template int Pogs<float, Sparse<float, int, COL> >
+    (PogsData<float, Sparse<float, int, COL> > *);
+template int Pogs<float, Sparse<float, int, ROW> >
+    (PogsData<float, Sparse<float, int, ROW> > *);
+
