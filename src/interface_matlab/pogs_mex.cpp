@@ -1,3 +1,4 @@
+#include <matrix.h>
 #include <mex.h>
 
 #include <algorithm>
@@ -193,15 +194,21 @@ int PopulateParams(const mxArray *params, PogsData<T, M> *pogs_data) {
   return 0;
 }
 
+template <typename T1, typename T2>
+void IntToInt(size_t n, const T1 *in, T2 *out) {
+  for (size_t i = 0; i < n; ++i)
+    out[i] = static_cast<T2>(in[i]);
+}
+
 // Wrapper for graph pogs. Populates pogs_data structure and calls pogs.
 template <typename T>
-void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
-  Dense<T, CblasColMajor> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
+  Dense<T, COL> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
 
   // Initialize Pogs data structure
-  PogsData<T, Dense<T, CblasColMajor> > pogs_data(A, m, n);
+  PogsData<T, Dense<T, COL> > pogs_data(A, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
@@ -241,6 +248,68 @@ void SolverWrap(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   if (num_obj > 1)
     FreeDenseFactors(&pogs_data);
+}
+
+template <typename T>
+void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  mwIndex *mw_row_ind = mxGetIr(prhs[0]);
+  mwIndex *mw_col_ptr = mxGetJc(prhs[0]);
+  T *val = reinterpret_cast<T*>(mxGetData(prhs[0]));
+  size_t m = mxGetM(prhs[0]);
+  size_t n = mxGetN(prhs[0]);
+  size_t nnz = mw_col_ptr[n];
+
+  int *row_ind = new int[nnz];
+  int *col_ptr = new int[n + 1];
+  IntToInt(nnz, mw_row_ind, row_ind);
+  IntToInt(n + 1, mw_col_ptr, col_ptr);
+
+  Sparse<T, int, COL> A(val, col_ptr, row_ind, nnz);
+
+  // Initialize Pogs data structure
+  PogsData<T, Sparse<T, int, COL> > pogs_data(A, m, n);
+  pogs_data.f.reserve(m);
+  pogs_data.g.reserve(n);
+
+  int err = 0;
+
+  unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
+//   if (num_obj > 1)
+//     err = AllocSparseFactors(&pogs_data);
+
+  // Populate parameters.
+  if (!err && nrhs == 4)
+    err = PopulateParams(prhs[3], &pogs_data);
+
+  for (unsigned int i = 0; i < num_obj && !err; ++i) {
+    pogs_data.x = reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n;
+    if (nlhs >= 2)
+      pogs_data.y = reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m;
+    if (nlhs >= 3)
+      pogs_data.l = reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m;
+
+    // Populate function objects.
+    pogs_data.f.clear();
+    pogs_data.g.clear();
+    err = PopulateFunctionObj("f", prhs[1], i, m, &pogs_data.f);
+    if (err)
+      break;
+    err = PopulateFunctionObj("g", prhs[2], i, n, &pogs_data.g);
+    if (err)
+      break;
+    
+    // Run solver.
+    Pogs(&pogs_data);
+
+    if (nlhs >= 4)
+      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
+  }
+
+//   if (num_obj > 1)
+//     FreeSparseFactors(&pogs_data);
+   
+  delete [] row_ind;
+  delete [] col_ptr;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -301,9 +370,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs >= 4)
     plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
-  if (class_id_A == mxDOUBLE_CLASS)
-    SolverWrap<double>(nlhs, plhs, nrhs, prhs);
-  else if (class_id_A == mxSINGLE_CLASS)
-    SolverWrap<float>(nlhs, plhs, nrhs, prhs);
+  if (mxIsSparse(prhs[0])) {
+    if (class_id_A == mxDOUBLE_CLASS)
+      SolverWrapSp<double>(nlhs, plhs, nrhs, prhs);
+    else if (class_id_A == mxSINGLE_CLASS)
+      SolverWrapSp<float>(nlhs, plhs, nrhs, prhs);
+  } else {
+    if (class_id_A == mxDOUBLE_CLASS)
+      SolverWrapDn<double>(nlhs, plhs, nrhs, prhs);
+    else if (class_id_A == mxSINGLE_CLASS)
+      SolverWrapDn<float>(nlhs, plhs, nrhs, prhs);
+  }
 }
 
