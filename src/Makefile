@@ -1,5 +1,4 @@
 # User Vars
-#GSLROOT=/usr/local
 
 # C++ Flags
 CXX=g++
@@ -27,9 +26,6 @@ pogs_sp_cu.o: pogs_sp.cu pogs.h prox_lib.h
 
 cml.o: cml/cml_blas.cu cml/cml_blas.cuh
 	$(CUXX) -Icml $(CUFLAGS) $< -dc -o $@
-
-test:
-	$(MAKE) all -C ./unit 
 
 clean:
 	rm -f *.o *~
