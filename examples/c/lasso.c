@@ -59,7 +59,7 @@ int main() {
     lambda_max = max(lambda_max, fabs(u));
   }
 
-  // Define f.
+  // Define f(y) = (1/2)||y - b||_2^2.
   real_t *f_a = (real_t *) malloc(m * sizeof(real_t));
   real_t *f_b = (real_t *) malloc(m * sizeof(real_t));
   real_t *f_c = (real_t *) malloc(m * sizeof(real_t));
@@ -73,7 +73,7 @@ int main() {
     f_h[i] = SQUARE;
   }
 
-  // Define g.
+  // Define g(x) = (lambda_max / 2) * ||x||_1.
   real_t *g_a = (real_t *) malloc(n * sizeof(real_t));
   real_t *g_b = (real_t *) malloc(n * sizeof(real_t));
   real_t *g_c = (real_t *) malloc(n * sizeof(real_t));
