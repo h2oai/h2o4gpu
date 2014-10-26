@@ -59,7 +59,7 @@ int main() {
     lambda_max = max(lambda_max, fabs(u));
   }
 
-  // Define f.
+  // Define f(y) = (1/2)||y - b||_2^2.
   real_t *f_a = (real_t *) malloc(m * sizeof(real_t));
   real_t *f_b = (real_t *) malloc(m * sizeof(real_t));
   real_t *f_c = (real_t *) malloc(m * sizeof(real_t));
@@ -73,7 +73,7 @@ int main() {
     f_h[i] = SQUARE;
   }
 
-  // Define g.
+  // Define g(x) = (lambda_max / 2) * ||x||_1.
   real_t *g_a = (real_t *) malloc(n * sizeof(real_t));
   real_t *g_b = (real_t *) malloc(n * sizeof(real_t));
   real_t *g_c = (real_t *) malloc(n * sizeof(real_t));
@@ -97,9 +97,11 @@ int main() {
   int adaptive_rho = 1;
 
   // Solve
-  Pogs(ord, m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
-      g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-      quiet, adaptive_rho, x, y, l, &optval);
+  Pogs(ord, m, n, A,
+      f_a, f_b, f_c, f_d, f_e, f_h,
+      g_a, g_b, g_c, g_d, g_e, g_h,
+      rho, abs_tol, rel_tol, max_iter, quiet, adaptive_rho,
+      x, y, l, &optval);
   printf("Lasso optval = %e\n", optval);
 
   // Clean up.
