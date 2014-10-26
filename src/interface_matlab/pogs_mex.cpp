@@ -196,6 +196,7 @@ int PopulateParams(const mxArray *params, PogsData<T, M> *pogs_data) {
 
 template <typename T1, typename T2>
 void IntToInt(size_t n, const T1 *in, T2 *out) {
+#pragma omp paralell for
   for (size_t i = 0; i < n; ++i)
     out[i] = static_cast<T2>(in[i]);
 }
@@ -263,6 +264,20 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   int *col_ptr = new int[n + 1];
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
+
+//   mexPrintf("%d, %d, %d\n", nnz, n, m);
+//   for (int i = 0; i < nnz; ++i)
+//     mexPrintf("%d ", row_ind[i]);
+//   mexPrintf("\n");
+// 
+//   for (int i = 0; i < n+1; ++i)
+//     mexPrintf("%d ", col_ptr[i]);
+//   mexPrintf("\n");
+// 
+//   for (int i = 0; i < nnz; ++i)
+//     mexPrintf("%e ", val[i]);
+//   mexPrintf("\n");
+//   return;
 
   Sparse<T, int, COL> A(val, col_ptr, row_ind, nnz);
 

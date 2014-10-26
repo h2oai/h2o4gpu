@@ -8,6 +8,7 @@
 
 #include "cml_defs.cuh"
 #include "cml_utils.cuh"
+#include "../_interface_defs.h"
 
 // Cuda Matrix Library
 namespace cml {
@@ -140,8 +141,8 @@ void vector_print(const vector<T> *x) {
   T* x_ = new T[x->size * x->stride];
   vector_memcpy(x_, x);
   for (unsigned int i = 0; i < x->size; ++i)
-    printf("%e ", x_[i * x->stride]);
-  printf("\n");
+    Printf("%e ", x_[i * x->stride]);
+  Printf("\n");
   delete [] x_;
 }
 
