@@ -9,7 +9,7 @@ end
 rng(0, 'twister');
 
 A = 1 / n * randn(m, n);
-b = A * ((rand(n, 1) > 0.8) .* randn(n, 1)) + 0.5 * randn(m, 1);
+b = A * ((rand(n, 1) > 0.8) .* randn(n, 1));% + 0.5 * randn(m, 1);
 
 f.h = kIndEq0;
 f.b = b;

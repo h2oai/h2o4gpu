@@ -13,6 +13,7 @@
 #include "cml/cml_spmat.cuh"
 #include "cml/cml_vector.cuh"
 #include "pogs.h"
+#include "timer.hpp"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -36,7 +37,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kKappa = static_cast<T>(0.9);
   const T kOne = static_cast<T>(1);
   const T kZero = static_cast<T>(0);
-  const T kTol = static_cast<T>(1e-4);
+  const T kTol = static_cast<T>(1e-3);
   const CBLAS_ORDER kOrd = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
@@ -122,8 +123,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   unsigned int kd = 0, ku = 0;
   bool converged = false;
 
-  Printf("abstol = %e, reltol = %e\n", pogs_data->abs_tol, pogs_data->rel_tol);
-
+  double t = timer<double>();
   for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
@@ -153,7 +153,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
         &x12, kOne, &y);
     nrm_r = cml::blas_nrm2(b_hdl, &y);
     cml::vector_set_all(&x, kZero);
-    cml::spblas_solve(s_hdl, b_hdl, descr, &A, kOne, &y, &x, kTol, 10, true);
+    cml::spblas_solve(s_hdl, b_hdl, descr, &A, kOne, &y, &x, kTol, 5, true);
     cml::blas_axpy(b_hdl, kOne, &x12, &x);
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne, &A,
         &x, kZero, &y);
@@ -205,6 +205,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
   }
+  Printf("TIME = %e\n", timer<double>() - t);
 
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);

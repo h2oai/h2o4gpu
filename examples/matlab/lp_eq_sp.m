@@ -1,4 +1,4 @@
-function pogs_time = lp_eq(m, n, nnz, params)
+function [pogs_time, cvx_time] = lp_eq(m, n, nnz, params)
 %LP_EQ
 
 if nargin == 2
@@ -20,6 +20,7 @@ g.h = kIndGe0;
 tic
 x_pogs = pogs([A; c'], f, g, params);
 pogs_time = toc;
+tic
 
 cvx_begin
 variables x(n)
@@ -28,6 +29,7 @@ subject to
   b == A * x
   x >= 0
 cvx_end
+cvx_time = toc;
 
 (c' * x_pogs - cvx_optval) / (cvx_optval)
 

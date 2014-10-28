@@ -26,7 +26,7 @@ double LpEq(int m, int n, int nnz) {
   // Generate A and c according to:
   //   A = 4 / n * rand(m, n)
   //   c = rand(n, 1)
-  MatGen(m + 1, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
+  nnz = MatGenApprox(m + 1, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
     static_cast<T>(0), static_cast<T>(4.0 / n));
   
   Sparse<T, int, ROW> A_(val.data(), row_ptr.data(), col_ind.data(), nnz);
@@ -34,12 +34,13 @@ double LpEq(int m, int n, int nnz) {
   pogs_data.x = x.data();
   pogs_data.y = y.data();
 
+
   // Generate b according to:
   //   v = rand(n, 1)
   //   b = A * v
   std::vector<T> v(n);
   for (unsigned int i = 0; i < n; ++i)
-    v[i] = u_dist(generator);
+    v[i] = 1 + u_dist(generator);
 
   pogs_data.f.reserve(m + 1);
   for (unsigned int i = 0; i < m; ++i) {
@@ -52,7 +53,7 @@ double LpEq(int m, int n, int nnz) {
 
   pogs_data.g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kIndGe0);
+    pogs_data.g.emplace_back(kIndGe0, static_cast<T>(1), static_cast<T>(1));
 
   double t = timer<double>();
   Pogs(&pogs_data);

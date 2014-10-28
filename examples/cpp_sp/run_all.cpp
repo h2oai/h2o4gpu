@@ -19,7 +19,7 @@ int main() {
 //   printf("Solver Time: %e sec\n", t);
 
   printf("\nLinear Program in Equality Form.\n");
-  t = LpEq<real_t>(200, 1000, 10000);
+  t = LpEq<real_t>(20000, 100000, 10000000);
   printf("Solver Time: %e sec\n", t);
 
 //   printf("\nLinear Program in Inequality Form.\n");

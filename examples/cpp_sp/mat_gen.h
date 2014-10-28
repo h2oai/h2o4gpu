@@ -9,7 +9,7 @@
 
 template <typename T>
 inline T rand(T lb, T ub) {
-  return (ub - lb) * (rand() / static_cast<T>(RAND_MAX)) + lb;
+  return static_cast<T>((ub - lb) * (rand() / (1.0 * RAND_MAX)) + lb);
 }
 
 template <typename T>
@@ -42,12 +42,21 @@ int MatGenApprox(int m, int n, int nnz, T *val, int *rptr, int *cind, T lb,
   values.reserve(nnz);
 
   for (size_t i = 0; i < nnz; ++i) {
-    indices.emplace_back(std::min(m - 1, static_cast<int>(rand(0, m))),
-        std::min(n - 1, static_cast<int>(rand(0, n))));
+    indices.emplace_back(std::min(m - 1, rand(0, m)),
+        std::min(n - 1, rand(0, n)));
     values.push_back(rand(lb, ub));
   }
 
+
   std::sort(indices.begin(), indices.end());
+
+//  for (auto v : values)
+//    printf("%e, ", v);
+//  printf("\n");
+//  for (auto v : indices)
+//    printf("(%d %d), ", v.first, v.second);
+//  printf("\n");
+
 
   int row_ind = 1;
   int col_ind = 1;
