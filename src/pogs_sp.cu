@@ -99,7 +99,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // Copy A to device (assume input row-major).
     cml::spmat_memcpy(s_hdl, &A, pogs_data->A.val, pogs_data->A.ind,
         pogs_data->A.ptr);
-    cml::vector_set_all(&de, kOne);
     err = sinkhorn_knopp::Equilibrate(s_hdl, b_hdl, descr, &A, &d, &e);
   }
 
