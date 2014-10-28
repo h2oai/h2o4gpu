@@ -72,80 +72,44 @@ struct FunctionObj {
 // Local Functions.
 namespace {
 //  Evaluate abs(x)
-template <typename T>
-__DEVICE__ inline T Abs(T x);
-template <>
 __DEVICE__ inline double Abs(double x) { return fabs(x); }
-template <>
 __DEVICE__ inline float Abs(float x) { return fabsf(x); }
 
 //  Evaluate acos(x)
-template <typename T>
-__DEVICE__ inline T Acos(T x);
-template <>
 __DEVICE__ inline double Acos(double x) { return acos(x); }
-template <>
 __DEVICE__ inline float Acos(float x) { return acosf(x); }
 
 //  Evaluate cos(x)
-template <typename T>
-__DEVICE__ inline T Cos(T x);
-template <>
 __DEVICE__ inline double Cos(double x) { return cos(x); }
-template <>
 __DEVICE__ inline float Cos(float x) { return cosf(x); }
 
 //  Evaluate e^x
-template <typename T>
-__DEVICE__ inline T Exp(T x);
-template <>
 __DEVICE__ inline double Exp(double x) { return exp(x); }
-template <>
 __DEVICE__ inline float Exp(float x) { return expf(x); }
 
 //  Evaluate log(x)
-template <typename T>
-__DEVICE__ inline T Log(T x);
-template <>
 __DEVICE__ inline double Log(double x) { return log(x); }
-template <>
 __DEVICE__ inline float Log(float x) { return logf(x); }
 
 //  Evaluate max(x, y)
-template <typename T>
-__DEVICE__ inline T Max(T x, T y);
-template <>
 __DEVICE__ inline double Max(double x, double y) { return fmax(x, y); }
-template <>
 __DEVICE__ inline float Max(float x, float y) { return fmaxf(x, y); }
 
 //  Evaluate max(x, y)
-template <typename T>
-__DEVICE__ inline T Min(T x, T y);
-template <>
 __DEVICE__ inline double Min(double x, double y) { return fmin(x, y); }
-template <>
 __DEVICE__ inline float Min(float x, float y) { return fminf(x, y); }
 
 //  Evaluate x^y
-template <typename T>
-__DEVICE__ inline T Pow(T x, T y);
-template <>
 __DEVICE__ inline double Pow(double x, double y) { return pow(x, y); }
-template <>
 __DEVICE__ inline float Pow(float x, float y) { return powf(x, y); }
 
 //  Evaluate sqrt(x)
-template <typename T>
-__DEVICE__ inline T Sqrt(T x);
-template <>
 __DEVICE__ inline double Sqrt(double x) { return sqrt(x); }
-template <>
 __DEVICE__ inline float Sqrt(float x) { return sqrtf(x); }
 
 //  Evaluate tol
 template <typename T>
-__DEVICE__ inline T Tol();
+__DEVICE__ inline T Tol() { return 1e-10; }
 template <>
 __DEVICE__ inline double Tol() { return 1e-10; }
 template <>

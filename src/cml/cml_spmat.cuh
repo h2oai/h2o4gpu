@@ -20,8 +20,6 @@ struct spmat {
   spmat() : val(0), ind(0), m(0), n(0), nnz(0) { };
 };
 
-namespace {
-
 template <typename T, typename I, CBLAS_ORDER O>
 I ptr_len(const spmat<T, I, O> &mat) {
   if (O == CblasColMajor)
@@ -29,6 +27,8 @@ I ptr_len(const spmat<T, I, O> &mat) {
   else
     return mat.m + 1;
 }
+
+namespace {
 
 template <CBLAS_ORDER O>
 cusparseStatus_t MatTransp(cusparseHandle_t handle, int m, int n, int nnz,

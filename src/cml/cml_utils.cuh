@@ -3,6 +3,7 @@
 
 #include <cublas_v2.h>
 #include <cusparse.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -11,9 +12,9 @@
 
 #include "cml_defs.cuh"
 
-#define CudaCheckError(val) __CudaCE((val), __func__, __FILE__, __LINE__)
-#define CublasCheckError(val) __CublasCE((val), __func__, __FILE__, __LINE__)
-#define CusparseCheckError(val) __CuspCE((val), __func__, __FILE__, __LINE__)
+#define CudaCheckError(val) cml::__CudaCE((val), __func__, __FILE__, __LINE__)
+#define CublasCheckError(val) cml::__CublasCE((val), __func__, __FILE__, __LINE__)
+#define CusparseCheckError(val) cml::__CuspCE((val), __func__, __FILE__, __LINE__)
 
 namespace cml {
 

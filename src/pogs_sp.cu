@@ -1,6 +1,8 @@
 #include <cusparse.h>
 #include <cublas_v2.h>
 
+#include "sinkhorn_knopp.cuh"
+
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -11,7 +13,6 @@
 #include "cml/cml_spmat.cuh"
 #include "cml/cml_vector.cuh"
 #include "pogs.h"
-#include "sinkhorn_knopp.cuh"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -99,7 +100,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::spmat_memcpy(s_hdl, &A, pogs_data->A.val, pogs_data->A.ind,
         pogs_data->A.ptr);
     cml::vector_set_all(&de, kOne);
-    // err = Equilibrate(&A, &d, &e);
+    err = sinkhorn_knopp::Equilibrate(s_hdl, b_hdl, descr, &A, &d, &e);
   }
 
   // Scale f and g to account for diagonal scaling e and d.
