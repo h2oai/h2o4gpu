@@ -1,3 +1,6 @@
+// TODO: move include once nvidia engineers get around to fixing their bugs
+#include "sinkhorn_knopp.cuh"
+
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/transform.h>
@@ -11,7 +14,6 @@
 #include "cml/cml_vector.cuh"
 #include "matrix_util.h"
 #include "pogs.h"
-#include "sinkhorn_knopp.cuh"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -91,7 +93,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
     cml::matrix_memcpy(&A, pogs_data->A.val);
-    err = Equilibrate(&A, &d, &e);
+    err = sinkhorn_knopp::Equilibrate(&A, &d, &e);
 
     if (!err) {
       // Compuate A^TA or AA^T.

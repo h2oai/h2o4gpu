@@ -28,11 +28,11 @@ __device__ inline float Abs(float x) { return fabsf(x); }
 __device__ inline double Sqrt(double x) { return sqrt(x); }
 __device__ inline float Sqrt(float x) { return sqrtf(x); }
 
-// // x -> |x|
-// template <typename T>
-// struct AbsF : thrust::unary_function<T, T> {
-//   __device__ T operator()(T x) { return fabs(x); }
-// };
+// x -> |x|
+template <typename T>
+struct AbsF : thrust::unary_function<T, T> {
+  __device__ T operator()(T x) { return fabs(x); }
+};
 
 // x -> 1 / x
 template <typename T>
@@ -136,15 +136,15 @@ void MultDiag(cml::vector<T> *d, cml::vector<T> *e,
   __MultCol<<<grid_dim_col, cml::kBlockSize>>>(d->data, e->data, A->val,
       A->ptr, A->ind, A->n);
   int grid_dim_row = cml::calc_grid_dim(A->m, cml::kBlockSize);
-  __MultCol<<<grid_dim_row, cml::kBlockSize>>>(d->data, e->data,
-      A->val + A->nnz, A->ptr + cml::ptr_len(*A), A->ind + A->nnz, A->n);
+  __MultRow<<<grid_dim_row, cml::kBlockSize>>>(d->data, e->data,
+      A->val + A->nnz, A->ptr + cml::ptr_len(*A), A->ind + A->nnz, A->m);
 }
 
 template <typename T, typename I>
 void MultDiag(cml::vector<T> *d, cml::vector<T> *e,
               cml::spmat<T, I, CblasRowMajor> *A) {
   int grid_dim_row = cml::calc_grid_dim(A->m, cml::kBlockSize);
-  __MultCol<<<grid_dim_row, cml::kBlockSize>>>(d->data, e->data, A->val,
+  __MultRow<<<grid_dim_row, cml::kBlockSize>>>(d->data, e->data, A->val,
       A->ptr, A->ind, A->m);
   int grid_dim_col = cml::calc_grid_dim(A->n, cml::kBlockSize);
   __MultCol<<<grid_dim_col, cml::kBlockSize>>>(d->data, e->data,
@@ -158,7 +158,6 @@ int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
                 cusparseMatDescr_t descr, cml::spmat<T, I, O> *A,
                 cml::vector<T> *d, cml::vector<T> *e) {
   unsigned int kNumItr = 10;
-  
   // Create bit-vector with sign.
   char *sign;
   size_t num_sign_bytes = (A->nnz + 7) / 8;
@@ -337,175 +336,175 @@ int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
 // }
 
 //*************************************************************************
-//
-//
-// template <typename T>
-// void __global__ __recipr(T* x, size_t size, size_t stride) {
-//   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-//   for (unsigned int t = tid; t < size; t += gridDim.x * blockDim.x)
-//     x[t * stride] = 1 / x[t * stride];
-// }
-// 
-// template <typename T>
-// void __global__ __equi(T* A, size_t m, size_t n, size_t tda, T *x,
-//                        size_t incx) {
-//   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-//   for (unsigned int j = tid; j < n; j += gridDim.x * blockDim.x) {
-//     x[j * incx] = 0;
-//     for (unsigned int i = 0; i < m; ++i)
-//       x[j * incx] += A[i * tda + j] * A[i * tda + j];
-//     x[j * incx] = 1 / sqrt(x[j * incx]);
-//   }
-// }
-// 
-// template <typename T, CBLAS_ORDER O, CBLAS_SIDE S>
-// void __global__ __diag_mult(T* A, size_t m, size_t n, size_t tda, T *x,
-//                             size_t incx) {
-//   unsigned int tidx = blockIdx.x * blockDim.x + threadIdx.x;
-//   unsigned int tidy = blockIdx.y * blockDim.y + threadIdx.y;
-//   if (O == CblasRowMajor) {
-//     if (S == CblasRight) {
-//       for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
-//         for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
-//           A[i * tda + j] *= x[j * incx];
-//         }
-//       }
-//     } else {
-//       for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
-//         for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
-//           A[i * tda + j] *= x[i * incx];
-//         }
-//       }
-//     }
-//   } else {
-//     if (S == CblasRight) {
-//       for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
-//         for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
-//           A[i + j * tda] *= x[j * incx];
-//         }
-//       }
-//     } else {
-//       for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
-//         for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
-//           A[i + j * tda] *= x[i * incx];
-//         }
-//       }
-//     }
-//   }
-// }
-// 
-// template <typename T>
-// void __global__ __any_is_zero(T *x, size_t size, size_t incx, int *tf) {
-//   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-//   for (unsigned int i = tid; i < size; i += gridDim.x * blockDim.x)
-//     if (x[i * incx] == static_cast<T>(0))
-//       tf[0] = 1;
-// }
-// 
-// 
-// template <typename T, CBLAS_ORDER O>
-// void EquiOp(cml::matrix<T, O> *A, cml::vector<T> *x) {
-//   unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
-//   size_t m;
-//   if (O == CblasRowMajor)
-//     m = A->size1;
-//   else
-//     m = A->size2;
-//   __equi<T><<<grid_dim, cml::kBlockSize>>>(A->data, m, x->size, A->tda, x->data,
-//       x->stride);
-// }
-// 
-// template <typename T>
-// void ReciprOp(cml::vector<T> *x) {
-//   unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
-//   __recipr<<<grid_dim, cml::kBlockSize>>>(x->data, x->size, x->stride);
-// }
-// 
-// template <typename T, CBLAS_ORDER O, CBLAS_SIDE S>
-// void DiagOp(cml::matrix<T, O> *A, cml::vector<T> *x) {
-//   const size_t kBlockSize = std::sqrt<size_t>(cml::kBlockSize);
-//   dim3 grid_size, block_size;
-//   grid_size.x = cml::calc_grid_dim(A->size1, kBlockSize);
-//   grid_size.y = cml::calc_grid_dim(A->size2, kBlockSize); 
-//   block_size.x = kBlockSize;
-//   block_size.y = kBlockSize;
-//   __diag_mult<T, O, S><<<grid_size, block_size>>>(A->data, A->size1, A->size2,
-//       A->tda, x->data, x->stride);
-// }
-// 
-// template <typename T>
-// int AnyIsZeroOp(cml::vector<T> *x) {
-//   int tf_h = 0, *tf_d;
-//   cudaMalloc(&tf_d, sizeof(int));
-//   cudaMemcpy(tf_d, &tf_h, sizeof(int), cudaMemcpyHostToDevice);
-//   unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
-//   __any_is_zero<<<grid_dim, cml::kBlockSize>>>(x->data, x->size, x->stride,
-//       tf_d);
-//   cudaMemcpy(&tf_h, tf_d, sizeof(int), cudaMemcpyDeviceToHost);
-//   return tf_h;
-// }
-// 
-// template <typename T>
-// int Equilibrate(cml::matrix<T, CblasRowMajor> *A,
-//                 cml::vector<T> *d, cml::vector<T> *e) {
-//   int err;
-//   if (A->size1 < A->size2) {
-//     unsigned int num_h = 4;
-//     cublasHandle_t h[num_h];
-//     for (unsigned int i = 0; i < num_h; ++i)
-//       cublasCreate(h + i);
-//     T *dpr = new T[A->size1];
-//     cml::vector_set_all(e, static_cast<T>(1));
-//     for (unsigned int i = 0; i < A->size1; ++i) {
-//       cml::vector<T> v = cml::matrix_row(A, i);
-//       dpr[i] = cml::blas_nrm2(h[i % num_h], &v);
-//     }
-//     cml::vector_memcpy(d, dpr);
-//     ReciprOp(d);
-//     DiagOp<T, CblasRowMajor, CblasLeft>(A, d);
-//     delete [] dpr;
-//     for (unsigned int i = 0; i < num_h; ++i)
-//       cublasDestroy(h[i]);
-//     err = AnyIsZeroOp(d);
-//   } else {
-//     cml::vector_set_all(d, static_cast<T>(1));
-//     EquiOp(A, e);
-//     DiagOp<T, CblasRowMajor, CblasRight>(A, e);
-//     err = AnyIsZeroOp(e);
-//   }
-//   return err;
-// }
-// 
-// template <typename T>
-// int Equilibrate(cml::matrix<T, CblasColMajor> *A,
-//                 cml::vector<T> *d, cml::vector<T> *e) {
-//   int err;
-//   if (A->size1 < A->size2) {
-//     cml::vector_set_all(e, static_cast<T>(1));
-//     EquiOp(A, d);
-//     DiagOp<T, CblasColMajor, CblasLeft>(A, d);
-//     err = AnyIsZeroOp(d);
-//   } else {
-//     unsigned int num_h = 4;
-//     cublasHandle_t h[num_h];
-//     for (unsigned int i = 0; i < num_h; ++i)
-//       cublasCreate(h + i);
-//     T *epr = new T[A->size2];
-//     cml::vector_set_all(d, static_cast<T>(1));
-//     for (unsigned int j = 0; j < A->size2; ++j) {
-//       cml::vector<T> v = cml::matrix_column(A, j);
-//       epr[j] = cml::blas_nrm2(h[j % num_h], &v);
-//     }
-//     cml::vector_memcpy(e, epr);
-//     ReciprOp(e);
-//     DiagOp<T, CblasColMajor, CblasRight>(A, e);
-//     delete [] epr;
-//     for (unsigned int i = 0; i < num_h; ++i)
-//       cublasDestroy(h[i]);
-//     err = AnyIsZeroOp(e);
-//   }
-//   return err;
-// }
+
+
+template <typename T>
+void __global__ __recipr(T* x, size_t size, size_t stride) {
+  unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (unsigned int t = tid; t < size; t += gridDim.x * blockDim.x)
+    x[t * stride] = 1 / x[t * stride];
+}
+
+template <typename T>
+void __global__ __equi(T* A, size_t m, size_t n, size_t tda, T *x,
+                       size_t incx) {
+  unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (unsigned int j = tid; j < n; j += gridDim.x * blockDim.x) {
+    x[j * incx] = 0;
+    for (unsigned int i = 0; i < m; ++i)
+      x[j * incx] += A[i * tda + j] * A[i * tda + j];
+    x[j * incx] = 1 / sqrt(x[j * incx]);
+  }
+}
+
+template <typename T, CBLAS_ORDER O, CBLAS_SIDE S>
+void __global__ __diag_mult(T* A, size_t m, size_t n, size_t tda, T *x,
+                            size_t incx) {
+  unsigned int tidx = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned int tidy = blockIdx.y * blockDim.y + threadIdx.y;
+  if (O == CblasRowMajor) {
+    if (S == CblasRight) {
+      for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
+        for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
+          A[i * tda + j] *= x[j * incx];
+        }
+      }
+    } else {
+      for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
+        for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
+          A[i * tda + j] *= x[i * incx];
+        }
+      }
+    }
+  } else {
+    if (S == CblasRight) {
+      for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
+        for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
+          A[i + j * tda] *= x[j * incx];
+        }
+      }
+    } else {
+      for (unsigned int j = tidy; j < n; j += gridDim.y * blockDim.y) {
+        for (unsigned int i = tidx; i < m; i += gridDim.x * blockDim.x) {
+          A[i + j * tda] *= x[i * incx];
+        }
+      }
+    }
+  }
+}
+
+template <typename T>
+void __global__ __any_is_zero(T *x, size_t size, size_t incx, int *tf) {
+  unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (unsigned int i = tid; i < size; i += gridDim.x * blockDim.x)
+    if (x[i * incx] == static_cast<T>(0))
+      tf[0] = 1;
+}
+
+
+template <typename T, CBLAS_ORDER O>
+void EquiOp(cml::matrix<T, O> *A, cml::vector<T> *x) {
+  unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
+  size_t m;
+  if (O == CblasRowMajor)
+    m = A->size1;
+  else
+    m = A->size2;
+  __equi<T><<<grid_dim, cml::kBlockSize>>>(A->data, m, x->size, A->tda, x->data,
+      x->stride);
+}
+
+template <typename T>
+void ReciprOp(cml::vector<T> *x) {
+  unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
+  __recipr<<<grid_dim, cml::kBlockSize>>>(x->data, x->size, x->stride);
+}
+
+template <typename T, CBLAS_ORDER O, CBLAS_SIDE S>
+void DiagOp(cml::matrix<T, O> *A, cml::vector<T> *x) {
+  const size_t kBlockSize = std::sqrt<size_t>(cml::kBlockSize);
+  dim3 grid_size, block_size;
+  grid_size.x = cml::calc_grid_dim(A->size1, kBlockSize);
+  grid_size.y = cml::calc_grid_dim(A->size2, kBlockSize); 
+  block_size.x = kBlockSize;
+  block_size.y = kBlockSize;
+  __diag_mult<T, O, S><<<grid_size, block_size>>>(A->data, A->size1, A->size2,
+      A->tda, x->data, x->stride);
+}
+
+template <typename T>
+int AnyIsZeroOp(cml::vector<T> *x) {
+  int tf_h = 0, *tf_d;
+  cudaMalloc(&tf_d, sizeof(int));
+  cudaMemcpy(tf_d, &tf_h, sizeof(int), cudaMemcpyHostToDevice);
+  unsigned int grid_dim = cml::calc_grid_dim(x->size, cml::kBlockSize);
+  __any_is_zero<<<grid_dim, cml::kBlockSize>>>(x->data, x->size, x->stride,
+      tf_d);
+  cudaMemcpy(&tf_h, tf_d, sizeof(int), cudaMemcpyDeviceToHost);
+  return tf_h;
+}
+
+template <typename T>
+int Equilibrate(cml::matrix<T, CblasRowMajor> *A,
+                cml::vector<T> *d, cml::vector<T> *e) {
+  int err;
+  if (A->size1 < A->size2) {
+    unsigned int num_h = 4;
+    cublasHandle_t h[num_h];
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasCreate(h + i);
+    T *dpr = new T[A->size1];
+    cml::vector_set_all(e, static_cast<T>(1));
+    for (unsigned int i = 0; i < A->size1; ++i) {
+      cml::vector<T> v = cml::matrix_row(A, i);
+      dpr[i] = cml::blas_nrm2(h[i % num_h], &v);
+    }
+    cml::vector_memcpy(d, dpr);
+    ReciprOp(d);
+    DiagOp<T, CblasRowMajor, CblasLeft>(A, d);
+    delete [] dpr;
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasDestroy(h[i]);
+    err = AnyIsZeroOp(d);
+  } else {
+    cml::vector_set_all(d, static_cast<T>(1));
+    EquiOp(A, e);
+    DiagOp<T, CblasRowMajor, CblasRight>(A, e);
+    err = AnyIsZeroOp(e);
+  }
+  return err;
+}
+
+template <typename T>
+int Equilibrate(cml::matrix<T, CblasColMajor> *A,
+                cml::vector<T> *d, cml::vector<T> *e) {
+  int err;
+  if (A->size1 < A->size2) {
+    cml::vector_set_all(e, static_cast<T>(1));
+    EquiOp(A, d);
+    DiagOp<T, CblasColMajor, CblasLeft>(A, d);
+    err = AnyIsZeroOp(d);
+  } else {
+    unsigned int num_h = 4;
+    cublasHandle_t h[num_h];
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasCreate(h + i);
+    T *epr = new T[A->size2];
+    cml::vector_set_all(d, static_cast<T>(1));
+    for (unsigned int j = 0; j < A->size2; ++j) {
+      cml::vector<T> v = cml::matrix_column(A, j);
+      epr[j] = cml::blas_nrm2(h[j % num_h], &v);
+    }
+    cml::vector_memcpy(e, epr);
+    ReciprOp(e);
+    DiagOp<T, CblasColMajor, CblasRight>(A, e);
+    delete [] epr;
+    for (unsigned int i = 0; i < num_h; ++i)
+      cublasDestroy(h[i]);
+    err = AnyIsZeroOp(e);
+  }
+  return err;
+}
 
 }  // namespace sinkhorn_knopp
 

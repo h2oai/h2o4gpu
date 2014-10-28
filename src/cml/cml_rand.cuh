@@ -9,6 +9,7 @@
 
 namespace cml {
 
+namespace {
 __global__ void setup_kernel(curandState *state, unsigned long seed) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   curand_init(seed, tid, 0, &state[tid]);
@@ -25,6 +26,8 @@ __global__ void generate(curandState *globalState, float *data, size_t size) {
   for (int i = tid; i < size; i += gridDim.x * blockDim.x)
     data[i] = curand_uniform(&globalState[tid]);
 }
+
+}  // namespace
 
 template <typename T>
 void rand(T *x, size_t size) {
