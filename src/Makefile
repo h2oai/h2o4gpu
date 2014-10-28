@@ -6,7 +6,7 @@ CXXFLAGS=-g -O3 -Wall -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=-arch=sm_20
+CUFLAGS=-arch=sm_20 -Xcompiler -fPIC
 
 all: pogs.o pogs_cu_link.o pogs_cu.o pogs_sp_cu.o cml.o
 
