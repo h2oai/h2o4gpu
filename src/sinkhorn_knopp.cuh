@@ -37,7 +37,10 @@ struct AbsF : thrust::unary_function<T, T> {
 // x -> 1 / x
 template <typename T>
 struct ReciprF : thrust::unary_function<T, T> {
-  __device__ T operator()(T x) { return static_cast<T>(1) / x; }
+  T alpha;
+  ReciprF() : alpha(1) {}
+  ReciprF(T alpha) : alpha(alpha) {}
+  __device__ T operator()(T x) { return alpha / x; }
 };
 
 // x -> sqrt(x)
@@ -56,7 +59,7 @@ void __global__ __SetSign(T* x, char *sign, size_t size) {
     sign[t] = 0;
     for (unsigned int i = 0; i < 8; ++i) {
       sign[t] |= (x[8 * t + i] < 0) << i; 
-      x[8 * t + i] = Abs(x[8 * t + i ]);
+      x[8 * t + i] = x[8 * t + i] * x[8 * t + i];
     }
   }
 }
@@ -75,7 +78,7 @@ void __global__ __UnSetSign(T* x, char *sign, size_t size) {
   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
   for (unsigned int t = tid; t < size; t += gridDim.x * blockDim.x) {
     for (unsigned int i = 0; i < 8; ++i)
-      x[8 * t + i] = (1 - 2 * ((sign[t] >> i) & 1)) * x[8 * t + i];
+      x[8 * t + i] = (1 - 2 * ((sign[t] >> i) & 1)) * Sqrt(x[8 * t + i]);
   }
 }
 
@@ -89,7 +92,7 @@ void __global__ __UnSetSignSingle(T* x, char *sign, size_t bits) {
 template <typename T, typename I, CBLAS_ORDER O>
 T NormEst(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
           cusparseMatDescr_t descr, cml::spmat<T, I, O> *A) {
-  unsigned int kMaxIter = 10u;
+  unsigned int kMaxIter = 100u;
   T nrm_est = 0;
   cml::vector<T> x = cml::vector_alloc<T>(A->n);
   cml::vector<T> Sx = cml::vector_alloc<T>(A->m);
@@ -181,14 +184,14 @@ int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
     cml::vector_add_constant(e, static_cast<T>(1e-4));
     thrust::transform(thrust::device_pointer_cast(e->data),
         thrust::device_pointer_cast(e->data + e->size),
-        thrust::device_pointer_cast(e->data), ReciprF<T>());
+        thrust::device_pointer_cast(e->data), ReciprF<T>(A->m));
 
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr,
         static_cast<T>(1), A, e, static_cast<T>(0), d);
     cml::vector_add_constant(d, static_cast<T>(1e-4));
     thrust::transform(thrust::device_pointer_cast(d->data),
         thrust::device_pointer_cast(d->data + d->size),
-        thrust::device_pointer_cast(d->data), ReciprF<T>());
+        thrust::device_pointer_cast(d->data), ReciprF<T>(A->n));
   }
 
   thrust::transform(thrust::device_pointer_cast(d->data),
@@ -211,6 +214,7 @@ int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
   T nrmd = cml::blas_nrm2(b_hdl, d);
   T nrme = cml::blas_nrm2(b_hdl, e);
   T scale = sqrt(nrmd * sqrt(e->size) / (nrme * sqrt(d->size)));
+
 
   cml::vector<T> a_vec = cml::vector_view_array(A->val, 2 * A->nnz);
   cml::vector_scale(&a_vec, 1 / nrmA);

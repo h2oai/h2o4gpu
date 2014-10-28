@@ -36,7 +36,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kKappa = static_cast<T>(0.9);
   const T kOne = static_cast<T>(1);
   const T kZero = static_cast<T>(0);
-  const T kTol = static_cast<T>(1e-8);
+  const T kTol = static_cast<T>(1e-4);
   const CBLAS_ORDER kOrd = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
@@ -153,7 +153,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
         &x12, kOne, &y);
     nrm_r = cml::blas_nrm2(b_hdl, &y);
     cml::vector_set_all(&x, kZero);
-    cml::spblas_solve(s_hdl, b_hdl, descr, &A, kOne, &y, &x, kTol, 100, true);
+    cml::spblas_solve(s_hdl, b_hdl, descr, &A, kOne, &y, &x, kTol, 10, true);
     cml::blas_axpy(b_hdl, kOne, &x12, &x);
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne, &A,
         &x, kZero, &y);
