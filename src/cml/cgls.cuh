@@ -376,21 +376,21 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
   cudaMemcpy(s, x, n * sizeof(T), cudaMemcpyDeviceToDevice);
 
   // r = b - A*x.
-  if (F == ROW)
-    spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
+  if (F == CSR)
+    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
         &kNegOne, descr, val_a, ptr_a, ind_a, x, &kOne, r);
   else
-    spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
+    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
         &kNegOne, descr, val_at, ptr_at, ind_at, x, &kOne, r);
 
   cudaDeviceSynchronize();
 
   // s = A'*r - shift*x.
-  if (F == ROW)
-    spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
+  if (F == CSR)
+    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
         descr, val_at, ptr_at, ind_at, r, &kNegShift, s);
   else
-    spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
+    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
         descr, val_a, ptr_a, ind_a, r, &kNegShift, s);
 
   // Initialize.
@@ -410,11 +410,11 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
 
   for (k = 0; k < maxit && !flag; ++k) {
     // q = A * p.
-    if (F == ROW)
-      spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kOne,
+    if (F == CSR)
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kOne,
           descr, val_a, ptr_a, ind_a, p, &kZero, q);
     else
-      spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kOne,
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kOne,
           descr, val_at, ptr_at, ind_at, p, &kZero, q);
     cudaDeviceSynchronize();
 
@@ -438,11 +438,11 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
 
     // s = A'*r - shift*x.
     cudaMemcpy(s, x, n * sizeof(T), cudaMemcpyDeviceToDevice);
-    if (F == ROW)
-      spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
+    if (F == CSR)
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
           descr, val_at, ptr_at, ind_at, r, &kNegShift, s);
     else
-      spmv<T, ROW>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, n, m, nnz, &kOne,
           descr, val_a, ptr_a, ind_a, r, &kNegShift, s);
     cudaDeviceSynchronize();
 
