@@ -1,7 +1,7 @@
-function [pogs_time, cvx_time] = lp_eq(m, n, nnz, params)
+function [pogs_time, cvx_time] = lp_eq_sp(m, n, nnz, params)
 %LP_EQ
 
-if nargin == 2
+if nargin == 3
   params = [];
 end
 

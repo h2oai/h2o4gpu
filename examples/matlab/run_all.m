@@ -2,7 +2,7 @@
 
 % Build interface
 cd([pwd '/../../src/interface_matlab'])
-pogs_setup % Alternatively `pogs_setup gpu`
+pogs_setup % Alternatively `pogs_setup -gpu`
 cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 

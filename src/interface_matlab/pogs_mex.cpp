@@ -386,10 +386,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
   if (mxIsSparse(prhs[0])) {
+#ifdef __CUDA__
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapSp<double>(nlhs, plhs, nrhs, prhs);
     else if (class_id_A == mxSINGLE_CLASS)
       SolverWrapSp<float>(nlhs, plhs, nrhs, prhs);
+#else
+    mexErrMsgIdAndTxt("MATLAB:pogs:notImplemented",
+        "Sparse POGS for CPU not implemented");
+#endif
   } else {
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapDn<double>(nlhs, plhs, nrhs, prhs);
