@@ -5,11 +5,11 @@
 #include "pogs_c.h"
 
 // Change these two definitions to switch between float and double.
-#define Pogs PogsD
+#define POGS PogsD
 typedef double real_t;
 
 // Uniform random value in [a, b)
-real_t runif(real_t a, real_t b) {
+inline real_t runif(real_t a, real_t b) {
   return (b - a) * rand() / RAND_MAX + a;
 }
 
@@ -95,12 +95,13 @@ int main() {
   unsigned int max_iter = 2000u;
   int quiet = 0;
   int adaptive_rho = 1;
+  int gap_stop = 0;
 
   // Solve
-  Pogs(ord, m, n, A,
+  POGS(ord, m, n, A,
       f_a, f_b, f_c, f_d, f_e, f_h,
       g_a, g_b, g_c, g_d, g_e, g_h,
-      rho, abs_tol, rel_tol, max_iter, quiet, adaptive_rho,
+      rho, abs_tol, rel_tol, max_iter, quiet, adaptive_rho, gap_stop,
       x, y, l, &optval);
   printf("Lasso optval = %e\n", optval);
 

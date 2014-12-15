@@ -25,6 +25,7 @@
 // - uint max_iter     : Maximum number of iterations (recommended 1e3-2e3).
 // - int quiet         : Output to screen if quiet = 0.
 // - int adaptive_rho  : No adaptive rho update if adaptive_rho = 0.
+// - int gap_stop      : Additionally use the gap as a stopping criteria.
 //
 // Output arguments (real_t is either double or float)
 // - real_t *x         : Array for solution vector x.
@@ -66,16 +67,16 @@ int PogsD(enum ORD ord, size_t m, size_t n, double *A,
           double *g_a, double *g_b, double *g_c, double *g_d, double *g_e,
           enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho,
+          int quiet, int adaptive_rho, int gap_stop,
           double *x, double *y, double *l, double *optval);
 
-int PogsF(enum ORD ord, size_t m, size_t n, float *A,
+int PogsS(enum ORD ord, size_t m, size_t n, float *A,
           float *f_a, float *f_b, float *f_c, float *f_d, float *f_e,
           enum FUNCTION *f_h,
           float *g_a, float *g_b, float *g_c, float *g_d, float *g_e,
           enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho,
+          int quiet, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval);
 
 #ifdef __cplusplus

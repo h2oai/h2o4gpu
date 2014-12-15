@@ -376,13 +376,14 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
   cudaMemcpy(s, x, n * sizeof(T), cudaMemcpyDeviceToDevice);
 
   // r = b - A*x.
-  if (F == CSR)
-    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
-        &kNegOne, descr, val_a, ptr_a, ind_a, x, &kOne, r);
-  else
-    spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
-        &kNegOne, descr, val_at, ptr_at, ind_at, x, &kOne, r);
-
+  if (false) {
+    if (F == CSR)
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
+          &kNegOne, descr, val_a, ptr_a, ind_a, x, &kOne, r);
+    else
+      spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
+          &kNegOne, descr, val_at, ptr_at, ind_at, x, &kOne, r);
+  }
   cudaDeviceSynchronize();
 
   // s = A'*r - shift*x.

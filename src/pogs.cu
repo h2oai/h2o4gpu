@@ -205,7 +205,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
 
     // Evaluate stopping criteria.
-    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
+    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+        (!pogs_data->gap_stop || gap < eps_gap);
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);

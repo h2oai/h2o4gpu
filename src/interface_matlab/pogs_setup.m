@@ -12,7 +12,7 @@ if opt_omp
   omp_flag = '-fopenmp';
 end
 
-cuda_lib = '/usr/local/cuda/lib';
+cuda_lib = '/usr/local/cuda/lib64';
 if opt_clb
   idx_lib = find(strcmp(varargin, '-cuda_lib')) + 1;
   cuda_lib = varargin{idx_lib};

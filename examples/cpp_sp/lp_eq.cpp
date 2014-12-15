@@ -21,26 +21,30 @@ double LpEq(int m, int n, int nnz) {
 
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
-                                           static_cast<T>(1));
+      static_cast<T>(1));
+
+  // Enforce c == rand(n, 1)
+  std::vector<std::tuple<int, int, T>> entries;
+  entries.reserve(n);
+  for (int i = 0; i < n; ++i) {
+    entries.push_back(std::make_tuple(m, i, u_dist(generator)));
+  }
 
   // Generate A and c according to:
   //   A = 4 / n * rand(m, n)
-  //   c = rand(n, 1)
   nnz = MatGenApprox(m + 1, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
-    static_cast<T>(0), static_cast<T>(4.0 / n));
+    static_cast<T>(0), static_cast<T>(4.0 / n), entries);
   
   Sparse<T, int, ROW> A_(val.data(), row_ptr.data(), col_ind.data(), nnz);
   PogsData<T, Sparse<T, int, ROW>> pogs_data(A_, m + 1, n);
   pogs_data.x = x.data();
-  pogs_data.y = y.data();
-
 
   // Generate b according to:
   //   v = rand(n, 1)
   //   b = A * v
   std::vector<T> v(n);
   for (unsigned int i = 0; i < n; ++i)
-    v[i] = 1 + u_dist(generator);
+    v[i] = u_dist(generator);
 
   pogs_data.f.reserve(m + 1);
   for (unsigned int i = 0; i < m; ++i) {
@@ -53,7 +57,7 @@ double LpEq(int m, int n, int nnz) {
 
   pogs_data.g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kIndGe0, static_cast<T>(1), static_cast<T>(1));
+    pogs_data.g.emplace_back(kIndGe0);
 
   double t = timer<double>();
   Pogs(&pogs_data);

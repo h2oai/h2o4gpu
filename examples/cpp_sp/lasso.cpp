@@ -22,8 +22,9 @@ double Lasso(int m, int n, int nnz) {
   std::normal_distribution<T> n_dist(static_cast<T>(0),
                                      static_cast<T>(1));
  
-  MatGen(m, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
-      static_cast<T>(-1), static_cast<T>(1));
+  std::vector<std::tuple<int, int, T>> entries;
+  nnz = MatGenApprox(m, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
+      static_cast<T>(-1), static_cast<T>(1), entries);
 
   for (unsigned int i = 0; i < m; ++i)
     b[i] = static_cast<T>(4) * n_dist(generator);

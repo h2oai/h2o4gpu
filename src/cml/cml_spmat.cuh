@@ -40,6 +40,9 @@ cusparseStatus_t MatTransp(cusparseHandle_t handle, int m, int n, int nnz,
     err = cusparseScsr2csc(handle, m, n, nnz, val_n,
         ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
         CUSPARSE_INDEX_BASE_ZERO);
+    int tmp;
+    cudaMemcpy(&tmp, ptr_n + m, sizeof(int), cudaMemcpyDeviceToHost);
+    printf("__%d %d\n", nnz, tmp);
   } else {
     err = cusparseScsr2csc(handle, n, m, nnz, val_n,
         ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
