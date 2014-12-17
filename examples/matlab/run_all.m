@@ -2,10 +2,11 @@
 
 % Build interface
 cd([pwd '/../../src/interface_matlab'])
-pogs_setup % Alternatively `pogs_setup gpu`
+pogs_setup % Alternatively `pogs_setup -gpu`
 cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 
+%{
 %% Run examples
 fprintf('\nBasis Pursuit\n')
 t = basis_pursuit(200, 2000);
@@ -54,3 +55,4 @@ fprintf('Solver Time: %e sec\n', t)
 fprintf('\nSupport Vector Machine\n')
 t = lasso(2000, 200);
 fprintf('Solver Time: %e sec\n', t)
+%}

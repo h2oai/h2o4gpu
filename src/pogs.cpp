@@ -11,6 +11,7 @@
 #include "pogs.h"
 #include "sinkhorn_knopp.h"
 
+
 // Proximal Operator Graph Solver.
 template<typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data) {
@@ -21,6 +22,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kTau = static_cast<T>(0.8);
   const T kAlpha = static_cast<T>(1.7);
   const T kKappa = static_cast<T>(0.9);
+  const T kRhoMax = static_cast<T>(1e4);
+  const T kRhoMin = static_cast<T>(1e-4);
   const CBLAS_ORDER Ord = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
@@ -189,7 +192,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
 
     // Evaluate stopping criteria.
-    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua && gap < eps_gap;
+    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+        (!pogs_data->gap_stop || gap < eps_gap);
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);
@@ -198,16 +202,21 @@ int Pogs(PogsData<T, M> *pogs_data) {
     if (pogs_data->adaptive_rho && !converged) {
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
-        rho *= delta;
-        gsl::blas_scal(1 / delta, &zt);
-        delta = std::min(kGamma * delta, kDeltaMax);
-        ku = k;
+        if (rho < kRhoMax) {
+          rho *= delta;
+          gsl::blas_scal(1 / delta, &zt);
+          delta = std::min(kGamma * delta, kDeltaMax);
+          ku = k;
+        }
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
-        rho /= delta;
-        gsl::blas_scal(delta, &zt);
-        delta = std::min(kGamma * delta, kDeltaMax);
-        kd = k;
+        if (rho > kRhoMin) {
+          rho /= delta;
+          gsl::blas_scal(1 / delta, &zt);
+          gsl::blas_scal(delta, &zt);
+          delta = std::min(kGamma * delta, kDeltaMax);
+          kd = k;
+        }
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
         xi *= kKappa;
       } else {

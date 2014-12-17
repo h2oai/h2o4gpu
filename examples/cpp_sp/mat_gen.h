@@ -7,9 +7,12 @@
 #include <cmath>
 #include <vector>
 
+using std::get;
+
 template <typename T>
 inline T rand(T lb, T ub) {
-  return static_cast<T>((ub - lb) * (rand() / (1.0 * RAND_MAX)) + lb);
+  return std::min(static_cast<T>(ub - lb - 1),
+      static_cast<T>((ub - lb) * (rand() / (1.0 * RAND_MAX)))) + lb;
 }
 
 template <typename T>
@@ -34,47 +37,44 @@ void MatGen(int m, int n, int nnz, T *val, int *rptr, int *cind, T lb, T ub) {
 
 template <typename T>
 int MatGenApprox(int m, int n, int nnz, T *val, int *rptr, int *cind, T lb,
-                 T ub) {
-  std::vector<std::pair<int, int>> indices;
-  std::vector<T> values;
+                 T ub, const std::vector<std::tuple<int, int, T>> &entries) {
+  std::vector<std::tuple<int, int, unsigned char, T>> values;
 
-  indices.reserve(nnz);
   values.reserve(nnz);
 
-  for (size_t i = 0; i < nnz; ++i) {
-    indices.emplace_back(std::min(m - 1, rand(0, m)),
-        std::min(n - 1, rand(0, n)));
-    values.push_back(rand(lb, ub));
+  for (const auto &e : entries) {
+    values.push_back(std::make_tuple(get<0>(e), get<1>(e),
+        static_cast<unsigned char>(0), get<2>(e)));
   }
 
+  for (size_t i = entries.size(); i < nnz; ++i) {
+    values.push_back(std::make_tuple(rand(0, m),
+        rand(0, n), static_cast<unsigned char>(1), rand(lb, ub)));
+  }
 
-  std::sort(indices.begin(), indices.end());
+  std::sort(values.begin(), values.end());
 
-//  for (auto v : values)
-//    printf("%e, ", v);
-//  printf("\n");
-//  for (auto v : indices)
-//    printf("(%d %d), ", v.first, v.second);
-//  printf("\n");
-
-
-  int row_ind = 1;
-  int col_ind = 1;
-  rptr[0] = 0; 
-  cind[0] = indices[0].second;
-  val[0] = values[0];
+  int index = 1;
+  cind[0] = get<1>(values[0]);
+  val[0] = get<3>(values[0]);
+  rptr[0] = 0;
+  for (size_t j = 1; j <= get<0>(values[0]); ++j)
+    rptr[j] = 0;
   for (size_t i = 1; i < nnz; ++i) {
-    if (indices[i-1] == indices[i])
+    if (get<0>(values[i-1]) == get<0>(values[i]) &&
+        get<1>(values[i-1]) == get<1>(values[i]))
       continue;
-    for (size_t j = indices[i-1].first; j < indices[i].first; ++j)
-      rptr[row_ind++] = col_ind;
-    cind[col_ind] = indices[i].second;
-    val[col_ind++] = values[i];
+    for (size_t j = get<0>(values[i-1]) + 1; j <= get<0>(values[i]); ++j)
+      rptr[j] = index;
+    cind[index] = get<1>(values[i]);
+    val[index] = get<3>(values[i]);
+    index++;
   }
 
-  for (size_t j = indices[nnz-1].first; j < m + 1; ++j)
-    rptr[row_ind++] = col_ind;
-  return col_ind;
+  for (size_t j = get<0>(values[nnz-1]) + 1; j <= m; ++j)
+    rptr[j] = index;
+  printf("ci %d\n", index);
+  return index;
 }
 
 #endif  // MAT_GEN_H_

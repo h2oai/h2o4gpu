@@ -10,6 +10,7 @@
 #include <thrust/transform.h>
 
 #include <algorithm>
+#include <limits>
 
 #include "_interface_defs.h"
 #include "cml/cml_blas.cuh"
@@ -53,60 +54,71 @@ struct SqrtF : thrust::unary_function<T, T> {
 // The following approx. holds: diag(d) * Ai * e =  1, diag(e) * Ai' * d = 1
 // Output matrix is generated as: Ao = diag(d) * Ai * diag(e),
 template <typename T>
-void __global__ __SetSign(T* x, char *sign, size_t size) {
+void __global__ __SetSign(T* x, unsigned char *sign, size_t size) {
   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
   for (unsigned int t = tid; t < size; t += gridDim.x * blockDim.x) {
     sign[t] = 0;
     for (unsigned int i = 0; i < 8; ++i) {
-      sign[t] |= (x[8 * t + i] < 0) << i; 
+      sign[t] |= static_cast<unsigned char>(x[8 * t + i] < 0) << i; 
       x[8 * t + i] = x[8 * t + i] * x[8 * t + i];
     }
   }
 }
 
 template <typename T>
-void __global__ __SetSignSingle(T* x, char *sign, size_t bits) {
+void __global__ __SetSignSingle(T* x, unsigned char *sign, size_t bits) {
   sign[0] = 0;
   for (unsigned int i = 0; i < bits; ++i) {
-    sign[0] |= (x[i] < 0) << i; 
+    sign[0] |= static_cast<unsigned char>(x[i] < 0) << i; 
     x[i] = x[i] * x[i];
   }
 }
 
 template <typename T>
-void __global__ __UnSetSign(T* x, char *sign, size_t size) {
+void __global__ __UnSetSign(T* x, unsigned char *sign, size_t size) {
   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
   for (unsigned int t = tid; t < size; t += gridDim.x * blockDim.x) {
     for (unsigned int i = 0; i < 8; ++i)
-      x[8 * t + i] = (1 - 2 * ((sign[t] >> i) & 1)) * Sqrt(x[8 * t + i]);
+      x[8 * t + i] = (1 - 2 * static_cast<int>((sign[t] >> i) & 1)) * Sqrt(x[8 * t + i]);
   }
 }
 
 template <typename T>
-void __global__ __UnSetSignSingle(T* x, char *sign, size_t bits) {
+void __global__ __UnSetSignSingle(T* x, unsigned char *sign, size_t bits) {
   for (unsigned int i = 0; i < bits; ++i)
-    x[i] = (1 - 2 * ((sign[0] >> i) & 1)) * Sqrt(x[i]);
+    x[i] = (1 - 2 * static_cast<int>((sign[0] >> i) & 1)) * Sqrt(x[i]);
 }
 
 
 template <typename T, typename I, CBLAS_ORDER O>
 T NormEst(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
           cusparseMatDescr_t descr, cml::spmat<T, I, O> *A) {
-  unsigned int kMaxIter = 100u;
-  T nrm_est = 0;
+  const unsigned int kMaxIter = 50u;
+  const T kTol = 1e-7;
+
+  T nrm_est = 0, nrm_est_last;
   cml::vector<T> x = cml::vector_alloc<T>(A->n);
   cml::vector<T> Sx = cml::vector_alloc<T>(A->m);
   cml::rand(x.data, x.size);
-  for (unsigned int i = 0; i < kMaxIter; ++i) { 
+  cudaDeviceSynchronize();
+
+  unsigned int i = 0;
+  for (/*unsigned int */i = 0; i < kMaxIter; ++i) {
+    nrm_est_last = nrm_est;
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr,
         static_cast<T>(1), A, &x, static_cast<T>(0), &Sx);
+    cudaDeviceSynchronize();
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_TRANSPOSE, descr,
         static_cast<T>(1), A, &Sx, static_cast<T>(0), &x);
+    cudaDeviceSynchronize();
     T nrmx = cml::blas_nrm2(b_hdl, &x);
     T nrmSx = cml::blas_nrm2(b_hdl, &Sx);
     cml::vector_scale(&x, 1 / nrmx);
     nrm_est = nrmx / nrmSx;
+    if (abs(nrm_est_last - nrm_est) < kTol * nrm_est)
+      break;
   }
+  Printf("niter = %d, nrmest = %e\n", i, nrm_est);
   cml::vector_free(&x);
   cml::vector_free(&Sx);
   return nrm_est;
@@ -160,10 +172,14 @@ template <typename T, typename I, CBLAS_ORDER O>
 int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
                 cusparseMatDescr_t descr, cml::spmat<T, I, O> *A,
                 cml::vector<T> *d, cml::vector<T> *e) {
+  cml::vector_set_all(d, static_cast<T>(1));
+  cml::vector_set_all(e, static_cast<T>(1));
+//  return 0;
+
   unsigned int kNumItr = 10;
   // Create bit-vector with sign.
-  char *sign;
-  size_t num_sign_bytes = (A->nnz + 7) / 8;
+  unsigned char *sign;
+  size_t num_sign_bytes = (2 * A->nnz + 7) / 8;
   cudaError_t err = cudaMalloc(&sign, num_sign_bytes);
   CudaCheckError(err);
   if (err != cudaSuccess)
@@ -172,55 +188,71 @@ int Equilibrate(cusparseHandle_t s_hdl, cublasHandle_t b_hdl,
   int num_chars = (2 * A->nnz) / 8;
   int grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
   __SetSign<<<grid_size, cml::kBlockSize>>>(A->val, sign, num_chars);
-  if (2 * A->nnz > num_chars * 8)
+  cudaDeviceSynchronize();
+  if (2 * A->nnz > num_chars * 8) {
     __SetSignSingle<<<1, 1>>>(A->val + num_chars * 8, sign + num_chars, 
         2 * A->nnz - num_chars * 8);
-
-  cml::vector_set_all(d, static_cast<T>(1));
+    cudaDeviceSynchronize();
+  }
 
   for (unsigned int k = 0; k < kNumItr; ++k) {
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_TRANSPOSE, descr,
         static_cast<T>(1), A, d, static_cast<T>(0), e);
+    cudaDeviceSynchronize();
     cml::vector_add_constant(e, static_cast<T>(1e-4));
+    cudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(e->data),
         thrust::device_pointer_cast(e->data + e->size),
         thrust::device_pointer_cast(e->data), ReciprF<T>(A->m));
+    cudaDeviceSynchronize();
 
     cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr,
         static_cast<T>(1), A, e, static_cast<T>(0), d);
+    cudaDeviceSynchronize();
     cml::vector_add_constant(d, static_cast<T>(1e-4));
+    cudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(d->data),
         thrust::device_pointer_cast(d->data + d->size),
         thrust::device_pointer_cast(d->data), ReciprF<T>(A->n));
+    cudaDeviceSynchronize();
   }
+//  return 0;
 
   thrust::transform(thrust::device_pointer_cast(d->data),
       thrust::device_pointer_cast(d->data + d->size),
       thrust::device_pointer_cast(d->data), SqrtF<T>());
+  cudaDeviceSynchronize();
 
   thrust::transform(thrust::device_pointer_cast(e->data),
       thrust::device_pointer_cast(e->data + e->size),
       thrust::device_pointer_cast(e->data), SqrtF<T>());
+  cudaDeviceSynchronize();
 
   __UnSetSign<<<grid_size, cml::kBlockSize>>>(A->val, sign, num_chars);
-  if (2 * A->nnz > num_chars * 8)
+  cudaDeviceSynchronize();
+  if (2 * A->nnz > num_chars * 8) {
     __UnSetSignSingle<<<1, 1>>>(A->val + num_chars * 8, sign + num_chars, 
         2 * A->nnz - num_chars * 8);
+    cudaDeviceSynchronize();
+  }
   
   // Compute D * A * E
   MultDiag(d, e, A);
+  cudaDeviceSynchronize();
 
   T nrmA = NormEst(s_hdl, b_hdl, descr, A);
   T nrmd = cml::blas_nrm2(b_hdl, d);
   T nrme = cml::blas_nrm2(b_hdl, e);
   T scale = sqrt(nrmd * sqrt(e->size) / (nrme * sqrt(d->size)));
 
-
   cml::vector<T> a_vec = cml::vector_view_array(A->val, 2 * A->nnz);
   cml::vector_scale(&a_vec, 1 / nrmA);
+  cudaDeviceSynchronize();
 
   cml::vector_scale(d, 1 / (scale * sqrt(nrmA)));
+  cudaDeviceSynchronize();
   cml::vector_scale(e, scale / sqrt(nrmA));
+  cudaDeviceSynchronize();
 
   cudaFree(sign);
 

@@ -191,6 +191,17 @@ int PopulateParams(const mxArray *params, PogsData<T, M> *pogs_data) {
     }
     pogs_data->adaptive_rho = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
   }
+  int gap_stop_idx = mxGetFieldNumber(params, "gap_stop");
+  if (gap_stop_idx != -1) {
+    mxArray *arr = mxGetFieldByNumber(params, 0, gap_stop_idx);
+    if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
+      mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+          "Parameter gap_stop must have dimension (1,1)");
+      return 1;
+    }
+    pogs_data->gap_stop = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
+  }
+
   return 0;
 }
 
@@ -264,20 +275,6 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   int *col_ptr = new int[n + 1];
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
-
-//   mexPrintf("%d, %d, %d\n", nnz, n, m);
-//   for (int i = 0; i < nnz; ++i)
-//     mexPrintf("%d ", row_ind[i]);
-//   mexPrintf("\n");
-// 
-//   for (int i = 0; i < n+1; ++i)
-//     mexPrintf("%d ", col_ptr[i]);
-//   mexPrintf("\n");
-// 
-//   for (int i = 0; i < nnz; ++i)
-//     mexPrintf("%e ", val[i]);
-//   mexPrintf("\n");
-//   return;
 
   Sparse<T, int, COL> A(val, col_ptr, row_ind, nnz);
 
@@ -386,10 +383,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
   if (mxIsSparse(prhs[0])) {
+#ifdef __CUDA__
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapSp<double>(nlhs, plhs, nrhs, prhs);
     else if (class_id_A == mxSINGLE_CLASS)
       SolverWrapSp<float>(nlhs, plhs, nrhs, prhs);
+#else
+    mexErrMsgIdAndTxt("MATLAB:pogs:notImplemented",
+        "Sparse POGS for CPU not implemented");
+#endif
   } else {
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapDn<double>(nlhs, plhs, nrhs, prhs);
