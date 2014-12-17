@@ -286,8 +286,8 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   int err = 0;
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
-//   if (num_obj > 1)
-//     err = AllocSparseFactors(&pogs_data);
+  if (num_obj > 1)
+    err = AllocSparseFactors(&pogs_data);
 
   // Populate parameters.
   if (!err && nrhs == 4)
@@ -317,8 +317,8 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
   }
 
-//   if (num_obj > 1)
-//     FreeSparseFactors(&pogs_data);
+  if (num_obj > 1)
+    FreeSparseFactors(&pogs_data);
    
   delete [] row_ind;
   delete [] col_ptr;

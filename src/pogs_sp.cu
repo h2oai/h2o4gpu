@@ -125,7 +125,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   bool converged = false;
 
   double t = timer<double>();
-  for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
+  for (unsigned int k = 0; !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
@@ -146,7 +146,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * 
         cml::blas_nrm2(d_hdl, &z);
 
-    if (converged || k == pogs_data->max_iter - 1)
+    if (converged || k == pogs_data->max_iter)
       break;
 
     // Project and Update Dual Variables
@@ -249,18 +249,57 @@ int Pogs(PogsData<T, M> *pogs_data) {
 template <typename T, typename I, POGS_ORD O>
 int AllocSparseFactors(PogsData<T, Sparse<T, I, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n, nnz = pogs_data->A.nnz;
-  size_t flen = 1 + 3 * (n + m) + 
-  cudaError_t err = cudaMalloc(&pogs_data->factors.val, flen * sizeof(T));
+  size_t flen = 1 + 3 * (n + m) + nnz;
+  printf("flen = %lu\n", flen);
+
+  Sparse<T, I, O>& A = pogs_data->factors;
+  A.val = 0;
+  A.ind = 0;
+  A.ptr = 0;
+  A.nnz = nnz;
+
+  cudaError_t err = cudaMalloc(&A.val, 2 * flen * sizeof(T));
   if (err == cudaSuccess)
-    err = cudaMemset(pogs_data->factors.val, 0, flen * sizeof(T));
-  if (err == cudaSuccess)
-    return 0;
-  else
+    err = cudaMemset(A.val, 0, 2 * flen * sizeof(T));
+  if (err != cudaSuccess) {
+    cudaFree(A.val);
     return 1;
+  }
+
+  err = cudaMalloc(&A.ind, 2 * nnz * sizeof(I));
+  if (err == cudaSuccess)
+    err = cudaMemset(A.ind, 0, 2 * nnz * sizeof(I));
+  if (err != cudaSuccess) {
+    cudaFree(A.ind);
+    cudaFree(A.val);
+    return 1;
+  }
+
+  err = cudaMalloc(&A.ptr, (m + n + 2) * sizeof(I));
+  if (err == cudaSuccess)
+    err = cudaMemset(A.ptr, 0, (m + n + 2) * sizeof(I));
+  if (err != cudaSuccess) {
+    cudaFree(A.ptr);
+    cudaFree(A.ind);
+    cudaFree(A.val);
+    return 1;
+  }
+
+  return 0;
 }
 
 template <typename T, typename I, POGS_ORD O>
-void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data);
+void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data) {
+  Sparse<T, I, O> &A = pogs_data->factors;
+  cudaFree(A.ptr);
+  cudaFree(A.ind);
+  cudaFree(A.val);
+
+  A.val = 0;
+  A.ind = 0;
+  A.ptr = 0;
+}
+
 
 // Declarations.
 template int Pogs<double, Sparse<double, int, COL> >
@@ -271,4 +310,22 @@ template int Pogs<float, Sparse<float, int, COL> >
     (PogsData<float, Sparse<float, int, COL> > *);
 template int Pogs<float, Sparse<float, int, ROW> >
     (PogsData<float, Sparse<float, int, ROW> > *);
+
+template int AllocSparseFactors<double, int, ROW>
+    (PogsData<double, Sparse<double, int, ROW> > *);
+template int AllocSparseFactors<double, int, COL>
+    (PogsData<double, Sparse<double, int, COL> > *);
+template int AllocSparseFactors<float, int, ROW>
+    (PogsData<float, Sparse<float, int, ROW> > *);
+template int AllocSparseFactors<float, int, COL>
+    (PogsData<float, Sparse<float, int, COL> > *);
+
+template void FreeSparseFactors<double, int, ROW>
+    (PogsData<double, Sparse<double, int, ROW> > *);
+template void FreeSparseFactors<double, int, COL>
+    (PogsData<double, Sparse<double, int, COL> > *);
+template void FreeSparseFactors<float, int, ROW>
+    (PogsData<float, Sparse<float, int, ROW> > *);
+template void FreeSparseFactors<float, int, COL>
+    (PogsData<float, Sparse<float, int, COL> > *);
 

@@ -124,7 +124,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   unsigned int kd = 0, ku = 0;
   bool converged = false;
 
-  for (unsigned int k = 0; k < pogs_data->max_iter && !err; ++k) {
+  for (unsigned int k = 0; !err; ++k) {
     gsl::vector_memcpy(&zprev, &z);
 
     // Evaluate proximal operators.
@@ -142,7 +142,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
 
-    if (converged)
+    if (converged && k < pogs_data->max_iter)
       break;
 
     // Project and Update Dual Variables.
