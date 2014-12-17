@@ -237,6 +237,22 @@ int Pogs(PogsData<T, M> *pogs_data) {
   return err;
 }
 
+template <typename T, typename I, POGS_ORD O>
+int AllocSparseFactors(PogsData<T, Sparse<T, I, O> > *pogs_data) {
+  size_t m = pogs_data->m, n = pogs_data->n, nnz = pogs_data->A.nnz;
+  size_t flen = 1 + 3 * (n + m) + 
+  cudaError_t err = cudaMalloc(&pogs_data->factors.val, flen * sizeof(T));
+  if (err == cudaSuccess)
+    err = cudaMemset(pogs_data->factors.val, 0, flen * sizeof(T));
+  if (err == cudaSuccess)
+    return 0;
+  else
+    return 1;
+}
+
+template <typename T, typename I, POGS_ORD O>
+void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data);
+
 // Declarations.
 template int Pogs<double, Sparse<double, int, COL> >
     (PogsData<double, Sparse<double, int, COL> > *);
