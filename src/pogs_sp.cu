@@ -13,7 +13,7 @@
 #include "cml/cml_spmat.cuh"
 #include "cml/cml_vector.cuh"
 #include "pogs.h"
-#include "timer.hpp"
+//#include "timer.hpp"
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -124,7 +124,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   unsigned int kd = 0, ku = 0;
   bool converged = false;
 
-  double t = timer<double>();
+  //double t = timer<double>();
   for (unsigned int k = 0; !err; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
@@ -214,7 +214,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
   }
-  Printf("TIME = %e\n", timer<double>() - t);
+  //Printf("TIME = %e\n", timer<double>() - t);
 
   // Scale x, y and l for output.
   cml::vector_div(&y12, &d);
