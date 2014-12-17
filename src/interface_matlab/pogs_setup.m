@@ -13,6 +13,9 @@ if opt_omp
 end
 
 cuda_lib = '/usr/local/cuda/lib64';
+if ismac
+  cuda_lib = '/usr/local/cuda/lib';
+end
 if opt_clb
   idx_lib = find(strcmp(varargin, '-cuda_lib')) + 1;
   cuda_lib = varargin{idx_lib};
