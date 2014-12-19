@@ -110,9 +110,52 @@ int Pogs(PogsData<T, M> *pogs_data) {
       cml::blas_scal(hdl, kOne / (factor * sqrt(sqrt_mean_diag)), &d);
       cml::blas_scal(hdl, factor / sqrt(sqrt_mean_diag), &e);
 
+      // Initialize x and y from x0 or y0
+      if (pogs_data->init_x && !pogs_data->init_y && pogs_data->x) {
+        cml::vector_memcpy(&x, pogs_data->x);
+        cml::vector_div(&x, &e);
+        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
+      } else if (pogs_data->init_y && !pogs_data->init_x && pogs_data->y) {
+        cml::vector_memcpy(&y, pogs_data->y);
+        cml::vector_mul(&y, &d);
+        cml::matrix<T, kOrd> AA = cml::matrix_alloc<T, kOrd>(min_dim, min_dim);
+        cml::matrix_memcpy(&AA, &L);
+        cml::vector<T> diag_AA = cml::matrix_diagonal(&AA);
+        cml::vector_add_constant(&diag_AA, static_cast<T>(1e-4));
+        cml::linalg_cholesky_decomp(hdl, &AA);
+        if (m >= n) {
+          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kZero, &x);
+          cml::linalg_cholesky_svx(hdl, &AA, &x);
+        } else {
+          cml::linalg_cholesky_svx(hdl, &AA, &y);
+          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kZero, &x);
+        }
+        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
+        cml::matrix_free(&AA);
+      }
+
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T)
       cml::vector_add_constant(&diag_L, kOne);
       cml::linalg_cholesky_decomp(hdl, &L);
+      
+      // TODO: Issue warning if x == NULL or y == NULL
+      // Initialize x and y from guess x0 and y0
+      if (pogs_data->init_x && pogs_data->init_y &&
+          pogs_data->x && pogs_data->y) {
+        cml::vector_memcpy(&x, pogs_data->x);
+        cml::vector_memcpy(&y, pogs_data->y);
+        cml::vector_div(&x, &e);
+        cml::vector_mul(&y, &d);
+        if (m >= n) {
+          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
+          cml::linalg_cholesky_svx(hdl, &L, &x);
+        } else {
+          cml::blas_gemv(hdl, CUBLAS_OP_N, -kOne, &A, &x, kOne, &y);
+          cml::linalg_cholesky_svx(hdl, &L, &y);
+          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
+        }
+        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
+      }
     }
   }
 

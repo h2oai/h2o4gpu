@@ -24,7 +24,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   const T kKappa = static_cast<T>(0.9);
   const T kRhoMax = static_cast<T>(1e4);
   const T kRhoMin = static_cast<T>(1e-4);
-  const CBLAS_ORDER Ord = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
+  const CBLAS_ORDER kOrd = M::Ord == ROW ? CblasRowMajor : CblasColMajor;
 
   int err = 0;
 
@@ -40,7 +40,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
   gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
-  gsl::matrix<T, Ord> A, L;
+  gsl::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     compute_factors = pogs_data->factors.val[0] == 0;
     if (!compute_factors)
@@ -49,16 +49,16 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = gsl::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = gsl::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
-    L = gsl::matrix_view_array<T, Ord>(
+    L = gsl::matrix_view_array<T, kOrd>(
         pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
-    A = gsl::matrix_view_array<T, Ord>(
+    A = gsl::matrix_view_array<T, kOrd>(
         pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = gsl::vector_calloc<T>(m + n);
     z = gsl::vector_calloc<T>(m + n);
     zt = gsl::vector_calloc<T>(m + n);
-    L = gsl::matrix_calloc<T, Ord>(min_dim, min_dim);
-    A = gsl::matrix_calloc<T, Ord>(m, n);
+    L = gsl::matrix_calloc<T, kOrd>(min_dim, min_dim);
+    A = gsl::matrix_calloc<T, kOrd>(m, n);
   }
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
       z12.data == 0 || A.data == 0 || L.data == 0)
@@ -74,7 +74,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   
   if (compute_factors && !err) {
     // Equilibrate A.
-    gsl::matrix<T, Ord> Ain = gsl::matrix_view_array<T, Ord>(
+    gsl::matrix<T, kOrd> Ain = gsl::matrix_view_array<T, kOrd>(
         pogs_data->A.val, m, n);
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
@@ -95,9 +95,52 @@ int Pogs(PogsData<T, M> *pogs_data) {
       gsl::blas_scal(kOne / (factor * std::sqrt(sqrt_mean_diag)), &d);
       gsl::blas_scal(factor / (std::sqrt(sqrt_mean_diag)), &e);
 
+      // Initialize x and y from x0 or y0
+      if (pogs_data->init_x && !pogs_data->init_y && pogs_data->x) {
+        gsl::vector_memcpy(&x, pogs_data->x);
+        gsl::vector_div(&x, &e);
+        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
+      } else if (pogs_data->init_y && !pogs_data->init_x && pogs_data->y) {
+        gsl::vector_memcpy(&y, pogs_data->y);
+        gsl::vector_mul(&y, &d);
+        gsl::matrix<T, kOrd> AA = gsl::matrix_alloc<T, kOrd>(min_dim, min_dim);
+        gsl::matrix_memcpy(&AA, &L);
+        gsl::vector<T> diag_AA = gsl::matrix_diagonal(&AA);
+        gsl::vector_add_constant(&diag_AA, static_cast<T>(1e-4));
+        gsl::linalg_cholesky_decomp(&AA);
+        if (m >= n) {
+          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kZero, &x);
+          gsl::linalg_cholesky_svx(&AA, &x);
+        } else {
+          gsl::linalg_cholesky_svx(&AA, &y);
+          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kZero, &x);
+        }
+        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
+        gsl::matrix_free(&AA);
+      }
+
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T).
       gsl::vector_add_constant(&diag_L, kOne);
       gsl::linalg_cholesky_decomp(&L);
+
+      // TODO: Issue warning if x == NULL or y == NULL
+      // Initialize x and y from guess x0 and y0
+      if (pogs_data->init_x && pogs_data->init_y &&
+          pogs_data->x && pogs_data->y) {
+        gsl::vector_memcpy(&x, pogs_data->x);
+        gsl::vector_memcpy(&y, pogs_data->y);
+        gsl::vector_div(&x, &e);
+        gsl::vector_mul(&y, &d);
+        if (m >= n) {
+          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);
+          gsl::linalg_cholesky_svx(&L, &x);
+        } else {
+          gsl::blas_gemv(CblasNoTrans, -kOne, &A, &x, kOne, &y);
+          gsl::linalg_cholesky_svx(&L, &y);
+          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);
+        }
+        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
+      }
     }
   }
 

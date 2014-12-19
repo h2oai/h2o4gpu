@@ -98,10 +98,42 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
 
   if (pre_process && !err) {
-    // Copy A to device (assume input row-major).
     cml::spmat_memcpy(s_hdl, &A, pogs_data->A.val, pogs_data->A.ind,
         pogs_data->A.ptr);
     err = sinkhorn_knopp::Equilibrate(s_hdl, d_hdl, descr, &A, &d, &e);
+
+    if (!err) {
+      // TODO: Issue warning if x == NULL or y == NULL
+      // Initialize x and y from x0 or/and y0
+      if (pogs_data->init_x && !pogs_data->init_y && pogs_data->x) {
+        cml::vector_memcpy(&x, pogs_data->x);
+        cml::vector_div(&x, &e);
+        cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne,
+            &A, &x, kZero, &y);
+      } else if (pogs_data->init_y && !pogs_data->init_x && pogs_data->y) {
+        cml::vector_memcpy(&y, pogs_data->y);
+        cml::vector_mul(&y, &d);
+        cml::vector_set_all(&x, kZero);
+        cml::spblas_solve(s_hdl, d_hdl, descr, &A, static_cast<T>(1e-4), &y, &x,
+            static_cast<T>(1e-6), 100, true);
+        cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne,
+            &A, &x, kZero, &y);
+      } else if (pogs_data->init_x && pogs_data->init_y &&
+          pogs_data->x && pogs_data->y) {
+        cml::vector_memcpy(&y, pogs_data->y);
+        cml::vector_mul(&y, &d);
+        cml::vector_memcpy(&x, pogs_data->x);
+        cml::vector_div(&x, &e);
+        cml::vector_memcpy(&x12, &x);
+        cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, -kOne,
+            &A, &x, kOne, &y);
+        cml::spblas_solve(s_hdl, d_hdl, descr, &A, kOne, &y, &x12,
+            static_cast<T>(1e-6), 100, true);
+        cml::blas_axpy(d_hdl, -kOne, &x12, &x);
+        cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne,
+            &A, &x, kZero, &y);
+      }
+    }
   }
 
   // Scale f and g to account for diagonal scaling e and d.

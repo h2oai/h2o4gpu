@@ -219,12 +219,15 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
   cudaMemcpy(s, x, n * sizeof(T), cudaMemcpyDeviceToDevice);
 
   // r = b - A*x.
-  spmv<T, F>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kNegOne,
-      descr, val, ptr, ind, x, &kOne, r);
+  nrm2(n, x, &normx);
+  if (normx > 0) {
+    spmv<T, F>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &kNegOne,
+        descr, val, ptr, ind, x, &kOne, r);
 
-  // s = A'*r - shift*x.
-  spmv<T, F>(handle_s, CUSPARSE_OPERATION_TRANSPOSE, m, n, nnz, &kOne,
-      descr, val, ptr, ind, r, &kNegShift, s);
+    // s = A'*r - shift*x.
+    spmv<T, F>(handle_s, CUSPARSE_OPERATION_TRANSPOSE, m, n, nnz, &kOne,
+        descr, val, ptr, ind, r, &kNegShift, s);
+  }
 
   // Initialize.
   cudaMemcpy(p, s, n * sizeof(T), cudaMemcpyDeviceToDevice);
@@ -376,7 +379,8 @@ INT solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
   cudaMemcpy(s, x, n * sizeof(T), cudaMemcpyDeviceToDevice);
 
   // r = b - A*x.
-  if (false) {
+  nrm2(n, x, &normx);
+  if (normx > 0) {
     if (F == CSR)
       spmv<T, CSR>(handle_s, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz,
           &kNegOne, descr, val_a, ptr_a, ind_a, x, &kOne, r);
