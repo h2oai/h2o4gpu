@@ -5,6 +5,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 template <typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
   T max_diff = 0;
@@ -91,7 +93,7 @@ double LassoPath(size_t m, size_t n) {
     for (unsigned int i = 0; i < n; ++i)
       pogs_data.g[i].c = lambda;
 
-    Pogs(&pogs_data);
+    Solve(&pogs_data);
     
     if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
       break;

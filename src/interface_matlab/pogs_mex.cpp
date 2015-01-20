@@ -127,7 +127,7 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
 
 // Populate parameters (rel_tol, abs_tol, max_iter, rho and quiet) in PogsData.
 template <typename T, typename M>
-int PopulateParams(const mxArray *params, PogsData<T, M> *pogs_data) {
+int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
   // Check if parameter exists in params, then make sure that it has
   // dimension 1x1 and finally set the corresponding value in pogs_data.
   int rel_tol_idx = mxGetFieldNumber(params, "rel_tol");
@@ -217,10 +217,10 @@ template <typename T>
 void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
-  Dense<T, COL> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
+  pogs::Dense<T, pogs::COL> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
 
   // Initialize Pogs data structure
-  PogsData<T, Dense<T, COL> > pogs_data(A, m, n);
+  pogs::PogsData<T, pogs::Dense<T, pogs::COL> > pogs_data(A, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
@@ -228,7 +228,7 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
   if (num_obj > 1)
-    err = AllocDenseFactors(&pogs_data);
+    err = pogs::AllocDenseFactors(&pogs_data);
 
   // Populate parameters.
   if (!err && nrhs == 4)
@@ -252,14 +252,14 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       break;
     
     // Run solver.
-    Pogs(&pogs_data);
+    pogs::Solve(&pogs_data);
 
     if (nlhs >= 4)
       reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
   }
 
   if (num_obj > 1)
-    FreeDenseFactors(&pogs_data);
+    pogs::FreeDenseFactors(&pogs_data);
 }
 
 template <typename T>
@@ -276,10 +276,10 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
 
-  Sparse<T, int, COL> A(val, col_ptr, row_ind, nnz);
+  pogs::Sparse<T, int, pogs::COL> A(val, col_ptr, row_ind, nnz);
 
   // Initialize Pogs data structure
-  PogsData<T, Sparse<T, int, COL> > pogs_data(A, m, n);
+  pogs::PogsData<T, pogs::Sparse<T, int, pogs::COL> > pogs_data(A, m, n);
   pogs_data.f.reserve(m);
   pogs_data.g.reserve(n);
 
@@ -287,7 +287,7 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
   if (num_obj > 1)
-    err = AllocSparseFactors(&pogs_data);
+    err = pogs::AllocSparseFactors(&pogs_data);
 
   // Populate parameters.
   if (!err && nrhs == 4)
@@ -311,14 +311,14 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       break;
     
     // Run solver.
-    Pogs(&pogs_data);
+    pogs::Solve(&pogs_data);
 
     if (nlhs >= 4)
       reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
   }
 
   if (num_obj > 1)
-    FreeSparseFactors(&pogs_data);
+    pogs::FreeSparseFactors(&pogs_data);
    
   delete [] row_ind;
   delete [] col_ptr;

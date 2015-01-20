@@ -15,6 +15,8 @@
 #include "matrix_util.h"
 #include "pogs.h"
 
+namespace pogs {
+
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
 struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
@@ -28,7 +30,7 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
 // Proximal Operator Graph Solver.
 template <typename T, typename M>
-int Pogs(PogsData<T, M> *pogs_data) {
+int Solve(PogsData<T, M> *pogs_data) {
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kDeltaMax = static_cast<T>(2);
@@ -326,13 +328,13 @@ void FreeDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
 }
 
 // Declarations.
-template int Pogs<double, Dense<double, ROW> >
+template int Solve<double, Dense<double, ROW> >
     (PogsData<double, Dense<double, ROW> > *);
-template int Pogs<double, Dense<double, COL> >
+template int Solve<double, Dense<double, COL> >
     (PogsData<double, Dense<double, COL> > *);
-template int Pogs<float, Dense<float, ROW> >
+template int Solve<float, Dense<float, ROW> >
     (PogsData<float, Dense<float, ROW> > *);
-template int Pogs<float, Dense<float, COL> >
+template int Solve<float, Dense<float, COL> >
     (PogsData<float, Dense<float, COL> > *);
 
 template int AllocDenseFactors<double, ROW>
@@ -352,4 +354,6 @@ template void FreeDenseFactors<float, ROW>
     (PogsData<float, Dense<float, ROW> > *);
 template void FreeDenseFactors<float, COL>
     (PogsData<float, Dense<float, COL> > *);
+
+}  // namespace pogs
 

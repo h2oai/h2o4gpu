@@ -5,6 +5,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Linear program in equality form.
 //   minimize    c^T * x
 //   subject to  Ax = b
@@ -60,7 +62,7 @@ double LpEq(int m, int n, int nnz) {
     pogs_data.g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
 
   return timer<double>() - t;
 }

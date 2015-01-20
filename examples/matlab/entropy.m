@@ -2,9 +2,9 @@ function pogs_time = entropy(m, n, params)
 %ENTROPY
 
 if nargin == 2
-  params.rho = 5e3;
-  params.rel_tol = 1e-5;
-  params.abs_tol = 1e-5;
+  params.rho = 1;
+  params.rel_tol = 1e-3;
+  params.abs_tol = 1e-4;
 end
 
 % Generate data.

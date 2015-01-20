@@ -4,6 +4,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Support Vector Machine.
 //   minimize    (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
 //
@@ -51,7 +53,7 @@ double Svm(size_t m, size_t n) {
   pogs_data.g.emplace_back(kZero);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
   return timer<double>() - t;
 }
 

@@ -4,6 +4,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Non-Negative Least Squares.
 //   minimize    (1/2) ||Ax - b||_2^2
 //   subject to  x >= 0.
@@ -48,7 +50,7 @@ double NonNegL2(size_t m, size_t n) {
     pogs_data.g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
 
   return timer<double>() - t;
 }

@@ -4,6 +4,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Linear program in inequality form.
 //   minimize    c^T * x
 //   subject to  Ax <= b.
@@ -48,7 +50,7 @@ double LpIneq(size_t m, size_t n) {
     pogs_data.g.emplace_back(kIdentity, u_dist(generator));
  
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
 
   return timer<double>() - t;
 }

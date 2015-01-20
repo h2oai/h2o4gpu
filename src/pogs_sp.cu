@@ -13,7 +13,8 @@
 #include "cml/cml_spmat.cuh"
 #include "cml/cml_vector.cuh"
 #include "pogs.h"
-//#include "timer.hpp"
+
+namespace pogs {
 
 // Apply operator to h.a and h.d.
 template <typename T, typename Op>
@@ -28,7 +29,7 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
 // Proximal Operator Graph Solver.
 template<typename T, typename M>
-int Pogs(PogsData<T, M> *pogs_data) {
+int Solve(PogsData<T, M> *pogs_data) {
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kGamma = static_cast<T>(1.01);
@@ -334,13 +335,13 @@ void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data) {
 
 
 // Declarations.
-template int Pogs<double, Sparse<double, int, COL> >
+template int Solve<double, Sparse<double, int, COL> >
     (PogsData<double, Sparse<double, int, COL> > *);
-template int Pogs<double, Sparse<double, int, ROW> >
+template int Solve<double, Sparse<double, int, ROW> >
     (PogsData<double, Sparse<double, int, ROW> > *);
-template int Pogs<float, Sparse<float, int, COL> >
+template int Solve<float, Sparse<float, int, COL> >
     (PogsData<float, Sparse<float, int, COL> > *);
-template int Pogs<float, Sparse<float, int, ROW> >
+template int Solve<float, Sparse<float, int, ROW> >
     (PogsData<float, Sparse<float, int, ROW> > *);
 
 template int AllocSparseFactors<double, int, ROW>
@@ -360,4 +361,6 @@ template void FreeSparseFactors<float, int, ROW>
     (PogsData<float, Sparse<float, int, ROW> > *);
 template void FreeSparseFactors<float, int, COL>
     (PogsData<float, Sparse<float, int, COL> > *);
+
+}  // namespace pogs
 

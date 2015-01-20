@@ -4,6 +4,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Logistic
 //   minimize    \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
 //   subject to  y = Ax
@@ -69,7 +71,7 @@ double Logistic(size_t m, size_t n) {
   pogs_data.g.emplace_back(kZero);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
 
   return timer<double>() - t;
 }

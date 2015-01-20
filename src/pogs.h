@@ -4,6 +4,8 @@
 #include <vector>
 #include "prox_lib.h"
 
+namespace pogs {
+
 enum POGS_ORD { COL, ROW };
 
 // Data structure for input to Pogs().
@@ -35,7 +37,7 @@ struct PogsData {
 
 // Pogs solver.
 template <typename T, typename M>
-int Pogs(PogsData<T, M> *pogs_data);
+int Solve(PogsData<T, M> *pogs_data);
 
 // Dense matrix type.
 template <typename T, POGS_ORD O>
@@ -72,6 +74,8 @@ int AllocSparseFactors(PogsData<T, Sparse<T, I, O> > *pogs_data);
 
 template <typename T, typename I, POGS_ORD O>
 void FreeSparseFactors(PogsData<T, Sparse<T, I,O> > *pogs_data);
+
+}  // namespace pogs
 
 #endif  // POGS_H_
 

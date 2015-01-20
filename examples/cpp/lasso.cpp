@@ -4,6 +4,8 @@
 #include "pogs.h"
 #include "timer.h"
 
+using namespace pogs;
+
 // Lasso
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
@@ -61,7 +63,7 @@ double Lasso(size_t m, size_t n) {
     pogs_data.g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  Solve(&pogs_data);
 
   return timer<double>() - t;
 }

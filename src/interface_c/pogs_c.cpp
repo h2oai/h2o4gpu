@@ -8,8 +8,8 @@ int Pogs(size_t m, size_t n, T *A,
          T rho, T abs_tol, T rel_tol, unsigned int max_iter, bool quiet,
          bool adaptive_rho, bool gap_stop, T *x, T *y, T *l, T *optval) {
   // Create pogs struct.
-  Dense<T, static_cast<POGS_ORD>(O)> A_(A);
-  PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> > pogs_data(A_, m, n);
+  pogs::Dense<T, static_cast<pogs::POGS_ORD>(O)> A_(A);
+  pogs::PogsData<T, pogs::Dense<T, static_cast<pogs::POGS_ORD>(O)> > pogs_data(A_, m, n);
   pogs_data.x = x;
   pogs_data.y = y;
   
@@ -34,7 +34,7 @@ int Pogs(size_t m, size_t n, T *A,
   pogs_data.gap_stop = gap_stop;
 
   // Solve.
-  int err = Pogs(&pogs_data);
+  int err = pogs::Solve(&pogs_data);
   *optval = pogs_data.optval;
 
   return err;
