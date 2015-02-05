@@ -2,11 +2,11 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lasso_path.cpp logistic.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC=lasso_new.cpp #lasso.cpp lasso_path.cpp logistic.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -I$(POGSROOT) -fopenmp -std=c++11 -Wall -Wconversion  
+CXXFLAGS=-g -O3 -I$(POGSROOT)/include -fopenmp -std=c++11 -Wall -Wconversion  
 
 # CUDA Flags
 CULDFLAGS_=-lcudart -lcublas -lcusparse
@@ -23,16 +23,14 @@ CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
 # CPU
-cpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OOFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.o
+# cpu: run_all.cpp examples.h $(EXSRC)
+# 	$(MAKE) -C $(POGSROOT)
+# 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OOFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.o
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_sp_cu.o pogs_cu_link.o
-	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $< \
-	$(POGSROOT)/pogs_sp_cu.o $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o $(POGSROOT)/cml.o \
-	$(CULDFLAGS)
+	$(MAKE) -C $(POGSROOT)
+	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/pogs.a $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run
