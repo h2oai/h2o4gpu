@@ -43,6 +43,16 @@ __global__ void __strided_memcpy(T *x, size_t stride_x, const T *y,
     x[i * stride_x] = y[i * stride_y];
 }
 
+template <typename T>
+__global__ void __any_isnan(T *x, size_t stride, size_t size, int *result) {
+  uint tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (uint i = tid; i < size; i += gridDim.x * blockDim.x) {
+    if (isnan(x[i * stride])) {
+      *result = 1;
+    }
+  }
+}
+
 }  // namespace
 
 template <typename T>
@@ -63,6 +73,19 @@ void vector_set_all(vector<T> *v, T x) {
   uint grid_dim = calc_grid_dim(v->size, kBlockSize);
   __set_vector<<<grid_dim, kBlockSize>>>(v->data, x, v->stride, v->size);
 }
+
+template <typename T>
+bool vector_any_isnan(vector<T> *v) {
+  int *res_ptr, res;
+  cudaMalloc(&res_ptr, sizeof(int));
+  cudaMemset(res_ptr, 0, sizeof(int));
+  uint grid_dim = calc_grid_dim(v->size, kBlockSize);
+  __any_isnan<<<grid_dim, kBlockSize>>>(v->data, v->stride, v->size, res_ptr);
+  cudaMemcpy(&res, res_ptr, sizeof(int), cudaMemcpyDeviceToHost);
+  cudaFree(res_ptr);
+  return res > 0;
+}
+
 
 template <typename T>
 vector<T> vector_calloc(size_t n) {

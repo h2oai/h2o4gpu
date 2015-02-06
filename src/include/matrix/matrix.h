@@ -28,7 +28,7 @@ class Matrix {
   virtual int Equil(T *d, T *e) = 0;
 
   // Method to multiply by A and A^T.
-  virtual int Mul(char trans, T alpha, const T *x, T beta, T *y) = 0;
+  virtual int Mul(char trans, T alpha, const T *x, T beta, T *y) const = 0;
 
   // Get dimensions and check if initialized
   size_t Rows() const { return _m; }

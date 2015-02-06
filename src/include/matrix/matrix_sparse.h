@@ -34,7 +34,7 @@ class MatrixSparse : public Matrix<T> {
   int Equil(T *d, T *e);
 
   // Method to multiply by A and A^T.
-  int Mul(char trans, T alpha, const T *x, T beta, T *y);
+  int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
 
   // Getters
   T* Data() { return _data; }

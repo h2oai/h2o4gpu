@@ -28,11 +28,13 @@ struct GpuData {
     cublasCreate(&d_hdl);
     cusparseCreate(&s_hdl);
     cusparseCreateMatDescr(&descr);
+    DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
     cublasDestroy(d_hdl);
     cusparseDestroy(s_hdl);
     cusparseDestroyMatDescr(descr);
+    DEBUG_CUDA_CHECK_ERR();
   }
 };
 
@@ -66,6 +68,7 @@ MatrixSparse<T>::~MatrixSparse() {
 
 template <typename T>
 int MatrixSparse<T>::Init() {
+  DEBUG_ASSERT(!this->_done_init);
   if (this->_done_init)
     return 1;
   this->_done_init = true;
@@ -74,11 +77,9 @@ int MatrixSparse<T>::Init() {
 
   // Allocate sparse matrix on gpu.
   cudaMalloc(&_data, 2 * _nnz * sizeof(T));
-  CHECKERR("Malloc data fail");
   cudaMalloc(&_ind, 2 * _nnz * sizeof(POGS_INT));
-  CHECKERR("Malloc ind fail");
   cudaMalloc(&_ptr, (this->_m + this->_n + 2) * sizeof(POGS_INT));
-  CHECKERR("Malloc ptr fail");
+  DEBUG_CUDA_CHECK_ERR();
 
   if (_ord == ROW) {
     cml::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ptr, _ind, this->_m,
@@ -89,38 +90,41 @@ int MatrixSparse<T>::Init() {
         this->_n, _nnz);
     cml::spmat_memcpy(info->s_hdl, &A, _data, _ind, _ptr);
   }
+  DEBUG_CUDA_CHECK_ERR();
 
   return 0;
 }
 
 template <typename T>
 int MatrixSparse<T>::Free() {
+  DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
   if (_data) {
     cudaFree(_data);
     _data = 0;
-    CHECKERR("Failed to free device data");
+    DEBUG_CUDA_CHECK_ERR();
   }
 
   if (_ptr) {
     cudaFree(_ptr);
     _ptr = 0;
-    CHECKERR("Failed to free device row/col pointer");
+    DEBUG_CUDA_CHECK_ERR();
   }
 
   if (_ind) {
     cudaFree(_ind);
     _ind = 0;
-    CHECKERR("Failed to free device row/col indices");
+    DEBUG_CUDA_CHECK_ERR();
   }
 
   return 0;
 }
 
 template <typename T>
-int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) {
+int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
+  DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
@@ -140,12 +144,17 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) {
     cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
         &A, &x_vec, beta, &y_vec);
   }
+  DEBUG_CUDA_CHECK_ERR();
 
   return 0;
 }
 
 template <typename T>
 int MatrixSparse<T>::Equil(T *d, T *e) {
+  DEBUG_ASSERT(this->_done_init);
+  if (!this->_done_init)
+    return 1;
+
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
 

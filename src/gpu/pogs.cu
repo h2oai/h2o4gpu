@@ -26,8 +26,9 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
   Op binary_op;
   ApplyOp(Op binary_op) : binary_op(binary_op) { }
   __host__ __device__ FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
-    // TODO: modify e too!!!!
-    h.a = binary_op(h.a, x); h.d = binary_op(h.d, x);
+    h.a = binary_op(h.a, x);
+    h.d = binary_op(h.d, x);
+    h.e = binary_op(binary_op(h.e, x), x);
     return h;
   }
 };
@@ -55,6 +56,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 
 template <typename T, typename M, typename P>
 int Pogs<T, M, P>::_Init() {
+  DEBUG_ASSERT(!_done_init);
   if (_done_init)
     return 1;
   _done_init = true;
@@ -66,11 +68,15 @@ int Pogs<T, M, P>::_Init() {
   cudaMalloc(&_de, (m + n) * sizeof(T));
   cudaMalloc(&_z, (m + n) * sizeof(T));
   cudaMalloc(&_zt, (m + n) * sizeof(T));
+  cudaMemset(_de, 0, (m + n) * sizeof(T));
+  cudaMemset(_z, 0, (m + n) * sizeof(T));
+  cudaMemset(_zt, 0, (m + n) * sizeof(T));
+  XDEBUG_CUDA_CHECK_ERR();
 
-//  _P = P(_A);
   _A.Init();
   _A.Equil(_de, _de + m);
   _P.Init();
+  XDEBUG_CUDA_CHECK_ERR();
 
   return 0;
 }
@@ -103,6 +109,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Create cuBLAS handle.
   cublasHandle_t hdl;
   cublasCreate(&hdl);
+  XDEBUG_CUDA_CHECK_ERR();
 
   // Allocate data for ADMM variables.
   cml::vector<T> de = cml::vector_view_array(_de, m + n);
@@ -111,6 +118,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> ztemp = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
+  XDEBUG_CUDA_CHECK_ERR();
 
   // Create views for x and y components.
   cml::vector<T> d = cml::vector_subvector(&de, 0, m);
@@ -123,6 +131,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> yprev = cml::vector_subvector(&zprev, n, m);
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
+  XDEBUG_CUDA_CHECK_ERR();
 
   // TODO: Use some form of init y maybe?
   // Initialize x and y from x0 or y0
@@ -131,7 +140,10 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_memcpy(&xprev, _x);
   cml::vector_div(&xprev, &e);
   cml::vector_set_all(&x, kZero);
+  XDEBUG_CUDA_CHECK_ERR();
   _P.Project(yprev.data, xprev.data, kOne, x.data, y.data);
+  cudaDeviceSynchronize();
+  XDEBUG_CUDA_CHECK_ERR();
 
   // TODO: initialize from _mu and _lambda and check if ||A^Tmu+lambda|| < tol.
 //  cml::vector_memcpy(&xt, _mu);
@@ -149,6 +161,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   thrust::transform(g_gpu.begin(), g_gpu.end(),
       thrust::device_pointer_cast(e.data), g_gpu.begin(),
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
+  XDEBUG_CUDA_CHECK_ERR();
 
   // Signal start of execution.
   if (_verbose > 0) {
@@ -171,6 +184,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     ProxEval(g_gpu, _rho, x.data, x12.data);
     ProxEval(f_gpu, _rho, y.data, y12.data);
+    XDEBUG_CUDA_CHECK_ERR();
 
     // Compute dual variable.
     T gap;
@@ -182,21 +196,20 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         cml::blas_nrm2(hdl, &z12);
     T eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &z12);
     T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &z);
+    XDEBUG_CUDA_CHECK_ERR();
 
     if (converged || k == _max_iter)
       break;
 
     // Project onto y = Ax.
     _P.Project(x12.data, y12.data, kOne, x.data, y.data);
+    cudaDeviceSynchronize();
+    XDEBUG_CUDA_CHECK_ERR();
 
     // Apply over relaxation.
     cml::blas_scal(hdl, kAlpha, &z);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
-
-    // Update dual variable.
-    cml::blas_axpy(hdl, kAlpha, &z12, &zt);
-    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
-    cml::blas_axpy(hdl, -kOne, &z, &zt);
+    XDEBUG_CUDA_CHECK_ERR();
 
     // Calculate residuals.
     cml::vector_memcpy(&ztemp, &zprev);
@@ -209,19 +222,28 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
-    if (nrm_r < eps_pri && nrm_s < eps_dua) {
+    if (nrm_r < eps_pri && nrm_s < eps_dua || true) {
       cml::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
+      cudaDeviceSynchronize();
       nrm_r = cml::blas_nrm2(hdl, &ytemp);
-      if (nrm_r < eps_pri) {
+      if (nrm_r < eps_pri || true) {
         cml::vector_memcpy(&ztemp, &z12);
         cml::blas_axpy(hdl, kOne, &zt, &ztemp);
-        cml::blas_axpy(hdl, -kOne, &z, &ztemp);
+        cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
         _A.Mul('t', kOne, ytemp.data, kOne, xtemp.data);
+        cudaDeviceSynchronize();
         nrm_s = _rho * cml::blas_nrm2(hdl, &xtemp);
         exact = true;
       }
     }
+    XDEBUG_CUDA_CHECK_ERR();
+
+    // Update dual variable.
+    cml::blas_axpy(hdl, kAlpha, &z12, &zt);
+    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
+    cml::blas_axpy(hdl, -kOne, &z, &zt);
+    XDEBUG_CUDA_CHECK_ERR();
 
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
@@ -258,6 +280,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       } else {
         delta = kDeltaMin;
       }
+      XDEBUG_CUDA_CHECK_ERR();
     }
   }
 
@@ -278,6 +301,8 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&zprev);
   cml::vector_free(&ztemp);
   cublasDestroy(hdl);
+  XDEBUG_CUDA_CHECK_ERR();
+  DEBUG_PRINT("Finished Execution");
 
   return 0;
 }
@@ -288,9 +313,12 @@ Pogs<T, M, P>::~Pogs() {
   cudaFree(_z);
   cudaFree(_zt);
   _de = _z = _zt = 0;
+  XDEBUG_CUDA_CHECK_ERR();
 
   _A.Free();
+  XDEBUG_CUDA_CHECK_ERR();
   _P.Free();
+  XDEBUG_CUDA_CHECK_ERR();
 
   delete [] _x;
   delete [] _y;

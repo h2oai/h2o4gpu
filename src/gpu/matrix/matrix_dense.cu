@@ -16,9 +16,11 @@ struct GpuData {
   cublasHandle_t handle;
   GpuData(const T *orig_data) : orig_data(orig_data) {
     cublasCreate(&handle);
+    DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
     cublasDestroy(handle);
+    DEBUG_CUDA_CHECK_ERR();
   }
 };
 
@@ -51,6 +53,7 @@ MatrixDense<T>::~MatrixDense() {
 
 template <typename T>
 int MatrixDense<T>::Init() {
+  DEBUG_ASSERT(!this->_done_init);
   if (this->_done_init)
     return 1;
   this->_done_init = true;
@@ -59,30 +62,31 @@ int MatrixDense<T>::Init() {
 
   // Copy Matrix to GPU.
   cudaMalloc(&_data, this->_m * this->_n * sizeof(T));
-  CHECKERR("Malloc _m * _n fail");
   cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),
       cudaMemcpyHostToDevice);
-  CHECKERR("Memcpy to device fail");
+  DEBUG_CUDA_CHECK_ERR();
 
   return 0;
 }
 
 template <typename T>
 int MatrixDense<T>::Free() {
+  DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
   if (this->_data) {
     cudaFree(this->_data);
     this->_data = 0;
-    CHECKERR("Failed to free device _data pointer");
+    DEBUG_CUDA_CHECK_ERR();
   }
 
   return 0;
 }
 
 template <typename T>
-int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) {
+int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
+  DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
@@ -102,11 +106,14 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) {
     cml::blas_gemv(info->handle, OpToCublasOp(trans), alpha, &A, &x_vec, beta,
         &y_vec);
   }
+  DEBUG_CUDA_CHECK_ERR();
+
   return 0;
 }
 
 template <typename T>
 int MatrixDense<T>::Equil(T *d, T *e) {
+  DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 

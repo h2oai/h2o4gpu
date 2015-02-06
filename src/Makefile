@@ -35,7 +35,7 @@ CXXFLAGS=-g -O3 -Wall -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=-arch=sm_35 -Xcompiler -fPIC
+CUFLAGS=-arch=sm_20 -Xcompiler -fPIC -DDEBUG
 
 MATRIX=include/matrix/matrix.h \
 	include/matrix/matrix_dense.h \
@@ -103,6 +103,6 @@ gpu/%.o: %.cu $(GPU_HDR)
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 clean:
-	rm -f *.a *.0 gpu/*.o gpu/matrix/*.o gpu/projector/*.o gpu/cml/*.o
+	rm -f *.a *.o gpu/*.o gpu/matrix/*.o gpu/projector/*.o gpu/cml/*.o
 	rm -rf *.dSYM
 

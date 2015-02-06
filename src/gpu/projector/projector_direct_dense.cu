@@ -2,12 +2,14 @@
 #include <cublas_v2.h>
 
 #include <algorithm>
+#include <limits>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_linalg.cuh"
 #include "cml/cml_matrix.cuh"
 #include "matrix/matrix_dense.h"
 #include "projector/projector_direct.h"
+#include "util.cuh"
 
 namespace pogs {
 
@@ -17,8 +19,14 @@ template<typename T>
 struct GpuData {
   T *AA, *L, s;
   cublasHandle_t handle;
-  GpuData() : AA(0), L(0), s(static_cast<T>(-1.)) { cublasCreate(&handle); }
-  ~GpuData() { cublasDestroy(handle); }
+  GpuData() : AA(0), L(0), s(static_cast<T>(-1.)) {
+    cublasCreate(&handle);
+    XDEBUG_CUDA_CHECK_ERR();
+  }
+  ~GpuData() {
+    cublasDestroy(handle);
+    XDEBUG_CUDA_CHECK_ERR();
+  }
 };
 
 }  // namespace
@@ -33,6 +41,7 @@ ProjectorDirect<T, M>::ProjectorDirect(const M& A)
 
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
+  // TODO: Check if this works.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   delete info;
 }
@@ -42,15 +51,17 @@ int ProjectorDirect<T, M>::Init() {
   if (this->_done_init)
     return 1;
   this->_done_init = true;
-
-  assert(_A.IsInit());
+  DEBUG_ASSERT(_A.IsInit());
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 
-  cudaMalloc(&(info->AA), min_dim * min_dim * sizeof(T)); 
-  cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T)); 
+  cudaMalloc(&(info->AA), min_dim * min_dim * sizeof(T));
+  cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
+  cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
+  cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
+  XDEBUG_CUDA_CHECK_ERR();
 
   cublasOperation_t op_type = _A.Rows() >= _A.Cols()
       ? CUBLAS_OP_T : CUBLAS_OP_N;
@@ -60,19 +71,26 @@ int ProjectorDirect<T, M>::Init() {
     const cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    XDEBUG_CUDA_CHECK_ERR();
     cml::matrix<T, CblasRowMajor> AA = cml::matrix_view_array<T, CblasRowMajor>
         (info->AA, min_dim, min_dim);
+    XDEBUG_CUDA_CHECK_ERR();
     cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
+    XDEBUG_CUDA_CHECK_ERR();
   } else {
     const cml::matrix<T, CblasColMajor> A =
         cml::matrix_view_array<T, CblasColMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    XDEBUG_CUDA_CHECK_ERR();
     cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
         (info->AA, min_dim, min_dim);
+    XDEBUG_CUDA_CHECK_ERR();
     cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
+    XDEBUG_CUDA_CHECK_ERR();
   }
+  XDEBUG_CUDA_CHECK_ERR();
 
   return 0;
 }
@@ -87,11 +105,13 @@ int ProjectorDirect<T, M>::Free() {
   if (info->AA) {
     cudaFree(info->AA);
     info->AA = 0;
+    XDEBUG_CUDA_CHECK_ERR();
   }
 
   if (info->L) {
     cudaFree(info->L);
     info->L = 0;
+    XDEBUG_CUDA_CHECK_ERR();
   }
   
   return 0;
@@ -117,6 +137,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
   // Set (x, y) = (x0, y0).
   cml::vector_memcpy(&x_vec, &x0_vec);
   cml::vector_memcpy(&y_vec, &y0_vec);
+  XDEBUG_CUDA_CHECK_ERR();
 
   if (_A.Order() == MatrixDense<T>::ROW) {
     const cml::matrix<T, CblasRowMajor> A =
@@ -126,6 +147,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
         (info->AA, min_dim, min_dim);
     cml::matrix<T, CblasRowMajor> L = cml::matrix_view_array<T, CblasRowMajor>
         (info->L, min_dim, min_dim);
+    XDEBUG_CUDA_CHECK_ERR();
 
     if (s != info->s) {
       cml::matrix_memcpy(&L, &AA);
@@ -147,6 +169,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
           static_cast<T>(1.), &x_vec);
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
     }
+    XDEBUG_CUDA_CHECK_ERR();
   } else {
     const cml::matrix<T, CblasColMajor> A =
         cml::matrix_view_array<T, CblasColMajor>
@@ -155,12 +178,14 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
         (info->AA, min_dim, min_dim);
     cml::matrix<T, CblasColMajor> L = cml::matrix_view_array<T, CblasColMajor>
         (info->L, min_dim, min_dim);
+    XDEBUG_CUDA_CHECK_ERR();
 
     if (s != info->s) {
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
       cml::linalg_cholesky_decomp(hdl, &L);
+      XDEBUG_CUDA_CHECK_ERR();
     }
     if (_A.Rows() >= _A.Cols()) {
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
@@ -176,7 +201,38 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
           static_cast<T>(1.), &x_vec);
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
     }
+    XDEBUG_CUDA_CHECK_ERR();
   }
+
+#ifdef DEBUG
+  {
+    T tol = 1e2 * std::numeric_limits<T>::epsilon();
+    cml::vector<T> x_ = cml::vector_calloc<T>(_A.Cols());
+    cml::vector<T> y_ = cml::vector_calloc<T>(_A.Rows());
+    
+    // Check residual
+    cml::vector_memcpy(&x_, x);
+    cml::vector_memcpy(&y_, y);
+    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
+    cudaDeviceSynchronize();
+    T nrm_r = cml::blas_nrm2(hdl, &y_)  / std::sqrt(_A.Rows());
+    DEBUG_ASSERT_EQ_EPS(nrm_r, static_cast<T>(0.), tol);
+  
+    // Check KKT
+    cml::vector_memcpy(&x_, x);
+    cml::vector_memcpy(&y_, y0);
+    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
+    cudaDeviceSynchronize();
+    _A.Mul('t', static_cast<T>(1.), y_.data, static_cast<T>(1.), x_.data);
+    cudaDeviceSynchronize();
+    cml::blas_axpy(hdl, static_cast<T>(-1.), &x0_vec, &x_);
+    T nrm_kkt = cml::blas_nrm2(hdl, &x_) / std::sqrt(_A.Cols());
+    DEBUG_ASSERT_EQ_EPS(nrm_kkt, static_cast<T>(0.), tol);
+
+    cml::vector_free(&x_);
+    cml::vector_free(&y_);
+  }
+#endif
 
   info->s = s;
   return 0;
