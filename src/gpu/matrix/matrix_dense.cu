@@ -13,7 +13,7 @@ namespace pogs {
 // File scoped constants.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 const NormTypes kNormEquilibrate   = kNorm2; 
-const NormTypes kNormNormalize     = kNorm2; 
+const NormTypes kNormNormalize     = kNormFro; 
 const unsigned int kEquilIter      = 10u; 
 const unsigned int kNormEstMaxIter = 50u;
 const double kNormEstTol           = 1e-2;
@@ -59,7 +59,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 template <typename T>
 MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
     : Matrix<T>(m, n), _data(0) {
-  assert(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
+  ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   // Set GPU specific _info.
