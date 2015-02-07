@@ -10,7 +10,6 @@ class Matrix {
  protected:
   const size_t _m, _n;
 
-  // TODO: Implement copy constructor
   void *_info;
 
   bool _done_init;
@@ -20,9 +19,8 @@ class Matrix {
 
   virtual ~Matrix() { };
 
-  // Call these methods to initialize and free the matrix.
+  // Call this methods to initialize the matrix.
   virtual int Init() = 0;
-  virtual int Free() = 0;
 
   // Method to equilibrate and return equilibration vectors.
   virtual int Equil(T *d, T *e) = 0;

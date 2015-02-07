@@ -10,7 +10,7 @@
 namespace pogs {
 
 // Defaults.
-const double       kAbsTol      = 1e-4;
+const double       kAbsTol      = 1e-9;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
 const unsigned int kVerbose     = 2u;
@@ -51,20 +51,20 @@ class Pogs {
             const std::vector<FunctionObj<T> >& g);
 
   // Getters for solution variables.
-  const T* GetX() const { return _x; }
-  const T* GetY() const { return _y; }
+  const T* GetX()      const { return _x; }
+  const T* GetY()      const { return _y; }
   const T* GetLambda() const { return _lambda; }
-  const T* GetMu() const { return _mu; }
+  const T* GetMu()     const { return _mu; }
   const T  GetOptval() const { return _optval; }
 
   // Setters for parameters and initial values.
-  void SetRho(T rho) { _rho = rho; }
-  void SetAbsTol(T abs_tol) { _abs_tol = abs_tol; }
-  void SetRelTol(T rel_tol) { _rel_tol = rel_tol; }
+  void SetRho(T rho)                     { _rho = rho; }
+  void SetAbsTol(T abs_tol)              { _abs_tol = abs_tol; }
+  void SetRelTol(T rel_tol)              { _rel_tol = rel_tol; }
   void SetMaxIter(unsigned int max_iter) { _max_iter = max_iter; }
-  void SetVerbose(unsigned int verbose) { _verbose = verbose; }
+  void SetVerbose(unsigned int verbose)  { _verbose = verbose; }
   void SetAdaptiveRho(bool adaptive_rho) { _adaptive_rho = adaptive_rho; }
-  void SetGapStop(bool gap_stop) { _gap_stop = gap_stop; }
+  void SetGapStop(bool gap_stop)         { _gap_stop = gap_stop; }
   void SetX(const T *x) { memcpy(_x, x, _A.Cols() * sizeof(T)); }
   void SetY(const T *y) { memcpy(_y, y, _A.Rows() * sizeof(T)); }
 };

@@ -13,22 +13,24 @@ class MatrixSparse : public Matrix<T> {
   enum Ord {ROW, COL};
 
  private:
+  // TODO: This should be shared cpu/gpu pointer?
   T *_data;
   
   POGS_INT *_ptr, *_ind, _nnz;
 
   Ord _ord;
 
+  // Get rid of assignment operator.
+  MatrixSparse<T>& operator=(const MatrixSparse<T>& A);
+
  public:
   MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
       const POGS_INT *ptr, const POGS_INT *ind);
+  MatrixSparse(const MatrixSparse<T>& A);
   ~MatrixSparse();
 
   // Call this before any other method.
   int Init();
-
-  // Free up data.
-  int Free();
 
   // Method to equilibrate.
   int Equil(T *d, T *e);

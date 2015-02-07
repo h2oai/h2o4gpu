@@ -29,9 +29,9 @@ cublasOperation_t InvOp(cublasOperation_t trans) {
 //
 // BLAS LEVEL 1
 //
-cublasStatus_t blas_nrm2(cublasHandle_t handle, vector<double> *x,
+cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<double> *x,
                          double *result);
-cublasStatus_t blas_nrm2(cublasHandle_t handle, vector<float> *x,
+cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<float> *x,
                          float *result);
 
 cublasStatus_t blas_scal(cublasHandle_t handle, const double alpha,
@@ -75,7 +75,7 @@ struct Square : thrust::unary_function<T, T> {
 };
 
 template <typename T>
-T blas_nrm2(cublasHandle_t handle, vector<T> *x) {
+T blas_nrm2(cublasHandle_t handle, const vector<T> *x) {
   strided_range<thrust::device_ptr<T> > strided_x(
       thrust::device_pointer_cast(x->data),
       thrust::device_pointer_cast(x->data + x->stride * x->size), x->stride);

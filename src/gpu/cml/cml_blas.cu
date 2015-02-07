@@ -2,7 +2,7 @@
 
 namespace cml {
 
-cublasStatus_t blas_nrm2(cublasHandle_t handle, vector<double> *x,
+cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<double> *x,
                          double *result) {
   cublasStatus_t err = cublasDnrm2(handle, static_cast<int>(x->size), x->data,
       static_cast<int>(x->stride), result);
@@ -10,7 +10,7 @@ cublasStatus_t blas_nrm2(cublasHandle_t handle, vector<double> *x,
   return err;
 }
 
-cublasStatus_t blas_nrm2(cublasHandle_t handle, vector<float> *x,
+cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<float> *x,
                          float *result) {
   cublasStatus_t err = cublasSnrm2(handle, static_cast<int>(x->size), x->data,
       static_cast<int>(x->stride), result);

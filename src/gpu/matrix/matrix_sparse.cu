@@ -60,10 +60,41 @@ MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
 }
 
 template <typename T>
+MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
+    : Matrix<T>(A._m, A._n), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+      _ord(A._ord) {
+
+  GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info);
+  GpuData<T> *info = new GpuData<T>(info_A->orig_data, info_A->orig_ptr,
+      info_A->orig_ind);
+  this->_info = reinterpret_cast<void*>(info);
+}
+
+template <typename T>
 MatrixSparse<T>::~MatrixSparse() {
-  // TODO: Check memory management
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   delete info;
+  this->_info = 0;
+
+  if (this->_done_init) {
+    if (_data) {
+      cudaFree(_data);
+      _data = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+
+    if (_ptr) {
+      cudaFree(_ptr);
+      _ptr = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+
+    if (_ind) {
+      cudaFree(_ind);
+      _ind = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+  }
 }
 
 template <typename T>
@@ -91,33 +122,6 @@ int MatrixSparse<T>::Init() {
     cml::spmat_memcpy(info->s_hdl, &A, _data, _ind, _ptr);
   }
   DEBUG_CUDA_CHECK_ERR();
-
-  return 0;
-}
-
-template <typename T>
-int MatrixSparse<T>::Free() {
-  DEBUG_ASSERT(this->_done_init);
-  if (!this->_done_init)
-    return 1;
-
-  if (_data) {
-    cudaFree(_data);
-    _data = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
-
-  if (_ptr) {
-    cudaFree(_ptr);
-    _ptr = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
-
-  if (_ind) {
-    cudaFree(_ind);
-    _ind = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
 
   return 0;
 }

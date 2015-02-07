@@ -11,20 +11,22 @@ class MatrixDense : public Matrix<T> {
   enum Ord {ROW, COL};
 
  private:
+  // TODO: This should be shared cpu/gpu pointer?
   T *_data;
 
   Ord _ord;
 
+  // Get rid of assignment operator.
+  MatrixDense<T>& operator=(const MatrixDense<T>& A);
+
  public:
   // Constructor (only sets variables)
   MatrixDense(char ord, size_t m, size_t n, const T *data);
+  MatrixDense(const MatrixDense<T>& A);
   ~MatrixDense();
 
   // Initialize matrix, call this before any other methods.
   int Init();
-
-  // Free up data, factors_direct and factors_indirect.
-  int Free();
 
   // Method to equilibrate.
   int Equil(T *d, T *e);
