@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <cublas_v2.h>
 
 #include "cml/cml_blas.cuh"
@@ -9,6 +8,8 @@
 #include "matrix/matrix_dense.h"
 #include "util.cuh"
 
+namespace pogs {
+
 // File scoped constants.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 const NormTypes kNormEquilibrate   = kNorm2; 
@@ -17,9 +18,8 @@ const unsigned int kEquilIter      = 10u;
 const unsigned int kNormEstMaxIter = 50u;
 const double kNormEstTol           = 1e-2;
 
-namespace pogs {
 ////////////////////////////////////////////////////////////////////////////////
-/////////////////////// Hidden Helper Functions ////////////////////////////////
+////////////////////////////// Helper Functions ////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 
@@ -38,7 +38,7 @@ struct GpuData {
 };
 
 cublasOperation_t OpToCublasOp(char trans) {
-  assert(trans == 'n' || trans == 'N' || trans == 't' || trans == 'T');
+  ASSERT(trans == 'n' || trans == 'N' || trans == 't' || trans == 'T');
   return trans == 'n' || trans == 'N' ? CUBLAS_OP_N : CUBLAS_OP_T;
 }
 
@@ -146,8 +146,8 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   // Wrap raw pointers in cml::vectors and initialize to 1.
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
-  cml::vector_set_all(&d_vec, static_cast<T>(1));
-  cml::vector_set_all(&e_vec, static_cast<T>(1));
+  cml::vector_set_all(&d_vec, static_cast<T>(1.));
+  cml::vector_set_all(&e_vec, static_cast<T>(1.));
 
   size_t num_el = this->_m * this->_n;
 
@@ -166,7 +166,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
         SquareF<T>());
   } else {
     __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-    AbsF<T>());
+        AbsF<T>());
   }
   cudaDeviceSynchronize();
   CUDA_CHECK_ERR();
@@ -317,7 +317,7 @@ template <typename T>
 T NormEst(cublasHandle_t hdl, NormTypes norm_type, size_t m, size_t n,
           typename MatrixDense<T>::Ord ord, const T *data) {
   DEBUG_EXPECT_NEQ(norm_type, kNorm1);
-  T norm = static_cast<T>(0.);
+  T norm = static_cast<T>(1.);
   switch (norm_type) {
    case kNorm1:
      // Normalize by the 2-norm. 1-norm normalization doens't make
@@ -346,6 +346,8 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, size_t m, size_t n,
      }
      break;
    }
+   default:
+     ASSERT(false);
   }
   return norm;
 }
