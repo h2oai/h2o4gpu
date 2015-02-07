@@ -37,13 +37,16 @@ CXXFLAGS=-g -O3 -Wall -Wconversion
 CUXX=nvcc
 CUFLAGS=-arch=sm_20 -Xcompiler -fPIC -DDEBUG
 
-MATRIX=include/matrix/matrix.h \
+MATRIX=\
+	include/matrix/matrix.h \
 	include/matrix/matrix_dense.h \
 	include/matrix/matrix_sparse.h
-PROJECTOR=include/matrix/matrix.h \
-	include/matrix/matrix_dense.h \
+PROJECTOR=\
+	include/projector/projector_cgls.h \
+	include/projector/projector_direct.h \
 	include/matrix/matrix_sparse.h
-POGS_HDR=include/interface_defs.h \
+POGS_HDR=\
+	include/interface_defs.h \
 	include/pogs.h \
 	include/prox_lib.h \
 	$(MATRIX) $(PROJECTOR)
