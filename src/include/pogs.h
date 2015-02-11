@@ -73,9 +73,8 @@ class Pogs {
 template <typename T, typename M>
 using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
 
-// Uncomment once CGLS has been implemented
-//template <typename T, typename M>
-//using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
+template <typename T, typename M>
+using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
 #endif
 
 }  // namespace pogs

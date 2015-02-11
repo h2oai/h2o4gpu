@@ -39,7 +39,7 @@ struct GpuData {
 
 cusparseOperation_t OpToCusparseOp(char trans) {
   assert(trans == 'n' || trans == 'N' || trans == 't' || trans == 'T');
-  return trans == 'n' || trans == 'N'
+  return (trans == 'n' || trans == 'N')
       ? CUSPARSE_OPERATION_NON_TRANSPOSE : CUSPARSE_OPERATION_TRANSPOSE;
 }
 
@@ -104,6 +104,9 @@ int MatrixSparse<T>::Init() {
   this->_done_init = true;
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+  const T *orig_data = info->orig_data;
+  const POGS_INT *orig_ptr = info->orig_ptr;
+  const POGS_INT *orig_ind = info->orig_ind;
 
   // Allocate sparse matrix on gpu.
   cudaMalloc(&_data, 2 * _nnz * sizeof(T));
@@ -112,13 +115,13 @@ int MatrixSparse<T>::Init() {
   DEBUG_CUDA_CHECK_ERR();
 
   if (_ord == ROW) {
-    cml::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ptr, _ind, this->_m,
+    cml::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
-    cml::spmat_memcpy(info->s_hdl, &A, _data, _ind, _ptr);
+    cml::spmat_memcpy(info->s_hdl, &A, orig_data, orig_ind, orig_ptr);
   } else {
-    cml::spmat<T, POGS_INT, CblasColMajor> A(_data, _ptr, _ind, this->_m,
+    cml::spmat<T, POGS_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
-    cml::spmat_memcpy(info->s_hdl, &A, _data, _ind, _ptr);
+    cml::spmat_memcpy(info->s_hdl, &A, orig_data, orig_ind, orig_ptr);
   }
   DEBUG_CUDA_CHECK_ERR();
 
@@ -133,8 +136,14 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
-  const cml::vector<T> x_vec = cml::vector_view_array<T>(x, this->_n);
-  cml::vector<T> y_vec = cml::vector_view_array<T>(y, this->_m);
+  cml::vector<T> x_vec, y_vec;
+  if (trans == 'n' || trans == 'N') {
+    x_vec = cml::vector_view_array<T>(x, this->_n);
+    y_vec = cml::vector_view_array<T>(y, this->_m);
+  } else {
+    x_vec = cml::vector_view_array<T>(x, this->_m);
+    y_vec = cml::vector_view_array<T>(y, this->_n);
+  }
 
   if (_ord == ROW) {
     cml::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,

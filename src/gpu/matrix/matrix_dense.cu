@@ -12,11 +12,8 @@ namespace pogs {
 
 // File scoped constants.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
-const NormTypes kNormEquilibrate   = kNorm2; 
-const NormTypes kNormNormalize     = kNormFro; 
-const unsigned int kEquilIter      = 10u; 
-const unsigned int kNormEstMaxIter = 50u;
-const double kNormEstTol           = 1e-2;
+const NormTypes kNormEquilibrate = kNorm2; 
+const NormTypes kNormNormalize   = kNormFro; 
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
@@ -43,8 +40,7 @@ cublasOperation_t OpToCublasOp(char trans) {
 }
 
 template <typename T>
-T NormEst(cublasHandle_t hdl, NormTypes norm_type, size_t m, size_t n,
-          typename MatrixDense<T>::Ord ord, const T *data);
+T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixDense<T>& A);
 
 template <typename T>
 void MultDiag(const T *d, const T *e, size_t m, size_t n,
@@ -140,15 +136,11 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   if (!this->_done_init)
     return 1;
 
+  // Extract cublas handle from _info.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
 
-  // Wrap raw pointers in cml::vectors and initialize to 1.
-  cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
-  cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
-  cml::vector_set_all(&d_vec, static_cast<T>(1.));
-  cml::vector_set_all(&e_vec, static_cast<T>(1.));
-
+  // Number of elements in matrix.
   size_t num_el = this->_m * this->_n;
 
   // Create bit-vector with signs of entries in A and then let A = f(A),
@@ -186,30 +178,8 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   }
 
   // Perform Sinkhorn-Knopp equilibration.
-  for (unsigned int k = 0; k < kEquilIter; ++k) {
-    Mul('t', static_cast<T>(1.), d_vec.data, static_cast<T>(0.), e_vec.data);
-    cudaDeviceSynchronize();
-    CUDA_CHECK_ERR();
-    // TODO: Figure out a better value for this constant
-    cml::vector_add_constant(&e_vec, static_cast<T>(1e-4));
-    cudaDeviceSynchronize();
-    thrust::transform(thrust::device_pointer_cast(e_vec.data),
-        thrust::device_pointer_cast(e_vec.data + e_vec.size),
-        thrust::device_pointer_cast(e_vec.data), ReciprF<T>(this->_m));
-    cudaDeviceSynchronize();
-    CUDA_CHECK_ERR();
-
-    Mul('n', static_cast<T>(1.), e_vec.data, static_cast<T>(0.), d_vec.data);
-    cudaDeviceSynchronize();
-    CUDA_CHECK_ERR();
-    cml::vector_add_constant(&d_vec, static_cast<T>(1e-4));
-    cudaDeviceSynchronize();
-    thrust::transform(thrust::device_pointer_cast(d_vec.data),
-        thrust::device_pointer_cast(d_vec.data + d_vec.size),
-        thrust::device_pointer_cast(d_vec.data), ReciprF<T>(this->_n));
-    cudaDeviceSynchronize();
-    CUDA_CHECK_ERR();
-  }
+  SinkhornKnopp(this, d, e);
+  cudaDeviceSynchronize();
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
@@ -223,6 +193,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   cudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
+  // Deal with last few entries if num_el is not a multiple of 8.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
       __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
@@ -234,14 +205,14 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
-  
-  // Compute D * A * E
-  MultDiag(d_vec.data, e_vec.data, this->_m, this->_n, _ord, _data);
+
+  // Compute A := D * A * E.
+  MultDiag(d, e, this->_m, this->_n, _ord, _data);
   cudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
   // Scale A to have norm of 1 (in the kNormNormalize norm).
-  T normA = NormEst(hdl, kNormNormalize, this->_m, this->_n, _ord, _data);
+  T normA = NormEst(hdl, kNormNormalize, *this);
   CUDA_CHECK_ERR();
   cudaDeviceSynchronize();
   cml::vector<T> a_vec = cml::vector_view_array(_data, num_el);
@@ -249,11 +220,12 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   cudaDeviceSynchronize();
 
   // Scale d and e to account for normalization of A.
+  cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
+  cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
   T normd = cml::blas_nrm2(hdl, &d_vec);
   T norme = cml::blas_nrm2(hdl, &e_vec);
   T scale = sqrt(normd * sqrt(e_vec.size) / (norme * sqrt(d_vec.size)));
   cml::vector_scale(&d_vec, 1 / (scale * sqrt(normA)));
-  cudaDeviceSynchronize();
   cml::vector_scale(&e_vec, scale / sqrt(normA));
   cudaDeviceSynchronize();
 
@@ -268,91 +240,28 @@ int MatrixDense<T>::Equil(T *d, T *e) {
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 
-template <typename T, CBLAS_ORDER O>
-T Norm2Est(cublasHandle_t hdl, const cml::matrix<T, O> *A) {
-  // Same as MATLAB's method for norm estimation.
-
-  T kTol = static_cast<T>(kNormEstTol);
-
-  T norm_est = 0, norm_est_last;
-  cml::vector<T> x = cml::vector_alloc<T>(A->size2);
-  cml::vector<T> Sx = cml::vector_alloc<T>(A->size1);
-  cml::rand(x.data, x.size);
-  cudaDeviceSynchronize();
-
-  unsigned int i = 0;
-  for (i = 0; i < kNormEstMaxIter; ++i) {
-    norm_est_last = norm_est;
-    cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), A, &x,
-        static_cast<T>(0.), &Sx);
-    cudaDeviceSynchronize();
-    cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), A, &Sx,
-        static_cast<T>(0.), &x);
-    cudaDeviceSynchronize();
-    T normx = cml::blas_nrm2(hdl, &x);
-    T normSx = cml::blas_nrm2(hdl, &Sx);
-    cml::vector_scale(&x, 1 / normx);
-    norm_est = normx / normSx;
-    if (abs(norm_est_last - norm_est) < kTol * norm_est)
-      break;
-  }
-  DEBUG_EXPECT_LT(i, kNormEstMaxIter);
-
-  cml::vector_free(&x);
-  cml::vector_free(&Sx);
-  return norm_est;
-}
-
-// RMS-Frobenius norm = \sqrt(\sum_i \sigma_i^2 / min(m, n))
-template <typename T, CBLAS_ORDER O>
-T NormFroEst(cublasHandle_t hdl, const cml::matrix<T, O> *A) {
-  const cml::vector<T> a = cml::vector_view_array(A->data, A->size1 * A->size2);
-  T norm_est = cml::blas_nrm2(hdl, &a) /
-      std::sqrt(std::min(A->size1, A->size2));
-  return norm_est;
-}
-
 // Estimates norm of A. norm_type should either be kNorm2 or kNormFro.
 template <typename T>
-T NormEst(cublasHandle_t hdl, NormTypes norm_type, size_t m, size_t n,
-          typename MatrixDense<T>::Ord ord, const T *data) {
-  DEBUG_EXPECT_NEQ(norm_type, kNorm1);
-  T norm = static_cast<T>(1.);
+T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixDense<T>& A) {
   switch (norm_type) {
-   case kNorm1:
-     // Normalize by the 2-norm. 1-norm normalization doens't make
-     // make sense since it treats rows and columns differently.
-   case kNorm2: {
-     if (ord == MatrixDense<T>::ROW) {
-       cml::matrix<T, CblasRowMajor> A =
-           cml::matrix_view_array<T, CblasRowMajor>(data, m, n);
-       norm = Norm2Est(hdl, &A);
-     } else {
-       cml::matrix<T, CblasColMajor> A =
-           cml::matrix_view_array<T, CblasColMajor>(data, m, n);
-       norm = Norm2Est(hdl, &A);
-     }
-     break;
-   }
-   case kNormFro: {
-     if (ord == MatrixDense<T>::ROW) {
-       cml::matrix<T, CblasRowMajor> A =
-           cml::matrix_view_array<T, CblasRowMajor>(data, m, n);
-       norm = NormFroEst(hdl, &A);
-     } else {
-       cml::matrix<T, CblasColMajor> A =
-           cml::matrix_view_array<T, CblasColMajor>(data, m, n);
-       norm = NormFroEst(hdl, &A);
-     }
-     break;
-   }
-   default:
-     ASSERT(false);
+    case kNorm2: {
+      return Norm2Est(hdl, &A);
+    }
+    case kNormFro: {
+      const cml::vector<T> a = cml::vector_view_array(A.Data(),
+          A.Rows() * A.Cols());
+      return cml::blas_nrm2(hdl, &a) / std::sqrt(std::min(A.Rows(), A.Cols()));
+    }
+    case kNorm1:
+      // 1-norm normalization doens't make make sense since it treats rows and
+      // columns differently.
+    default:
+      ASSERT(false);
+      return static_cast<T>(0.);
   }
-  return norm;
 }
 
-// Performs D * A * E for A in row major
+// Performs A := D * A * E for A in row major
 template <typename T>
 void __global__ __MultRow(size_t m, size_t n, const T *d, const T *e, T *data) {
   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -360,7 +269,7 @@ void __global__ __MultRow(size_t m, size_t n, const T *d, const T *e, T *data) {
     data[t] *= d[t / n] * e[t % n];
 }
 
-// Performs D * A * E for A in col major
+// Performs A := D * A * E for A in col major
 template <typename T>
 void __global__ __MultCol(size_t m, size_t n, const T *d, const T *e, T *data) {
   unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;

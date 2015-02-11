@@ -29,7 +29,8 @@ endif
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) -C $(POGSROOT)
-	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.a $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -I$(POGSROOT)/include -o run $(EXSRC) \
+  $< $(POGSROOT)/pogs.a $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run

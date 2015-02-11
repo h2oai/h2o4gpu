@@ -15,8 +15,9 @@ namespace pogs {
 
 namespace {
 
+// TODO: Make these variable
 double kTol  = 1e-4;
-int kMaxIter = 5;
+int kMaxIter = 10;
 
 template<typename T>
 struct GpuData {
@@ -93,10 +94,10 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
       static_cast<cgls::INT>(_A.Cols()), y, x, s, kTol, kMaxIter, true);
   cudaDeviceSynchronize();
  
-  // x := x - x0
+  // x := x + x0
   cml::vector<T> x_vec = cml::vector_view_array(x, _A.Cols());
   const cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
-  cml::blas_axpy(hdl, static_cast<T>(-1.), &x0_vec, &x_vec);
+  cml::blas_axpy(hdl, static_cast<T>(1.), &x0_vec, &x_vec);
   cudaDeviceSynchronize();
 
   // y := Ax
@@ -105,7 +106,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
 #ifdef DEBUG
   // Verify that projection was successful.
-  CheckProjection(&_A, x0, y0, x, y, s);
+  CheckProjection(&_A, x0, y0, x, y, s, static_cast<T>(kTol));
 #endif
 
   return 0;

@@ -47,7 +47,8 @@ double Lasso(size_t m, size_t n) {
   }
 
   pogs::MatrixDense<T> A_('r', m, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  //pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  pogs::PogsIndirect<T, pogs::MatrixDense<T> > pogs_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 

@@ -193,7 +193,8 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
 #ifdef DEBUG
   // Verify that projection was successful.
-  CheckProjection(&_A, x0, y0, x, y, s);
+  CheckProjection(&_A, x0, y0, x, y, s,
+      static_cast<T>(1e2) * std::numeric_limits<T>::epsilon());
 #endif
 
   info->s = s;

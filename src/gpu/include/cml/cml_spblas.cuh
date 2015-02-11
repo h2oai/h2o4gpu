@@ -64,7 +64,6 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
         A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, x->data, &beta,
         y->data);
   CusparseCheckError(err);
-//  Printf("trans = %d\n", CUSPARSE_OPERATION_TRANSPOSE == transA);
   return err;
 }
 

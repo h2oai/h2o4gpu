@@ -330,18 +330,17 @@ template class Pogs<double, MatrixDense<double>,
 template class Pogs<float, MatrixDense<float>,
     ProjectorDirect<float, MatrixDense<float> > >;
 
-// TODO: add cgls projector
-// // Dense indirect.
-// template class Pogs<double, MatrixDense<double>,
-//     ProjectorCgls<double, MatrixDense<double> > >;
-// template class Pogs<float, MatrixDense<float>,
-//     ProjectorCgls<float, MatrixDense<float> > >;
-// 
-// // Sparse indirect.
-// template class Pogs<double, MatrixSparse<double>,
-//     ProjectorCgls<double, MatrixSparse<double> > >;
-// template class Pogs<float, MatrixSparse<float>,
-//     ProjectorCgls<float, MatrixSparse<float> > >;
+// Dense indirect.
+template class Pogs<double, MatrixDense<double>,
+    ProjectorCgls<double, MatrixDense<double> > >;
+template class Pogs<float, MatrixDense<float>,
+    ProjectorCgls<float, MatrixDense<float> > >;
+
+// Sparse indirect.
+template class Pogs<double, MatrixSparse<double>,
+    ProjectorCgls<double, MatrixSparse<double> > >;
+template class Pogs<float, MatrixSparse<float>,
+    ProjectorCgls<float, MatrixSparse<float> > >;
 
 }  // namespace pogs
 

@@ -1,8 +1,6 @@
 #ifndef PROJECTOR_HELPER_CUH_
 #define PROJECTOR_HELPER_CUH_
 
-#include <limits>
-
 #include "cml/cml_blas.cuh" 
 #include "cml/cml_vector.cuh" 
 #include "matrix/matrix.h" 
@@ -11,15 +9,15 @@
 namespace pogs {
 namespace {
 
-// Check that (x, y) satisfies
+// Check that (x, y) satisfies two conditions
 //   1. y = Ax
 //   2. x = min. ||Ax - y0||_2^2 + s||x - x0||_2^2
+//      <=> A^T(Ax - y0) + s(x - x0) = 0
 template <typename T>
 void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
-                     const T *x, const T *y, T s) {
+                     const T *x, const T *y, T s, T tol) {
   cublasHandle_t hdl;
   cublasCreate(&hdl);
-  T tol = 1e2 * std::numeric_limits<T>::epsilon();
   cml::vector<T> x_ = cml::vector_calloc<T>(A->Cols());
   cml::vector<T> y_ = cml::vector_calloc<T>(A->Rows());
   
