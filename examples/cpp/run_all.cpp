@@ -7,7 +7,7 @@ typedef float real_t;
 int main() {
   double t;
   printf("\nLasso.\n");
-  t = Lasso<real_t>(10000, 1000);
+  t = Lasso<real_t>(10000, 2000);
   printf("Solver Time: %e sec\n", t);
  
 //  printf("\nLasso Path.\n");

@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <cublas_v2.h>
 
 #include <algorithm>

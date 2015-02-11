@@ -43,15 +43,15 @@ MATRIX=\
 	include/matrix/matrix_sparse.h
 PROJECTOR=\
 	include/projector/projector_cgls.h \
-	include/projector/projector_direct.h \
-	include/matrix/matrix_sparse.h
+	include/projector/projector_direct.h
 POGS_HDR=\
 	include/interface_defs.h \
 	include/pogs.h \
 	include/prox_lib.h \
 	$(MATRIX) $(PROJECTOR)
 
-CML_HDR=gpu/include/cml/cblas.h \
+CML_HDR=\
+	gpu/include/cml/cblas.h \
 	gpu/include/cml/cgls.cuh \
 	gpu/include/cml/cml_blas.cuh \
 	gpu/include/cml/cml_defs.cuh \
