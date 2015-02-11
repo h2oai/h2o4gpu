@@ -56,7 +56,7 @@ ProjectorDirect<T, M>::~ProjectorDirect() {
   }
   
   delete info;
-  _info = 0;
+  this->_info = 0;
 }
 
 template <typename T, typename M>
@@ -193,7 +193,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
 #ifdef DEBUG
   // Verify that projection was successful.
-  CheckProjection(&_A, x, y, s);
+  CheckProjection(&_A, x0, y0, x, y, s);
 #endif
 
   info->s = s;

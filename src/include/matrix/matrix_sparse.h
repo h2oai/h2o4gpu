@@ -1,5 +1,5 @@
-#ifndef MATRIX_MATRIX_DENSE_H_
-#define MATRIX_MATRIX_DENSE_H_
+#ifndef MATRIX_MATRIX_SPARSE_H_
+#define MATRIX_MATRIX_SPARSE_H_
 
 #include "matrix.h"
 
@@ -46,5 +46,5 @@ class MatrixSparse : public Matrix<T> {
 
 }  // namespace pogs
 
-#endif  // MATRIX_MATRIX_DENSE_H_
+#endif  // MATRIX_MATRIX_SPARSE_H_
 

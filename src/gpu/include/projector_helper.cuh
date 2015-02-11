@@ -8,11 +8,17 @@
 #include "matrix/matrix.h" 
 #include "util.cuh" 
 
+namespace pogs {
+namespace {
+
 // Check that (x, y) satisfies
 //   1. y = Ax
 //   2. x = min. ||Ax - y0||_2^2 + s||x - x0||_2^2
 template <typename T>
-void CheckProjection(const Matrix<T> *A, const T *x, const T *y, T s) {
+void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
+                     const T *x, const T *y, T s) {
+  cublasHandle_t hdl;
+  cublasCreate(&hdl);
   T tol = 1e2 * std::numeric_limits<T>::epsilon();
   cml::vector<T> x_ = cml::vector_calloc<T>(A->Cols());
   cml::vector<T> y_ = cml::vector_calloc<T>(A->Rows());
@@ -28,6 +34,7 @@ void CheckProjection(const Matrix<T> *A, const T *x, const T *y, T s) {
   // Check KKT
   cml::vector_memcpy(&x_, x);
   cml::vector_memcpy(&y_, y0);
+  const cml::vector<T> x0_vec = cml::vector_view_array(x0, A->Cols());
   A->Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
   cudaDeviceSynchronize();
   A->Mul('t', static_cast<T>(1.), y_.data, s, x_.data);
@@ -38,7 +45,11 @@ void CheckProjection(const Matrix<T> *A, const T *x, const T *y, T s) {
 
   cml::vector_free(&x_);
   cml::vector_free(&y_);
+  cublasDestroy(hdl);
 }
+
+}  // namespace
+}  // namespace pogs
 
 #endif  // PROJECTOR_HELPER_CUH_
 

@@ -35,7 +35,7 @@ CXXFLAGS=-g -O3 -Wall -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=-arch=sm_20 -Xcompiler -fPIC -DDEBUG
+CUFLAGS=-arch=sm_20 -Xcompiler -fPIC #-DDEBUG
 
 MATRIX=\
 	include/matrix/matrix.h \
@@ -66,7 +66,7 @@ CML_OBJ=gpu/cml/cml_blas.o
 GPU_HDR=\
 	gpu/include/cgls.cuh \
 	gpu/include/equil_helper.cuh \
-	gpu/include/projection_helper.cuh \
+	gpu/include/projector_helper.cuh \
 	gpu/include/util.cuh
 GPU_MTX_OBJ=\
 	gpu/matrix/matrix_dense.o \
@@ -76,7 +76,8 @@ GPU_PRJ_OBJ=\
 	gpu/projector/projector_direct_dense.o
 GPU_OBJ=gpu/pogs.o
 
-VPATH=gpu:gpu/matrix:gpu/cml:gpu/projector
+VPATH=gpu gpu/matrix gpu/cml gpu/projector
+#VPATH=gpu:gpu/matrix:gpu/cml:gpu/projector
 
 all: pogs_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CML_OBJ)
 	ar cr pogs.a $^

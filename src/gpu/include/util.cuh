@@ -239,7 +239,7 @@
 
 #define DEBUG_ASSERT(statement)            do { } while (0)
 #define DEBUG_ASSERT_EQ(a, b)              do { } while (0)
-#define DEBUG_ASSERT_EQ_EPS(a, b)          do { } while (0)
+#define DEBUG_ASSERT_EQ_EPS(a, b, tol)     do { } while (0)
 #define DEBUG_ASSERT_GEQ(a, b)             do { } while (0)
 #define DEBUG_ASSERT_GT(a, b)              do { } while (0)
 #define DEBUG_ASSERT_LEQ(a, b)             do { } while (0)
@@ -248,7 +248,7 @@
 #define DEBUG_CUDA_CHECK_ERR()             do { } while (0)
 #define DEBUG_EXPECT(statement)            do { } while (0)
 #define DEBUG_EXPECT_EQ(a, b)              do { } while (0)
-#define DEBUG_EXPECT_EQ_EPS(a, b)          do { } while (0)
+#define DEBUG_EXPECT_EQ_EPS(a, b, tol)     do { } while (0)
 #define DEBUG_EXPECT_GEQ(a, b)             do { } while (0)
 #define DEBUG_EXPECT_GT(a, b)              do { } while (0)
 #define DEBUG_EXPECT_LEQ(a, b)             do { } while (0)

@@ -5,6 +5,8 @@
 
 #include "cgls.cuh"
 #include "cml/cml_blas.cuh"
+#include "matrix/matrix_dense.h"
+#include "matrix/matrix_sparse.h"
 #include "projector/projector_cgls.h"
 #include "projector_helper.cuh"
 #include "util.cuh"
@@ -12,6 +14,9 @@
 namespace pogs {
 
 namespace {
+
+double kTol  = 1e-4;
+int kMaxIter = 5;
 
 template<typename T>
 struct GpuData {
@@ -26,6 +31,17 @@ struct GpuData {
   }
 };
 
+// CGLS Gemv struct for matrix multiplication.
+template <typename T, typename M>
+struct Gemv : cgls::Gemv<T> {
+  const M& A;
+  Gemv(const M& A) : A(A) { }
+  int operator()(char op, const T alpha, const T *x, const T beta, T *y)
+      const {
+    return A.Mul(op, alpha, x, beta, y);
+  }
+};
+
 }  // namespace
 
 template <typename T, typename M>
@@ -36,6 +52,7 @@ ProjectorCgls<T, M>::ProjectorCgls(const M& A)
   this->_info = reinterpret_cast<void*>(info);
 }
 
+template <typename T, typename M>
 ProjectorCgls<T, M>::~ProjectorCgls() {
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   delete info;
@@ -64,28 +81,22 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
 
-  // CGLS Gemv struct for matrix multiplication.
-  struct Gemv : cgls::Gemv<T> {
-    int operator()(char op, const T alpha, const T *x, const T beta, T *y) {
-      return _A.Mul(op, alpha, x, beta, y);
-    }
-  };
-
-  // Set initial y and x.
-  cudaMemcpy(y, y0, _A.Rows() * sizeof(T));
+  // Set initial x and y.
   cudaMemset(x, 0, _A.Cols() * sizeof(T));
+  cudaMemcpy(y, y0, _A.Rows() * sizeof(T), cudaMemcpyDeviceToDevice);
 
   // y := y0 - Ax0;
   _A.Mul('n', static_cast<T>(-1.), x0, static_cast<T>(1.), y);
 
   // Minimize ||Ax - b||_2^2 + s||x||_2^2
-  cgls::Solve(hdl, Gemv(), _A.Rows(), _A.Cols(), y, x, s, kTol, kMaxIter, true);
+  cgls::Solve(hdl, Gemv<T, M>(_A), static_cast<cgls::INT>(_A.Rows()),
+      static_cast<cgls::INT>(_A.Cols()), y, x, s, kTol, kMaxIter, true);
   cudaDeviceSynchronize();
  
   // x := x - x0
   cml::vector<T> x_vec = cml::vector_view_array(x, _A.Cols());
-  cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
-  cml::blas_axpy(hdl, static_cast<T>(-1.), x0_vec, x_vec);
+  const cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
+  cml::blas_axpy(hdl, static_cast<T>(-1.), &x0_vec, &x_vec);
   cudaDeviceSynchronize();
 
   // y := Ax
@@ -94,7 +105,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
 #ifdef DEBUG
   // Verify that projection was successful.
-  CheckProjection(&_A, x, y, s);
+  CheckProjection(&_A, x0, y0, x, y, s);
 #endif
 
   return 0;
