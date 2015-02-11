@@ -79,7 +79,7 @@ int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
           int quiet, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval);
 
-// TODO: Add interface for sparse version too.
+// TODO: Add interface for sparse version.
 
 #ifdef __cplusplus
 }
