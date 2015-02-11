@@ -2,13 +2,16 @@
 #include "pogs_c.h"
 
 template <typename T, ORD O>
-int Pogs(size_t m, size_t n, T *A,
-         T *f_a, T *f_b, T *f_c, T *f_d, T *f_e, FUNCTION *f_h,
-         T *g_a, T *g_b, T *g_c, T *g_d, T *g_e, FUNCTION *g_h,
+int Pogs(size_t m, size_t n, const T *A,
+         const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e,
+         const FUNCTION *f_h,
+         const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e,
+         const FUNCTION *g_h,
          T rho, T abs_tol, T rel_tol, unsigned int max_iter, bool quiet,
          bool adaptive_rho, bool gap_stop, T *x, T *y, T *l, T *optval) {
   // Create pogs struct.
-  Dense<T, static_cast<POGS_ORD>(O)> A_(A);
+  // TODO: Get rid of const cast with new interface.
+  const Dense<T, static_cast<POGS_ORD>(O)> A_(const_cast<T*>(A));
   PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> > pogs_data(A_, m, n);
   pogs_data.x = x;
   pogs_data.y = y;
@@ -41,12 +44,11 @@ int Pogs(size_t m, size_t n, T *A,
 }
 
 extern "C" {
-
-int PogsD(enum ORD ord, size_t m, size_t n, double *A,
-          double *f_a, double *f_b, double *f_c, double *f_d, double *f_e,
-          enum FUNCTION *f_h,
-          double *g_a, double *g_b, double *g_c, double *g_d, double *g_e,
-          enum FUNCTION *g_h,
+int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
+          const double *f_a, const double *f_b, const double *f_c,
+          const double *f_d, const double *f_e, const enum FUNCTION *f_h,
+          const double *g_a, const double *g_b, const double *g_c,
+          const double *g_d, const double *g_e, const enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
           int quiet, int adaptive_rho, int gap_stop,
           double *x, double *y, double *l, double *optval) {
@@ -63,11 +65,11 @@ int PogsD(enum ORD ord, size_t m, size_t n, double *A,
   }
 }
 
-int PogsS(enum ORD ord, size_t m, size_t n, float *A,
-          float *f_a, float *f_b, float *f_c, float *f_d, float *f_e,
-          enum FUNCTION *f_h,
-          float *g_a, float *g_b, float *g_c, float *g_d, float *g_e,
-          enum FUNCTION *g_h,
+int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
+          const float *f_a, const float *f_b, const float *f_c,
+          const float *f_d, const float *f_e, const enum FUNCTION *f_h,
+          const float *g_a, const float *g_b, const float *g_c,
+          const float *g_d, const float *g_e, const enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
           int quiet, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval) {

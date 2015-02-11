@@ -61,23 +61,25 @@ enum FUNCTION { ABS,       // f(x) = |x|
 extern "C" {
 #endif
 
-int PogsD(enum ORD ord, size_t m, size_t n, double *A,
-          double *f_a, double *f_b, double *f_c, double *f_d, double *f_e,
-          enum FUNCTION *f_h,
-          double *g_a, double *g_b, double *g_c, double *g_d, double *g_e,
-          enum FUNCTION *g_h,
+int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
+          const double *f_a, const double *f_b, const double *f_c,
+          const double *f_d, const double *f_e, const enum FUNCTION *f_h,
+          const double *g_a, const double *g_b, const double *g_c,
+          const double *g_d, const double *g_e, const enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
           int quiet, int adaptive_rho, int gap_stop,
           double *x, double *y, double *l, double *optval);
 
-int PogsS(enum ORD ord, size_t m, size_t n, float *A,
-          float *f_a, float *f_b, float *f_c, float *f_d, float *f_e,
-          enum FUNCTION *f_h,
-          float *g_a, float *g_b, float *g_c, float *g_d, float *g_e,
-          enum FUNCTION *g_h,
+int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
+          const float *f_a, const float *f_b, const float *f_c,
+          const float *f_d, const float *f_e, const enum FUNCTION *f_h,
+          const float *g_a, const float *g_b, const float *g_c,
+          const float *g_d, const float *g_e, const enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
           int quiet, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval);
+
+// TODO: Add interface for sparse version too.
 
 #ifdef __cplusplus
 }
