@@ -52,7 +52,6 @@ POGS_HDR=\
 
 CML_HDR=\
 	gpu/include/cml/cblas.h \
-	gpu/include/cml/cgls.cuh \
 	gpu/include/cml/cml_blas.cuh \
 	gpu/include/cml/cml_defs.cuh \
 	gpu/include/cml/cml_linalg.cuh \
@@ -64,16 +63,20 @@ CML_HDR=\
 	gpu/include/cml/cml_vector.cuh
 CML_OBJ=gpu/cml/cml_blas.o
 
-GPU_HDR=gpu/include/util.cuh
-GPU_MTX_OBJ=gpu/matrix/matrix_dense.o \
-	gpu/matrix/matrix_sparse.o
-GPU_PRJ_OBJ=gpu/projector/projector_direct_dense.o
-# TODO : include cgls
-#GPU_PRJ_OBJ=gpu/projector/projector_cgls.o \
-#	gpu/projector/projector_direct_dense.o
+GPU_HDR=\
+	gpu/include/cgls.cuh \
+	gpu/include/equil_helper.cuh \
+	gpu/include/projection_helper.cuh \
+	gpu/include/util.cuh
+GPU_MTX_OBJ=\
+	gpu/matrix/matrix_dense.o \
+  gpu/matrix/matrix_sparse.o
+GPU_PRJ_OBJ=\
+	gpu/projector/projector_cgls.o \
+	gpu/projector/projector_direct_dense.o
 GPU_OBJ=gpu/pogs.o
 
-VPATH=gpu gpu/matrix gpu/cml gpu/projector
+VPATH=gpu:gpu/matrix:gpu/cml:gpu/projector
 
 all: pogs_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CML_OBJ)
 	ar cr pogs.a $^

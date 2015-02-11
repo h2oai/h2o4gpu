@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lp_eq.cpp lasso_path.cpp # logistic.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC= lasso_new.cpp #lasso.cpp lp_eq.cpp lasso_path.cpp # logistic.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
@@ -28,9 +28,8 @@ endif
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs_sp_cu.o pogs_cu.o pogs_cu_link.o cml.o
-	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs_sp_cu.o \
-	$(POGSROOT)/pogs_cu_link.o $(POGSROOT)/pogs_cu.o $(POGSROOT)/cml.o $(CULDFLAGS)
+	$(MAKE) -C $(POGSROOT)
+	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -o run $(EXSRC) $< $(POGSROOT)/pogs.a $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run

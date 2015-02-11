@@ -18,8 +18,7 @@ namespace {
 template <typename T>
 struct GpuData {
   const T *orig_data;
-  const POGS_INT *orig_ptr;
-  const POGS_INT *orig_ind;
+  const POGS_INT *orig_ptr, *orig_ind;
   cublasHandle_t d_hdl;
   cusparseHandle_t s_hdl;
   cusparseMatDescr_t descr;

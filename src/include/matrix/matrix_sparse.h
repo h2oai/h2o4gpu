@@ -13,7 +13,6 @@ class MatrixSparse : public Matrix<T> {
   enum Ord {ROW, COL};
 
  private:
-  // TODO: This should be shared cpu/gpu pointer?
   T *_data;
   
   POGS_INT *_ptr, *_ind, _nnz;

@@ -8,6 +8,7 @@
 #include "cml/cml_matrix.cuh"
 #include "matrix/matrix_dense.h"
 #include "projector/projector_direct.h"
+#include "projector_helper.cuh"
 #include "util.cuh"
 
 namespace pogs {
@@ -41,7 +42,21 @@ ProjectorDirect<T, M>::ProjectorDirect(const M& A)
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+
+  if (info->AA) {
+    cudaFree(info->AA);
+    info->AA = 0;
+    CUDA_CHECK_ERR();
+  }
+
+  if (info->L) {
+    cudaFree(info->L);
+    info->L = 0;
+    CUDA_CHECK_ERR();
+  }
+  
   delete info;
+  _info = 0;
 }
 
 template <typename T, typename M>
@@ -84,28 +99,6 @@ int ProjectorDirect<T, M>::Init() {
   }
   CUDA_CHECK_ERR();
 
-  return 0;
-}
-
-template <typename T, typename M>
-int ProjectorDirect<T, M>::Free() {
-  if (!this->_done_init)
-    return 1;
-  
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-
-  if (info->AA) {
-    cudaFree(info->AA);
-    info->AA = 0;
-    CUDA_CHECK_ERR();
-  }
-
-  if (info->L) {
-    cudaFree(info->L);
-    info->L = 0;
-    CUDA_CHECK_ERR();
-  }
-  
   return 0;
 }
 
@@ -198,35 +191,9 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
     CUDA_CHECK_ERR();
   }
 
-   // Check that projection was successful.
 #ifdef DEBUG
-  {
-    T tol = 1e2 * std::numeric_limits<T>::epsilon();
-    cml::vector<T> x_ = cml::vector_calloc<T>(_A.Cols());
-    cml::vector<T> y_ = cml::vector_calloc<T>(_A.Rows());
-    
-    // Check residual
-    cml::vector_memcpy(&x_, x);
-    cml::vector_memcpy(&y_, y);
-    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-    cudaDeviceSynchronize();
-    T nrm_r = cml::blas_nrm2(hdl, &y_)  / std::sqrt(_A.Rows());
-    DEBUG_EXPECT_EQ_EPS(nrm_r, static_cast<T>(0.), tol);
-  
-    // Check KKT
-    cml::vector_memcpy(&x_, x);
-    cml::vector_memcpy(&y_, y0);
-    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-    cudaDeviceSynchronize();
-    _A.Mul('t', static_cast<T>(1.), y_.data, static_cast<T>(1.), x_.data);
-    cudaDeviceSynchronize();
-    cml::blas_axpy(hdl, static_cast<T>(-1.), &x0_vec, &x_);
-    T nrm_kkt = cml::blas_nrm2(hdl, &x_) / std::sqrt(_A.Cols());
-    DEBUG_EXPECT_EQ_EPS(nrm_kkt, static_cast<T>(0.), tol);
-
-    cml::vector_free(&x_);
-    cml::vector_free(&y_);
-  }
+  // Verify that projection was successful.
+  CheckProjection(&_A, x, y, s);
 #endif
 
   info->s = s;

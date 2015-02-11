@@ -11,7 +11,6 @@ class Projector {
  protected:
   bool _done_init;
 
-  // TODO: Implement copy constructor.
   void *_info;
 
  public:
@@ -19,8 +18,6 @@ class Projector {
   virtual ~Projector() { };
   
   virtual int Init() = 0;
-
-  virtual int Free() = 0;
 
   // TODO tolerance for solve. 
   virtual int Project(const T *x0, const T *y0, T s, T *x, T *y) = 0;

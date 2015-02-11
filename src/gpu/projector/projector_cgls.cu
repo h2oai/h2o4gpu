@@ -3,11 +3,10 @@
 #include <algorithm>
 #include <limits>
 
+#include "cgls.cuh"
 #include "cml/cml_blas.cuh"
-#include "cml/cml_linalg.cuh"
-#include "cml/cml_matrix.cuh"
-#include "matrix/matrix_dense.h"
-#include "projector/projector_direct.h"
+#include "projector/projector_cgls.h"
+#include "projector_helper.cuh"
 #include "util.cuh"
 
 namespace pogs {
@@ -16,9 +15,8 @@ namespace {
 
 template<typename T>
 struct GpuData {
-  T *AA, *L, s;
   cublasHandle_t handle;
-  GpuData() : AA(0), L(0), s(static_cast<T>(-1.)) {
+  GpuData() {
     cublasCreate(&handle);
     CUDA_CHECK_ERR();
   }
@@ -31,87 +29,34 @@ struct GpuData {
 }  // namespace
 
 template <typename T, typename M>
-ProjectorDirect<T, M>::ProjectorDirect(const M& A)
+ProjectorCgls<T, M>::ProjectorCgls(const M& A)
     : _A(A) {
   // Set GPU specific this->_info.
   GpuData<T> *info = new GpuData<T>();
   this->_info = reinterpret_cast<void*>(info);
 }
 
-template <typename T, typename M>
-ProjectorDirect<T, M>::~ProjectorDirect() {
+ProjectorCgls<T, M>::~ProjectorCgls() {
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   delete info;
+  this->_info = 0;
 }
 
 template <typename T, typename M>
-int ProjectorDirect<T, M>::Init() {
+int ProjectorCgls<T, M>::Init() {
   if (this->_done_init)
     return 1;
   this->_done_init = true;
+
   ASSERT(_A.IsInit());
 
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-
-  size_t min_dim = std::min(_A.Rows(), _A.Cols());
-
-  cudaMalloc(&(info->AA), min_dim * min_dim * sizeof(T));
-  cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
-  cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
-  cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
-  CUDA_CHECK_ERR();
-
-  cublasOperation_t op_type = _A.Rows() >= _A.Cols()
-      ? CUBLAS_OP_T : CUBLAS_OP_N;
-
-  // Compute AA
-  if (_A.Order() == MatrixDense<T>::ROW) {
-    const cml::matrix<T, CblasRowMajor> A =
-        cml::matrix_view_array<T, CblasRowMajor>
-        (_A.Data(), _A.Rows(), _A.Cols());
-    cml::matrix<T, CblasRowMajor> AA = cml::matrix_view_array<T, CblasRowMajor>
-        (info->AA, min_dim, min_dim);
-    cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
-        static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
-  } else {
-    const cml::matrix<T, CblasColMajor> A =
-        cml::matrix_view_array<T, CblasColMajor>
-        (_A.Data(), _A.Rows(), _A.Cols());
-    cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
-        (info->AA, min_dim, min_dim);
-    cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
-        static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
-  }
-  CUDA_CHECK_ERR();
-
   return 0;
 }
 
 template <typename T, typename M>
-int ProjectorDirect<T, M>::Free() {
-  if (!this->_done_init)
-    return 1;
-  
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-
-  if (info->AA) {
-    cudaFree(info->AA);
-    info->AA = 0;
-    CUDA_CHECK_ERR();
-  }
-
-  if (info->L) {
-    cudaFree(info->L);
-    info->L = 0;
-    CUDA_CHECK_ERR();
-  }
-  
-  return 0;
-}
-
-template <typename T, typename M>
-int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
+int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
   DEBUG_EXPECT(this->_done_init);
+  DEBUG_EXPECT(s >= static_cast<T>(0.));
   if (!this->_done_init || s < static_cast<T>(0.))
     return 1;
 
@@ -119,122 +64,47 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
 
-  size_t min_dim = std::min(_A.Rows(), _A.Cols());
+  // CGLS Gemv struct for matrix multiplication.
+  struct Gemv : cgls::Gemv<T> {
+    int operator()(char op, const T alpha, const T *x, const T beta, T *y) {
+      return _A.Mul(op, alpha, x, beta, y);
+    }
+  };
 
-  // Set up views for raw vectors.
-  cml::vector<T> y_vec = cml::vector_view_array(y, _A.Rows());
-  const cml::vector<T> y0_vec = cml::vector_view_array(y0, _A.Rows());
+  // Set initial y and x.
+  cudaMemcpy(y, y0, _A.Rows() * sizeof(T));
+  cudaMemset(x, 0, _A.Cols() * sizeof(T));
+
+  // y := y0 - Ax0;
+  _A.Mul('n', static_cast<T>(-1.), x0, static_cast<T>(1.), y);
+
+  // Minimize ||Ax - b||_2^2 + s||x||_2^2
+  cgls::Solve(hdl, Gemv(), _A.Rows(), _A.Cols(), y, x, s, kTol, kMaxIter, true);
+  cudaDeviceSynchronize();
+ 
+  // x := x - x0
   cml::vector<T> x_vec = cml::vector_view_array(x, _A.Cols());
-  const cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
+  cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
+  cml::blas_axpy(hdl, static_cast<T>(-1.), x0_vec, x_vec);
+  cudaDeviceSynchronize();
 
-  // Set (x, y) = (x0, y0).
-  cml::vector_memcpy(&x_vec, &x0_vec);
-  cml::vector_memcpy(&y_vec, &y0_vec);
-  CUDA_CHECK_ERR();
+  // y := Ax
+  _A.Mul('n', static_cast<T>(1.), x, static_cast<T>(0.), y);
+  cudaDeviceSynchronize();
 
-  if (_A.Order() == MatrixDense<T>::ROW) {
-    const cml::matrix<T, CblasRowMajor> A =
-        cml::matrix_view_array<T, CblasRowMajor>
-        (_A.Data(), _A.Rows(), _A.Cols());
-    cml::matrix<T, CblasRowMajor> AA = cml::matrix_view_array<T, CblasRowMajor>
-        (info->AA, min_dim, min_dim);
-    cml::matrix<T, CblasRowMajor> L = cml::matrix_view_array<T, CblasRowMajor>
-        (info->L, min_dim, min_dim);
-    CUDA_CHECK_ERR();
-
-    if (s != info->s) {
-      cml::matrix_memcpy(&L, &AA);
-      cml::vector<T> diagL = cml::matrix_diagonal(&L);
-      cml::vector_add_constant(&diagL, s);
-      cml::linalg_cholesky_decomp(hdl, &L);
-    }
-    if (_A.Rows() >= _A.Cols()) {
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &x_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(0.), &y_vec);
-    } else {
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(-1.), &y_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &y_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
-    }
-    CUDA_CHECK_ERR();
-  } else {
-    const cml::matrix<T, CblasColMajor> A =
-        cml::matrix_view_array<T, CblasColMajor>
-        (_A.Data(), _A.Rows(), _A.Cols());
-    cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
-        (info->AA, min_dim, min_dim);
-    cml::matrix<T, CblasColMajor> L = cml::matrix_view_array<T, CblasColMajor>
-        (info->L, min_dim, min_dim);
-    CUDA_CHECK_ERR();
-
-    if (s != info->s) {
-      cml::matrix_memcpy(&L, &AA);
-      cml::vector<T> diagL = cml::matrix_diagonal(&L);
-      cml::vector_add_constant(&diagL, s);
-      cudaDeviceSynchronize();
-      cml::linalg_cholesky_decomp(hdl, &L);
-      CUDA_CHECK_ERR();
-    }
-    if (_A.Rows() >= _A.Cols()) {
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &x_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(0.), &y_vec);
-    } else {
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(-1.), &y_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &y_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
-    }
-    CUDA_CHECK_ERR();
-  }
-
-   // Check that projection was successful.
 #ifdef DEBUG
-  {
-    T tol = 1e2 * std::numeric_limits<T>::epsilon();
-    cml::vector<T> x_ = cml::vector_calloc<T>(_A.Cols());
-    cml::vector<T> y_ = cml::vector_calloc<T>(_A.Rows());
-    
-    // Check residual
-    cml::vector_memcpy(&x_, x);
-    cml::vector_memcpy(&y_, y);
-    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-    cudaDeviceSynchronize();
-    T nrm_r = cml::blas_nrm2(hdl, &y_)  / std::sqrt(_A.Rows());
-    DEBUG_EXPECT_EQ_EPS(nrm_r, static_cast<T>(0.), tol);
-  
-    // Check KKT
-    cml::vector_memcpy(&x_, x);
-    cml::vector_memcpy(&y_, y0);
-    _A.Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-    cudaDeviceSynchronize();
-    _A.Mul('t', static_cast<T>(1.), y_.data, static_cast<T>(1.), x_.data);
-    cudaDeviceSynchronize();
-    cml::blas_axpy(hdl, static_cast<T>(-1.), &x0_vec, &x_);
-    T nrm_kkt = cml::blas_nrm2(hdl, &x_) / std::sqrt(_A.Cols());
-    DEBUG_EXPECT_EQ_EPS(nrm_kkt, static_cast<T>(0.), tol);
-
-    cml::vector_free(&x_);
-    cml::vector_free(&y_);
-  }
+  // Verify that projection was successful.
+  CheckProjection(&_A, x, y, s);
 #endif
 
-  info->s = s;
   return 0;
 }
 
-template class ProjectorDirect<double, MatrixDense<double> >;
-template class ProjectorDirect<float, MatrixDense<float> >;
+template class ProjectorCgls<double, MatrixDense<double> >;
+template class ProjectorCgls<float, MatrixDense<float> >;
+
+template class ProjectorCgls<double, MatrixSparse<double> >;
+template class ProjectorCgls<float, MatrixSparse<float> >;
 
 }  // namespace pogs
 

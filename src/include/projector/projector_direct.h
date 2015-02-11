@@ -7,7 +7,7 @@ namespace pogs {
 
 // Minimizes ||Ax - y0||^2  + s ||x - x0||^2
 template <typename T, typename M>
-class ProjectorDirect : Projector<T, M > {
+class ProjectorDirect : Projector<T, M> {
  private:
   const M& _A;
 
@@ -20,8 +20,6 @@ class ProjectorDirect : Projector<T, M > {
   ~ProjectorDirect();
   
   int Init();
-
-  int Free();
 
   int Project(const T *x0, const T *y0, T s, T *x, T *y);
 };

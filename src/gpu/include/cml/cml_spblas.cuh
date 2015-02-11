@@ -1,23 +1,11 @@
 #ifndef CML_SPBLAS_CUH_
 #define CML_SPBLAS_CUH_
 
-#include "cml/cgls.cuh"
-#include "cml/cml_spmat.cuh"
-#include "cml/cml_utils.cuh"
-#include "cml/cml_vector.cuh"
+#include "cml_spmat.cuh"
+#include "cml_utils.cuh"
+#include "cml_vector.cuh"
 
 namespace cml {
-
-template <typename T, typename I, CBLAS_ORDER O>
-int spblas_solve(cusparseHandle_t handle_s, cublasHandle_t handle_b,
-          cusparseMatDescr_t descr, const spmat<T, I, O> *A, const T shift,
-          const vector<T> *b, vector<T> *x, const T tol, const I maxit,
-          bool quiet) {
-  const cgls::CGLS_ORD kOrd = (O == CblasRowMajor ? cgls::CSR : cgls::CSC);
-  return cgls::solve<T, kOrd>(handle_s, handle_b, descr, A->val, A->ptr, A->ind,
-      A->val + A->nnz, A->ptr + ptr_len(*A), A->ind + A->nnz, A->m, A->n,
-      A->nnz, b->data, x->data, shift, tol, maxit, quiet);
-}
 
 template <typename I>
 cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
@@ -99,8 +87,6 @@ cusparseStatus_t spblas_gemv(cusparseHandle_t handle,
   CusparseCheckError(err);
   return err;
 }
-
-
 
 }
 
