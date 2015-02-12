@@ -1,7 +1,6 @@
 #ifndef CML_RAND_CUH_
 #define CML_RAND_CUH_
 
-#include <time.h>
 #include <curand_kernel.h>
 
 #include "cml/cml_defs.cuh"
@@ -37,10 +36,12 @@ void rand(T *x, size_t size) {
   
   // Setup seeds.
   int grid_dim = calc_grid_dim(num_rand, kBlockSize);
-  setup_kernel<<<grid_dim, kBlockSize>>>(devStates, time(NULL));
+  setup_kernel<<<grid_dim, kBlockSize>>>(devStates, 0);
 
   // Generate random numbers.
   generate<<<grid_dim, kBlockSize>>>(devStates, x, size);
+
+  cudaFree(devStates);
 }
 
 }  // namespace cml
