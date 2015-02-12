@@ -280,6 +280,8 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       } else {
         delta = kDeltaMin;
       }
+      DEBUG_EXPECT_LT(_rho, kRhoMax);
+      DEBUG_EXPECT_GT(_rho, kRhoMin);
       CUDA_CHECK_ERR();
     }
   }

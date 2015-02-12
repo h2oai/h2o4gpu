@@ -38,10 +38,11 @@ class MatrixSparse : public Matrix<T> {
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
 
   // Getters
-  T* Data() { return _data; }
-  POGS_INT* Ptr() { return _ptr; }
-  POGS_INT* Ind() { return _ind; }
-  Ord Order() { return _ord; }
+  const T* Data() const { return _data; }
+  const POGS_INT* Ptr() const { return _ptr; }
+  const POGS_INT* Ind() const { return _ind; }
+  POGS_INT Nnz() const { return _nnz; }
+  Ord Order() const { return _ord; }
 };
 
 }  // namespace pogs

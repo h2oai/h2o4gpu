@@ -2,7 +2,7 @@
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_matrix.cuh"
-#include "cml/cml_rand.cuh"
+#include "cml/cml_vector.cuh"
 #include "equil_helper.cuh"
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
@@ -10,15 +10,14 @@
 
 namespace pogs {
 
-// File scoped constants.
-enum NormTypes { kNorm1, kNorm2, kNormFro };
-const NormTypes kNormEquilibrate = kNorm2; 
-const NormTypes kNormNormalize   = kNormFro; 
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
+
+// File scoped constants.
+const NormTypes kNormEquilibrate = kNorm2; 
+const NormTypes kNormNormalize   = kNorm2;
 
 template<typename T>
 struct GpuData {
@@ -51,7 +50,6 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
 template <typename T>
 MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
     : Matrix<T>(m, n), _data(0) {
@@ -151,8 +149,8 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   CUDA_CHECK_ERR();
 
   // Fill sign bits, assigning each thread a multiple of 8 elements.
-  int num_chars = num_el / 8;
-  int grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
+  size_t num_chars = num_el / 8;
+  size_t grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
         SquareF<T>());
@@ -164,7 +162,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   CUDA_CHECK_ERR();
 
   // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits to 
+  // of sign bits too. 
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
       __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
@@ -206,6 +204,18 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     CUDA_CHECK_ERR();
   }
 
+  // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
+  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+    thrust::transform(thrust::device_pointer_cast(d),
+        thrust::device_pointer_cast(d + this->_m),
+        thrust::device_pointer_cast(d), SqrtF<T>());
+    thrust::transform(thrust::device_pointer_cast(e),
+        thrust::device_pointer_cast(e + this->_n),
+        thrust::device_pointer_cast(e), SqrtF<T>());
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
+  }
+
   // Compute A := D * A * E.
   MultDiag(d, e, this->_m, this->_n, _ord, _data);
   cudaDeviceSynchronize();
@@ -224,7 +234,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
   T normd = cml::blas_nrm2(hdl, &d_vec);
   T norme = cml::blas_nrm2(hdl, &e_vec);
-  T scale = sqrt(normd * sqrt(e_vec.size) / (norme * sqrt(d_vec.size)));
+  T scale = sqrt(normd * sqrt(this->_n) / (norme * sqrt(this->_m)));
   cml::vector_scale(&d_vec, 1 / (scale * sqrt(normA)));
   cml::vector_scale(&e_vec, scale / sqrt(normA));
   cudaDeviceSynchronize();
@@ -264,16 +274,16 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixDense<T>& A) {
 // Performs A := D * A * E for A in row major
 template <typename T>
 void __global__ __MultRow(size_t m, size_t n, const T *d, const T *e, T *data) {
-  unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-  for (unsigned int t = tid; t < m * n; t += gridDim.x * blockDim.x)
+  size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (size_t t = tid; t < m * n; t += gridDim.x * blockDim.x)
     data[t] *= d[t / n] * e[t % n];
 }
 
 // Performs A := D * A * E for A in col major
 template <typename T>
 void __global__ __MultCol(size_t m, size_t n, const T *d, const T *e, T *data) {
-  unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
-  for (unsigned int t = tid; t < m * n; t += gridDim.x * blockDim.x)
+  size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (size_t t = tid; t < m * n; t += gridDim.x * blockDim.x)
     data[t] *= d[t % m] * e[t / m];
 }
 
@@ -295,5 +305,5 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 template class MatrixDense<double>;
 template class MatrixDense<float>;
 
-}  // _namespace pogs
+}  // namespace pogs
 

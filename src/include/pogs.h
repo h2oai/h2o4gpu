@@ -10,7 +10,7 @@
 namespace pogs {
 
 // Defaults.
-const double       kAbsTol      = 1e-9;
+const double       kAbsTol      = 1e-5;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
 const unsigned int kVerbose     = 2u;

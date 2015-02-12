@@ -4,12 +4,16 @@
 #include <thrust/functional.h>
 
 #include "cml/cml_blas.cuh"
+#include "cml/cml_rand.cuh"
 #include "cml/cml_vector.cuh"
 #include "matrix/matrix.h"
 #include "util.cuh"
 
 namespace pogs {
 namespace {
+
+// Different norm types.
+enum NormTypes { kNorm1, kNorm2, kNormFro };
 
 // TODO: Figure out a better value for this constant
 const double kSinkhornConst        = 1e-4;
@@ -31,26 +35,26 @@ struct ReciprF : thrust::unary_function<T, T> {
 
 template <typename T>
 struct AbsF : thrust::unary_function<T, T> {
-  __device__ inline double Abs(double x) { return fabs(x); }
-  __device__ inline float Abs(float x) { return fabsf(x); }
-  __device__ T operator()(T x) { return Abs(x); }
+  __host__ __device__ inline double Abs(double x) { return fabs(x); }
+  __host__ __device__ inline float Abs(float x) { return fabsf(x); }
+  __host__ __device__ T operator()(T x) { return Abs(x); }
 };
 
 template <typename T>
 struct IdentityF: thrust::unary_function<T, T> {
-  __device__ T operator()(T x) { return x; }
+  __host__ __device__ T operator()(T x) { return x; }
 };
 
 template <typename T>
 struct SquareF: thrust::unary_function<T, T> {
-  __device__ T operator()(T x) { return x * x; }
+  __host__ __device__ T operator()(T x) { return x * x; }
 };
 
 template <typename T>
 struct SqrtF : thrust::unary_function<T, T> {
-  __device__ inline double Sqrt(double x) { return sqrt(x); }
-  __device__ inline float Sqrt(float x) { return sqrtf(x); }
-  __device__ T operator()(T x) { return Sqrt(x); }
+  __host__ __device__ inline double Sqrt(double x) { return sqrt(x); }
+  __host__ __device__ inline float Sqrt(float x) { return sqrtf(x); }
+  __host__ __device__ T operator()(T x) { return Sqrt(x); }
 };
 
 template <typename T, typename F>
@@ -110,12 +114,8 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
   for (i = 0; i < kNormEstMaxIter; ++i) {
     norm_est_last = norm_est;
     A->Mul('n', static_cast<T>(1.), x.data, static_cast<T>(0.), Sx.data);
-//    cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), A, &x,
-//        static_cast<T>(0.), &Sx);
     cudaDeviceSynchronize();
     A->Mul('t', static_cast<T>(1.), Sx.data, static_cast<T>(0.), x.data);
-//     cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), A, &Sx,
-//         static_cast<T>(0.), &x);
     cudaDeviceSynchronize();
     T normx = cml::blas_nrm2(hdl, &x);
     T normSx = cml::blas_nrm2(hdl, &Sx);
