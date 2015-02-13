@@ -56,6 +56,9 @@ class Pogs {
   const T* GetLambda() const { return _lambda; }
   const T* GetMu()     const { return _mu; }
   const T  GetOptval() const { return _optval; }
+  const T  GetRho()    const { return _rho; }
+  const T  GetRelTol() const { return _rel_tol; }
+  const T  GetAbsTol() const { return _abs_tol; }
 
   // Setters for parameters and initial values.
   void SetRho(T rho)                     { _rho = rho; }

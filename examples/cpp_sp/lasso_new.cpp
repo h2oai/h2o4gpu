@@ -14,9 +14,11 @@ using namespace pogs;
 // See <pogs>/matlab/examples/lasso.m for detailed description.
 template <typename T>
 double Lasso(int m, int n, int nnz) {
+  char ord = 'c';
+
   std::vector<T> val(nnz);
   std::vector<int> col_ind(nnz);
-  std::vector<int> row_ptr(m + 1);
+  std::vector<int> row_ptr;
   std::vector<T> b(m);
   std::vector<T> x(n);
   std::vector<T> y(m);
@@ -26,15 +28,22 @@ double Lasso(int m, int n, int nnz) {
                                      static_cast<T>(1));
  
   std::vector<std::tuple<int, int, T>> entries;
-  nnz = MatGenApprox(m, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
-      static_cast<T>(-1), static_cast<T>(1), entries);
+  if (ord == 'r') {
+    row_ptr.reserve(m + 1);
+    nnz = MatGenApprox(m, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
+        static_cast<T>(-1), static_cast<T>(1), entries);
+  } else {
+    row_ptr.reserve(n + 1);
+    nnz = MatGenApprox(n, m, nnz, val.data(), row_ptr.data(), col_ind.data(),
+        static_cast<T>(-1), static_cast<T>(1), entries);
+  }
 
   for (unsigned int i = 0; i < m; ++i)
     b[i] = static_cast<T>(4) * n_dist(generator);
 
-  T lambda_max = 5;
+  T lambda_max = 1;
 
-  pogs::MatrixSparse<T> A_('r', m, n, nnz, val.data(), row_ptr.data(),
+  pogs::MatrixSparse<T> A_(ord, m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
   pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
   std::vector<FunctionObj<T> > f;
