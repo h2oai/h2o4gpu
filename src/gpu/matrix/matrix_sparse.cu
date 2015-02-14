@@ -18,7 +18,7 @@ namespace {
 
 // File scoped constants.
 const NormTypes kNormEquilibrate = kNorm2; 
-const NormTypes kNormNormalize   = kNormFro; 
+const NormTypes kNormNormalize   = kNorm2; 
 
 template <typename T>
 struct GpuData {
@@ -286,7 +286,8 @@ int MatrixSparse<T>::Equil(T *d, T *e) {
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
   T normd = cml::blas_nrm2(hdl, &d_vec);
   T norme = cml::blas_nrm2(hdl, &e_vec);
-  T scale = sqrt(normd * sqrt(this->_n) / (norme * sqrt(this->_m)));
+//  T scale = sqrt(normd * sqrt(this->_n) / (norme * sqrt(this->_m)));
+  T scale = static_cast<T>(1.);
   cml::vector_scale(&d_vec, 1 / (scale * sqrt(normA)));
   cml::vector_scale(&e_vec, scale / sqrt(normA));
   cudaDeviceSynchronize();
@@ -294,7 +295,7 @@ int MatrixSparse<T>::Equil(T *d, T *e) {
   cudaFree(sign);
   CUDA_CHECK_ERR();
 
-  printf("norm A = %e, normd = %e, norme = %e\n", normA, normd, norme);
+  DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA, normd, norme);
 
   return 0;
 }
