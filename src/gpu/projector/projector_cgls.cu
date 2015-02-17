@@ -16,8 +16,8 @@ namespace pogs {
 namespace {
 
 // TODO: Make these variable
-double kTol  = 1e-4;
-int kMaxIter = 10;
+double kTol  = 1e-6;
+int kMaxIter = 100;
 
 template<typename T>
 struct GpuData {

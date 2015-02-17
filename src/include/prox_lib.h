@@ -11,6 +11,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/inner_product.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/execution_policy.h>
 #define __DEVICE__ __device__
@@ -470,6 +471,151 @@ __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
 }
 
 
+// Projection onto subgradient definitions
+//
+// Each of the following functions corresponds to one of the Function enums.
+// All functions accept one argument x and five parameters (a, b, c, d, and e)
+// and returns the evaluation of
+//
+//   x -> ProjSubgrad{c * f(a * x - b) + d * x + (1/2) e * x ^ 2},
+//
+// where ProjSubgrad{.} is the projection  onto the subgradient of the function.
+template <typename T>
+__DEVICE__ inline T ProjSubgradAbs(T v, T x) {
+  if (x < static_cast<T>(0.))
+    return static_cast<T>(-1.);
+  else if (x > static_cast<T>(0.))
+    return static_cast<T>(1.);
+ else
+    return Max(static_cast<T>(-1.), Min(static_cast<T>(1.), v));
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradNegEntr(T v, T x) {
+  return -Log(x) - static_cast<T>(1.);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradExp(T v, T x) {
+  return Exp(x);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradHuber(T v, T x) {
+  return Max(static_cast<T>(-1.), Min(static_cast<T>(1.), x));
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradIdentity(T v, T x) {
+  return static_cast<T>(1.);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradIndBox01(T v, T x) {
+  if (x <= static_cast<T>(0.))
+    return Min(static_cast<T>(0.), v);
+  else if (x >= static_cast<T>(1.))
+    return Max(static_cast<T>(0.), v);
+  else
+    return static_cast<T>(0.);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradIndEq0(T v, T x) {
+  return v;
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradIndGe0(T v, T x) {
+  if (x <= static_cast<T>(0.))
+    return Min(static_cast<T>(0.), v);
+  else
+    return static_cast<T>(0.);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradIndLe0(T v, T x) {
+  if (x >= static_cast<T>(0.))
+    return Max(static_cast<T>(0.), v);
+  else
+    return static_cast<T>(0.);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradLogistic(T v, T x) {
+  return Exp(x) / (static_cast<T>(1.) + Exp(x));
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradMaxNeg0(T v, T x) {
+  if (x < static_cast<T>(0.))
+    return static_cast<T>(-1.);
+  else if (x > static_cast<T>(0.))
+    return static_cast<T>(0.);
+  else
+    return Min(static_cast<T>(0.), Max(static_cast<T>(-1.), v));
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradMaxPos0(T v, T x) {
+  if (x < static_cast<T>(0.))
+    return static_cast<T>(0.);
+  else if (x > static_cast<T>(0.))
+    return static_cast<T>(1.);
+  else
+    return Min(static_cast<T>(1.), Max(static_cast<T>(0.), v));
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradNegLog(T v, T x) {
+  return static_cast<T>(-1.) / x;
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradRecipr(T v, T x) {
+  return static_cast<T>(1.) / (x * x);
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradSquare(T v, T x) {
+  return x;
+}
+
+template <typename T>
+__DEVICE__ inline T ProjSubgradZero(T v, T x) {
+  return static_cast<T>(0.);
+}
+
+// Evaluates the projection of v onto the subgradient of f at x.
+template <typename T>
+__DEVICE__ inline T ProjSubgradEval(const FunctionObj<T> &f_obj, T v, T x) {
+  const T a = f_obj.a, b = f_obj.b, c = f_obj.c, d = f_obj.d, e = f_obj.e;
+  if (a == static_cast<T>(0.) || c == static_cast<T>(0.))
+    return d + e * x;
+  v = static_cast<T>(1.) / (a * c) * (v - d - e * x);
+  T axb = a * x - b;
+  switch (f_obj.h) {
+    case kAbs: v = ProjSubgradAbs(v, axb); break;
+    case kNegEntr: v = ProjSubgradNegEntr(v, axb); break;
+    case kExp: v = ProjSubgradExp(v, axb); break;
+    case kHuber: v = ProjSubgradHuber(v, axb); break;
+    case kIdentity: v = ProjSubgradIdentity(v, axb); break;
+    case kIndBox01: v = ProjSubgradIndBox01(v, axb); break;
+    case kIndEq0: v = ProjSubgradIndEq0(v, axb); break;
+    case kIndGe0: v = ProjSubgradIndGe0(v, axb); break;
+    case kIndLe0: v = ProjSubgradIndLe0(v, axb); break;
+    case kLogistic: v = ProjSubgradLogistic(v, axb); break;
+    case kMaxNeg0: v = ProjSubgradMaxNeg0(v, axb); break;
+    case kMaxPos0: v = ProjSubgradMaxPos0(v, axb); break;
+    case kNegLog: v = ProjSubgradNegLog(v, axb); break;
+    case kRecipr: v = ProjSubgradRecipr(v, axb); break;
+    case kSquare: v = ProjSubgradSquare(v, axb); break;
+    case kZero: default: v = ProjSubgradZero(v, axb); break;
+  }
+  return a * c * v + d + e * x;
+}
+
+
 // Evaluates the proximal operator Prox{f_obj[i]}(x_in[i]) -> x_out[i].
 //
 // @param f_obj Vector of function objects.
@@ -477,13 +623,13 @@ __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
 // @param x_in Array to which proximal operator will be applied.
 // @param x_out Array to which result will be written.
 template <typename T>
-void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
-              size_t stride_in, T* x_out, size_t stride_out) {
+void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T *x_in,
+              T *x_out) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
   for (unsigned int i = 0; i < f_obj.size(); ++i)
-    x_out[i * stride_out] = ProxEval(f_obj[i], x_in[i * stride_in], rho);
+    x_out[i] = ProxEval(f_obj[i], x_in[i], rho);
 }
 
 
@@ -494,15 +640,31 @@ void ProxEval(const std::vector<FunctionObj<T> > &f_obj, T rho, const T* x_in,
 // @param x_out Array to which result will be written.
 // @returns Evaluation of sum of functions.
 template <typename T>
-T FuncEval(const std::vector<FunctionObj<T> > &f_obj, const T* x_in,
-           size_t stride) {
+T FuncEval(const std::vector<FunctionObj<T> > &f_obj, const T* x_in) {
   T sum = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+:sum)
 #endif
   for (unsigned int i = 0; i < f_obj.size(); ++i)
-    sum += FuncEval(f_obj[i], x_in[i * stride]);
+    sum += FuncEval(f_obj[i], x_in[i]);
   return sum;
+}
+
+// Projection onto the subgradient at x_in
+//   ProjSubgrad{f_obj[i]}(x_in[i], v_in[i]) -> x_out[i].
+//
+// @param f_obj Vector of function objects.
+// @param x_in Array of points at which subgradient should be evaluated.
+// @param v_in Array of points that should be projected onto the subgradient.
+// @param v_out Array to which result will be written.
+template <typename T>
+void ProjSubgradEval(const std::vector<FunctionObj<T> > &f_obj, const T *x_in,
+                     const T *v_in, T *v_out) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+  for (unsigned int i = 0; i < f_obj.size(); ++i)
+    v_out[i] = ProjSubgradEval(f_obj[i], v_in[i], x_in[i]);
 }
 
 #ifdef __CUDACC__
@@ -535,6 +697,24 @@ T FuncEval(const thrust::device_vector<FunctionObj<T> > &f_obj, const T *x_in) {
   return thrust::inner_product(f_obj.cbegin(), f_obj.cend(),
       thrust::device_pointer_cast(x_in), static_cast<T>(0), thrust::plus<T>(),
       FuncEvalF<T>());
+}
+
+template <typename T>
+struct ProjSubgradF {
+  __device__ T operator()(const FunctionObj<T> &f_obj,
+                          const thrust::tuple<T, T>& vx) {
+    return ProjSubgradEval(f_obj, thrust::get<0>(vx), thrust::get<1>(vx));
+  }
+};
+
+template <typename T>
+void ProjSubgradEval(const thrust::device_vector<FunctionObj<T> > &f_obj,
+                     const T *v_in, const T *x_in, T *v_out) {
+  thrust::transform(thrust::device, f_obj.cbegin(), f_obj.cend(),
+      thrust::make_zip_iterator(thrust::make_tuple(
+          thrust::device_pointer_cast(v_in),
+          thrust::device_pointer_cast(x_in))),
+      thrust::device_pointer_cast(v_out), ProjSubgradF<T>());
 }
 
 #endif  // __CUDACC__

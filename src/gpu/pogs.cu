@@ -45,9 +45,11 @@ Pogs<T, M, P>::Pogs(const M &A)
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
       _max_iter(kMaxIter),
+      _init_iter(kInitIter),
       _verbose(kVerbose),
       _adaptive_rho(kAdaptiveRho),
-      _gap_stop(kGapStop) {
+      _gap_stop(kGapStop),
+      _init_x(false), _init_lambda(false) {
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
@@ -133,27 +135,6 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
 
-  // TODO: Use some form of init y maybe?
-  // Initialize x and y from x0 or y0
-  cml::vector_memcpy(&yprev, _y);
-  cml::vector_mul(&yprev, &d);
-  cml::vector_memcpy(&xprev, _x);
-  cml::vector_div(&xprev, &e);
-  cml::vector_set_all(&x, kZero);
-  CUDA_CHECK_ERR();
-  _P.Project(yprev.data, xprev.data, kOne, x.data, y.data);
-  cudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
-
-  // TODO: initialize from _mu and _lambda and check if ||A^Tmu+lambda|| < tol.
-//  cml::vector_memcpy(&xt, _mu);
-//  cml::vector_memcpy(&yt, _lambda);
-//  cml::vector_scal(&zt, -kOne / _rho);
-//  cml::blas_axpy(hdl, kOne, &z, &zt);
-//  ProxEval(g_gpu, _rho, x.data, x12.data);
-//  ProxEval(f_gpu, _rho, y.data, y12.data);
-//  cml::blas_axpy(hdl, -kOne, &z12, &zt);
-
   // Scale f and g to account for diagonal scaling e and d.
   thrust::transform(f_gpu.begin(), f_gpu.end(),
       thrust::device_pointer_cast(d.data), f_gpu.begin(),
@@ -162,6 +143,48 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       thrust::device_pointer_cast(e.data), g_gpu.begin(),
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   CUDA_CHECK_ERR();
+
+  // Initialize (x, lambda) from (x0, lambda0).
+  if (_init_x) {
+    cml::vector_memcpy(&xtemp, _x);
+    cml::vector_div(&xtemp, &e);
+    _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data);
+    cudaDeviceSynchronize();
+    cml::vector_memcpy(&z, &ztemp);
+    CUDA_CHECK_ERR();
+  }
+  if (_init_lambda) {
+    cml::vector_memcpy(&ytemp, _lambda);
+    cml::vector_div(&ytemp, &d);
+    _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
+    cudaDeviceSynchronize();
+    cml::blas_scal(hdl, -kOne / _rho, &ztemp);
+    cml::vector_memcpy(&zt, &ztemp);
+    CUDA_CHECK_ERR();
+  }
+
+  // Make an initial guess for (x0 or lambda0).
+  if (_init_x && !_init_lambda) {
+    // Alternating projections to satisfy 
+    //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
+    //   2. \mu = -A^T\lambda
+    cml::vector_set_all(&zprev, kZero);
+    for (unsigned int i = 0; i < kInitIter; ++i) {
+      ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
+      ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
+      _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data);
+      cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+      cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);
+      cml::blas_scal(hdl, -kOne, &zprev);
+    }
+    // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
+    cml::vector_memcpy(&zt, &zprev);
+    cml::blas_scal(hdl, -kOne / _rho, &zt);
+  } else if (_init_lambda && !_init_x) {
+    ASSERT(false);
+  }
+  _init_x = _init_lambda = false;
 
   // Signal start of execution.
   if (_verbose > 0) {
@@ -175,7 +198,6 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * _abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0u, ku = 0u;
-  bool converged = false;
 
   for (unsigned int k = 0;; ++k) {
     cml::vector_memcpy(&zprev, &z);
@@ -186,7 +208,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     ProxEval(f_gpu, _rho, y.data, y12.data);
     CUDA_CHECK_ERR();
 
-    // Compute dual variable.
+    // Compute gap, optval, and tolerances.
     T gap;
     cml::blas_axpy(hdl, -kOne, &z12, &z);
     cml::blas_dot(hdl, &z, &z12, &gap);
@@ -197,9 +219,6 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     T eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &z12);
     T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &z);
     CUDA_CHECK_ERR();
-
-    if (converged || k == _max_iter)
-      break;
 
     // Project onto y = Ax.
     _P.Project(x12.data, y12.data, kOne, x.data, y.data);
@@ -239,22 +258,25 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
     CUDA_CHECK_ERR();
 
-    // Update dual variable.
-    cml::blas_axpy(hdl, kAlpha, &z12, &zt);
-    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
-    cml::blas_axpy(hdl, -kOne, &z, &zt);
-    CUDA_CHECK_ERR();
-
     // Evaluate stopping criteria.
-    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+    bool converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
     if (_verbose > 0 && (k % 10 == 0 || converged)) {
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, _optval);
     }
 
+    if (converged || k == _max_iter - 1)
+      break;
+
+    // Update dual variable.
+    cml::blas_axpy(hdl, kAlpha, &z12, &zt);
+    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
+    cml::blas_axpy(hdl, -kOne, &z, &zt);
+    CUDA_CHECK_ERR();
+
     // Rescale rho.
-    if (_adaptive_rho && !converged) {
+    if (_adaptive_rho) {
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         if (_rho < kRhoMax) {
@@ -286,19 +308,27 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
   }
 
-  // Scale x, y and l for output.
+  // Scale x, y, lambda and mu for output.
+  cml::vector_memcpy(&ztemp, &zt);
+  cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
+  cml::blas_axpy(hdl, kOne, &z12, &ztemp);
+  cml::blas_scal(hdl, -_rho, &ztemp);
+  cml::vector_mul(&ytemp, &d);
+  cml::vector_div(&xtemp, &e);
+
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
-  cml::vector_mul(&y, &d);
-  cml::blas_scal(hdl, _rho, &z);
 
   // Copy results to output.
   cml::vector_memcpy(_x, &x12);
   cml::vector_memcpy(_y, &y12);
-  cml::vector_memcpy(_mu, &x);
-  cml::vector_memcpy(_lambda, &y);
+  cml::vector_memcpy(_mu, &xtemp);
+  cml::vector_memcpy(_lambda, &ytemp);
 
-  // Store rho and free memory.
+  // Store z.
+  cml::vector_memcpy(&z, &zprev);
+
+  // Free memory.
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
   cml::vector_free(&ztemp);
@@ -323,7 +353,6 @@ Pogs<T, M, P>::~Pogs() {
   delete [] _lambda;
   _x = _y = _mu = _lambda = 0;
 }
-
 
 // Explicit template instantiation.
 // Dense direct.
