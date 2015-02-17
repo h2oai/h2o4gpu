@@ -256,7 +256,7 @@
 #define DEBUG_EXPECT_LEQ(a, b)                   do { } while (0)
 #define DEBUG_EXPECT_LT(a, b)                    do { } while (0)
 #define DEBUG_EXPECT_NEQ(a, b)                   do { } while (0)
-#define DEBUG_PRINTF(message)                    do { } while (0)
+#define DEBUG_PRINTF(message, ...)               do { } while (0)
 #define DEBUG_PRINT(message)                     do { } while (0)
 #define DEBUG_PRINTF_IF(statement, message, ...) do { } while (0)
 #define DEBUG_PRINT_IF(statement, message, ...)  do { } while (0)

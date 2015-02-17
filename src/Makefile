@@ -35,7 +35,7 @@ CXXFLAGS=-g -O3 -Wall -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=-arch=sm_20 -Xcompiler -fPIC -DDEBUG
+CUFLAGS=-arch=sm_20 -Xcompiler -fPIC #-DDEBUG
 
 MATRIX=\
 	include/matrix/matrix.h \

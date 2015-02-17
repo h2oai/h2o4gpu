@@ -22,9 +22,9 @@ g.h = kAbs;
 g.c = 0.06 * norm(A' * (ones(m, 1) / 2 - y), inf);
 
 % Solve with pogs
-A = single(A);
+As = single(A);
 tic
-pogs(A, f, g, params);
+pogs(As, f, g, params);
 pogs_time = toc;
 
 % Solve with CVX

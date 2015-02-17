@@ -24,9 +24,9 @@ g.d = r;
 g.e = gamma * d;
 
 % Solve with pogs
-A = single(A);
+As = single(A);
 tic
-pogs(A, f, g, params);
+pogs(As, f, g, params);
 pogs_time = toc;
 
 % Solve with CVX

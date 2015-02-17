@@ -22,9 +22,9 @@ g.h = kIdentity;
 g.c = c;
 
 % Solve with pogs
-A = single(A);
+As = single(A);
 tic
-x = pogs(A, f, g, params);
+x = pogs(As, f, g, params);
 pogs_time = toc;
 
 % Solve with CVX

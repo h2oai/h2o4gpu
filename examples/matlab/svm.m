@@ -9,6 +9,10 @@ if nargin <= 3
   cvx_time = nan;
 end
 
+if mod(m, 2) ~= 0
+  m = m + 1;
+end
+
 % Generate data.
 rng(0, 'twister')
 
@@ -25,9 +29,9 @@ f.c = lambda;
 g.h = [kSquare(n); 0];
 
 % Solve with pogs
-A = single(A);
+As = single(A);
 tic
-pogs(A, f, g, params);
+pogs(As, f, g, params);
 pogs_time = toc;
 
 % Solve with CVX
