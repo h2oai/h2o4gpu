@@ -94,8 +94,8 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kGamma    = static_cast<T>(1.01);
   const T kTau      = static_cast<T>(0.8);
   const T kAlpha    = static_cast<T>(1.7);
-  const T kRhoMin   = static_cast<T>(1e-3);
-  const T kRhoMax   = static_cast<T>(1e3);
+  const T kRhoMin   = static_cast<T>(1e-4);
+  const T kRhoMax   = static_cast<T>(1e4);
   const T kKappa    = static_cast<T>(0.9);
   const T kOne      = static_cast<T>(1.0);
   const T kZero     = static_cast<T>(0.0);
