@@ -5,9 +5,10 @@ if nargin <= 2
   params = [];
 end
 if nargin <= 3
-  cvx_time = nan;
   comp_cvx = false;
 end
+
+cvx_time = nan;
 
 % Generate data.
 rng(0, 'twister');

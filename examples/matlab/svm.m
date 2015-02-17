@@ -6,8 +6,9 @@ if nargin <= 2
 end
 if nargin <= 3
   comp_cvx = false;
-  cvx_time = nan;
 end
+
+cvx_time = nan;
 
 if mod(m, 2) ~= 0
   m = m + 1;

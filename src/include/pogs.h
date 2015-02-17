@@ -11,11 +11,11 @@
 namespace pogs {
 
 // Defaults.
-const double       kAbsTol      = 1e-5;
+const double       kAbsTol      = 1e-8;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
 const unsigned int kVerbose     = 2u;
-const unsigned int kMaxIter     = 4000u;
+const unsigned int kMaxIter     = 2000u;
 const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
 const bool         kGapStop     = false;
@@ -84,12 +84,13 @@ class Pogs {
   }
 };
 
+// TODO: Change back
 #ifndef __CUDACC__
 template <typename T, typename M>
-using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
+using PogsDirect = Pogs<T, M, ProjectorIndirect<T, M> >;
 
-template <typename T, typename M>
-using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
+//template <typename T, typename M>
+//using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
 #endif
 
 }  // namespace pogs

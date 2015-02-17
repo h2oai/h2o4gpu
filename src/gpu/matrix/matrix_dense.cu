@@ -17,7 +17,7 @@ namespace {
 
 // File scoped constants.
 const NormTypes kNormEquilibrate = kNorm2; 
-const NormTypes kNormNormalize   = kNorm2;
+const NormTypes kNormNormalize   = kNormFro;
 
 template<typename T>
 struct GpuData {
@@ -243,7 +243,8 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   cudaFree(sign);
   CUDA_CHECK_ERR();
 
-  DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA, normd, norme);
+  //DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA, normd, norme);
+  printf("normA = %e, normd = %e, norme = %e\n", normA, normd, norme);
 
   return 0;
 }

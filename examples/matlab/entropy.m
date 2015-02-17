@@ -8,6 +8,8 @@ if nargin <= 3
   cvx_comp = false;
 end
 
+cvx_time = nan;
+
 % Generate data.
 rng(0, 'twister');
 

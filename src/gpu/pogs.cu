@@ -219,8 +219,8 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
     T eps_gap = sqrtmn_atol + _rel_tol * cml::blas_nrm2(hdl, &z) *
         cml::blas_nrm2(hdl, &z12);
-    T eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &z12);
-    T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &z);
+    T eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
+    T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &x);
     CUDA_CHECK_ERR();
 
     // Apply over relaxation.
