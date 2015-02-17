@@ -1,9 +1,12 @@
-function pogs_time = pwl(m, n, params)
+function [pogs_time, cvx_time] = pwl(m, n, params, comp_cvx)
 %PWL
 
-if nargin == 2
+if nargin <= 2
   params = [];
-  params.rho = 1e-3;
+end
+if nargin <= 3
+  comp_cvx = false;
+  cvx_time = nan;
 end
 
 % Generate data.
@@ -17,10 +20,21 @@ f.h = kIndLe0;
 f.b = b;
 g.h = [kZero(n); kIdentity];
 
-% Solve
+% Solve with pogs
+A = single(A);
 tic
 pogs(A, f, g, params);
 pogs_time = toc;
+
+% Solve with CVX
+if comp_cvx
+  tic
+  cvx_begin
+    variables x(n)
+    minimize(max(A * x - b))
+  cvx_end
+  cvx_time = toc;
+end
 
 end
 

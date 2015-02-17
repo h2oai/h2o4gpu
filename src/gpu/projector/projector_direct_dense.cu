@@ -139,39 +139,10 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
-      cml::linalg_cholesky_decomp(hdl, &L);
-    }
-    if (_A.Rows() >= _A.Cols()) {
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &x_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(0.), &y_vec);
-    } else {
-      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
-          static_cast<T>(-1.), &y_vec);
-      cml::linalg_cholesky_svx(hdl, &L, &y_vec);
-      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
-          static_cast<T>(1.), &x_vec);
-      cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
-    }
-    CUDA_CHECK_ERR();
-  } else {
-    const cml::matrix<T, CblasColMajor> A =
-        cml::matrix_view_array<T, CblasColMajor>
-        (_A.Data(), _A.Rows(), _A.Cols());
-    cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
-        (info->AA, min_dim, min_dim);
-    cml::matrix<T, CblasColMajor> L = cml::matrix_view_array<T, CblasColMajor>
-        (info->L, min_dim, min_dim);
-    CUDA_CHECK_ERR();
-
-    if (s != info->s) {
-      cml::matrix_memcpy(&L, &AA);
-      cml::vector<T> diagL = cml::matrix_diagonal(&L);
-      cml::vector_add_constant(&diagL, s);
       cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
       cml::linalg_cholesky_decomp(hdl, &L);
+      cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
     }
     if (_A.Rows() >= _A.Cols()) {
@@ -188,13 +159,50 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
           static_cast<T>(1.), &x_vec);
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
     }
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
+  } else {
+    const cml::matrix<T, CblasColMajor> A =
+        cml::matrix_view_array<T, CblasColMajor>
+        (_A.Data(), _A.Rows(), _A.Cols());
+    cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
+        (info->AA, min_dim, min_dim);
+    cml::matrix<T, CblasColMajor> L = cml::matrix_view_array<T, CblasColMajor>
+        (info->L, min_dim, min_dim);
+    CUDA_CHECK_ERR();
+
+    if (s != info->s) {
+      cml::matrix_memcpy(&L, &AA);
+      cml::vector<T> diagL = cml::matrix_diagonal(&L);
+      cml::vector_add_constant(&diagL, s);
+      cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+      cml::linalg_cholesky_decomp(hdl, &L);
+      cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+    }
+    if (_A.Rows() >= _A.Cols()) {
+      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
+          static_cast<T>(1.), &x_vec);
+      cml::linalg_cholesky_svx(hdl, &L, &x_vec);
+      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
+          static_cast<T>(0.), &y_vec);
+    } else {
+      cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
+          static_cast<T>(-1.), &y_vec);
+      cml::linalg_cholesky_svx(hdl, &L, &y_vec);
+      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
+          static_cast<T>(1.), &x_vec);
+      cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
+    }
+    cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
 
 #ifdef DEBUG
   // Verify that projection was successful.
   CheckProjection(&_A, x0, y0, x, y, s,
-      static_cast<T>(1e2) * std::numeric_limits<T>::epsilon());
+      static_cast<T>(1e3) * std::numeric_limits<T>::epsilon());
 #endif
 
   info->s = s;

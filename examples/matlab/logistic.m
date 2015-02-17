@@ -1,8 +1,12 @@
-function pogs_time = logistic(m, n, params)
+function [pogs_time, cvx_time] = logistic(m, n, params, comp_cvx)
 %LOGISTIC
 
-if nargin == 2
+if nargin <= 2
   params = [];
+end
+if nargin <= 3
+  comp_cvx = false;
+  cvx_time = nan;
 end
 
 % Generate data.
@@ -17,9 +21,20 @@ f.d = -y;
 g.h = kAbs;
 g.c = 0.06 * norm(A' * (ones(m, 1) / 2 - y), inf);
 
-% Solve
+% Solve with pogs
+A = single(A);
 tic
 pogs(A, f, g, params);
 pogs_time = toc;
+
+% Solve with CVX
+if comp_cvx
+  tic
+  cvx_begin
+    variables x(n + 1)
+    minimize(sum(log(1 + exp(A * x))) + g.c * norm(x, 1))
+  cvx_end
+  cvx_time = toc;
+end
 
 end

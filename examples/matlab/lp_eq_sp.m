@@ -8,17 +8,6 @@ end
 % Generate data.
 rng(0, 'twister')
 
-% Conclusion, there is something wrong with the sparse equilibration,
-% probably very early on. Maybe it has something to do with block sizes? or
-% synchronization.
-%
-% Also, there is either something wrong with the row major version, or
-% there is something wrong with the CSR matrix generation. Check it out.
-%
-% Figure out why the dual residual suddenly explodes, what are we doing to
-% rho? Maybe it doesn't make sense? It seems to happen as soon as the dual
-% residual converges.
-
 nnz_ = nnz;
 load('tmp.mat');
 if ~exist('A', 'var') || size(A, 1) ~= m || size(A, 2) ~= n || nnz ~= nnz_
@@ -30,7 +19,6 @@ if ~exist('A', 'var') || size(A, 1) ~= m || size(A, 2) ~= n || nnz ~= nnz_
   save('tmp.mat', 'A', 'b', 'c', 'nnz', '-v7.3');
   fprintf(' done!\n')
 end
-
 
 f.h = [kIndEq0(m); kIdentity];
 f.b = [b; 0];

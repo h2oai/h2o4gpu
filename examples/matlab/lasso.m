@@ -1,8 +1,12 @@
-function pogs_time = lasso(m, n, params)
+function [pogs_time, cvx_time] = lasso(m, n, params, comp_cvx)
 %LASSO
 
-if nargin == 2
+if nargin <= 2
   params = [];
+end
+if nargin <= 3
+  comp_cvx = false;
+  cvx_time = nan;
 end
 
 % Generate data.
@@ -17,10 +21,21 @@ f.b = b;
 g.h = kAbs;
 g.c = lambda;
 
-% Solve
+% Solve with pogs
+A = single(A);
 tic
 pogs(A, f, g, params);
 pogs_time = toc;
+
+% Solve with CVX
+if comp_cvx
+  tic
+  cvx_begin
+    variables x(n)
+    minimize(sum_square(A * x - b) + lambda * norm(x, 1))
+  cvx_end
+  cvx_time = toc;
+end
 
 end
 

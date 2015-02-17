@@ -1,8 +1,12 @@
-function pogs_time = basis_pursuit(m, n, params)
+function [pogs_time, cvx_time] = basis_pursuit(m, n, params, comp_cvx)
 %BASIS_PURSUIT
 
-if nargin == 2
+if nargin <= 2
   params = [];
+end
+if nargin <= 3
+  comp_cvx = false;
+  cvx_time = nan;
 end
 
 % Generate data.
@@ -15,9 +19,22 @@ f.h = kIndEq0;
 f.b = b;
 g.h = kAbs;
 
-% Solve
+% Solve with pogs
+As = single(A);
 tic
-pogs(A, f, g, params);
+pogs(As, f, g, params);
 pogs_time = toc;
+
+% Solve with CVX
+if comp_cvx
+  tic
+  cvx_begin
+    variables x(n)
+    minimize(norm(x, 1))
+    subject to
+      A * x == b;
+  cvx_end
+  cvx_time = toc;
+end
 
 end

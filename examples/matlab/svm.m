@@ -1,8 +1,12 @@
-function pogs_time = svm(m, n, params)
+function [pogs_time, cvx_time] = svm(m, n, params, comp_cvx)
 %SVM
 
-if nargin == 2
+if nargin <= 2
   params = [];
+end
+if nargin <= 3
+  comp_cvx = false;
+  cvx_time = nan;
 end
 
 % Generate data.
@@ -20,9 +24,20 @@ f.b = -1;
 f.c = lambda;
 g.h = [kSquare(n); 0];
 
-% Solve.
+% Solve with pogs
+A = single(A);
 tic
 pogs(A, f, g, params);
 pogs_time = toc;
+
+% Solve with CVX
+if comp_cvx
+  tic
+  cvx_begin
+    variables x(n + 1)
+    minimize(lambda * sum(max(A * x + 1, 0)) + 1 / 2 * (x' * x))
+  cvx_end
+  cvx_time = toc;
+end
 
 end

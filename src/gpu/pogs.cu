@@ -17,6 +17,8 @@
 #include "projector/projector_cgls.h"
 #include "util.cuh"
 
+#include "timer.h"
+
 namespace pogs {
 
 namespace {
@@ -86,10 +88,11 @@ int Pogs<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                          const std::vector<FunctionObj<T> > &g) {
+  double tt = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kGamma    = static_cast<T>(1.01);
-  const T kTau      = static_cast<T>(0.5);
+  const T kTau      = static_cast<T>(0.8);
   const T kAlpha    = static_cast<T>(1.7);
   const T kRhoMin   = static_cast<T>(1e-3);
   const T kRhoMax   = static_cast<T>(1e3);
@@ -220,14 +223,15 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &z);
     CUDA_CHECK_ERR();
 
-    // Project onto y = Ax.
-    _P.Project(x12.data, y12.data, kOne, x.data, y.data);
-    cudaDeviceSynchronize();
+    // Apply over relaxation.
+    cml::vector_memcpy(&ztemp, &zt);
+    cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
+    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
     CUDA_CHECK_ERR();
 
-    // Apply over relaxation.
-    cml::blas_scal(hdl, kAlpha, &z);
-    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
+    // Project onto y = Ax.
+    _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data);
+    cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 
     // Calculate residuals.
@@ -241,12 +245,12 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
-    if (nrm_r < eps_pri && nrm_s < eps_dua) {
+    if (nrm_r < eps_pri && nrm_s < eps_dua || true) {
       cml::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
       cudaDeviceSynchronize();
       nrm_r = cml::blas_nrm2(hdl, &ytemp);
-      if (nrm_r < eps_pri) {
+      if (nrm_r < eps_pri || true) {
         cml::vector_memcpy(&ztemp, &z12);
         cml::blas_axpy(hdl, kOne, &zt, &ztemp);
         cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
@@ -266,6 +270,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, _optval);
     }
 
+    DEBUG_EXPECT_LT(k, _max_iter - 1);
     if (converged || k == _max_iter - 1)
       break;
 
@@ -302,8 +307,8 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       } else {
         delta = kDeltaMin;
       }
-      DEBUG_EXPECT_LT(_rho, kRhoMax);
-      DEBUG_EXPECT_GT(_rho, kRhoMin);
+//       DEBUG_EXPECT_LT(_rho, kRhoMax);
+//       DEBUG_EXPECT_GT(_rho, kRhoMin);
       CUDA_CHECK_ERR();
     }
   }
@@ -335,6 +340,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
   DEBUG_PRINT("Finished Execution");
+  DEBUG_PRINTF("Time: %e s\n", timer<double>() - tt);
 
   return 0;
 }

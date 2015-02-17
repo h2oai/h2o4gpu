@@ -2,6 +2,7 @@
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
@@ -35,9 +36,7 @@ double LassoPath(size_t m, size_t n) {
   unsigned int nlambda = 100;
   std::vector<T> A(m * n);
   std::vector<T> b(m);
-  std::vector<T> x(n);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
-  std::vector<T> y(m);
 
   // Generate data
   std::default_random_engine generator;
@@ -70,36 +69,37 @@ double LassoPath(size_t m, size_t n) {
   }
 
   // Set up pogs datastructure.
-  Dense<T, ROW> A_(A.data());
-  PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n);
-  pogs_data.x = x.data();
-  pogs_data.y = y.data();
-  pogs_data.f.reserve(m);
-  pogs_data.g.reserve(n);
+  pogs::MatrixDense<T> A_('r', m, n, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
+  f.reserve(m);
+  g.reserve(n);
 
   for (unsigned int i = 0; i < m; ++i)
-    pogs_data.f.emplace_back(kSquare, static_cast<T>(1), b[i]);
+    f.emplace_back(kSquare, static_cast<T>(1), b[i]);
 
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kAbs);
+    g.emplace_back(kAbs);
   
-  AllocDenseFactors(&pogs_data);
-
   double t = timer<double>();
   for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
         static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
 
     for (unsigned int i = 0; i < n; ++i)
-      pogs_data.g[i].c = lambda;
+      g[i].c = lambda;
 
-    Solve(&pogs_data);
-    
+    pogs_data.Solve(f, g);
+
+    std::vector<T> x(n);
+    for (unsigned int i = 0; i < n; ++i)
+      x[i] = pogs_data.GetX()[i];
+
     if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
       break;
     x_last = x;
   }
-  FreeDenseFactors(&pogs_data);
 
   return timer<double>() - t;
 }

@@ -1,6 +1,7 @@
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
@@ -16,8 +17,6 @@ template <typename T>
 double Logistic(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
   std::vector<T> d(m);
-  std::vector<T> x(n + 1);
-  std::vector<T> y(m);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
@@ -56,22 +55,22 @@ double Logistic(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  Dense<T, ROW> A_(A.data());
-  PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n + 1);
-  pogs_data.x = x.data();
-  pogs_data.y = y.data();
+  pogs::MatrixDense<T> A_('r', m, n + 1, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
 
-  pogs_data.f.reserve(m);
+  f.reserve(m);
   for (unsigned int i = 0; i < m; ++i)
-    pogs_data.f.emplace_back(kLogistic, 1, 0, 1, -d[i]);
+    f.emplace_back(kLogistic, 1, 0, 1, -d[i]);
 
-  pogs_data.g.reserve(n + 1);
+  g.reserve(n + 1);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
-  pogs_data.g.emplace_back(kZero);
+    g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
+  g.emplace_back(kZero);
 
   double t = timer<double>();
-  Solve(&pogs_data);
+  pogs_data.Solve(f, g);
 
   return timer<double>() - t;
 }

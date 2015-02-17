@@ -5,7 +5,8 @@
 #include <limits>
 #include <vector>
 
-#include "matrix_util.h"
+#include "matrix/matrix_dense.h"
+#include "matrix/matrix_sparse.h"
 #include "pogs.h"
 
 // Returns value of pr[idx], with appropriate casting from id to T.
@@ -126,8 +127,8 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
 }
 
 // Populate parameters (rel_tol, abs_tol, max_iter, rho and quiet) in PogsData.
-template <typename T, typename M>
-int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
+template <typename T, typename M, typename P>
+int PopulateParams(const mxArray *params, pogs::Pogs<T, M, P> *pogs_data) {
   // Check if parameter exists in params, then make sure that it has
   // dimension 1x1 and finally set the corresponding value in pogs_data.
   int rel_tol_idx = mxGetFieldNumber(params, "rel_tol");
@@ -138,7 +139,7 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter rel_tol must have dimension (1,1)");
       return 1;
     }
-    pogs_data->rel_tol = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetRelTol(GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int abs_tol_idx = mxGetFieldNumber(params, "abs_tol");
   if (abs_tol_idx != -1) {
@@ -148,7 +149,7 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter abs_tol must have dimension (1,1)");
       return 1;
     }
-    pogs_data->abs_tol = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetAbsTol(GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int rho_idx = mxGetFieldNumber(params, "rho");
   if (rho_idx != -1) {
@@ -158,7 +159,7 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter rho must have dimension (1,1)");
       return 1;
     }
-    pogs_data->rho = GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetRho(GetVal<T>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int max_iter_idx = mxGetFieldNumber(params, "max_iter");
   if (max_iter_idx != -1) {
@@ -168,8 +169,8 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter max_iter must have dimension (1,1)");
       return 1;
     }
-    pogs_data->max_iter =
-        GetVal<unsigned int>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetMaxIter(
+        GetVal<unsigned int>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int quiet_idx = mxGetFieldNumber(params, "quiet");
   if (quiet_idx != -1) {
@@ -179,7 +180,7 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter quiet must have dimension (1,1)");
       return 1;
     }
-    pogs_data->quiet = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetVerbose(GetVal<int>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int adaptive_rho_idx = mxGetFieldNumber(params, "adaptive_rho");
   if (adaptive_rho_idx != -1) {
@@ -189,7 +190,8 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter adaptive_rho must have dimension (1,1)");
       return 1;
     }
-    pogs_data->adaptive_rho = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetAdaptiveRho(
+        GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
   int gap_stop_idx = mxGetFieldNumber(params, "gap_stop");
   if (gap_stop_idx != -1) {
@@ -199,7 +201,7 @@ int PopulateParams(const mxArray *params, pogs::PogsData<T, M> *pogs_data) {
           "Parameter gap_stop must have dimension (1,1)");
       return 1;
     }
-    pogs_data->gap_stop = GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr));
+    pogs_data->SetGapStop(GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
 
   return 0;
@@ -217,49 +219,54 @@ template <typename T>
 void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
-  pogs::Dense<T, pogs::COL> A(reinterpret_cast<T*>(mxGetData(prhs[0])));
 
   // Initialize Pogs data structure
-  pogs::PogsData<T, pogs::Dense<T, pogs::COL> > pogs_data(A, m, n);
-  pogs_data.f.reserve(m);
-  pogs_data.g.reserve(n);
+  pogs::MatrixDense<T> A_('c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
+
+  f.reserve(m);
+  g.reserve(n);
 
   int err = 0;
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
-  if (num_obj > 1)
-    err = pogs::AllocDenseFactors(&pogs_data);
 
   // Populate parameters.
   if (!err && nrhs == 4)
     err = PopulateParams(prhs[3], &pogs_data);
 
   for (unsigned int i = 0; i < num_obj && !err; ++i) {
-    pogs_data.x = reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n;
-    if (nlhs >= 2)
-      pogs_data.y = reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m;
-    if (nlhs >= 3)
-      pogs_data.l = reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m;
 
     // Populate function objects.
-    pogs_data.f.clear();
-    pogs_data.g.clear();
-    err = PopulateFunctionObj("f", prhs[1], i, m, &pogs_data.f);
+    f.clear();
+    g.clear();
+    err = PopulateFunctionObj("f", prhs[1], i, m, &f);
     if (err)
       break;
-    err = PopulateFunctionObj("g", prhs[2], i, n, &pogs_data.g);
+    err = PopulateFunctionObj("g", prhs[2], i, n, &g);
     if (err)
       break;
     
     // Run solver.
-    pogs::Solve(&pogs_data);
+    pogs_data.Solve(f, g);
+
+    // Get solution.
+    memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, pogs_data.GetX(),
+        n * sizeof(T));
+    if (nlhs >= 2) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m,
+          pogs_data.GetY(), m * sizeof(T));
+    }
+    if (nlhs >= 3) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
+          pogs_data.GetLambda(), m * sizeof(T));
+    }
 
     if (nlhs >= 4)
-      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
+      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
   }
-
-  if (num_obj > 1)
-    pogs::FreeDenseFactors(&pogs_data);
 }
 
 template <typename T>
@@ -276,50 +283,55 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
 
-  pogs::Sparse<T, int, pogs::COL> A(val, col_ptr, row_ind, nnz);
+//  pogs::Sparse<T, int, pogs::COL> A(val, col_ptr, row_ind, nnz);
 
   // Initialize Pogs data structure
-  pogs::PogsData<T, pogs::Sparse<T, int, pogs::COL> > pogs_data(A, m, n);
-  pogs_data.f.reserve(m);
-  pogs_data.g.reserve(n);
+  pogs::MatrixSparse<T> A('c', m, n, nnz, val, col_ptr, row_ind);
+  pogs::PogsIndirect<T, pogs::MatrixSparse<T> > pogs_data(A);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
+
+  f.reserve(m);
+  g.reserve(n);
 
   int err = 0;
 
   unsigned int num_obj = std::max(mxGetN(prhs[1]), mxGetM(prhs[1]));
-  if (num_obj > 1)
-    err = pogs::AllocSparseFactors(&pogs_data);
 
   // Populate parameters.
   if (!err && nrhs == 4)
     err = PopulateParams(prhs[3], &pogs_data);
 
   for (unsigned int i = 0; i < num_obj && !err; ++i) {
-    pogs_data.x = reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n;
-    if (nlhs >= 2)
-      pogs_data.y = reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m;
-    if (nlhs >= 3)
-      pogs_data.l = reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m;
-
     // Populate function objects.
-    pogs_data.f.clear();
-    pogs_data.g.clear();
-    err = PopulateFunctionObj("f", prhs[1], i, m, &pogs_data.f);
+    f.clear();
+    g.clear();
+    err = PopulateFunctionObj("f", prhs[1], i, m, &f);
     if (err)
       break;
-    err = PopulateFunctionObj("g", prhs[2], i, n, &pogs_data.g);
+    err = PopulateFunctionObj("g", prhs[2], i, n, &g);
     if (err)
       break;
     
     // Run solver.
-    pogs::Solve(&pogs_data);
+    pogs_data.Solve(f, g);
+
+    // Get solution.
+    memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, pogs_data.GetX(),
+        n * sizeof(T));
+    if (nlhs >= 2) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[1])) + i * m,
+          pogs_data.GetY(), m * sizeof(T));
+    }
+    if (nlhs >= 3) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
+          pogs_data.GetLambda(), m * sizeof(T));
+    }
 
     if (nlhs >= 4)
-      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.optval;
+      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
   }
 
-  if (num_obj > 1)
-    pogs::FreeSparseFactors(&pogs_data);
-   
   delete [] row_ind;
   delete [] col_ptr;
 }
