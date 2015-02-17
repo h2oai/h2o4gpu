@@ -3,6 +3,7 @@
 
 #include "mat_gen.h"
 #include "matrix/matrix_sparse.h"
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
@@ -16,6 +17,7 @@ template <typename T>
 double Lasso(int m, int n, int nnz) {
   char ord = 'c';
 
+  std::vector<T> A(m * n, static_cast<T>(0.));
   std::vector<T> val(nnz);
   std::vector<int> col_ind(nnz);
   std::vector<int> row_ptr;
@@ -32,10 +34,18 @@ double Lasso(int m, int n, int nnz) {
     row_ptr.reserve(m + 1);
     nnz = MatGenApprox(m, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
         static_cast<T>(-1), static_cast<T>(1), entries);
+    for (int i = 0; i < m; ++i) {
+      for (int k = row_ptr[i]; k < row_ptr[i + 1]; ++k)
+        A[i * n + col_ind[k]] = val[k];
+    }
   } else {
     row_ptr.reserve(n + 1);
     nnz = MatGenApprox(n, m, nnz, val.data(), row_ptr.data(), col_ind.data(),
         static_cast<T>(-1), static_cast<T>(1), entries);
+    for (int j = 0; j < n; ++j) {
+      for (int k = row_ptr[j]; k < row_ptr[j + 1]; ++k)
+        A[col_ind[k] + j * m] = val[k];
+    }
   }
 
   for (unsigned int i = 0; i < m; ++i)
@@ -43,9 +53,11 @@ double Lasso(int m, int n, int nnz) {
 
   T lambda_max = 1;
 
-  pogs::MatrixSparse<T> A_(ord, m, n, nnz, val.data(), row_ptr.data(),
+  pogs::MatrixSparse<T> A_sp(ord, m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
-  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  pogs::MatrixDense<T> A_dn(ord, m, n, A.data());
+  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data_sp(A_sp);
+  pogs::PogsDirect<T, pogs::MatrixDense<T>> pogs_data_dn(A_dn);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -58,7 +70,8 @@ double Lasso(int m, int n, int nnz) {
     g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
 
   double t = timer<double>();
-  pogs_data.Solve(f, g);
+  pogs_data_dn.Solve(f, g);
+  pogs_data_sp.Solve(f, g);
 
   return timer<double>() - t;
 }

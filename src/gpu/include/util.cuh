@@ -1,6 +1,8 @@
 #ifndef UTIL_CUH_
 #define UTIL_CUH_
 
+#include <stdio.h>
+
 #include <iostream>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,25 +239,27 @@
 ////////////////////////////////////////////////////////////////////////////////
 #ifndef DEBUG
 
-#define DEBUG_ASSERT(statement)            do { } while (0)
-#define DEBUG_ASSERT_EQ(a, b)              do { } while (0)
-#define DEBUG_ASSERT_EQ_EPS(a, b, tol)     do { } while (0)
-#define DEBUG_ASSERT_GEQ(a, b)             do { } while (0)
-#define DEBUG_ASSERT_GT(a, b)              do { } while (0)
-#define DEBUG_ASSERT_LEQ(a, b)             do { } while (0)
-#define DEBUG_ASSERT_LT(a, b)              do { } while (0)
-#define DEBUG_ASSERT_NEQ(a, b)             do { } while (0)
-#define DEBUG_CUDA_CHECK_ERR()             do { } while (0)
-#define DEBUG_EXPECT(statement)            do { } while (0)
-#define DEBUG_EXPECT_EQ(a, b)              do { } while (0)
-#define DEBUG_EXPECT_EQ_EPS(a, b, tol)     do { } while (0)
-#define DEBUG_EXPECT_GEQ(a, b)             do { } while (0)
-#define DEBUG_EXPECT_GT(a, b)              do { } while (0)
-#define DEBUG_EXPECT_LEQ(a, b)             do { } while (0)
-#define DEBUG_EXPECT_LT(a, b)              do { } while (0)
-#define DEBUG_EXPECT_NEQ(a, b)             do { } while (0)
-#define DEBUG_PRINT(message)               do { } while (0)
-#define DEBUG_PRINT_IF(statement, message) do { } while (0)
+#define DEBUG_ASSERT(statement)                  do { } while (0)
+#define DEBUG_ASSERT_EQ(a, b)                    do { } while (0)
+#define DEBUG_ASSERT_EQ_EPS(a, b, tol)           do { } while (0)
+#define DEBUG_ASSERT_GEQ(a, b)                   do { } while (0)
+#define DEBUG_ASSERT_GT(a, b)                    do { } while (0)
+#define DEBUG_ASSERT_LEQ(a, b)                   do { } while (0)
+#define DEBUG_ASSERT_LT(a, b)                    do { } while (0)
+#define DEBUG_ASSERT_NEQ(a, b)                   do { } while (0)
+#define DEBUG_CUDA_CHECK_ERR()                   do { } while (0)
+#define DEBUG_EXPECT(statement)                  do { } while (0)
+#define DEBUG_EXPECT_EQ(a, b)                    do { } while (0)
+#define DEBUG_EXPECT_EQ_EPS(a, b, tol)           do { } while (0)
+#define DEBUG_EXPECT_GEQ(a, b)                   do { } while (0)
+#define DEBUG_EXPECT_GT(a, b)                    do { } while (0)
+#define DEBUG_EXPECT_LEQ(a, b)                   do { } while (0)
+#define DEBUG_EXPECT_LT(a, b)                    do { } while (0)
+#define DEBUG_EXPECT_NEQ(a, b)                   do { } while (0)
+#define DEBUG_PRINTF(message)                    do { } while (0)
+#define DEBUG_PRINT(message)                     do { } while (0)
+#define DEBUG_PRINTF_IF(statement, message, ...) do { } while (0)
+#define DEBUG_PRINT_IF(statement, message, ...)  do { } while (0)
 
 #else
 
@@ -436,19 +440,35 @@
     } \
   } while (0)
 
+#define DEBUG_PRINTF(message, ...) \
+  do { \
+    printf("%s:%d:%s%s\n%sMESSAGE: ", __FILE__,  __LINE__, __BLUE, __func__, \
+        __GREEN); \
+    printf(message, __VA_ARGS__); \
+    printf("%s\n", __RESET); \
+  } while (0)
+
 #define DEBUG_PRINT(message) \
   do { \
-    std::cout << __FILE__ << ":" << __LINE__ << ":" \
-              << __BLUE << __func__ << "\n" \
-              << __GREEN << "MESSAGE: " << message << __RESET << std::endl; \
+    printf("%s:%d:%s%s\n%sMESSAGE: %s%s\n", __FILE__,  __LINE__, __BLUE, \
+        __func__, __GREEN, message, __RESET); \
+  } while (0)
+
+#define DEBUG_PRINTF_IF(statement, message, ...) \
+  do { \
+    if ((statement)) { \
+      printf("%s:%d:%s%s\n%sMESSAGE: ", __FILE__,  __LINE__, __BLUE, __func__, \
+          __GREEN); \
+      printf(message, __VA_ARGS__); \
+      printf("%s\n", __RESET); \
+    } \
   } while (0)
 
 #define DEBUG_PRINT_IF(statement, message) \
   do { \
     if ((statement)) { \
-      std::cout << __FILE__ << ":" << __LINE__ << ":" \
-                << __BLUE << __func__ << "\n" \
-                << __GREEN << "MESSAGE: " << message << __RESET << std::endl; \
+      printf("%s:%d:%s%s\n%sMESSAGE: %s%s\n", __FILE__,  __LINE__, __BLUE, \
+          __func__, __GREEN, message, __RESET); \
     } \
   } while (0)
 
