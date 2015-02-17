@@ -89,8 +89,8 @@ class Pogs {
 template <typename T, typename M>
 using PogsDirect = Pogs<T, M, ProjectorIndirect<T, M> >;
 
-//template <typename T, typename M>
-//using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
+template <typename T, typename M>
+using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
 #endif
 
 }  // namespace pogs
