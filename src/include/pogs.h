@@ -11,14 +11,20 @@
 namespace pogs {
 
 // Defaults.
-const double       kAbsTol      = 1e-8;
+const double       kAbsTol      = 1e-5;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
 const unsigned int kVerbose     = 2u;
-const unsigned int kMaxIter     = 2000u;
+const unsigned int kMaxIter     = 10000u;
 const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
 const bool         kGapStop     = false;
+
+// Status messages
+enum PogsStatus { POGS_SUCCESS,   // Converged succesfully.
+                  POGS_MAX_ITER,  // Reached max iter.
+                  POGS_NAN_FOUND, // Reached max iter.
+                  POGS_ERROR };   // Generic error, check logs.
 
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
@@ -47,8 +53,8 @@ class Pogs {
   ~Pogs();
   
   // Solve for specific objective.
-  int Solve(const std::vector<FunctionObj<T> >& f,
-            const std::vector<FunctionObj<T> >& g);
+  PogsStatus Solve(const std::vector<FunctionObj<T> >& f,
+                   const std::vector<FunctionObj<T> >& g);
 
   // Getters for solution variables and parameters.
   const T*     GetX()           const { return _x; }
@@ -84,10 +90,9 @@ class Pogs {
   }
 };
 
-// TODO: Change back
 #ifndef __CUDACC__
 template <typename T, typename M>
-using PogsDirect = Pogs<T, M, ProjectorIndirect<T, M> >;
+using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
 
 template <typename T, typename M>
 using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;

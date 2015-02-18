@@ -9,7 +9,7 @@ addpath([pwd '/../../src/interface_matlab'])
 
 %% Run examples
 fprintf('\nBasis Pursuit\n')
-t = basis_pursuit(2000, 20000);
+t = basis_pursuit(200, 2000);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nEntropy\n')

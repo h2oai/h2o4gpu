@@ -13,20 +13,24 @@ cvx_time = nan;
 % Generate data.
 rng(0, 'twister');
 
-x = randn(n + 1, 1) / n .* (rand(n + 1, 1) > 0.8);
-A = [rand(m, n), ones(m, 1)];
-y = (rand(m, 1) < 1 ./ (1 + exp(-A * x)));
+x_true = randn(n + 1, 1) .* [rand(n, 1) > 0.8; 1];
+A = [randn(m, n), ones(m, 1)];
+y = (rand(m, 1) < 1 ./ (1 + exp(-A * x_true)));
 
 f.h = kLogistic;
 f.d = -y;
 g.h = kAbs;
-g.c = 0.06 * norm(A' * (ones(m, 1) / 2 - y), inf);
+g.c = 0.05 * norm(A' * (ones(m, 1) / 2 - y), inf);
 
 % Solve with pogs
 As = single(A);
 tic
-pogs(As, f, g, params);
+[~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
+
+if status > 0
+  pogs_time = nan;
+end
 
 % Solve with CVX
 if comp_cvx

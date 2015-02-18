@@ -25,8 +25,12 @@ g.c = c;
 % Solve with pogs
 As = single(A);
 tic
-x = pogs(As, f, g, params);
+[~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
+
+if status > 0
+  pogs_time = nan;
+end
 
 % Solve with CVX
 if comp_cvx

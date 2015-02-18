@@ -13,9 +13,9 @@ cvx_time = nan;
 % Generate data.
 rng(0, 'twister')
 
-n_half = floor(0.9 * n);
-A = 2 / n * rand(m, n);
-b = A * [ones(n_half, 1); -ones(n - n_half, 1)] + 0.1 * randn(m, 1);
+A = randn(m, n);
+x_true = 2 * rand(n, 1) / sqrt(n);
+b = A * (x_true + 0.5 * randn(n, 1) / sqrt(n)) + 0.3 * randn(m, 1);
 
 f.h = kSquare;
 f.b = b;
@@ -24,8 +24,12 @@ g.h = kIndGe0;
 % Solve with pogs
 As = single(A);
 tic
-pogs(As, f, g, params);
+[x, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
+
+if status > 0
+  pogs_time = nan;
+end
 
 % Solve with CVX
 if comp_cvx

@@ -25,7 +25,7 @@ double Lasso(size_t m, size_t n) {
 
   std::vector<T> x_true(n);
   for (unsigned int i = 0; i < n; ++i)
-    x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator) / n;
+    x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator) / sqrt(n);
 
 #pragma omp parallel for
   for (unsigned int i = 0; i < m; ++i)

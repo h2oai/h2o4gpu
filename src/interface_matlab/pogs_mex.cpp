@@ -172,7 +172,7 @@ int PopulateParams(const mxArray *params, pogs::Pogs<T, M, P> *pogs_data) {
     pogs_data->SetMaxIter(
         GetVal<unsigned int>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
-  int quiet_idx = mxGetFieldNumber(params, "quiet");
+  int quiet_idx = mxGetFieldNumber(params, "verbose");
   if (quiet_idx != -1) {
     mxArray *arr = mxGetFieldByNumber(params, 0, quiet_idx);
     if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
@@ -250,7 +250,7 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       break;
     
     // Run solver.
-    pogs_data.Solve(f, g);
+    pogs::PogsStatus status = pogs_data.Solve(f, g);
 
     // Get solution.
     memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, pogs_data.GetX(),
@@ -266,6 +266,8 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     if (nlhs >= 4)
       reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
+    if (nlhs >= 5)
+      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = status;
   }
 }
 
@@ -314,7 +316,7 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       break;
     
     // Run solver.
-    pogs_data.Solve(f, g);
+    pogs::PogsStatus status = pogs_data.Solve(f, g);
 
     // Get solution.
     memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, pogs_data.GetX(),
@@ -330,6 +332,8 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     if (nlhs >= 4)
       reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
+    if (nlhs >= 5)
+      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = status;
   }
 
   delete [] row_ind;
@@ -343,7 +347,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
     return;
   }
-  if (nlhs > 4) {
+  if (nlhs > 5) {
     mexErrMsgIdAndTxt("MATLAB:pogs:extraneousOutputArgs",
         "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
     return;
@@ -393,6 +397,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[2] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
   if (nlhs >= 4)
     plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
+  if (nlhs >= 5)
+    plhs[4] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
   if (mxIsSparse(prhs[0])) {
 #ifdef __CUDA__

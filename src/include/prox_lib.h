@@ -108,9 +108,17 @@ __DEVICE__ inline float Pow(float x, float y) { return powf(x, y); }
 __DEVICE__ inline double Sqrt(double x) { return sqrt(x); }
 __DEVICE__ inline float Sqrt(float x) { return sqrtf(x); }
 
+// Numeric Epsilon.
+template <typename T>
+__DEVICE__ inline T Epsilon();
+template <>
+__DEVICE__ inline double Epsilon<double>() { return 4e-16; }
+template <>
+__DEVICE__ inline float Epsilon<float>() { return 1e-7; }
+
 //  Evaluate tol
 template <typename T>
-__DEVICE__ inline T Tol() { return 1e-10; }
+__DEVICE__ inline T Tol();
 template <>
 __DEVICE__ inline double Tol() { return 1e-10; }
 template <>
@@ -140,39 +148,43 @@ template <typename T>
 __DEVICE__ inline T LambertW(T x) {
   const T kEm1 = static_cast<T>(0.3678794411714423215955237701614608);
   const T kE = static_cast<T>(2.7182818284590452353602874713526625);
-  if (x == 0) {
-    return 0;
-  } else if (x < -kEm1 + 1e-4) {
+  if (x == 0.) {
+    return 0.;
+  }
+  if (x < -kEm1 + 1e-4) {
     T q = x + kEm1, r = Sqrt(q), q2 = q * q, q3 = q2 * q;
     return
-     -static_cast<T>(1.0)
-     +static_cast<T>(2.331643981597124203363536062168) * r
-     -static_cast<T>(1.812187885639363490240191647568) * q
-     +static_cast<T>(1.936631114492359755363277457668) * r * q
-     -static_cast<T>(2.353551201881614516821543561516) * q2
-     +static_cast<T>(3.066858901050631912893148922704) * r * q2
-     -static_cast<T>(4.175335600258177138854984177460) * q3
-     +static_cast<T>(5.858023729874774148815053846119) * r * q3
-     -static_cast<T>(8.401032217523977370984161688514) * q3 * q;
-  } else {
-    T w;
-    if (x < 1) {
-      T p = Sqrt(static_cast<T>(2.0 * (kE * x + 1.0)));
-      w = static_cast<T>(-1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * 11.0 / 72.0)));
-    } else {
-      w = Log(x);
-    }
-    if (x > 3)
-      w -= Log(w);
-    for (unsigned int i = 0; i < 10; i++) {
-      T e = Exp(w);
-      T t = w * e - x;
-      T p = w + static_cast<T>(1);
-      t /= static_cast<T>(e * p - 0.5 * (p + 1.0) * t / p);
-      w -= t;
-    }
-    return w;
+        -static_cast<T>(1.0)
+        +static_cast<T>(2.331643981597124203363536062168) * r
+        -static_cast<T>(1.812187885639363490240191647568) * q
+        +static_cast<T>(1.936631114492359755363277457668) * r * q
+        -static_cast<T>(2.353551201881614516821543561516) * q2
+        +static_cast<T>(3.066858901050631912893148922704) * r * q2
+        -static_cast<T>(4.175335600258177138854984177460) * q3
+        +static_cast<T>(5.858023729874774148815053846119) * r * q3
+        -static_cast<T>(8.401032217523977370984161688514) * q3 * q;
   }
+
+  T w;
+  if (x < 1.) {
+    T p = Sqrt(static_cast<T>(2.0 * (kE * x + 1.0)));
+    w = static_cast<T>(-1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * 11.0 / 72.0)));
+  } else {
+    w = Log(x);
+  }
+  if (x > 3.) {
+    w -= Log(w);
+  }
+  for (unsigned int i = 0; i < 10; i++) {
+    T e = Exp(w);
+    T t = w * e - x;
+    T p = w + static_cast<T>(1.);
+    t /= static_cast<T>(e * p - 0.5 * (p + 1.0) * t / p);
+    w -= t;
+    if (Abs(t) < Epsilon<T>() * (1. + Abs(w)))
+      break;
+  }
+  return w;
 }
 
 // Find the root of a cubic x^3 + px^2 + qx + r = 0 with a single positive root.
@@ -212,12 +224,16 @@ __DEVICE__ inline T ProxAbs(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxNegEntr(T v, T rho) {
-  return LambertW(Exp(rho * v - 1) * rho) / rho;
+  T w = LambertW<double>(Exp(rho * v - 1) * rho) / rho;
+  if (w < Epsilon<T>() || isnan(w))
+    return Epsilon<T>();
+  else
+    return w;
 }
 
 template <typename T>
 __DEVICE__ inline T ProxExp(T v, T rho) {
-  return v - LambertW(Exp(v) / rho);
+  return v - LambertW<double>(Exp(v) / rho);
 }
 
 template <typename T>

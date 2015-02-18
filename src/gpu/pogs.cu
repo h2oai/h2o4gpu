@@ -86,7 +86,7 @@ int Pogs<T, M, P>::_Init() {
 }
 
 template <typename T, typename M, typename P>
-int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
+PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                          const std::vector<FunctionObj<T> > &g) {
   double tt = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
@@ -200,9 +200,10 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   T sqrtm_atol = std::sqrt(static_cast<T>(m)) * _abs_tol;
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * _abs_tol;
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
-  unsigned int kd = 0u, ku = 0u;
+  unsigned int k = 0u, kd = 0u, ku = 0u;
+  bool converged = false;
 
-  for (unsigned int k = 0;; ++k) {
+  for (;; ++k) {
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
@@ -237,10 +238,12 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Calculate residuals.
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
+    cudaDeviceSynchronize();
     T nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
+    cudaDeviceSynchronize();
     T nrm_r = cml::blas_nrm2(hdl, &ztemp);
 
     // Calculate exact residuals only if necessary.
@@ -263,14 +266,16 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
 
     // Evaluate stopping criteria.
-    bool converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
-    if (_verbose > 0 && (k % 10 == 0 || converged)) {
+    if (_verbose > 0 && (k % 1 == 0 || converged)) {
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, _optval);
+      if (cml::vector_any_isnan(&zt)) {
+        break;
+      }
     }
 
-    DEBUG_EXPECT_LT(k, _max_iter - 1);
     if (converged || k == _max_iter - 1)
       break;
 
@@ -312,6 +317,7 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       CUDA_CHECK_ERR();
     }
   }
+  DEBUG_EXPECT_LT(k, _max_iter - 1);
 
   // Scale x, y, lambda and mu for output.
   cml::vector_memcpy(&ztemp, &zt);
@@ -340,9 +346,15 @@ int Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
   DEBUG_PRINT("Finished Execution");
-  DEBUG_PRINTF("Time: %e s\n", timer<double>() - tt);
+  printf("Time: %e s, Iter: %u\n", timer<double>() - tt, k);
 
-  return 0;
+  // Return status.
+  if (!converged && k == _max_iter - 1)
+    return POGS_MAX_ITER;
+  else if (!converged && k < _max_iter - 1)
+    return POGS_NAN_FOUND;
+  else
+    return POGS_SUCCESS;
 }
 
 template <typename T, typename M, typename P>
