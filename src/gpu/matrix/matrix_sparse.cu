@@ -18,7 +18,7 @@ namespace {
 
 // File scoped constants.
 const NormTypes kNormEquilibrate = kNorm2; 
-const NormTypes kNormNormalize   = kNorm2; 
+const NormTypes kNormNormalize   = kNormFro; 
 
 template <typename T>
 struct GpuData {

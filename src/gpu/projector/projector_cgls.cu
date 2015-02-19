@@ -16,9 +16,9 @@ namespace pogs {
 namespace {
 
 // TODO: Make these variable
-// Tolerance should be at least 1e-5, seems to converge in 3-6 iterations.
-double kTol  = 1e-5;
-int kMaxIter = 10;
+// Tolerance should be at least 1e-4, seems to converge in 3-6 iterations.
+double kTol  = 1e-4;
+int kMaxIter = 100;
 
 template<typename T>
 struct GpuData {
