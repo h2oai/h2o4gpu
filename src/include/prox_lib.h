@@ -114,7 +114,7 @@ __DEVICE__ inline T Epsilon();
 template <>
 __DEVICE__ inline double Epsilon<double>() { return 4e-16; }
 template <>
-__DEVICE__ inline float Epsilon<float>() { return 1e-7; }
+__DEVICE__ inline float Epsilon<float>() { return 1e-7f; }
 
 //  Evaluate tol
 template <typename T>
