@@ -268,7 +268,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
-    if (_verbose > 0 && (k % 1 == 0 || converged)) {
+    if (_verbose > 0 && (k % 10 == 0 || converged)) {
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, _optval);
       if (cml::vector_any_isnan(&zt)) {
