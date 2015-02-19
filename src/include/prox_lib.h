@@ -224,11 +224,7 @@ __DEVICE__ inline T ProxAbs(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxNegEntr(T v, T rho) {
-  T w = LambertW<double>(Exp(rho * v - 1) * rho) / rho;
-  if (w < Epsilon<T>() || isnan(w))
-    return Epsilon<T>();
-  else
-    return w;
+  return LambertW<double>(Exp(rho * v - 1) * rho) / rho;
 }
 
 template <typename T>
