@@ -13,10 +13,10 @@ cvx_time = nan;
 % Generate data.
 rng(0, 'twister');
 
-F = randn(m, n);
+F = randn(m, n) * sqrt(n);
 x_p = rand(n, 1);
 x_p = x_p / sum(x_p);
-b = F * x_p * sqrt(n) + 0.5 * rand(m, 1);
+b = F * x_p + 0.5 * rand(m, 1);
 A = [F; ones(1, n)];
 
 f.h = [kIndLe0(m); kIndEq0];

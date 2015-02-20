@@ -171,7 +171,7 @@ void vector_print(const vector<T> *x) {
   T* x_ = new T[x->size * x->stride];
   vector_memcpy(x_, x);
   for (unsigned int i = 0; i < x->size; ++i)
-    Printf("%e ", x_[i * x->stride]);
+    Printf("(%u, %e) ", i, x_[i * x->stride]);
   Printf("\n");
   delete [] x_;
 }

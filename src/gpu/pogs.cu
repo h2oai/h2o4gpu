@@ -19,6 +19,9 @@
 
 #include "timer.h"
 
+#define __HBAR__ \
+"----------------------------------------------------------------------------\n"
+
 namespace pogs {
 
 namespace {
@@ -88,7 +91,7 @@ int Pogs<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                          const std::vector<FunctionObj<T> > &g) {
-  double tt = timer<double>();
+  double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kGamma    = static_cast<T>(1.01);
@@ -189,10 +192,18 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
   _init_x = _init_lambda = false;
 
+  // Save initialization time.
+  double time_init = timer<double>() - t0;
+
   // Signal start of execution.
   if (_verbose > 0) {
-    Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
-        "        gap    eps_gap  objective\n");
+    Printf(__HBAR__
+           "           POGS v%s - Proximal Operator Graph Solver             \n"
+           "           (c) Christopher Fougner, Stanford University 2014-2015\n"
+           __HBAR__
+        " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap | "
+        "pri obj\n"
+        __HBAR__, POGS_VERSION.c_str());
   }
 
   // Initialize scalars.
@@ -202,6 +213,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int k = 0u, kd = 0u, ku = 0u;
   bool converged = false;
+  T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
 
   for (;; ++k) {
     cml::vector_memcpy(&zprev, &z);
@@ -212,16 +224,22 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     ProxEval(f_gpu, _rho, y.data, y12.data);
     CUDA_CHECK_ERR();
 
+    if (cml::vector_any_isnan(&z) || cml::vector_any_isnan(&z12)) {
+      printf("rho = %e\n", _rho);
+      cml::vector_print(&e);
+      cml::vector_print(&x);
+      cml::vector_print(&x12);
+      break;
+    }
+
     // Compute gap, optval, and tolerances.
-    T gap;
     cml::blas_axpy(hdl, -kOne, &z12, &z);
     cml::blas_dot(hdl, &z, &z12, &gap);
     gap = std::abs(gap);
-    _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
-    T eps_gap = sqrtmn_atol + _rel_tol * cml::blas_nrm2(hdl, &z) *
+    eps_gap = sqrtmn_atol + _rel_tol * cml::blas_nrm2(hdl, &z) *
         cml::blas_nrm2(hdl, &z12);
-    T eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
-    T eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &x);
+    eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
+    eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &x);
     CUDA_CHECK_ERR();
 
     // Apply over relaxation.
@@ -239,12 +257,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
-    T nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
+    nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
-    T nrm_r = cml::blas_nrm2(hdl, &ztemp);
+    nrm_r = cml::blas_nrm2(hdl, &ztemp);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
@@ -268,15 +286,16 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
-    if (_verbose > 0 && (k % 10 == 0 || converged)) {
-      Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
-          k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, _optval);
-      if (cml::vector_any_isnan(&zt)) {
-        break;
-      }
+    if (_verbose > 2 && k % 10  == 0 ||
+        _verbose > 1 && k % 100 == 0 ||
+        _verbose > 1 && converged) {
+      T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
+      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+          k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
 
-    if (converged || k == _max_iter - 1)
+    // Break if converged or there are nans
+    if (converged || k == _max_iter - 1)// || cml::vector_any_isnan(&zt))
       break;
 
     // Update dual variable.
@@ -294,7 +313,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           cml::blas_scal(hdl, 1 / delta, &zt);
           delta = kGamma * delta;
           ku = k;
-          if (_verbose > 1)
+          if (_verbose > 3)
             Printf("+ rho %e\n", _rho);
         }
       } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
@@ -304,7 +323,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           cml::blas_scal(hdl, delta, &zt);
           delta = kGamma * delta;
           kd = k;
-          if (_verbose > 1)
+          if (_verbose > 3)
             Printf("- rho %e\n", _rho);
         }
       } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
@@ -312,12 +331,40 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       } else {
         delta = kDeltaMin;
       }
-//       DEBUG_EXPECT_LT(_rho, kRhoMax);
-//       DEBUG_EXPECT_GT(_rho, kRhoMin);
       CUDA_CHECK_ERR();
     }
   }
-  DEBUG_EXPECT_LT(k, _max_iter - 1);
+
+  // Get optimal value
+  _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
+
+  // Check status
+  PogsStatus status;
+  if (!converged && k == _max_iter - 1)
+    status = POGS_MAX_ITER;
+  else if (!converged && k < _max_iter - 1)
+    status = POGS_NAN_FOUND;
+  else
+    status = POGS_SUCCESS;
+
+  // Print summary
+  if (_verbose > 0) {
+    Printf(__HBAR__
+        "Status: %s\n" 
+        "Timing: Total = %3.2e s, Init = %3.2e s\n"
+        "Iter  : %u\n",
+        PogsStatusString(status).c_str(), timer<double>() - t0, time_init, k);
+    Printf(__HBAR__
+        "Error Metrics:\n"
+        "Pri: "
+        "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e\n"
+        "Dua: "
+        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e\n"
+        "Gap: "
+        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e\n"
+        __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
+        _rel_tol * gap / eps_gap);
+  }
 
   // Scale x, y, lambda and mu for output.
   cml::vector_memcpy(&ztemp, &zt);
@@ -345,16 +392,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&ztemp);
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
-  DEBUG_PRINT("Finished Execution");
-  printf("Time: %e s, Iter: %u\n", timer<double>() - tt, k);
-
-  // Return status.
-  if (!converged && k == _max_iter - 1)
-    return POGS_MAX_ITER;
-  else if (!converged && k < _max_iter - 1)
-    return POGS_NAN_FOUND;
-  else
-    return POGS_SUCCESS;
+  
+  return status;
 }
 
 template <typename T, typename M, typename P>

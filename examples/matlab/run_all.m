@@ -6,7 +6,6 @@ pogs_setup -gpu % Alternatively `pogs_setup -gpu`
 cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 
-
 %% Run examples
 fprintf('\nBasis Pursuit\n')
 t = basis_pursuit(200, 2000);

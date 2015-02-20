@@ -2,20 +2,24 @@
 #define POGS_H_
 
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
 #include "prox_lib.h"
 
+
 namespace pogs {
+
+static const std::string POGS_VERSION = "0.2.0";
 
 // Defaults.
 const double       kAbsTol      = 1e-4;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
-const unsigned int kVerbose     = 2u;
-const unsigned int kMaxIter     = 10000u;
+const unsigned int kVerbose     = 3u;   // 0...4
+const unsigned int kMaxIter     = 2500u;
 const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
 const bool         kGapStop     = false;
@@ -90,6 +94,7 @@ class Pogs {
   }
 };
 
+// Templated typedefs
 #ifndef __CUDACC__
 template <typename T, typename M>
 using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
@@ -97,6 +102,21 @@ using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
 template <typename T, typename M>
 using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
 #endif
+
+// String version of status message.
+inline std::string PogsStatusString(PogsStatus status) {
+  switch(status) {
+    case POGS_SUCCESS:
+      return "Solved";
+    case POGS_MAX_ITER:
+      return "Reached max iter";
+    case POGS_NAN_FOUND:
+      return "Encountered NaN";
+    case POGS_ERROR:
+    default:
+      return "Error";  
+  }
+}
 
 }  // namespace pogs
 

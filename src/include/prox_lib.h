@@ -187,6 +187,35 @@ __DEVICE__ inline T LambertW(T x) {
   return w;
 }
 
+// LambertW(Exp(x)) 
+template <typename T>
+__DEVICE__ inline T LambertWExp(T x) {
+  T w;
+  if (x > 100.) {
+    // Approximation for x in [100, 700].
+    T log_x = Log(x);
+    return -0.36962844 + x - 0.97284858 * log_x + 1.3437973 / log_x;
+  } else if (x < 0.) {
+    T p = Sqrt(static_cast<T>(2.0 * (Exp(x + static_cast<T>(1.)) + 1.0)));
+    w = static_cast<T>(-1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * 11.0 / 72.0)));
+  } else {
+    w = x;
+  }
+  if (x > 1.098612288668110) {
+    w -= Log(w);
+  }
+  for (unsigned int i = 0; i < 10; i++) {
+    T e = Exp(w);
+    T t = w * e - Exp(x);
+    T p = w + static_cast<T>(1.);
+    t /= static_cast<T>(e * p - 0.5 * (p + 1.0) * t / p);
+    w -= t;
+    if (Abs(t) < Epsilon<T>() * (1. + Abs(w)))
+      break;
+  }
+  return w;
+}
+
 // Find the root of a cubic x^3 + px^2 + qx + r = 0 with a single positive root.
 // ref: http://math.stackexchange.com/questions/60376
 template <typename T>
@@ -224,12 +253,12 @@ __DEVICE__ inline T ProxAbs(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxNegEntr(T v, T rho) {
-  return LambertW<double>(Exp(rho * v - 1) * rho) / rho;
+  return LambertWExp<double>((rho * v - 1) + Log(rho)) / rho;
 }
 
 template <typename T>
 __DEVICE__ inline T ProxExp(T v, T rho) {
-  return v - LambertW<double>(Exp(v) / rho);
+  return v - LambertWExp<double>(v - Log(rho));
 }
 
 template <typename T>
