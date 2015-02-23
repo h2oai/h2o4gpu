@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = lasso(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = lasso(m, n, params, comp_cvx, density)
 %LASSO
 
 if nargin <= 2
@@ -7,13 +7,20 @@ end
 if nargin <= 3
   comp_cvx = false;
 end
+if nargin <= 4
+  density = 1;
+end
 
 cvx_time = nan;
 
 % Generate data.
 rng(0, 'twister');
 
-A = randn(m, n);
+if density == 1
+  A = randn(m, n);
+else
+  A = sprandn(m, n, density);
+end
 x_true = (randn(n, 1) > 0.8) .* randn(n, 1) / sqrt(n);
 b = A * x_true + 0.5 * randn(m, 1);
 lambda = 0.2 * norm(A' * b, inf);
@@ -24,7 +31,11 @@ g.h = kAbs;
 g.c = lambda;
 
 % Solve with pogs
-As = single(A);
+if ~issparse(A)
+  As = single(A);
+else
+  As = A;
+end
 tic
 [~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;

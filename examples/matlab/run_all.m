@@ -28,11 +28,11 @@ t = lasso_path(100, 1000);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nLinear Program in Equality Form\n')
-t = lp_eq(200, 1000, struct('rho', 100, 'max_iter', 10000));
+t = lp_eq(200, 1000);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nLinear Program in Inequality Form\n')
-t = lp_ineq(1000, 200, struct('rho', 1e-1, 'max_iter', 10000));
+t = lp_ineq(1000, 200);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nLogistic Regression\n')

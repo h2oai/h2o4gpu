@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = portfolio(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = portfolio(m, n, params, comp_cvx, density)
 %PORTFOLIO
 
 if nargin <= 2
@@ -7,13 +7,20 @@ end
 if nargin <= 3
   comp_cvx = false;
 end
+if nargin <= 4
+  density = 1;
+end
 
 cvx_time = nan;
 
 % Generate data.
 rng(0, 'twister');
 
-A = [randn(n, m) ones(n, 1)]';
+if density == 1
+  A = [randn(m, n) ones(n, 1)];
+else
+  A = [sprandn(m, n, density) ones(n, 1)];
+end
 d = rand(n, 1);
 r = -rand(n, 1);
 gamma = 1;
@@ -25,7 +32,11 @@ g.d = r;
 g.e = gamma * d;
 
 % Solve with pogs
-As = single(A);
+if ~issparse(A)
+  As = single(A);
+else
+  As = A;
+end
 tic
 [~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;

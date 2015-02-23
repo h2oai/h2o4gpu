@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = pwl(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = pwl(m, n, params, comp_cvx, density)
 %PWL
 
 if nargin <= 2
@@ -7,13 +7,21 @@ end
 if nargin <= 3
   comp_cvx = false;
 end
+if nargin <= 4
+  density = 1;
+end
 
 cvx_time = nan;
 
 % Generate data.
 rng(0, 'twister');
 
-A = [1 / n * rand(m-n, n); -eye(n)];
+if density == 1
+  A = [1 / n * rand(m-n, n); -eye(n)];
+else
+  A = [1 / n * sprand(m - n, n); -speye(n)];
+end
+
 b = A * rand(n, 1) + 2 * randn(m, 1);
 A = [A -ones(m, 1)];
 
@@ -22,7 +30,11 @@ f.b = b;
 g.h = [kZero(n); kIdentity];
 
 % Solve with pogs
-As = single(A);
+if ~issparse(A)
+  As = single(A);
+else
+  As = A;
+end
 tic
 [~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;

@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = huber_fit(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = huber_fit(m, n, params, comp_cvx, density)
 %HUBER_FIT
 
 if nargin <= 2
@@ -8,13 +8,20 @@ end
 if nargin <= 3
   comp_cvx = false;
 end
+if nargin <= 4
+  density = 1;
+end
 
 cvx_time = nan;
 
 % Generate data.
 rng(0, 'twister');
 
-A = randn(m, n);
+if density == 1
+  A = randn(m, n);
+else
+  A = sprandn(m, n, density);
+end
 x_true = randn(n, 1) / sqrt(n);
 b = A * x_true + 10 * rand(m, 1) .* (rand(m, 1) > 0.95);
 
@@ -23,7 +30,11 @@ f.b = b;
 g.h = kZero;
 
 % Solve with pogs
-As = single(A);
+if ~issparse(A)
+  As = single(A);
+else
+  As = A;
+end
 tic
 [~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;

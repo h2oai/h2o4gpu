@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = svm(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = svm(m, n, params, comp_cvx, density)
 %SVM
 
 if nargin <= 2
@@ -6,6 +6,9 @@ if nargin <= 2
 end
 if nargin <= 3
   comp_cvx = false;
+end
+if nargin <= 4
+  density = 1;
 end
 
 cvx_time = nan;
@@ -20,9 +23,18 @@ rng(0, 'twister')
 lambda = 1.0;
 N = m / 2;
 
-x = 1 / n * [randn(N, n) + ones(N, n); randn(N, n) - ones(N, n)];
-y = [ones(N, 1); -ones(N, 1)];
-A = [(-y * ones(1, n)) .* x, -y];
+if density == 1
+  x = 1 / n * [randn(N, n) + ones(N, n); randn(N, n) - ones(N, n)];
+  y = [ones(N, 1); -ones(N, 1)];
+  A = [(-y * ones(1, n)) .* x, -y];
+else
+  mu_plus  = sprandn(N, n, density);
+  mu_minus = sprandn(N, n, density);
+  x = 1 / n * [mu_plus  + 1. * (mu_plus  ~= 0)
+               mu_minus - 1. * (mu_minus ~= 0)];
+  y = [ones(N, 1); -ones(N, 1)];
+  A = sparse([(-y * ones(1, n)) .* x, -y]);
+end
 
 f.h = kMaxPos0;
 f.b = -1;
@@ -30,7 +42,11 @@ f.c = lambda;
 g.h = [kSquare(n); 0];
 
 % Solve with pogs
-As = single(A);
+if ~issparse(A)
+  As = single(A);
+else
+  As = A;
+end
 tic
 [~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
