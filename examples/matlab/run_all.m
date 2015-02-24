@@ -52,6 +52,6 @@ t = pwl(2000, 200);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nSupport Vector Machine\n')
-t = lasso(2000, 200);
+t = svm(2000, 200);
 fprintf('Solver Time: %e sec\n', t)
 

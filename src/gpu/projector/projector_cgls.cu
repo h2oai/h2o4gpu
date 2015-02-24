@@ -17,7 +17,7 @@ namespace {
 
 // TODO: Make these variable
 // Tolerance should be at least 1e-4, seems to converge in 3-6 iterations.
-double kTol  = 1e-4;
+double kTol  = 1e-5;
 int kMaxIter = 100;
 
 template<typename T>
@@ -92,7 +92,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
   // Minimize ||Ax - b||_2^2 + s||x||_2^2
   cgls::Solve(hdl, Gemv<T, M>(_A), static_cast<cgls::INT>(_A.Rows()),
-      static_cast<cgls::INT>(_A.Cols()), y, x, s, kTol, kMaxIter, true);
+      static_cast<cgls::INT>(_A.Cols()), y, x, s, kTol, kMaxIter, false);
   cudaDeviceSynchronize();
  
   // x := x + x0

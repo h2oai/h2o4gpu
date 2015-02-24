@@ -24,14 +24,14 @@ lambda = 1.0;
 N = m / 2;
 
 if density == 1
-  x = 1 / n * [randn(N, n) + ones(N, n); randn(N, n) - ones(N, n)];
+  x = 1 / sqrt(n) * [randn(N, n) + ones(N, n); randn(N, n) - ones(N, n)];
   y = [ones(N, 1); -ones(N, 1)];
   A = [(-y * ones(1, n)) .* x, -y];
 else
   mu_plus  = sprandn(N, n, density);
   mu_minus = sprandn(N, n, density);
-  x = 1 / n * [mu_plus  + 1. * (mu_plus  ~= 0)
-               mu_minus - 1. * (mu_minus ~= 0)];
+  x = 1 / sqrt(n) * [mu_plus  + 1. * (mu_plus  ~= 0)
+                     mu_minus - 1. * (mu_minus ~= 0)];
   y = [ones(N, 1); -ones(N, 1)];
   A = sparse([(-y * ones(1, n)) .* x, -y]);
 end
@@ -48,7 +48,8 @@ else
   As = A;
 end
 tic
-[~, ~, ~, ~, status] = pogs(As, f, g, params);
+%[xx, ~, ~, ~, status] = pogs(single(full(As)), f, g, params);
+[xx, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
 
 if status > 0
