@@ -198,12 +198,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Signal start of execution.
   if (_verbose > 0) {
     Printf(__HBAR__
-           "           POGS v%s - Proximal Operator Graph Solver             \n"
-           "           (c) Christopher Fougner, Stanford University 2014-2015\n"
-           __HBAR__
-        " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap | "
-        "pri obj\n"
-        __HBAR__, POGS_VERSION.c_str());
+        "           POGS v%s - Proximal Graph Solver                      \n"
+        "           (c) Christopher Fougner, Stanford University 2014-2015\n",
+        POGS_VERSION.c_str());
+  }
+  if (_verbose > 1) {
+    Printf(__HBAR__
+        " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
+        " pri obj\n" __HBAR__);
   }
 
   // Initialize scalars.
@@ -223,14 +225,6 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     ProxEval(g_gpu, _rho, x.data, x12.data);
     ProxEval(f_gpu, _rho, y.data, y12.data);
     CUDA_CHECK_ERR();
-
-    if (cml::vector_any_isnan(&z) || cml::vector_any_isnan(&z12)) {
-      printf("rho = %e\n", _rho);
-      cml::vector_print(&e);
-      cml::vector_print(&x);
-      cml::vector_print(&x12);
-      break;
-    }
 
     // Compute gap, optval, and tolerances.
     cml::blas_axpy(hdl, -kOne, &z12, &z);

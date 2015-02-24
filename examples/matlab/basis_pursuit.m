@@ -34,7 +34,7 @@ else
   As = A;
 end
 tic
-[xx, ~, ~, ~, status] = pogs(As, f, g, params);
+[~, ~, ~, ~, status] = pogs(full(As), f, g, params);
 pogs_time = toc;
 
 if status > 0
@@ -44,7 +44,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n)
     minimize(norm(x, 1))
     subject to

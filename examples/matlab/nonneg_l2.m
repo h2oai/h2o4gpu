@@ -45,7 +45,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n)
     minimize(norm(A * x - b))
     x >= 0;

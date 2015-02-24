@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = logistic(m, n, params, comp_cvx)
+function [pogs_time, cvx_time] = logistic(m, n, params, comp_cvx, density)
 %LOGISTIC
 
 if nargin <= 2
@@ -47,7 +47,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n + 1)
     minimize(sum(log(1 + exp(A * x))) + g.c * norm(x, 1))
   cvx_end

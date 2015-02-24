@@ -47,7 +47,7 @@ end
 % Solve with CVX
 if cvx_comp
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n)
     minimize(-sum(entr(x)))
     subject to

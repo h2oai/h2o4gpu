@@ -46,7 +46,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n)
     minimize(sum(huber(A * x - b)))
   cvx_end

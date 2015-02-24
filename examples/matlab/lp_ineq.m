@@ -19,7 +19,7 @@ rng(0, 'twister');
 if density == 1
   A = -[4 / n * rand(m - n, n); eye(n)];
 else
-  A = -[4 / n * sprand(m, n, density); speye(n)];
+  A = -[4 / n * sprand(m - n, n, density); speye(n)];
 end
 b = A * rand(n, 1) + 0.2 * rand(m, 1);
 c = 1 / n * rand(n, 1);
@@ -46,7 +46,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variable x(n)
     minimize(c' * x)
     A * x <= b;

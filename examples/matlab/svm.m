@@ -58,7 +58,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n + 1)
     minimize(lambda * sum(max(A * x + 1, 0)) + 1 / 2 * (x' * x))
   cvx_end

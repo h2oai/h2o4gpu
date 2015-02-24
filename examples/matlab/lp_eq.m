@@ -45,7 +45,7 @@ end
 % Solve with CVX.
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variable x(n)
     minimize(c' * x)
     A * x == b;

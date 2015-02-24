@@ -47,7 +47,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n)
     minimize(sum_square(A * x - b) + lambda * norm(x, 1))
   cvx_end

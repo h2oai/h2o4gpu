@@ -17,9 +17,9 @@ cvx_time = nan;
 rng(0, 'twister');
 
 if density == 1
-  A = [randn(m, n) ones(n, 1)];
+  A = [randn(m, n); ones(1, n)];
 else
-  A = [sprandn(m, n, density) ones(n, 1)];
+  A = [sprandn(m, n, density); ones(1, n)];
 end
 d = rand(n, 1);
 r = -rand(n, 1);
@@ -48,7 +48,7 @@ end
 % Solve with CVX
 if comp_cvx
   tic
-  cvx_begin
+  cvx_begin quiet
     variables x(n) y(m + 1)
     minimize(r' * x + sum(d .* x .* x) + gamma * sum_square(y))
     y == A * x;
