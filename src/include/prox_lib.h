@@ -142,75 +142,38 @@ __DEVICE__ inline T Sign(T x) {
   return x >= 0 ? 1 : -1;
 }
 
+// LambertW(Exp(x)) 
 // Evaluate the principal branch of the Lambert W function.
 // ref: http://keithbriggs.info/software/LambertW.c
 template <typename T>
-__DEVICE__ inline T LambertW(T x) {
-  const T kEm1 = static_cast<T>(0.3678794411714423215955237701614608);
-  const T kE = static_cast<T>(2.7182818284590452353602874713526625);
-  if (x == 0.) {
-    return 0.;
-  }
-  if (x < -kEm1 + 1e-4) {
-    T q = x + kEm1, r = Sqrt(q), q2 = q * q, q3 = q2 * q;
-    return
-        -static_cast<T>(1.0)
-        +static_cast<T>(2.331643981597124203363536062168) * r
-        -static_cast<T>(1.812187885639363490240191647568) * q
-        +static_cast<T>(1.936631114492359755363277457668) * r * q
-        -static_cast<T>(2.353551201881614516821543561516) * q2
-        +static_cast<T>(3.066858901050631912893148922704) * r * q2
-        -static_cast<T>(4.175335600258177138854984177460) * q3
-        +static_cast<T>(5.858023729874774148815053846119) * r * q3
-        -static_cast<T>(8.401032217523977370984161688514) * q3 * q;
-  }
-
-  T w;
-  if (x < 1.) {
-    T p = Sqrt(static_cast<T>(2.0 * (kE * x + 1.0)));
-    w = static_cast<T>(-1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * 11.0 / 72.0)));
-  } else {
-    w = Log(x);
-  }
-  if (x > 3.) {
-    w -= Log(w);
-  }
-  for (unsigned int i = 0; i < 10; i++) {
-    T e = Exp(w);
-    T t = w * e - x;
-    T p = w + static_cast<T>(1.);
-    t /= static_cast<T>(e * p - 0.5 * (p + 1.0) * t / p);
-    w -= t;
-    if (Abs(t) < Epsilon<T>() * (1. + Abs(w)))
-      break;
-  }
-  return w;
-}
-
-// LambertW(Exp(x)) 
-template <typename T>
 __DEVICE__ inline T LambertWExp(T x) {
   T w;
-  if (x > 100.) {
+  if (x > static_cast<T>(100)) {
     // Approximation for x in [100, 700].
     T log_x = Log(x);
-    return -0.36962844 + x - 0.97284858 * log_x + 1.3437973 / log_x;
-  } else if (x < 0.) {
-    T p = Sqrt(static_cast<T>(2.0 * (Exp(x + static_cast<T>(1.)) + 1.0)));
-    w = static_cast<T>(-1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * 11.0 / 72.0)));
+    return static_cast<T>(-0.36962844)
+        + x
+        - static_cast<T>(0.97284858) * log_x
+        + static_cast<T>(1.3437973) / log_x;
+  } else if (x < static_cast<T>(0)) {
+    T p = Sqrt(static_cast<T>(2.0) * (Exp(x + static_cast<T>(1)) + static_cast<T>(1)));
+    w = static_cast<T>(-1.0)
+       + p * (static_cast<T>(1.0)
+           + p * (static_cast<T>(-1.0 / 3.0)
+               + p * static_cast<T>(11.0 / 72.0)));
   } else {
     w = x;
   }
-  if (x > 1.098612288668110) {
+  if (x > static_cast<T>(1.098612288668110)) {
     w -= Log(w);
   }
-  for (unsigned int i = 0; i < 10; i++) {
+  for (unsigned int i = 0u; i < 10u; i++) {
     T e = Exp(w);
     T t = w * e - Exp(x);
     T p = w + static_cast<T>(1.);
-    t /= static_cast<T>(e * p - 0.5 * (p + 1.0) * t / p);
+    t /= e * p - static_cast<T>(0.5) * (p + static_cast<T>(1.0)) * t / p;
     w -= t;
-    if (Abs(t) < Epsilon<T>() * (1. + Abs(w)))
+    if (Abs(t) < Epsilon<T>() * (static_cast<T>(1) + Abs(w)))
       break;
   }
   return w;
@@ -253,12 +216,16 @@ __DEVICE__ inline T ProxAbs(T v, T rho) {
 
 template <typename T>
 __DEVICE__ inline T ProxNegEntr(T v, T rho) {
-  return LambertWExp<double>((rho * v - 1) + Log(rho)) / rho;
+  // Use double precision.
+  return static_cast<T>(
+      LambertWExp<double>(
+          static_cast<double>((rho * v - 1) + Log(rho)))) / rho;
 }
 
 template <typename T>
 __DEVICE__ inline T ProxExp(T v, T rho) {
-  return v - LambertWExp<double>(v - Log(rho));
+  return v - static_cast<T>(
+      LambertWExp<double>(static_cast<double>(v - Log(rho))));
 }
 
 template <typename T>

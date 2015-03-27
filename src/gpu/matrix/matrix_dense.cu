@@ -6,7 +6,7 @@
 #include "equil_helper.cuh"
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
-#include "util.cuh"
+#include "util.h"
 
 namespace pogs {
 
@@ -232,18 +232,15 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   // Scale d and e to account for normalization of A.
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
-  T normd = cml::blas_nrm2(hdl, &d_vec);
-  T norme = cml::blas_nrm2(hdl, &e_vec);
-//  T scale = sqrt(normd * sqrt(this->_n) / (norme * sqrt(this->_m)));
-  T scale = static_cast<T>(1.);
-  cml::vector_scale(&d_vec, 1 / (scale * sqrt(normA)));
-  cml::vector_scale(&e_vec, scale / sqrt(normA));
+  cml::vector_scale(&d_vec, 1 / sqrt(normA));
+  cml::vector_scale(&e_vec, 1 / sqrt(normA));
   cudaDeviceSynchronize();
+
+  DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
+      cml::blas_nrm2(hdl, &d_vec), cml::blas_nrm2(hdl, &e_vec));
 
   cudaFree(sign);
   CUDA_CHECK_ERR();
-
-  DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA, normd, norme);
 
   return 0;
 }

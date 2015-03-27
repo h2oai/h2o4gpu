@@ -2,7 +2,11 @@
 
 % Build interface
 cd([pwd '/../../src/interface_matlab'])
-pogs_setup -gpu % Alternatively `pogs_setup -gpu`
+% % Use one of the following to set up
+pogs_setup 
+% pogs_setup -omp
+% pogs_setup -gpu
+% pogs_setup -gpu -cuda_lib /usr/local/cuda/lib -cuda_bin /usr/local/cuda/bin
 cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 
@@ -27,12 +31,8 @@ fprintf('\nLasso Path\n')
 t = lasso_path(100, 1000);
 fprintf('Solver Time: %e sec\n', t)
 %%
-fprintf('\nLinear Program in Equality Form\n')
-t = lp_eq(200, 1000);
-fprintf('Solver Time: %e sec\n', t)
-%%
-fprintf('\nLinear Program in Inequality Form\n')
-t = lp_ineq(1000, 200);
+fprintf('\nLinear Program in Cone Form\n')
+t = lp_cone(1000, 200);
 fprintf('Solver Time: %e sec\n', t)
 %%
 fprintf('\nLogistic Regression\n')

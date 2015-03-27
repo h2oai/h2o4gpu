@@ -55,9 +55,9 @@ double Lasso(int m, int n, int nnz) {
 
   pogs::MatrixSparse<T> A_sp(ord, m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
-  pogs::MatrixDense<T> A_dn(ord, m, n, A.data());
+//  pogs::MatrixDense<T> A_dn(ord, m, n, A.data());
   pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data_sp(A_sp);
-  pogs::PogsDirect<T, pogs::MatrixDense<T>> pogs_data_dn(A_dn);
+//  pogs::PogsDirect<T, pogs::MatrixDense<T>> pogs_data_dn(A_dn);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -70,7 +70,7 @@ double Lasso(int m, int n, int nnz) {
     g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
 
   double t = timer<double>();
-  pogs_data_dn.Solve(f, g);
+  //pogs_data_dn.Solve(f, g);
   pogs_data_sp.Solve(f, g);
 
   return timer<double>() - t;

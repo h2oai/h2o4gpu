@@ -25,10 +25,12 @@ const bool         kAdaptiveRho = true;
 const bool         kGapStop     = false;
 
 // Status messages
-enum PogsStatus { POGS_SUCCESS,   // Converged succesfully.
-                  POGS_MAX_ITER,  // Reached max iter.
-                  POGS_NAN_FOUND, // Reached max iter.
-                  POGS_ERROR };   // Generic error, check logs.
+enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
+                  POGS_INFEASIBLE, // Problem likely infeasible.
+                  POGS_UNBOUNDED,  // Problem likely unbounded
+                  POGS_MAX_ITER,   // Reached max iter.
+                  POGS_NAN_FOUND,  // Encountered nan.
+                  POGS_ERROR };    // Generic error, check logs.
 
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
@@ -108,6 +110,10 @@ inline std::string PogsStatusString(PogsStatus status) {
   switch(status) {
     case POGS_SUCCESS:
       return "Solved";
+    case POGS_UNBOUNDED:
+      return "Unbounded";
+    case POGS_INFEASIBLE:
+      return "Infeasible";
     case POGS_MAX_ITER:
       return "Reached max iter";
     case POGS_NAN_FOUND:

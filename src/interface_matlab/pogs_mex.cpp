@@ -9,6 +9,8 @@
 #include "matrix/matrix_sparse.h"
 #include "pogs.h"
 
+using pogs::POGS_INT;
+
 // Returns value of pr[idx], with appropriate casting from id to T.
 // If id is not a numeric type, then it returns nan.
 template <typename T>
@@ -209,7 +211,9 @@ int PopulateParams(const mxArray *params, pogs::Pogs<T, M, P> *pogs_data) {
 
 template <typename T1, typename T2>
 void IntToInt(size_t n, const T1 *in, T2 *out) {
+#ifdef _OPENMP
 #pragma omp paralell for
+#endif
   for (size_t i = 0; i < n; ++i)
     out[i] = static_cast<T2>(in[i]);
 }
@@ -263,11 +267,15 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
           pogs_data.GetLambda(), m * sizeof(T));
     }
+    if (nlhs >= 4) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[3])) + i * n,
+          pogs_data.GetMu(), n * sizeof(T));
+    }
 
-    if (nlhs >= 4)
-      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
     if (nlhs >= 5)
-      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = status;
+      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = pogs_data.GetOptval();
+    if (nlhs >= 6)
+      reinterpret_cast<T*>(mxGetData(plhs[5]))[i] = status;
   }
 }
 
@@ -280,12 +288,10 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t n = mxGetN(prhs[0]);
   size_t nnz = mw_col_ptr[n];
 
-  int *row_ind = new int[nnz];
-  int *col_ptr = new int[n + 1];
+  POGS_INT *row_ind = new POGS_INT[nnz];
+  POGS_INT *col_ptr = new POGS_INT[n + 1];
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
-
-//  pogs::Sparse<T, int, pogs::COL> A(val, col_ptr, row_ind, nnz);
 
   // Initialize Pogs data structure
   pogs::MatrixSparse<T> A('c', m, n, nnz, val, col_ptr, row_ind);
@@ -329,11 +335,15 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
           pogs_data.GetLambda(), m * sizeof(T));
     }
+    if (nlhs >= 4) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[3])) + i * n,
+          pogs_data.GetMu(), n * sizeof(T));
+    }
 
-    if (nlhs >= 4)
-      reinterpret_cast<T*>(mxGetData(plhs[3]))[i] = pogs_data.GetOptval();
     if (nlhs >= 5)
-      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = status;
+      reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = pogs_data.GetOptval();
+    if (nlhs >= 6)
+      reinterpret_cast<T*>(mxGetData(plhs[5]))[i] = status;
   }
 
   delete [] row_ind;
@@ -344,12 +354,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check number of arguments.
   if (nrhs < 3 || nrhs > 4) {
     mexErrMsgIdAndTxt("MATLAB:pogs:insufficientInputArgs",
-        "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
+        "Usage: [x, y, l, u, optval, status] = pogs(A, f, g, [params])");
     return;
   }
-  if (nlhs > 5) {
+  if (nlhs > 6) {
     mexErrMsgIdAndTxt("MATLAB:pogs:extraneousOutputArgs",
-        "Usage: [x, y, l, optval] = pogs(A, f, g, [params])");
+        "Usage: [x, y, l, u, optval, status] = pogs(A, f, g, [params])");
     return;
   }
 
@@ -396,20 +406,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs >= 3)
     plhs[2] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
   if (nlhs >= 4)
-    plhs[3] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
+    plhs[3] = mxCreateNumericMatrix(n, num_obj, class_id_A, mxREAL);
   if (nlhs >= 5)
     plhs[4] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
+  if (nlhs >= 6)
+    plhs[5] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
 
   if (mxIsSparse(prhs[0])) {
-#ifdef __CUDA__
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapSp<double>(nlhs, plhs, nrhs, prhs);
     else if (class_id_A == mxSINGLE_CLASS)
       SolverWrapSp<float>(nlhs, plhs, nrhs, prhs);
-#else
-    mexErrMsgIdAndTxt("MATLAB:pogs:notImplemented",
-        "Sparse POGS for CPU not implemented");
-#endif
   } else {
     if (class_id_A == mxDOUBLE_CLASS)
       SolverWrapDn<double>(nlhs, plhs, nrhs, prhs);

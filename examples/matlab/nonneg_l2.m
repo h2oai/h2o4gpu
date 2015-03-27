@@ -35,7 +35,7 @@ else
   As = A;
 end
 tic
-[x, ~, ~, ~, status] = pogs(As, f, g, params);
+[~, ~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
 
 if status > 0

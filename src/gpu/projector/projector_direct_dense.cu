@@ -9,7 +9,7 @@
 #include "matrix/matrix_dense.h"
 #include "projector/projector_direct.h"
 #include "projector_helper.cuh"
-#include "util.cuh"
+#include "util.h"
 
 namespace pogs {
 
@@ -76,7 +76,7 @@ int ProjectorDirect<T, M>::Init() {
   cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
   CUDA_CHECK_ERR();
 
-  cublasOperation_t op_type = _A.Rows() >= _A.Cols()
+  cublasOperation_t op_type = _A.Rows() > _A.Cols()
       ? CUBLAS_OP_T : CUBLAS_OP_N;
 
   // Compute AA
@@ -103,7 +103,8 @@ int ProjectorDirect<T, M>::Init() {
 }
 
 template <typename T, typename M>
-int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
+int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
+                                   T tol) {
   DEBUG_EXPECT(this->_done_init);
   if (!this->_done_init || s < static_cast<T>(0.))
     return 1;
@@ -145,7 +146,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
     }
-    if (_A.Rows() >= _A.Cols()) {
+    if (_A.Rows() > _A.Cols()) {
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
@@ -181,7 +182,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
     }
-    if (_A.Rows() >= _A.Cols()) {
+    if (_A.Rows() > _A.Cols()) {
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);

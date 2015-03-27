@@ -15,7 +15,7 @@
 #include "projector/projector.h"
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
-#include "util.cuh"
+#include "util.h"
 
 #include "timer.h"
 
@@ -43,10 +43,10 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::Pogs(const M &A)
     : _A(A), _P(_A),
-      _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
+      _done_init(false),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
       _max_iter(kMaxIter),
@@ -70,7 +70,6 @@ int Pogs<T, M, P>::_Init() {
 
   size_t m = _A.Rows();
   size_t n = _A.Cols();
-  size_t min_dim = std::min(m, n);
 
   cudaMalloc(&_de, (m + n) * sizeof(T));
   cudaMalloc(&_z, (m + n) * sizeof(T));
@@ -90,18 +89,23 @@ int Pogs<T, M, P>::_Init() {
 
 template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
-                         const std::vector<FunctionObj<T> > &g) {
+                                const std::vector<FunctionObj<T> > &g) {
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
-  const T kDeltaMin = static_cast<T>(1.05);
-  const T kGamma    = static_cast<T>(1.01);
-  const T kTau      = static_cast<T>(0.8);
-  const T kAlpha    = static_cast<T>(1.7);
-  const T kRhoMin   = static_cast<T>(1e-4);
-  const T kRhoMax   = static_cast<T>(1e4);
-  const T kKappa    = static_cast<T>(0.9);
-  const T kOne      = static_cast<T>(1.0);
-  const T kZero     = static_cast<T>(0.0);
+  const T kDeltaMin   = static_cast<T>(1.05);
+  const T kGamma      = static_cast<T>(1.01);
+  const T kTau        = static_cast<T>(0.8);
+  const T kAlpha      = static_cast<T>(1.7);
+  const T kRhoMin     = static_cast<T>(1e-4);
+  const T kRhoMax     = static_cast<T>(1e4);
+  const T kKappa      = static_cast<T>(0.4);
+  const T kOne        = static_cast<T>(1.0);
+  const T kZero       = static_cast<T>(0.0);
+  const T kProjTolMax = static_cast<T>(1e-8);
+  const T kProjTolMin = static_cast<T>(1e-2);
+  const T kProjTolPow = static_cast<T>(1.3);
+  const T kProjTolIni = static_cast<T>(1e-5);
+  bool use_exact_stop = true;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
@@ -110,7 +114,6 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Extract values from pogs_data
   size_t m = _A.Rows();
   size_t n = _A.Cols();
-  size_t min_dim = std::min(m, n);
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
 
@@ -178,7 +181,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     for (unsigned int i = 0; i < kInitIter; ++i) {
       ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
       ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
-      _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data);
+      _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data,
+          kProjTolIni);
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
       cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);
@@ -233,7 +237,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_gap = sqrtmn_atol + _rel_tol * cml::blas_nrm2(hdl, &z) *
         cml::blas_nrm2(hdl, &z12);
     eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
-    eps_dua = sqrtn_atol + _rel_tol * _rho * cml::blas_nrm2(hdl, &x);
+    eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
 
     // Apply over relaxation.
@@ -243,7 +247,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
 
     // Project onto y = Ax.
-    _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data);
+    T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
+    proj_tol = std::max(proj_tol, kProjTolMax);
+    _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 
@@ -260,12 +266,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
-    if (nrm_r < eps_pri && nrm_s < eps_dua || true) {
+    if ((nrm_r < eps_pri && nrm_s < eps_dua) || use_exact_stop) {
       cml::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
       cudaDeviceSynchronize();
       nrm_r = cml::blas_nrm2(hdl, &ytemp);
-      if (nrm_r < eps_pri || true) {
+      if ((nrm_r < eps_pri) || use_exact_stop) {
         cml::vector_memcpy(&ztemp, &z12);
         cml::blas_axpy(hdl, kOne, &zt, &ztemp);
         cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);

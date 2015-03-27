@@ -47,9 +47,9 @@ if ~issparse(A)
 else
   As = A;
 end
+
 tic
-%[xx, ~, ~, ~, status] = pogs(single(full(As)), f, g, params);
-[xx, ~, ~, ~, status] = pogs(As, f, g, params);
+[~, ~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
 
 if status > 0

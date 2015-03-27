@@ -1,8 +1,6 @@
 #ifndef PROJECTOR_PROJECTOR_H_ 
 #define PROJECTOR_PROJECTOR_H_ 
 
-#include <memory>
-
 namespace pogs {
 
 // Minimizes ||Ax - y0||^2  + s ||x - x0||^2
@@ -19,8 +17,7 @@ class Projector {
   
   virtual int Init() = 0;
 
-  // TODO tolerance for solve. 
-  virtual int Project(const T *x0, const T *y0, T s, T *x, T *y) = 0;
+  virtual int Project(const T *x0, const T *y0, T s, T *x, T *y, T tol) = 0;
   
   bool IsInit() { return _done_init; }
 };

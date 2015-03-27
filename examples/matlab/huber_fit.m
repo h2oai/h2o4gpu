@@ -31,12 +31,12 @@ g.h = kZero;
 
 % Solve with pogs
 if ~issparse(A)
-  As = single(A);
+  As = double(A);
 else
   As = A;
 end
 tic
-[~, ~, ~, ~, status] = pogs(As, f, g, params);
+[~, ~, ~, ~, ~, status] = pogs(As, f, g, params);
 pogs_time = toc;
 
 if status > 0
@@ -47,8 +47,10 @@ end
 if comp_cvx
   tic
   cvx_begin quiet
-    variables x(n)
-    minimize(sum(huber(A * x - b)))
+    variables x(n) y(m)
+    dual variable lambda
+    minimize(sum(huber(y - b)))
+      lambda : y == A * x
   cvx_end
   cvx_time = toc;
 end

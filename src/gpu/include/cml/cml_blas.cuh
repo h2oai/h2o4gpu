@@ -29,34 +29,107 @@ cublasOperation_t InvOp(cublasOperation_t trans) {
 //
 // BLAS LEVEL 1
 //
-cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<double> *x,
-                         double *result);
-cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<float> *x,
-                         float *result);
 
-cublasStatus_t blas_scal(cublasHandle_t handle, const double alpha,
-                         vector<double> *x);
-cublasStatus_t blas_scal(cublasHandle_t handle, const float alpha,
-                         vector<float> *x);
-cublasStatus_t blas_scal(cublasHandle_t handle, const double *alpha,
-                         vector<double> *x);
-cublasStatus_t blas_scal(cublasHandle_t handle, const float *alpha,
-                         vector<float> *x);
+// Nrm2.
+inline cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<double> *x,
+                                double *result) {
+  cublasStatus_t err = cublasDnrm2(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), result);
+  CublasCheckError(err);
+  return err;
+}
 
-cublasStatus_t blas_asum(cublasHandle_t handle, const vector<double> *x,
-                         double *result);
-cublasStatus_t blas_asum(cublasHandle_t handle, const vector<float> *x,
-                         float *result);
+inline cublasStatus_t blas_nrm2(cublasHandle_t handle, const vector<float> *x,
+                                float *result) {
+  cublasStatus_t err = cublasSnrm2(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), result);
+  CublasCheckError(err);
+  return err;
+}
 
-cublasStatus_t blas_dot(cublasHandle_t handle, const vector<double> *x,
-                        const vector<double> *y, double *result);
-cublasStatus_t blas_dot(cublasHandle_t handle, const vector<float> *x,
-                        const vector<float> *y, float *result);
+// Scal.
+inline cublasStatus_t blas_scal(cublasHandle_t handle, const double alpha,
+                                vector<double> *x) {
+  cublasStatus_t err = cublasDscal(handle, static_cast<int>(x->size), &alpha,
+      x->data, static_cast<int>(x->stride));
+  CublasCheckError(err);
+  return err;
+}
 
-cublasStatus_t blas_axpy(cublasHandle_t handle, double alpha,
-                         const vector<double> *x, vector<double> *y);
-cublasStatus_t blas_axpy(cublasHandle_t handle, float alpha,
-                         const vector<float> *x, vector<float> *y);
+inline cublasStatus_t blas_scal(cublasHandle_t handle, const float alpha,
+                                vector<float> *x) {
+  cublasStatus_t err = cublasSscal(handle, static_cast<int>(x->size), &alpha,
+      x->data, static_cast<int>(x->stride));
+  CublasCheckError(err);
+  return err;
+}
+
+inline cublasStatus_t blas_scal(cublasHandle_t handle, const double *alpha,
+                                vector<double> *x) {
+  cublasStatus_t err = cublasDscal(handle, static_cast<int>(x->size), alpha,
+      x->data, static_cast<int>(x->stride));
+  CublasCheckError(err);
+  return err;
+}
+
+inline cublasStatus_t blas_scal(cublasHandle_t handle, const float *alpha,
+                                vector<float> *x) {
+  cublasStatus_t err = cublasSscal(handle, static_cast<int>(x->size), alpha,
+      x->data, static_cast<int>(x->stride));
+  CublasCheckError(err);
+  return err;
+}
+
+// Asum.
+inline cublasStatus_t blas_asum(cublasHandle_t handle, const vector<double> *x,
+                                double *result) {
+  cublasStatus_t err = cublasDasum(handle, x->size, x->data, x->stride, result);
+  CublasCheckError(err);
+  return err;
+}
+
+inline cublasStatus_t blas_asum(cublasHandle_t handle, const vector<float> *x,
+                                float *result) {
+  cublasStatus_t err = cublasSasum(handle, x->size, x->data, x->stride, result);
+  CublasCheckError(err);
+  return err;
+}
+
+// Dot.
+inline cublasStatus_t blas_dot(cublasHandle_t handle, const vector<double> *x,
+                               const vector<double> *y, double *result) {
+  cublasStatus_t err = cublasDdot(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), y->data, static_cast<int>(y->stride), result);
+  CublasCheckError(err);
+  return err;
+}
+
+inline cublasStatus_t blas_dot(cublasHandle_t handle, const vector<float> *x,
+                               const vector<float> *y, float *result) {
+  cublasStatus_t err = cublasSdot(handle, static_cast<int>(x->size), x->data,
+      static_cast<int>(x->stride), y->data, static_cast<int>(y->stride), result);
+  CublasCheckError(err);
+  return err;
+}
+
+// Axpy.
+inline cublasStatus_t blas_axpy(cublasHandle_t handle, double alpha,
+                                const vector<double> *x, vector<double> *y) {
+  cublasStatus_t err = cublasDaxpy(handle, static_cast<int>(x->size), &alpha,
+      x->data, static_cast<int>(x->stride), y->data,
+      static_cast<int>(y->stride));
+  CublasCheckError(err);
+  return err;
+}
+
+inline cublasStatus_t blas_axpy(cublasHandle_t handle, float alpha,
+                                const vector<float> *x, vector<float> *y) {
+  cublasStatus_t err = cublasSaxpy(handle, static_cast<int>(x->size), &alpha,
+      x->data, static_cast<int>(x->stride), y->data,
+      static_cast<int>(y->stride));
+  CublasCheckError(err);
+  return err;
+}
 
 // Asum
 template <typename T>

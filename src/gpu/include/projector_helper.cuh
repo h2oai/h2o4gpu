@@ -4,7 +4,7 @@
 #include "cml/cml_blas.cuh" 
 #include "cml/cml_vector.cuh" 
 #include "matrix/matrix.h" 
-#include "util.cuh" 
+#include "util.h" 
 
 namespace pogs {
 namespace {

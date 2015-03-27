@@ -7,7 +7,7 @@
 #include "equil_helper.cuh"
 #include "matrix/matrix.h"
 #include "matrix/matrix_sparse.h"
-#include "util.cuh"
+#include "util.h"
 
 namespace pogs {
 

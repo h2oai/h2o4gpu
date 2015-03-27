@@ -5,20 +5,19 @@
 
 #include "cgls.cuh"
 #include "cml/cml_blas.cuh"
+#include "cml/cml_vector.cuh"
 #include "matrix/matrix_dense.h"
 #include "matrix/matrix_sparse.h"
 #include "projector/projector_cgls.h"
 #include "projector_helper.cuh"
-#include "util.cuh"
+#include "util.h"
 
 namespace pogs {
 
 namespace {
 
-// TODO: Make these variable
-// Tolerance should be at least 1e-4, seems to converge in 3-6 iterations.
-double kTol  = 1e-5;
 int kMaxIter = 100;
+bool kCglsQuiet = true;
 
 template<typename T>
 struct GpuData {
@@ -73,7 +72,8 @@ int ProjectorCgls<T, M>::Init() {
 }
 
 template <typename T, typename M>
-int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
+int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
+                                 T tol) {
   DEBUG_EXPECT(this->_done_init);
   DEBUG_EXPECT(s >= static_cast<T>(0.));
   if (!this->_done_init || s < static_cast<T>(0.))
@@ -92,7 +92,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y) {
 
   // Minimize ||Ax - b||_2^2 + s||x||_2^2
   cgls::Solve(hdl, Gemv<T, M>(_A), static_cast<cgls::INT>(_A.Rows()),
-      static_cast<cgls::INT>(_A.Cols()), y, x, s, kTol, kMaxIter, false);
+      static_cast<cgls::INT>(_A.Cols()), y, x, s, tol, kMaxIter, kCglsQuiet);
   cudaDeviceSynchronize();
  
   // x := x + x0

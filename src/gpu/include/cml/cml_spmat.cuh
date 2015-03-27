@@ -1,5 +1,5 @@
-#ifndef CML_SPMAT_H_
-#define CML_SPMAT_H_
+#ifndef CML_SPMAT_CUH_
+#define CML_SPMAT_CUH_
 
 #include <cusparse.h>
 
@@ -108,5 +108,5 @@ void spmat_memcpy(cusparseHandle_t handle, spmat<T, I, O> *A,
 
 }  // namespace
 
-#endif  // CML_SPMAT_H_
+#endif  // CML_SPMAT_CUH_
 

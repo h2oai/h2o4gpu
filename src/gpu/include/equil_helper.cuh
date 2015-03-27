@@ -7,7 +7,7 @@
 #include "cml/cml_rand.cuh"
 #include "cml/cml_vector.cuh"
 #include "matrix/matrix.h"
-#include "util.cuh"
+#include "util.h"
 
 namespace pogs {
 namespace {
@@ -16,7 +16,7 @@ namespace {
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 
 // TODO: Figure out a better value for this constant
-const double kSinkhornConst        = 1e-4;
+const double kSinkhornConst        = 1e-8;
 const double kNormEstTol           = 1e-3;
 const unsigned int kEquilIter      = 50u; 
 const unsigned int kNormEstMaxIter = 50u;
@@ -146,7 +146,8 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-    cml::vector_add_constant(&e_vec, static_cast<T>(kSinkhornConst));
+    cml::vector_add_constant(&e_vec,
+        static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Rows());
     cudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(e),
         thrust::device_pointer_cast(e + e_vec.size),
@@ -158,7 +159,8 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     A->Mul('n', static_cast<T>(1.), e, static_cast<T>(0.), d);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-    cml::vector_add_constant(&d_vec, static_cast<T>(kSinkhornConst));
+    cml::vector_add_constant(&d_vec,
+        static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Cols());
     cudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(d),
         thrust::device_pointer_cast(d + d_vec.size),

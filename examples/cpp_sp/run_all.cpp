@@ -21,8 +21,8 @@ int main() {
 
 //  printf("\nLinear Program in Equality Form.\n");
 //  t = LpEq<real_t>(100000, 10000000, 200000000);
-//   t = LpEq<real_t>(200, 1000, 10000);
-//   printf("Solver Time: %e sec\n", t);
+//  t = LpEq<real_t>(200, 1000, 10000);
+//  printf("Solver Time: %e sec\n", t);
 
 //   printf("\nLinear Program in Inequality Form.\n");
 //   t = LpIneq<real_t>(1000, 200);
