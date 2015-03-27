@@ -28,7 +28,9 @@ double Lasso(size_t m, size_t n) {
     x_true[i] = u_dist(generator) < static_cast<T>(0.8)
         ? static_cast<T>(0) : n_dist(generator) / static_cast<T>(std::sqrt(n));
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
   for (unsigned int i = 0; i < m; ++i)
     for (unsigned int j = 0; j < n; ++j)
       b[i] += A[i * n + j] * x_true[j];
@@ -38,7 +40,9 @@ double Lasso(size_t m, size_t n) {
     b[i] += static_cast<T>(0.5) * n_dist(generator);
 
   T lambda_max = static_cast<T>(0);
+#ifdef _OPENMP
 #pragma omp parallel for reduction(max : lambda_max)
+#endif
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < m; ++i)

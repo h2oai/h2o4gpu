@@ -11,7 +11,9 @@ using namespace pogs;
 template <typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
   T max_diff = 0;
+#ifdef _OPENMP
 #pragma omp parallel for reduction(max : max_diff)
+#endif
   for (unsigned int i = 0; i < v1->size(); ++i)
     max_diff = std::max(max_diff, std::abs((*v1)[i] - (*v2)[i]));
   return max_diff;
@@ -20,7 +22,9 @@ T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
 template <typename T>
 T Asum(std::vector<T> *v) {
   T asum = 0;
+#ifdef _OPENMP
 #pragma omp parallel for reduction(+ : asum)
+#endif
   for (unsigned int i = 0; i < v->size(); ++i)
     asum += std::abs((*v)[i]);
   return asum;

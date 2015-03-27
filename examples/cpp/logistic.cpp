@@ -35,7 +35,9 @@ double Logistic(size_t m, size_t n) {
     x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator) / n;
   x_true[n] = n_dist(generator) / n;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
   for (unsigned int i = 0; i < m; ++i) {
     d[i] = 0;
     for (unsigned int j = 0; j < n + 1; ++j)
@@ -46,7 +48,9 @@ double Logistic(size_t m, size_t n) {
     d[i] = 1 / (1 + std::exp(-d[i])) > u_dist(generator);
 
   T lambda_max = static_cast<T>(0);
+#ifdef _OPENMP
 #pragma omp parallel for reduction(max : lambda_max)
+#endif
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < m; ++i)
