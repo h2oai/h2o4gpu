@@ -1,7 +1,7 @@
 [POGS](http://foges.github.io/pogs)
 ====
 
-POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). Head over to the GitHub.io page for complete [Documentation](http://foges.github.io/pogs).
+POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). Head over to the GitHub.io page for more complete [Documentation](http://foges.github.io/pogs).
 
 ----
 A graph form problem can be expressed as
@@ -21,15 +21,15 @@ The following functions are currently supported
 
 ![Supported Equations](https://github.com/foges/pogs/raw/master/img/eqs.png)
 
-where `I(.)` is the indicator function, taking on the value 0 if the condition is satisfied and infinity otherwise. More functions can be added by modifying the proximal operator header file: `<pogs>/src/prox_lib.h`.
+where `I(.)` is the indicator function, taking on the value 0 if the condition is satisfied and infinity otherwise. More functions can be added by modifying the proximal operator header file: `<pogs>/src/include/prox_lib.h`.
 
 
 Languages / Frameworks
 ======================
 Three different implementations of the solver are either planned or already supported:
 
-  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<pogs>/src/pogs.cpp`. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
-  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<pogs>/src/pogs.cu`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
+  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<pogs>/src/cpu/`. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
+  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<pogs>/src/gpu/`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
   3. MATLAB: A MATLAB implementation along with examples can be found in the `<pogs>/matlab` directory. The code is heavily documented and primarily intended for pedagogical purposes.
 
 
