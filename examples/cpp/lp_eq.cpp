@@ -1,6 +1,7 @@
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
@@ -13,23 +14,21 @@
 template <typename T>
 double LpEq(size_t m, size_t n) {
   std::vector<T> A((m + 1) * n);
-  std::vector<T> x(n);
-  std::vector<T> y(m + 1);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
                                            static_cast<T>(1));
 
   // Generate A and c according to:
-  //   A = 4 / n * rand(m, n)
-  //   c = rand(n, 1)
+  //   A = 1 / n * rand(m, n)
+  //   c = 1 / n * rand(n, 1)
   for (unsigned int i = 0; i < (m + 1) * n; ++i)
     A[i] = u_dist(generator) / static_cast<T>(n);
 
-  Dense<T, ROW> A_(A.data());
-  PogsData<T, Dense<T, ROW>> pogs_data(A_, m + 1, n);
-  pogs_data.x = x.data();
-  pogs_data.y = y.data();
+  pogs::MatrixDense<T> A_('r', m + 1, n, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
 
   // Generate b according to:
   //   v = rand(n, 1)
@@ -38,21 +37,21 @@ double LpEq(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     v[i] = u_dist(generator);
 
-  pogs_data.f.reserve(m + 1);
+  f.reserve(m + 1);
   for (unsigned int i = 0; i < m; ++i) {
     T b_i = static_cast<T>(0);
     for (unsigned int j = 0; j < n; ++j)
       b_i += A[i * n + j] * v[j];
-    pogs_data.f.emplace_back(kIndEq0, static_cast<T>(1), b_i);
+    f.emplace_back(kIndEq0, static_cast<T>(1), b_i);
   }
-  pogs_data.f.emplace_back(kIdentity);
+  f.emplace_back(kIdentity);
 
-  pogs_data.g.reserve(n);
+  g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kIndGe0);
+    g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  Pogs(&pogs_data);
+  pogs_data.Solve(f, g);
 
   return timer<double>() - t;
 }

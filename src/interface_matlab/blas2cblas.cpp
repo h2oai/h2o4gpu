@@ -1,6 +1,6 @@
 #include <mex.h>
 
-#include "../gsl/cblas.h"
+#include "../cpu/include/gsl/cblas.h"
 
 #define INT mwSignedIndex
 
