@@ -1,15 +1,8 @@
 ## C++ Implementation of POGS
 
-
-
 Tutorial
 --------
-The fist step is to formulate the problem in such a way that `A`, `f` and `g` are clearly defined. Once this is done, you should instantiate an `PogsData` object and set _all_ input fields. These are:
-
-  + `PogsData::A`: Pointer to the `A` matrix from the problem description. It is assumed to be in row-major format. 
-  + `(PogsData::m, PogsData::n)`: Dimensions of `A`.
-  + `(PogsData::x, PogsData::y)`: Pointers to pre-allocated memory locations, where the solution will be stored.
-  + `(PogsData::f, PogsData::g)`: Vectors of function objects. The `i`'th element corresponds to the term `f_i`  (respectively `g_i`) in the objective. Refer to the Proximal Operator Library section for a description of function objects.
+Please refer to the examples to see how to use POGS. Documentation will be updated in the near future.
 
 
 Proximal Operator Library
