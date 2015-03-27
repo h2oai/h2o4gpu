@@ -1,11 +1,10 @@
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
 #include "pogs.h"
 #include "timer.h"
-
-using namespace pogs;
 
 // Linear program in equality form.
 //   minimize    c^T * x
@@ -37,9 +36,11 @@ double LpEq(int m, int n, int nnz) {
   nnz = MatGenApprox(m + 1, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
     static_cast<T>(0), static_cast<T>(4.0 / n), entries);
   
-  Sparse<T, int, ROW> A_(val.data(), row_ptr.data(), col_ind.data(), nnz);
-  PogsData<T, Sparse<T, int, ROW>> pogs_data(A_, m + 1, n);
-  pogs_data.x = x.data();
+  pogs::MatrixSparse<T> A_('r', m + 1, n, nnz, val.data(), row_ptr.data(),
+       col_ind.data());
+  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
 
   // Generate b according to:
   //   v = rand(n, 1)
@@ -48,21 +49,21 @@ double LpEq(int m, int n, int nnz) {
   for (unsigned int i = 0; i < n; ++i)
     v[i] = u_dist(generator);
 
-  pogs_data.f.reserve(m + 1);
+  f.reserve(m + 1);
   for (unsigned int i = 0; i < m; ++i) {
     T b_i = static_cast<T>(0);
-    for (unsigned int j = row_ptr[i]; j < row_ptr[i+1]; ++j)
+    for (unsigned int j = row_ptr[i]; j < row_ptr[i + 1]; ++j)
       b_i += val[j] * v[col_ind[j]];
-    pogs_data.f.emplace_back(kIndEq0, static_cast<T>(1), b_i);
+    f.emplace_back(kIndEq0, static_cast<T>(1), b_i);
   }
-  pogs_data.f.emplace_back(kIdentity);
+  f.emplace_back(kIdentity);
 
-  pogs_data.g.reserve(n);
+  g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kIndGe0);
+    g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  Solve(&pogs_data);
+  pogs_data.Solve(f, g);
 
   return timer<double>() - t;
 }

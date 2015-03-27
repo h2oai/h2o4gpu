@@ -67,7 +67,7 @@ int PogsD(enum ORD ord, size_t m, size_t n, double *A,
           double *g_a, double *g_b, double *g_c, double *g_d, double *g_e,
           enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho, int gap_stop,
+          int verbose, int adaptive_rho, int gap_stop,
           double *x, double *y, double *l, double *optval);
 
 int PogsS(enum ORD ord, size_t m, size_t n, float *A,
@@ -76,7 +76,7 @@ int PogsS(enum ORD ord, size_t m, size_t n, float *A,
           float *g_a, float *g_b, float *g_c, float *g_d, float *g_e,
           enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho, int gap_stop,
+          int verbose, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval);
 
 #ifdef __cplusplus

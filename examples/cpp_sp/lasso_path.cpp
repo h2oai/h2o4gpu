@@ -2,11 +2,10 @@
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
 #include "pogs.h"
 #include "timer.h"
-
-using namespace pogs;
 
 template <typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
@@ -25,7 +24,6 @@ T Asum(std::vector<T> *v) {
     asum += std::abs((*v)[i]);
   return asum;
 }
-
 
 // LassoPath
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
@@ -65,37 +63,37 @@ double LassoPath(int m, int n, int nnz) {
   for (unsigned int i = 0; i < n; ++i)
     lambda_max = std::max(lambda_max, std::abs(u[i]));
 
-  Sparse<T, int, ROW> A_(val.data(), row_ptr.data(), col_ind.data(), nnz);
-  PogsData<T, Sparse<T, int, ROW>> pogs_data(A_, m, n);
-  pogs_data.x = x.data();
-  pogs_data.y = y.data();
+  pogs::MatrixSparse<T> A_('r', m, n, nnz, val.data(), row_ptr.data(),
+      col_ind.data());
+  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
 
-  pogs_data.f.reserve(m);
+  f.reserve(m);
   for (unsigned int i = 0; i < m; ++i)
-    pogs_data.f.emplace_back(kSquare, static_cast<T>(1), b[i]);
+    f.emplace_back(kSquare, static_cast<T>(1), b[i]);
 
-  pogs_data.g.reserve(n);
+  g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(kAbs);
-
-  AllocSparseFactors(&pogs_data);
+    g.emplace_back(kAbs);
 
   double t = timer<double>();
   for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
         static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
-    printf("max = %e\n", lambda);
 
     for (unsigned int i = 0; i < n; ++i)
-      pogs_data.g[i].c = lambda;
+      g[i].c = lambda;
 
-    Solve(&pogs_data);
+    pogs_data.Solve(f, g);
+
+    for (int j = 0; j < n; ++j)
+      x[j] = pogs_data.GetX()[j];
     
     if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
       break;
     x_last = x;
   }
-  FreeSparseFactors(&pogs_data);
 
   return timer<double>() - t;
 }
