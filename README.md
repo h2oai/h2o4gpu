@@ -1,7 +1,7 @@
 [POGS](http://foges.github.io/pogs)
 ====
 
-POGS is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). Head over to the GitHub.io page for more complete [Documentation](http://foges.github.io/pogs).
+Proximal Graph Solver (POGS) is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). Details about the implementation can be found in a recent [paper](http://stanford.edu/~boyd/papers/pogs.html). The GitHub.io page contains [Documentation](http://foges.github.io/pogs).
 
 ----
 A graph form problem can be expressed as
@@ -45,10 +45,13 @@ Among others, the solver can be used for the following classes of (linearly cons
 
 References
 ==========
-1. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
-2. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
-3. [Proximal Algorithms -- N. Parikh and S. Boyd][prox_algs]
+1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][pogs]
+2. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
+3. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
+4. [Proximal Algorithms -- N. Parikh and S. Boyd][prox_algs]
 
+
+[pogs]: http://stanford.edu/~boyd/papers/pogs.html "Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd"
 
 [block_splitting]: http://www.stanford.edu/~boyd/papers/block_splitting.html "Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd"
 
