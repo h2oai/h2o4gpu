@@ -4,7 +4,7 @@
 Proximal Graph Solver (POGS) is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). 
 
 - The GitHub.io page contains [Documentation](http://foges.github.io/pogs).
-- We recently released a [paper](http://stanford.edu/~boyd/papers/pogs.html), with details about the implementation, as well as many numerical examples.
+- We recently posted a [paper](http://stanford.edu/~boyd/papers/pogs.html) online, with details about the implementation, as well as many numerical examples.
 
 ----
 A graph form problem can be expressed as
