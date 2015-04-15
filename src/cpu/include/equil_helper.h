@@ -2,6 +2,7 @@
 #define EQUIL_HELPER_H_
 
 #include <algorithm>
+#include <cmath>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_rand.h"
@@ -18,7 +19,7 @@ enum NormTypes { kNorm1, kNorm2, kNormFro };
 // TODO: Figure out a better value for this constant
 const double kSinkhornConst        = 1e-4;
 const double kNormEstTol           = 1e-3;
-const unsigned int kEquilIter      = 50u; 
+const unsigned int kEquilIter      = 50u;
 const unsigned int kNormEstMaxIter = 50u;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +66,7 @@ void SetSign(T* x, unsigned char *sign, size_t size, F f) {
   for (unsigned int t = 0; t < size; ++t) {
     sign[t] = 0;
     for (unsigned int i = 0; i < 8; ++i) {
-      sign[t] |= static_cast<unsigned char>((x[8 * t + i] < 0) << i); 
+      sign[t] |= static_cast<unsigned char>((x[8 * t + i] < 0) << i);
       x[8 * t + i] = f(x[8 * t + i]);
     }
   }
@@ -75,7 +76,7 @@ template <typename T, typename F>
 void SetSignSingle(T* x, unsigned char *sign, size_t bits, F f) {
   sign[0] = 0;
   for (unsigned int i = 0; i < bits; ++i) {
-    sign[0] |= static_cast<unsigned char>((x[i] < 0) << i); 
+    sign[0] |= static_cast<unsigned char>((x[i] < 0) << i);
     x[i] = f(x[i]);
   }
 }
@@ -122,7 +123,7 @@ T Norm2Est(const Matrix<T> *A) {
     T normSx = gsl::blas_nrm2(&Sx);
     gsl::vector_scale(&x, 1 / normx);
     norm_est = normx / normSx;
-    if (abs(norm_est_last - norm_est) < kTol * norm_est)
+    if (std::abs(norm_est_last - norm_est) < kTol * norm_est)
       break;
   }
   DEBUG_EXPECT_LT(i, kNormEstMaxIter);
