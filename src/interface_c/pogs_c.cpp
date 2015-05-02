@@ -4,10 +4,10 @@
 #include "pogs_c.h"
 
 template <typename T, ORD O>
-int Pogs(size_t m, size_t n, T *A,
-         T *f_a, T *f_b, T *f_c, T *f_d, T *f_e, FUNCTION *f_h,
-         T *g_a, T *g_b, T *g_c, T *g_d, T *g_e, FUNCTION *g_h,
-         T rho, T abs_tol, T rel_tol, unsigned int max_iter, int verbose,
+int Pogs(size_t m, size_t n, const T *A,
+         const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
+         const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
+         T rho, T abs_tol, T rel_tol, unsigned int max_iter, unsigned int verbose,
          bool adaptive_rho, bool gap_stop, T *x, T *y, T *l, T *optval) {
   // Create pogs struct.
   char ord = O == ROW_MAJ ? 'r' : 'c';
@@ -55,7 +55,7 @@ int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
           const double *g_a, const double *g_b, const double *g_c,
           const double *g_d, const double *g_e, const enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
-          int verbose, int adaptive_rho, int gap_stop,
+          unsigned int verbose, int adaptive_rho, int gap_stop,
           double *x, double *y, double *l, double *optval) {
   if (ord == COL_MAJ) {
     return Pogs<double, COL_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
@@ -76,7 +76,7 @@ int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
           const float *g_a, const float *g_b, const float *g_c,
           const float *g_d, const float *g_e, const enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
-          int verbose, int adaptive_rho, int gap_stop,
+          unsigned int verbose, int adaptive_rho, int gap_stop,
           float *x, float *y, float *l, float *optval) {
   if (ord == COL_MAJ) {
     return Pogs<float, COL_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
