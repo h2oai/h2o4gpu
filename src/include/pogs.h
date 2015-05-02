@@ -32,6 +32,7 @@ enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
                   POGS_NAN_FOUND,  // Encountered nan.
                   POGS_ERROR };    // Generic error, check logs.
 
+
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
 class Pogs {
@@ -47,6 +48,7 @@ class Pogs {
 
   // Output.
   T *_x, *_y, *_mu, *_lambda, _optval;
+  unsigned int _final_iter;
 
   // Parameters.
   T _abs_tol, _rel_tol;
@@ -68,6 +70,7 @@ class Pogs {
   const T*     GetLambda()      const { return _lambda; }
   const T*     GetMu()          const { return _mu; }
   T            GetOptval()      const { return _optval; }
+  unsigned int GetFinalIter()   const { return _final_iter; }
   T            GetRho()         const { return _rho; }
   T            GetRelTol()      const { return _rel_tol; }
   T            GetAbsTol()      const { return _abs_tol; }
@@ -76,6 +79,7 @@ class Pogs {
   unsigned int GetVerbose()     const { return _verbose; }
   bool         GetAdaptiveRho() const { return _adaptive_rho; }
   bool         GetGapStop()     const { return _gap_stop; }
+
 
   // Setters for parameters and initial values.
   void SetRho(T rho)                       { _rho = rho; }
