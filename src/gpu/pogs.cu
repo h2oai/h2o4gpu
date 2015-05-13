@@ -27,7 +27,7 @@ namespace pogs {
 namespace {
 
 template <typename T, typename Op>
-struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {   
+struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
   Op binary_op;
   ApplyOp(Op binary_op) : binary_op(binary_op) { }
   __host__ __device__ FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
@@ -46,7 +46,8 @@ Pogs<T, M, P>::Pogs(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _final_iter(0),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
       _max_iter(kMaxIter),

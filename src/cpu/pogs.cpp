@@ -24,7 +24,7 @@ namespace pogs {
 namespace {
 
 template <typename T, typename Op>
-struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {   
+struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
   Op binary_op;
   ApplyOp(Op binary_op) : binary_op(binary_op) { }
   FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
@@ -43,7 +43,8 @@ Pogs<T, M, P>::Pogs(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _final_iter(0),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
       _max_iter(kMaxIter),
@@ -158,7 +159,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
-    // Alternating projections to satisfy 
+    // Alternating projections to satisfy
     //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
     //   2. \mu = -A^T\lambda
     gsl::vector_set_all(&zprev, kZero);
@@ -322,7 +323,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Print summary
   if (_verbose > 0) {
     Printf(__HBAR__
-        "Status: %s\n" 
+        "Status: %s\n"
         "Timing: Total = %3.2e s, Init = %3.2e s\n"
         "Iter  : %u\n",
         PogsStatusString(status).c_str(), timer<double>() - t0, time_init, k);
@@ -362,7 +363,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector_free(&z12);
   gsl::vector_free(&zprev);
   gsl::vector_free(&ztemp);
-  
+
   return status;
 }
 
