@@ -1,6 +1,6 @@
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 
 #include "pogs_c.h"
 
@@ -27,12 +27,13 @@ int main() {
   real_t *A = (real_t *) malloc(m * n * sizeof(real_t));
   real_t *b = (real_t *) malloc(m * sizeof(real_t));
   real_t *x_true = (real_t *) malloc(n * sizeof(real_t));
-  
+
   // Define output variables.
   real_t *x = (real_t *) malloc(n * sizeof(real_t));
   real_t *y = (real_t *) malloc(m * sizeof(real_t));
   real_t *l = (real_t *) malloc(m * sizeof(real_t));
   real_t optval;
+  unsigned int final_iter = 0;
 
   // Generate random A.
   for (unsigned int i = 0; i < m * n; ++i)
@@ -102,8 +103,8 @@ int main() {
       f_a, f_b, f_c, f_d, f_e, f_h,
       g_a, g_b, g_c, g_d, g_e, g_h,
       rho, abs_tol, rel_tol, max_iter, verbose, adaptive_rho, gap_stop,
-      x, y, l, &optval);
-  printf("Lasso optval = %e\n", optval);
+      x, y, l, &optval, &final_iter);
+  printf("Lasso optval = %e, final iter = %u\n", optval, final_iter);
 
   // Clean up.
   free(A);
