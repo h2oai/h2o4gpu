@@ -8,6 +8,7 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 
+#include <algorithm>
 #include <cstdio>
 
 #include "cml/cml_defs.cuh"
