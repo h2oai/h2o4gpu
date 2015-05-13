@@ -46,7 +46,7 @@ Pogs<T, M, P>::Pogs(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
       _max_iter(kMaxIter),
@@ -295,8 +295,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
     // Break if converged or there are nans
-    if (converged || k == _max_iter - 1)// || cml::vector_any_isnan(&zt))
+    if (converged || k == _max_iter - 1){ // || cml::vector_any_isnan(&zt))
+      _final_iter = k;
       break;
+    }
 
     // Update dual variable.
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
