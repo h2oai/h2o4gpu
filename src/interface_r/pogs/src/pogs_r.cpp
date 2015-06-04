@@ -7,7 +7,7 @@
 #include <cstring>
 #include <vector>
 
-#include "matrix_util.h"
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 
 SEXP getListElement(SEXP list, const char *str) {
@@ -69,91 +69,95 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   }
 }
 
-template <typename M>
-void PopulateParams(SEXP params, PogsData<double, M> *pogs_data) {
+template <typename T, typename M, typename P>
+void PopulateParams(SEXP params, pogs::Pogs<T, M, P> *pogs_data) {
   // Check if parameter exists in params, and set the corresponding
   // value in pogs_data.
-  
+
   SEXP rel_tol = getListElement(params, "rel_tol");
   if (rel_tol != R_NilValue)
-    pogs_data->rel_tol = REAL(rel_tol)[0];
+    pogs_data->SetRelTol(REAL(rel_tol)[0]);
 
   SEXP abs_tol = getListElement(params, "abs_tol");
   if (abs_tol != R_NilValue)
-    pogs_data->abs_tol = REAL(abs_tol)[0];
+    pogs_data->SetAbsTol(REAL(abs_tol)[0]);
 
   SEXP rho = getListElement(params, "rho");
   if (rho != R_NilValue)
-    pogs_data->rho = REAL(rho)[0];
+    pogs_data->SetRho(REAL(rho)[0]);
 
   SEXP max_iter = getListElement(params, "max_iter");
   if (max_iter != R_NilValue)
-    pogs_data->max_iter = REAL(max_iter)[0];
+    pogs_data->SetMaxIter(REAL(max_iter)[0]);
 
-  SEXP quiet = getListElement(params, "quiet");
-  if (quiet != R_NilValue)
-    pogs_data->quiet = LOGICAL(quiet)[0];
+  SEXP verbose = getListElement(params, "verbose");
+  if (verbose != R_NilValue)
+    pogs_data->SetVerbose(INTEGER(verbose)[0]);
 
   SEXP adaptive_rho = getListElement(params, "adaptive_rho");
   if (adaptive_rho != R_NilValue)
-    pogs_data->adaptive_rho = LOGICAL(adaptive_rho)[0];
+    pogs_data->SetAdaptiveRho(LOGICAL(adaptive_rho)[0]);
+
+  SEXP gap_stop = getListElement(params, "gap_stop");
+  if (gap_stop != R_NilValue)
+    pogs_data->SetGapStop(LOGICAL(gap_stop)[0]);
 }
 
-void SolverWrap(SEXP A, SEXP f, SEXP g, SEXP params, SEXP x, SEXP y, SEXP l,
-                SEXP opt) {
+template <typename T>
+void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
+                SEXP u, SEXP v, SEXP opt, SEXP status) {
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
-  unsigned int num_obj = length(f);
+  unsigned int num_obj = length(fin);
 
-  Dense<double, CblasColMajor> A_dense(REAL(A));
+  pogs::MatrixDense<T> A_dense('c', m, n, REAL(A));
 
   // Initialize Pogs data structure
-  PogsData<double, Dense<double, CblasColMajor> > pogs_data(A_dense, m, n);
-  pogs_data.f.reserve(m);
-  pogs_data.g.reserve(n);
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_dense);
+  std::vector<FunctionObj<T> > f, g;
+
+  f.reserve(m);
+  g.reserve(n);
 
   // Populate parameters.
   PopulateParams(params, &pogs_data);
 
   // Allocate space for factors if more than one objective.
   int err = 0;
-  if (num_obj > 1)
-    err = AllocDenseFactors(&pogs_data);
 
   for (unsigned int i = 0; i < num_obj && !err; ++i) {
-    pogs_data.x = REAL(x) + i * n;
-    pogs_data.y = REAL(y) + i * m;
-    pogs_data.l = REAL(l) + i * m;
-
     // Populate function objects.
-    pogs_data.f.clear();
-    pogs_data.g.clear();
-    PopulateFunctionObj(VECTOR_ELT(f, i), m, &pogs_data.f);
-    PopulateFunctionObj(VECTOR_ELT(g, i), n, &pogs_data.g);
+    f.clear();
+    g.clear();
+    PopulateFunctionObj(VECTOR_ELT(fin, i), m, &f);
+    PopulateFunctionObj(VECTOR_ELT(gin, i), n, &g);
 
     // Run solver.
-    Pogs(&pogs_data);
+    INTEGER(status)[i] = pogs_data.Solve(f, g);
 
-    REAL(opt)[i] = pogs_data.optval;
+    // Get Solution
+    memcpy(REAL(x) + i * n, pogs_data.GetX(), n * sizeof(T));
+    memcpy(REAL(y) + i * m, pogs_data.GetY(), m * sizeof(T));
+    memcpy(REAL(u) + i * n, pogs_data.GetMu(), n * sizeof(T));
+    memcpy(REAL(v) + i * m, pogs_data.GetLambda(), m * sizeof(T));
+
+    REAL(opt)[i] = pogs_data.GetOptval();
   }
-
-  if (num_obj > 1)
-    FreeDenseFactors(&pogs_data);
 }
 
 extern "C" {
 SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   // Setup output.
-  SEXP x, y, l, opt, ans, retnames;
+  SEXP x, y, u, v, opt, status, ans, retnames;
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
   unsigned int num_obj = length(f);
 
   // Create output list.
-  PROTECT(ans = NEW_LIST(4));
-  PROTECT(retnames = NEW_CHARACTER(4));
+  PROTECT(ans = NEW_LIST(6));
+  PROTECT(retnames = NEW_CHARACTER(6));
   SET_NAMES(ans, retnames);
 
   // Allocate x.
@@ -166,19 +170,29 @@ SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   SET_STRING_ELT(retnames, 1, mkChar("y"));
   SET_VECTOR_ELT(ans, 1, y);
 
-  // Allocate l.
-  PROTECT(l = allocMatrix(REALSXP, m, num_obj));
-  SET_STRING_ELT(retnames, 2, mkChar("l"));
-  SET_VECTOR_ELT(ans, 2, l);
+  // Allocate nu.
+  PROTECT(v = allocMatrix(REALSXP, m, num_obj));
+  SET_STRING_ELT(retnames, 2, mkChar("v"));
+  SET_VECTOR_ELT(ans, 2, v);
+
+  // Allocate mu.
+  PROTECT(u = allocMatrix(REALSXP, n, num_obj));
+  SET_STRING_ELT(retnames, 3, mkChar("u"));
+  SET_VECTOR_ELT(ans, 3, u);
 
   // Allocate opt.
   PROTECT(opt = NEW_NUMERIC(num_obj));
-  SET_STRING_ELT(retnames, 3, mkChar("optval"));
-  SET_VECTOR_ELT(ans, 3, opt);
+  SET_STRING_ELT(retnames, 4, mkChar("optval"));
+  SET_VECTOR_ELT(ans, 4, opt);
 
-  SolverWrap(A, f, g, params, x, y, l, opt);
+  // Allocate status.
+  PROTECT(status = NEW_INTEGER(num_obj));
+  SET_STRING_ELT(retnames, 5, mkChar("status"));
+  SET_VECTOR_ELT(ans, 5, status);
 
-  UNPROTECT(6);
+  SolverWrap<double>(A, f, g, params, x, y, u, v, opt, status);
+
+  UNPROTECT(8);
   return ans;
 }
 }

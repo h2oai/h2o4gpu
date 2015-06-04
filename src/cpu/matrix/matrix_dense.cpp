@@ -69,7 +69,7 @@ MatrixDense<T>::~MatrixDense() {
   delete info;
   this->_info = 0;
 }
-      
+
 template <typename T>
 int MatrixDense<T>::Init() {
   DEBUG_EXPECT(!this->_done_init);
@@ -190,7 +190,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
 
   DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
       gsl::blas_nrm2(&d_vec), gsl::blas_nrm2(&e_vec));
-  
+
   delete [] sign;
 
   return 0;
@@ -256,8 +256,13 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 }  // namespace
 
 // Explicit template instantiation.
+#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
 template class MatrixDense<double>;
+#endif
+
+#if !defined(POGS_SINGLE) || POGS_SINGLE==1
 template class MatrixDense<float>;
+#endif
 
 }  // namespace pogs
 

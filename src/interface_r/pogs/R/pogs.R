@@ -5,7 +5,7 @@
 #' @description Solver for convex optimization problems in the form
 #' \deqn{\min. f(y) + g(x), \textrm{ s.t. } y = Ax}{min. f(y) + g(x),  s.t. y = Ax,}
 #' where \eqn{f} and \eqn{g} are convex, separable, and take the form
-#' \deqn{c h(a x - b) + d x + e x^2,} where \eqn{a}, \eqn{b} and 
+#' \deqn{c h(a x - b) + d x + e x^2,} where \eqn{a}, \eqn{b} and
 #' \eqn{d} are real, \eqn{c} and \eqn{d} are non-negative and \eqn{h} is one
 #' of 16 convex functions (see. \link{kAbs}, \link{kExp}, \link{kHuber},
 #' \link{kIdentity}, \link{kIndBox01}, \link{kIndEq0}, \link{kIndGe0},
@@ -17,7 +17,7 @@
 #' @param g List with fields a, b, c, d, e, and h. All fields except h are
 #' optional and each field which is specified must be a vector of length 1 or ncol(A).
 #' @param params List of parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
-#' max_iter=1000, quiet=FALSE, adaptive_rho=TRUE). 
+#' max_iter=1000, quiet=FALSE, adaptive_rho=TRUE).
 #' All parameters are optional and take on a default value if not specified.
 #' @examples
 #' # Specify Lasso problem.
@@ -113,20 +113,23 @@ pogs <- function(A, f, g, params=list()) {
  
   # Check fields in params.
   if (length(params) > 0 && is.null(names(params))) {
-    stop("params must be a named list (elements abs_tol, rel_tol, rho, max_iter, quiet, adaptive_rho)")
+    stop("params must be a named list (elements abs_tol, rel_tol, rho, max_iter, verbose, adaptive_rho, gap_stop)")
   }
   for (name in names(params)) {
-    if (!any(name == c("rel_tol", "abs_tol", "rho", "max_iter", "quiet", "adaptive_rho"))) {
+    if (!any(name == c("rel_tol", "abs_tol", "rho", "max_iter", "verbose", "adaptive_rho", "gap_stop"))) {
       stop(cat("pogs(): field params$", name, " unknown!", sep=""))
     }
-    if (!is.numeric(params[[name]]) && name != "quiet" && name != "adaptive_rho") {
+    if (!is.numeric(params[[name]]) && name != "adaptive_rho" && name != "gap_stop") {
       stop(cat("pogs(): field params$", name, " must be numeric!", sep=""))
     }
-    if (!is.logical(params[[name]]) && (name == "quiet" || name == "adaptive_rho")) {
+    if (!is.logical(params[[name]]) && (name == "adaptive_rho" || name == "gap_stop")) {
       stop(cat("pogs(): field params$", name, " must be logical!", sep=""))
     }
     if (length(params[[name]]) != 1) {
       stop(cat("pogs(): field params$", name, " must must have length 1!", sep=""))
+    }
+    if (name == "verbose") {
+      params[[name]] = as.integer(params[[name]])
     }
   }
 
@@ -288,7 +291,7 @@ kZero <- function(m=1) {
 pogsnet <- function(x, y, family=c("gaussian", "binomial"),
                     weights, alpha=1, nlambda=100,
                     lambda.min.ratio=ifelse(nobs < nvars, 0.01, 0.0001), lambda=NULL,
-                    penalty.factor=rep(1, nvars), intercept=TRUE, params=list(quiet=TRUE),
+                    penalty.factor=rep(1, nvars), intercept=TRUE, params=list(),
                     cutoff=TRUE) {
 
   # Check Family
