@@ -20,7 +20,7 @@ Hint: Use `getwd()` to get the current directory.
    `TARGET=[cpu/gpu]`, to target the respective platform.
    Also update `CUDA_HOME` if necessary.
 3. In your terminal, navigate to `cd <path-to-pogs-root>/src/interface_r`
-   and execute `R CMD build --binary pogs` (or `R CMD build pogs` for
+   and execute `R CMD INSTALL --build pogs` (or `R CMD build pogs` for
    a non-compiled package).
 4. Install as specified above.
 
