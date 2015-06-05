@@ -7,8 +7,8 @@ In R execute:
 where `XXX` is one of the following
 - (empty) -- This package should work on any system, but needs compiling.
 - `_gpu` -- This package requires nvcc installed and the environment variable `CUDA_HOME` to be set.
-- `_osx` -- This is pre-compiled binary, but will only work on OSX.
-- `_gpu_osx` -- This is pre-compiled binary, but will only work if you're on OS X
+- `_osx` -- This is a pre-compiled binary, but will only work on OS X.
+- `_gpu_osx` -- This is a pre-compiled binary, but will only work if you're on OS X
   and have a CUDA enabled GPU.
 
 Hint: Use `getwd()` to get the current directory.
