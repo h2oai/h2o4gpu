@@ -1,1 +1,1 @@
-cp -rf ../../gsl ../../_interface_defs.h ../../matrix_util.h ../../pogs.cpp ../../pogs.h ../../prox_lib.h ../../sinkhorn_knopp.h src/
+cp -r ../../gpu ../../cpu ../../include src/
