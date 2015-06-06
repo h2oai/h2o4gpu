@@ -1,6 +1,8 @@
 #ifndef MATRIX_MATRIX_SPARSE_H_
 #define MATRIX_MATRIX_SPARSE_H_
 
+#include <functional>
+
 #include "matrix.h"
 
 namespace pogs {
@@ -14,7 +16,7 @@ class MatrixSparse : public Matrix<T> {
 
  private:
   T *_data;
-  
+
   POGS_INT *_ptr, *_ind, _nnz;
 
   Ord _ord;
@@ -32,7 +34,9 @@ class MatrixSparse : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T *d, T *e);
+  int Equil(T *d, T *e,
+            const std::function<void(T*)> &constrain_d,
+            const std::function<void(T*)> &constrain_e);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;

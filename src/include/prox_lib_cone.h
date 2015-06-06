@@ -1,6 +1,8 @@
 #ifndef PROX_LIB_CONE_H_
 #define PROX_LIB_CONE_H_
 
+#include <assert.h>
+
 #include <vector>
 
 #ifdef __CUDACC__
@@ -25,13 +27,13 @@ enum Cone { kConeZero,       // { x : x = 0 }
 struct ConeConstraint {
   Cone cone;
   std::vector<CONE_IDX> idx;
-}
+};
 
 struct ConeConstraintRaw {
   CONE_IDX *idx;
   CONE_IDX size;
   Cone cone;
-}
+};
 
 bool IsSeparable(Cone cone) {
   if (cone == kConeZero || cone == kConeNonNeg)
@@ -41,25 +43,25 @@ bool IsSeparable(Cone cone) {
 
 // Shared GPU/CPU code.
 namespace {
-const kExp1 = 2.718281828459045;
+const double kExp1 = 2.718281828459045;
 
 template <typename T>
-__DEVICE__ ProjectExpPrimalCone(const CONE_IDX idx, T *v) {
-  T x = v[idx[0]];
-  T y = v[idx[1]];
-  T z = v[idx[2]];
+__DEVICE__ void ProjectExpPrimalCone(const CONE_IDX *idx, T *v) {
+  T &x = v[idx[0]];
+  T &y = v[idx[1]];
+  T &z = v[idx[2]];
   if (x > 0 && x * Exp(y / z) <= -kExp1 * z) {
-    v[0] = v[1] = v[2] = static_cast<T>(0);
+    x = y = z = static_cast<T>(0);
   } else if (x < 0 && y < 0) {
-    v[1] = static_cast<T>(0);
-    v[2] = Max(static_cast<T>(0), v[2]);
+    x = static_cast<T>(0);
+    y = Max(static_cast<T>(0), y);
   } else if (!(y > 0 && y * Exp(x / y) <= z)) {
     assert(false && "TODO");
   }
 }
 
 template <typename T>
-__DEVICE__ ProjectExpDualCone(const CONE_IDX idx, T *v) {
+__DEVICE__ void ProjectExpDualCone(const CONE_IDX *idx, T *v) {
   assert(false && "TODO");
 }
 }  // namespace
@@ -69,19 +71,19 @@ namespace {
 template <typename T, typename F>
 void ApplyCpu(const F& f, const ConeConstraintRaw& cone_constr, T *v) {
   for (CONE_IDX i = 0; i < cone_constr.size; ++i)
-    v[cone_constr.idx[i]] = f(v[cone_constr.idx[i]])
+    v[cone_constr.idx[i]] = f(v[cone_constr.idx[i]]);
 }
 }  // namespace
 
 template <typename T>
-inline void ProxConeZeroCpu(const ConeConstraintRaw& cone_constr, const T *v) {
+inline void ProxConeZeroCpu(const ConeConstraintRaw& cone_constr, T *v) {
   auto f = [](int) { return static_cast<T>(0); };
   ApplyCpu(f, cone_constr, v);
 }
 
 template <typename T>
 inline void ProxConeNonNegCpu(const ConeConstraintRaw& cone_constr, T *v) {
-  auto f = [](T x) { return std::max(x, static_cast<T>(0)); }
+  auto f = [](T x) { return std::max(x, static_cast<T>(0)); };
   ApplyCpu(f, cone_constr, v);
 }
 
@@ -99,7 +101,7 @@ inline void ProxConeSocCpu(const ConeConstraintRaw& cone_constr, T *v) {
   } else if (nrm >= std::abs(p)) {
     T scale = (static_cast<T>(1) + p / nrm) / 2;
     v[cone_constr.idx[0]] = nrm;
-    auto f = [=scale](T x) { return scale * x; };
+    auto f = [scale](T x) { return scale * x; };
     ApplyCpu(f, cone_constr, v);
   }
 }
@@ -121,7 +123,7 @@ inline void ProxConeExpDualCpu(const ConeConstraintRaw& cone_constr, T *v) {
 }
 
 template <typename T>
-void ProxEvalConeCpu(const std::vector<ConeConstraint>& cone_constr_vec,
+void ProxEvalConeCpu(const std::vector<ConeConstraintRaw>& cone_constr_vec,
                      CONE_IDX size, const T *x_in, T *x_out) {
   memcpy(x_out, x_in, size * sizeof(T));
 
@@ -198,7 +200,7 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
                            int stream) {
   // TODO: Use reduce that has stream option.
   // Compute nrm(v[1:end])
-  auto square = [=v](T i) { return v[i] * v[i]; };
+  auto square = [v](T i) { return v[i] * v[i]; };
   T nrm = thrust::transform_reduce(thrust::cuda::par.on(stream),
       thrust::device_pointer_cast(cone_constr.idx),
       thrust::device_pointer_cast(cone_constr.idx + cone_constr.size),
@@ -219,7 +221,7 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
   } else if (nrm >= std::abs(p)) {
     T scale = (static_cast<T>(1) + p / nrm) / 2;
     cudaMemcpyAsync(v + i, &nrm, sizeof(T), cudaMemcpyHostToDevice, stream);
-    auto f = [=scale](T x) { return scale * x; };
+    auto f = [scale](T x) { return scale * x; };
     ApplyGpu(f, cone_constr, v, stream);
   }
 }
@@ -245,7 +247,7 @@ inline void ProxConeExpDualGpu(const ConeConstraintRaw& cone_constr, T *v,
 }
 
 template <typename T>
-void ProxEvalConeGpu(const std::vector<ConeConstraint>& cone_constr_vec,
+void ProxEvalConeGpu(const std::vector<ConeConstraintRaw>& cone_constr_vec,
                      CONE_IDX size, const T *x_in, T *x_out) {
   cudaMemcpy(x_out, x_in, size * sizeof(T), cudaMemcpyDeviceToDevice);
 

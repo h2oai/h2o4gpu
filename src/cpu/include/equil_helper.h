@@ -2,6 +2,7 @@
 #define EQUIL_HELPER_H_
 
 #include <algorithm>
+#include <functional>
 #include <cmath>
 
 #include "gsl/gsl_blas.h"
@@ -11,7 +12,6 @@
 #include "util.h"
 
 namespace pogs {
-namespace {
 
 // Different norm types.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
@@ -137,7 +137,9 @@ T Norm2Est(const Matrix<T> *A) {
 ///////////////////////// Modified Sinkhorn Knopp //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
+void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
+                   const std::function<void(T*)> &constrain_d,
+                   const std::function<void(T*)> &constrain_e) {
   gsl::vector<T> d_vec = gsl::vector_view_array<T>(d, A->Rows());
   gsl::vector<T> e_vec = gsl::vector_view_array<T>(e, A->Cols());
   gsl::vector_set_all(&d_vec, static_cast<T>(1.));
@@ -148,6 +150,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
     gsl::vector_add_constant(&e_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Rows());
+    constrain_e(e);
     std::transform(e, e + e_vec.size, e, ReciprF<T>(A->Rows()));
 
     // d := 1 ./ (A' * e).
@@ -155,10 +158,10 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     gsl::vector_add_constant(&d_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Cols());
     std::transform(d, d + d_vec.size, d, ReciprF<T>(A->Cols()));
+    constrain_d(d);
   }
 }
 
-}  // namespace
 }  // namespace pogs
 
 #endif  // EQUIL_HELPER_H_

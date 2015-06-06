@@ -7,11 +7,8 @@
 
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
-
-// TODO: this isn't so great. Doesn't follow style guide.
-namespace pogs { template <typename T> class FunctionObj; }
-namespace pogs { template <typename T> class ConeConstraint; }
-namespace pogs { template <typename T> class PogsObjective; }
+#include "prox_lib.h"
+#include "prox_lib_cone.h"
 
 namespace pogs {
 
@@ -35,6 +32,18 @@ enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
                   POGS_NAN_FOUND,  // Encountered nan.
                   POGS_ERROR };    // Generic error, check logs.
 
+// Generic POGS objective.
+template <typename T>
+class PogsObjective {
+ public:
+  virtual T evaluate(const T *x, const T *y) const = 0;
+  virtual void prox(const T *x_in, const T *y_in, T *x_out, T *y_out,
+                    T rho) const = 0;
+  virtual void scale(const T *d, const T *e) = 0;
+  virtual void constrain_d(T *d) const = 0;
+  virtual void constrain_e(T *e) const = 0;
+};
+
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
 class PogsImplementation {
@@ -46,7 +55,7 @@ class PogsImplementation {
   bool _done_init;
 
   // Setup matrix _A and projector _P.
-  int _Init();
+  int _Init(const PogsObjective<T> *obj);
 
   // Output.
   T *_x, *_y, *_mu, *_lambda, _optval;
@@ -108,24 +117,24 @@ class PogsSeparable : public PogsImplementation<T, M, P> {
   ~PogsSeparable();
 
   // Solve for specific objective.
-  PogsStatus Solve(const std::vector<FunctionObj>& f,
-                   const std::vector<FunctionObj>& g);
+  PogsStatus Solve(const std::vector<FunctionObj<T>>& f,
+                   const std::vector<FunctionObj<T>>& g);
 };
 
 template <typename T, typename M, typename P>
 class PogsCone : public PogsImplementation<T, M, P> {
  public:
   PogsCone(const M &A,
-           const std::vector<ConeConstraint<T> >& Kx,
-           const std::vector<ConeConstraint<T> >& Ky);
+           const std::vector<ConeConstraint>& Kx,
+           const std::vector<ConeConstraint>& Ky);
   ~PogsCone();
 
   // Solve for specific objective.
   PogsStatus Solve(const std::vector<T>& b, const std::vector<T>& c);
 
  private:
-  const std::vector<ConeConstraint<T> >& Kx;
-  const std::vector<ConeConstraint<T> >& Ky;
+  std::vector<ConeConstraintRaw> Kx;
+  std::vector<ConeConstraintRaw> Ky;
 };
 
 // Templated typedefs

@@ -22,31 +22,6 @@
 
 namespace pogs {
 
-namespace {
-
-template <typename T, typename Op>
-struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
-  Op binary_op;
-  ApplyOp(Op binary_op) : binary_op(binary_op) { }
-  FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
-    h.a = binary_op(h.a, x);
-    h.d = binary_op(h.d, x);
-    h.e = binary_op(binary_op(h.e, x), x);
-    return h;
-  }
-};
-
-template <typename T>
-class PogsObjective {
- public:
-  virtual T evaluate(const T *x, const T *y) const = 0;
-  virtual void prox(const T *x_in, const T *y_in, T *x_out, T *y_out) const = 0;
-  virtual void scale(const T *d, const T *e) = 0;
-  virtual void average_equil(T *d, T *e) const = 0;
-};
-
-}  // namespace
-
 template <typename T, typename M, typename P>
 PogsImplementation<T, M, P>::PogsImplementation(const M &A)
     : _A(A), _P(_A),
@@ -70,7 +45,7 @@ PogsImplementation<T, M, P>::PogsImplementation(const M &A)
 }
 
 template <typename T, typename M, typename P>
-int PogsImplementation<T, M, P>::_Init() {
+int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -90,7 +65,9 @@ int PogsImplementation<T, M, P>::_Init() {
   memset(_zt, 0, (m + n) * sizeof(T));
 
   _A.Init();
-  _A.Equil(_de, _de + m);
+  _A.Equil(_de, _de + m,
+           std::function<void(T*)>([obj](T *v){ obj->constrain_d(v); }),
+           std::function<void(T*)>([obj](T *v){ obj->constrain_e(v); }));
   _P.Init();
 
   return 0;
@@ -117,7 +94,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
-    _Init();
+    _Init(obj);
 
   // Extract values from pogs_data
   size_t m = _A.Rows();
@@ -144,7 +121,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
 
   // Scale objective to account for diagonal scaling e and d.
-  obj->scale(d, e);
+  obj->scale(d.data, e.data);
 
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
@@ -168,8 +145,9 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     //   2. \mu = -A^T\lambda
     gsl::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
-      ProjSubgradEval(g_cpu, xprev.data, x.data, xtemp.data);
-      ProjSubgradEval(f_cpu, yprev.data, y.data, ytemp.data);
+      // TODO: Make part of PogsObj
+//      ProjSubgradEval(g, xprev.data, x.data, xtemp.data);
+//      ProjSubgradEval(f, yprev.data, y.data, ytemp.data);
       _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data,
           kProjTolIni);
       gsl::blas_axpy(-kOne, &ztemp, &zprev);
@@ -213,7 +191,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
 
     // Evaluate Proximal Operators
     gsl::blas_axpy(-kOne, &zt, &z);
-    obj->prox(x.data, y.data, x12.data, y12.data, rho);
+    obj->prox(x.data, y.data, x12.data, y12.data, _rho);
 
     // Compute gap, optval, and tolerances.
     gsl::blas_axpy(-kOne, &z12, &z);
@@ -265,7 +243,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     if ((_verbose > 2 && k % 10  == 0) ||
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
-      T optval = obj->eval(x12.data, y12.data);
+      T optval = obj->evaluate(x12.data, y12.data);
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
@@ -312,7 +290,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   }
 
   // Get optimal value
-  _optval = obj->eval(x12.data, y12.data);
+  _optval = obj->evaluate(x12.data, y12.data);
 
   // Check status
   PogsStatus status;
@@ -371,7 +349,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
 }
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::~Pogs() {
+PogsImplementation<T, M, P>::~PogsImplementation() {
   delete [] _de;
   delete [] _z;
   delete [] _zt;
@@ -399,35 +377,39 @@ class PogsObjectiveSeparable : public PogsObjective<T> {
     return FuncEval(f, y) + FuncEval(g, x);
   }
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
-    ProxEval(g, _rho, x.data, x12.data);
-    ProxEval(f, _rho, y.data, y12.data);
+    ProxEval(g, rho, x_in, x_out);
+    ProxEval(f, rho, y_in, y_out);
   }
 
   void scale(const T *d, const T *e) {
     auto divide = [](FunctionObj<T> fi, T di) {
       fi.a *= di; fi.d *= di; fi.e *= di * di; return fi;
     };
-    std::transform(f.begin(), f.end(), d.data, f.begin(), divide);
+    std::transform(f.begin(), f.end(), d, f.begin(), divide);
     auto multiply = [](FunctionObj<T> gi, T ei) {
       gi.a /= ei; gi.d /= ei; gi.e /= ei * ei; return gi;
     };
-    std::transform(g.begin(), g.end(), e.data, g.begin(), multiply);
+    std::transform(g.begin(), g.end(), e, g.begin(), multiply);
   }
+
+  void constrain_d(T *d) const { }
+  void constrain_e(T *e) const { }
 };
 }  // namespace
 
 // Implementation of PogsSeparable
 template <typename T, typename M, typename P>
-PogsSeparable<T, M, P>::PogsSeparable(const M& A) : PogsImplementation(A) { }
+PogsSeparable<T, M, P>::PogsSeparable(const M& A)
+    : PogsImplementation<T, M, P>(A) { }
 
 template <typename T, typename M, typename P>
 PogsSeparable<T, M, P>::~PogsSeparable() { }
 
 template <typename T, typename M, typename P>
-PogsStatus PogsSeparable<T, M, P>::Solve(const std::vector<FunctionObj>& f,
-                                         const std::vector<FunctionObj>& g) {
-  PogsObjectiveSeparable pogs_obj(f, g);
-  return PogsImplementation(&pogs_obj);
+PogsStatus PogsSeparable<T, M, P>::Solve(const std::vector<FunctionObj<T>>& f,
+                                         const std::vector<FunctionObj<T>>& g) {
+  PogsObjectiveSeparable<T> pogs_obj(f, g);
+  return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
 }
 
 // Pogs for cone problems
@@ -436,12 +418,12 @@ template <typename T>
 class PogsObjectiveCone : public PogsObjective<T> {
  private:
   std::vector<T> b, c;
-  const std::vector<ConeConstraint<T> > &Kx, &Ky;
+  const std::vector<ConeConstraintRaw> &Kx, &Ky;
  public:
-  PogsObjectiveSeparable(const std::vector<T>& b,
-                         const std::vector<T>& c,
-                         const std::vector<ConeConstraint<T> >& Kx,
-                         const std::vector<ConeConstraint<T> >& Ky)
+  PogsObjectiveCone(const std::vector<T>& b,
+                    const std::vector<T>& c,
+                    const std::vector<ConeConstraintRaw>& Kx,
+                    const std::vector<ConeConstraintRaw>& Ky)
       : b(b), c(c), Kx(Kx), Ky(Ky) { }
 
   T evaluate(const T *x, const T*) const {
@@ -450,7 +432,7 @@ class PogsObjectiveCone : public PogsObjective<T> {
 
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
     memcpy(x_out, x_in, c.size());
-    auto x_updater = [=rho](T ci, T xi) { return xi + c / rho; };
+    auto x_updater = [rho](T ci, T xi) { return xi + ci / rho; };
     std::transform(c.begin(), c.end(), x_out, x_out, x_updater);
 
     memcpy(y_out, y_in, b.size());
@@ -459,41 +441,64 @@ class PogsObjectiveCone : public PogsObjective<T> {
     ProxEvalConeCpu(Kx, c.size(), x_in, x_out);
     ProxEvalConeCpu(Ky, b.size(), y_in, y_out);
 
-    std::tranform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
+    std::transform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
   }
 
   void scale(const T *d, const T *e) {
-    std::transform(c.begin(), c.end(), e, c.begin(), std::multiply<T>());
-    std::transform(b.begin(), b.end(), d, b.begin(), std::multiply<T>());
+    std::transform(c.begin(), c.end(), e, c.begin(), std::multiplies<T>());
+    std::transform(b.begin(), b.end(), d, b.begin(), std::multiplies<T>());
   }
 
-  // TODO
-  void average_equil(T *d, T *e) {
-    // Average the e_i in Kx
+  // Average the e_i in Kx
+  void constrain_e(T *e) const {
     for (auto& cone : Kx) {
+      if (IsSeparable(cone.cone))
+        continue;
       T sum = static_cast<T>(0.);
-      for (auto i : cone.idx)
-        sum += e[i];
-      for (auto i : cone.idx)
-        e[i] = sum / cone.idx.size();
+      for (int i = 0; i < cone.size; ++i)
+        sum += e[cone.idx[i]];
+      for (int i = 0; i < cone.size; ++i)
+        e[cone.idx[i]] = sum / cone.size;
     }
+  }
 
-    // Average the d_i in Ky
+  // Average the d_i in Ky
+  void constrain_d(T *d) const {
     for (auto& cone : Ky) {
+      if (IsSeparable(cone.cone))
+        continue;
       T sum = static_cast<T>(0.);
-      for (auto i : cone.idx)
-        sum += d[i];
-      for (auto i : cone.idx)
-        d[i] = sum / cone.idx.size();
+      for (int i = 0; i < cone.size; ++i)
+        sum += d[cone.idx[i]];
+      for (int i = 0; i < cone.size; ++i)
+        d[cone.idx[i]] = sum / cone.size;
     }
   }
 };
+
+void MakeRawCone(const std::vector<ConeConstraint> &K,
+                 std::vector<ConeConstraintRaw> *K_raw) {
+  for (const auto& cone_constraint : K) {
+    ConeConstraintRaw raw;
+    raw.size = cone_constraint.idx.size();
+    raw.idx = new CONE_IDX[raw.size];
+    memcpy(raw.idx, cone_constraint.idx.data(), raw.size * sizeof(CONE_IDX));
+    raw.cone = cone_constraint.cone;
+    K_raw->push_back(raw);
+  }
+}
+
 }  // namespace
 
 // Implementation of PogsCone
 template <typename T, typename M, typename P>
-PogsCone<T, M, P>::PogsCone(const M& A)
-    : PogsImplementation(A), Kx(Kx), Ky(Ky) { }
+PogsCone<T, M, P>::PogsCone(const M& A,
+                            const std::vector<ConeConstraint>& Kx,
+                            const std::vector<ConeConstraint>& Ky)
+    : PogsImplementation<T, M, P>(A) {
+  MakeRawCone(Kx, &this->Kx);
+  MakeRawCone(Ky, &this->Ky);
+}
 
 template <typename T, typename M, typename P>
 PogsCone<T, M, P>::~PogsCone() { }
@@ -501,8 +506,8 @@ PogsCone<T, M, P>::~PogsCone() { }
 template <typename T, typename M, typename P>
 PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
                                     const std::vector<T>& c) {
-  PogsObjectiveCone pogs_obj(b, c, Kx, Ky);
-  return PogsImplementation(&pogs_obj);
+  PogsObjectiveCone<T> pogs_obj(b, c, Kx, Ky);
+  return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
 }
 
 // Explicit template instantiation.

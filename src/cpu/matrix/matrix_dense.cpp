@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <functional>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_matrix.h"
@@ -69,7 +70,7 @@ MatrixDense<T>::~MatrixDense() {
   delete info;
   this->_info = 0;
 }
-      
+
 template <typename T>
 int MatrixDense<T>::Init() {
   DEBUG_EXPECT(!this->_done_init);
@@ -111,7 +112,9 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
-int MatrixDense<T>::Equil(T *d, T *e) {
+int MatrixDense<T>::Equil(T *d, T *e,
+                          const std::function<void(T*)> &constrain_d,
+                          const std::function<void(T*)> &constrain_e) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -135,7 +138,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   }
 
   // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too. 
+  // of sign bits too.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
       SetSignSingle(_data + num_chars * 8, sign + num_chars,
@@ -147,7 +150,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   }
 
   // Perform Sinkhorn-Knopp equilibration.
-  SinkhornKnopp(this, d, e);
+  SinkhornKnopp(this, d, e, constrain_d, constrain_e);
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
@@ -190,7 +193,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
 
   DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
       gsl::blas_nrm2(&d_vec), gsl::blas_nrm2(&e_vec));
-  
+
   delete [] sign;
 
   return 0;

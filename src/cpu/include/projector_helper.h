@@ -1,13 +1,12 @@
 #ifndef PROJECTOR_HELPER_H_
 #define PROJECTOR_HELPER_H_
 
-#include "gsl/gsl_blas.h" 
-#include "gsl/gsl_vector.h" 
-#include "matrix/matrix.h" 
-#include "util.h" 
+#include "gsl/gsl_blas.h"
+#include "gsl/gsl_vector.h"
+#include "matrix/matrix.h"
+#include "util.h"
 
 namespace pogs {
-namespace {
 
 // Check that (x, y) satisfies two conditions
 //   1. y = Ax
@@ -18,7 +17,7 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
                      const T *x, const T *y, T s, T tol) {
   gsl::vector<T> x_ = gsl::vector_calloc<T>(A->Cols());
   gsl::vector<T> y_ = gsl::vector_calloc<T>(A->Rows());
-  
+
   // Check residual
   gsl::vector_memcpy(&x_, x);
   gsl::vector_memcpy(&y_, y);
@@ -40,7 +39,6 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   gsl::vector_free(&y_);
 }
 
-}  // namespace
 }  // namespace pogs
 
 #endif  // PROJECTOR_HELPER_H_
