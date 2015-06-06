@@ -19,6 +19,7 @@ typedef unsigned int CONE_IDX;
 
 enum Cone { kConeZero,       // { x : x = 0 }
             kConeNonNeg,     // { x : x >= 0 }
+            kConeNonPos,     // { x : x <= 0 }
             kConeSoc,        // { (p, x) : ||x||_2 <= p }
             kConeSdp,        // { X : X >= 0 }
             kConeExpPrimal,  // { (x, y, z) : y > 0, y e^(x/y) <= z }
@@ -35,7 +36,7 @@ struct ConeConstraintRaw {
   Cone cone;
 };
 
-bool IsSeparable(Cone cone) {
+inline bool IsSeparable(Cone cone) {
   if (cone == kConeZero || cone == kConeNonNeg)
     return true;
   return false;
@@ -88,6 +89,12 @@ inline void ProxConeNonNegCpu(const ConeConstraintRaw& cone_constr, T *v) {
 }
 
 template <typename T>
+inline void ProxConeNonPosCpu(const ConeConstraintRaw& cone_constr, T *v) {
+  auto f = [](T x) { return std::min(x, static_cast<T>(0)); };
+  ApplyCpu(f, cone_constr, v);
+}
+
+template <typename T>
 inline void ProxConeSocCpu(const ConeConstraintRaw& cone_constr, T *v) {
   T nrm = static_cast<T>(0);
   for (CONE_IDX i = 1; i < cone_constr.size; ++i)
@@ -134,6 +141,7 @@ void ProxEvalConeCpu(const std::vector<ConeConstraintRaw>& cone_constr_vec,
     switch (cone_constr.cone) {
       case kConeZero: default: ProxConeZeroCpu(cone_constr, x_out); break;
       case kConeNonNeg: ProxConeNonNegCpu(cone_constr, x_out); break;
+      case kConeNonPos: ProxConeNonPosCpu(cone_constr, x_out); break;
       case kConeSoc: ProxConeSocCpu(cone_constr, x_out); break;
       case kConeSdp: ProxConeSdpCpu(cone_constr, x_out); break;
       case kConeExpPrimal: ProxConeExpPrimalCpu(cone_constr, x_out); break;
@@ -192,6 +200,13 @@ template <typename T>
 inline void ProxConeNonNegGpu(const ConeConstraintRaw& cone_constr, T *v,
                               int stream) {
   auto f = [](T x) { return Max(static_cast<T>(0), x); };
+  ApplyGpu(f, cone_constr.idx, cone_constr.size, v, stream);
+}
+
+template <typename T>
+inline void ProxConeNonPosGpu(const ConeConstraintRaw& cone_constr, T *v,
+                              int stream) {
+  auto f = [](T x) { return Min(static_cast<T>(0), x); };
   ApplyGpu(f, cone_constr.idx, cone_constr.size, v, stream);
 }
 
@@ -256,6 +271,7 @@ void ProxEvalConeGpu(const std::vector<ConeConstraintRaw>& cone_constr_vec,
     switch (cone_constr.cone) {
       case kConeZero: default: ProxConeZeroGpu(cone_constr, x_out, i); break;
       case kConeNonNeg: ProxConeNonNegGpu(cone_constr, x_out, i); break;
+      case kConeNonPos: ProxConeNonNegGpu(cone_constr, x_out, i); break;
       case kConeSoc: ProxConeSocGpu(cone_constr, x_out, i); break;
       case kConeSdp: ProxConeSdpGpu(cone_constr, x_out, i); break;
       case kConeExpPrimal: ProxConeExpPrimalGpu(cone_constr, x_out, i); break;
