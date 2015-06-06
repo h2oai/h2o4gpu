@@ -28,16 +28,18 @@ enum Cone { kConeZero,       // { x : x = 0 }
 struct ConeConstraint {
   Cone cone;
   std::vector<CONE_IDX> idx;
+  ConeConstraint(Cone cone, const std::vector<CONE_IDX>& idx)
+      : cone(cone), idx(idx) { };
 };
 
 struct ConeConstraintRaw {
+  Cone cone;
   CONE_IDX *idx;
   CONE_IDX size;
-  Cone cone;
 };
 
 inline bool IsSeparable(Cone cone) {
-  if (cone == kConeZero || cone == kConeNonNeg)
+  if (cone == kConeZero || cone == kConeNonNeg || cone == kConeNonPos)
     return true;
   return false;
 }

@@ -383,11 +383,11 @@ class PogsObjectiveSeparable : public PogsObjective<T> {
 
   void scale(const T *d, const T *e) {
     auto divide = [](FunctionObj<T> fi, T di) {
-      fi.a *= di; fi.d *= di; fi.e *= di * di; return fi;
+      fi.a /= di; fi.d /= di; fi.e /= di * di; return fi;
     };
     std::transform(f.begin(), f.end(), d, f.begin(), divide);
     auto multiply = [](FunctionObj<T> gi, T ei) {
-      gi.a /= ei; gi.d /= ei; gi.e /= ei * ei; return gi;
+      gi.a *= ei; gi.d *= ei; gi.e *= ei * ei; return gi;
     };
     std::transform(g.begin(), g.end(), e, g.begin(), multiply);
   }
