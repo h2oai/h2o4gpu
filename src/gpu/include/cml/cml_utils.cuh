@@ -124,7 +124,7 @@ class strided_range {
   // Construct strided_range for the range [first,last).
   strided_range(It first, It last, diff_t stride)
       : first(first), last(last), stride(stride) { }
- 
+
   strided_iterator_t begin() const {
     return PermutationIt(first, TransformIt(CountingIt(0), StrideF(stride)));
   }
@@ -132,7 +132,7 @@ class strided_range {
   strided_iterator_t end() const {
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
-  
+
  protected:
   It first;
   It last;

@@ -2,10 +2,10 @@ Package: pogs
 Type: Package
 Title: Proximal Operator Graph Solver
 Version: 1.0
-Date: 2014-07-02
+Date: 2015-06-02
 Author: Chris Fougner
-Maintainer: Chris Fougner <fougner@stanford.edu>
+Maintainer: Chris Fougner <chris.fougner@gmail.com>
 Description: Solver for convex optimizaation problems in the form f(Ax) + g(x).
-License: GPL
+License: BSD 3
 Depends:
     Matrix

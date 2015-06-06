@@ -1,5 +1,5 @@
-#ifndef PROJECTOR_PROJECTOR_CGLS_H_ 
-#define PROJECTOR_PROJECTOR_CGLS_H_ 
+#ifndef PROJECTOR_PROJECTOR_CGLS_H_
+#define PROJECTOR_PROJECTOR_CGLS_H_
 
 #include "projector/projector.h"
 
@@ -18,7 +18,7 @@ class ProjectorCgls : Projector<T, M> {
  public:
   ProjectorCgls(const M& A);
   ~ProjectorCgls();
-  
+
   int Init();
 
   int Project(const T *x0, const T *y0, T s, T *x, T *y, T tol);

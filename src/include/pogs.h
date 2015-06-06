@@ -7,22 +7,25 @@
 
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
-#include "prox_lib.h"
 
+// TODO: this isn't so great. Doesn't follow style guide.
+namespace pogs { template <typename T> class FunctionObj; }
+namespace pogs { template <typename T> class ConeConstraint; }
+namespace pogs { template <typename T> class PogsObjective; }
 
 namespace pogs {
 
-static const std::string POGS_VERSION = "0.2.0";
+static const char POGS_VERSION[] = "0.2.0";
 
 // Defaults.
-const double       kAbsTol      = 1e-4;
-const double       kRelTol      = 1e-3;
-const double       kRhoInit     = 1.;
-const unsigned int kVerbose     = 2u;   // 0...4
-const unsigned int kMaxIter     = 2500u;
-const unsigned int kInitIter    = 10u;
-const bool         kAdaptiveRho = true;
-const bool         kGapStop     = false;
+const double       kAbsTol       = 1e-4;
+const double       kRelTol       = 1e-3;
+const double       kRhoInit      = 1.;
+const unsigned int kVerbose      = 2u;   // 0...4
+const unsigned int kMaxIter      = 2500u;
+const unsigned int kInitIter     = 10u;
+const bool         kAdaptiveRho  = true;
+const bool         kGapStop      = false;
 
 // Status messages
 enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
@@ -32,18 +35,17 @@ enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
                   POGS_NAN_FOUND,  // Encountered nan.
                   POGS_ERROR };    // Generic error, check logs.
 
-
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
-class Pogs {
- private:
+class PogsImplementation {
+ protected:
   // Data
   M _A;
   P _P;
   T *_de, *_z, *_zt, _rho;
   bool _done_init;
 
-  // Setup matrix _A and solver _LS
+  // Setup matrix _A and projector _P.
   int _Init();
 
   // Output.
@@ -55,14 +57,13 @@ class Pogs {
   unsigned int _max_iter, _init_iter, _verbose;
   bool _adaptive_rho, _gap_stop, _init_x, _init_lambda;
 
+  // Solver
+  PogsStatus Solve(PogsObjective<T> *obj);
+
  public:
   // Constructor and Destructor.
-  Pogs(const M &A);
-  ~Pogs();
-  
-  // Solve for specific objective.
-  PogsStatus Solve(const std::vector<FunctionObj<T> >& f,
-                   const std::vector<FunctionObj<T> >& g);
+  PogsImplementation(const M &A);
+  ~PogsImplementation();
 
   // Getters for solution variables and parameters.
   const T*     GetX()           const { return _x; }
@@ -100,13 +101,46 @@ class Pogs {
   }
 };
 
+template <typename T, typename M, typename P>
+class PogsSeparable : public PogsImplementation<T, M, P> {
+ public:
+  PogsSeparable(const M &A);
+  ~PogsSeparable();
+
+  // Solve for specific objective.
+  PogsStatus Solve(const std::vector<FunctionObj>& f,
+                   const std::vector<FunctionObj>& g);
+};
+
+template <typename T, typename M, typename P>
+class PogsCone : public PogsImplementation<T, M, P> {
+ public:
+  PogsCone(const M &A,
+           const std::vector<ConeConstraint<T> >& Kx,
+           const std::vector<ConeConstraint<T> >& Ky);
+  ~PogsCone();
+
+  // Solve for specific objective.
+  PogsStatus Solve(const std::vector<T>& b, const std::vector<T>& c);
+
+ private:
+  const std::vector<ConeConstraint<T> >& Kx;
+  const std::vector<ConeConstraint<T> >& Ky;
+};
+
 // Templated typedefs
 #ifndef __CUDACC__
 template <typename T, typename M>
-using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
+using PogsDirect = PogsSeparable<T, M, ProjectorDirect<T, M> >;
 
 template <typename T, typename M>
-using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
+using PogsIndirect = PogsSeparable<T, M, ProjectorCgls<T, M> >;
+
+template <typename T, typename M>
+using PogsDirectCone = PogsCone<T, M, ProjectorDirect<T, M> >;
+
+template <typename T, typename M>
+using PogsIndirectCone = PogsCone<T, M, ProjectorDirect<T, M> >;
 #endif
 
 // String version of status message.
@@ -124,7 +158,7 @@ inline std::string PogsStatusString(PogsStatus status) {
       return "Encountered NaN";
     case POGS_ERROR:
     default:
-      return "Error";  
+      return "Error";
   }
 }
 

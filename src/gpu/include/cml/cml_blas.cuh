@@ -153,7 +153,7 @@ T blas_nrm2(cublasHandle_t handle, const vector<T> *x) {
       thrust::device_pointer_cast(x->data),
       thrust::device_pointer_cast(x->data + x->stride * x->size), x->stride);
   T nrm2 = sqrt(thrust::transform_reduce(strided_x.begin(), strided_x.end(),
-      Square<T>(), static_cast<T>(0.0), thrust::plus<T>()));
+      Square<T>(), static_cast<T>(0), thrust::plus<T>()));
   return nrm2;
 }
 

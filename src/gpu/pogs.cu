@@ -205,7 +205,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     Printf(__HBAR__
         "           POGS v%s - Proximal Graph Solver                      \n"
         "           (c) Christopher Fougner, Stanford University 2014-2015\n",
-        POGS_VERSION.c_str());
+        POGS_VERSION);
   }
   if (_verbose > 1) {
     Printf(__HBAR__
@@ -395,7 +395,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&ztemp);
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
-  
+
   return status;
 }
 

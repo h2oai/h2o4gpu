@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <numeric>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_vector.h"
@@ -35,10 +36,19 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
   }
 };
 
+template <typename T>
+class PogsObjective {
+ public:
+  virtual T evaluate(const T *x, const T *y) const = 0;
+  virtual void prox(const T *x_in, const T *y_in, T *x_out, T *y_out) const = 0;
+  virtual void scale(const T *d, const T *e) = 0;
+  virtual void average_equil(T *d, T *e) const = 0;
+};
+
 }  // namespace
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+PogsImplementation<T, M, P>::PogsImplementation(const M &A)
     : _A(A), _P(_A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -60,7 +70,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 }
 
 template <typename T, typename M, typename P>
-int Pogs<T, M, P>::_Init() {
+int PogsImplementation<T, M, P>::_Init() {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -87,8 +97,7 @@ int Pogs<T, M, P>::_Init() {
 }
 
 template <typename T, typename M, typename P>
-PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
-                                const std::vector<FunctionObj<T> > &g) {
+PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin   = static_cast<T>(1.05);
@@ -113,8 +122,6 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Extract values from pogs_data
   size_t m = _A.Rows();
   size_t n = _A.Cols();
-  std::vector<FunctionObj<T> > f_cpu = f;
-  std::vector<FunctionObj<T> > g_cpu = g;
 
   // Allocate data for ADMM variables.
   gsl::vector<T> de    = gsl::vector_view_array(_de, m + n);
@@ -136,11 +143,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector<T> xtemp = gsl::vector_subvector(&ztemp, 0, n);
   gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
 
-  // Scale f and g to account for diagonal scaling e and d.
-  std::transform(f_cpu.begin(), f_cpu.end(), d.data, f_cpu.begin(),
-      ApplyOp<T, std::divides<T> >(std::divides<T>()));
-  std::transform(g_cpu.begin(), g_cpu.end(), e.data, g_cpu.begin(),
-      ApplyOp<T, std::multiplies<T> >(std::multiplies<T>()));
+  // Scale objective to account for diagonal scaling e and d.
+  obj->scale(d, e);
 
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
@@ -187,7 +191,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     Printf(__HBAR__
         "           POGS v%s - Proximal Graph Solver                      \n"
         "           (c) Christopher Fougner, Stanford University 2014-2015\n",
-        POGS_VERSION.c_str());
+        POGS_VERSION);
   }
   if (_verbose > 1) {
     Printf(__HBAR__
@@ -209,8 +213,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Evaluate Proximal Operators
     gsl::blas_axpy(-kOne, &zt, &z);
-    ProxEval(g_cpu, _rho, x.data, x12.data);
-    ProxEval(f_cpu, _rho, y.data, y12.data);
+    obj->prox(x.data, y.data, x12.data, y12.data, rho);
 
     // Compute gap, optval, and tolerances.
     gsl::blas_axpy(-kOne, &z12, &z);
@@ -262,7 +265,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     if ((_verbose > 2 && k % 10  == 0) ||
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
-      T optval = FuncEval(f_cpu, y12.data) + FuncEval(g_cpu, x12.data);
+      T optval = obj->eval(x12.data, y12.data);
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
@@ -309,7 +312,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
 
   // Get optimal value
-  _optval = FuncEval(f_cpu, y12.data) + FuncEval(g_cpu, x12.data);
+  _optval = obj->eval(x12.data, y12.data);
 
   // Check status
   PogsStatus status;
@@ -381,24 +384,164 @@ Pogs<T, M, P>::~Pogs() {
   _x = _y = _mu = _lambda = 0;
 }
 
+// Pogs for separable problems
+namespace {
+template <typename T>
+class PogsObjectiveSeparable : public PogsObjective<T> {
+ private:
+   std::vector<FunctionObj<T> > f, g;
+ public:
+  PogsObjectiveSeparable(const std::vector<FunctionObj<T> >& f,
+                         const std::vector<FunctionObj<T> >& g)
+      : f(f), g(g) { }
+
+  T evaluate(const T *x, const T *y) const {
+    return FuncEval(f, y) + FuncEval(g, x);
+  }
+  void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
+    ProxEval(g, _rho, x.data, x12.data);
+    ProxEval(f, _rho, y.data, y12.data);
+  }
+
+  void scale(const T *d, const T *e) {
+    auto divide = [](FunctionObj<T> fi, T di) {
+      fi.a *= di; fi.d *= di; fi.e *= di * di; return fi;
+    };
+    std::transform(f.begin(), f.end(), d.data, f.begin(), divide);
+    auto multiply = [](FunctionObj<T> gi, T ei) {
+      gi.a /= ei; gi.d /= ei; gi.e /= ei * ei; return gi;
+    };
+    std::transform(g.begin(), g.end(), e.data, g.begin(), multiply);
+  }
+};
+}  // namespace
+
+// Implementation of PogsSeparable
+template <typename T, typename M, typename P>
+PogsSeparable<T, M, P>::PogsSeparable(const M& A) : PogsImplementation(A) { }
+
+template <typename T, typename M, typename P>
+PogsSeparable<T, M, P>::~PogsSeparable() { }
+
+template <typename T, typename M, typename P>
+PogsStatus PogsSeparable<T, M, P>::Solve(const std::vector<FunctionObj>& f,
+                                         const std::vector<FunctionObj>& g) {
+  PogsObjectiveSeparable pogs_obj(f, g);
+  return PogsImplementation(&pogs_obj);
+}
+
+// Pogs for cone problems
+namespace {
+template <typename T>
+class PogsObjectiveCone : public PogsObjective<T> {
+ private:
+  std::vector<T> b, c;
+  const std::vector<ConeConstraint<T> > &Kx, &Ky;
+ public:
+  PogsObjectiveSeparable(const std::vector<T>& b,
+                         const std::vector<T>& c,
+                         const std::vector<ConeConstraint<T> >& Kx,
+                         const std::vector<ConeConstraint<T> >& Ky)
+      : b(b), c(c), Kx(Kx), Ky(Ky) { }
+
+  T evaluate(const T *x, const T*) const {
+    return std::inner_product(c.begin(), c.end(), x, static_cast<T>(0));
+  }
+
+  void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
+    memcpy(x_out, x_in, c.size());
+    auto x_updater = [=rho](T ci, T xi) { return xi + c / rho; };
+    std::transform(c.begin(), c.end(), x_out, x_out, x_updater);
+
+    memcpy(y_out, y_in, b.size());
+    std::transform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
+
+    ProxEvalConeCpu(Kx, c.size(), x_in, x_out);
+    ProxEvalConeCpu(Ky, b.size(), y_in, y_out);
+
+    std::tranform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
+  }
+
+  void scale(const T *d, const T *e) {
+    std::transform(c.begin(), c.end(), e, c.begin(), std::multiply<T>());
+    std::transform(b.begin(), b.end(), d, b.begin(), std::multiply<T>());
+  }
+
+  // TODO
+  void average_equil(T *d, T *e) {
+    // Average the e_i in Kx
+    for (auto& cone : Kx) {
+      T sum = static_cast<T>(0.);
+      for (auto i : cone.idx)
+        sum += e[i];
+      for (auto i : cone.idx)
+        e[i] = sum / cone.idx.size();
+    }
+
+    // Average the d_i in Ky
+    for (auto& cone : Ky) {
+      T sum = static_cast<T>(0.);
+      for (auto i : cone.idx)
+        sum += d[i];
+      for (auto i : cone.idx)
+        d[i] = sum / cone.idx.size();
+    }
+  }
+};
+}  // namespace
+
+// Implementation of PogsCone
+template <typename T, typename M, typename P>
+PogsCone<T, M, P>::PogsCone(const M& A)
+    : PogsImplementation(A), Kx(Kx), Ky(Ky) { }
+
+template <typename T, typename M, typename P>
+PogsCone<T, M, P>::~PogsCone() { }
+
+template <typename T, typename M, typename P>
+PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
+                                    const std::vector<T>& c) {
+  PogsObjectiveCone pogs_obj(b, c, Kx, Ky);
+  return PogsImplementation(&pogs_obj);
+}
+
 // Explicit template instantiation.
 // Dense direct.
-template class Pogs<double, MatrixDense<double>,
+template class PogsSeparable<double, MatrixDense<double>,
     ProjectorDirect<double, MatrixDense<double> > >;
-template class Pogs<float, MatrixDense<float>,
+template class PogsSeparable<float, MatrixDense<float>,
     ProjectorDirect<float, MatrixDense<float> > >;
 
 // Dense indirect.
-template class Pogs<double, MatrixDense<double>,
+template class PogsSeparable<double, MatrixDense<double>,
     ProjectorCgls<double, MatrixDense<double> > >;
-template class Pogs<float, MatrixDense<float>,
+template class PogsSeparable<float, MatrixDense<float>,
     ProjectorCgls<float, MatrixDense<float> > >;
 
 // Sparse indirect.
-template class Pogs<double, MatrixSparse<double>,
+template class PogsSeparable<double, MatrixSparse<double>,
     ProjectorCgls<double, MatrixSparse<double> > >;
-template class Pogs<float, MatrixSparse<float>,
+template class PogsSeparable<float, MatrixSparse<float>,
     ProjectorCgls<float, MatrixSparse<float> > >;
+
+// Dense direct.
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorDirect<double, MatrixDense<double> > >;
+template class PogsCone<float, MatrixDense<float>,
+    ProjectorDirect<float, MatrixDense<float> > >;
+
+// Dense indirect.
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorCgls<double, MatrixDense<double> > >;
+template class PogsCone<float, MatrixDense<float>,
+    ProjectorCgls<float, MatrixDense<float> > >;
+
+// Sparse indirect.
+template class PogsCone<double, MatrixSparse<double>,
+    ProjectorCgls<double, MatrixSparse<double> > >;
+template class PogsCone<float, MatrixSparse<float>,
+    ProjectorCgls<float, MatrixSparse<float> > >;
+
 
 }  // namespace pogs
 
