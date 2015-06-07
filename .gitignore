@@ -1,0 +1,32 @@
+# Compiled Object files #
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled Dynamic Libraries #
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries #
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables #
+*.exe
+*.out
+*.app
+
+# CUDA #
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
+
+# Entire build directory #
+/src/build/*
