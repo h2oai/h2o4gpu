@@ -105,7 +105,7 @@ void PopulateParams(SEXP params, pogs::Pogs<T, M, P> *pogs_data) {
 
 template <typename T>
 void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
-                SEXP u, SEXP v, SEXP opt, SEXP status) {
+                SEXP mu, SEXP nu, SEXP opt, SEXP status) {
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
@@ -139,8 +139,8 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
     // Get Solution
     memcpy(REAL(x) + i * n, pogs_data.GetX(), n * sizeof(T));
     memcpy(REAL(y) + i * m, pogs_data.GetY(), m * sizeof(T));
-    memcpy(REAL(u) + i * n, pogs_data.GetMu(), n * sizeof(T));
-    memcpy(REAL(v) + i * m, pogs_data.GetLambda(), m * sizeof(T));
+    memcpy(REAL(mu) + i * n, pogs_data.GetMu(), n * sizeof(T));
+    memcpy(REAL(nu) + i * m, pogs_data.GetNu(), m * sizeof(T));
 
     REAL(opt)[i] = pogs_data.GetOptval();
   }
@@ -149,7 +149,7 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
 extern "C" {
 SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   // Setup output.
-  SEXP x, y, u, v, opt, status, ans, retnames;
+  SEXP x, y, mu, nu, opt, status, ans, retnames;
   SEXP Adim = GET_DIM(A);
   size_t m = INTEGER(Adim)[0];
   size_t n = INTEGER(Adim)[1];
@@ -171,14 +171,14 @@ SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   SET_VECTOR_ELT(ans, 1, y);
 
   // Allocate nu.
-  PROTECT(v = allocMatrix(REALSXP, m, num_obj));
-  SET_STRING_ELT(retnames, 2, mkChar("v"));
-  SET_VECTOR_ELT(ans, 2, v);
+  PROTECT(nu = allocMatrix(REALSXP, m, num_obj));
+  SET_STRING_ELT(retnames, 2, mkChar("nu"));
+  SET_VECTOR_ELT(ans, 2, nu);
 
   // Allocate mu.
-  PROTECT(u = allocMatrix(REALSXP, n, num_obj));
-  SET_STRING_ELT(retnames, 3, mkChar("u"));
-  SET_VECTOR_ELT(ans, 3, u);
+  PROTECT(mu = allocMatrix(REALSXP, n, num_obj));
+  SET_STRING_ELT(retnames, 3, mkChar("mu"));
+  SET_VECTOR_ELT(ans, 3, mu);
 
   // Allocate opt.
   PROTECT(opt = NEW_NUMERIC(num_obj));
@@ -190,7 +190,7 @@ SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   SET_STRING_ELT(retnames, 5, mkChar("status"));
   SET_VECTOR_ELT(ans, 5, status);
 
-  SolverWrap<double>(A, f, g, params, x, y, u, v, opt, status);
+  SolverWrap<double>(A, f, g, params, x, y, mu, nu, opt, status);
 
   UNPROTECT(8);
   return ans;
