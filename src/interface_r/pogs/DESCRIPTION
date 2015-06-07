@@ -5,7 +5,7 @@ Version: 1.0
 Date: 2015-06-02
 Author: Chris Fougner
 Maintainer: Chris Fougner <chris.fougner@gmail.com>
-Description: Solver for convex optimizaation problems in the form f(Ax) + g(x).
+Description: Solver for convex optimization problems in the form f(Ax) + g(x).
 License: BSD 3
 Depends:
     Matrix

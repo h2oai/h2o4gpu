@@ -259,8 +259,13 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 }  // namespace
 
 // Explicit template instantiation.
+#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
 template class MatrixDense<double>;
+#endif
+
+#if !defined(POGS_SINGLE) || POGS_SINGLE==1
 template class MatrixDense<float>;
+#endif
 
 }  // namespace pogs
 

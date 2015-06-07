@@ -383,11 +383,11 @@ class PogsObjectiveSeparable : public PogsObjective<T> {
 
   void scale(const T *d, const T *e) {
     auto divide = [](FunctionObj<T> fi, T di) {
-      fi.a *= di; fi.d *= di; fi.e *= di * di; return fi;
+      fi.a /= di; fi.d /= di; fi.e /= di * di; return fi;
     };
     std::transform(f.begin(), f.end(), d, f.begin(), divide);
     auto multiply = [](FunctionObj<T> gi, T ei) {
-      gi.a /= ei; gi.d /= ei; gi.e /= ei * ei; return gi;
+      gi.a *= ei; gi.d *= ei; gi.e *= ei * ei; return gi;
     };
     std::transform(g.begin(), g.end(), e, g.begin(), multiply);
   }
@@ -511,42 +511,38 @@ PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
 }
 
 // Explicit template instantiation.
+#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
 // Dense direct.
 template class PogsSeparable<double, MatrixDense<double>,
     ProjectorDirect<double, MatrixDense<double> > >;
-template class PogsSeparable<float, MatrixDense<float>,
-    ProjectorDirect<float, MatrixDense<float> > >;
-
-// Dense indirect.
 template class PogsSeparable<double, MatrixDense<double>,
     ProjectorCgls<double, MatrixDense<double> > >;
-template class PogsSeparable<float, MatrixDense<float>,
-    ProjectorCgls<float, MatrixDense<float> > >;
-
-// Sparse indirect.
 template class PogsSeparable<double, MatrixSparse<double>,
     ProjectorCgls<double, MatrixSparse<double> > >;
+
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorDirect<double, MatrixDense<double> > >;
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorCgls<double, MatrixDense<double> > >;
+template class PogsCone<double, MatrixSparse<double>,
+    ProjectorCgls<double, MatrixSparse<double> > >;
+#endif
+
+#if !defined(POGS_SINGLE) || POGS_SINGLE==1
+template class PogsSeparable<float, MatrixDense<float>,
+    ProjectorDirect<float, MatrixDense<float> > >;
+template class PogsSeparable<float, MatrixDense<float>,
+    ProjectorCgls<float, MatrixDense<float> > >;
 template class PogsSeparable<float, MatrixSparse<float>,
     ProjectorCgls<float, MatrixSparse<float> > >;
 
-// Dense direct.
-template class PogsCone<double, MatrixDense<double>,
-    ProjectorDirect<double, MatrixDense<double> > >;
 template class PogsCone<float, MatrixDense<float>,
     ProjectorDirect<float, MatrixDense<float> > >;
-
-// Dense indirect.
-template class PogsCone<double, MatrixDense<double>,
-    ProjectorCgls<double, MatrixDense<double> > >;
 template class PogsCone<float, MatrixDense<float>,
     ProjectorCgls<float, MatrixDense<float> > >;
-
-// Sparse indirect.
-template class PogsCone<double, MatrixSparse<double>,
-    ProjectorCgls<double, MatrixSparse<double> > >;
 template class PogsCone<float, MatrixSparse<float>,
     ProjectorCgls<float, MatrixSparse<float> > >;
-
+#endif
 
 }  // namespace pogs
 

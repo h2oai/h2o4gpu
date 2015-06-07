@@ -1,18 +1,20 @@
+#include <numeric>
 #include <random>
 #include <vector>
 
+#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
 // Linear program in equality form.
 //   minimize    c^T * x
-//   subject to  Ax = b
+//   subject to  b - Ax = 0
 //               x >= 0.
 //
 // See <pogs>/matlab/examples/lp_eq.m for detailed description.
 template <typename T>
 double LpEq(size_t m, size_t n) {
-  std::vector<T> A((m + 1) * n);
+  std::vector<T> A(m * n), b(m, static_cast<T>(0)), c(n);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
@@ -21,13 +23,10 @@ double LpEq(size_t m, size_t n) {
   // Generate A and c according to:
   //   A = 1 / n * rand(m, n)
   //   c = 1 / n * rand(n, 1)
-  for (unsigned int i = 0; i < (m + 1) * n; ++i)
+  for (unsigned int i = 0; i < m * n; ++i)
     A[i] = u_dist(generator) / static_cast<T>(n);
-
-  pogs::MatrixDense<T> A_('r', m + 1, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
-  std::vector<FunctionObj<T> > f;
-  std::vector<FunctionObj<T> > g;
+  for (unsigned int i = 0; i < n; ++i)
+    c[i] = u_dist(generator) / static_cast<T>(n);
 
   // Generate b according to:
   //   v = rand(n, 1)
@@ -36,22 +35,25 @@ double LpEq(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     v[i] = u_dist(generator);
 
-  f.reserve(m + 1);
   for (unsigned int i = 0; i < m; ++i) {
-    T b_i = static_cast<T>(0);
     for (unsigned int j = 0; j < n; ++j)
-      b_i += A[i * n + j] * v[j];
-    f.emplace_back(kIndEq0, static_cast<T>(1), b_i);
+      b[i] += A[i * n + j] * v[j];
   }
-  f.emplace_back(kIdentity);
 
-  g.reserve(n);
-  for (unsigned int i = 0; i < n; ++i)
-    g.emplace_back(kIndGe0);
+  std::vector<ConeConstraint> Kx, Ky;
+  std::vector<CONE_IDX> idx_x(n), idx_y(m);
+  std::iota(std::begin(idx_x), std::end(idx_x), 0);
+  std::iota(std::begin(idx_y), std::end(idx_y), 0);
+  Kx.emplace_back(kConeNonNeg, idx_x);
+  Ky.emplace_back(kConeZero, idx_y);
+
+  pogs::MatrixDense<T> A_('r', m, n, A.data());
+  pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   double t = timer<double>();
   pogs_data.SetVerbose(5);
-  pogs_data.Solve(f, g);
+  //pogs_data.SetMaxIter(21);
+  pogs_data.Solve(b, c);
 
   return timer<double>() - t;
 }

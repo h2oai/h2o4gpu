@@ -305,8 +305,13 @@ void MultDiag(const T *d, const T *e, POGS_INT m, POGS_INT n, POGS_INT nnz,
 
 }  // namespace
 
+#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
 template class MatrixSparse<double>;
+#endif
+
+#if !defined(POGS_SINGLE) || POGS_SINGLE==1
 template class MatrixSparse<float>;
+#endif
 
 }  // namespace pogs
 

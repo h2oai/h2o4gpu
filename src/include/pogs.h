@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "projector/projector_direct.h"
+#include "matrix/matrix_dense.h"
+#include "matrix/matrix_sparse.h"
 #include "projector/projector_cgls.h"
+#include "projector/projector_direct.h"
 #include "prox_lib.h"
 #include "prox_lib_cone.h"
 
