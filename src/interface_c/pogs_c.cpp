@@ -65,7 +65,7 @@ int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
   if (ord == COL_MAJ) {
     return Pogs<double, COL_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
         g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-        verbose, static_cast<bool>(adaptive_rho),s
+        verbose, static_cast<bool>(adaptive_rho),
         static_cast<bool>(gap_stop), x, y, nu, optval, final_iter);
   } else {
     return Pogs<double, ROW_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
