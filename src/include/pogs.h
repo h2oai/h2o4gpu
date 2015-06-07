@@ -151,7 +151,7 @@ template <typename T, typename M>
 using PogsDirectCone = PogsCone<T, M, ProjectorDirect<T, M> >;
 
 template <typename T, typename M>
-using PogsIndirectCone = PogsCone<T, M, ProjectorDirect<T, M> >;
+using PogsIndirectCone = PogsCone<T, M, ProjectorCgls<T, M> >;
 #endif
 
 // String version of status message.

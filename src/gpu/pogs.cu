@@ -1,10 +1,10 @@
 #include "pogs.h"
 
+#include <algorithm>
+
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/transform.h>
-
-#include <algorithm>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_vector.cuh"
@@ -24,24 +24,8 @@
 
 namespace pogs {
 
-namespace {
-
-template <typename T, typename Op>
-struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
-  Op binary_op;
-  ApplyOp(Op binary_op) : binary_op(binary_op) { }
-  __host__ __device__ FunctionObj<T> operator()(FunctionObj<T> &h, T x) {
-    h.a = binary_op(h.a, x);
-    h.d = binary_op(h.d, x);
-    h.e = binary_op(binary_op(h.e, x), x);
-    return h;
-  }
-};
-
-}  // namespace
-
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+PogsImplementation<T, M, P>::PogsImplementation(const M &A)
     : _A(A), _P(_A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -63,7 +47,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 }
 
 template <typename T, typename M, typename P>
-int Pogs<T, M, P>::_Init() {
+int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -81,7 +65,9 @@ int Pogs<T, M, P>::_Init() {
   CUDA_CHECK_ERR();
 
   _A.Init();
-  _A.Equil(_de, _de + m);
+  _A.Equil(_de, _de + m,
+           std::function<void(T*)>([obj](T *v){ obj->constrain_d(v); }),
+           std::function<void(T*)>([obj](T *v){ obj->constrain_e(v); }));
   _P.Init();
   CUDA_CHECK_ERR();
 
@@ -89,8 +75,7 @@ int Pogs<T, M, P>::_Init() {
 }
 
 template <typename T, typename M, typename P>
-PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
-                                const std::vector<FunctionObj<T> > &g) {
+PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin   = static_cast<T>(1.05);
@@ -110,13 +95,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
-    _Init();
+    _Init(obj);
 
   // Extract values from pogs_data
   size_t m = _A.Rows();
   size_t n = _A.Cols();
-  thrust::device_vector<FunctionObj<T> > f_gpu = f;
-  thrust::device_vector<FunctionObj<T> > g_gpu = g;
 
   // Create cuBLAS handle.
   cublasHandle_t hdl;
@@ -145,13 +128,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
 
-  // Scale f and g to account for diagonal scaling e and d.
-  thrust::transform(f_gpu.begin(), f_gpu.end(),
-      thrust::device_pointer_cast(d.data), f_gpu.begin(),
-      ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
-  thrust::transform(g_gpu.begin(), g_gpu.end(),
-      thrust::device_pointer_cast(e.data), g_gpu.begin(),
-      ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
+  // Scale objective to account for diagonal scaling e and d.
+  obj->scale(d.data, e.data);
   CUDA_CHECK_ERR();
 
   // Initialize (x, lambda) from (x0, lambda0).
@@ -180,8 +158,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     //   2. \mu = -A^T\lambda
     cml::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
-      ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
-      ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
+//      ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
+//      ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
       _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data,
           kProjTolIni);
       cudaDeviceSynchronize();
@@ -227,8 +205,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Evaluate Proximal Operators
     cml::blas_axpy(hdl, -kOne, &zt, &z);
-    ProxEval(g_gpu, _rho, x.data, x12.data);
-    ProxEval(f_gpu, _rho, y.data, y12.data);
+    obj->prox(x.data, y.data, x12.data, y12.data, _rho);
     CUDA_CHECK_ERR();
 
     // Compute gap, optval, and tolerances.
@@ -290,7 +267,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     if (_verbose > 2 && k % 10  == 0 ||
         _verbose > 1 && k % 100 == 0 ||
         _verbose > 1 && converged) {
-      T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
+      T optval = obj->evaluate(x12.data, y12.data);
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
@@ -339,7 +316,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
 
   // Get optimal value
-  _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
+  _optval = obj->evaluate(x12.data, y12.data);
 
   // Check status
   PogsStatus status;
@@ -400,7 +377,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 }
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::~Pogs() {
+PogsImplementation<T, M, P>::~PogsImplementation() {
   cudaFree(_de);
   cudaFree(_z);
   cudaFree(_zt);
@@ -413,6 +390,203 @@ Pogs<T, M, P>::~Pogs() {
   delete [] _lambda;
   _x = _y = _mu = _lambda = 0;
 }
+
+// Pogs for separable problems
+namespace {
+template <typename T>
+class PogsObjectiveSeparable : public PogsObjective<T> {
+ private:
+   thrust::device_vector<FunctionObj<T> > f, g;
+ public:
+  PogsObjectiveSeparable(const std::vector<FunctionObj<T> >& f,
+                         const std::vector<FunctionObj<T> >& g)
+      : f(f), g(g) { }
+
+  T evaluate(const T *x, const T *y) const {
+    return FuncEval(f, y) + FuncEval(g, x);
+  }
+  void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
+    ProxEval(g, rho, x_in, x_out);
+    ProxEval(f, rho, y_in, y_out);
+  }
+
+  void scale(const T *d, const T *e) {
+    auto divide = [](FunctionObj<T> fi, T di) {
+      fi.a /= di; fi.d /= di; fi.e /= di * di; return fi;
+    };
+    thrust::transform(f.begin(), f.end(), thrust::device_pointer_cast(d),
+        f.begin(), divide);
+    auto multiply = [](FunctionObj<T> gi, T ei) {
+      gi.a *= ei; gi.d *= ei; gi.e *= ei * ei; return gi;
+    };
+    thrust::transform(g.begin(), g.end(), thrust::device_pointer_cast(e),
+        g.begin(), multiply);
+  }
+
+  void constrain_d(T *d) const { }
+  void constrain_e(T *e) const { }
+};
+}  // namespace
+
+// Implementation of PogsSeparable
+template <typename T, typename M, typename P>
+PogsSeparable<T, M, P>::PogsSeparable(const M& A)
+    : PogsImplementation<T, M, P>(A) { }
+
+template <typename T, typename M, typename P>
+PogsSeparable<T, M, P>::~PogsSeparable() { }
+
+template <typename T, typename M, typename P>
+PogsStatus PogsSeparable<T, M, P>::Solve(const std::vector<FunctionObj<T>>& f,
+                                         const std::vector<FunctionObj<T>>& g) {
+  PogsObjectiveSeparable<T> pogs_obj(f, g);
+  return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
+}
+
+// Pogs for cone problems
+namespace {
+template <typename T>
+class PogsObjectiveCone : public PogsObjective<T> {
+ private:
+  thrust::device_vector<T> b, c;
+  const std::vector<ConeConstraintRaw> &Kx, &Ky;
+ public:
+  PogsObjectiveCone(const std::vector<T>& b,
+                    const std::vector<T>& c,
+                    const std::vector<ConeConstraintRaw>& Kx,
+                    const std::vector<ConeConstraintRaw>& Ky)
+      : b(b), c(c), Kx(Kx), Ky(Ky) { }
+
+  T evaluate(const T *x, const T*) const {
+    return thrust::inner_product(c.begin(), c.end(),
+        thrust::device_pointer_cast(x), static_cast<T>(0));
+  }
+
+  void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
+    cudaMemcpy(x_out, x_in, c.size(), cudaMemcpyDeviceToDevice);
+    auto x_updater = [rho](T ci, T xi) { return xi + ci / rho; };
+    thrust::transform(c.begin(), c.end(), thrust::device_pointer_cast(x_out),
+        thrust::device_pointer_cast(x_out), x_updater);
+
+    cudaMemcpy(y_out, y_in, b.size(), cudaMemcpyDeviceToDevice);
+    thrust::transform(b.begin(), b.end(), thrust::device_pointer_cast(y_out),
+        thrust::device_pointer_cast(y_out), thrust::minus<T>());
+
+    ProxEvalConeCpu(Kx, c.size(), x_in, x_out);
+    ProxEvalConeCpu(Ky, b.size(), y_in, y_out);
+
+    thrust::transform(b.begin(), b.end(), y_out, y_out, thrust::minus<T>());
+  }
+
+  void scale(const T *d, const T *e) {
+    thrust::transform(c.begin(), c.end(), thrust::device_pointer_cast(e),
+        c.begin(), thrust::multiplies<T>());
+    thrust::transform(b.begin(), b.end(), thrust::device_pointer_cast(d),
+        b.begin(), thrust::multiplies<T>());
+  }
+
+  // Average the e_i in Kx
+  void constrain_e(T *e) const {
+    for (auto& cone : Kx) {
+      if (IsSeparable(cone.cone))
+        continue;
+      thrust::reduce(thrust::device_pointer_cast(cone.idx),
+          thrust::device_pointer_cast(cone.idx)
+      T sum = static_cast<T>(0.);
+      for (int i = 0; i < cone.size; ++i)
+        sum += e[cone.idx[i]];
+      for (int i = 0; i < cone.size; ++i)
+        e[cone.idx[i]] = sum / cone.size;
+    }
+  }
+
+  // Average the d_i in Ky
+  void constrain_d(T *d) const {
+    for (auto& cone : Ky) {
+      if (IsSeparable(cone.cone))
+        continue;
+      T sum = static_cast<T>(0.);
+      for (int i = 0; i < cone.size; ++i)
+        sum += d[cone.idx[i]];
+      for (int i = 0; i < cone.size; ++i)
+        d[cone.idx[i]] = sum / cone.size;
+    }
+  }
+};
+
+void MakeRawCone(const std::vector<ConeConstraint> &K,
+                 std::vector<ConeConstraintRaw> *K_raw) {
+  for (const auto& cone_constraint : K) {
+    ConeConstraintRaw raw;
+    raw.size = cone_constraint.idx.size();
+    raw.idx = new CONE_IDX[raw.size];
+    memcpy(raw.idx, cone_constraint.idx.data(), raw.size * sizeof(CONE_IDX));
+    raw.cone = cone_constraint.cone;
+    K_raw->push_back(raw);
+  }
+}
+
+}  // namespace
+
+// Implementation of PogsCone
+template <typename T, typename M, typename P>
+PogsCone<T, M, P>::PogsCone(const M& A,
+                            const std::vector<ConeConstraint>& Kx,
+                            const std::vector<ConeConstraint>& Ky)
+    : PogsImplementation<T, M, P>(A) {
+  MakeRawCone(Kx, &this->Kx);
+  MakeRawCone(Ky, &this->Ky);
+}
+
+template <typename T, typename M, typename P>
+PogsCone<T, M, P>::~PogsCone() { }
+
+template <typename T, typename M, typename P>
+PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
+                                    const std::vector<T>& c) {
+  PogsObjectiveCone<T> pogs_obj(b, c, Kx, Ky);
+  return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
+}
+
+// Explicit template instantiation.
+#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
+// Dense direct.
+template class PogsSeparable<double, MatrixDense<double>,
+    ProjectorDirect<double, MatrixDense<double> > >;
+template class PogsSeparable<double, MatrixDense<double>,
+    ProjectorCgls<double, MatrixDense<double> > >;
+template class PogsSeparable<double, MatrixSparse<double>,
+    ProjectorCgls<double, MatrixSparse<double> > >;
+
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorDirect<double, MatrixDense<double> > >;
+template class PogsCone<double, MatrixDense<double>,
+    ProjectorCgls<double, MatrixDense<double> > >;
+template class PogsCone<double, MatrixSparse<double>,
+    ProjectorCgls<double, MatrixSparse<double> > >;
+#endif
+
+#if !defined(POGS_SINGLE) || POGS_SINGLE==1
+template class PogsSeparable<float, MatrixDense<float>,
+    ProjectorDirect<float, MatrixDense<float> > >;
+template class PogsSeparable<float, MatrixDense<float>,
+    ProjectorCgls<float, MatrixDense<float> > >;
+template class PogsSeparable<float, MatrixSparse<float>,
+    ProjectorCgls<float, MatrixSparse<float> > >;
+
+template class PogsCone<float, MatrixDense<float>,
+    ProjectorDirect<float, MatrixDense<float> > >;
+template class PogsCone<float, MatrixDense<float>,
+    ProjectorCgls<float, MatrixDense<float> > >;
+template class PogsCone<float, MatrixSparse<float>,
+    ProjectorCgls<float, MatrixSparse<float> > >;
+#endif
+
+
+
+
+
+
 
 // Explicit template instantiation.
 #if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
