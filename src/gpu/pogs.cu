@@ -46,7 +46,7 @@ Pogs<T, M, P>::Pogs(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _x(0), _y(0), _mu(0), _nu(0), _optval(static_cast<T>(0.)),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -55,11 +55,11 @@ Pogs<T, M, P>::Pogs(const M &A)
       _verbose(kVerbose),
       _adaptive_rho(kAdaptiveRho),
       _gap_stop(kGapStop),
-      _init_x(false), _init_lambda(false) {
+      _init_x(false), _init_nu(false) {
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
-  _lambda = new T[_A.Rows()]();
+  _nu = new T[_A.Rows()]();
 }
 
 template <typename T, typename M, typename P>
@@ -154,7 +154,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   CUDA_CHECK_ERR();
 
-  // Initialize (x, lambda) from (x0, lambda0).
+  // Initialize (x, nu) from (x0, nu0).
   if (_init_x) {
     cml::vector_memcpy(&xtemp, _x);
     cml::vector_div(&xtemp, &e);
@@ -163,8 +163,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&z, &ztemp);
     CUDA_CHECK_ERR();
   }
-  if (_init_lambda) {
-    cml::vector_memcpy(&ytemp, _lambda);
+  if (_init_nu) {
+    cml::vector_memcpy(&ytemp, _nu);
     cml::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
     cudaDeviceSynchronize();
@@ -173,11 +173,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
   }
 
-  // Make an initial guess for (x0 or lambda0).
-  if (_init_x && !_init_lambda) {
+  // Make an initial guess for (x0 or nu0).
+  if (_init_x && !_init_nu) {
     // Alternating projections to satisfy 
-    //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
-    //   2. \mu = -A^T\lambda
+    //   1. \nu \in \partial f(y), \mu \in \partial g(x)
+    //   2. \mu = -A^T\nu
     cml::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
       ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
@@ -189,13 +189,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);
       cml::blas_scal(hdl, -kOne, &zprev);
     }
-    // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
+    // xt = -1 / \rho * \mu, yt = -1 / \rho * \nu.
     cml::vector_memcpy(&zt, &zprev);
     cml::blas_scal(hdl, -kOne / _rho, &zt);
-  } else if (_init_lambda && !_init_x) {
+  } else if (_init_nu && !_init_x) {
     ASSERT(false);
   }
-  _init_x = _init_lambda = false;
+  _init_x = _init_nu = false;
 
   // Save initialization time.
   double time_init = timer<double>() - t0;
@@ -362,14 +362,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         "Pri: "
         "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e\n"
         "Dua: "
-        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e\n"
+        "|A'nu + mu|   / (abs_tol sqrt(n)     / rel_tol + |mu|)          = %.2e\n"
         "Gap: "
-        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e\n"
+        "|x'mu + y'nu| / (abs_tol sqrt(m + n) / rel_tol + |x'mu| |y'nu|)  = %.2e\n"
         __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
         _rel_tol * gap / eps_gap);
   }
 
-  // Scale x, y, lambda and mu for output.
+  // Scale x, y, nu and mu for output.
   cml::vector_memcpy(&ztemp, &zt);
   cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
   cml::blas_axpy(hdl, kOne, &z12, &ztemp);
@@ -384,7 +384,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_memcpy(_x, &x12);
   cml::vector_memcpy(_y, &y12);
   cml::vector_memcpy(_mu, &xtemp);
-  cml::vector_memcpy(_lambda, &ytemp);
+  cml::vector_memcpy(_nu, &ytemp);
 
   // Store z.
   cml::vector_memcpy(&z, &zprev);
@@ -410,8 +410,8 @@ Pogs<T, M, P>::~Pogs() {
   delete [] _x;
   delete [] _y;
   delete [] _mu;
-  delete [] _lambda;
-  _x = _y = _mu = _lambda = 0;
+  delete [] _nu;
+  _x = _y = _mu = _nu = 0;
 }
 
 // Explicit template instantiation.

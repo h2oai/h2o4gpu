@@ -58,13 +58,13 @@ class PogsImplementation {
   int _Init(const PogsObjective<T> *obj);
 
   // Output.
-  T *_x, *_y, *_mu, *_lambda, _optval;
+  T *_x, *_y, *_mu, *_nu, _optval;
   unsigned int _final_iter;
 
   // Parameters.
   T _abs_tol, _rel_tol;
   unsigned int _max_iter, _init_iter, _verbose;
-  bool _adaptive_rho, _gap_stop, _init_x, _init_lambda;
+  bool _adaptive_rho, _gap_stop, _init_x, _init_nu;
 
   // Solver
   PogsStatus Solve(PogsObjective<T> *obj);
@@ -77,7 +77,7 @@ class PogsImplementation {
   // Getters for solution variables and parameters.
   const T*     GetX()           const { return _x; }
   const T*     GetY()           const { return _y; }
-  const T*     GetLambda()      const { return _lambda; }
+  const T*     GetNu()          const { return _nu; }
   const T*     GetMu()          const { return _mu; }
   T            GetOptval()      const { return _optval; }
   unsigned int GetFinalIter()   const { return _final_iter; }
@@ -104,9 +104,9 @@ class PogsImplementation {
     memcpy(_x, x, _A.Cols() * sizeof(T));
     _init_x = true;
   }
-  void SetInitLambda(const T *lambda) {
-    memcpy(_lambda, lambda, _A.Rows() * sizeof(T));
-    _init_lambda = true;
+  void SetInitNu(const T *nu) {
+    memcpy(_nu, nu, _A.Rows() * sizeof(T));
+    _init_nu = true;
   }
 };
 

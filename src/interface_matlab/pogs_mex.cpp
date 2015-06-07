@@ -264,13 +264,14 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
           pogs_data.GetY(), m * sizeof(T));
     }
     if (nlhs >= 3) {
-      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
-          pogs_data.GetLambda(), m * sizeof(T));
-    }
-    if (nlhs >= 4) {
       memcpy(reinterpret_cast<T*>(mxGetData(plhs[3])) + i * n,
           pogs_data.GetMu(), n * sizeof(T));
     }
+    if (nlhs >= 4) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
+          pogs_data.GetNu(), m * sizeof(T));
+    }
+
 
     if (nlhs >= 5)
       reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = pogs_data.GetOptval();
@@ -332,13 +333,14 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
           pogs_data.GetY(), m * sizeof(T));
     }
     if (nlhs >= 3) {
-      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * m,
-          pogs_data.GetLambda(), m * sizeof(T));
-    }
-    if (nlhs >= 4) {
-      memcpy(reinterpret_cast<T*>(mxGetData(plhs[3])) + i * n,
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[2])) + i * n,
           pogs_data.GetMu(), n * sizeof(T));
     }
+    if (nlhs >= 4) {
+      memcpy(reinterpret_cast<T*>(mxGetData(plhs[3])) + i * m,
+          pogs_data.GetNu(), m * sizeof(T));
+    }
+
 
     if (nlhs >= 5)
       reinterpret_cast<T*>(mxGetData(plhs[4]))[i] = pogs_data.GetOptval();
@@ -354,12 +356,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check number of arguments.
   if (nrhs < 3 || nrhs > 4) {
     mexErrMsgIdAndTxt("MATLAB:pogs:insufficientInputArgs",
-        "Usage: [x, y, l, u, optval, status] = pogs(A, f, g, [params])");
+        "Usage: [x, y, mu, nu, optval, status] = pogs(A, f, g, [params])");
     return;
   }
   if (nlhs > 6) {
     mexErrMsgIdAndTxt("MATLAB:pogs:extraneousOutputArgs",
-        "Usage: [x, y, l, u, optval, status] = pogs(A, f, g, [params])");
+        "Usage: [x, y, mu, nu, optval, status] = pogs(A, f, g, [params])");
     return;
   }
 
@@ -404,9 +406,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs >= 2)
     plhs[1] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
   if (nlhs >= 3)
-    plhs[2] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
+    plhs[2] = mxCreateNumericMatrix(n, num_obj, class_id_A, mxREAL);
   if (nlhs >= 4)
-    plhs[3] = mxCreateNumericMatrix(n, num_obj, class_id_A, mxREAL);
+    plhs[3] = mxCreateNumericMatrix(m, num_obj, class_id_A, mxREAL);
   if (nlhs >= 5)
     plhs[4] = mxCreateNumericMatrix(num_obj, 1, class_id_A, mxREAL);
   if (nlhs >= 6)

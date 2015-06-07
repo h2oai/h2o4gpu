@@ -6,8 +6,8 @@
 % 
 %   where the f and g are separable and A is dense.
 %
-%   [x, y, l, optval] = pogs(A, f, g)
-%   [x, y, l, optval] = pogs(A, f, g, params)
+%   [x, y, mu, nu, optval, status] = pogs(A, f, g)
+%   [x, y, mu, nu, optval, status] = pogs(A, f, g, params)
 % 
 %   Optional Inputs: params
 %
@@ -48,7 +48,7 @@
 %
 %   y         - The partial solution y^\star to the optimization problem.
 %
-%   l         - The dual variable corresponding to the constraint 
+%   nu        - The dual variable corresponding to the constraint 
 %               Ax - y = 0.
 %   
 %   optval    - The optimal value of the objective f(y^\star) + g(x^\star).

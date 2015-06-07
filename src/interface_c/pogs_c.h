@@ -30,7 +30,7 @@
 // Output arguments (real_t is either double or float)
 // - real_t *x         : Array for solution vector x.
 // - real_t *y         : Array for solution vector y.
-// - real_t *l         : Array for dual vector lambda.
+// - real_t *nu        : Array for dual vector nu.
 // - real_t *optval    : Pointer to single real for f(y^*) + g(x^*).
 //
 // Author: Chris Fougner (fougner@stanford.edu)
@@ -68,7 +68,7 @@ int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
           const double *g_d, const double *g_e, const enum FUNCTION *g_h,
           double rho, double abs_tol, double rel_tol, unsigned int max_iter,
           unsigned int verbose, int adaptive_rho, int gap_stop,
-          double *x, double *y, double *l, double *optval, unsigned int * final_iter);
+          double *x, double *y, double *nu, double *optval, unsigned int * final_iter);
 
 int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
           const float *f_a, const float *f_b, const float *f_c,
@@ -77,7 +77,7 @@ int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
           const float *g_d, const float *g_e, const enum FUNCTION *g_h,
           float rho, float abs_tol, float rel_tol, unsigned int max_iter,
           unsigned int verbose, int adaptive_rho, int gap_stop,
-          float *x, float *y, float *l, float *optval, unsigned int * final_iter);
+          float *x, float *y, float *nu, float *optval, unsigned int * final_iter);
 
 // TODO: Add interface for sparse version.
 

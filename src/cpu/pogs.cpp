@@ -28,7 +28,7 @@ PogsImplementation<T, M, P>::PogsImplementation(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _x(0), _y(0), _mu(0), _nu(0), _optval(static_cast<T>(0.)),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -37,11 +37,11 @@ PogsImplementation<T, M, P>::PogsImplementation(const M &A)
       _verbose(kVerbose),
       _adaptive_rho(kAdaptiveRho),
       _gap_stop(kGapStop),
-      _init_x(false), _init_lambda(false) {
+      _init_x(false), _init_nu(false) {
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
-  _lambda = new T[_A.Rows()]();
+  _nu = new T[_A.Rows()]();
 }
 
 template <typename T, typename M, typename P>
@@ -123,26 +123,26 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   // Scale objective to account for diagonal scaling e and d.
   obj->scale(d.data, e.data);
 
-  // Initialize (x, lambda) from (x0, lambda0).
+  // Initialize (x, nu) from (x0, nu0).
   if (_init_x) {
     gsl::vector_memcpy(&xtemp, _x);
     gsl::vector_div(&xtemp, &e);
     _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data);
     gsl::vector_memcpy(&z, &ztemp);
   }
-  if (_init_lambda) {
-    gsl::vector_memcpy(&ytemp, _lambda);
+  if (_init_nu) {
+    gsl::vector_memcpy(&ytemp, _nu);
     gsl::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
     gsl::blas_scal(-kOne / _rho, &ztemp);
     gsl::vector_memcpy(&zt, &ztemp);
   }
 
-  // Make an initial guess for (x0 or lambda0).
-  if (_init_x && !_init_lambda) {
+  // Make an initial guess for (x0 or nu0).
+  if (_init_x && !_init_nu) {
     // Alternating projections to satisfy
-    //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
-    //   2. \mu = -A^T\lambda
+    //   1. \nu \in \partial f(y), \mu \in \partial g(x)
+    //   2. \mu = -A^T\nu
     gsl::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
       // TODO: Make part of PogsObj
@@ -153,13 +153,13 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       gsl::blas_axpy(-kOne, &ztemp, &zprev);
       gsl::blas_scal(-kOne, &zprev);
     }
-    // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
+    // xt = -1 / \rho * \mu, yt = -1 / \rho * \nu.
     gsl::vector_memcpy(&zt, &zprev);
     gsl::blas_scal(-kOne / _rho, &zt);
-  } else if (_init_lambda && !_init_x) {
+  } else if (_init_nu && !_init_x) {
     ASSERT(false);
   }
-  _init_x = _init_lambda = false;
+  _init_x = _init_nu = false;
 
   // Save initialization time.
   double time_init = timer<double>() - t0;
@@ -313,14 +313,14 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         "Pri: "
         "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e\n"
         "Dua: "
-        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e\n"
+        "|A'nu + .u|   / (abs_tol sqrt(n)     / rel_tol + |mu|)          = %.2e\n"
         "Gap: "
-        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e\n"
+        "|x'.u + y'nu| / (abs_tol sqrt(m + n) / rel_tol + |x'u| |y'nu|)  = %.2e\n"
         __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
         _rel_tol * gap / eps_gap);
   }
 
-  // Scale x, y, lambda and mu for output.
+  // Scale x, y, nu and mu for output.
   gsl::vector_memcpy(&ztemp, &zt);
   gsl::blas_axpy(-kOne, &zprev, &ztemp);
   gsl::blas_axpy(kOne, &z12, &ztemp);
@@ -335,7 +335,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   gsl::vector_memcpy(_x, &x12);
   gsl::vector_memcpy(_y, &y12);
   gsl::vector_memcpy(_mu, &xtemp);
-  gsl::vector_memcpy(_lambda, &ytemp);
+  gsl::vector_memcpy(_nu, &ytemp);
 
   // Store z.
   gsl::vector_memcpy(&z, &zprev);
@@ -358,8 +358,8 @@ PogsImplementation<T, M, P>::~PogsImplementation() {
   delete [] _x;
   delete [] _y;
   delete [] _mu;
-  delete [] _lambda;
-  _x = _y = _mu = _lambda = 0;
+  delete [] _nu;
+  _x = _y = _mu = _nu = 0;
 }
 
 // Pogs for separable problems
