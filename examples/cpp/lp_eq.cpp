@@ -51,7 +51,13 @@ double LpEq(size_t m, size_t n) {
 
   double t = timer<double>();
   pogs_data.SetVerbose(5);
+  pogs_data.SetRelTol(1e-6);
+  pogs_data.SetAbsTol(1e-6);
   pogs_data.Solve(f, g);
+
+//  for (int i = 0; i < n; ++i)
+//    printf("%e, ", pogs_data.GetX()[i]);
+//  printf("\n");
 
   return timer<double>() - t;
 }
