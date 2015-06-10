@@ -76,6 +76,8 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   _A.Mul('n', static_cast<T>(1.), x, static_cast<T>(0.), y);
 
 #ifdef DEBUG
+  // TODO
+  T kTol = 1e-9;
   // Verify that projection was successful.
   CheckProjection(&_A, x0, y0, x, y, s, static_cast<T>(1e1 * kTol));
 #endif

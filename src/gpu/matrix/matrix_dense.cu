@@ -82,7 +82,7 @@ MatrixDense<T>::~MatrixDense() {
     DEBUG_CUDA_CHECK_ERR();
   }
 }
-      
+
 template <typename T>
 int MatrixDense<T>::Init() {
   DEBUG_EXPECT(!this->_done_init);
@@ -129,7 +129,9 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
-int MatrixDense<T>::Equil(T *d, T *e) {
+int MatrixDense<T>::Equil(T *d, T *e,
+                          const std::function<void(T*)> &constrain_d,
+                          const std::function<void(T*)> &constrain_e) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -162,7 +164,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   CUDA_CHECK_ERR();
 
   // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too. 
+  // of sign bits too.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
       __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
@@ -176,7 +178,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
   }
 
   // Perform Sinkhorn-Knopp equilibration.
-  SinkhornKnopp(this, d, e);
+  SinkhornKnopp(this, d, e, constrain_d, constrain_e);
   cudaDeviceSynchronize();
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,

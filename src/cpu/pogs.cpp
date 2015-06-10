@@ -145,6 +145,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     //   2. \mu = -A^T\lambda
     gsl::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
+      ASSERT(false);
       // TODO: Make part of PogsObj
 //      ProjSubgradEval(g, xprev.data, x.data, xtemp.data);
 //      ProjSubgradEval(f, yprev.data, y.data, ytemp.data);
@@ -192,6 +193,18 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     // Evaluate Proximal Operators
     gsl::blas_axpy(-kOne, &zt, &z);
     obj->prox(x.data, y.data, x12.data, y12.data, _rho);
+
+
+//     printf("X ");
+//     gsl::vector_print(&x);
+//     printf("Y ");
+//     gsl::vector_print(&y);
+// 
+//     printf("X12 ");
+//     gsl::vector_print(&x12);
+//     printf("Y12 ");
+//     gsl::vector_print(&y12);
+
 
     // Compute gap, optval, and tolerances.
     gsl::blas_axpy(-kOne, &z12, &z);
@@ -431,15 +444,15 @@ class PogsObjectiveCone : public PogsObjective<T> {
   }
 
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
-    memcpy(x_out, x_in, c.size());
-    auto x_updater = [rho](T ci, T xi) { return xi + ci / rho; };
+    memcpy(x_out, x_in, c.size() * sizeof(T));
+    auto x_updater = [rho](T ci, T xi) { return xi - ci / rho; };
     std::transform(c.begin(), c.end(), x_out, x_out, x_updater);
 
-    memcpy(y_out, y_in, b.size());
+    memcpy(y_out, y_in, b.size() * sizeof(T));
     std::transform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
 
-    ProxEvalConeCpu(Kx, c.size(), x_in, x_out);
-    ProxEvalConeCpu(Ky, b.size(), y_in, y_out);
+    ProxEvalConeCpu(Kx, c.size(), x_out, x_out);
+    ProxEvalConeCpu(Ky, b.size(), y_out, y_out);
 
     std::transform(b.begin(), b.end(), y_out, y_out, std::minus<T>());
   }
@@ -501,7 +514,12 @@ PogsCone<T, M, P>::PogsCone(const M& A,
 }
 
 template <typename T, typename M, typename P>
-PogsCone<T, M, P>::~PogsCone() { }
+PogsCone<T, M, P>::~PogsCone() {
+  for (const auto& cone_constraint : this->Kx)
+    delete [] cone_constraint.idx;
+  for (const auto& cone_constraint : this->Ky)
+    delete [] cone_constraint.idx;
+}
 
 template <typename T, typename M, typename P>
 PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,

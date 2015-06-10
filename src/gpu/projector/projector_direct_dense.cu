@@ -54,7 +54,7 @@ ProjectorDirect<T, M>::~ProjectorDirect() {
     info->L = 0;
     CUDA_CHECK_ERR();
   }
-  
+
   delete info;
   this->_info = 0;
 }

@@ -1,10 +1,10 @@
 #ifndef PROJECTOR_HELPER_CUH_
 #define PROJECTOR_HELPER_CUH_
 
-#include "cml/cml_blas.cuh" 
-#include "cml/cml_vector.cuh" 
-#include "matrix/matrix.h" 
-#include "util.h" 
+#include "cml/cml_blas.cuh"
+#include "cml/cml_vector.cuh"
+#include "matrix/matrix.h"
+#include "util.h"
 
 namespace pogs {
 namespace {
@@ -20,7 +20,7 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   cublasCreate(&hdl);
   cml::vector<T> x_ = cml::vector_calloc<T>(A->Cols());
   cml::vector<T> y_ = cml::vector_calloc<T>(A->Rows());
-  
+
   // Check residual
   cml::vector_memcpy(&x_, x);
   cml::vector_memcpy(&y_, y);

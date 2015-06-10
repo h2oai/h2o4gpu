@@ -181,7 +181,9 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T *d, T *e) {
+int MatrixSparse<T>::Equil(T *d, T *e,
+                           const std::function<void(T*)> &constrain_d,
+                           const std::function<void(T*)> &constrain_e) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -228,7 +230,7 @@ int MatrixSparse<T>::Equil(T *d, T *e) {
   }
 
   // Perform Sinkhorn-Knopp equilibration.
-  SinkhornKnopp(this, d, e);
+  SinkhornKnopp(this, d, e, constrain_d, constrain_e);
   cudaDeviceSynchronize();
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,

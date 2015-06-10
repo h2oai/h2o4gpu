@@ -135,7 +135,9 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
 ///////////////////////// Modified Sinkhorn Knopp //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
+void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
+                   const std::function<void(T*)> &constrain_d,
+                   const std::function<void(T*)> &constrain_e) {
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, A->Rows());
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, A->Cols());
   cml::vector_set_all(&d_vec, static_cast<T>(1.));
@@ -152,6 +154,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     thrust::transform(thrust::device_pointer_cast(e),
         thrust::device_pointer_cast(e + e_vec.size),
         thrust::device_pointer_cast(e), ReciprF<T>(A->Rows()));
+    constrain_e(e);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 
@@ -165,6 +168,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     thrust::transform(thrust::device_pointer_cast(d),
         thrust::device_pointer_cast(d + d_vec.size),
         thrust::device_pointer_cast(d), ReciprF<T>(A->Cols()));
+    constrain_d(d);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }

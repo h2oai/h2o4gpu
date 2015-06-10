@@ -2,7 +2,6 @@
 #include <random>
 #include <vector>
 
-#include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
 
