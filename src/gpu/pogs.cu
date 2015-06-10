@@ -76,6 +76,8 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
 
 template <typename T, typename M, typename P>
 PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
+  int count = 0;
+  printf("--- %d\n", count++);
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin   = static_cast<T>(1.05);
@@ -97,6 +99,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   if (!_done_init)
     _Init(obj);
 
+  printf("--- %d\n", count++);
   // Extract values from pogs_data
   size_t m = _A.Rows();
   size_t n = _A.Cols();
@@ -105,6 +108,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   cublasHandle_t hdl;
   cublasCreate(&hdl);
   CUDA_CHECK_ERR();
+  printf("--- %d\n", count++);
 
   // Allocate data for ADMM variables.
   cml::vector<T> de    = cml::vector_view_array(_de, m + n);
@@ -127,6 +131,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
+  printf("--- %d\n", count++);
 
   // Scale objective to account for diagonal scaling e and d.
   obj->scale(d.data, e.data);
@@ -150,6 +155,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     cml::vector_memcpy(&zt, &ztemp);
     CUDA_CHECK_ERR();
   }
+  printf("--- %d\n", count++);
 
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
@@ -190,6 +196,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
         " pri obj\n" __HBAR__);
   }
+  printf("--- %d\n", count++);
 
   // Initialize scalars.
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * _abs_tol;
@@ -199,14 +206,17 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   unsigned int k = 0u, kd = 0u, ku = 0u;
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
+  printf("--- %d\n", count++);
 
   for (;; ++k) {
+    printf("--- %d\n", count++);
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     obj->prox(x.data, y.data, x12.data, y12.data, _rho);
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Compute gap, optval, and tolerances.
     cml::blas_axpy(hdl, -kOne, &z12, &z);
@@ -217,12 +227,14 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
     eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Apply over relaxation.
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Project onto y = Ax.
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
@@ -230,17 +242,20 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Calculate residuals.
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
     nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
+    printf("--- %d\n", count++);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
     nrm_r = cml::blas_nrm2(hdl, &ztemp);
+    printf("--- %d\n", count++);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
@@ -260,6 +275,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       }
     }
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
@@ -271,18 +287,21 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
+    printf("--- %d\n", count++);
 
     // Break if converged or there are nans
     if (converged || k == _max_iter - 1){ // || cml::vector_any_isnan(&zt))
       _final_iter = k;
       break;
     }
+    printf("--- %d\n", count++);
 
     // Update dual variable.
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
     CUDA_CHECK_ERR();
+    printf("--- %d\n", count++);
 
     // Rescale rho.
     if (_adaptive_rho) {
@@ -313,6 +332,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       }
       CUDA_CHECK_ERR();
     }
+    printf("--- %d\n", count++);
   }
 
   // Get optimal value
@@ -514,11 +534,8 @@ class PogsObjectiveCone : public PogsObjective<T> {
           thrust::device_pointer_cast(e),
           thrust::device_pointer_cast(cone.idx));
       T sum = thrust::reduce(iter, iter + cone.size);
-      thrust::transform(thrust::device_pointer_cast(e),
-          thrust::device_pointer_cast(e + cone.size),
-          thrust::make_constant_iterator(1 / sum),
-          thrust::device_pointer_cast(e),
-          thrust::multiplies<T>());
+      thrust::fill(thrust::device_pointer_cast(e),
+          thrust::device_pointer_cast(e + cone.size), sum / cone.size);
       CUDA_CHECK_ERR();
     }
   }
@@ -536,11 +553,8 @@ class PogsObjectiveCone : public PogsObjective<T> {
           thrust::device_pointer_cast(d),
           thrust::device_pointer_cast(cone.idx));
       T sum = thrust::reduce(iter, iter + cone.size);
-      thrust::transform(thrust::device_pointer_cast(d),
-          thrust::device_pointer_cast(d + cone.size),
-          thrust::make_constant_iterator(1 / sum),
-          thrust::device_pointer_cast(d),
-          thrust::multiplies<T>());
+      thrust::fill(thrust::device_pointer_cast(d),
+          thrust::device_pointer_cast(d + cone.size), sum / cone.size);
       CUDA_CHECK_ERR();
     }
   }

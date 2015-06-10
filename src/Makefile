@@ -7,7 +7,7 @@ OBJDIR=build
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -DDEBUG # -Wconversion
 
 # CUDA Flags
 CUXX=nvcc

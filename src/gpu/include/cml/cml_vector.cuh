@@ -70,8 +70,9 @@ vector<T> vector_alloc(size_t n) {
 
 template <typename T>
 void vector_set_all(vector<T> *v, T x) {
-  uint grid_dim = calc_grid_dim(v->size, kBlockSize);
-  __set_vector<<<grid_dim, kBlockSize>>>(v->data, x, v->stride, v->size);
+  size_t block_size = std::min(kBlockSize, v->size);
+  uint grid_dim = calc_grid_dim(v->size, block_size);
+  __set_vector<<<grid_dim, block_size>>>(v->data, x, v->stride, v->size);
 }
 
 template <typename T>
@@ -79,8 +80,9 @@ bool vector_any_isnan(vector<T> *v) {
   int *res_ptr, res;
   cudaMalloc(&res_ptr, sizeof(int));
   cudaMemset(res_ptr, 0, sizeof(int));
-  uint grid_dim = calc_grid_dim(v->size, kBlockSize);
-  __any_isnan<<<grid_dim, kBlockSize>>>(v->data, v->stride, v->size, res_ptr);
+  size_t block_size = std::min(kBlockSize, v->size);
+  uint grid_dim = calc_grid_dim(v->size, block_size);
+  __any_isnan<<<grid_dim, block_size>>>(v->data, v->stride, v->size, res_ptr);
   cudaMemcpy(&res, res_ptr, sizeof(int), cudaMemcpyDeviceToHost);
   cudaFree(res_ptr);
   return res > 0;
@@ -130,8 +132,9 @@ void vector_memcpy(vector<T> *x, const vector<T> *y) {
         cudaMemcpyDefault);
     CudaCheckError(err);
   } else {
-    uint grid_dim = calc_grid_dim(x->size, kBlockSize);
-    __strided_memcpy<<<grid_dim, kBlockSize>>>(x->data, x->stride, y->data,
+    size_t block_size = std::min(kBlockSize, x->size);
+    uint grid_dim = calc_grid_dim(x->size, block_size);
+    __strided_memcpy<<<grid_dim, block_size>>>(x->data, x->stride, y->data,
         y->stride, x->size);
   }
 }

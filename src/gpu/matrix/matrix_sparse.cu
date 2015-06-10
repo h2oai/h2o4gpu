@@ -204,12 +204,13 @@ int MatrixSparse<T>::Equil(T *d, T *e,
 
   // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
-  size_t grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
+  size_t block_size = std::min(cml::kBlockSize, num_chars);
+  size_t grid_size = cml::calc_grid_dim(num_chars, block_size);
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+    __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
         SquareF<T>());
   } else {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+    __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
         AbsF<T>());
   }
   cudaDeviceSynchronize();
@@ -236,10 +237,10 @@ int MatrixSparse<T>::Equil(T *d, T *e,
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+    __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
         SqrtF<T>());
   } else {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+    __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
         IdentityF<T>());
   }
   cudaDeviceSynchronize();
@@ -353,17 +354,19 @@ template <typename T>
 void MultDiag(const T *d, const T *e, POGS_INT m, POGS_INT n, POGS_INT nnz,
               typename MatrixSparse<T>::Ord ord, T *data, const POGS_INT *ind,
               const POGS_INT *ptr) {
+  size_t block_size_n = std::min<size_t>(cml::kBlockSize, n);
+  size_t block_size_m = std::min<size_t>(cml::kBlockSize, m);
   if (ord == MatrixSparse<T>::ROW) {
-    size_t grid_dim_row = cml::calc_grid_dim(m, cml::kBlockSize);
-    __MultRow<<<grid_dim_row, cml::kBlockSize>>>(d, e, data, ptr, ind, m);
+    size_t grid_dim_row = cml::calc_grid_dim(m, block_size_m);
+    __MultRow<<<grid_dim_row, block_size_m>>>(d, e, data, ptr, ind, m);
     size_t grid_dim_col = cml::calc_grid_dim(n, cml::kBlockSize);
-    __MultCol<<<grid_dim_col, cml::kBlockSize>>>(d, e, data + nnz, ptr + m + 1,
+    __MultCol<<<grid_dim_col, block_size_n>>>(d, e, data + nnz, ptr + m + 1,
         ind + nnz, n);
   } else {
-    size_t grid_dim_col = cml::calc_grid_dim(n, cml::kBlockSize);
-    __MultCol<<<grid_dim_col, cml::kBlockSize>>>(d, e, data, ptr, ind, n);
-    size_t grid_dim_row = cml::calc_grid_dim(m, cml::kBlockSize);
-    __MultRow<<<grid_dim_row, cml::kBlockSize>>>(d, e, data + nnz, ptr + n + 1,
+    size_t grid_dim_col = cml::calc_grid_dim(n, block_size_n);
+    __MultCol<<<grid_dim_col, block_size_n>>>(d, e, data, ptr, ind, n);
+    size_t grid_dim_row = cml::calc_grid_dim(m, block_size_m);
+    __MultRow<<<grid_dim_row, block_size_m>>>(d, e, data + nnz, ptr + n + 1,
         ind + nnz, m);
   }
 }

@@ -39,10 +39,12 @@ __global__ void __set_matrix(T *data, T val, size_t tda, size_t size1,
 
 template <typename T, CBLAS_ORDER O>
 void _set_matrix(matrix<T, O> *A, T val) {
-  uint grid_dimx = calc_grid_dim(A->size1, kBlockSize);
-  uint grid_dimy = calc_grid_dim(A->size2, kBlockSize);
+  size_t block_size_x = std::min(A->size1, kBlockSize);
+  size_t block_size_y = std::min(A->size2, kBlockSize);
+  uint grid_dimx = calc_grid_dim(A->size1, block_size_x);
+  uint grid_dimy = calc_grid_dim(A->size2, block_size_y);
   dim3 grid_dim(grid_dimx, grid_dimy, 1u);
-  dim3 block_dim(kBlockSize, kBlockSize, 1u);
+  dim3 block_dim(block_size_x, block_size_y, 1u);
   __set_matrix<T, O><<<grid_dim, block_dim>>>(A->data, val, A->tda, A->size1,
                                               A->size2);
 }

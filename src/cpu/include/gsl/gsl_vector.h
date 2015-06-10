@@ -3,6 +3,7 @@
 
 #include <assert.h>
 
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -56,6 +57,16 @@ void vector_set_all(vector<T> *v, T x) {
 }
 
 template <typename T>
+bool vector_any_isnan(vector<T> *v) {
+  for (unsigned int i = 0; i < v->size; ++i) {
+    if (isnan(vector_get(v, i))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 vector<T> vector_subvector(vector<T> *vec, size_t offset, size_t n) {
   vector<T> subvec;
   subvec.size = n;
@@ -98,7 +109,7 @@ void vector_memcpy(vector<T> *x, const T *y) {
   if (x->stride == 1) {
     memcpy(x->data, y, x->size * sizeof(T));
   } else {
-    for (unsigned int i = 0; i < x->size; ++i) 
+    for (unsigned int i = 0; i < x->size; ++i)
       vector_set(x, i, y[i]);
   }
 }

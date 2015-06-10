@@ -30,16 +30,17 @@ __global__ void generate(curandState *globalState, float *data, size_t size) {
 
 template <typename T>
 void rand(T *x, size_t size) {
-  size_t num_rand = min(static_cast<unsigned int>(size), kMaxGridSize);
+  size_t num_rand = std::min(size, kMaxGridSize);
   curandState* devStates;
   cudaMalloc(&devStates, num_rand * sizeof(curandState));
-  
+
   // Setup seeds.
-  int grid_dim = calc_grid_dim(num_rand, kBlockSize);
-  setup_kernel<<<grid_dim, kBlockSize>>>(devStates, 0);
+  size_t block_dim = std::min(kBlockSize, num_rand);
+  size_t grid_dim = calc_grid_dim(num_rand, block_dim);
+  setup_kernel<<<grid_dim, block_dim>>>(devStates, 0);
 
   // Generate random numbers.
-  generate<<<grid_dim, kBlockSize>>>(devStates, x, size);
+  generate<<<grid_dim, block_dim>>>(devStates, x, size);
 
   cudaFree(devStates);
 }
