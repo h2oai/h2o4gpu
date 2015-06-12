@@ -194,18 +194,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     gsl::blas_axpy(-kOne, &zt, &z);
     obj->prox(x.data, y.data, x12.data, y12.data, _rho);
 
-
-//     printf("X ");
-//     gsl::vector_print(&x);
-//     printf("Y ");
-//     gsl::vector_print(&y);
-// 
-//     printf("X12 ");
-//     gsl::vector_print(&x12);
-//     printf("Y12 ");
-//     gsl::vector_print(&y12);
-
-
     // Compute gap, optval, and tolerances.
     gsl::blas_axpy(-kOne, &z12, &z);
     gsl::blas_dot(&z, &z12, &gap);
@@ -389,6 +377,7 @@ class PogsObjectiveSeparable : public PogsObjective<T> {
   T evaluate(const T *x, const T *y) const {
     return FuncEval(f, y) + FuncEval(g, x);
   }
+
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
     ProxEval(g, rho, x_in, x_out);
     ProxEval(f, rho, y_in, y_out);
