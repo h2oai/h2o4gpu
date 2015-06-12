@@ -509,6 +509,7 @@ PogsCone<T, M, P>::PogsCone(const M& A,
                             const std::vector<ConeConstraint>& Kx,
                             const std::vector<ConeConstraint>& Ky)
     : PogsImplementation<T, M, P>(A) {
+  valid_cones = ValidCone(Kx, A.Cols()) && ValidCone(Ky, A.Rows());
   MakeRawCone(Kx, &this->Kx);
   MakeRawCone(Ky, &this->Ky);
 }
@@ -524,6 +525,8 @@ PogsCone<T, M, P>::~PogsCone() {
 template <typename T, typename M, typename P>
 PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
                                     const std::vector<T>& c) {
+  if (!valid_cones)
+    return POGS_INVALID_CONE;
   PogsObjectiveCone<T> pogs_obj(b, c, Kx, Ky);
   return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
 }

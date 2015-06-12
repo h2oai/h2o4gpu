@@ -154,24 +154,26 @@ int MatrixDense<T>::Equil(T *d, T *e,
   size_t num_chars = num_el / 8;
   size_t block_size = std::min(cml::kBlockSize, num_chars);
   size_t grid_size = cml::calc_grid_dim(num_chars, block_size);
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
-        SquareF<T>());
-  } else {
-    __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
-        AbsF<T>());
+  if (num_chars > 0) {
+    if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+      __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
+          SquareF<T>());
+    } else {
+      __SetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
+          AbsF<T>());
+    }
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
   }
-  cudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
 
   // If numel(A) is not a multiple of 8, then we need to set the last couple
   // of sign bits too.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, SquareF<T>());
     } else {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, AbsF<T>());
     }
     cudaDeviceSynchronize();
@@ -184,15 +186,17 @@ int MatrixDense<T>::Equil(T *d, T *e,
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
-        SqrtF<T>());
-  } else {
-    __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
-        IdentityF<T>());
+  if (num_chars > 0) {
+    if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+      __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
+          SqrtF<T>());
+    } else {
+      __UnSetSign<<<grid_size, block_size>>>(_data, sign, num_chars,
+          IdentityF<T>());
+    }
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
   }
-  cudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
 
   // Deal with last few entries if num_el is not a multiple of 8.
   if (num_el > num_chars * 8) {

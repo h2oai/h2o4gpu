@@ -76,8 +76,6 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
 
 template <typename T, typename M, typename P>
 PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
-  int count = 0;
-  printf("--- %d\n", count++);
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin   = static_cast<T>(1.05);
@@ -99,7 +97,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   if (!_done_init)
     _Init(obj);
 
-  printf("--- %d\n", count++);
   // Extract values from pogs_data
   size_t m = _A.Rows();
   size_t n = _A.Cols();
@@ -108,7 +105,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   cublasHandle_t hdl;
   cublasCreate(&hdl);
   CUDA_CHECK_ERR();
-  printf("--- %d\n", count++);
 
   // Allocate data for ADMM variables.
   cml::vector<T> de    = cml::vector_view_array(_de, m + n);
@@ -131,7 +127,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
-  printf("--- %d\n", count++);
 
   // Scale objective to account for diagonal scaling e and d.
   obj->scale(d.data, e.data);
@@ -155,7 +150,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     cml::vector_memcpy(&zt, &ztemp);
     CUDA_CHECK_ERR();
   }
-  printf("--- %d\n", count++);
 
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
@@ -196,7 +190,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
         " pri obj\n" __HBAR__);
   }
-  printf("--- %d\n", count++);
 
   // Initialize scalars.
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * _abs_tol;
@@ -206,17 +199,14 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   unsigned int k = 0u, kd = 0u, ku = 0u;
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
-  printf("--- %d\n", count++);
 
   for (;; ++k) {
-    printf("--- %d\n", count++);
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     obj->prox(x.data, y.data, x12.data, y12.data, _rho);
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Compute gap, optval, and tolerances.
     cml::blas_axpy(hdl, -kOne, &z12, &z);
@@ -227,14 +217,12 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
     eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Apply over relaxation.
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Project onto y = Ax.
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
@@ -242,20 +230,17 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Calculate residuals.
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
     nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
-    printf("--- %d\n", count++);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
     nrm_r = cml::blas_nrm2(hdl, &ztemp);
-    printf("--- %d\n", count++);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
@@ -275,7 +260,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       }
     }
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
@@ -287,21 +271,18 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
-    printf("--- %d\n", count++);
 
     // Break if converged or there are nans
     if (converged || k == _max_iter - 1){ // || cml::vector_any_isnan(&zt))
       _final_iter = k;
       break;
     }
-    printf("--- %d\n", count++);
 
     // Update dual variable.
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
     CUDA_CHECK_ERR();
-    printf("--- %d\n", count++);
 
     // Rescale rho.
     if (_adaptive_rho) {
@@ -332,7 +313,6 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       }
       CUDA_CHECK_ERR();
     }
-    printf("--- %d\n", count++);
   }
 
   // Get optimal value
@@ -478,7 +458,7 @@ template <typename T>
 struct Updater {
   T rho;
   Updater(T rho) : rho(rho) { }
-  __host__ __device__ T operator()(T ci, T xi) { return xi + ci / rho; };
+  __host__ __device__ T operator()(T ci, T xi) { return xi - ci / rho; };
 };
 
 template <typename T>
@@ -486,12 +466,32 @@ class PogsObjectiveCone : public PogsObjective<T> {
  private:
   thrust::device_vector<T> b, c;
   const std::vector<ConeConstraintRaw> &Kx, &Ky;
+  std::vector<cudaStream_t> streams_x, streams_y;
+
  public:
   PogsObjectiveCone(const std::vector<T>& b,
                     const std::vector<T>& c,
                     const std::vector<ConeConstraintRaw>& Kx,
                     const std::vector<ConeConstraintRaw>& Ky)
-      : b(b), c(c), Kx(Kx), Ky(Ky) { }
+      : b(b), c(c), Kx(Kx), Ky(Ky) {
+    streams_x.resize(Kx.size());
+    streams_y.resize(Ky.size());
+    for (auto &stream : streams_x) {
+      cudaStreamCreate(&stream);
+    }
+    for (auto &stream : streams_y) {
+      cudaStreamCreate(&stream);
+    }
+  }
+
+  ~PogsObjectiveCone() {
+    for (auto &stream : streams_x) {
+      cudaStreamDestroy(stream);
+    }
+    for (auto &stream : streams_y) {
+      cudaStreamDestroy(stream);
+    }
+  }
 
   T evaluate(const T *x, const T*) const {
     return thrust::inner_product(c.begin(), c.end(),
@@ -499,16 +499,20 @@ class PogsObjectiveCone : public PogsObjective<T> {
   }
 
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
-    cudaMemcpy(x_out, x_in, c.size(), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(x_out, x_in, c.size() * sizeof(T), cudaMemcpyDeviceToDevice);
     thrust::transform(c.begin(), c.end(), thrust::device_pointer_cast(x_out),
         thrust::device_pointer_cast(x_out), Updater<T>(rho));
 
-    cudaMemcpy(y_out, y_in, b.size(), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(y_out, y_in, b.size() * sizeof(T), cudaMemcpyDeviceToDevice);
     thrust::transform(b.begin(), b.end(), thrust::device_pointer_cast(y_out),
         thrust::device_pointer_cast(y_out), thrust::minus<T>());
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
 
-    ProxEvalConeCpu(Kx, c.size(), x_in, x_out);
-    ProxEvalConeCpu(Ky, b.size(), y_in, y_out);
+    ProxEvalConeGpu(Kx, streams_x, c.size(), x_out, x_out);
+    ProxEvalConeGpu(Ky, streams_y, b.size(), y_out, y_out);
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
 
     thrust::transform(b.begin(), b.end(), thrust::device_pointer_cast(y_out),
         thrust::device_pointer_cast(y_out), thrust::minus<T>());
@@ -581,7 +585,8 @@ template <typename T, typename M, typename P>
 PogsCone<T, M, P>::PogsCone(const M& A,
                             const std::vector<ConeConstraint>& Kx,
                             const std::vector<ConeConstraint>& Ky)
-    : PogsImplementation<T, M, P>(A) {
+    : PogsImplementation<T, M, P>(A) , valid_cones(true) {
+  valid_cones = ValidCone(Kx, A.Cols()) && ValidCone(Ky, A.Rows());
   MakeRawCone(Kx, &this->Kx);
   MakeRawCone(Ky, &this->Ky);
 }
@@ -597,6 +602,8 @@ PogsCone<T, M, P>::~PogsCone() {
 template <typename T, typename M, typename P>
 PogsStatus PogsCone<T, M, P>::Solve(const std::vector<T>& b,
                                     const std::vector<T>& c) {
+  if (!valid_cones)
+    return POGS_INVALID_CONE;
   PogsObjectiveCone<T> pogs_obj(b, c, Kx, Ky);
   return this->PogsImplementation<T, M, P>::Solve(&pogs_obj);
 }

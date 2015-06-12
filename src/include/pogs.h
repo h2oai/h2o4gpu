@@ -27,12 +27,13 @@ const bool         kAdaptiveRho  = true;
 const bool         kGapStop      = false;
 
 // Status messages
-enum PogsStatus { POGS_SUCCESS,    // Converged succesfully.
-                  POGS_INFEASIBLE, // Problem likely infeasible.
-                  POGS_UNBOUNDED,  // Problem likely unbounded
-                  POGS_MAX_ITER,   // Reached max iter.
-                  POGS_NAN_FOUND,  // Encountered nan.
-                  POGS_ERROR };    // Generic error, check logs.
+enum PogsStatus { POGS_SUCCESS,          // Converged succesfully.
+                  POGS_INFEASIBLE,       // Problem likely infeasible.
+                  POGS_UNBOUNDED,        // Problem likely unbounded
+                  POGS_MAX_ITER,         // Reached max iter.
+                  POGS_NAN_FOUND,        // Encountered nan.
+                  POGS_INVALID_CONE,     // Encountered nan.
+                  POGS_ERROR };          // Generic error, check logs.
 
 // Generic POGS objective.
 template <typename T>
@@ -137,6 +138,7 @@ class PogsCone : public PogsImplementation<T, M, P> {
  private:
   std::vector<ConeConstraintRaw> Kx;
   std::vector<ConeConstraintRaw> Ky;
+  bool valid_cones;
 };
 
 // Templated typedefs
@@ -167,6 +169,8 @@ inline std::string PogsStatusString(PogsStatus status) {
       return "Reached max iter";
     case POGS_NAN_FOUND:
       return "Encountered NaN";
+    case POGS_INVALID_CONE:
+      return "Invalid cone found";
     case POGS_ERROR:
     default:
       return "Error";

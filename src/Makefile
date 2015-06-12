@@ -3,15 +3,15 @@
 
 # Bulid directory
 OBJDIR=build
-
+DEBUG=#-DDEBUG
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g  -Wall -std=c++11 -fPIC # -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=$(IFLAGS) -std=c++11 -arch=sm_20 -Xcompiler -fPIC -DDEBUG
+CUFLAGS=$(IFLAGS) -std=c++11 -arch=sm_20 -Xcompiler -fPIC
 
 
 # POGS header files.
