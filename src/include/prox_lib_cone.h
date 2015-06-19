@@ -268,15 +268,15 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
   T nrm = thrust::transform_reduce(thrust::cuda::par.on(stream),
       thrust::device_pointer_cast(cone_constr.idx),
       thrust::device_pointer_cast(cone_constr.idx + cone_constr.size),
-      Square<T>(), static_cast<T>(0.), thrust::plus<T>());
+      Square<T>(), static_cast<T>(0), thrust::plus<T>());
 
   // Get p from GPU.
   CONE_IDX i;
   T p;
   cudaMemcpyAsync(&i, cone_constr.idx, sizeof(CONE_IDX),
                   cudaMemcpyDeviceToHost, stream);
-  cudaMemcpyAsync(&p, v + i, sizeof(T), cudaMemcpyDeviceToHost,
-                  stream);
+  cudaMemcpyAsync(v + i, &p, sizeof(T), cudaMemcpyDeviceToHost, stream);
+  cudaStreamSynchronize(stream);
 
   // Project if ||x||_2 > p
   if (nrm <= -p) {
@@ -284,6 +284,7 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
   } else if (nrm >= std::abs(p)) {
     T scale = (static_cast<T>(1) + p / nrm) / 2;
     cudaMemcpyAsync(v + i, &nrm, sizeof(T), cudaMemcpyHostToDevice, stream);
+    cudaStreamSynchronize(stream);
     ApplyGpu(Scale<T>(scale), cone_constr, v, stream);
   }
 }
