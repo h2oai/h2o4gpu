@@ -36,4 +36,5 @@ gpu: $(EXSRC)
 clean:
 	rm -f *.o *~ *~ run
 	rm -rf *.dSYM
+	$(MAKE) clean -C $(POGSROOT)
 

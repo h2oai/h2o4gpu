@@ -14,9 +14,6 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/execution_policy.h>
-#define __DEVICE__ __device__
-#else
-#define __DEVICE__
 #endif
 
 #include "interface_defs.h"

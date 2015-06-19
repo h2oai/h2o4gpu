@@ -510,6 +510,8 @@ class PogsObjectiveCone : public PogsObjective<T> {
     CUDA_CHECK_ERR();
 
     ProxEvalConeGpu(Kx, streams_x, c.size(), x_out, x_out);
+    cudaDeviceSynchronize();
+    CUDA_CHECK_ERR();
     ProxEvalConeGpu(Ky, streams_y, b.size(), y_out, y_out);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();

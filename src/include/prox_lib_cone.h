@@ -5,15 +5,13 @@
 
 #include <set>
 #include <vector>
+#include <iostream>
 
 #ifdef __CUDACC__
 #include <thrust/functional.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/execution_policy.h>
-#define __DEVICE__ __device__
-#else
-#define __DEVICE__
 #endif
 
 #include "interface_defs.h"
@@ -101,7 +99,7 @@ void ApplyCpu(const F& f, const ConeConstraintRaw& cone_constr, T *v) {
 
 template <typename T>
 inline void ProxConeZeroCpu(const ConeConstraintRaw& cone_constr, T *v) {
-  auto f = [](int) { return static_cast<T>(0); };
+  auto f = [](T) { return static_cast<T>(0); };
   ApplyCpu(f, cone_constr, v);
 }
 
@@ -187,13 +185,13 @@ const CONE_IDX kMaxGridSize = 65535u;  // 2^16 - 1
 
 template <typename F>
 __global__
-void __Execute(const F& f) {
+void __Execute(F f) {
   f();
 }
 
 template <typename T, typename F>
 __global__
-void __Apply(const F& f, const CONE_IDX *idx, CONE_IDX size, T *v) {
+void __Apply(F f, const CONE_IDX *idx, CONE_IDX size, T *v) {
   CONE_IDX tid = blockIdx.x * blockDim.x + threadIdx.x;
 #if __CUDA_ARCH__ >= 300
   v[idx[tid]] = f(v[idx[tid]]);
@@ -204,8 +202,8 @@ void __Apply(const F& f, const CONE_IDX *idx, CONE_IDX size, T *v) {
 }
 
 template <typename T, typename F>
-void inline ApplyGpu(const F& f, const ConeConstraintRaw& cone_constr, T *v,
-                     cudaStream_t stream) {
+void inline ApplyGpu(F f, const ConeConstraintRaw& cone_constr, T *v,
+                     const cudaStream_t& stream) {
   CONE_IDX block_size = std::min<CONE_IDX>(kBlockSize, cone_constr.size);
   CONE_IDX grid_dim = std::min(kMaxGridSize,
       (cone_constr.size + block_size - 1) / block_size);
@@ -230,14 +228,16 @@ struct Min0 {
 };
 
 template <typename T>
-struct Square {
-  __DEVICE__ T operator()(T x) const { return x * x; }
+struct SquareIdx {
+  T *v;
+  __DEVICE__ SquareIdx(T *v) : v(v) { };
+  __DEVICE__ T operator()(CONE_IDX i) const { return v[i] * v[i]; }
 };
 
 template <typename T>
 struct Scale {
   T a;
-  Scale(T a) : a(a) { }
+  __DEVICE__ Scale(T a) : a(a) { }
   __DEVICE__ T operator()(T x) const { return a * x; }
 };
 
@@ -252,6 +252,7 @@ inline void ProxConeZeroGpu(const ConeConstraintRaw& cone_constr, T *v,
 template <typename T>
 inline void ProxConeNonNegGpu(const ConeConstraintRaw& cone_constr, T *v,
                               const cudaStream_t &stream) {
+
   ApplyGpu(Max0<T>(), cone_constr, v, stream);
 }
 
@@ -261,20 +262,32 @@ inline void ProxConeNonPosGpu(const ConeConstraintRaw& cone_constr, T *v,
   ApplyGpu(Min0<T>(), cone_constr, v, stream);
 }
 
+// TODO: Move this to the GPU, the sync here will make this slow.
 template <typename T>
 inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
                            const cudaStream_t &stream) {
   // Compute nrm(v[1:end])
   T nrm = thrust::transform_reduce(thrust::cuda::par.on(stream),
-      thrust::device_pointer_cast(cone_constr.idx),
+      thrust::device_pointer_cast(cone_constr.idx + 1u),
       thrust::device_pointer_cast(cone_constr.idx + cone_constr.size),
-      Square<T>(), static_cast<T>(0), thrust::plus<T>());
+      SquareIdx<T>(v), static_cast<T>(0), thrust::plus<T>());
+  nrm = std::sqrt(nrm);
+
+//  if (nrm > 0) {
+//    printf("%e\n", nrm);
+//    T *x = new T[4];
+//    cudaMemcpy(x, v, 4 * sizeof(T), cudaMemcpyDeviceToHost);
+//    for (int i = 0; i < 4; ++i)
+//      printf(".. %f\n", x[i]);
+//    exit(1);
+//  }
 
   // Get p from GPU.
   CONE_IDX i;
   T p;
   cudaMemcpyAsync(&i, cone_constr.idx, sizeof(CONE_IDX),
                   cudaMemcpyDeviceToHost, stream);
+  cudaStreamSynchronize(stream);
   cudaMemcpyAsync(&p, v + i, sizeof(T), cudaMemcpyDeviceToHost, stream);
   cudaStreamSynchronize(stream);
 
@@ -282,9 +295,8 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
   if (nrm <= -p) {
     ApplyGpu(Zero<T>(), cone_constr, v, stream);
   } else if (nrm >= std::abs(p)) {
-    T scale = (static_cast<T>(1) + p / nrm) / 2;
     cudaMemcpyAsync(v + i, &nrm, sizeof(T), cudaMemcpyHostToDevice, stream);
-    cudaStreamSynchronize(stream);
+    T scale = (static_cast<T>(1) + p / nrm) / 2;
     ApplyGpu(Scale<T>(scale), cone_constr, v, stream);
   }
 }
@@ -302,6 +314,7 @@ inline void ProxConeExpPrimalGpu(const ConeConstraintRaw& cone_constr, T *v,
   // CONE_IDX *idx = cone_constr.idx;
   // auto f = [idx, v](){ ProjectExpPrimalCone(idx, v); };
   // __Execute<<<1, 1, 0, stream>>>(f);
+  assert(false && "not implemented");
 }
 
 template <typename T>
@@ -311,6 +324,7 @@ inline void ProxConeExpDualGpu(const ConeConstraintRaw& cone_constr, T *v,
   // CONE_IDX *idx = cone_constr.idx;
   // auto f = [idx, v]() { ProjectExpDualCone(idx, v); };
   // __Execute<<<1, 1, 0, stream>>>(f);
+  assert(false && "not implemented");
 }
 
 template <typename T>

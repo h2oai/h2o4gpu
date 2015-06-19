@@ -4,7 +4,7 @@
 #include <cmath>
 
 #ifdef __CUDACC__
-#define __DEVICE__ __device__
+#define __DEVICE__ __device__ __host__
 #else
 #define __DEVICE__
 #endif
