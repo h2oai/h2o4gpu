@@ -168,7 +168,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   // Signal start of execution.
   if (_verbose > 0) {
     Printf(__HBAR__
-        "           POGS v%s - Proximal Graph Solver                      \n"
+        "           POGS v%s - Proximal Graph Solver (CPU)                \n"
         "           (c) Christopher Fougner, Stanford University 2014-2015\n",
         POGS_VERSION);
   }
