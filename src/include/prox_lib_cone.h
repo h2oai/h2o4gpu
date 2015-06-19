@@ -275,7 +275,7 @@ inline void ProxConeSocGpu(const ConeConstraintRaw& cone_constr, T *v,
   T p;
   cudaMemcpyAsync(&i, cone_constr.idx, sizeof(CONE_IDX),
                   cudaMemcpyDeviceToHost, stream);
-  cudaMemcpyAsync(v + i, &p, sizeof(T), cudaMemcpyDeviceToHost, stream);
+  cudaMemcpyAsync(&p, v + i, sizeof(T), cudaMemcpyDeviceToHost, stream);
   cudaStreamSynchronize(stream);
 
   // Project if ||x||_2 > p
