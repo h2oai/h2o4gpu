@@ -540,8 +540,7 @@ class PogsObjectiveCone : public PogsObjective<T> {
           thrust::device_pointer_cast(e),
           thrust::device_pointer_cast(cone.idx));
       T sum = thrust::reduce(iter, iter + cone.size);
-      thrust::fill(thrust::device_pointer_cast(e),
-          thrust::device_pointer_cast(e + cone.size), sum / cone.size);
+      thrust::fill(iter, iter + cone.size, sum / cone.size);
       CUDA_CHECK_ERR();
     }
   }
@@ -559,8 +558,7 @@ class PogsObjectiveCone : public PogsObjective<T> {
           thrust::device_pointer_cast(d),
           thrust::device_pointer_cast(cone.idx));
       T sum = thrust::reduce(iter, iter + cone.size);
-      thrust::fill(thrust::device_pointer_cast(d),
-          thrust::device_pointer_cast(d + cone.size), sum / cone.size);
+      thrust::fill(iter, iter + cone.size, sum / cone.size);
       CUDA_CHECK_ERR();
     }
   }

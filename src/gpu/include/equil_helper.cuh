@@ -151,10 +151,10 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
     cml::vector_add_constant(&e_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Rows());
     cudaDeviceSynchronize();
+    constrain_e(e);
     thrust::transform(thrust::device_pointer_cast(e),
         thrust::device_pointer_cast(e + e_vec.size),
         thrust::device_pointer_cast(e), ReciprF<T>(A->Rows()));
-    constrain_e(e);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 
@@ -165,10 +165,10 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
     cml::vector_add_constant(&d_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Cols());
     cudaDeviceSynchronize();
+    constrain_d(d);
     thrust::transform(thrust::device_pointer_cast(d),
         thrust::device_pointer_cast(d + d_vec.size),
         thrust::device_pointer_cast(d), ReciprF<T>(A->Cols()));
-    constrain_d(d);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }

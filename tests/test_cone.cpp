@@ -1,6 +1,8 @@
 #include "pogs.h"
 
 #define VERBOSE 2
+#define ABS_TOL 1e-4
+#define REL_TOL 1e-4
 
 /*
  *  min. [1 0] [x_1 x_2]'
@@ -24,6 +26,8 @@ void lp_cone_dense_row_direct() {
   pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(1000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -43,6 +47,8 @@ void lp_cone_dense_row_indirect() {
   pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(1000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -81,6 +87,8 @@ void lp_cone_dense_col_indirect() {
   pogs::PogsIndirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(1000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -112,8 +120,8 @@ void soc_cone_dense_row_direct() {
   pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(5000);
-  pogs_data.SetAbsTol(1e-5);
-  pogs_data.SetRelTol(1e-5);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -136,6 +144,8 @@ void soc_cone_dense_row_indirect() {
   pogs::PogsIndirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(5000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -157,6 +167,8 @@ void soc_cone_dense_col_direct() {
   pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(5000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }
@@ -178,6 +190,8 @@ void soc_cone_dense_col_indirect() {
   pogs::PogsIndirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(5000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
 }

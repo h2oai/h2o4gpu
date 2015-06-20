@@ -157,8 +157,8 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
     A->Mul('n', static_cast<T>(1.), e, static_cast<T>(0.), d);
     gsl::vector_add_constant(&d_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Cols());
-    std::transform(d, d + d_vec.size, d, ReciprF<T>(A->Cols()));
     constrain_d(d);
+    std::transform(d, d + d_vec.size, d, ReciprF<T>(A->Cols()));
   }
 }
 
