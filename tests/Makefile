@@ -9,16 +9,18 @@ CXX=g++
 CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse
+CULDFLAGS=-lcudart -lcublas -lcusparse
 
 # Check System Args.
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
-CULDFLAGS=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS_)
+CULDFLAGS+=-L/usr/local/cuda/lib -L/usr/local/lib
+CXXFLAGS+=-DPOGS_PRETTY_PRINT
+IFLAGS+=-DPOGS_PRETTY_PRINT
 else
 LDFLAGS=-lm -lopenblas
-CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
+CULDFLAGS+=-L/usr/local/cuda/lib64
 endif
 
 # CPU

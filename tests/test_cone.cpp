@@ -1,8 +1,11 @@
 #include "pogs.h"
+#include "util.h"
 
-#define VERBOSE 2
-#define ABS_TOL 1e-4
-#define REL_TOL 1e-4
+#define VERBOSE 0
+#define ABS_TOL 1e-5
+#define REL_TOL 1e-5
+
+#define TEST_EPS 1e-3
 
 /*
  *  min. [1 0] [x_1 x_2]'
@@ -11,6 +14,9 @@
  *       [ 1 -1] [x_1 x_2]' <= [0]
  *       [ 0  1]               [2]
  */
+
+#define LP_OPTVAL -2.
+
 template <typename T>
 void lp_cone_dense_row_direct() {
   size_t m = 3, n = 2;
@@ -30,6 +36,8 @@ void lp_cone_dense_row_direct() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -51,6 +59,8 @@ void lp_cone_dense_row_indirect() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -68,8 +78,12 @@ void lp_cone_dense_col_direct() {
   pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   pogs_data.SetMaxIter(1000);
+  pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
+  pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -91,6 +105,8 @@ void lp_cone_dense_col_indirect() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
 }
 
 
@@ -102,6 +118,8 @@ void lp_cone_dense_col_indirect() {
  *      [0] - [ 0 -1 -1] [x_1 x_2 x_3]' \in {0, SOC(3)}
  *      [0]   [ 0 0   1]
  */
+
+#define SOC_OPTVAL -5.65685425
 template <typename T>
 void soc_cone_dense_row_direct() {
   size_t m = 4, n = 3;
@@ -124,6 +142,8 @@ void soc_cone_dense_row_direct() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -148,6 +168,8 @@ void soc_cone_dense_row_indirect() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -171,6 +193,8 @@ void soc_cone_dense_col_direct() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
 template <typename T>
@@ -194,6 +218,8 @@ void soc_cone_dense_col_indirect() {
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
   pogs_data.Solve(b, c);
+
+  TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
 

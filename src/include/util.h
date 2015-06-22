@@ -8,8 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// PRETTY PRINT COLORS //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define NO_PRETTY_PRINT
-#ifdef NO_PRETTY_PRINT
+#ifndef POGS_PRETTY_PRINT
   #define __RESET       ""                     /* Default*/
   #define __BLACK       ""                     /* Black */
   #define __RED         ""                     /* Red */
@@ -234,6 +233,208 @@
     } \
   } while (0)
 
+// Test functions
+#define TEST_ASSERT(statement) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if (!(statement)) { \
+      std::cout << __RED << "TEST FAILED" << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    }\
+  } while (0)
+
+#define TEST_ASSERT_EQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) != (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " == " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_ASSERT_EQ_EPS(a, b, eps)  \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    decltype(eps) tol = eps * std::max<decltype(eps)>(std::abs((a)),\
+                                                      std::abs((b))); \
+    if ((a) - (b) > tol || (b) - (a) > tol ) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " == " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_ASSERT_GEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) < (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " >= " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_ASSERT_GT(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) <= (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " > " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_ASSERT_LEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) > (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " <= " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+
+#define TEST_ASSERT_LT(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) >= (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " < " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_ASSERT_NEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) == (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " != " << (b) \
+                << __RESET << std::endl; \
+      return; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT(statement) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if (!(statement)) { \
+      std::cout << __RED << "TEST FAILED: " << (statement) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_EQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) != (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " == " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_EQ_EPS(a, b, eps)  \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    decltype(eps) tol = eps * std::max<decltype(eps)>(std::abs((a)), \
+                                                      std::abs((b))); \
+    if ((a) - (b) > tol || (b) - (a) > tol ) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " == " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_GEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) < (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " >= " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_GT(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) <= (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " > " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_LEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) > (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " <= " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_LT(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) >= (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " < " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
+
+#define TEST_EXPECT_NEQ(a, b) \
+  do { \
+    std::cout << __FILE__ << ":" << __LINE__ << ":" \
+              << __BLUE << __func__ << "\n"; \
+    if ((a) == (b)) { \
+      std::cout << __RED << "TEST FAILED: " << (a) << " != " << (b) \
+                << __RESET << std::endl; \
+    } else { \
+      std::cout << __GREEN << "> TEST PASSED" << __RESET << std::endl; \
+    } \
+  } while (0)
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////// -DDEBUG DEFINED ONLY ///////////////////////////////
