@@ -23,6 +23,7 @@ POGS_HDR=\
 	include/matrix/matrix.h \
 	include/matrix/matrix_dense.h \
 	include/matrix/matrix_sparse.h \
+	include/matrix/matrix_fao.h \
 	include/projector/projector_cgls.h \
 	include/projector/projector_direct.h
 
@@ -43,7 +44,8 @@ CPU_HDR=\
 	cpu/include/projector_helper.h
 CPU_MTX_OBJ=\
 	$(OBJDIR)/cpu/matrix/matrix_sparse.o \
-	$(OBJDIR)/cpu/matrix/matrix_dense.o
+	$(OBJDIR)/cpu/matrix/matrix_dense.o \
+	$(OBJDIR)/cpu/matrix/matrix_fao.o
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
@@ -93,28 +95,28 @@ $(OBJDIR):
 
 # Directories CPU
 $(OBJDIR)/cpu: $(OBJDIR)
-	mkdir -p $@ 
+	mkdir -p $@
 
 $(OBJDIR)/cpu/matrix: $(OBJDIR)/cpu
-	mkdir -p $@ 
+	mkdir -p $@
 
 $(OBJDIR)/cpu/projector: $(OBJDIR)/cpu
-	mkdir -p $@ 
+	mkdir -p $@
 
 # Directories GPU
 $(OBJDIR)/gpu: $(OBJDIR)
-	mkdir -p $@ 
+	mkdir -p $@
 
 $(OBJDIR)/gpu/matrix: $(OBJDIR)/gpu
-	mkdir -p $@ 
+	mkdir -p $@
 
 $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
-	mkdir -p $@ 
+	mkdir -p $@
 
 
 # POGS CPU objects
 $(OBJDIR)/cpu/pogs.o: cpu/pogs.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu
-	$(CXX) -I include -Icpu/include $< $(CXXFLAGS) -c -o $@ 
+	$(CXX) -I include -Icpu/include $< $(CXXFLAGS) -c -o $@
 
 $(OBJDIR)/cpu/matrix/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/matrix
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
@@ -127,10 +129,10 @@ $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu
 
 # POGS GPU objects
 $(OBJDIR)/pogs_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR)
-	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
+	$(CUXX) $(CUFLAGS) $^ -dlink -o $@
 
 $(OBJDIR)/gpu/pogs.o: gpu/pogs.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
-	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
