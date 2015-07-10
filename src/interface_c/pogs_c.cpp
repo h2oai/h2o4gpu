@@ -114,12 +114,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   }
 
   // Solve.
-  info->status = pogs_data.Solve(*f, *g);
+  *(info->status) = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.GetOptval();
-  info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho();
+  *(info->obj) = pogs_data.GetOptval();
+  *(info->iter) = pogs_data.GetFinalIter();
+  *(info->rho) = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -149,12 +149,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   }
 
   // Solve.
-  info->status = pogs_data.Solve(*f, *g);
+  *(info->status) = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.GetOptval();
-  info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho();
+  *(info->obj) = pogs_data.GetOptval();
+  *(info->iter) = pogs_data.GetFinalIter();
+  *(info->rho) = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -184,12 +184,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   }
 
   // Solve.
-  info->status = pogs_data.Solve(*f, *g);
+  *(info->status) = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.GetOptval();
-  info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho();
+  *(info->obj) = pogs_data.GetOptval();
+  *(info->iter) = pogs_data.GetFinalIter();
+  *(info->rho) = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -219,12 +219,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   }
 
   // Solve.
-  info->status = pogs_data.Solve(*f, *g);
+  *(info->status) = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.GetOptval();
-  info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho();
+  *(info->obj) = pogs_data.GetOptval();
+  *(info->iter) = pogs_data.GetFinalIter();
+  *(info->rho) = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -238,9 +238,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
 
 template <typename T>
 int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
-         const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
-         const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
+            const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
+            void *settings_, void *info_, void *solution_){
 
+  const PogsSettings<T> * settings = static_cast<PogsSettings<T> *>(settings_);
+  PogsInfo<T> * info = static_cast<PogsInfo<T> *>(info_);
+  PogsSolution<T> * solution = static_cast<PogsSolution<T> *>(solution_);  
   PogsWork * p_work = static_cast<PogsWork *>(work);
   
   size_t m = p_work->m;
@@ -266,7 +269,7 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
     PogsRun(*pogs_data, f, g, settings, info, solution);      
   }
 
-  return info->status;
+  return *(info->status);
 } 
 
 template<typename T>
@@ -321,16 +324,14 @@ void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, con
 
 }
 
-int pogs_solve_single(void *work, PogsSettings<float> *settings, 
+int pogs_solve_single(void *work, PogsSettingsS *settings, PogsSolutionS *solution, PogsInfoS *info,
                       const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
-                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h,
-                      PogsSolution<float> *solution, PogsInfo<float> *info){
+                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h){
   return PogsRun<float>(work, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h, settings, info, solution);
 }
-int pogs_solve_double(void *work, PogsSettings<double> *settings, 
+int pogs_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *solution, PogsInfoD *info,
                       const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
-                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h,
-                      PogsSolution<double> *solution, PogsInfo<double> *info){
+                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h){
   return PogsRun<double>(work, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h, settings, info, solution);
 }
 

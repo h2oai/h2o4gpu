@@ -79,14 +79,39 @@ struct PogsSettings{
   int adaptive_rho, gap_stop, warm_start;
 };
 
+struct PogsSettingsS{
+  float rho, abs_tol, rel_tol;
+  unsigned int max_iters, verbose;
+  int adaptive_rho, gap_stop, warm_start;
+};
+
+struct PogsSettingsD{
+  double rho, abs_tol, rel_tol;
+  unsigned int max_iters, verbose;
+  int adaptive_rho, gap_stop, warm_start;
+};
+
 
 // created and managed by caller
 template <typename T>
 struct PogsInfo{
-    unsigned int iter;
-    int status;
-    T obj, rho;
+    unsigned int *iter;
+    int *status;
+    T *obj, *rho;
 };
+
+struct PogsInfoS{
+    unsigned int *iter;
+    int *status;
+    float *obj, *rho;
+};
+
+struct PogsInfoD{
+    unsigned int *iter;
+    int *status;
+    double *obj, *rho;
+};
+
 
 // created and managed by caller
 template <typename T>
@@ -94,6 +119,13 @@ struct PogsSolution{
     T *x, *y, *mu, *nu; 
 };
 
+struct PogsSolutionS{
+    float *x, *y, *mu, *nu; 
+};
+
+struct PogsSolutionD{
+    double *x, *y, *mu, *nu; 
+};
 
 // created and managed locally
 struct PogsWork{
@@ -140,8 +172,8 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
 
 template<typename T>
 int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
-         const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
-         const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+            const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
+            void *settings, void *info, void *solution);
 
 template<typename T>
 void PogsShutdown(void * work);
@@ -157,14 +189,12 @@ void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A);
 void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A);
 void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
 void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
-int pogs_solve_single(void *work, PogsSettings<float> *settings, 
+int pogs_solve_single(void *work, PogsSettingsS *settings, PogsSolutionS *solution, PogsInfoS *info,
                       const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
-                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h,
-                      PogsSolution<float> *solution, PogsInfo<float> *info);
-int pogs_solve_double(void *work, PogsSettings<double> *settings, 
+                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h);
+int pogs_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *solution, PogsInfoD *info,
                       const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
-                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h,
-                      PogsSolution<double> *solution, PogsInfo<double> *info);
+                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h);
 void pogs_finish_single(void * work);
 void pogs_finish_double(void * work);
 

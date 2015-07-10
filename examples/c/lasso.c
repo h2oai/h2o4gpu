@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pogs_c.h"
+#include "../../src/interface_c/pogs_c_api.h"
 
 // Change these two definitions to switch between float and double.
 #define POGS PogsD
@@ -31,9 +31,11 @@ int main() {
   // Define output variables.
   real_t *x = (real_t *) malloc(n * sizeof(real_t));
   real_t *y = (real_t *) malloc(m * sizeof(real_t));
+  real_t *mu = (real_t *) malloc(n * sizeof(real_t));
   real_t *nu = (real_t *) malloc(m * sizeof(real_t));
   real_t optval;
   unsigned int final_iter = 0;
+  int status;
 
   // Generate random A.
   for (unsigned int i = 0; i < m * n; ++i)
@@ -97,13 +99,37 @@ int main() {
   int verbose = 2;
   int adaptive_rho = 1;
   int gap_stop = 0;
+  int warm_start = 0;
+
+  SettingsD * settings = calloc(1,sizeof(SettingsD));
+  settings->rho=rho;
+  settings->abs_tol=abs_tol;
+  settings->rel_tol=rel_tol;
+  settings->max_iters=max_iter;
+  settings->verbose=verbose;
+  settings->adaptive_rho=adaptive_rho;
+  settings->gap_stop=gap_stop;
+  settings->warm_start=warm_start;
+
+  InfoD * info = calloc(1,sizeof(InfoD));
+  info->iter=&final_iter;
+  info->status=&status;
+  info->obj=&optval;
+  info->rho=&rho;
+
+  SolutionD * sol = calloc(1,sizeof(SolutionD));
+  sol->x=x;
+  sol->y=y;
+  sol->mu=mu;
+  sol->nu=nu;
+
 
   // Solve
-  POGS(ord, m, n, A,
-      f_a, f_b, f_c, f_d, f_e, f_h,
-      g_a, g_b, g_c, g_d, g_e, g_h,
-      rho, abs_tol, rel_tol, max_iter, verbose, adaptive_rho, gap_stop,
-      x, y, nu, &optval, &final_iter);
+  void * work = pogs_init_dense_double(ord, m, n, A);
+  int err = pogs_solve_double(work, settings, sol, info, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h);
+  pogs_finish_double(work);
+
+
   printf("Lasso optval = %e, final iter = %u\n", optval, final_iter);
 
   // Clean up.
@@ -111,7 +137,8 @@ int main() {
   free(b);
   free(x);
   free(y);
-  free(l);
+  free(mu);
+  free(nu);
   free(x_true);
 
   free(f_a);
@@ -127,6 +154,10 @@ int main() {
   free(g_d);
   free(g_e);
   free(g_h);
+
+  free(settings);
+  free(info);
+  free(sol);
 
   return 0;
 }
