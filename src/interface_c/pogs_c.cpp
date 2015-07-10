@@ -44,20 +44,17 @@ void * PogsInit(size_t m, size_t n, const T *A, const char ord){
 }
 
 //Sparse Indirect
-template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers){
+template <typename T>
+void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord){
     
-    bool directbit = false, densebit = false, rowmajorbit = O == ROW_MAJ;
+    // bool directbit = false, densebit = false, rowmajorbit = O == ROW_MAJ;
+    bool directbit = false, densebit = false, rowmajorbit = ord == 'r';
 
+    // char ord = rowmajorbit ? 'r' : 'c';
+    pogs::MatrixSparse<T> A_(ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
     pogs::PogsIndirect<T,pogs::MatrixSparse<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
     PogsWork * work;
-
-
-    //create pogs_data object
-    char ord = rowmajorbit ? 'r' : 'c';
-    pogs::MatrixSparse<T> A_(ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
-    pogs_data = new pogs::PogsIndirect<T, pogs::MatrixSparse<T> >(A_);
 
 
     // create pogs function vectors
@@ -72,7 +69,10 @@ void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzin
     for (unsigned int j = 0; j < n; ++j)
       g->emplace_back(static_cast<Function>(kZero), static_cast<T>(1), static_cast<T>(0), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0));   
 
+    //create pogs_data object
+    pogs_data = new pogs::PogsIndirect<T, pogs::MatrixSparse<T> >(A_);
 
+    // create new pogs work struct
     work = new PogsWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
     return static_cast<void *>(work);
 }
@@ -310,10 +310,15 @@ void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A)
     return ord == COL_MAJ ? PogsInit<double>(m,n,A,'c') : PogsInit<double>(m,n,A,'r');   
 }
 void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers){
-  return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,nnz,nzvals,indices,pointers) : PogsInit<float, ROW_MAJ>(m,n,nnz,nzvals,indices,pointers);   
+  // return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,nnz,nzvals,indices,pointers) : PogsInit<float, ROW_MAJ>(m,n,nnz,nzvals,indices,pointers);   
+  return ord == COL_MAJ ? PogsInit<float>(m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<float>(m,n,nnz,nzvals,indices,pointers,'r');   
+
+
 }
 void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers){
-  return ord == COL_MAJ ? PogsInit<double, COL_MAJ>(m,n,nnz,nzvals,indices,pointers) : PogsInit<double, ROW_MAJ>(m,n,nnz,nzvals,indices,pointers);   
+  // return ord == COL_MAJ ? PogsInit<double, COL_MAJ>(m,n,nnz,nzvals,indices,pointers) : PogsInit<double, ROW_MAJ>(m,n,nnz,nzvals,indices,pointers);   
+  return ord == COL_MAJ ? PogsInit<double>(m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<double>(m,n,nnz,nzvals,indices,pointers,'r');   
+
 }
 
 int pogs_solve_single(void *work, PogsSettings<float> *settings, 

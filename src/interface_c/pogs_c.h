@@ -113,8 +113,8 @@ template <typename T>
 void * PogsInit(size_t m, size_t n, const T *A, const char ord);
 
 // Sparse 
-template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers);
+template <typename T>
+void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord);
 
 // TODO: check implementation efficiency (currently suspect)
 template <typename T>
