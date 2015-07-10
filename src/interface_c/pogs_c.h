@@ -3,6 +3,15 @@
 
 #include <stddef.h>
 
+
+// TODO: arg for projector? or do we leave dense-direct and sparse-indirect pairings fixed?
+// TODO: get primal and dual variables and rho
+// TODO: set primal and dual variables and rho
+// TODO: methods for warmstart with x,nu,rho,options
+// TODO: pass in void *
+// TODO: pogs shutdown
+// TODO: julia finalizer
+
 // Wrapper for POGS, a solver for convex problems in the form
 //   min. \sum_i f(y_i) + g(x_i)
 //   s.t.  y = Ax,
@@ -32,12 +41,16 @@
 // - real_t *y         : Array for solution vector y.
 // - real_t *nu        : Array for dual vector nu.
 // - real_t *optval    : Pointer to single real for f(y^*) + g(x^*).
+// - uint final_iter   : # of iterations at termination
 //
 // Author: Chris Fougner (fougner@stanford.edu)
 //
 
 // Possible column and row ordering.
 enum ORD { COL_MAJ, ROW_MAJ };
+
+// Possible projector implementations
+enum PROJECTOR { DIRECT, INDIRECT };
 
 // Possible objective values.
 enum FUNCTION { ABS,       // f(x) = |x|
@@ -57,29 +70,105 @@ enum FUNCTION { ABS,       // f(x) = |x|
                 SQUARE,    // f(x) = (1/2) x^2
                 ZERO };    // f(x) = 0
 
+
+// created and managed by caller
+template <typename T>
+struct PogsSettings{
+  T rho, abs_tol, rel_tol;
+  uint max_iters, verbose;
+  int adaptive_rho, gap_stop, warm_start;
+};
+
+
+// created and managed by caller
+template <typename T>
+struct PogsInfo{
+    int iter, status;
+    T obj, rho;
+};
+
+// created and managed by caller
+template <typename T>
+struct PogsSolution{
+    T *x, *y, *mu, *nu; 
+};
+
+
+// created and managed locally
+template <typename T>
+struct PogsWork{
+    size_t m,n;
+    bool direct, dense, rowmajor;
+    void *pogs_data;
+    void *f, *g;
+
+    ~PogsWork(){
+      delete f;
+      delete g;
+      delete pogs_data;
+    }
+};
+
+// Dense
+template <typename T, ORD O>
+void * PogsInit(size_t m, size_t n, const T *A);
+
+// Sparse 
+template <typename T, ORD O>
+void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const T *pointers, const T *nzindices);
+
+// TODO: check implementation efficiency (currently suspect)
+template <typename T>
+void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
+                          const T *f_d, const T *f_e, const FUNCTION *f_h);
+
+template <typename T>
+void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+  const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+
+
+template <typename T>
+void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);emcpy(solution->nu, pogs_data.GetNu(), m);
+
+template<typename T>
+void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+
+template<typename T>
+void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+
+template <typename T>
+int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
+         const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
+         const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+
+template <typename T>
+void PogsShutdown(void * work);
+
+                
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int PogsD(enum ORD ord, size_t m, size_t n, const double *A,
-          const double *f_a, const double *f_b, const double *f_c,
-          const double *f_d, const double *f_e, const enum FUNCTION *f_h,
-          const double *g_a, const double *g_b, const double *g_c,
-          const double *g_d, const double *g_e, const enum FUNCTION *g_h,
-          double rho, double abs_tol, double rel_tol, unsigned int max_iter,
-          unsigned int verbose, int adaptive_rho, int gap_stop,
-          double *x, double *y, double *nu, double *optval, unsigned int * final_iter);
 
-int PogsS(enum ORD ord, size_t m, size_t n, const float *A,
-          const float *f_a, const float *f_b, const float *f_c,
-          const float *f_d, const float *f_e, const enum FUNCTION *f_h,
-          const float *g_a, const float *g_b, const float *g_c,
-          const float *g_d, const float *g_e, const enum FUNCTION *g_h,
-          float rho, float abs_tol, float rel_tol, unsigned int max_iter,
-          unsigned int verbose, int adaptive_rho, int gap_stop,
-          float *x, float *y, float *nu, float *optval, unsigned int * final_iter);
+void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A);
+void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A);
+void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
+void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
+int pogs_solve_single(void *work, PogsSettings<float> *settings, 
+                      const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
+                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h,
+                      PogsSolution<float> *solution, PogsInfo<float> *info);
+int pogs_solve_double(void *work, PogsSettings<double> *settings, 
+                      const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
+                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h,
+                      PogsSolution<double> *solution, PogsInfo<double> *info);
+void pogs_finish_single(void * work);
+void pogs_finish_double(void * work);
 
-// TODO: Add interface for sparse version.
 
 #ifdef __cplusplus
 }
