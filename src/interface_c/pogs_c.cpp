@@ -10,16 +10,16 @@ void * PogsInit(size_t m, size_t n, const T *A){
     
     bool directbit = true, densebit = true, rowmajorbit = O == ROW_MAJ;
 
-    char ord = rowmajor ? 'r' : 'c';
+    char ord = rowmajorbit ? 'r' : 'c';
     pogs::MatrixDense<T> A_(ord,m,n,A);
     pogs::PogsDirect<T,pogs::MatrixDense<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
-    PogsWork<T> * work;
+    PogsWork * work;
 
 
     // create pogs function vectors
-    f = new std::vector<FunctionObj<T> >
-    g = new std::vector<FunctionObj<T> >
+    f = new std::vector<FunctionObj<T> >;
+    g = new std::vector<FunctionObj<T> >;
 
 
     f->reserve(m);
@@ -35,7 +35,7 @@ void * PogsInit(size_t m, size_t n, const T *A){
     pogs_data = new pogs::PogsDirect<T,pogs::MatrixDense<T> >(A_);
 
     // create new pogs work struct
-    work = new PogsWork<T>(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
+    work = new PogsWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
 
 
     return static_cast<void *>(work);
@@ -44,24 +44,24 @@ void * PogsInit(size_t m, size_t n, const T *A){
 
 //Sparse Indirect
 template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const T *pointers, const T *nzindices){
+void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers){
     
     bool directbit = false, densebit = false, rowmajorbit = O == ROW_MAJ;
 
     pogs::PogsIndirect<T,pogs::MatrixSparse<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
-    PogsWork<T> * work;
+    PogsWork * work;
 
 
     //create pogs_data object
-    char ord = rowmajor ? 'r' : 'c';
-    pogs::MatrixSparse<T> A_(ord, m, n, nnz, nzvals, pointers, nzindices);
+    char ord = rowmajorbit ? 'r' : 'c';
+    pogs::MatrixSparse<T> A_(ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
     pogs_data = new pogs::PogsIndirect<T, pogs::MatrixSparse<T> >(A_);
 
 
     // create pogs function vectors
-    f = new std::vector<FunctionObj<T> >
-    g = new std::vector<FunctionObj<T> >
+    f = new std::vector<FunctionObj<T> >;
+    g = new std::vector<FunctionObj<T> >;
 
     f->reserve(m);
     for (unsigned int i = 0; i < m; ++i)
@@ -72,7 +72,7 @@ void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const T *pointe
       g->emplace_back(static_cast<Function>(kZero), static_cast<T>(1), static_cast<T>(0), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0));   
 
 
-    work = new PogsWork<T>(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
+    work = new PogsWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
     return static_cast<void *>(work);
 }
 
@@ -81,27 +81,27 @@ template <typename T>
 void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
                             const T *f_d, const T *f_e, const FUNCTION *f_h){
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].a= f_a[i];
+    f->at(i).a= f_a[i];
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].b= f_b[i];
+    f->at(i).b= f_b[i];
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].c= f_c[i];
+    f->at(i).c= f_c[i];
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].d= f_d[i];
+    f->at(i).d= f_d[i];
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].e= f_e[i];
+    f->at(i).e= f_e[i];
   for (unsigned int i = 0; i < m; ++i)
-    *f[j].h= f_h[i];
+    f->at(i).h= static_cast<Function>(f_h[i]);
 }
 
 template <typename T>
-void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, \
               const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
   // Set parameters.
   pogs_data.SetRho(settings->rho);
   pogs_data.SetAbsTol(settings->abs_tol);
   pogs_data.SetRelTol(settings->rel_tol);
-  pogs_data.SetMaxIter(settings->max_iter);
+  pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
@@ -116,9 +116,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->optval = pogs_data.GetOptval();
+  info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho()
+  info->rho = pogs_data.GetRho();
+
+  size_t m = f->size();
+  size_t n = g->size();
 
   memcpy(solution->x, pogs_data.GetX(), n);
   memcpy(solution->y, pogs_data.GetY(), m);
@@ -127,13 +130,13 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
 }
 
 template<typename T>
-void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
+void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, \
+                const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
   // Set parameters.
   pogs_data.SetRho(settings->rho);
   pogs_data.SetAbsTol(settings->abs_tol);
   pogs_data.SetRelTol(settings->rel_tol);
-  pogs_data.SetMaxIter(settings->max_iter);
+  pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
@@ -148,9 +151,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->optval = pogs_data.GetOptval();
+  info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho()
+  info->rho = pogs_data.GetRho();
+
+  size_t m = f->size();
+  size_t n = g->size();
 
   memcpy(solution->x, pogs_data.GetX(), n);
   memcpy(solution->y, pogs_data.GetY(), m);
@@ -165,7 +171,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   pogs_data.SetRho(settings->rho);
   pogs_data.SetAbsTol(settings->abs_tol);
   pogs_data.SetRelTol(settings->rel_tol);
-  pogs_data.SetMaxIter(settings->max_iter);
+  pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
@@ -180,9 +186,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->optval = pogs_data.GetOptval();
+  info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho()
+  info->rho = pogs_data.GetRho();
+
+  size_t m = f->size();
+  size_t n = g->size();
 
   memcpy(solution->x, pogs_data.GetX(), n);
   memcpy(solution->y, pogs_data.GetY(), m);
@@ -197,11 +206,10 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   pogs_data.SetRho(settings->rho);
   pogs_data.SetAbsTol(settings->abs_tol);
   pogs_data.SetRelTol(settings->rel_tol);
-  pogs_data.SetMaxIter(settings->max_iter);
+  pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
-  pogs_data.SetWarmStart(static_cast<bool>(settings->gap_stop));
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
@@ -213,9 +221,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->optval = pogs_data.GetOptval();
+  info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
-  info->rho = pogs_data.GetRho()
+  info->rho = pogs_data.GetRho();
+
+  size_t m = f->size();
+  size_t n = g->size();
 
   memcpy(solution->x, pogs_data.GetX(), n);
   memcpy(solution->y, pogs_data.GetY(), m);
@@ -229,7 +240,7 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
          const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
          const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
 
-  p_work = static_cast<PogsWork<T> *>(work);
+  PogsWork * p_work = static_cast<PogsWork *>(work);
   
   size_t m = p_work->m;
   size_t n = p_work->n;
@@ -243,28 +254,45 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
   // Run
   if (p_work->densebit){
     if (p_work->directbit){
-      pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsDirect<T, pogs::MatrixDense<T> > >(p_work->pogs_data);
-      PogsRun(*pogs_data, f, g, settings_, info_, solution_);
+      pogs::PogsDirect<T, pogs::MatrixDense<T> > *pogs_data = static_cast< pogs::PogsDirect<T, pogs::MatrixDense<T> > *>(p_work->pogs_data);
+      PogsRun(*pogs_data, f, g, settings, info, solution);
     }else{
-      pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixDense<T> > >(p_work->pogs_data);
-      PogsRun(*pogs_data, f, g, settings_, info_, solution_);
+      pogs::PogsIndirect<T, pogs::MatrixDense<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixDense<T> > *>(p_work->pogs_data);
+      PogsRun(*pogs_data, f, g, settings, info, solution);
     }
   }else{
-    if (p_work->directbit){
-      pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsDirect<T, pogs::MatrixSparse<T> > >(p_work->pogs_data);
-      PogsRun(*pogs_data, f, g, settings_, info_, solution_);
-    }else{
-      pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixSparse<T> > >(p_work->pogs_data);
-      PogsRun(*pogs_data, f, g, settings_, info_, solution_);      
-    }
+    pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *>(p_work->pogs_data);
+    PogsRun(*pogs_data, f, g, settings, info, solution);      
   }
 
   return info->status;
 } 
 
-template <typename T>
+template<typename T>
 void PogsShutdown(void * work){
-  p_work = static_cast<PogsWork<T> *>(work);
+  PogsWork * p_work = static_cast<PogsWork *>(work);
+
+  std::vector<FunctionObj<T> > *f, *g;
+  f = static_cast<std::vector<FunctionObj<T> > *>(p_work->f);
+  g = static_cast<std::vector<FunctionObj<T> > *>(p_work->g);
+
+  delete f;
+  delete g;
+
+  // Run
+  if (p_work->densebit){
+    if (p_work->directbit){
+      pogs::PogsDirect<T, pogs::MatrixDense<T> > *pogs_data = static_cast< pogs::PogsDirect<T, pogs::MatrixDense<T> > *>(p_work->pogs_data);
+      delete pogs_data;
+    }else{
+      pogs::PogsIndirect<T, pogs::MatrixDense<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixDense<T> > *>(p_work->pogs_data);
+      delete pogs_data;
+    }
+  }else{
+    pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *>(p_work->pogs_data);
+    delete pogs_data;
+  }
+
   delete p_work;
 }
 
@@ -273,7 +301,7 @@ extern "C" {
 
 
 void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A){
-  return ord == COL_MAJ ? return PogsInit<float, COL_MAJ>(m,n,A) : return PogsInit<float, ROW_MAJ>(m,n,A);   
+  return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,A) : PogsInit<float, ROW_MAJ>(m,n,A);   
 }
 void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A){
   return ord == COL_MAJ ? PogsInit<double, COL_MAJ>(m,n,A) : PogsInit<double, ROW_MAJ>(m,n,A);   

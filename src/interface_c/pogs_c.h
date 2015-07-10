@@ -75,7 +75,7 @@ enum FUNCTION { ABS,       // f(x) = |x|
 template <typename T>
 struct PogsSettings{
   T rho, abs_tol, rel_tol;
-  uint max_iters, verbose;
+  unsigned int max_iters, verbose;
   int adaptive_rho, gap_stop, warm_start;
 };
 
@@ -83,7 +83,8 @@ struct PogsSettings{
 // created and managed by caller
 template <typename T>
 struct PogsInfo{
-    int iter, status;
+    unsigned int iter;
+    int status;
     T obj, rho;
 };
 
@@ -95,17 +96,15 @@ struct PogsSolution{
 
 
 // created and managed locally
-template <typename T>
 struct PogsWork{
     size_t m,n;
-    bool direct, dense, rowmajor;
-    void *pogs_data;
-    void *f, *g;
+    bool directbit, densebit, rowmajorbit;
+    void *pogs_data, *f, *g;
 
-    ~PogsWork(){
-      delete f;
-      delete g;
-      delete pogs_data;
+    PogsWork(size_t m_, size_t n_, bool direct_, bool dense_, bool rowmajor_, void *pogs_data_, void *f_, void *g_){
+      m=m_;n=n_;
+      directbit=direct_; densebit=dense_; rowmajorbit=rowmajor_;
+      pogs_data= pogs_data_; f=f_; g=g_;
     }
 };
 
@@ -115,7 +114,7 @@ void * PogsInit(size_t m, size_t n, const T *A);
 
 // Sparse 
 template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const T *pointers, const T *nzindices);
+void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers);
 
 // TODO: check implementation efficiency (currently suspect)
 template <typename T>
@@ -129,7 +128,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
 
 template <typename T>
 void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);emcpy(solution->nu, pogs_data.GetNu(), m);
+              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
 
 template<typename T>
 void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
@@ -139,12 +138,12 @@ template<typename T>
 void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
               const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
 
-template <typename T>
+template<typename T>
 int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
          const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
          const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
 
-template <typename T>
+template<typename T>
 void PogsShutdown(void * work);
 
                 
@@ -175,4 +174,13 @@ void pogs_finish_double(void * work);
 #endif
 
 #endif  // POGS_C_H
+
+
+
+
+
+
+
+
+
 
