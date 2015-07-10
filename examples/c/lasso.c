@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../src/interface_c/pogs_c_api.h"
+#include "pogs_c_api.h"
 
 // Change these two definitions to switch between float and double.
 #define POGS PogsD
@@ -33,9 +33,6 @@ int main() {
   real_t *y = (real_t *) malloc(m * sizeof(real_t));
   real_t *mu = (real_t *) malloc(n * sizeof(real_t));
   real_t *nu = (real_t *) malloc(m * sizeof(real_t));
-  real_t optval;
-  unsigned int final_iter = 0;
-  int status;
 
   // Generate random A.
   for (unsigned int i = 0; i < m * n; ++i)
@@ -101,7 +98,7 @@ int main() {
   int gap_stop = 0;
   int warm_start = 0;
 
-  SettingsD * settings = calloc(1,sizeof(SettingsD));
+  struct PogsSettingsD * settings = calloc(1,sizeof(struct PogsSettingsD));
   settings->rho=rho;
   settings->abs_tol=abs_tol;
   settings->rel_tol=rel_tol;
@@ -111,26 +108,36 @@ int main() {
   settings->gap_stop=gap_stop;
   settings->warm_start=warm_start;
 
-  InfoD * info = calloc(1,sizeof(InfoD));
-  info->iter=&final_iter;
-  info->status=&status;
-  info->obj=&optval;
-  info->rho=&rho;
+  struct PogsInfoD * info = calloc(1,sizeof(struct PogsInfoD));
 
-  SolutionD * sol = calloc(1,sizeof(SolutionD));
+  struct PogsSolutionD * sol = calloc(1,sizeof(struct PogsSolutionD));
   sol->x=x;
   sol->y=y;
   sol->mu=mu;
   sol->nu=nu;
 
+  int err;
 
   // Solve
   void * work = pogs_init_dense_double(ord, m, n, A);
-  int err = pogs_solve_double(work, settings, sol, info, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h);
+  err = pogs_solve_double(work, settings, sol, info, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h);
+  printf(" Status=%u\n Lasso optval = %e\n Final iter = %u\n Rho = %e\n", err, info->obj, info->iter, info->rho);
+
+  // Warm Start 1 - Pass in *work, last value of rho
+  settings->rho = info->rho;
+  err = pogs_solve_double(work, settings, sol, info, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h);
+  printf(" Status=%u\n Lasso optval = %e\n Final iter = %u\n Rho = %e\n", err, info->obj, info->iter, info->rho);
+
+
+  // Warm Start 2 - Pass in *work, last values of rho, x, nu
+  settings->rho = info->rho;
+  settings->warm_start = 1;
+  err = pogs_solve_double(work, settings, sol, info, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h);
+  printf(" Status=%u\n Lasso optval = %e\n Final iter = %u\n Rho = %e\n", err, info->obj, info->iter, info->rho);
+
+  // Shutdown POGS
   pogs_finish_double(work);
 
-
-  printf("Lasso optval = %e, final iter = %u\n", optval, final_iter);
 
   // Clean up.
   free(A);

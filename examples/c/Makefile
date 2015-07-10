@@ -19,6 +19,10 @@ LDFLAGS=$(LDFLAGS_) -lopenblas
 CULDFLAGS=-lm -L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
+
+.PHONY: default
+default: cpu
+
 # CPU
 cpu: lasso.c
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
@@ -33,6 +37,7 @@ gpu: lasso.c
 	$(CC) $(CFLAGS) -o run $< $(POGSROOT)/interface_c/pogs_c.o \
 		$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
+.PHONY: clean
 clean:
 	rm -f *.o *~ *~ run 
 	rm -rf *.dSYM
