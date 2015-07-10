@@ -5,12 +5,13 @@
 
 
 //Dense Direct
-template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, const T *A){
+template <typename T>
+void * PogsInit(size_t m, size_t n, const T *A, const char ord){
     
-    bool directbit = true, densebit = true, rowmajorbit = O == ROW_MAJ;
+    bool directbit = true, densebit = true, rowmajorbit = ord == 'r';
+    // bool directbit = true, densebit = true, rowmajorbit = O == ROW_MAJ;
 
-    char ord = rowmajorbit ? 'r' : 'c';
+    // char ord = rowmajorbit ? 'r' : 'c';
     pogs::MatrixDense<T> A_(ord,m,n,A);
     pogs::PogsDirect<T,pogs::MatrixDense<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
@@ -301,10 +302,12 @@ extern "C" {
 
 
 void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A){
-  return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,A) : PogsInit<float, ROW_MAJ>(m,n,A);   
+  // return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,A) : PogsInit<float, ROW_MAJ>(m,n,A);   
+    return ord == COL_MAJ ? PogsInit<float>(m,n,A,'c') : PogsInit<float>(m,n,A,'r');   
 }
 void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A){
-  return ord == COL_MAJ ? PogsInit<double, COL_MAJ>(m,n,A) : PogsInit<double, ROW_MAJ>(m,n,A);   
+  // return ord == COL_MAJ ? PogsInit<double, COL_MAJ>(m,n,A) : PogsInit<double, ROW_MAJ>(m,n,A); 
+    return ord == COL_MAJ ? PogsInit<double>(m,n,A,'c') : PogsInit<double>(m,n,A,'r');   
 }
 void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers){
   return ord == COL_MAJ ? PogsInit<float, COL_MAJ>(m,n,nnz,nzvals,indices,pointers) : PogsInit<float, ROW_MAJ>(m,n,nnz,nzvals,indices,pointers);   

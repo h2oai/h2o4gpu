@@ -109,8 +109,8 @@ struct PogsWork{
 };
 
 // Dense
-template <typename T, ORD O>
-void * PogsInit(size_t m, size_t n, const T *A);
+template <typename T>
+void * PogsInit(size_t m, size_t n, const T *A, const char ord);
 
 // Sparse 
 template <typename T, ORD O>
