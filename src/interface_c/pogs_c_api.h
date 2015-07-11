@@ -31,6 +31,14 @@ enum FUNCTION { ABS,       // f(x) = |x|
                 SQUARE,    // f(x) = (1/2) x^2
                 ZERO };    // f(x) = 0
 
+// Possible status values.
+enum STATUS { POGS_SUCCESS,    // Converged succesfully.
+      POGS_INFEASIBLE, // Problem likely infeasible.
+      POGS_UNBOUNDED,  // Problem likely unbounded
+      POGS_MAX_ITER,   // Reached max iter.
+      POGS_NAN_FOUND,  // Encountered nan.
+      POGS_ERROR };    // Generic error, check logs.
+
 struct PogsSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
@@ -44,15 +52,15 @@ struct PogsSettingsD{
 };
 
 struct PogsInfoS{
-    unsigned int *iter;
-    int *status;
-    float *obj, *rho;
+    unsigned int iter;
+    int status;
+    float obj, rho;
 };
 
 struct PogsInfoD{
-    unsigned int *iter;
-    int *status;
-    double *obj, *rho;
+    unsigned int iter;
+    int status;
+    double obj, rho;
 };
 
 struct PogsSolutionS{
@@ -63,13 +71,6 @@ struct PogsSolutionD{
     double *x, *y, *mu, *nu; 
 };
 
-
-typedef struct PogsSettingsS SettingsS;
-typedef struct PogsSettingsD SettingsD;
-typedef struct PogsInfoS InfoS;
-typedef struct PogsInfoD InfoD;
-typedef struct PogsSolutionS SolutionS;
-typedef struct PogsSolutionD SolutionD;
 
 
 

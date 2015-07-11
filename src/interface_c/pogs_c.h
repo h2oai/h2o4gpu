@@ -71,6 +71,14 @@ enum FUNCTION { ABS,       // f(x) = |x|
                 ZERO };    // f(x) = 0
 
 
+// Possible status values.
+enum STATUS { POGS_SUCCESS,    // Converged succesfully.
+      POGS_INFEASIBLE, // Problem likely infeasible.
+      POGS_UNBOUNDED,  // Problem likely unbounded
+      POGS_MAX_ITER,   // Reached max iter.
+      POGS_NAN_FOUND,  // Encountered nan.
+      POGS_ERROR };    // Generic error, check logs.
+
 // created and managed by caller
 template <typename T>
 struct PogsSettings{
@@ -95,21 +103,21 @@ struct PogsSettingsD{
 // created and managed by caller
 template <typename T>
 struct PogsInfo{
-    unsigned int *iter;
-    int *status;
-    T *obj, *rho;
+    unsigned int iter;
+    int status;
+    T obj, rho;
 };
 
 struct PogsInfoS{
-    unsigned int *iter;
-    int *status;
-    float *obj, *rho;
+    unsigned int iter;
+    int status;
+    float obj, rho;
 };
 
 struct PogsInfoD{
-    unsigned int *iter;
-    int *status;
-    double *obj, *rho;
+    unsigned int iter;
+    int status;
+    double obj, rho;
 };
 
 
@@ -139,6 +147,9 @@ struct PogsWork{
       pogs_data= pogs_data_; f=f_; g=g_;
     }
 };
+
+
+bool VerifyPogsWork(void * work);
 
 // Dense
 template <typename T>

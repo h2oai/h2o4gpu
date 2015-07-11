@@ -2,7 +2,15 @@
 #include "matrix/matrix_sparse.h"
 #include "pogs.h"
 #include "pogs_c.h"
+#include <iostream>   //std::cout
 
+
+bool VerifyPogsWork(void * work){
+  if (!work) { return false; }
+  PogsWork * p_work = static_cast<PogsWork *>(work);
+  if (!(p_work->pogs_data) || !(p_work->f) || !(p_work->g)){ return false; }
+  else { return true; } 
+}
 
 //Dense Direct
 template <typename T>
@@ -114,20 +122,20 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   }
 
   // Solve.
-  *(info->status) = pogs_data.Solve(*f, *g);
+  info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  *(info->obj) = pogs_data.GetOptval();
-  *(info->iter) = pogs_data.GetFinalIter();
-  *(info->rho) = pogs_data.GetRho();
+  info->obj = pogs_data.GetOptval();
+  info->iter = pogs_data.GetFinalIter();
+  info->rho = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
 
-  memcpy(solution->x, pogs_data.GetX(), n);
-  memcpy(solution->y, pogs_data.GetY(), m);
-  memcpy(solution->mu, pogs_data.GetMu(), n);  
-  memcpy(solution->nu, pogs_data.GetNu(), m);
+  memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
+  memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
+  memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
+  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
 }
 
 template<typename T>
@@ -149,20 +157,20 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   }
 
   // Solve.
-  *(info->status) = pogs_data.Solve(*f, *g);
+  info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  *(info->obj) = pogs_data.GetOptval();
-  *(info->iter) = pogs_data.GetFinalIter();
-  *(info->rho) = pogs_data.GetRho();
+  info->obj = pogs_data.GetOptval();
+  info->iter = pogs_data.GetFinalIter();
+  info->rho = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
 
-  memcpy(solution->x, pogs_data.GetX(), n);
-  memcpy(solution->y, pogs_data.GetY(), m);
-  memcpy(solution->mu, pogs_data.GetMu(), n);  
-  memcpy(solution->nu, pogs_data.GetNu(), m);
+  memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
+  memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
+  memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
+  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
 }
 
 template<typename T>
@@ -184,20 +192,20 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   }
 
   // Solve.
-  *(info->status) = pogs_data.Solve(*f, *g);
+  info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  *(info->obj) = pogs_data.GetOptval();
-  *(info->iter) = pogs_data.GetFinalIter();
-  *(info->rho) = pogs_data.GetRho();
+  info->obj = pogs_data.GetOptval();
+  info->iter = pogs_data.GetFinalIter();
+  info->rho = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
 
-  memcpy(solution->x, pogs_data.GetX(), n);
-  memcpy(solution->y, pogs_data.GetY(), m);
-  memcpy(solution->mu, pogs_data.GetMu(), n);  
-  memcpy(solution->nu, pogs_data.GetNu(), m);
+  memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
+  memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
+  memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
+  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
 }
 
 template<typename T>
@@ -219,20 +227,20 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   }
 
   // Solve.
-  *(info->status) = pogs_data.Solve(*f, *g);
+  info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  *(info->obj) = pogs_data.GetOptval();
-  *(info->iter) = pogs_data.GetFinalIter();
-  *(info->rho) = pogs_data.GetRho();
+  info->obj = pogs_data.GetOptval();
+  info->iter = pogs_data.GetFinalIter();
+  info->rho = pogs_data.GetRho();
 
   size_t m = f->size();
   size_t n = g->size();
 
-  memcpy(solution->x, pogs_data.GetX(), n);
-  memcpy(solution->y, pogs_data.GetY(), m);
-  memcpy(solution->mu, pogs_data.GetMu(), n);  
-  memcpy(solution->nu, pogs_data.GetNu(), m);
+  memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
+  memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
+  memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
+  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
 }
 
 
@@ -241,11 +249,16 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
             const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
             void *settings_, void *info_, void *solution_){
 
+  if (!VerifyPogsWork(work)) { return static_cast <int>(POGS_ERROR); }
+
+
   const PogsSettings<T> * settings = static_cast<PogsSettings<T> *>(settings_);
   PogsInfo<T> * info = static_cast<PogsInfo<T> *>(info_);
   PogsSolution<T> * solution = static_cast<PogsSolution<T> *>(solution_);  
   PogsWork * p_work = static_cast<PogsWork *>(work);
   
+
+
   size_t m = p_work->m;
   size_t n = p_work->n;
   std::vector<FunctionObj<T> > *f = static_cast<std::vector<FunctionObj<T> > *>(p_work->f);
@@ -268,8 +281,7 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
     pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *pogs_data = static_cast< pogs::PogsIndirect<T, pogs::MatrixSparse<T> > *>(p_work->pogs_data);
     PogsRun(*pogs_data, f, g, settings, info, solution);      
   }
-
-  return *(info->status);
+  return info->status;
 } 
 
 template<typename T>
