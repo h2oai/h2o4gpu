@@ -2,7 +2,7 @@ import sys
 # 1. REPLACE WITH '/path/to/pogs'
 POGS_ROOT = "/home/baris/pogs/"
 sys.path.append(POGS_ROOT+"src/interface_c/")
-import "pogs.py" as pogs
+import pogs as pogs
 
 
 m=40
@@ -10,8 +10,8 @@ n=20
 
 
 A=np.random.rand(m,n)
-f=FunctionVector(m,double_precision=True)
-g=FunctionVector(n,double_precision=True)
+f=pogs.FunctionVector(m,double_precision=True)
+g=pogs.FunctionVector(n,double_precision=True)
 
 n_targ = 0;
 n_oar = 0;
@@ -40,8 +40,8 @@ for i,b in enumerate(f.b):
     else:
         f.c[i] = wt_oar
 
-f.h[:]=FUNCTION["ABS"] 
-g.h[:]=FUNCTION["INDGE0"]
+f.h[:]=pogs.FUNCTION["ABS"] 
+g.h[:]=pogs.FUNCTION["INDGE0"]
 pgs = pogs.Solver(m,n,A)
 pgs.solve(f,g)
 pogs.STATUS[pgs.info.status]
