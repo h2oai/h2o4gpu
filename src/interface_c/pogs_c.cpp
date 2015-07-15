@@ -26,6 +26,7 @@ void * PogsInit(size_t m, size_t n, const T *A, const char ord){
     PogsWork * work;
 
 
+
     // create pogs function vectors
     f = new std::vector<FunctionObj<T> >;
     g = new std::vector<FunctionObj<T> >;
@@ -89,6 +90,8 @@ void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzin
 template <typename T>
 void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
                             const T *f_d, const T *f_e, const FUNCTION *f_h){
+
+
   for (unsigned int i = 0; i < m; ++i)
     f->at(i).a= f_a[i];
   for (unsigned int i = 0; i < m; ++i)
@@ -106,6 +109,8 @@ void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a,
 template <typename T>
 void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, \
               const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
+
+
   // Set parameters.
   pogs_data.SetRho(settings->rho);
   pogs_data.SetAbsTol(settings->abs_tol);
@@ -256,7 +261,6 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
   PogsInfo<T> * info = static_cast<PogsInfo<T> *>(info_);
   PogsSolution<T> * solution = static_cast<PogsSolution<T> *>(solution_);  
   PogsWork * p_work = static_cast<PogsWork *>(work);
-  
 
 
   size_t m = p_work->m;

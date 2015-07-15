@@ -29,5 +29,11 @@
 *.cubin
 *.fatbin
 
+# Compiled Python #
+*.pyc
+
+# IPything Notebook
+*ipynb*
+
 # Entire build directory #
 /src/build/*
