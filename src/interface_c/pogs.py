@@ -104,7 +104,7 @@ class InfoD(Structure):
 class Solution(object):
 	def __init__(self,double_precision,m,n):
 		T = c_double if double_precision else c_float
-		self.double_precision = True
+		self.double_precision = double_precision
 		self.x=np.zeros(n,dtype=T)
 		self.y=np.zeros(m,dtype=T)
 		self.mu=np.zeros(n,dtype=T)
