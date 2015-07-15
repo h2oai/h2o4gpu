@@ -268,13 +268,13 @@ class Solver(object):
 				print "no viable POGS_work pointer to call solve(). call Solver.init( args... )"
 				return 
 			elif not self.double_precision:
-				pogs.pogs_solve_single(self.work, byref(self.settings), byref(self.solution), byref(self.info),
+				pogs.pogs_solve_single(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info),
 										cptr(f.a,c_float), cptr(f.b,c_float), cptr(f.c,c_float), 
 										cptr(f.d,c_float), cptr(f.e,c_float), cptr(f.h,c_int),
 										cptr(g.a,c_float), cptr(g.b,c_float), cptr(g.c,c_float),
 										cptr(g.d,c_float), cptr(g.e,c_float), cptr(g.h,c_int))
 			else:
-				pogs.pogs_solve_double(self.work, byref(self.settings), byref(self.solution), byref(self.info), 
+				pogs.pogs_solve_double(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info), 
 										cptr(f.a,c_double), cptr(f.b,c_double), cptr(f.c,c_double), 
 										cptr(f.d,c_double), cptr(f.e,c_double), cptr(f.h,c_int),
 										cptr(g.a,c_double), cptr(g.b,c_double), cptr(g.c,c_double),

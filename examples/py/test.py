@@ -1,11 +1,14 @@
 import sys
-POGS_ROOT = "/Users/Baris/Documents/Thesis/modules/pogs/"
+# 1. REPLACE WITH '/path/to/pogs'
+POGS_ROOT = "/home/baris/pogs/"
 sys.path.append(POGS_ROOT+"src/interface_c/")
 import "pogs.py" as pogs
 
 
 m=40
 n=20
+
+
 A=np.random.rand(m,n)
 f=FunctionVector(m,double_precision=True)
 g=FunctionVector(n,double_precision=True)
