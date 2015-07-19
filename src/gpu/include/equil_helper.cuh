@@ -16,7 +16,7 @@ namespace {
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 
 // TODO: Figure out a better value for this constant
-const double kSinkhornConst        = 1e-8;
+const double kSinkhornConst        = 1e-4;
 const double kNormEstTol           = 1e-3;
 const unsigned int kEquilIter      = 50u;
 const unsigned int kNormEstMaxIter = 50u;

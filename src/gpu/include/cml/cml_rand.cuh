@@ -51,9 +51,13 @@ void rand(T *x, size_t size, bool use_gpu) {
     std::uniform_real_distribution<T> dist(static_cast<T>(0),
         static_cast<T>(1));
 
+    std::vector<T> x_temp(size);
+
     for (size_t i = 0; i < size; ++i) {
-      x[i] = dist(generator);
+      x_temp[i] = dist(generator);
     }
+
+    cudaMemcpy(x, x_temp.data(), size * sizeof(T), cudaMemcpyHostToDevice);
   }
 }
 

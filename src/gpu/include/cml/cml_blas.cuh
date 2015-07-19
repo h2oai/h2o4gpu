@@ -140,21 +140,24 @@ T blas_asum(cublasHandle_t handle, const vector<T> *x) {
 }
 
 // Nrm2.
-template <typename T>
-struct Square : thrust::unary_function<T, T> {
-  __device__ T operator()(const T &x) {
-    return x * x;
-  }
-};
+// template <typename T>
+// struct Square : thrust::unary_function<T, T> {
+//   __device__ T operator()(const T &x) {
+//     return x * x;
+//   }
+// };
 
 template <typename T>
 T blas_nrm2(cublasHandle_t handle, const vector<T> *x) {
-  strided_range<thrust::device_ptr<T> > strided_x(
-      thrust::device_pointer_cast(x->data),
-      thrust::device_pointer_cast(x->data + x->stride * x->size), x->stride);
-  T nrm2 = sqrt(thrust::transform_reduce(strided_x.begin(), strided_x.end(),
-      Square<T>(), static_cast<T>(0), thrust::plus<T>()));
-  return nrm2;
+  T nrm;
+  blas_nrm2(handle, x, &nrm);
+  return nrm;
+//   strided_range<thrust::device_ptr<T> > strided_x(
+//       thrust::device_pointer_cast(x->data),
+//       thrust::device_pointer_cast(x->data + x->stride * x->size), x->stride);
+//   T nrm = sqrt(thrust::transform_reduce(strided_x.begin(), strided_x.end(),
+//       Square<T>(), static_cast<T>(0), thrust::plus<T>()));
+//   return nrm;
 }
 
 //

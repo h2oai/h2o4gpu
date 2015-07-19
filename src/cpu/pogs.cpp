@@ -4,6 +4,7 @@
 #include <functional>
 #include <numeric>
 
+#include "equil_helper.h"
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_vector.h"
 #include "interface_defs.h"
@@ -68,6 +69,8 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
   _A.Equil(_de, _de + m,
            std::function<void(T*)>([obj](T *v){ obj->constrain_d(v); }),
            std::function<void(T*)>([obj](T *v){ obj->constrain_e(v); }));
+  _nrmA = Norm2Est(&_A);
+
   _P.Init();
 
   return 0;
@@ -84,13 +87,13 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   const T kRhoMin     = static_cast<T>(1e-4);
   const T kRhoMax     = static_cast<T>(1e4);
   const T kKappa      = static_cast<T>(0.9);
-  const T kOne        = static_cast<T>(1.0);
-  const T kZero       = static_cast<T>(0.0);
+  const T kOne        = static_cast<T>(1);
+  const T kZero       = static_cast<T>(0);
   const T kProjTolMax = static_cast<T>(1e-8);
   const T kProjTolMin = static_cast<T>(1e-2);
-  const T kProjTolPow = static_cast<T>(1.3);
+  const T kProjTolPow = static_cast<T>(2);
   const T kProjTolIni = static_cast<T>(1e-5);
-  bool use_exact_stop = true;
+  bool use_exact_stop = false;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
@@ -182,7 +185,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * _abs_tol;
   T sqrtm_atol = std::sqrt(static_cast<T>(m)) * _abs_tol;
   T sqrtmn_atol = std::sqrt(static_cast<T>(m + n)) * _abs_tol;
-  T delta = kDeltaMin, xi = static_cast<T>(1.0);
+  T delta = kDeltaMin, xi = static_cast<T>(1);
   unsigned int k = 0u, kd = 0u, ku = 0u;
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
@@ -216,11 +219,11 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     // Calculate residuals.
     gsl::vector_memcpy(&ztemp, &zprev);
     gsl::blas_axpy(-kOne, &z, &ztemp);
-    nrm_s = _rho * gsl::blas_nrm2(&ztemp);
+    nrm_s = _rho * gsl::blas_nrm2(&ztemp) / (1 + _nrmA);
 
     gsl::vector_memcpy(&ztemp, &z12);
     gsl::blas_axpy(-kOne, &z, &ztemp);
-    nrm_r = gsl::blas_nrm2(&ztemp);
+    nrm_r = gsl::blas_nrm2(&ztemp) / (1 + _nrmA);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
@@ -228,7 +231,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
       gsl::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
       nrm_r = gsl::blas_nrm2(&ytemp);
-      if ((nrm_r < eps_pri) || use_exact_stop) {
+      if (nrm_r < eps_pri || use_exact_stop) {
         gsl::vector_memcpy(&ztemp, &z12);
         gsl::blas_axpy(kOne, &zt, &ztemp);
         gsl::blas_axpy(-kOne, &zprev, &ztemp);
@@ -419,6 +422,7 @@ namespace {
 template <typename T>
 class PogsObjectiveCone : public PogsObjective<T> {
  private:
+  T c_scale;
   std::vector<T> b, c;
   const std::vector<ConeConstraintRaw> &Kx, &Ky;
  public:
@@ -429,7 +433,8 @@ class PogsObjectiveCone : public PogsObjective<T> {
       : b(b), c(c), Kx(Kx), Ky(Ky) { }
 
   T evaluate(const T *x, const T*) const {
-    return std::inner_product(c.begin(), c.end(), x, static_cast<T>(0));
+    return std::inner_product(c.begin(), c.end(), x, static_cast<T>(0)) /
+        c_scale;
   }
 
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
@@ -449,6 +454,15 @@ class PogsObjectiveCone : public PogsObjective<T> {
   void scale(const T *d, const T *e) {
     std::transform(c.begin(), c.end(), e, c.begin(), std::multiplies<T>());
     std::transform(b.begin(), b.end(), d, b.begin(), std::multiplies<T>());
+
+    T sum_sq = 0;
+    for (T ci : c) {
+      sum_sq += ci * ci;
+    }
+    c_scale = 1 / std::sqrt(sum_sq);
+    for (T &ci : c) {
+      ci *= c_scale;
+    }
   }
 
   // Average the e_i in Kx

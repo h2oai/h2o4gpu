@@ -47,19 +47,17 @@ double LpEq(size_t m, size_t n) {
   Ky.emplace_back(kConeZero, idx_y);
 
   pogs::MatrixDense<T> A_('r', m, n, A.data());
-  pogs::PogsDirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
+  pogs::PogsIndirectCone<T, pogs::MatrixDense<T> > pogs_data(A_, Kx, Ky);
 
   double t = timer<double>();
   pogs_data.SetVerbose(5);
-  pogs_data.SetRelTol(1e-6);
-  pogs_data.SetAbsTol(1e-6);
-  //pogs_data.SetMaxIter(21);
+//  pogs_data.SetRelTol(static_cast<T>(1e-3));
+//  pogs_data.SetAbsTol(static_cast<T>(1e-4));
+  pogs_data.SetRelTol(static_cast<T>(1e-6));
+  pogs_data.SetAbsTol(static_cast<T>(1e-6));
+
+  pogs_data.SetMaxIter(10000u);
   pogs_data.Solve(b, c);
-
-//  for (int i = 0; i < n; ++i)
-//    printf("%e, ", pogs_data.GetX()[i]);
-//  printf("\n");
-
 
   return timer<double>() - t;
 }

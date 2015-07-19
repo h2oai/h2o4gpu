@@ -8,6 +8,7 @@
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_vector.cuh"
+#include "equil_helper.cuh"
 #include "interface_defs.h"
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
@@ -64,13 +65,21 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
   cudaMemset(_zt, 0, (m + n) * sizeof(T));
   CUDA_CHECK_ERR();
 
+  cublasHandle_t hdl;
+  cublasCreate(&hdl);
+  CUDA_CHECK_ERR();
+
   _A.Init();
   _A.Equil(_de, _de + m,
            std::function<void(T*)>([obj](T *v){ obj->constrain_d(v); }),
            std::function<void(T*)>([obj](T *v){ obj->constrain_e(v); }));
+  _nrmA = Norm2Est(hdl, &_A);
+  CUDA_CHECK_ERR();
+
   _P.Init();
   CUDA_CHECK_ERR();
 
+  cublasDestroy(hdl);
   return 0;
 }
 
@@ -85,13 +94,13 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   const T kRhoMin     = static_cast<T>(1e-4);
   const T kRhoMax     = static_cast<T>(1e4);
   const T kKappa      = static_cast<T>(0.9);
-  const T kOne        = static_cast<T>(1.0);
-  const T kZero       = static_cast<T>(0.0);
+  const T kOne        = static_cast<T>(1);
+  const T kZero       = static_cast<T>(0);
   const T kProjTolMax = static_cast<T>(1e-8);
   const T kProjTolMin = static_cast<T>(1e-2);
-  const T kProjTolPow = static_cast<T>(1.3);
+  const T kProjTolPow = static_cast<T>(2);
   const T kProjTolIni = static_cast<T>(1e-5);
-  bool use_exact_stop = true;
+  bool use_exact_stop = false;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
@@ -235,12 +244,12 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
-    nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
+    nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp) / (1 + _nrmA);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
-    nrm_r = cml::blas_nrm2(hdl, &ztemp);
+    nrm_r = cml::blas_nrm2(hdl, &ztemp) / (1 + _nrmA);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
@@ -455,6 +464,13 @@ PogsStatus PogsSeparable<T, M, P>::Solve(const std::vector<FunctionObj<T>>& f,
 namespace {
 
 template <typename T>
+struct Square : thrust::unary_function<T, T> {
+  inline __host__ __device__ T operator()(const T &x) const {
+    return x * x;
+  }
+};
+
+template <typename T>
 struct Updater {
   T rho;
   Updater(T rho) : rho(rho) { }
@@ -464,6 +480,7 @@ struct Updater {
 template <typename T>
 class PogsObjectiveCone : public PogsObjective<T> {
  private:
+  T c_scale;
   thrust::device_vector<T> b, c;
   const std::vector<ConeConstraintRaw> &Kx, &Ky;
   std::vector<cudaStream_t> streams_x, streams_y;
@@ -495,7 +512,7 @@ class PogsObjectiveCone : public PogsObjective<T> {
 
   T evaluate(const T *x, const T*) const {
     return thrust::inner_product(c.begin(), c.end(),
-        thrust::device_pointer_cast(x), static_cast<T>(0));
+        thrust::device_pointer_cast(x), static_cast<T>(0)) / c_scale;
   }
 
   void prox(const T *x_in, const T *y_in, T *x_out, T *y_out, T rho) const {
@@ -525,6 +542,13 @@ class PogsObjectiveCone : public PogsObjective<T> {
         c.begin(), thrust::multiplies<T>());
     thrust::transform(b.begin(), b.end(), thrust::device_pointer_cast(d),
         b.begin(), thrust::multiplies<T>());
+
+    c_scale = 1 / std::sqrt(thrust::transform_reduce(c.begin(), c.end(),
+        Square<T>(), static_cast<T>(0), thrust::plus<T>()));
+
+    thrust::transform(c.begin(), c.end(),
+        thrust::constant_iterator<T>(c_scale), c.begin(),
+        thrust::multiplies<T>());
   }
 
   // Average the e_i in Kx

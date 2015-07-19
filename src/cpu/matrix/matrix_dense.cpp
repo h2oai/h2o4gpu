@@ -18,7 +18,7 @@ namespace pogs {
 namespace {
 
 // File scoped constants.
-const NormTypes kNormEquilibrate = kNorm2; 
+const NormTypes kNormEquilibrate = kNorm2;
 const NormTypes kNormNormalize   = kNormFro;
 
 template<typename T>
@@ -144,7 +144,7 @@ int MatrixDense<T>::Equil(T *d, T *e,
       SetSignSingle(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, SquareF<T>());
     } else {
-      SetSignSingle(_data + num_chars * 8, sign + num_chars, 
+      SetSignSingle(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, AbsF<T>());
     }
   }
@@ -163,10 +163,10 @@ int MatrixDense<T>::Equil(T *d, T *e,
   // Deal with last few entries if num_el is not a multiple of 8.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-     UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+     UnSetSignSingle(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, SqrtF<T>());
     } else {
-      UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+      UnSetSignSingle(_data + num_chars * 8, sign + num_chars,
           num_el - num_chars * 8, IdentityF<T>());
     }
   }

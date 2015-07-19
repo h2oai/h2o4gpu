@@ -57,6 +57,9 @@ class PogsImplementation {
   T *_de, *_z, *_zt, _rho;
   bool _done_init;
 
+  // Results
+  T _nrmA;
+
   // Setup matrix _A and projector _P.
   int _Init(const PogsObjective<T> *obj);
 
