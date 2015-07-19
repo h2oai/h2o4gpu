@@ -39,8 +39,9 @@ void lp_cone_row_direct() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
   }
 }
@@ -65,8 +66,9 @@ void lp_cone_row_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
   }
 
@@ -86,8 +88,9 @@ void lp_cone_row_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
   }
 }
@@ -110,8 +113,9 @@ void lp_cone_col_direct() {
   pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
-  pogs_data.Solve(b, c);
+  pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+  TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
   TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
 }
 
@@ -135,8 +139,9 @@ void lp_cone_col_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
   }
 
@@ -156,8 +161,9 @@ void lp_cone_col_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), LP_OPTVAL, TEST_EPS);
   }
 }
@@ -194,8 +200,9 @@ void soc_cone_row_direct() {
   pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
-  pogs_data.Solve(b, c);
+  pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+  TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
   TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
@@ -222,8 +229,9 @@ void soc_cone_row_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
   }
 
@@ -242,8 +250,9 @@ void soc_cone_row_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
   }
 
@@ -269,8 +278,9 @@ void soc_cone_col_direct() {
   pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
   pogs_data.SetRelTol(static_cast<T>(REL_TOL));
   pogs_data.SetVerbose(VERBOSE);
-  pogs_data.Solve(b, c);
+  pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+  TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
   TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
 }
 
@@ -296,8 +306,9 @@ void soc_cone_col_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
   }
 
@@ -317,8 +328,9 @@ void soc_cone_col_indirect() {
     pogs_data.SetAbsTol(static_cast<T>(ABS_TOL));
     pogs_data.SetRelTol(static_cast<T>(REL_TOL));
     pogs_data.SetVerbose(VERBOSE);
-    pogs_data.Solve(b, c);
+    pogs::PogsStatus status = pogs_data.Solve(b, c);
 
+    TEST_EXPECT_EQ(status, pogs::POGS_SUCCESS);
     TEST_EXPECT_EQ_EPS(pogs_data.GetOptval(), SOC_OPTVAL, TEST_EPS);
   }
 }
