@@ -245,8 +245,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
       T optval = obj->evaluate(x12.data, y12.data);
-//      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
-      Printf("%5d : %.4e  %.4e  %.4e  %.4e  %.4e  %.4e % .4e\n",
+      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
 

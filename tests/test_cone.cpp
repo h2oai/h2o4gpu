@@ -2,7 +2,7 @@
 #include "util.h"
 #include "test_util.h"
 
-#define VERBOSE 0
+#define VERBOSE 4
 #define ABS_TOL 1e-5
 #define REL_TOL 1e-5
 #define MAX_ITER 1000
