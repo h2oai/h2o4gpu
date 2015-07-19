@@ -18,7 +18,7 @@ enum NormTypes { kNorm1, kNorm2, kNormFro };
 // TODO: Figure out a better value for this constant
 const double kSinkhornConst        = 1e-8;
 const double kNormEstTol           = 1e-3;
-const unsigned int kEquilIter      = 50u; 
+const unsigned int kEquilIter      = 50u;
 const unsigned int kNormEstMaxIter = 50u;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,9 +105,9 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
   T kTol = static_cast<T>(kNormEstTol);
 
   T norm_est = 0, norm_est_last;
-  cml::vector<T> x = cml::vector_alloc<T>(A->Cols());
-  cml::vector<T> Sx = cml::vector_alloc<T>(A->Rows());
-  cml::rand(x.data, x.size);
+  cml::vector<T> x = cml::vector_calloc<T>(A->Cols());
+  cml::vector<T> Sx = cml::vector_calloc<T>(A->Rows());
+  cml::rand(x.data, x.size, false);
   cudaDeviceSynchronize();
 
   unsigned int i = 0;
@@ -121,7 +121,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
     T normSx = cml::blas_nrm2(hdl, &Sx);
     cml::vector_scale(&x, 1 / normx);
     norm_est = normx / normSx;
-    if (abs(norm_est_last - norm_est) < kTol * norm_est)
+    if (std::abs(norm_est_last - norm_est) < kTol * norm_est)
       break;
   }
   DEBUG_EXPECT_LT(i, kNormEstMaxIter);
@@ -140,12 +140,12 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
                    const std::function<void(T*)> &constrain_e) {
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, A->Rows());
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, A->Cols());
-  cml::vector_set_all(&d_vec, static_cast<T>(1.));
-  cml::vector_set_all(&e_vec, static_cast<T>(1.));
+  cml::vector_set_all(&d_vec, static_cast<T>(1));
+  cml::vector_set_all(&e_vec, static_cast<T>(1));
 
   for (unsigned int k = 0; k < kEquilIter; ++k) {
     // e := 1 ./ (A' * d).
-    A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
+    A->Mul('t', static_cast<T>(1), d, static_cast<T>(0), e);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     cml::vector_add_constant(&e_vec,
@@ -159,7 +159,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e,
     CUDA_CHECK_ERR();
 
     // d := 1 ./ (A' * e).
-    A->Mul('n', static_cast<T>(1.), e, static_cast<T>(0.), d);
+    A->Mul('n', static_cast<T>(1), e, static_cast<T>(0), d);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     cml::vector_add_constant(&d_vec,

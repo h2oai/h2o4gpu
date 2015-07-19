@@ -84,7 +84,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   const T kAlpha      = static_cast<T>(1.7);
   const T kRhoMin     = static_cast<T>(1e-4);
   const T kRhoMax     = static_cast<T>(1e4);
-  const T kKappa      = static_cast<T>(0.4);
+  const T kKappa      = static_cast<T>(0.9);
   const T kOne        = static_cast<T>(1.0);
   const T kZero       = static_cast<T>(0.0);
   const T kProjTolMax = static_cast<T>(1e-8);
@@ -153,7 +153,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
 
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
-    // Alternating projections to satisfy 
+    // Alternating projections to satisfy
     //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
     //   2. \mu = -A^T\lambda
     cml::vector_set_all(&zprev, kZero);
@@ -268,7 +268,8 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         _verbose > 1 && k % 100 == 0 ||
         _verbose > 1 && converged) {
       T optval = obj->evaluate(x12.data, y12.data);
-      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+//      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+      Printf("%5d : %.4e  %.4e  %.4e  %.4e  %.4e  %.4e % .4e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
 

@@ -201,7 +201,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     eps_gap = sqrtmn_atol + _rel_tol * gsl::blas_nrm2(&z) *
         gsl::blas_nrm2(&z12);
     eps_pri = sqrtm_atol + _rel_tol * gsl::blas_nrm2(&y12);
-    eps_dua = sqrtn_atol + _rel_tol * _rho * gsl::blas_nrm2(&x);
+    eps_dua = _rho * (sqrtn_atol + _rel_tol * gsl::blas_nrm2(&x));
 
     // Apply over relaxation.
     gsl::vector_memcpy(&ztemp, &zt);
@@ -245,7 +245,8 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
       T optval = obj->evaluate(x12.data, y12.data);
-      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+//      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+      Printf("%5d : %.4e  %.4e  %.4e  %.4e  %.4e  %.4e % .4e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
 

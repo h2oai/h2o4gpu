@@ -214,10 +214,10 @@ int Solve(const F& A, const INT m, const INT n, const T *b, T *x,
   const double kEps = Epsilon<T>();
 
   // Memory Allocation.
-  p = gsl::vector_alloc<T>(n);
-  q = gsl::vector_alloc<T>(m);
-  r = gsl::vector_alloc<T>(m);
-  s = gsl::vector_alloc<T>(n);
+  p = gsl::vector_calloc<T>(n);
+  q = gsl::vector_calloc<T>(m);
+  r = gsl::vector_calloc<T>(m);
+  s = gsl::vector_calloc<T>(n);
 
   gsl::vector_memcpy(&r, b);
   gsl::vector_memcpy(&s, x);
