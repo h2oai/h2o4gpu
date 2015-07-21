@@ -46,7 +46,7 @@ PogsImplementation<T, M, P>::PogsImplementation(const M &A)
 }
 
 template <typename T, typename M, typename P>
-int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
+int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *objective) {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -67,8 +67,12 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
 
   _A.Init();
   _A.Equil(_de, _de + m,
-           std::function<void(T*)>([obj](T *v){ obj->constrain_d(v); }),
-           std::function<void(T*)>([obj](T *v){ obj->constrain_e(v); }));
+           std::function<void(T*)>([objective](T *v){
+               objective->constrain_d(v);
+           }),
+           std::function<void(T*)>([objective](T *v){
+               objective->constrain_e(v);
+           }));
   _nrmA = Norm2Est(&_A);
 
   _P.Init();
@@ -77,27 +81,27 @@ int PogsImplementation<T, M, P>::_Init(const PogsObjective<T> *obj) {
 }
 
 template <typename T, typename M, typename P>
-PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
+PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *objective) {
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
-  const T kDeltaMin   = static_cast<T>(1.05);
-  const T kGamma      = static_cast<T>(1.01);
-  const T kTau        = static_cast<T>(0.8);
-  const T kAlpha      = static_cast<T>(1.7);
-  const T kRhoMin     = static_cast<T>(1e-4);
-  const T kRhoMax     = static_cast<T>(1e4);
-  const T kKappa      = static_cast<T>(0.9);
-  const T kOne        = static_cast<T>(1);
-  const T kZero       = static_cast<T>(0);
-  const T kProjTolMax = static_cast<T>(1e-8);
-  const T kProjTolMin = static_cast<T>(1e-2);
-  const T kProjTolPow = static_cast<T>(2);
-  const T kProjTolIni = static_cast<T>(1e-5);
-  bool use_exact_stop = false;
+  const T kDeltaMin       = static_cast<T>(1.05);
+  const T kGamma          = static_cast<T>(1.01);
+  const T kTau            = static_cast<T>(0.8);
+  const T kAlpha          = static_cast<T>(1.7);
+  const T kRhoMin         = static_cast<T>(1e-4);
+  const T kRhoMax         = static_cast<T>(1e4);
+  const T kKappa          = static_cast<T>(0.9);
+  const T kOne            = static_cast<T>(1);
+  const T kZero           = static_cast<T>(0);
+  const T kProjTolMax     = static_cast<T>(1e-8);
+  const T kProjTolMin     = static_cast<T>(1e-2);
+  const T kProjTolPow     = static_cast<T>(2);
+  const T kProjTolIni     = static_cast<T>(1e-5);
+  const bool kUseExactTol = false;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
-    _Init(obj);
+    _Init(objective);
 
   // Extract values from pogs_data
   size_t m = _A.Rows();
@@ -124,7 +128,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
 
   // Scale objective to account for diagonal scaling e and d.
-  obj->scale(d.data, e.data);
+  objective->scale(d.data, e.data);
 
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
@@ -195,7 +199,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
 
     // Evaluate Proximal Operators
     gsl::blas_axpy(-kOne, &zt, &z);
-    obj->prox(x.data, y.data, x12.data, y12.data, _rho);
+    objective->prox(x.data, y.data, x12.data, y12.data, _rho);
 
     // Compute gap, optval, and tolerances.
     gsl::blas_axpy(-kOne, &z12, &z);
@@ -219,26 +223,24 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     // Calculate residuals.
     gsl::vector_memcpy(&ztemp, &zprev);
     gsl::blas_axpy(-kOne, &z, &ztemp);
-    nrm_s = _rho * gsl::blas_nrm2(&ztemp) / (1 + _nrmA);
+    nrm_s = _rho * (_nrmA * gsl::blas_nrm2(&ytemp) + gsl::blas_nrm2(&xtemp));
 
     gsl::vector_memcpy(&ztemp, &z12);
     gsl::blas_axpy(-kOne, &z, &ztemp);
-    nrm_r = gsl::blas_nrm2(&ztemp) / (1 + _nrmA);
+    nrm_r = _nrmA * gsl::blas_nrm2(&xtemp) + gsl::blas_nrm2(&ytemp);
 
     // Calculate exact residuals only if necessary.
     bool exact = false;
-    if ((nrm_r < eps_pri && nrm_s < eps_dua) || use_exact_stop) {
+    if ((nrm_r < 10 * eps_pri && nrm_s < 10 * eps_dua) || kUseExactTol) {
       gsl::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
       nrm_r = gsl::blas_nrm2(&ytemp);
-      if (nrm_r < eps_pri || use_exact_stop) {
-        gsl::vector_memcpy(&ztemp, &z12);
-        gsl::blas_axpy(kOne, &zt, &ztemp);
-        gsl::blas_axpy(-kOne, &zprev, &ztemp);
-        _A.Mul('t', kOne, ytemp.data, kOne, xtemp.data);
-        nrm_s = _rho * gsl::blas_nrm2(&xtemp);
-        exact = true;
-      }
+      gsl::vector_memcpy(&ztemp, &z12);
+      gsl::blas_axpy(kOne, &zt, &ztemp);
+      gsl::blas_axpy(-kOne, &zprev, &ztemp);
+      _A.Mul('t', kOne, ytemp.data, kOne, xtemp.data);
+      nrm_s = _rho * gsl::blas_nrm2(&xtemp);
+      exact = true;
     }
 
     // Evaluate stopping criteria.
@@ -247,7 +249,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
     if ((_verbose > 2 && k % 10  == 0) ||
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
-      T optval = obj->evaluate(x12.data, y12.data);
+      T optval = objective->evaluate(x12.data, y12.data);
       Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
@@ -294,7 +296,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *obj) {
   }
 
   // Get optimal value
-  _optval = obj->evaluate(x12.data, y12.data);
+  _optval = objective->evaluate(x12.data, y12.data);
 
   // Check status
   PogsStatus status;
