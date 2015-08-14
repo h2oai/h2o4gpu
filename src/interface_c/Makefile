@@ -1,20 +1,14 @@
 # Instructions
-# 1. To build with openmp set IFLAGS=-fopenmp
+# 1. To build with openmp set 
+# IFLAGS=-fopenmp
 
-# 2. Switch target between cpu/gpu
-TARGET=cpu
-
-# User Vars
+# 2. Set POGSROOT= path/to/POGS/src/
 POGSROOT=../
-
-# C++ Flags
-CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC
 
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
 ifndef CUDA_HOME
-CUDA_HOME=/usr/local/cuda/
+CUDA_HOME=/usr/local/cuda/lib64/
 endif
 
 # Check System Args.
@@ -23,11 +17,14 @@ LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME)/lib -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
-LDFLAGS=-lm -lopenblas
-CULDFLAGS=-L$(CUDAHOME)/lib64 -lcudart -lcublas -lcusparse
+LDFLAGS=-lm -lblas
+CULDFLAGS=-L$(CUDAHOME)/lib64 -lcudart -lcublas -lcusparse -lcutil
 SHARED=so
 endif
 
+# C++ Flags
+CXX=g++
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC
 
 # POGS static libraries
 POGSLIB=\
@@ -45,6 +42,11 @@ CUPOGSLIB=\
 	$(POGSROOT)/build/gpu/projector/projector_direct_dense.o \
 	$(POGSROOT)/build/gpu/projector/projector_cgls.o
 
+# Python-required CUDA runtime library
+PYCUDART=\
+	$(CUDAROOT)/libcudart.so	
+
+
 
 .PHONY: default
 default: pogs_c.o
@@ -56,6 +58,10 @@ libpogs: pogs_c.o
 libpogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(CULDFLAGS)
+
+pypogs_gpu: pogs_c.o
+	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(CXX) -shared - o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
 
 pogs_c.o: pogs_c.cpp pogs_c.h
 	$(CXX) $(CXXFLAGS) $< -c -o $@

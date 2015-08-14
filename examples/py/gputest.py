@@ -4,7 +4,7 @@ import numpy as np
 # 1. REPLACE WITH '/path/to/pogs/'
 POGS_ROOT = "/home/baris/pogs-dev/pogs/"
 sys.path.append(POGS_ROOT+"src/interface_py/")
-import pogs as pogs
+import pogs_gpu as pogs
 
 
 m=1000
@@ -25,7 +25,7 @@ for b in f.b:
         n_oar +=1
 
 wt_targ = 1
-wt_oar = np.true_divide(1,20)*np.true_divide(n_targ,n_oar)
+wt_oar = np.true_divide(1,100)*np.true_divide(n_targ,n_oar)
 
 alpha = 0.05
 c = (alpha+1)/2

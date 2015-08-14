@@ -11,7 +11,7 @@ else:
 	ext = ".so"
 
 
-rel_lib_path = "libpogs" + ext
+rel_lib_path = "pypogs_gpu" + ext
 this_dir = os.path.dirname(__file__)
 
 
@@ -65,9 +65,7 @@ DEFAULTS['warm_start']=1
 c_int_p = POINTER(c_int)
 c_float_p = POINTER(c_float)
 c_double_p = POINTER(c_double)
-# c_int_p = np.ctypeslib.ndpointer(c_int,flags="C_CONTIGUOUS")
-# c_float_p = np.ctypeslib.ndpointer(c_float,flags="C_CONTIGUOUS")
-# c_double_p = np.ctypeslib.ndpointer(c_double,flags="C_CONTIGUOUS")
+
 
 class SettingsS(Structure):
 	_fields_ = [('rho', c_float), 

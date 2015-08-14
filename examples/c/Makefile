@@ -15,7 +15,7 @@ ifeq ($(UNAME), Darwin)
 LDFLAGS=$(LDFLAGS_) -framework Accelerate
 CULDFLAGS=-lm -L/usr/local/cuda/lib $(CULDFLAGS_)
 else
-LDFLAGS=$(LDFLAGS_) -lopenblas
+LDFLAGS=$(LDFLAGS_) -lblas
 CULDFLAGS=-lm -L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 

@@ -1,4 +1,4 @@
-#include "matrix/matrix_dense.h"
+ #include "matrix/matrix_dense.h"
 #include "matrix/matrix_sparse.h"
 #include "pogs.h"
 #include "pogs_c.h"
