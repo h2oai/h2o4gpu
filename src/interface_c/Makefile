@@ -18,7 +18,7 @@ CULDFLAGS=-L$(CUDAHOME)/lib -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=-lm -lblas
-CULDFLAGS=-L$(CUDAHOME)/lib64 -lcudart -lcublas -lcusparse -lcutil
+CULDFLAGS=-L$(CUDAHOME)/lib64 -lcudart -lcublas -lcusparse
 SHARED=so
 endif
 
