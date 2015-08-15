@@ -10,7 +10,6 @@ import pogs as pogs
 m=1000
 n=100
 
-
 A=np.random.rand(m,n)
 f=pogs.FunctionVector(m,double_precision=True)
 g=pogs.FunctionVector(n,double_precision=True)

@@ -43,13 +43,12 @@ CUPOGSLIB=\
 	$(POGSROOT)/build/gpu/projector/projector_cgls.o
 
 # Python-required CUDA runtime library
-PYCUDART=\
-	$(CUDAROOT)/libcudart.so	
+PYCUDART=$(CUDA_HOME)/libcudart.so	
 
 
-
-.PHONY: default
+.PHONY: default all
 default: pogs_c.o
+all: libpogs libpogs_gpu pypogs_gpu
 
 libpogs: pogs_c.o
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
