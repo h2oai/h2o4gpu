@@ -123,14 +123,14 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
     pogs_data.SetInitX(solution->x);
-    pogs_data.SetInitNu(solution->nu);
+    pogs_data.SetInitLambda(solution->nu);
   }
 
   // Solve.
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.GetOptval();
+  info->obj = pogs_data.:wOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
 
@@ -140,7 +140,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
-  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
+  memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
 }
 
 template<typename T>
@@ -158,7 +158,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
     pogs_data.SetInitX(solution->x);
-    pogs_data.SetInitNu(solution->nu);
+    pogs_data.SetInitLambda(solution->nu);
   }
 
   // Solve.
@@ -175,7 +175,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
-  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
+  memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
 }
 
 template<typename T>
@@ -193,7 +193,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
     pogs_data.SetInitX(solution->x);
-    pogs_data.SetInitNu(solution->nu);
+    pogs_data.SetInitLambda(solution->nu);
   }
 
   // Solve.
@@ -210,7 +210,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
-  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
+  memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
 }
 
 template<typename T>
@@ -228,7 +228,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
     pogs_data.SetInitX(solution->x);
-    pogs_data.SetInitNu(solution->nu);
+    pogs_data.SetInitLambda(solution->nu);
   }
 
   // Solve.
@@ -245,7 +245,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   memcpy(solution->x, pogs_data.GetX(), n * sizeof(T));
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
-  memcpy(solution->nu, pogs_data.GetNu(), m * sizeof(T));
+  memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
 }
 
 
