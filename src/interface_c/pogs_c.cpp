@@ -130,7 +130,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   info->status = pogs_data.Solve(*f, *g);
 
   // Retrieve solver output & state
-  info->obj = pogs_data.:wOptval();
+  info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
 
