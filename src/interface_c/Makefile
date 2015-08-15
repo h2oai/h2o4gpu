@@ -60,7 +60,7 @@ libpogs_gpu: pogs_c.o
 
 pypogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -shared - o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
+	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
 
 pogs_c.o: pogs_c.cpp pogs_c.h
 	$(CXX) $(CXXFLAGS) $< -c -o $@
