@@ -11,11 +11,13 @@ else:
 	ext = ".so"
 
 
-rel_lib_path = "libpogs" + ext
+rel_lib_path = "../interface_c/libpogs" + ext
 this_dir = os.path.dirname(__file__)
 
-
-pogs = CDLL(this_dir + "/" + rel_lib_path )
+if this_dir == '':
+        pogs = CDLL(rel_lib_path)
+else:
+        pogs = CDLL(this_dir + "/" + rel_lib_path )
 
 
 ORD = {}

@@ -11,7 +11,7 @@ else:
 	ext = ".so"
 
 
-rel_lib_path = "pypogs_gpu" + ext
+rel_lib_path = "../interface_c/pypogs_gpu" + ext
 this_dir = os.path.dirname(__file__)
 
 
