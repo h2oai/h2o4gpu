@@ -1,5 +1,5 @@
-from ctypes import *
-import numpy as np
+from ctypes import POINTER, c_int, c_uint, c_float, c_double, Structure
+from numpy import float32, float64, zeros, ones, inf
 
 # POGS constants
 ORD = {}
@@ -85,10 +85,10 @@ class Solution(object):
 	def __init__(self,double_precision,m,n):
 		T = c_double if double_precision else c_float
 		self.double_precision = double_precision
-		self.x=np.zeros(n,dtype=T)
-		self.y=np.zeros(m,dtype=T)
-		self.mu=np.zeros(n,dtype=T)
-		self.nu=np.zeros(m,dtype=T)
+		self.x=zeros(n,dtype=T)
+		self.y=zeros(m,dtype=T)
+		self.mu=zeros(n,dtype=T)
+		self.nu=zeros(m,dtype=T)
 
 class SolutionS(Structure):
 	_fields_ = [('x', c_float_p), 
@@ -152,32 +152,32 @@ def make_solution(pysol):
 		
 def make_info(double_precision):
 	if double_precision:
-		return InfoD(0,0,np.inf,0)
+		return InfoD(0,0,inf,0)
 	else:
-		return InfoS(0,0,np.inf,0)
+		return InfoS(0,0,inf,0)
 
 
 class FunctionVector(object):
 	def __init__(self, length, double_precision=False):
 		T = c_double if double_precision else c_float
-		self.a = np.ones(length,T)
-		self.b = np.zeros(length,T)
-		self.c = np.ones(length,T)
-		self.d = np.zeros(length,T)
-		self.e = np.zeros(length,T)
-		self.h = np.zeros(length, c_int)
+		self.a = ones(length,T)
+		self.b = zeros(length,T)
+		self.c = ones(length,T)
+		self.d = zeros(length,T)
+		self.e = zeros(length,T)
+		self.h = zeros(length, c_int)
 		self.double_precision = double_precision
 
 	def to_double(self):
 		if self.double_precision:
 			return self
 		else:
-			return FunctionVector(np.float64(self.a),np.float64(self.b),np.float64(self.c),np.float64(self.d),np.float64(self.e),self.h)
+			return FunctionVector(float64(self.a),float64(self.b),float64(self.c),float64(self.d),float64(self.e),self.h)
 		
 
 	def to_float(self):
 		if self.double_precision:
-			return FunctionVector(np.float32(self.a),np.float32(self.b),np.float32(self.c),np.float32(self.d),np.float32(self.e),self.h)			
+			return FunctionVector(float32(self.a),float32(self.b),float32(self.c),float32(self.d),float32(self.e),self.h)			
 		else:
 			return self
 
