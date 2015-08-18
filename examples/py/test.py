@@ -1,10 +1,5 @@
 import sys
 import numpy as np
-
-# 1. REPLACE WITH '/path/to/pogs/'
-POGS_ROOT = "/Users/Baris/Documents/Thesis/modules/pogs/"
-# POGS_ROOT = "/home/baris/pogs/"
-sys.path.append(POGS_ROOT+"src/interface_py/")
 import pogs as pogs
 
 
