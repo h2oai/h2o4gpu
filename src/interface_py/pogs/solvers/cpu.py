@@ -2,7 +2,7 @@ from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
-from pogs.types import ORD, cptr, make_settings, make_solution, make_info, Solution, FunctionVector
+from pogs.types import ORD, cptr, make_settings, make_solution, make_info, change_settings, change_solution, Solution, FunctionVector
 from pogs.libs.cpu import pogsCPU
 
 #TODO: catch Ctrl-C
