@@ -17,7 +17,7 @@ class BaseSolver(object):
 
 			assert self.dense or self.CSC or self.CSR
 			assert A.dtype == c_float or A.dtype == c_double
-			assert lib and lib==pogsCPU or lib==pogsGPU
+			assert lib and (lib==pogsCPU or lib==pogsGPU)
 
 			self.m = A.shape[0]
 			self.n = A.shape[1]
