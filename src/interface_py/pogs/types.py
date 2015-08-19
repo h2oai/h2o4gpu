@@ -140,17 +140,21 @@ def make_settings(double_precision=False, **kwargs):
 	else:
 		return SettingsS(rho, relt, abst, maxit, verb, adap, gaps, warm)
 
-def change_solution(solution, **kwargs):
-	if 'x_init' in kwargs: solution.x = x_init
-	if 'nu_init' in kwargs: solution.nu = nu_init
+def change_solution(pysolution, **kwargs):
+	try:
+		if 'x_init' in kwargs: pysolution.x[:] = kwargs['x_init'][:]
+		if 'nu_init' in kwargs: pysolution.nu[:] = kwargs['nu_init'][:]
+	except:
+		#TODO: message about vector lengths? 
+		raise
 
-def make_solution(pysol):
-	if pysol.double_precision:
-		return SolutionD(cptr(pysol.x,c_double),cptr(pysol.y,c_double),
-							cptr(pysol.mu,c_double),cptr(pysol.nu,c_double))
+def make_solution(pysolution):
+	if pysolution.double_precision:
+		return SolutionD(cptr(pysolution.x,c_double),cptr(pysolution.y,c_double),
+							cptr(pysolution.mu,c_double),cptr(pysolution.nu,c_double))
 	else:
-		return SolutionS(cptr(pysol.x,c_float),cptr(pysol.y,c_float),
-		 					cptr(pysol.mu,c_float),cptr(pysol.nu,c_float))
+		return SolutionS(cptr(pysolution.x,c_float),cptr(pysolution.y,c_float),
+		 					cptr(pysolution.mu,c_float),cptr(pysolution.nu,c_float))
 
 		
 def make_info(double_precision):

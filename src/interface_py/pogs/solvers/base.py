@@ -17,7 +17,7 @@ class BaseSolver(object):
 
 			assert self.dense or self.CSC or self.CSR
 			assert A.dtype == c_float or A.dtype == c_double
-			assert lib and lib==pogsCPU or lib==pogsGPU
+			assert lib and (lib==pogsCPU or lib==pogsGPU)
 
 			self.m = A.shape[0]
 			self.n = A.shape[1]
@@ -52,7 +52,7 @@ class BaseSolver(object):
 		if not self.work:
 			self.__init__(A, lib, **kwargs)
 		else:
-			print "POGS_work already intialized, cannot re-initialize without calling finish()"
+			print "POGS_work data structure already intialized, cannot re-initialize without calling finish()"
 	 
 	def solve(self, f, g, **kwargs):
 		try:
@@ -64,16 +64,16 @@ class BaseSolver(object):
 			assert f.length()==self.m
 			assert g.length()==self.n
 
-			# pass previous rho through, if relevant
+			# pass previous rho through, if not first run (rho=0)
 			if self.info.rho>0:
 				self.settings.rho=self.info.rho
 
 			# apply user inputs
 			change_settings(self.settings, **kwargs)
-			change_solution(self.solution, **kwargs)
+			change_solution(self.pysolution, **kwargs)
 			 
 			if not self.work:
-				print "no viable POGS_work pointer to call solve(). call Solver.init( args... )"
+				print "no viable POGS_work pointer to call solve(). call Solver.init( args... ) first"
 				return 
 			elif not self.double_precision:
 				self.lib.pogs_solve_single(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info),
@@ -96,7 +96,7 @@ class BaseSolver(object):
 	 
 	def finish(self):
 		if not self.work:
-			print "no viable POGS_work pointer to call finish(). call Solver.init( args... )"
+			print "no viable POGS_work pointer to call finish(). call Solver.init( args... ) first"
 			pass
 		elif not self.double_precision:
 			self.lib.pogs_finish_single(self.work)
