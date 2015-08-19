@@ -8,6 +8,7 @@ def main(argv):
     if gpu and not pogs.SolverGPU:
         print "\nPOGS GPU library not compiled, please call again without `-g/gpu/G/GPU` option\n"
         return
+    Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
 
     m=1000
     n=100
@@ -16,42 +17,39 @@ def main(argv):
     f=pogs.FunctionVector(m,double_precision=True)
     g=pogs.FunctionVector(n,double_precision=True)
 
-    n_targ = 0;
-    n_oar = 0;
-    for b in f.b:
+
+    wt_1_over=25
+    wt_1_under=35
+    wt_2 =1
+
+    for i in xrange(m):
         if np.random.rand()>0.75:
-            b=1
-            n_targ+=1
+            # f.a[i]=1 (from initialization)
+            f.b[i]=1
+            f.c[i]=(wt_1_over+wt_1_under)/2
+            f.d[i]=(wt_1_over-wt_1_under)/2
+            # f.e[i]=0 (from initialization)
         else:
-            n_oar +=1
+            # f.a[i]=1 (from initialization)
+            # f.b[i]=0 (from initialization)
+            f.c[i]=wt_2
+            # f.d[i]=0 (from initialization)
+            # f.e[i]=0 (from initialization)
+         
+    # f(y) =  c|y-b|+dy --- skewed 1-norm, or equivalently piecewise linear 
+    f.h[:]=pogs.FUNCTION["ABS"]
 
-    wt_targ = 1
-    wt_oar = np.true_divide(1,20)*np.true_divide(n_targ,n_oar)
-
-    alpha = 0.05
-    c = (alpha+1)/2
-    d = (alpha-1)/2
-
-    for i in xrange(len(f.b)):
-        if np.random.rand() > 0.75:
-            f.b[i]=1.
-     
-
-    for i,bi in enumerate(f.b):
-        if bi >0:
-            f.c[i] = c
-            f.d[i] = d
-        else:
-            f.c[i] = wt_oar
-
-    f.h[:]=pogs.FUNCTION["ABS"] 
+    # g(x) = I(x>= 0) 
     g.h[:]=pogs.FUNCTION["INDGE0"]
-    if gpu:
-        p = pogs.SolverGPU(m,n,A)
-    else:
-        p = pogs.SolverCPU(m,n,A)
+
+    # initialize solver
+    p=Solver(A)
+
+    # solve
     p.solve(f,g)
-    pogs.STATUS[p.info.status]
+    print pogs.STATUS[p.info.status]
+
+    # tear down solver
     p.finish()
 
 

@@ -43,7 +43,7 @@ Pogs<T, M, P>::Pogs(const M &A)
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
-      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -320,13 +320,16 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   else
     status = POGS_SUCCESS;
 
+  // Get run time
+  _time = static_cast<T>(timer<double>() - t0);
+
   // Print summary
   if (_verbose > 0) {
     Printf(__HBAR__
         "Status: %s\n"
         "Timing: Total = %3.2e s, Init = %3.2e s\n"
         "Iter  : %u\n",
-        PogsStatusString(status).c_str(), timer<double>() - t0, time_init, k);
+        PogsStatusString(status).c_str(), _time, time_init, k);
     Printf(__HBAR__
         "Error Metrics:\n"
         "Pri: "

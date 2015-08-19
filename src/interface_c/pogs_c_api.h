@@ -54,13 +54,13 @@ struct PogsSettingsD{
 struct PogsInfoS{
     unsigned int iter;
     int status;
-    float obj, rho;
+    float obj, rho, solvetime;
 };
 
 struct PogsInfoD{
     unsigned int iter;
     int status;
-    double obj, rho;
+    double obj, rho, solvetime;
 };
 
 struct PogsSolutionS{

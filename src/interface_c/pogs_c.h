@@ -105,19 +105,19 @@ template <typename T>
 struct PogsInfo{
     unsigned int iter;
     int status;
-    T obj, rho;
+    T obj, rho, solvetime;
 };
 
 struct PogsInfoS{
     unsigned int iter;
     int status;
-    float obj, rho;
+    float obj, rho, solvetime;
 };
 
 struct PogsInfoD{
     unsigned int iter;
     int status;
-    double obj, rho;
+    double obj, rho, solvetime;
 };
 
 
@@ -159,7 +159,6 @@ void * PogsInit(size_t m, size_t n, const T *A, const char ord);
 template <typename T>
 void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord);
 
-// TODO: check implementation efficiency (currently suspect)
 template <typename T>
 void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
                           const T *f_d, const T *f_e, const FUNCTION *f_h);

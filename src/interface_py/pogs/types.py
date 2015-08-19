@@ -73,13 +73,16 @@ class InfoS(Structure):
 	_fields_ = [('iter', c_uint), 
 				('status', c_int), 
 				('obj',c_float), 
-				('rho',c_float)]
+				('rho',c_float),
+				('solvetime',c_float)]
 
 class InfoD(Structure):
 	_fields_ = [('iter', c_uint), 
 				('status', c_int), 
 				('obj',c_double), 
-				('rho',c_double)]
+				('rho',c_double),
+				('solvetime',c_float)]
+
 
 class Solution(object):
 	def __init__(self,double_precision,m,n):
@@ -152,9 +155,9 @@ def make_solution(pysol):
 		
 def make_info(double_precision):
 	if double_precision:
-		return InfoD(0,0,inf,0)
+		return InfoD(0,0,inf,0,0)
 	else:
-		return InfoS(0,0,inf,0)
+		return InfoS(0,0,inf,0,0)
 
 
 class FunctionVector(object):
@@ -167,6 +170,9 @@ class FunctionVector(object):
 		self.e = zeros(length,T)
 		self.h = zeros(length, c_int)
 		self.double_precision = double_precision
+
+	def length(self):
+		return len(self.a)
 
 	def to_double(self):
 		if self.double_precision:

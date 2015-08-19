@@ -133,6 +133,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
+  info->solvetime = pogs_data.GetTime();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -168,6 +169,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
+  info->solvetime = pogs_data.GetTime();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -203,6 +205,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
+  info->solvetime = pogs_data.GetTime();
 
   size_t m = f->size();
   size_t n = g->size();
@@ -238,6 +241,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
+  info->solvetime = pogs_data.GetTime();
 
   size_t m = f->size();
   size_t n = g->size();
