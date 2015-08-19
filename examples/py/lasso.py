@@ -56,4 +56,6 @@ def Lasso(m,n, gpu=False, double_precision=False):
 
   return t
 
+if __name__ == "__main__":
+   print "Solve time:\t{:.2e} seconds".format(Lasso(200,2000))
 
