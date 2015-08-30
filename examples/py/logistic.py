@@ -1,18 +1,17 @@
 import pogs as pogs
-from numpy import abs, float32, float64, max, sqrt
+from numpy import abs, exp, float32, float64, max
 from numpy.random import rand, randn
 
-
 '''
-Lasso
+Logistic regression
 
-  minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
+  minimize    \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
+  subject to  y = Ax
 
-See <pogs>/matlab/examples/lasso.m for detailed description.
-template <typename T>
+See <pogs>/matlab/examples/logistic_regression.m for detailed description.
 '''
 
-def Lasso(m,n, gpu=False, double_precision=False):
+def Logistic(m,n, gpu=False, double_precision=False):
   # set solver cpu/gpu according to input args
   if gpu and pogs.SolverGPU is None:
     print "\nGPU solver unavailable, using CPU solver\n"
@@ -27,26 +26,27 @@ def Lasso(m,n, gpu=False, double_precision=False):
   A=A if double_precision else float32(A)
 
   # true x vector, ~20% zeros
-  x_true=(randn(n)/sqrt(n))*float64(randn(n)<0.8)
+  x_true=(randn(n)/n)*float64(randn(n)<0.8)
 
-  # b= A*x_true + v (noise)
-  b=A.dot(x_true)+0.5*randn(m)
+  # generate labels  
+  d = 1./(1+exp(-A.dot(x_true))) > rand(m)
 
-  # lambda
-  lambda_max = max(abs(A.T.dot(b)))
+  # lambda_max
+  lambda_max = max(abs(A.T.dot(0.5-d)))
 
-
-  # f(Ax) = ||Ax - b||_2^2
+  # f(y) = \sum_i -d_i y_i + log(1 + e ^ y_i)
   f = pogs.FunctionVector(m,double_precision=double_precision)
-  f.b[:]=b[:]
-  f.h[:]=pogs.FUNCTION["SQUARE"]
+  f.d[:]=-d[:]
+  f.h[:]=pogs.FUNCTION["LOGISTIC"]
 
-  # g(x) = 0.2*lambda_max*||x||_1
+
+  # g(x) = \lambda ||x||_1
   g = pogs.FunctionVector(n,double_precision=double_precision)
-  g.a[:] = 0.2*lambda_max 
+  g.a[:] = 0.5*lambda_max 
   g.h[:] = pogs.FUNCTION["ABS"]
 
-  # use problem data A to create solver 
+
+  # intialize solver 
   s = Solver(A) 
 
   # solve
@@ -61,5 +61,6 @@ def Lasso(m,n, gpu=False, double_precision=False):
   return t
 
 if __name__ == "__main__":
-   print "Solve time:\t{:.2e} seconds".format(Lasso(200,2000))
+   print "Solve time:\t{:.2e} seconds".format(Logistic(1000,100))
+
 

@@ -34,14 +34,14 @@ STATUS[5]='POGS_ERROR'
 
 # Default POGS solver settings
 DEFAULTS = {}
-DEFAULTS['rho']=1.
-DEFAULTS['abs_tol']=1e-4
-DEFAULTS['rel_tol']=1e-4
-DEFAULTS['max_iters']=2000
-DEFAULTS['verbose']=2
-DEFAULTS['adaptive_rho']=1
-DEFAULTS['gap_stop']=1
-DEFAULTS['warm_start']=1
+DEFAULTS['rho']			=	1. 		# rho = 1.0
+DEFAULTS['abs_tol']		=	1e-4 	# abs_tol = 1e-2
+DEFAULTS['rel_tol']		=	1e-4 	# rel_tol = 1e-4
+DEFAULTS['max_iters']	=	2500 	# max_iters = 2500
+DEFAULTS['verbose']		=	2 		# verbose = 2
+DEFAULTS['adaptive_rho']=	1 		# adaptive_rho = True
+DEFAULTS['gap_stop']	=	1		# gap_stop = True
+DEFAULTS['warm_start']	=	0 		# warm_start = False
 
 # pointers to C types
 c_int_p = POINTER(c_int)
@@ -117,6 +117,8 @@ def cptr(np_arr,dtype=c_float):
 	return np_arr.ctypes.data_as(POINTER(dtype))
 
 def change_settings(settings, **kwargs):
+	
+	# all settings (except warm_start) are persistent and change only if called
 	if 'rho' in kwargs: settings.rho=kwargs['rho']
 	if 'abs_tol' in kwargs: settings.abs_tol=kwargs['abs_tol']
 	if 'rel_tol' in kwargs: settings.rel_tol=kwargs['rel_tol']
@@ -124,7 +126,13 @@ def change_settings(settings, **kwargs):
 	if 'verbose' in kwargs: settings.verbose=kwargs['verbose']
 	if 'adaptive_rho' in kwargs: settings.adaptive_rho=kwargs['adaptive_rho']
 	if 'gap_stop' in kwargs: settings.gap_stop=kwargs['gap_stop']
-	if 'warm_start' in kwargs: settings.warm_start=kwargs['warm_start']
+	
+	# warm_start must be specified each time it is desired
+	if 'warm_start' in kwargs: 
+		settings.warm_start=kwargs['warm_start']
+	else:
+		settings.warm_start=0
+
 
 def make_settings(double_precision=False, **kwargs):
 	rho = kwargs['rho'] if 'rho' in kwargs.keys() else DEFAULTS['rho'] 
@@ -178,16 +186,36 @@ class FunctionVector(object):
 	def length(self):
 		return len(self.a)
 
+	def copyfrom(self,f):
+		self.a[:]=f.a[:]
+		self.b[:]=f.b[:]
+		self.c[:]=f.c[:]
+		self.d[:]=f.d[:]
+		self.e[:]=f.e[:]
+		self.h[:]=f.h[:]
+
+	def copyto(self,f):
+		f.a[:]=self.a[:]
+		f.b[:]=self.b[:]
+		f.c[:]=self.c[:]
+		f.d[:]=self.d[:]
+		f.e[:]=self.e[:]
+		f.h[:]=self.h[:]
+
+
 	def to_double(self):
 		if self.double_precision:
 			return self
 		else:
-			return FunctionVector(float64(self.a),float64(self.b),float64(self.c),float64(self.d),float64(self.e),self.h)
-		
+			f=FunctionVector(self.length(),double_precision=True)
+			self.copyto(f)
+			return f
 
 	def to_float(self):
 		if self.double_precision:
-			return FunctionVector(float32(self.a),float32(self.b),float32(self.c),float32(self.d),float32(self.e),self.h)			
+			f=FunctionVector(self.length())
+			self.copyto(f)
+			return f 
 		else:
 			return self
 

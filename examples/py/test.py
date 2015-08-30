@@ -43,14 +43,14 @@ def main(argv):
     g.h[:]=pogs.FUNCTION["INDGE0"]
 
     # initialize solver
-    p=Solver(A)
+    s=Solver(A)
 
     # solve
-    p.solve(f,g)
-    print pogs.STATUS[p.info.status]
+    s.solve(f,g)
+    print pogs.STATUS[s.info.status]
 
     # tear down solver
-    p.finish()
+    s.finish()
 
 
 if __name__ == "__main__":
