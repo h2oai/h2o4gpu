@@ -7,18 +7,22 @@ POGSROOT=../
 
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
-ifndef CUDA_HOME
-CUDA_HOME=/usr/local/cuda/lib64/
+ifndef CUDAHOME
+ifeq ($(shell uname -s), Darwin)
+CUDAHOME=/usr/local/cuda/lib/
+else
+CUDAHOME=/usr/local/cuda/lib64/
+endif
 endif
 
 # Check System Args.
 ifeq ($(shell uname -s), Darwin)
 LDFLAGS=-lm -framework Accelerate
-CULDFLAGS=-L$(CUDAHOME)/lib -L/usr/local/lib $(CULDFLAGS_)
+CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=-lm -lblas
-CULDFLAGS=-L$(CUDAHOME)/lib64 -lcudart -lcublas -lcusparse
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse
 SHARED=so
 endif
 
@@ -43,7 +47,7 @@ CUPOGSLIB=\
 	$(POGSROOT)/build/gpu/projector/projector_cgls.o
 
 # Python-required CUDA runtime library
-PYCUDART=$(CUDA_HOME)/libcudart.so	
+PYCUDART=$(CUDAHOME)/libcudart.so	
 
 
 .PHONY: default all
