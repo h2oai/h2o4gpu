@@ -100,7 +100,7 @@ PogsStatus PogsImplementation<T, M, P>::Solve(PogsObjective<T> *objective) {
   const T kKappa          = static_cast<T>(0.9);
   const T kOne            = static_cast<T>(1);
   const T kZero           = static_cast<T>(0);
-  const T kProjTolMax     = static_cast<T>(1e-8);
+  const T kProjTolMax     = static_cast<T>(1e-6);
   const T kProjTolMin     = static_cast<T>(1e-2);
   const T kProjTolPow     = static_cast<T>(2);
   const T kProjTolIni     = static_cast<T>(1e-5);
