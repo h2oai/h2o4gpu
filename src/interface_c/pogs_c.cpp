@@ -1,88 +1,254 @@
+#include <vector>
 #include "pogs.h"
 #include "pogs_c.h"
 
-template <typename T, ORD O>
-int Pogs(size_t m, size_t n, T *A,
-         T *f_a, T *f_b, T *f_c, T *f_d, T *f_e, FUNCTION *f_h,
-         T *g_a, T *g_b, T *g_c, T *g_d, T *g_e, FUNCTION *g_h,
-         T rho, T abs_tol, T rel_tol, unsigned int max_iter, bool quiet,
-         bool adaptive_rho, bool gap_stop, T *x, T *y, T *l, T *optval) {
-  // Create pogs struct.
-  Dense<T, static_cast<POGS_ORD>(O)> A_(A);
-  PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> > pogs_data(A_, m, n);
-  pogs_data.x = x;
-  pogs_data.y = y;
-  
-  // Set f and g.
-  pogs_data.f.reserve(m);
-  for (unsigned int i = 0; i < m; ++i)
-    pogs_data.f.emplace_back(static_cast<Function>(f_h[i]),
-        f_a[i], f_b[i], f_c[i], f_d[i], f_e[i]);
+// to be created and managed by caller
+template <typename T>
+struct PogsSettings{
+  T rho, abs_tol, rel_tol;
+  unsigned int max_iters, verbose;
+  int adaptive_rho, gap_stop, warm_start;
+};
 
-  pogs_data.g.reserve(n);
-  for (unsigned int i = 0; i < n; ++i)
-    pogs_data.g.emplace_back(static_cast<Function>(g_h[i]),
-        g_a[i], g_b[i], g_c[i], g_d[i], g_e[i]);
+template <typename T>
+struct PogsInfo{
+    unsigned int iter;
+    int status;
+    T obj, rho, solvetime;
+};
+
+template <typename T>
+struct PogsSolution{
+    T *x, *y, *mu, *nu; 
+};
+
+// created and managed locally
+struct PogsWork{
+    size_t m,n;
+    bool densebit, rowmajorbit;
+    void *pogs_data, *x, *y;
+
+    PogsWork(size_t m_, size_t n_, bool dense_, bool rowmajor_, void *pogs_data_, void *x_, void *y_){
+      m=m_;n=n_;
+      densebit=dense_; rowmajorbit=rowmajor_;
+      pogs_data= pogs_data_;
+      x=x_; y=y_;
+    }
+};
+
+
+bool VerifyPogsWork(void * work){
+  if (!work) { return false; }
+  PogsWork * p_work = static_cast<PogsWork *>(work);
+  if (!(p_work->pogs_data) || !(p_work->x) || !(p_work->y) ){ return false; }
+  else { return true; } 
+}
+
+//Dense 
+template <typename T, ORD O>
+void * PogsInit(size_t m, size_t n, T *A){
+
+  bool densebit = true, rowmajorbit = O==ROW_MAJ;
+
+  // data containers
+  Dense<T, static_cast<POGS_ORD>(O)> A_(A);
+  PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >  *pogs_data;
+  std::vector<T> *x, *y;
+  PogsWork * work;
+
+  // create new data vectors
+  x = new std::vector<T>;
+  y = new std::vector<T>;
+
+  y->resize(m);
+  x->resize(n);
+
+  // create new pogs data object
+  pogs_data = new PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >(A_, m, n);
+  pogs_data->x=x->data();
+  pogs_data->y=y->data();
+
+  // initialize function vectors
+  pogs_data->f.reserve(m);
+  for (unsigned int i = 0; i < m; ++i)
+    pogs_data->f.emplace_back(static_cast<Function>(kZero));   
+
+  pogs_data->g.reserve(n);
+  for (unsigned int j = 0; j < n; ++j)
+    pogs_data->g.emplace_back(static_cast<Function>(kZero));   
+
+  // allocate factors (enables warm start)
+  AllocDenseFactors(pogs_data);
+
+  // create new PogsWork struct
+  work = new PogsWork(m,n, densebit, rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(x), static_cast<void *>(y));
+
+  return static_cast<void *>(work);
+}
+
+template <typename T>
+void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > &f, const T *f_a, const T *f_b, const T *f_c, 
+                            const T *f_d, const T *f_e, const FUNCTION *f_h){
+
+
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].a= f_a[i];
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].b= f_b[i];
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].c= f_c[i];
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].d= f_d[i];
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].e= f_e[i];
+  for (unsigned int i = 0; i < m; ++i)
+    f[i].h= static_cast<Function>(f_h[i]);
+}
+
+
+template <typename T, POGS_ORD O>
+void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution){
+
 
   // Set parameters.
-  pogs_data.rho = rho;
-  pogs_data.abs_tol = abs_tol;
-  pogs_data.rel_tol = rel_tol;
-  pogs_data.max_iter = max_iter;
-  pogs_data.quiet = quiet;
-  pogs_data.adaptive_rho = adaptive_rho;
-  pogs_data.gap_stop = gap_stop;
+  pogs_data.rho=settings->rho;
+  pogs_data.abs_tol=settings->abs_tol;
+  pogs_data.rel_tol=settings->rel_tol;
+  pogs_data.max_iter=settings->max_iters;
+  pogs_data.quiet=!static_cast<bool>(settings->verbose);
+  pogs_data.adaptive_rho=static_cast<bool>(settings->adaptive_rho);
+  pogs_data.gap_stop=static_cast<bool>(settings->gap_stop);
+
+  // Optionally, feed in warm start variables
+  // if (static_cast<bool>(settings->warm_start)){
+  //   pogs_data.SetInitX(solution->x);
+  //   pogs_data.SetInitLambda(solution->nu);
+  // }
 
   // Solve.
-  int err = Pogs(&pogs_data);
-  *optval = pogs_data.optval;
+  info->status = Pogs(&pogs_data);
 
-  return err;
+  // Retrieve solver output & state
+  info->obj = pogs_data.optval;
+  // info->iter = pogs_data.GetFinalIter();
+  info->rho = pogs_data.rho;
+  // info->solvetime = pogs_data.GetTime();
+
+  size_t m = pogs_data.f.size();
+  size_t n = pogs_data.g.size();
+
+  memcpy(solution->x, pogs_data.x, n * sizeof(T));
+  memcpy(solution->y, pogs_data.y, m * sizeof(T));
+  // memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
+  // memcpy(solution->nu, pogs_data.lambda, m * sizeof(T));
+}
+
+
+template <typename T>
+int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
+            const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
+            void *settings_, void *info_, void *solution_){
+
+  if (!VerifyPogsWork(work)) { return static_cast <int>(POGS_ERROR); }
+
+
+  const PogsSettings<T> * settings = static_cast<PogsSettings<T> *>(settings_);
+  PogsInfo<T> * info = static_cast<PogsInfo<T> *>(info_);
+  PogsSolution<T> * solution = static_cast<PogsSolution<T> *>(solution_);  
+  PogsWork * p_work = static_cast<PogsWork *>(work);
+
+  size_t m = p_work->m;
+  size_t n = p_work->n;
+
+
+  // Run
+  if (p_work->densebit){
+    if (p_work->rowmajorbit)
+    {
+      PogsData<T, Dense<T, ROW> > *pogs_data = static_cast< PogsData<T, Dense<T, ROW> > *>(p_work->pogs_data);
+
+      // Update f and g
+      PogsFunctionUpdate(m, pogs_data->f, f_a, f_b, f_c, f_d, f_e, f_h);
+      PogsFunctionUpdate(n, pogs_data->g, g_a, g_b, g_c, g_d, g_e, g_h);
+      PogsRun(*pogs_data, settings, info, solution);    
+    }else{
+      PogsData<T, Dense<T, COL> > *pogs_data = static_cast< PogsData<T, Dense<T, COL> > *>(p_work->pogs_data);
+
+      // Update f and g
+      PogsFunctionUpdate(m, pogs_data->f, f_a, f_b, f_c, f_d, f_e, f_h);
+      PogsFunctionUpdate(n, pogs_data->g, g_a, g_b, g_c, g_d, g_e, g_h);
+      PogsRun(*pogs_data, settings, info, solution);    
+    }
+
+  }else{
+    printf("\nWARNING: SPARSE POGS METHODS NOT IMPLEMENTED IN C INTERFACE.\n");
+  }
+
+  return info->status;
+} 
+
+
+template <typename T>
+void PogsShutdown(void *work){
+  PogsWork * p_work = static_cast<PogsWork *>(work);
+
+  if (p_work->densebit){
+    if (p_work->rowmajorbit)
+    {
+      PogsData<T, Dense<T, ROW> > *pogs_data = static_cast< PogsData<T, Dense<T, ROW> > *>(p_work->pogs_data);
+      FreeDenseFactors(pogs_data);
+      delete pogs_data;
+    }else{
+      PogsData<T, Dense<T, COL> > *pogs_data = static_cast< PogsData<T, Dense<T, COL> > *>(p_work->pogs_data);
+      FreeDenseFactors(pogs_data);
+      delete pogs_data;
+    }
+
+  }else{
+    printf("\nWARNING: SPARSE POGS METHODS NOT IMPLEMENTED IN C INTERFACE.\n");
+  }
+
+  std::vector<T> *x = static_cast<std::vector<T> *>(p_work->x);
+  std::vector<T> *y = static_cast<std::vector<T> *>(p_work->y);
+
+  delete x;
+  delete y;
+  delete p_work;
 }
 
 extern "C" {
 
-int PogsD(enum ORD ord, size_t m, size_t n, double *A,
-          double *f_a, double *f_b, double *f_c, double *f_d, double *f_e,
-          enum FUNCTION *f_h,
-          double *g_a, double *g_b, double *g_c, double *g_d, double *g_e,
-          enum FUNCTION *g_h,
-          double rho, double abs_tol, double rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho, int gap_stop,
-          double *x, double *y, double *l, double *optval) {
-  if (ord == COL_MAJ) {
-    return Pogs<double, COL_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
-        g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-        static_cast<bool>(quiet), static_cast<bool>(adaptive_rho), 
-        static_cast<bool>(gap_stop), x, y, l, optval);
-  } else {
-    return Pogs<double, ROW_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
-        g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-        static_cast<bool>(quiet), static_cast<bool>(adaptive_rho), 
-        static_cast<bool>(gap_stop), x, y, l, optval);
-  }
+void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, float *A){
+  return ord == ROW_MAJ ? PogsInit<float, ROW_MAJ>(m,n,A) : PogsInit<float, COL_MAJ>(m,n,A);   
 }
 
-int PogsS(enum ORD ord, size_t m, size_t n, float *A,
-          float *f_a, float *f_b, float *f_c, float *f_d, float *f_e,
-          enum FUNCTION *f_h,
-          float *g_a, float *g_b, float *g_c, float *g_d, float *g_e,
-          enum FUNCTION *g_h,
-          float rho, float abs_tol, float rel_tol, unsigned int max_iter,
-          int quiet, int adaptive_rho, int gap_stop,
-          float *x, float *y, float *l, float *optval) {
-  if (ord == COL_MAJ) {
-    return Pogs<float, COL_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
-        g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-        static_cast<bool>(quiet), static_cast<bool>(adaptive_rho), 
-        static_cast<bool>(gap_stop), x, y, l, optval);
-  } else {
-    return Pogs<float, ROW_MAJ>(m, n, A, f_a, f_b, f_c, f_d, f_e, f_h,
-        g_a, g_b, g_c, g_d, g_e, g_h, rho, abs_tol, rel_tol, max_iter,
-        static_cast<bool>(quiet), static_cast<bool>(adaptive_rho),
-        static_cast<bool>(gap_stop), x, y, l, optval);
-  }
+void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, double *A){
+  return ord == ROW_MAJ ? PogsInit<double, ROW_MAJ>(m,n,A) : PogsInit<double, COL_MAJ>(m,n,A);   
 }
+
+void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers){
+  printf("\nWARNING: SPARSE POGS METHODS NOT IMPLEMENTED IN C INTERFACE. RETURNING NULL POINTER\n");
+  return (void *)0;
+}
+
+void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers){
+  printf("\nWARNING: SPARSE POGS METHODS NOT IMPLEMENTED IN C INTERFACE. RETURNING NULL POINTER\n");
+  return (void *)0;
+}
+
+int pogs_solve_single(void *work, PogsSettingsS *settings, PogsSolutionS *solution, PogsInfoS *info,
+                      const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
+                      const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h){
+  return PogsRun<float>(work, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h, settings, info, solution);
+}
+int pogs_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *solution, PogsInfoD *info,
+                      const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
+                      const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h){
+  return PogsRun<double>(work, f_a, f_b, f_c, f_d, f_e, f_h, g_a, g_b, g_c, g_d, g_e, g_h, settings, info, solution);
+}
+
+void pogs_finish_single(void * work){ return PogsShutdown<float>(work); }
+void pogs_finish_double(void * work){ return PogsShutdown<double>(work); }
 
 }
 

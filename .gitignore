@@ -1,0 +1,45 @@
+# OSX #
+*.DS_STORE
+
+# Compiled Object files #
+*.slo
+*.lo
+*.o
+*.obj
+*run
+
+# Compiled Dynamic Libraries #
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries #
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables #
+*.exe
+*.out
+*.app
+
+# CUDA #
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
+
+# Compiled Python #
+*.pyc
+
+# IPything Notebook
+*ipynb*
+
+# Entire build directory #
+/src/build/*
+
+# Markdown preview #
+*README.html
