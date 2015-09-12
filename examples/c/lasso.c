@@ -4,9 +4,14 @@
 
 #include "pogs_c.h"
 
-// Change these two definitions to switch between float and double.
-#define POGS PogsD
-typedef double real_t;
+// change these definitions to switch between single- and double-precision
+typedef double real_t;        
+#define POGS_SETTINGS PogsSettingsD       // PogsSettingsD or PogsSettingsS
+#define POGS_SOLUTION PogsSolutionD       // PogsSolutionD or PogsSolutionS
+#define POGS_INFO PogsInfoD               // PogsInfoD or PogsInfoS
+#define POGS_INIT pogs_init_dense_double  // pogs_init_dense_double or pogs_init_dense_single
+#define POGS_SOLVE pogs_solve_double      // pogs_solve_double or pogs_solve_single
+#define POGS_FINISH pogs_finish_double    // pogs_finish_double or pogs_finish_single
 
 // Uniform random value in [a, b)
 inline real_t runif(real_t a, real_t b) {
@@ -28,12 +33,6 @@ int main() {
   real_t *b = (real_t *) malloc(m * sizeof(real_t));
   real_t *x_true = (real_t *) malloc(n * sizeof(real_t));
   
-  // Define output variables.
-  real_t *x = (real_t *) malloc(n * sizeof(real_t));
-  real_t *y = (real_t *) malloc(m * sizeof(real_t));
-  real_t *l = (real_t *) malloc(m * sizeof(real_t));
-  real_t optval;
-
   // Generate random A.
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = runif((real_t) -1, (real_t) 1);
@@ -87,31 +86,53 @@ int main() {
     g_h[i] = ABS;
   }
 
-  // Set up parameters.
+  // Setup parameters.
   enum ORD ord = ROW_MAJ;
-  real_t rho = (real_t) 1;
-  real_t abs_tol = (real_t) 1e-4;
-  real_t rel_tol = (real_t) 1e-3;
-  unsigned int max_iter = 2000u;
-  int quiet = 0;
-  int adaptive_rho = 1;
-  int gap_stop = 0;
+  POGS_SETTINGS *settings = &(POGS_SETTINGS){
+    .rho = (real_t) 1,
+    .abs_tol = (real_t) 1e-4,
+    .rel_tol = (real_t) 1e-3,
+    .max_iters = 2000u,
+    .verbose = 1u,
+    .adaptive_rho = 1,
+    .gap_stop = 0,
+    .warm_start = 0
+  };
+
+  // Output variables.
+  POGS_SOLUTION *solution = &(POGS_SOLUTION){
+    .x = (real_t *) malloc(n * sizeof(real_t)),
+    .y = (real_t *) malloc(m * sizeof(real_t)),
+    .nu = (real_t *) malloc(m * sizeof(real_t)),
+    .mu = (real_t *) malloc(n * sizeof(real_t))
+  };
+  
+  POGS_INFO *info = &(POGS_INFO){
+    .iter=0,
+    .status=0,
+    .obj=(real_t) 0,
+    .rho=(real_t) 0,
+    .solvetime=(real_t) 0
+  };
 
   // Solve
-  POGS(ord, m, n, A,
-      f_a, f_b, f_c, f_d, f_e, f_h,
-      g_a, g_b, g_c, g_d, g_e, g_h,
-      rho, abs_tol, rel_tol, max_iter, quiet, adaptive_rho, gap_stop,
-      x, y, l, &optval);
-  printf("Lasso optval = %e\n", optval);
+  void * p_work = POGS_INIT(ord, m, n, A);
+    info->status = POGS_SOLVE(p_work, settings, solution, info, \
+      f_a, f_b, f_c, f_d, f_e, f_h, \
+      g_a, g_b, g_c, g_d, g_e, g_h);
+ POGS_FINISH(p_work);
+  
+  printf("Lasso optval = %e\n", info->obj);
 
   // Clean up.
   free(A);
   free(b);
-  free(x);
-  free(y);
-  free(l);
+  free(solution->x);
+  free(solution->y);
+  free(solution->nu);
+  free(solution->mu);  
   free(x_true);
+
 
   free(f_a);
   free(f_b);

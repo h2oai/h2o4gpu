@@ -57,6 +57,8 @@ struct FunctionObj {
       : h(h), a(a), b(0), c(1), d(0), e(0) { }
   explicit FunctionObj(Function h)
       : h(h), a(1), b(0), c(1), d(0), e(0) { }
+  FunctionObj()
+      : h(kZero), a(1), b(0), c(1), d(0), e(0) { }
 
   void CheckConsts() {
     if (c < static_cast<T>(0))
