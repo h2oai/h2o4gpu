@@ -198,8 +198,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(pogs_data->optval);
 
-    if (converged || k == pogs_data->max_iter)
-        Printf("Reached max iter=%i\n",pogs_data->max_iter);
+    if (converged || k == pogs_data->max_iter){
+      Printf("Reached max iter=%i\n",pogs_data->max_iter);
       break;
     }
 
