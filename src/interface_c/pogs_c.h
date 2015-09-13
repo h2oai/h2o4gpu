@@ -64,10 +64,10 @@ enum FUNCTION { ABS,       // f(x) = |x|
 
 // Possible status values.
 enum STATUS { POGS_SUCCESS,    // Converged succesfully.
-      POGS_INFEASIBLE, // Problem likely infeasible.
-      POGS_UNBOUNDED,  // Problem likely unbounded
-      POGS_MAX_ITER,   // Reached max iter.
-      POGS_NAN_FOUND,  // Encountered nan.
+      // POGS_INFEASIBLE, // Problem likely infeasible.
+      // POGS_UNBOUNDED,  // Problem likely unbounded
+      // POGS_MAX_ITER,   // Reached max iter.
+      // POGS_NAN_FOUND,  // Encountered nan.
       POGS_ERROR };    // Generic error, check logs.
 
 typedef struct PogsSettingsS{
