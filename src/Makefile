@@ -2,7 +2,7 @@
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -O3 -Wall -Wconversion
+CXXFLAGS=-g -O3 -Wall -Wconversion -fPIC
 
 # CUDA Flags
 CUXX=nvcc

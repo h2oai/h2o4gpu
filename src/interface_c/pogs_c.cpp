@@ -1,3 +1,4 @@
+#include <cstring> // memcpy()
 #include <vector>
 #include "pogs.h"
 #include "pogs_c.h"
@@ -137,8 +138,8 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
   size_t m = pogs_data.f.size();
   size_t n = pogs_data.g.size();
 
-  memcpy(solution->x, pogs_data.x, n * sizeof(T));
-  memcpy(solution->y, pogs_data.y, m * sizeof(T));
+  std::memcpy(solution->x, pogs_data.x, n * sizeof(T));
+  std::memcpy(solution->y, pogs_data.y, m * sizeof(T));
   // memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
   // memcpy(solution->nu, pogs_data.lambda, m * sizeof(T));
 }
