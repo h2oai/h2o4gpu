@@ -1,6 +1,6 @@
 # Instructions
 # 1. To build with openmp set 
-IFLAGS=-fopenmp
+# IFLAGS=-fopenmp
 
 # 2. Set POGSROOT= path/to/POGS/src/
 POGSROOT=../

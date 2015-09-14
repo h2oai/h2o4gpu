@@ -102,6 +102,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
         pogs_data->A.ptr);
     err = sinkhorn_knopp::Equilibrate(s_hdl, d_hdl, descr, &A, &d, &e);
 
+    /*
     if (!err) {
       // TODO: Issue warning if x == NULL or y == NULL
       // Initialize x and y from x0 or/and y0
@@ -133,7 +134,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
         cml::spblas_gemv(s_hdl, CUSPARSE_OPERATION_NON_TRANSPOSE, descr, kOne,
             &A, &x, kZero, &y);
       }
-    }
+    }*/
   }
 
   // Scale f and g to account for diagonal scaling e and d.
