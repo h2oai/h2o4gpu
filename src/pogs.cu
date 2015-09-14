@@ -56,6 +56,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
   cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
+  cml::vector<T> ztemp = cml::vector_calloc<T>(m + n);
   cml::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
@@ -89,6 +90,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> y = cml::vector_subvector(&z, n, m);
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
+  cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
+  cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
+
 
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
@@ -110,52 +114,11 @@ int Pogs(PogsData<T, M> *pogs_data) {
       cml::blas_scal(hdl, kOne / (factor * sqrt(sqrt_mean_diag)), &d);
       cml::blas_scal(hdl, factor / sqrt(sqrt_mean_diag), &e);
 
-      // Initialize x and y from x0 or y0
-      if (pogs_data->init_x && !pogs_data->init_y && pogs_data->x) {
-        cml::vector_memcpy(&x, pogs_data->x);
-        cml::vector_div(&x, &e);
-        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
-      } else if (pogs_data->init_y && !pogs_data->init_x && pogs_data->y) {
-        cml::vector_memcpy(&y, pogs_data->y);
-        cml::vector_mul(&y, &d);
-        cml::matrix<T, kOrd> AA = cml::matrix_alloc<T, kOrd>(min_dim, min_dim);
-        cml::matrix_memcpy(&AA, &L);
-        cml::vector<T> diag_AA = cml::matrix_diagonal(&AA);
-        cml::vector_add_constant(&diag_AA, static_cast<T>(1e-4));
-        cml::linalg_cholesky_decomp(hdl, &AA);
-        if (m >= n) {
-          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kZero, &x);
-          cml::linalg_cholesky_svx(hdl, &AA, &x);
-        } else {
-          cml::linalg_cholesky_svx(hdl, &AA, &y);
-          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kZero, &x);
-        }
-        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
-        cml::matrix_free(&AA);
-      }
 
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T)
       cml::vector_add_constant(&diag_L, kOne);
       cml::linalg_cholesky_decomp(hdl, &L);
       
-      // TODO: Issue warning if x == NULL or y == NULL
-      // Initialize x and y from guess x0 and y0
-      if (pogs_data->init_x && pogs_data->init_y &&
-          pogs_data->x && pogs_data->y) {
-        cml::vector_memcpy(&x, pogs_data->x);
-        cml::vector_memcpy(&y, pogs_data->y);
-        cml::vector_div(&x, &e);
-        cml::vector_mul(&y, &d);
-        if (m >= n) {
-          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
-          cml::linalg_cholesky_svx(hdl, &L, &x);
-        } else {
-          cml::blas_gemv(hdl, CUBLAS_OP_N, -kOne, &A, &x, kOne, &y);
-          cml::linalg_cholesky_svx(hdl, &L, &y);
-          cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
-        }
-        cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);
-      }
     }
   }
 
@@ -167,8 +130,36 @@ int Pogs(PogsData<T, M> *pogs_data) {
         g.begin(), ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   }
 
+
+  // Initialize (x, lambda) from (x0, lambda0).
+  
+  // Check that both x and lambda provided
+  if (pogs_data-> warm_start && !(pogs_data->x && pogs_data->l)) {
+    Printf("\nERROR: Must provide x0 and lambda0 for warm start\n");
+    err=1;
+  }
+  if (!err && pogs_data->warm_start) {
+    // x:= x0, y:= A * x
+    cml::vector_memcpy(&xtemp, pogs_data->x);
+    cml::vector_div(&xtemp, &e);
+    cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &xtemp, kZero, &ytemp);
+    cml::vector_memcpy(&z, &ztemp);
+    CUDA_CHECK_ERR();
+
+    // lambda:= lambda0, mu:= A^T * lambda
+    cml::vector_memcpy(&ytemp, pogs_data->l);
+    cml::vector_div(&ytemp, &d);
+    cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &ytemp, kZero, &xtemp);
+    cml::blas_scal(hdl, -kOne / rho, &ztemp);
+    cml::vector_memcpy(&zt, &ztemp);
+    CUDA_CHECK_ERR();
+  }
+
+  pogs_data->warm_start = false;
+
+
   // Signal start of execution.
-  if (!pogs_data->quiet)
+  if (!err && !pogs_data->quiet)
     Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
            "        gap    eps_gap  objective\n");
 
@@ -198,8 +189,11 @@ int Pogs(PogsData<T, M> *pogs_data) {
     T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * cml::blas_nrm2(hdl, &z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * fabs(pogs_data->optval);
 
-    if (converged || k == pogs_data->max_iter)
+    if (converged || k == pogs_data->max_iter){
+      if (!converged)
+        Printf("Reached max iter=%i\n",pogs_data->max_iter);      
       break;
+    }
 
     // Project and Update Dual Variables
     if (m >= n) {
@@ -303,6 +297,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
+  cml::vector_free(&ztemp);
 
   return err;
 }

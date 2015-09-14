@@ -1,3 +1,4 @@
+#include <cstring> // memcpy
 #include <vector>
 #include "pogs.h"
 #include "pogs_c.h"
@@ -26,13 +27,13 @@ struct PogsSolution{
 struct PogsWork{
     size_t m,n;
     bool densebit, rowmajorbit;
-    void *pogs_data, *x, *y;
+    void *pogs_data, *x, *y, *l;
 
-    PogsWork(size_t m_, size_t n_, bool dense_, bool rowmajor_, void *pogs_data_, void *x_, void *y_){
+    PogsWork(size_t m_, size_t n_, bool dense_, bool rowmajor_, void *pogs_data_, void *x_, void *y_, void *l_){
       m=m_;n=n_;
       densebit=dense_; rowmajorbit=rowmajor_;
       pogs_data= pogs_data_;
-      x=x_; y=y_;
+      x=x_; y=y_; l=l_;
     }
 };
 
@@ -53,20 +54,23 @@ void * PogsInit(size_t m, size_t n, T *A){
   // data containers
   Dense<T, static_cast<POGS_ORD>(O)> A_(A);
   PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >  *pogs_data;
-  std::vector<T> *x, *y;
+  std::vector<T> *x, *y, *l;
   PogsWork * work;
 
   // create new data vectors
   x = new std::vector<T>;
   y = new std::vector<T>;
+  l = new std::vector<T>;
 
   y->resize(m);
   x->resize(n);
+  l->resize(m);
 
   // create new pogs data object
   pogs_data = new PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >(A_, m, n);
   pogs_data->x=x->data();
   pogs_data->y=y->data();
+  pogs_data->l=l->data();
 
   // initialize function vectors
   pogs_data->f.reserve(m);
@@ -81,7 +85,8 @@ void * PogsInit(size_t m, size_t n, T *A){
   AllocDenseFactors(pogs_data);
 
   // create new PogsWork struct
-  work = new PogsWork(m,n, densebit, rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(x), static_cast<void *>(y));
+  work = new PogsWork(m,n, densebit, rowmajorbit, static_cast<void *>(pogs_data), \
+                    static_cast<void *>(x), static_cast<void *>(y), static_cast<void *>(l));
 
   return static_cast<void *>(work);
 }
@@ -119,11 +124,15 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
   pogs_data.adaptive_rho=static_cast<bool>(settings->adaptive_rho);
   pogs_data.gap_stop=static_cast<bool>(settings->gap_stop);
 
+  // Get problem dims
+  size_t m = pogs_data.f.size();
+  size_t n = pogs_data.g.size();
+
   // Optionally, feed in warm start variables
-  // if (static_cast<bool>(settings->warm_start)){
-  //   pogs_data.SetInitX(solution->x);
-  //   pogs_data.SetInitLambda(solution->nu);
-  // }
+  if (static_cast<bool>(settings->warm_start)){
+    std::memcpy(pogs_data.x, solution->x, n * sizeof(T));
+    std::memcpy(pogs_data.l, solution->nu, m * sizeof(T));
+  }
 
   // Solve.
   info->status = Pogs(&pogs_data);
@@ -134,13 +143,11 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
   info->rho = pogs_data.rho;
   // info->solvetime = pogs_data.GetTime();
 
-  size_t m = pogs_data.f.size();
-  size_t n = pogs_data.g.size();
 
-  memcpy(solution->x, pogs_data.x, n * sizeof(T));
-  memcpy(solution->y, pogs_data.y, m * sizeof(T));
+  std::memcpy(solution->x, pogs_data.x, n * sizeof(T));
+  std::memcpy(solution->y, pogs_data.y, m * sizeof(T));
   // memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
-  // memcpy(solution->nu, pogs_data.lambda, m * sizeof(T));
+  std::memcpy(solution->nu, pogs_data.l, m * sizeof(T));
 }
 
 
@@ -210,9 +217,11 @@ void PogsShutdown(void *work){
 
   std::vector<T> *x = static_cast<std::vector<T> *>(p_work->x);
   std::vector<T> *y = static_cast<std::vector<T> *>(p_work->y);
+  std::vector<T> *l = static_cast<std::vector<T> *>(p_work->l);
 
   delete x;
   delete y;
+  delete l;
   delete p_work;
 }
 

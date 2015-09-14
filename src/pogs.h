@@ -15,12 +15,12 @@ struct PogsData {
   size_t m, n;
 
   // Output.
-  T *x, *y, *l, optval;
+  T *x, *y, *mu, *l, optval;
 
   // Parameters.
   T rho, abs_tol, rel_tol;
   unsigned int max_iter;
-  bool quiet, adaptive_rho, gap_stop, init_x, init_y;
+  bool quiet, adaptive_rho, gap_stop, warm_start;
 
   // Factors
   M factors;
@@ -30,7 +30,7 @@ struct PogsData {
       : A(A), m(m), n(n), x(0), y(0), l(0), rho(1),
         abs_tol(static_cast<T>(1e-4)), rel_tol(static_cast<T>(1e-3)),
         max_iter(2000), quiet(false), adaptive_rho(true), gap_stop(false),
-        init_x(false), init_y(false) { }
+        warm_start(false) { }
 };
 
 // Pogs solver.

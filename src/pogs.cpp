@@ -40,6 +40,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
   gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
+  gsl::vector<T> ztemp = gsl::vector_calloc<T>(m + n);
   gsl::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     compute_factors = pogs_data->factors.val[0] == 0;
@@ -64,6 +65,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
       z12.data == 0 || A.data == 0 || L.data == 0)
     err = 1;
 
+
+
   // Create views for x and y components.
   gsl::vector<T> d = gsl::vector_subvector(&de, 0, m);
   gsl::vector<T> e = gsl::vector_subvector(&de, m, n);
@@ -71,7 +74,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> y = gsl::vector_subvector(&z, n, m);
   gsl::vector<T> x12 = gsl::vector_subvector(&z12, 0, n);
   gsl::vector<T> y12 = gsl::vector_subvector(&z12, n, m);
-  
+  gsl::vector<T> xtemp = gsl::vector_subvector(&ztemp, 0, n);
+  gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
+
   if (compute_factors && !err) {
     // Equilibrate A.
     gsl::matrix<T, kOrd> Ain = gsl::matrix_view_array<T, kOrd>(
@@ -95,56 +100,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
       gsl::blas_scal(kOne / (factor * std::sqrt(sqrt_mean_diag)), &d);
       gsl::blas_scal(factor / (std::sqrt(sqrt_mean_diag)), &e);
 
-      // Initialize x and y from x0 or y0
-      if (pogs_data->init_x && !pogs_data->init_y && pogs_data->x) {
-        gsl::vector_memcpy(&x, pogs_data->x);
-        gsl::vector_div(&x, &e);
-        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
-      } else if (pogs_data->init_y && !pogs_data->init_x && pogs_data->y) {
-        gsl::vector_memcpy(&y, pogs_data->y);
-        gsl::vector_mul(&y, &d);
-        gsl::matrix<T, kOrd> AA = gsl::matrix_alloc<T, kOrd>(min_dim, min_dim);
-        gsl::matrix_memcpy(&AA, &L);
-        gsl::vector<T> diag_AA = gsl::matrix_diagonal(&AA);
-        gsl::vector_add_constant(&diag_AA, static_cast<T>(1e-4));
-        gsl::linalg_cholesky_decomp(&AA);
-        if (m >= n) {
-          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kZero, &x);
-          gsl::linalg_cholesky_svx(&AA, &x);
-        } else {
-          gsl::linalg_cholesky_svx(&AA, &y);
-          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kZero, &x);
-        }
-        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
-        gsl::matrix_free(&AA);
-      }
-
       // Compute cholesky decomposition of (I + A^TA) or (I + AA^T).
       gsl::vector_add_constant(&diag_L, kOne);
       gsl::linalg_cholesky_decomp(&L);
-
-      // TODO: Issue warning if x == NULL or y == NULL
-      // Initialize x and y from guess x0 and y0
-      if (pogs_data->init_x && pogs_data->init_y &&
-          pogs_data->x && pogs_data->y) {
-        gsl::vector_memcpy(&x, pogs_data->x);
-        gsl::vector_memcpy(&y, pogs_data->y);
-        gsl::vector_div(&x, &e);
-        gsl::vector_mul(&y, &d);
-        if (m >= n) {
-          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);
-          gsl::linalg_cholesky_svx(&L, &x);
-        } else {
-          gsl::blas_gemv(CblasNoTrans, -kOne, &A, &x, kOne, &y);
-          gsl::linalg_cholesky_svx(&L, &y);
-          gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);
-        }
-        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
-      }
     }
   }
 
-  // Scale f and g to account++ for diagonal scaling e and d.
+  // Scale f and g to account for diagonal scaling e and d.
   for (unsigned int i = 0; i < m && !err; ++i) {
     f[i].a /= gsl::vector_get(&d, i);
     f[i].d /= gsl::vector_get(&d, i);
@@ -154,8 +116,36 @@ int Pogs(PogsData<T, M> *pogs_data) {
     g[j].d *= gsl::vector_get(&e, j);
   }
 
+
+  // Initialize (x, lambda) from (x0, lambda0).
+
+  // Check that both x and lambda provided
+  if (pogs_data-> warm_start && !(pogs_data->x && pogs_data->l)) {
+    Printf("\nERROR: Must provide x0 and lambda0 for warm start\n");
+    err=1;
+  }
+
+  if (!err && pogs_data->warm_start) {
+    // x:= x0, y:= A * x
+    gsl::vector_memcpy(&xtemp, pogs_data->x);
+    gsl::vector_div(&xtemp, &e);
+    gsl::blas_gemv(CblasNoTrans, kOne, &A, &xtemp, kZero, &ytemp);
+    gsl::vector_memcpy(&z, &ztemp);
+
+    // lambda:= lambda0, mu:= A^T * lambda
+    gsl::vector_memcpy(&ytemp, pogs_data->l);
+    gsl::vector_div(&ytemp, &d);
+    gsl::blas_gemv(CblasTrans, kOne, &A, &ytemp, kZero, &xtemp);
+    gsl::blas_scal(-kOne / rho, &ztemp);
+    gsl::vector_memcpy(&zt, &ztemp);
+  }
+
+  pogs_data->warm_start = false;
+
+
+
   // Signal start of execution.
-  if (!pogs_data->quiet)
+  if (!err && !pogs_data->quiet)
     Printf("   #      res_pri    eps_pri   res_dual   eps_dual"
            "        gap    eps_gap  objective\n");
 
@@ -185,8 +175,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
     T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
     T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
 
-    if (converged && k < pogs_data->max_iter)
+
+    // TODO: ERROR CODE FOR MAX_ITER
+    if (converged || k == pogs_data->max_iter){
+      if (!converged)
+        printf("Reached max iter=%i\n",pogs_data->max_iter);
       break;
+    }
 
     // Project and Update Dual Variables.
     if (m >= n) {
@@ -294,6 +289,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
   gsl::vector_free(&z12);
   gsl::vector_free(&zprev);
+  gsl::vector_free(&ztemp);
   return err;
 }
 
