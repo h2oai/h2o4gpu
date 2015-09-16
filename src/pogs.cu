@@ -144,7 +144,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_div(&xtemp, &e);
     cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &xtemp, kZero, &ytemp);
     cml::vector_memcpy(&z, &ztemp);
-    CUDA_CHECK_ERR();
+    // CUDA_CHECK_ERR();
 
     // lambda:= lambda0, mu:= -A^T * lambda
     cml::vector_memcpy(&ytemp, pogs_data->l);
@@ -152,7 +152,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &ytemp, kZero, &xtemp);
     cml::blas_scal(hdl, -kOne / rho, &ztemp);
     cml::vector_memcpy(&zt, &ztemp);
-    CUDA_CHECK_ERR();
+    // CUDA_CHECK_ERR();
   }
 
   pogs_data->warm_start = false;
