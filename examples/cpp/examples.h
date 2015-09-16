@@ -10,6 +10,9 @@ template <typename T>
 double LassoPath(size_t m, size_t n);
 
 template <typename T>
+double LassoWarmstart(size_t m, size_t n);
+
+template <typename T>
 double Logistic(size_t m, size_t n);
 
 template <typename T>

@@ -117,10 +117,58 @@ int main() {
 
   // Solve
   void * p_work = POGS_INIT(ord, m, n, A);
-    info->status = POGS_SOLVE(p_work, settings, solution, info, \
+  
+  printf("First solve:\n");
+  info->status = POGS_SOLVE(p_work, settings, solution, info, \
       f_a, f_b, f_c, f_d, f_e, f_h, \
       g_a, g_b, g_c, g_d, g_e, g_h);
- POGS_FINISH(p_work);
+  printf("rho final=%0.2f\n",info->rho);
+
+
+  printf("Second solve---warm start by continuation\n");
+  printf("rho input=%0.2f\n",info->rho);
+
+  settings->rho=info->rho;
+  info->status = POGS_SOLVE(p_work, settings, solution, info, \
+      f_a, f_b, f_c, f_d, f_e, f_h, \
+      g_a, g_b, g_c, g_d, g_e, g_h);
+  printf("rho final=%0.2f\n",info->rho);
+
+
+  settings->rho=info->rho;
+  settings->warm_start=1;    // forces solution->x, solution->nu to be initial values of primal and dual vars
+  printf("Third solve---warm start by variable feed\n");
+  printf("rho input=%0.2f\n",info->rho);
+
+  settings->rho=info->rho;
+  info->status = POGS_SOLVE(p_work, settings, solution, info, \
+      f_a, f_b, f_c, f_d, f_e, f_h, \
+      g_a, g_b, g_c, g_d, g_e, g_h);
+  printf("rho final=%0.2f\n",info->rho);
+
+  POGS_FINISH(p_work);
+
+  /* ----------------------------------- */
+
+  void * p_clone = POGS_INIT(ord, m, n, A);
+  printf("Fourth solve---cold start with rho transfer\n");
+  printf("rho=%0.2f\n",info->rho);
+  settings->rho=info->rho;
+  info->status = POGS_SOLVE(p_clone, settings, solution, info, \
+      f_a, f_b, f_c, f_d, f_e, f_h, \
+      g_a, g_b, g_c, g_d, g_e, g_h);
+  POGS_FINISH(p_clone);
+
+  p_clone = POGS_INIT(ord, m, n, A);
+  printf("Fifth solve---warm start by variable transfer\n");
+  printf("rho=%0.2f\n",info->rho);
+  settings->rho=info->rho;
+  settings->warm_start=1;    // forces solution->x, solution->nu to be initial values of primal and dual vars  
+  info->status = POGS_SOLVE(p_clone, settings, solution, info, \
+      f_a, f_b, f_c, f_d, f_e, f_h, \
+      g_a, g_b, g_c, g_d, g_e, g_h);
+  POGS_FINISH(p_clone);
+
   
   printf("Lasso optval = %e\n", info->obj);
 

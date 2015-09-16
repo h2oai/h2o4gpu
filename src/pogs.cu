@@ -146,10 +146,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_memcpy(&z, &ztemp);
     CUDA_CHECK_ERR();
 
-    // lambda:= lambda0, mu:= A^T * lambda
+    // lambda:= lambda0, mu:= -A^T * lambda
     cml::vector_memcpy(&ytemp, pogs_data->l);
     cml::vector_div(&ytemp, &d);
-    cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &ytemp, kZero, &xtemp);
+    cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &ytemp, kZero, &xtemp);
     cml::blas_scal(hdl, -kOne / rho, &ztemp);
     cml::vector_memcpy(&zt, &ztemp);
     CUDA_CHECK_ERR();
@@ -287,6 +287,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
     cudaMemcpy(pogs_data->factors.val, &rho, sizeof(T), cudaMemcpyHostToDevice);
+    pogs_data->rho=rho;
     cml::vector_memcpy(&z, &zprev);
   } else {
     cml::vector_free(&de);

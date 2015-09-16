@@ -132,10 +132,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::blas_gemv(CblasNoTrans, kOne, &A, &xtemp, kZero, &ytemp);
     gsl::vector_memcpy(&z, &ztemp);
 
-    // lambda:= lambda0, mu:= A^T * lambda
+    // lambda:= lambda0, mu:= -A^T * lambda
     gsl::vector_memcpy(&ytemp, pogs_data->l);
     gsl::vector_div(&ytemp, &d);
-    gsl::blas_gemv(CblasTrans, kOne, &A, &ytemp, kZero, &xtemp);
+    gsl::blas_gemv(CblasTrans, -kOne, &A, &ytemp, kZero, &xtemp);
     gsl::blas_scal(-kOne / rho, &ztemp);
     gsl::vector_memcpy(&zt, &ztemp);
   }
@@ -279,6 +279,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
     pogs_data->factors.val[0] = rho;
+    pogs_data->rho=rho;
     gsl::vector_memcpy(&z, &zprev);
   } else {
     gsl::vector_free(&de);

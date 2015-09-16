@@ -34,6 +34,10 @@ int main() {
   t = Svm<real_t>(1000, 200);
   printf("Solver Time: %e sec\n", t);
 
+  printf("\nLasso Warmstart Tests.\n");
+  t = LassoWarmstart<real_t>(200, 1000);
+  printf("Solver Time: %e sec\n", t);
+
   return 0;
 }
 

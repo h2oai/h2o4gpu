@@ -130,6 +130,7 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
+    pogs_data.warm_start=true;
     std::memcpy(pogs_data.x, solution->x, n * sizeof(T));
     std::memcpy(pogs_data.l, solution->nu, m * sizeof(T));
   }
@@ -143,11 +144,14 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
   info->rho = pogs_data.rho;
   // info->solvetime = pogs_data.GetTime();
 
-
   std::memcpy(solution->x, pogs_data.x, n * sizeof(T));
   std::memcpy(solution->y, pogs_data.y, m * sizeof(T));
   // memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
   std::memcpy(solution->nu, pogs_data.l, m * sizeof(T));
+
+  // always reset warm start flag
+  pogs_data.warm_start=false;
+
 }
 
 

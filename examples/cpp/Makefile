@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lasso_path.cpp logistic.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
+EXSRC=lasso.cpp lasso_path.cpp logistic.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp lasso_warmstart.cpp
 
 # C++ Flags
 CXX=g++
