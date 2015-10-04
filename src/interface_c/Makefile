@@ -21,7 +21,7 @@ LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
-LDFLAGS=-lm -lblas
+LDFLAGS=-lblas -lm 
 CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse
 SHARED=so
 endif

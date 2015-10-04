@@ -55,7 +55,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   bool compute_factors = true;
   cml::vector<T> de, z, zt;
   cml::vector<T> zprev = cml::vector_calloc<T>(m + n);
-  cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
+  // cml::vector<T> z12 = cml::vector_calloc<T>(m + n);
+  // cml::vector<T> zt12 = cml::vector_calloc<T>(m+n);
+  cml::vector<T> z12, zt12;
+  cml::vector<T> ztemp = cml::vector_calloc<T>(m+n);
   cml::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
@@ -66,14 +69,18 @@ int Pogs(PogsData<T, M> *pogs_data) {
     z = cml::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
     zt = cml::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
         m + n);
+    z12 = cml::vector_view_array(pogs_data->factors.val + 1 + 3 * (m + n), m + n);
+    zt12 = cml::vector_view_array(pogs_data->factors.val + 1 + 4 * (m + n), m + n);
     L = cml::matrix_view_array<T, kOrd>(
-        pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
+        pogs_data->factors.val + 1 + 5 * (m + n), min_dim, min_dim);
     A = cml::matrix_view_array<T, kOrd>(
-        pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
+        pogs_data->factors.val + 1 + 5 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = cml::vector_calloc<T>(m + n);
     z = cml::vector_calloc<T>(m + n);
     zt = cml::vector_calloc<T>(m + n);
+    z12 = cml::vector_calloc<T>(m + n);
+    zt12 = cml::vector_calloc<T>(m + n);
     L = cml::matrix_alloc<T, kOrd>(min_dim, min_dim);
     A = cml::matrix_alloc<T, kOrd>(m, n);
   }
@@ -89,10 +96,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> y = cml::vector_subvector(&z, n, m);
   cml::vector<T> x12 = cml::vector_subvector(&z12, 0, n);
   cml::vector<T> y12 = cml::vector_subvector(&z12, n, m);
-  cml::vector<T> yt = cml::vector_subvector(&zt, n, m);
   cml::vector<T> xprev = cml::vector_subvector(&zprev, 0, n);
   cml::vector<T> yprev = cml::vector_subvector(&zprev, n, m);
-
+  cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
+  cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
 
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
@@ -134,7 +141,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Initialize (x, lambda) from (x0, lambda0).
   
   // Check that both x and lambda provided
-  if (pogs_data-> warm_start && !(pogs_data->x && pogs_data->l)) {
+  if (pogs_data-> warm_start && !(pogs_data->x && pogs_data->nu)) {
     Printf("\nERROR: Must provide x0 and lambda0 for warm start\n");
     err=1;
   }
@@ -147,7 +154,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // CUDA_CHECK_ERR();
 
     // lambda:= lambda0, mu:= -A^T * lambda
-    cml::vector_memcpy(&yprev, pogs_data->l);
+    cml::vector_memcpy(&yprev, pogs_data->nu);
     cml::vector_div(&yprev, &d);
     cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &yprev, kZero, &xprev);
     cml::blas_scal(hdl, -kOne / rho, &zprev);
@@ -229,10 +236,17 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::blas_scal(hdl, kAlpha, &z);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
 
+    // \tilde x^{1/2} := x^{1/2} - x +\tilde x
+    // \tilde y^{1/2} := y^{1/2} - y +\tilde y
+    cml::vector_memcpy(&zt12, &z12);
+    cml::blas_axpy(hdl, -kOne, &zprev, &zt12);
+    cml::blas_axpy(hdl, kOne, &zt, &zt12);
+
+
     // Update dual variable.
     // ---------------------
     // \tilde x := \tilde x + \alpha (x^{1/2} - x^{1})
-    // \tilde y := \tilde y + \aplha (y^{1/2} - y^{1})
+    // \tilde y := \tilde y + \alpha (y^{1/2} - y^{1})
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
@@ -294,29 +308,43 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   }
 
-  // Scale x, y and l for output.
-  // cml::vector_div(&y12, &d);
-  // cml::vector_mul(&x12, &e);
-  // cml::vector_mul(&y, &d);
-  // cml::blas_scal(hdl, rho, &y);
-  cml::vector_div(&y, &d);
-  cml::vector_mul(&x, &e);
-  cml::vector_mul(&yt, &d);
-  cml::blas_scal(hdl, rho, &yt);
-
-  // Copy results to output.
-  // if (pogs_data->y != 0 && !err)
-  //   cml::vector_memcpy(pogs_data->y, &y12);
-  // if (pogs_data->x != 0 && !err)
-  //   cml::vector_memcpy(pogs_data->x, &x12);
-  // if (pogs_data->l != 0 && !err)
-  //   cml::vector_memcpy(pogs_data->l, &y);
+  // Scale final iterates, copy to output.
+  cml::vector_memcpy(&ztemp, &z);
+  cml::vector_div(&ytemp, &d);
+  cml::vector_mul(&xtemp, &e);
   if (pogs_data->y != 0 && !err)
-    cml::vector_memcpy(pogs_data->y, &y);
+    cml::vector_memcpy(pogs_data->y, &ytemp);
   if (pogs_data->x != 0 && !err)
-    cml::vector_memcpy(pogs_data->x, &x);
-  if (pogs_data->l != 0 && !err)
-    cml::vector_memcpy(pogs_data->l, &yt);
+    cml::vector_memcpy(pogs_data->x, &xtemp);
+
+  cml::vector_memcpy(&ztemp, &zt);
+  cml::vector_mul(&ytemp, &d);
+  cml::blas_scal(hdl, rho, &ytemp);
+  cml::vector_div(&xtemp, &e);
+  cml::blas_scal(hdl, rho, &xtemp);
+  if (pogs_data->nu != 0 && !err)
+    cml::vector_memcpy(pogs_data->nu, &ytemp);
+  if (pogs_data->mu != 0 && !err)
+    cml::vector_memcpy(pogs_data->mu, &xtemp);
+
+  cml::vector_memcpy(&ztemp, &z12);
+  cml::vector_div(&ytemp, &d);
+  cml::vector_mul(&xtemp, &e);
+  if (pogs_data->y12 != 0 && !err)
+    cml::vector_memcpy(pogs_data->y12, &ytemp);
+  if (pogs_data->x12 != 0 && !err)
+    cml::vector_memcpy(pogs_data->x12, &xtemp);
+
+  cml::vector_memcpy(&ztemp, &zt12);
+  cml::vector_mul(&ytemp, &d);
+  cml::blas_scal(hdl, rho, &ytemp);
+  cml::vector_div(&xtemp, &e);
+  cml::blas_scal(hdl, rho, &xtemp);
+  if (pogs_data->nu12 != 0 && !err)
+    cml::vector_memcpy(pogs_data->nu12, &ytemp);
+  if (pogs_data->mu12 != 0 && !err)
+    cml::vector_memcpy(pogs_data->mu12, &xtemp);
+
 
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
@@ -327,11 +355,13 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_free(&de);
     cml::vector_free(&z);
     cml::vector_free(&zt);
+    cml::vector_free(&z12);
+    cml::vector_free(&zt12);
     cml::matrix_free(&L);
     cml::matrix_free(&A);
   }
-  cml::vector_free(&z12);
   cml::vector_free(&zprev);
+  cml::vector_free(&ztemp);
 
   return err;
 }
@@ -339,7 +369,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 template <typename T, POGS_ORD O>
 int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n;
-  size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
+  size_t flen = 1 + 5 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
   cudaError_t err = cudaMalloc(&pogs_data->factors.val, flen * sizeof(T));
   if (err == cudaSuccess)
     err = cudaMemset(pogs_data->factors.val, 0, flen * sizeof(T));

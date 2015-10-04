@@ -15,6 +15,8 @@
 // Proximal Operator Graph Solver.
 template<typename T, typename M>
 int Pogs(PogsData<T, M> *pogs_data) {
+
+
   // Constants for adaptive-rho and over-relaxation.
   const T kDeltaMin = static_cast<T>(1.05);
   const T kDeltaMax = static_cast<T>(2);
@@ -28,6 +30,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   int err = 0;
 
+
+
   // Extract values from pogs_data.
   size_t m = pogs_data->m, n = pogs_data->n, min_dim = std::min(m, n);
   T rho = pogs_data->rho;
@@ -39,7 +43,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   bool compute_factors = true;
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
-  gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
+  // gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
+  // gsl::vector<T> zt12 = gsl::vector_calloc<T>(m + n);
+  gsl::vector<T> z12, zt12;  
+  gsl::vector<T> ztemp = gsl::vector_calloc<T>(m + n);
   gsl::matrix<T, kOrd> A, L;
   if (pogs_data->factors.val != 0) {
     compute_factors = pogs_data->factors.val[0] == 0;
@@ -47,23 +54,25 @@ int Pogs(PogsData<T, M> *pogs_data) {
       rho = pogs_data->factors.val[0];
     de = gsl::vector_view_array(pogs_data->factors.val + 1, m + n);
     z = gsl::vector_view_array(pogs_data->factors.val + 1 + m + n, m + n);
-    zt = gsl::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n),
-        m + n);
+    zt = gsl::vector_view_array(pogs_data->factors.val + 1 + 2 * (m + n), m + n);
+    z12 = gsl::vector_view_array(pogs_data->factors.val + 1 + 3 * (m + n), m + n);
+    zt12 = gsl::vector_view_array(pogs_data->factors.val + 1 + 4 * (m + n), m + n);
     L = gsl::matrix_view_array<T, kOrd>(
-        pogs_data->factors.val + 1 + 3 * (m + n), min_dim, min_dim);
+        pogs_data->factors.val + 1 + 5 * (m + n), min_dim, min_dim);
     A = gsl::matrix_view_array<T, kOrd>(
-        pogs_data->factors.val + 1 + 3 * (m + n) + min_dim * min_dim, m, n);
+        pogs_data->factors.val + 1 + 5 * (m + n) + min_dim * min_dim, m, n);
   } else {
     de = gsl::vector_calloc<T>(m + n);
     z = gsl::vector_calloc<T>(m + n);
     zt = gsl::vector_calloc<T>(m + n);
+    z12 = gsl::vector_calloc<T>(m + n);
+    zt12 = gsl::vector_calloc<T>(m + n);
     L = gsl::matrix_calloc<T, kOrd>(min_dim, min_dim);
     A = gsl::matrix_calloc<T, kOrd>(m, n);
   }
   if (de.data == 0 || z.data == 0 || zt.data == 0 || zprev.data == 0 ||
       z12.data == 0 || A.data == 0 || L.data == 0)
     err = 1;
-
 
 
   // Create views for x and y components.
@@ -73,9 +82,11 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> y = gsl::vector_subvector(&z, n, m);
   gsl::vector<T> x12 = gsl::vector_subvector(&z12, 0, n);
   gsl::vector<T> y12 = gsl::vector_subvector(&z12, n, m);
-  gsl::vector<T> yt = gsl::vector_subvector(&zt, n, m);
   gsl::vector<T> xprev = gsl::vector_subvector(&zprev, 0, n);
   gsl::vector<T> yprev = gsl::vector_subvector(&zprev, n, m);
+  gsl::vector<T> xtemp = gsl::vector_subvector(&ztemp, 0, n);
+  gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
+
 
   if (compute_factors && !err) {
     // Equilibrate A.
@@ -84,10 +95,12 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::matrix_memcpy(&A, &Ain);
     err = Equilibrate(&A, &d, &e, true);
 
+
     if (!err) {
       // Compute AᵀA or AAᵀ.
       CBLAS_TRANSPOSE_t mult_type = m >= n ? CblasTrans : CblasNoTrans;
       
+
       // "L":= AᵀA or AAᵀ
       gsl::blas_syrk(CblasLower, mult_type, kOne, &A, kZero, &L);
 
@@ -110,6 +123,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
   }
 
+
   // Scale f and g to account for diagonal scaling e and d.
   for (unsigned int i = 0; i < m && !err; ++i) {
     f[i].a /= gsl::vector_get(&d, i);
@@ -123,7 +137,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Initialize (x,y,\tilde x, \tilde y) from (xₒ, νₒ).
 
   // Check that guesses for both xₒ and νₒ provided
-  if (pogs_data-> warm_start && !(pogs_data->x && pogs_data->l)) {
+  if (pogs_data->warm_start && !(pogs_data->x != 0 && pogs_data->nu != 0)) {
     Printf("\nERROR: Must provide x0 and nu0 for warm start\n");
     err=1;
   }
@@ -138,7 +152,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
     //  ν:= νₒ, 
     //  µ:= -Aᵀνₒ
     //  (\tilde x, \tilde y)= (1/ρ)*(µ,ν)
-    gsl::vector_memcpy(&yprev, pogs_data->l);
+    gsl::vector_memcpy(&yprev, pogs_data->nu);
     gsl::vector_div(&yprev, &d);
     gsl::blas_gemv(CblasTrans, -kOne, &A, &yprev, kZero, &xprev);
     gsl::blas_scal(-kOne / rho, &zprev);
@@ -147,7 +161,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // else, (x,y, \tilde x, \tilde y) = (0,0,0,0) 
 
   pogs_data->warm_start = false;
-
 
   // Signal start of execution.
   if (!err && !pogs_data->quiet)
@@ -161,6 +174,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   T delta = kDeltaMin, xi = static_cast<T>(1.0);
   unsigned int kd = 0, ku = 0;
   bool converged = false;
+
+
+  T eps_pri, eps_dua, eps_gap, gap, nrm_r=0, nrm_s=0;
+
 
   for (unsigned int k = 0; !err; ++k) {
     //  (x_prev,y_prev)=(x,y)
@@ -178,7 +195,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
     // Compute gap, objective and tolerances.
     // --------------------------------------
-    T gap, nrm_r = 0, nrm_s = 0;
+    nrm_r = 0; nrm_s = 0;
     
     //  ("x","y") := (x- \tilde x-x^{1/2},y - \tilde y - y^{1/2})
     //             = ( -µ^{1/2}/ρ, -ν^{1/2}/ρ ), by definition
@@ -191,19 +208,21 @@ int Pogs(PogsData<T, M> *pogs_data) {
     //  obj := f(y^{1/2})+g(x^{1/2})
     pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
     
+
+    // calculate_tolerances(eps_pri, eps_dua, eps_gap, m, n, pogs_data, rho, &z, &z12);
     // tolerances
     //  (eps_abs * sqrt(m) + eps_rel) * ( || x^{1/2} ||_2 + || y^{1/2} ||_2 )
-    T eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&z12);
+    eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&z12);
     // TODO: POGS PAPER USES THIS CRITERION, TEST IT:
     // T eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&y12);
 
     //  (eps_abs * sqrt(n) + eps_rel) * ρ * ( || µ^{1/2}/ρ ||_2 + || ν^{1/2}/ρ ||_2 )    
-    T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
+    eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
     // TODO: POGS PAPER USES THIS CRITERION, TEST IT:
     // T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&x);
 
     //  (eps_abs * sqrt(m*n) + eps_rel) * obj
-    T eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
+    eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
 
 
     // Projection & primal update.
@@ -286,6 +305,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::blas_scal(kAlpha, &z);
     gsl::blas_axpy(kOne - kAlpha, &zprev, &z);
 
+
+    // \tilde x^{1/2} := x^{1/2} - x +\tilde x
+    // \tilde y^{1/2} := y^{1/2} - y +\tilde y
+    gsl::vector_memcpy(&zt12, &z12);
+    gsl::blas_axpy(-kOne, &zprev, &zt12);
+    gsl::blas_axpy(kOne, &zt, &zt12);
+
+
     // Update dual variable.
     // ---------------------
     // \tilde x := \tilde x + \alpha (x^{1/2} - x^{1})
@@ -365,36 +392,49 @@ int Pogs(PogsData<T, M> *pogs_data) {
         printf("Reached max iter=%i\n",pogs_data->max_iter);
       break;
     }
-
   }
-  // Scale x, y and l for output.
 
-  // y_final = D⁻¹y^{1/2}
-  // gsl::vector_div(&y12, &d);
-  // x_final =  Ex^{1/2}
-  // gsl::vector_mul(&x12, &e);
-  // nu_final = ρD "y"
-  // gsl::vector_mul(&y, &d);
-  // gsl::blas_scal(rho, &y);
+  // Scale final iterates, copy to output.
 
-  // y_final = D⁻¹y^{1}
-  gsl::vector_div(&y, &d);
-  // x_final =  Ex^{1}
-  gsl::vector_mul(&x, &e);
-  // nu_final = ρD "y"
-  gsl::vector_mul(&yt, &d);
-  gsl::blas_scal(rho, &yt);
-
-  // Copy results to output.
-  if (pogs_data->y != 0 && !err)
-    // gsl::vector_memcpy(pogs_data->y, &y12);
-    gsl::vector_memcpy(pogs_data->y, &y);
+  // x,y
+  gsl::vector_memcpy(&ztemp, &z);
+  gsl::vector_div(&ytemp, &d);
+  gsl::vector_mul(&xtemp, &e);
   if (pogs_data->x != 0 && !err)
-    // gsl::vector_memcpy(pogs_data->x, &x12);
-    gsl::vector_memcpy(pogs_data->x, &x);
-  if (pogs_data->l != 0 && !err)
-    // gsl::vector_memcpy(pogs_data->l, &y);
-    gsl::vector_memcpy(pogs_data->l, &yt);
+    gsl::vector_memcpy(pogs_data->x, &xtemp);
+  if (pogs_data->y != 0 && !err)
+    gsl::vector_memcpy(pogs_data->y, &ytemp);
+
+  // mu,nu
+  gsl::vector_memcpy(&ztemp, &zt);
+  gsl::vector_mul(&ytemp, &d); 
+  gsl::blas_scal(rho, &ytemp);
+  gsl::vector_div(&xtemp, &e); 
+  gsl::blas_scal(rho, &xtemp);
+  if (pogs_data->nu != 0 && !err)
+    gsl::vector_memcpy(pogs_data->nu, &ytemp);
+  if (pogs_data->mu != 0 && !err)
+      gsl::vector_memcpy(pogs_data->mu, &xtemp);
+
+  // x^{1/2}, y^{1/2}
+  gsl::vector_memcpy(&ztemp, &z12);
+  gsl::vector_div(&ytemp, &d);
+  gsl::vector_mul(&xtemp, &e);
+  if (pogs_data->y12 != 0 && !err)
+    gsl::vector_memcpy(pogs_data->y12, &ytemp);
+  if (pogs_data->x12 != 0 && !err)
+    gsl::vector_memcpy(pogs_data->x12, &xtemp);
+
+  //  mu^{1/2},nu^{1/2}
+  gsl::vector_memcpy(&ztemp, &zt12);
+  gsl::vector_mul(&ytemp, &d); 
+  gsl::blas_scal(rho, &ytemp);
+  gsl::vector_div(&xtemp, &e); 
+  gsl::blas_scal(rho, &xtemp);
+  if (pogs_data->nu12 != 0 && !err)
+    gsl::vector_memcpy(pogs_data->nu12, &ytemp);
+  if (pogs_data->mu12 != 0 && !err)
+    gsl::vector_memcpy(pogs_data->mu12, &xtemp);
 
 
   // Store rho and free memory.
@@ -406,18 +446,21 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::vector_free(&de);
     gsl::vector_free(&z);
     gsl::vector_free(&zt);
+    gsl::vector_free(&z12);
+    gsl::vector_free(&zt12);
     gsl::matrix_free(&L);
     gsl::matrix_free(&A);
   }
-  gsl::vector_free(&z12);
   gsl::vector_free(&zprev);
+  gsl::vector_free(&ztemp);
+
   return err;
 }
 
 template <typename T, POGS_ORD O>
 int AllocDenseFactors(PogsData<T, Dense<T, O> > *pogs_data) {
   size_t m = pogs_data->m, n = pogs_data->n;
-  size_t flen = 1 + 3 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
+  size_t flen = 1 + 5 * (m + n) + std::min(m, n) * std::min(m, n) + m * n;
   pogs_data->factors.val = new T[flen]();
   if (pogs_data->factors.val != 0)
     return 0;

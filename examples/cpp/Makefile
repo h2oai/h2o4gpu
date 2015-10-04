@@ -17,7 +17,7 @@ ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS_)
 else
-LDFLAGS=-lm
+LDFLAGS=-lblas -lm
 #CULDFLAGS=-L/cm/shared/apps/cuda55/toolkit/current/lib64 $(CULDFLAGS_)
 CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
@@ -29,7 +29,7 @@ cpu: run_all.cpp examples.h $(EXSRC)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_sp_cu.o pogs_cu_link.o
+	$(MAKE) -C $(POGSROOT) pogs_cu.o pogs_cu_link.o
 	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $< \
 	$(POGSROOT)/pogs_sp_cu.o $(POGSROOT)/pogs_cu.o $(POGSROOT)/pogs_cu_link.o $(POGSROOT)/cml.o \
 	$(CULDFLAGS)

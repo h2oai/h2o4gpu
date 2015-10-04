@@ -13,6 +13,12 @@ double Svm(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
   std::vector<T> x(n + 1);
   std::vector<T> y(m);
+  std::vector<T> mu(n+1);
+  std::vector<T> nu(m);
+  std::vector<T> x12(n+1);
+  std::vector<T> y12(m);
+  std::vector<T> mu12(n+1);
+  std::vector<T> nu12(m);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
@@ -37,6 +43,12 @@ double Svm(size_t m, size_t n) {
   PogsData<T, Dense<T, ROW>> pogs_data(A_, m, n + 1);
   pogs_data.x = x.data();
   pogs_data.y = y.data();
+  pogs_data.mu = mu.data();
+  pogs_data.nu = nu.data();
+  pogs_data.x12 = x12.data();
+  pogs_data.y12 = y12.data();
+  pogs_data.mu12 = mu12.data();
+  pogs_data.nu12 = nu12.data();
 
   T lambda = static_cast<T>(1);
 

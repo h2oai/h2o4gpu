@@ -13,6 +13,7 @@ typedef double real_t;
 #define POGS_SOLVE pogs_solve_double      // pogs_solve_double or pogs_solve_single
 #define POGS_FINISH pogs_finish_double    // pogs_finish_double or pogs_finish_single
 
+
 // Uniform random value in [a, b)
 inline real_t runif(real_t a, real_t b) {
   return (b - a) * rand() / RAND_MAX + a;
@@ -23,6 +24,21 @@ inline real_t max(real_t a, real_t b) {
   return a < b ? b : a;
 }
 
+real_t maxdiff(real_t *a, real_t *b, unsigned int n){
+  real_t diff = (real_t) 0;
+  for (unsigned int i = 0; i < n; ++i)
+    diff = max(diff, fabs(a[i]-b[i]) );
+  return diff;
+}
+
+real_t asum(real_t *a, unsigned int n){
+  real_t sum= (real_t) 0;
+  for (unsigned int i = 0; i < n; ++i)
+    sum += fabs(a[i]);
+  return sum;
+}
+
+
 // Lasso
 //   minimize (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 int main() {
@@ -32,7 +48,8 @@ int main() {
   real_t *A = (real_t *) malloc(m * n * sizeof(real_t));
   real_t *b = (real_t *) malloc(m * sizeof(real_t));
   real_t *x_true = (real_t *) malloc(n * sizeof(real_t));
-  
+  real_t *x_last = (real_t *) malloc(n * sizeof(real_t));
+
   // Generate random A.
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = runif((real_t) -1, (real_t) 1);
@@ -119,62 +136,38 @@ int main() {
     .solvetime=(real_t) 0
   };
 
+
+  unsigned int nlambda = 100;
+
+
   // Solve
   void * p_work = POGS_INIT(ord, m, n, A);
   
-  printf("First solve:\n");
-  info->status = POGS_SOLVE(p_work, settings, solution, info, \
+
+  for (unsigned int i = 0; i < nlambda; ++i) {
+    real_t lambda = (real_t) exp((log(lambda_max) * (nlambda - 1 - i) +
+        (real_t) 1e-2 * log(lambda_max) * i) / (nlambda - 1));
+
+    for (unsigned int i = 0; i < n; ++i)
+      g_c[i] = lambda;
+
+    info->status = POGS_SOLVE(p_work, settings, solution, info, \
       f_a, f_b, f_c, f_d, f_e, f_h, \
       g_a, g_b, g_c, g_d, g_e, g_h);
-  printf("rho final=%0.2f\n",info->rho);
 
 
-  printf("Second solve---warm start by continuation\n");
-  printf("rho input=%0.2f\n",info->rho);
+    if ( maxdiff(solution->x, x_last, n) < ((real_t) 1e-3) * asum(solution->x, n))
+      break;
 
-  settings->rho=info->rho;
-  info->status = POGS_SOLVE(p_work, settings, solution, info, \
-      f_a, f_b, f_c, f_d, f_e, f_h, \
-      g_a, g_b, g_c, g_d, g_e, g_h);
-  printf("rho final=%0.2f\n",info->rho);
+    for (int i = 0; i < n; ++i)
+      x_last[i] = solution->x[i];
+  }
 
-
-  settings->rho=info->rho;
-  settings->warm_start=1;    // forces solution->x, solution->nu to be initial values of primal and dual vars
-  printf("Third solve---warm start by variable feed\n");
-  printf("rho input=%0.2f\n",info->rho);
-
-  settings->rho=info->rho;
-  info->status = POGS_SOLVE(p_work, settings, solution, info, \
-      f_a, f_b, f_c, f_d, f_e, f_h, \
-      g_a, g_b, g_c, g_d, g_e, g_h);
-  printf("rho final=%0.2f\n",info->rho);
 
   POGS_FINISH(p_work);
 
-  /* ----------------------------------- */
-
-  void * p_clone = POGS_INIT(ord, m, n, A);
-  printf("Fourth solve---cold start with rho transfer\n");
-  printf("rho=%0.2f\n",info->rho);
-  settings->rho=info->rho;
-  info->status = POGS_SOLVE(p_clone, settings, solution, info, \
-      f_a, f_b, f_c, f_d, f_e, f_h, \
-      g_a, g_b, g_c, g_d, g_e, g_h);
-  POGS_FINISH(p_clone);
-
-  p_clone = POGS_INIT(ord, m, n, A);
-  printf("Fifth solve---warm start by variable transfer\n");
-  printf("rho=%0.2f\n",info->rho);
-  settings->rho=info->rho;
-  settings->warm_start=1;    // forces solution->x, solution->nu to be initial values of primal and dual vars  
-  info->status = POGS_SOLVE(p_clone, settings, solution, info, \
-      f_a, f_b, f_c, f_d, f_e, f_h, \
-      g_a, g_b, g_c, g_d, g_e, g_h);
-  POGS_FINISH(p_clone);
-
   
-  printf("Lasso optval = %e\n", info->obj);
+  printf("Lasso path optval = %e\n", info->obj);
 
   // Clean up.
   free(A);
@@ -188,7 +181,7 @@ int main() {
   free(solution->nu12);
   free(solution->mu12);  
   free(x_true);
-
+  free(x_last);
 
   free(f_a);
   free(f_b);

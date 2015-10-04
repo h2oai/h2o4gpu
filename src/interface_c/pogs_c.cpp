@@ -20,20 +20,21 @@ struct PogsInfo{
 
 template <typename T>
 struct PogsSolution{
-    T *x, *y, *mu, *nu; 
+    T *x, *y, *mu, *nu, *x12, *y12, *mu12, *nu12; 
 };
 
 // created and managed locally
 struct PogsWork{
     size_t m,n;
     bool densebit, rowmajorbit;
-    void *pogs_data, *x, *y, *l;
+    void *pogs_data, *x, *y, *mu, *nu, *x12, *y12, *mu12, *nu12;
 
-    PogsWork(size_t m_, size_t n_, bool dense_, bool rowmajor_, void *pogs_data_, void *x_, void *y_, void *l_){
+    PogsWork(size_t m_, size_t n_, bool dense_, bool rowmajor_, void *pogs_data_, void *x_, void *y_, void *mu_, void *nu_, void *x12_, void *y12_, void *mu12_, void *nu12_){
       m=m_;n=n_;
       densebit=dense_; rowmajorbit=rowmajor_;
       pogs_data= pogs_data_;
-      x=x_; y=y_; l=l_;
+      x=x_; y=y_; mu=mu_; nu=nu_;
+      x12=x12_; y12=y12_; mu12=mu12_; nu12=nu12_;
     }
 };
 
@@ -54,23 +55,39 @@ void * PogsInit(size_t m, size_t n, T *A){
   // data containers
   Dense<T, static_cast<POGS_ORD>(O)> A_(A);
   PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >  *pogs_data;
-  std::vector<T> *x, *y, *l;
+  std::vector<T> *x, *y, *mu, *nu, *x12, *y12, *mu12, *nu12;
   PogsWork * work;
 
   // create new data vectors
   x = new std::vector<T>;
   y = new std::vector<T>;
-  l = new std::vector<T>;
+  mu = new std::vector<T>;
+  nu = new std::vector<T>;
+  x12 = new std::vector<T>;
+  y12 = new std::vector<T>;
+  mu12 = new std::vector<T>;
+  nu12 = new std::vector<T>;
 
   y->resize(m);
   x->resize(n);
-  l->resize(m);
+  nu->resize(m);
+  mu->resize(n);
+  y12->resize(m);
+  x12->resize(n);
+  nu12->resize(m);
+  mu12->resize(n);
+
 
   // create new pogs data object
   pogs_data = new PogsData<T, Dense<T, static_cast<POGS_ORD>(O)> >(A_, m, n);
   pogs_data->x=x->data();
   pogs_data->y=y->data();
-  pogs_data->l=l->data();
+  pogs_data->mu=mu->data();
+  pogs_data->nu=nu->data();
+  pogs_data->x12=x12->data();
+  pogs_data->y12=y12->data();
+  pogs_data->mu12=mu12->data();
+  pogs_data->nu12=nu12->data();
 
   // initialize function vectors
   pogs_data->f.reserve(m);
@@ -86,7 +103,10 @@ void * PogsInit(size_t m, size_t n, T *A){
 
   // create new PogsWork struct
   work = new PogsWork(m,n, densebit, rowmajorbit, static_cast<void *>(pogs_data), \
-                    static_cast<void *>(x), static_cast<void *>(y), static_cast<void *>(l));
+                    static_cast<void *>(x), static_cast<void *>(y), \
+                    static_cast<void *>(mu), static_cast<void *>(nu), \
+                    static_cast<void *>(x12), static_cast<void *>(y12), \
+                    static_cast<void *>(mu12), static_cast<void *>(nu12));
 
   return static_cast<void *>(work);
 }
@@ -132,8 +152,10 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
   if (static_cast<bool>(settings->warm_start)){
     pogs_data.warm_start=true;
     std::memcpy(pogs_data.x, solution->x, n * sizeof(T));
-    std::memcpy(pogs_data.l, solution->nu, m * sizeof(T));
+    std::memcpy(pogs_data.nu, solution->nu, m * sizeof(T));
   }
+
+
 
   // Solve.
   info->status = Pogs(&pogs_data);
@@ -146,8 +168,14 @@ void PogsRun(PogsData<T, Dense<T, O> > &pogs_data, const PogsSettings<T> *settin
 
   std::memcpy(solution->x, pogs_data.x, n * sizeof(T));
   std::memcpy(solution->y, pogs_data.y, m * sizeof(T));
-  // memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
-  std::memcpy(solution->nu, pogs_data.l, m * sizeof(T));
+  std::memcpy(solution->mu, pogs_data.mu, n * sizeof(T));  
+  std::memcpy(solution->nu, pogs_data.nu, m * sizeof(T));
+
+  std::memcpy(solution->x12, pogs_data.x12, n * sizeof(T));
+  std::memcpy(solution->y12, pogs_data.y12, m * sizeof(T));
+  std::memcpy(solution->mu12, pogs_data.mu12, n * sizeof(T));  
+  std::memcpy(solution->nu12, pogs_data.nu12, m * sizeof(T));
+
 
   // always reset warm start flag
   pogs_data.warm_start=false;
@@ -221,11 +249,22 @@ void PogsShutdown(void *work){
 
   std::vector<T> *x = static_cast<std::vector<T> *>(p_work->x);
   std::vector<T> *y = static_cast<std::vector<T> *>(p_work->y);
-  std::vector<T> *l = static_cast<std::vector<T> *>(p_work->l);
+  std::vector<T> *mu = static_cast<std::vector<T> *>(p_work->mu);
+  std::vector<T> *nu = static_cast<std::vector<T> *>(p_work->nu);
+  std::vector<T> *x12 = static_cast<std::vector<T> *>(p_work->x12);
+  std::vector<T> *y12 = static_cast<std::vector<T> *>(p_work->y12);
+  std::vector<T> *mu12 = static_cast<std::vector<T> *>(p_work->mu12);
+  std::vector<T> *nu12 = static_cast<std::vector<T> *>(p_work->nu12);
 
   delete x;
   delete y;
-  delete l;
+  delete mu;
+  delete nu;
+  delete x12;
+  delete y12;
+  delete mu12;
+  delete nu12;
+
   delete p_work;
 }
 

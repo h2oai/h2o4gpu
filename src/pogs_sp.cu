@@ -261,8 +261,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     cml::vector_memcpy(pogs_data->y, &y12);
   if (pogs_data->x != 0 && !err)
     cml::vector_memcpy(pogs_data->x, &x12);
-  if (pogs_data->l != 0 && !err)
-    cml::vector_memcpy(pogs_data->l, &y);
+  if (pogs_data->nu != 0 && !err)
+    cml::vector_memcpy(pogs_data->nu, &y);
 
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
