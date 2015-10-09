@@ -60,7 +60,9 @@ enum FUNCTION { ABS,       // f(x) = |x|
                 NEGLOG,    // f(x) = -log(x)
                 RECIPR,    // f(x) = 1/x
                 SQUARE,    // f(x) = (1/2) x^2
-                ZERO };    // f(x) = 0
+                ZERO,      // f(x) = 0
+                NNEGLIN,   // f(x) = I(x >= 0) + x
+                NNEGABS }; // f(x) = I(x >= 0) + abs ( x - b )
 
 // Possible status values.
 enum STATUS { POGS_SUCCESS,    // Converged succesfully.

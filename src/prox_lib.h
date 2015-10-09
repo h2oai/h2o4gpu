@@ -36,7 +36,9 @@ enum Function { kAbs,       // f(x) = |x|
                 kNegLog,    // f(x) = -log(x)
                 kRecipr,    // f(x) = 1/x
                 kSquare,    // f(x) = (1/2) x^2
-                kZero };    // f(x) = 0
+                kZero,      // f(x) = 0
+                kNnegLin,   // f(x) = I(x >= 0) + x 
+                kNnegAbs }; // f(x) = I(x >= 0) + abs( x - b )  
 
 // Object associated with the generic function c * f(a * x - b) + d * x.
 // Parameters a and c default to 1, while b and d default to 0.
@@ -325,6 +327,18 @@ __DEVICE__ inline T ProxZero(T v, T rho) {
   return v;
 }
 
+template <typename T>
+__DEVICE__ inline T ProxNnegLin(T v, T rho) {
+  return v <= 0 ? 0 : v - 1 / rho;
+}
+
+template <typename T>
+__DEVICE__ inline T ProxNnegAbs(T v, T rho) {
+  return v <= 0 ? 0 : MaxPos(v - 1 / rho) - MaxNeg(v + 1 / rho);
+}
+
+
+
 // Evaluates the proximal operator of f.
 template <typename T>
 __DEVICE__ inline T ProxEval(const FunctionObj<T> &f_obj, T v, T rho) {
@@ -347,6 +361,8 @@ __DEVICE__ inline T ProxEval(const FunctionObj<T> &f_obj, T v, T rho) {
     case kNegLog: v = ProxNegLog(v, rho); break;
     case kRecipr: v = ProxRecipr(v, rho); break;
     case kSquare: v = ProxSquare(v, rho); break;
+    case kNnegLin: v = ProxNnegLin(v, rho); break;
+    case kNnegAbs: v = ProxNnegAbs(v, rho); break;
     case kZero: default: v = ProxZero(v, rho); break;
   }
   return (v + b) / a;
@@ -444,6 +460,17 @@ __DEVICE__ inline T FuncZero(T x) {
   return 0;
 }
 
+template <typename T>
+__DEVICE__ inline T FuncNnegLin(T x) {
+  return x; 
+}
+
+template <typename T>
+__DEVICE__ inline T FuncNnegAbs(T x) {
+  return Abs(x); 
+}
+
+
 // Evaluates the function f.
 template <typename T>
 __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
@@ -466,6 +493,8 @@ __DEVICE__ inline T FuncEval(const FunctionObj<T> &f_obj, T x) {
     case kNegLog: x = FuncNegLog(x); break;
     case kRecipr: x = FuncRecpr(x); break;
     case kSquare: x = FuncSquare(x); break;
+    case kNnegLin: x = FuncNnegLin(x); break;
+    case kNnegAbs: x = FuncNnegAbs(x); break;
     case kZero: default: x = FuncZero(x); break;
   }
   return f_obj.c * x + dx + ex;

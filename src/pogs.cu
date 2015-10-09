@@ -59,7 +59,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // cml::vector<T> zt12 = cml::vector_calloc<T>(m+n);
   cml::vector<T> z12, zt12;
   cml::vector<T> ztemp = cml::vector_calloc<T>(m+n);
+  cml::vector<T> w_ = cml::vector_calloc<T>(m+n);
+  T *w = (T *) calloc(m, sizeof(T));
   cml::matrix<T, kOrd> A, L;
+  bool obj_scal = false;
   if (pogs_data->factors.val != 0) {
     cudaMemcpy(&rho, pogs_data->factors.val, sizeof(T), cudaMemcpyDeviceToHost);
     compute_factors = rho == 0;
@@ -101,10 +104,30 @@ int Pogs(PogsData<T, M> *pogs_data) {
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
 
+
   if (compute_factors && !err) {
     // Copy A to device (assume input row-major).
     cml::matrix_memcpy(&A, pogs_data->A.val);
+
+
+    obj_scal = false;
+
+    // SCALE A for values of f.c
+    for (unsigned int i = 0; i < m; ++i)
+      obj_scal &= static_cast<bool>(pogs_data->f[i].c > 0);
+
     err = sinkhorn_knopp::Equilibrate(&A, &d, &e);
+
+    if (obj_scal){
+      #ifdef _OPENMP
+      #pragma omp parallel for
+      #endif
+      for (unsigned int i = 0; i < m; ++i)
+        w[i] = static_cast<T>(1/pogs_data->f[i].c);
+
+      cml::vector_memcpy(&w_, w);
+      sinkhorn_knopp::DiagOp<T, kOrd, CblasLeft>(&A, &w_);
+    }
 
     if (!err) {
       // Compuate A^TA or AA^T.
@@ -311,6 +334,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // Scale final iterates, copy to output.
   cml::vector_memcpy(&ztemp, &z);
   cml::vector_div(&ytemp, &d);
+  if (obj_scal)
+    cml::vector_div(&ytemp, &w_);
   cml::vector_mul(&xtemp, &e);
   if (pogs_data->y != 0 && !err)
     cml::vector_memcpy(pogs_data->y, &ytemp);
@@ -319,6 +344,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   cml::vector_memcpy(&ztemp, &zt);
   cml::vector_mul(&ytemp, &d);
+  if (obj_scal)
+    cml::vector_mul(&ytemp, &w_);
   cml::blas_scal(hdl, rho, &ytemp);
   cml::vector_div(&xtemp, &e);
   cml::blas_scal(hdl, rho, &xtemp);
@@ -329,6 +356,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   cml::vector_memcpy(&ztemp, &z12);
   cml::vector_div(&ytemp, &d);
+  if (obj_scal)
+    cml::vector_div(&ytemp, &w_);
   cml::vector_mul(&xtemp, &e);
   if (pogs_data->y12 != 0 && !err)
     cml::vector_memcpy(pogs_data->y12, &ytemp);
@@ -337,6 +366,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
   cml::vector_memcpy(&ztemp, &zt12);
   cml::vector_mul(&ytemp, &d);
+  if (obj_scal)
+    cml::vector_mul(&ytemp, &w_);
   cml::blas_scal(hdl, rho, &ytemp);
   cml::vector_div(&xtemp, &e);
   cml::blas_scal(hdl, rho, &xtemp);
@@ -362,6 +393,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
   cml::vector_free(&zprev);
   cml::vector_free(&ztemp);
+  cml::vector_free(&w_);
 
   return err;
 }

@@ -43,11 +43,11 @@ int Pogs(PogsData<T, M> *pogs_data) {
   bool compute_factors = true;
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
-  // gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
-  // gsl::vector<T> zt12 = gsl::vector_calloc<T>(m + n);
   gsl::vector<T> z12, zt12;  
   gsl::vector<T> ztemp = gsl::vector_calloc<T>(m + n);
+  gsl::vector<T> w = gsl::vector_calloc<T>(m);
   gsl::matrix<T, kOrd> A, L;
+  bool obj_scal = true;
   if (pogs_data->factors.val != 0) {
     compute_factors = pogs_data->factors.val[0] == 0;
     if (!compute_factors)
@@ -88,11 +88,34 @@ int Pogs(PogsData<T, M> *pogs_data) {
   gsl::vector<T> ytemp = gsl::vector_subvector(&ztemp, n, m);
 
 
+
+
+
   if (compute_factors && !err) {
     // Equilibrate A.
     gsl::matrix<T, kOrd> Ain = gsl::matrix_view_array<T, kOrd>(
         pogs_data->A.val, m, n);
     gsl::matrix_memcpy(&A, &Ain);
+
+    // SCALE A for values of f.c
+    for (unsigned int i = 0; i < m; ++i)
+      obj_scal &= static_cast<bool>(f[i].c > 0);
+
+    if (obj_scal){
+      #ifdef _OPENMP
+      #pragma omp parallel for
+      #endif
+      for (unsigned int i = 0; i < m; ++i)
+        gsl::vector_set(&w, i, static_cast<T>(1/f[i].c));
+
+      #ifdef _OPENMP
+      #pragma omp parallel for
+      #endif
+      for (unsigned int j = 0; j < n; ++j)
+        for (unsigned int i = 0; i < m; ++i)
+            gsl::matrix_set(&A, i, j, gsl::matrix_get(&A, i, j) * gsl::vector_get(&w, i));
+    }
+
     err = Equilibrate(&A, &d, &e, true);
 
 
@@ -134,8 +157,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
     g[j].d *= gsl::vector_get(&e, j);
   }
 
-  // Initialize (x,y,\tilde x, \tilde y) from (xₒ, νₒ).
 
+  // Initialize (x,y,\tilde x, \tilde y) from (xₒ, νₒ).
   // Check that guesses for both xₒ and νₒ provided
   if (pogs_data->warm_start && !(pogs_data->x != 0 && pogs_data->nu != 0)) {
     Printf("\nERROR: Must provide x0 and nu0 for warm start\n");
@@ -394,11 +417,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
     }
   }
 
+
   // Scale final iterates, copy to output.
 
   // x,y
   gsl::vector_memcpy(&ztemp, &z);
   gsl::vector_div(&ytemp, &d);
+  if (obj_scal)
+    gsl::vector_div(&ytemp, &w);
   gsl::vector_mul(&xtemp, &e);
   if (pogs_data->x != 0 && !err)
     gsl::vector_memcpy(pogs_data->x, &xtemp);
@@ -408,6 +434,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // mu,nu
   gsl::vector_memcpy(&ztemp, &zt);
   gsl::vector_mul(&ytemp, &d); 
+  if (obj_scal)
+    gsl::vector_mul(&ytemp, &w);
   gsl::blas_scal(rho, &ytemp);
   gsl::vector_div(&xtemp, &e); 
   gsl::blas_scal(rho, &xtemp);
@@ -419,6 +447,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   // x^{1/2}, y^{1/2}
   gsl::vector_memcpy(&ztemp, &z12);
   gsl::vector_div(&ytemp, &d);
+   if (obj_scal)
+    gsl::vector_div(&ytemp, &w);
   gsl::vector_mul(&xtemp, &e);
   if (pogs_data->y12 != 0 && !err)
     gsl::vector_memcpy(pogs_data->y12, &ytemp);
@@ -428,6 +458,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
   //  mu^{1/2},nu^{1/2}
   gsl::vector_memcpy(&ztemp, &zt12);
   gsl::vector_mul(&ytemp, &d); 
+  if (obj_scal)
+    gsl::vector_mul(&ytemp, &w);
   gsl::blas_scal(rho, &ytemp);
   gsl::vector_div(&xtemp, &e); 
   gsl::blas_scal(rho, &xtemp);
@@ -453,6 +485,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
   }
   gsl::vector_free(&zprev);
   gsl::vector_free(&ztemp);
+  gsl::vector_free(&w);
 
   return err;
 }
