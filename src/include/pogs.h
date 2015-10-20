@@ -10,6 +10,9 @@
 #include "prox_lib.h"
 
 
+#define OLDPOGS
+
+
 namespace pogs {
 
 static const std::string POGS_VERSION = "0.2.0";

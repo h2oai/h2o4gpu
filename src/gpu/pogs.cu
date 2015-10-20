@@ -241,11 +241,17 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
 
+    #ifdef OLDPOGS
+    // prepare for projection
+    cml::vector_memcpy(&ztemp, &zt);
+    cml::blas_axpy(hdl, kOne, &z12, &ztemp);
+    #else
     // Apply over relaxation.
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
     CUDA_CHECK_ERR();
+    #endif
 
     // Project onto y = Ax.
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
@@ -253,6 +259,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
+
+    #ifdef OLDPOGS
+    // Apply over-relaxation
+    cml::blas_scal(hdl, kAlpha, &z);
+    cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
+    #endif
 
     // Calculate residuals.
     cml::vector_memcpy(&ztemp, &zprev);

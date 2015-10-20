@@ -221,15 +221,27 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_pri = sqrtm_atol + _rel_tol * gsl::blas_nrm2(&y12);
     eps_dua = sqrtn_atol + _rel_tol * _rho * gsl::blas_nrm2(&x);
 
+    #ifdef OLDPOGS
+    // prepare for projection
+    gsl::vector_memcpy(&ztemp, &zt);
+    gsl::blas_axpy(kOne, &z12, &ztemp);    
+    #else
     // Apply over relaxation.
     gsl::vector_memcpy(&ztemp, &zt);
     gsl::blas_axpy(kAlpha, &z12, &ztemp);
     gsl::blas_axpy(kOne - kAlpha, &zprev, &ztemp);
+    #endif
 
     // Project onto y = Ax.
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
+
+    #ifdef OLDPOGS
+    // Apply over-relaxation
+    gsl::blas_scal(kAlpha, &z);
+    gsl::blas_axpy(kOne - kAlpha, &zprev, &z);
+    #endif
 
     // Calculate residuals.
     gsl::vector_memcpy(&ztemp, &zprev);
