@@ -230,11 +230,18 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // The projection step is defined as:
     // (x^{1},y^{1}) = PROJ_{y=Ax} (x^{1/2}+\tilde x, y^{1/2} + \tilde y)
     if (m >= n) {
+
+#ifdef CORRECTPROJECTION
+      cml::vector_memcpy(&z, &zprev);
+      cml::blas_axpy(hdl, kOne, &z12, &z);
+      cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
+#else
       //  for  m>=n, projection  becomes the reduced updates:
       //
       //  x^{1} := (I+AᵀA)⁻¹(x^{1/2}+Aᵀy^{1/2})
       //  y^{1} := Ax^{1}
       cml::blas_gemv(hdl, CUBLAS_OP_T, -kOne, &A, &y, -kOne, &x);
+#endif
       nrm_s = rho * cml::blas_nrm2(hdl, &x);
       cml::linalg_cholesky_svx(hdl, &L, &x);
       cml::blas_gemv(hdl, CUBLAS_OP_N, kOne, &A, &x, kZero, &y);

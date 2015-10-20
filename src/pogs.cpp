@@ -259,20 +259,24 @@ int Pogs(PogsData<T, M> *pogs_data) {
       //  x^{1} := (I+AᵀA)⁻¹(x^{1/2}+Aᵀy^{1/2})
       //  y^{1} := Ax^{1}
 
-
+#ifdef CORRECTPROJECTION
+      gsl::vector_memcpy(&z, &zprev);
+      gsl::blas_axpy(kOne, &z12, &z);
+      gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);   
+#else
       //  "x" := (Aᵀν^{1/2}/ρ + µ^{1/2}/ρ)
       //       = (Aᵀ(\tilde y+y^{1/2}-y) + (\tilde x+x^{1/2}-x))
       //       ...which, since Aᵀ\tilde y+\tilde x=0, is...
       //       = (Aᵀy^{1/2}+ x^{1/2} - (Aᵀy + x))
       gsl::blas_gemv(CblasTrans, -kOne, &A, &y, -kOne, &x);
-      
+#endif
       // nrm_s := ρ * || (µ+Aᵀν)/ρ - (x+Aᵀy)/ρ ||_2
       nrm_s = rho * gsl::blas_nrm2(&x);
   
       //  "x" := (I+AᵀA)⁻¹(Aᵀy^{1/2}+ x^{1/2} - (Aᵀy + x))
       //       = x^{1} - (I+AᵀA)⁻¹(Aᵀy + x)
       //      
-      //      ... however, (I+AᵀA)⁻¹(Aᵀy + x) is exactly the update rule for
+      //      ... however, (I+AᵀA)⁻¹(Aᵀy + x) is exactly the x update rule for
       //          the projection of (x,y) onto the graph y=Ax, and we have that
       //          iterate x is feasible, so we have...
       //
@@ -284,8 +288,10 @@ int Pogs(PogsData<T, M> *pogs_data) {
       gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
       
 
+#ifndef CORRECTPROJECTION
       //  ("x","y") := (x^{1}, y^{1})
       gsl::blas_axpy(kOne, &zprev, &z);
+#endif
 
     } else {
       //  for  m<n, projection  becomes the reduced updates:

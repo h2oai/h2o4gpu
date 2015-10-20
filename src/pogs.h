@@ -4,6 +4,8 @@
 #include <vector>
 #include "prox_lib.h"
 
+#define CORRECTPROJECTION
+
 enum POGS_ORD { COL, ROW };
 
 // Data structure for input to Pogs().
