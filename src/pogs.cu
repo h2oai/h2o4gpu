@@ -233,7 +233,8 @@ int Pogs(PogsData<T, M> *pogs_data) {
 
 #ifdef CORRECTPROJECTION
       cml::vector_memcpy(&z, &zprev);
-      cml::blas_axpy(hdl, kOne, &z12, &z);
+      cml::blas_scal(hdl, kOne - kAlpha, &z);
+      cml::blas_axpy(hdl, kAlpha, &z12, &z);
       cml::blas_gemv(hdl, CUBLAS_OP_T, kOne, &A, &y, kOne, &x);
 #else
       //  for  m>=n, projection  becomes the reduced updates:
@@ -259,12 +260,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
       cml::blas_axpy(hdl, kOne, &z12, &z);
     }
 
+#ifndef CORRECTPROJECTION
     // Apply over-relaxation.
     // ----------------------
     //  "x" := \alpha x^{1} + (1-alpha)x
     //  "y" := \alpha y^{1} + (1-alpha)y    
     cml::blas_scal(hdl, kAlpha, &z);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &z);
+#endif
 
     // \tilde x^{1/2} := x^{1/2} - x +\tilde x
     // \tilde y^{1/2} := y^{1/2} - y +\tilde y

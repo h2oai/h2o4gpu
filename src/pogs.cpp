@@ -260,8 +260,9 @@ int Pogs(PogsData<T, M> *pogs_data) {
       //  y^{1} := Ax^{1}
 
 #ifdef CORRECTPROJECTION
-      gsl::vector_memcpy(&z, &zprev);
-      gsl::blas_axpy(kOne, &z12, &z);
+      gsl::vector_memcpy(&z, &zt);
+      gsl::blas_scal(kOne - kAlpha, &z);
+      gsl::blas_axpy(kAlpha, &z12, &z);
       gsl::blas_gemv(CblasTrans, kOne, &A, &y, kOne, &x);   
 #else
       //  "x" := (Aᵀν^{1/2}/ρ + µ^{1/2}/ρ)
@@ -327,13 +328,14 @@ int Pogs(PogsData<T, M> *pogs_data) {
       gsl::blas_axpy(kOne, &z12, &z);
     }
 
+#ifndef CORRECTPROJECTION
     // Apply over-relaxation.
     // ----------------------
     //  "x" := \alpha x^{1} + (1-alpha)x
     //  "y" := \alpha y^{1} + (1-alpha)y
     gsl::blas_scal(kAlpha, &z);
     gsl::blas_axpy(kOne - kAlpha, &zprev, &z);
-
+#endif
 
     // \tilde x^{1/2} := x^{1/2} - x +\tilde x
     // \tilde y^{1/2} := y^{1/2} - y +\tilde y
