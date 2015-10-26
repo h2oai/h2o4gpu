@@ -43,8 +43,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
   bool compute_factors = true;
   gsl::vector<T> de, z, zt;
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
-  // gsl::vector<T> z12 = gsl::vector_calloc<T>(m + n);
-  // gsl::vector<T> zt12 = gsl::vector_calloc<T>(m + n);
   gsl::vector<T> z12, zt12;  
   gsl::vector<T> ztemp = gsl::vector_calloc<T>(m + n);
   gsl::matrix<T, kOrd> A, L;
@@ -100,7 +98,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
       // Compute AᵀA or AAᵀ.
       CBLAS_TRANSPOSE_t mult_type = m >= n ? CblasTrans : CblasNoTrans;
       
-
       // "L":= AᵀA or AAᵀ
       gsl::blas_syrk(CblasLower, mult_type, kOne, &A, kZero, &L);
 
@@ -175,7 +172,6 @@ int Pogs(PogsData<T, M> *pogs_data) {
   unsigned int kd = 0, ku = 0;
   bool converged = false;
 
-
   T eps_pri, eps_dua, eps_gap, gap, nrm_r=0, nrm_s=0;
 
 
@@ -186,125 +182,48 @@ int Pogs(PogsData<T, M> *pogs_data) {
     // Evaluate proximal operators.
     // ----------------------------
 
-    //  ("x","y"):= (x-\tilde x, y-\tilde y)
-    gsl::blas_axpy(-kOne, &zt, &z);
+    gsl::vector_memcpy(&ztemp, &z);
+    gsl::blas_axpy(-kOne, &zt, &ztemp);
 
     //  (x^{1/2},y^{1/2}) = (prox_{g,rho}(x-\tilde x), prox_{f,rho}(y-\tilde y))
-    ProxEval(g, rho, x.data, x.stride, x12.data, x12.stride);
-    ProxEval(f, rho, y.data, y.stride, y12.data, y12.stride);
+    ProxEval(g, rho, xtemp.data, xtemp.stride, x12.data, x12.stride);
+    ProxEval(f, rho, ytemp.data, ytemp.stride, y12.data, y12.stride);
 
-    // Compute gap, objective and tolerances.
-    // --------------------------------------
-    nrm_r = 0; nrm_s = 0;
-    
-    //  ("x","y") := (x- \tilde x-x^{1/2},y - \tilde y - y^{1/2})
-    //             = ( -µ^{1/2}/ρ, -ν^{1/2}/ρ ), by definition
-    gsl::blas_axpy(-kOne, &z12, &z);
 
-    //  gap := ρ*abs( -µ^{1/2}ᵀx^{1/2}/ρ - ν^{1/2}ᵀy^{1/2}/ρ)
-    gsl::blas_dot(&z, &z12, &gap);
-    gap = rho * std::fabs(gap);
-
-    //  obj := f(y^{1/2})+g(x^{1/2})
-    pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
-    
-
-    // calculate_tolerances(eps_pri, eps_dua, eps_gap, m, n, pogs_data, rho, &z, &z12);
-    // tolerances
-    //  (eps_abs * sqrt(m) + eps_rel) * ( || x^{1/2} ||_2 + || y^{1/2} ||_2 )
-    eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&z12);
-    // TODO: POGS PAPER USES THIS CRITERION, TEST IT:
-    // T eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&y12);
-
-    //  (eps_abs * sqrt(n) + eps_rel) * ρ * ( || µ^{1/2}/ρ ||_2 + || ν^{1/2}/ρ ||_2 )    
-    eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&z);
-    // TODO: POGS PAPER USES THIS CRITERION, TEST IT:
-    // T eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&x);
-
-    //  (eps_abs * sqrt(m*n) + eps_rel) * obj
-    eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
+    // Apply over-relaxation before projection
+    // ---------------------------------------
+    gsl::vector_memcpy(&ztemp, &zt);
+    gsl::blas_axpy(kAlpha, &z12, &ztemp);
+    gsl::blas_axpy(kOne - kAlpha, &zprev, &ztemp);
 
 
     // Projection & primal update.
     // ---------------------------
     // The projection step is defined as:
     // (x^{1},y^{1}) = PROJ_{y=Ax} (x^{1/2}+\tilde x, y^{1/2} + \tilde y)
-
+    //               = PROJ_{y=Ax} ("c", "d")
     if (m >= n) {
       //  for  m>=n, projection  becomes the reduced updates:
-      //
-      //  x^{1} := (I+AᵀA)⁻¹(x^{1/2}+Aᵀy^{1/2})
+      //  x^{1} := (I+AᵀA)⁻¹(c + A^Td)
       //  y^{1} := Ax^{1}
-
-
-      //  "x" := (Aᵀν^{1/2}/ρ + µ^{1/2}/ρ)
-      //       = (Aᵀ(\tilde y+y^{1/2}-y) + (\tilde x+x^{1/2}-x))
-      //       ...which, since Aᵀ\tilde y+\tilde x=0, is...
-      //       = (Aᵀy^{1/2}+ x^{1/2} - (Aᵀy + x))
-      gsl::blas_gemv(CblasTrans, -kOne, &A, &y, -kOne, &x);
-      
-      // nrm_s := ρ * || (µ+Aᵀν)/ρ - (x+Aᵀy)/ρ ||_2
-      nrm_s = rho * gsl::blas_nrm2(&x);
-  
-      //  "x" := (I+AᵀA)⁻¹(Aᵀy^{1/2}+ x^{1/2} - (Aᵀy + x))
-      //       = x^{1} - (I+AᵀA)⁻¹(Aᵀy + x)
-      //      
-      //      ... however, (I+AᵀA)⁻¹(Aᵀy + x) is exactly the update rule for
-      //          the projection of (x,y) onto the graph y=Ax, and we have that
-      //          iterate x is feasible, so we have...
-      //
-      //       = x^{1} - x
-      gsl::linalg_cholesky_svx(&L, &x);
-      
-      //  "y" := A"x"
-      //       = y^{1} - y
-      gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, kZero, &y);
-      
-
-      //  ("x","y") := (x^{1}, y^{1})
-      gsl::blas_axpy(kOne, &zprev, &z);
-
+      gsl::blas_gemv(CblasTrans, kOne, &A, &ytemp, kOne, &xtemp);
+      gsl::linalg_cholesky_svx(&L, &xtemp);
+      gsl::blas_gemv(CblasNoTrans, kOne, &A, &xtemp, kZero, &y);
+      gsl::vector_memcpy(&x, &xtemp);
     } else {
       //  for  m<n, projection  becomes the reduced updates:
-      //
-      //  y^{1} := y^{1/2}-\tilde y+(I+AAᵀ)⁻¹(Ax^{1/2}+A\tilde x-y^{1/2}-\tilde y)
-      //  x^{1} := x^{1/2}+\tilde x-Aᵀ(y^{1/2}+\tilde y) + Aᵀy^{1}
-   
-
-      //  ("x","y") := ( x^{1/2}, y^{1/2} )
-      gsl::vector_memcpy(&z, &z12);
-      
-      //  "y" := Ax^{1/2}-y^{1/2}
+      //  y^{1} := d + (I+AAᵀ)⁻¹(Ac - d)
+      //  x^{1} := c - Aᵀ(I+AAᵀ)⁻¹(Ac - d)
+      gsl::vector_memcpy(&z, &ztemp);
       gsl::blas_gemv(CblasNoTrans, kOne, &A, &x, -kOne, &y);
-
-      //  nrm_r := || Ax^{1/2}-y^{1/2} ||_2
-      nrm_r = gsl::blas_nrm2(&y);
-
-
-      //  "y" := (I+AAᵀ)⁻¹(Ax^{1/2}-y^{1/2})
-      //       = y^{1} - y^{1/2}+ \tilde y + (I+AAᵀ)⁻¹(A\tilde x -\tilde y)
-      //        ...since (\tilde x, \tilde y) dual feasible,
-      //            we have Aᵀ\tilde y + \tilde x = 0, and so...
-      //  "y"  = y^{1} - y^{1/2}+ \tilde y - (I+AAᵀ)⁻¹(AAᵀ+I) \tilde y)
-      //       = y^{1} - y^{1/2}
       gsl::linalg_cholesky_svx(&L, &y);
-
-      //  "x" := -Aᵀ(y^{1} - y^{1/2})
-      //       = Aᵀ(y^{1/2}-y^{1}) = \tilde x + Aᵀ(y^{1/2} + \tilde y - y^{1})
-      //       = x^{1} - x^{1/2}
-      gsl::blas_gemv(CblasTrans, -kOne, &A, &y, kZero, &x);
-
-      //  ("x","y") := (x^{1}, y^{1})
-      gsl::blas_axpy(kOne, &z12, &z);
+      gsl::blas_gemv(CblasTrans, -kOne, &A, &y, kOne, &x);
+      gsl::blas_axpy(kOne, &ytemp, &y);       
     }
 
-    // Apply over-relaxation.
-    // ----------------------
-    //  "x" := \alpha x^{1} + (1-alpha)x
-    //  "y" := \alpha y^{1} + (1-alpha)y
-    gsl::blas_scal(kAlpha, &z);
-    gsl::blas_axpy(kOne - kAlpha, &zprev, &z);
 
+    // Update dual variables (with over-relxation).
+    // --------------------------------------------
 
     // \tilde x^{1/2} := x^{1/2} - x +\tilde x
     // \tilde y^{1/2} := y^{1/2} - y +\tilde y
@@ -312,61 +231,74 @@ int Pogs(PogsData<T, M> *pogs_data) {
     gsl::blas_axpy(-kOne, &zprev, &zt12);
     gsl::blas_axpy(kOne, &zt, &zt12);
 
-
-    // Update dual variable.
-    // ---------------------
-    // \tilde x := \tilde x + \alpha (x^{1/2} - x^{1})
-    // \tilde y := \tilde y + \aplha (y^{1/2} - y^{1})
+    // \tilde x := \tilde x + \alpha x^{1/2} + (1-\alpha) x - x^{1}
+    // \tilde y := \tilde y + \alpha y^{1/2} + (1-\alpha) y - y^{1}
     gsl::blas_axpy(kAlpha, &z12, &zt);
     gsl::blas_axpy(kOne - kAlpha, &zprev, &zt);
     gsl::blas_axpy(-kOne, &z, &zt);
 
 
+
+    // Compute gap, objective and tolerances.
+    // --------------------------------------
+    gsl::blas_dot(&zt12, &z12, &gap);
+    gap = rho * std::fabs(gap);
+    pogs_data->optval = FuncEval(f, y12.data, 1) + FuncEval(g, x12.data, 1);
+    eps_pri = sqrtm_atol + pogs_data->rel_tol * gsl::blas_nrm2(&y12);
+    eps_dua = sqrtn_atol + pogs_data->rel_tol * rho * gsl::blas_nrm2(&x12);
+    eps_gap = sqrtmn_atol + pogs_data->rel_tol * std::fabs(pogs_data->optval);
+
+
+    // Calculate residuals.
+    // --------------------
+    gsl::vector_memcpy(&ztemp, &zprev);
+    gsl::blas_axpy(-kOne, &z, &ztemp);
+    nrm_s = gsl::blas_nrm2(&ztemp);
+
+    gsl::vector_memcpy(&ztemp, &z12);
+    gsl::blas_axpy(-kOne, &z, &ztemp);
+    nrm_r = gsl::blas_nrm2(&ztemp);
+
+
+
+
+    // Calculate exact residuals only if necessary.
+    // --------------------------------------------
     bool exact = false;
-    if (m >= n) {
-      // nrm_r = || x^{1/2}-x^{1} ||_2 + || y^{1/2} - y^{1} ||_2
-      gsl::vector_memcpy(&zprev, &z12);
-      gsl::blas_axpy(-kOne, &z, &zprev);
-      nrm_r = gsl::blas_nrm2(&zprev);
-      if (nrm_s < eps_dua && nrm_r < eps_pri) {
-        // nrm_r = || Ax^{1/2} - y^{1/2} ||_2
-        gsl::blas_gemv(CblasNoTrans, kOne, &A, &x12, -kOne, &y12);
-        nrm_r = gsl::blas_nrm2(&y12);
-        exact = true;
-      }
-    } else {
-      //  ("x^{1/2}","y^{1/2}") := (x^{1/2}-x,y^{1/2}-y)  
-      gsl::blas_axpy(-kOne, &zprev, &z12);
-      
-      //  (x_prev,y_prev) := (x-x^{1},y-y^{1})  
-      gsl::blas_axpy(-kOne, &z, &zprev);
-
-      //  nrm_s = rho * ( || x - x^{1} ||_2 + || y - y^{1} ||_2 )
-      nrm_s = rho * gsl::blas_nrm2(&zprev);
-      
-      if (nrm_r < eps_pri && nrm_s < eps_dua) {
-        //  "x^{1/2}" :=  Aᵀ(y^{1/2}-y) + x^{1/2}-x
-        gsl::blas_gemv(CblasTrans, kOne, &A, &y12, kOne, &x12);
-
-        //  nrm_s = rho * || Aᵀ(y^{1/2}-y) + (x^{1/2}-x) ||_2 
-        nrm_s = rho * gsl::blas_nrm2(&x12);
+    if (nrm_r < eps_pri && nrm_s < eps_dua) {
+      gsl::vector_memcpy(&ztemp, &z12);
+      gsl::blas_gemv(CblasNoTrans, kOne, &A, &xtemp, -kOne, &ytemp);
+      nrm_r = gsl::blas_nrm2(&ytemp);
+      if (nrm_r < eps_pri)  {
+        gsl::vector_memcpy(&ztemp, &zt12);
+        gsl::blas_gemv(CblasTrans, kOne, &A, &ytemp, kOne, &xtemp);
+        nrm_s = rho * gsl::blas_nrm2(&xtemp);
         exact = true;
       }
     }
 
     // Evaluate stopping criteria.
+    // ---------------------------
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!pogs_data->gap_stop || gap < eps_gap);
     if (!pogs_data->quiet && (k % 10 == 0 || converged))
       Printf("%4d :  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e  %.3e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, pogs_data->optval);
 
+    if (converged || k == pogs_data->max_iter){
+      if (!converged)
+        Printf("Reached max iter=%i\n",pogs_data->max_iter);      
+      break;
+    }
+
     // Rescale rho.
+    // ------------
     if (pogs_data->adaptive_rho && !converged) {
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         if (rho < kRhoMax) {
           rho *= delta;
+          // printf("+RHO: %.3e\n", rho);
           gsl::blas_scal(1 / delta, &zt);
           delta = std::min(kGamma * delta, kDeltaMax);
           ku = k;
@@ -375,6 +307,7 @@ int Pogs(PogsData<T, M> *pogs_data) {
           kTau * static_cast<T>(k) > static_cast<T>(ku)) {
         if (rho > kRhoMin) {
           rho /= delta;
+          // printf("-RHO: %.3e\n", rho);
           gsl::blas_scal(delta, &zt);
           delta = std::min(kGamma * delta, kDeltaMax);
           kd = k;
@@ -386,62 +319,35 @@ int Pogs(PogsData<T, M> *pogs_data) {
       }
     }
 
-    // TODO: ERROR CODE FOR MAX_ITER
-    if (converged || k == pogs_data->max_iter){
-      if (!converged)
-        printf("Reached max iter=%i\n",pogs_data->max_iter);
-      break;
-    }
   }
 
   // Scale final iterates, copy to output.
 
-  // x,y
-  gsl::vector_memcpy(&ztemp, &z);
-  gsl::vector_div(&ytemp, &d);
-  gsl::vector_mul(&xtemp, &e);
-  if (pogs_data->x != 0 && !err)
-    gsl::vector_memcpy(pogs_data->x, &xtemp);
-  if (pogs_data->y != 0 && !err)
-    gsl::vector_memcpy(pogs_data->y, &ytemp);
 
-  // mu,nu
-  gsl::vector_memcpy(&ztemp, &zt);
-  gsl::vector_mul(&ytemp, &d); 
-  gsl::blas_scal(rho, &ytemp);
-  gsl::vector_div(&xtemp, &e); 
-  gsl::blas_scal(rho, &xtemp);
-  if (pogs_data->nu != 0 && !err)
-    gsl::vector_memcpy(pogs_data->nu, &ytemp);
-  if (pogs_data->mu != 0 && !err)
-      gsl::vector_memcpy(pogs_data->mu, &xtemp);
-
-  // x^{1/2}, y^{1/2}
   gsl::vector_memcpy(&ztemp, &z12);
   gsl::vector_div(&ytemp, &d);
   gsl::vector_mul(&xtemp, &e);
-  if (pogs_data->y12 != 0 && !err)
-    gsl::vector_memcpy(pogs_data->y12, &ytemp);
-  if (pogs_data->x12 != 0 && !err)
-    gsl::vector_memcpy(pogs_data->x12, &xtemp);
+  if (pogs_data->y != 0 && !err)
+    gsl::vector_memcpy(pogs_data->y, &ytemp);
+  if (pogs_data->x != 0 && !err)
+    gsl::vector_memcpy(pogs_data->x, &xtemp);
 
-  //  mu^{1/2},nu^{1/2}
+
   gsl::vector_memcpy(&ztemp, &zt12);
+  gsl::blas_scal(-rho, &ztemp);
   gsl::vector_mul(&ytemp, &d); 
-  gsl::blas_scal(rho, &ytemp);
   gsl::vector_div(&xtemp, &e); 
-  gsl::blas_scal(rho, &xtemp);
-  if (pogs_data->nu12 != 0 && !err)
-    gsl::vector_memcpy(pogs_data->nu12, &ytemp);
-  if (pogs_data->mu12 != 0 && !err)
-    gsl::vector_memcpy(pogs_data->mu12, &xtemp);
+  if (pogs_data->nu != 0 && !err)
+    gsl::vector_memcpy(pogs_data->nu, &ytemp);
+  if (pogs_data->mu != 0 && !err)
+    gsl::vector_memcpy(pogs_data->mu, &xtemp);
 
 
   // Store rho and free memory.
   if (pogs_data->factors.val != 0 && !err) {
     pogs_data->factors.val[0] = rho;
     pogs_data->rho=rho;
-    gsl::vector_memcpy(&z, &zprev);
+    gsl::vector_memcpy(&z, &z12);
   } else {
     gsl::vector_free(&de);
     gsl::vector_free(&z);

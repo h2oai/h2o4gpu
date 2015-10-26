@@ -24,9 +24,8 @@ pogs_cu_link.o: pogs_cu.o pogs_sp_cu.o cml.o
 pogs_cu.o: pogs.cu pogs.h prox_lib.h
 	$(CUXX) $(CUFLAGS) $(IFLAGS) $< -dc -o $@
 
-pogs_sp_cu.o: 
-# pogs_sp_cu.o: pogs_sp.cu pogs.h prox_lib.h
-# 	$(CUXX) $(CUFLAGS) $(IFLAGS) $< -dc -o $@
+pogs_sp_cu.o: pogs_sp.cu pogs.h prox_lib.h
+	$(CUXX) $(CUFLAGS) $(IFLAGS) $< -dc -o $@
 
 cml.o: cml/cml_blas.cu cml/cml_blas.cuh
 	$(CUXX) -Icml $(CUFLAGS) $< -dc -o $@

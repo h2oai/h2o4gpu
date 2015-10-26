@@ -104,11 +104,7 @@ int main() {
     .x = (real_t *) malloc(n * sizeof(real_t)),
     .y = (real_t *) malloc(m * sizeof(real_t)),
     .nu = (real_t *) malloc(m * sizeof(real_t)),
-    .mu = (real_t *) malloc(n * sizeof(real_t)),
-    .x12 = (real_t *) malloc(n * sizeof(real_t)),
-    .y12 = (real_t *) malloc(m * sizeof(real_t)),
-    .nu12 = (real_t *) malloc(m * sizeof(real_t)),
-    .mu12 = (real_t *) malloc(n * sizeof(real_t))
+    .mu = (real_t *) malloc(n * sizeof(real_t))
   };
   
   POGS_INFO *info = &(POGS_INFO){
@@ -183,10 +179,6 @@ int main() {
   free(solution->y);
   free(solution->nu);
   free(solution->mu);  
-  free(solution->x12);
-  free(solution->y12);
-  free(solution->nu12);
-  free(solution->mu12);  
   free(x_true);
 
 

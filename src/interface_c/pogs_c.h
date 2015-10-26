@@ -95,11 +95,11 @@ typedef struct PogsInfoD{
 } PogsInfoD;
 
 typedef struct PogsSolutionS{
-    float *x, *y, *mu, *nu, *x12, *y12, *mu12, *nu12; 
+    float *x, *y, *mu, *nu; 
 } PogsSolutionS;
 
 typedef struct PogsSolutionD{
-    double *x, *y, *mu, *nu, *x12, *y12, *mu12, *nu12; 
+    double *x, *y, *mu, *nu; 
 } PogsSolutionD;
 
 void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, float *A);

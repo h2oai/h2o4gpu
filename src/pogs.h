@@ -16,7 +16,6 @@ struct PogsData {
 
   // Output.
   T *x, *y, *mu, *nu;
-  T *x12, *y12, *mu12, *nu12;
   T optval;
 
   // Parameters.
@@ -29,7 +28,7 @@ struct PogsData {
 
   // Constructor.
   PogsData(const M &A, size_t m, size_t n)
-      : A(A), m(m), n(n), x(0), y(0), mu(0), nu(0), x12(0), y12(0), mu12(0), nu12(0), rho(1),
+      : A(A), m(m), n(n), x(0), y(0), mu(0), nu(0), rho(1),
         abs_tol(static_cast<T>(1e-4)), rel_tol(static_cast<T>(1e-3)),
         max_iter(2000), quiet(false), adaptive_rho(true), gap_stop(false),
         warm_start(false) { }
