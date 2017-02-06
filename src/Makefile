@@ -11,7 +11,7 @@ CXXFLAGS=$(IFLAGS) -g  -Wall -std=c++11 -fPIC # -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=$(IFLAGS) -std=c++11 -arch=sm_20 -Xcompiler -fPIC
+CUFLAGS=$(IFLAGS) -std=c++11 -gencode=arch=compute_50,code=sm_50 -Xcompiler -fPIC
 
 
 # POGS header files.
