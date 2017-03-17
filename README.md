@@ -104,7 +104,7 @@ then can follow rest of README.md
 
 test R package
 ------
-cd examples
+cd examples/R
 R CMD BATCH simple.R
 
 
