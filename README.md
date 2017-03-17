@@ -110,12 +110,13 @@ R CMD BATCH simple.R
 
 
 
-## To compile gpu version, as above, just replace "cpu" with "gpu" and if compile interface yourself, then install that package.
+To compile gpu version, as above, just replace "cpu" with "gpu" and if compile interface yourself, then install that package.
+-----
 
-# for examples/c/lasso.c
-./run
-# 17s for m=5000 and n=100000 on Titan X (Pascal)
-# So about 6X faster on 1 GPU than 16 core 3.1Ghz 20MB Cache Xeon (hyperthreading with 32 threads)
+for examples/c/lasso.c
+    ./run
+17s for m=5000 and n=100000 on Titan X (Pascal)
+So about 6X faster on 1 GPU than 16 core 3.1Ghz 20MB Cache Xeon (hyperthreading with 32 threads)
 
 for interface_r, in src/interface_r/src/config.mk:
 1) TARGET=cpu -> TARGET=gpu
