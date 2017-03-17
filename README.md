@@ -68,35 +68,42 @@ Authors
 Chris Fougner, with input from Stephen Boyd. The basic algorithm is from ["Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd"][block_splitting].
 
 
-# JCM:
+Requirements
+------
+R, CUDA8 for GPU version
 
-# Requirements: R, CUDA8 for GPU version
-
-## To compile cpu version:
+To compile cpu version:
+------
 
 cd src ; make cpu
-# c library now in build/pogs.a, build/pogs_link.o, and build/cpu/pogs.o
 
-# test (will compile as well if not already done)
+   c library now in build/pogs.a, build/pogs_link.o, and build/cpu/pogs.o
+
+test (will compile as well if not already done)
+
 cd ../examples/c
 make cpu
 ./run
-# can change n and m to, say, m=5000 and n=100000
-# 105seconds for m=5000 and n=100000 on 16 core (32 hyperthreaded) Xeon E5-2687W
-# can also test C++ in examples/cpp and examples/cpp_sp and test matlab in examples/matlab
 
-# install R package
+can change n and m to, say, m=5000 and n=100000
+105seconds for m=5000 and n=100000 on 16 core (32 hyperthreaded) Xeon E5-2687W
+can also test C++ in examples/cpp and examples/cpp_sp and test matlab in examples/matlab
+
+install R package
+------
 cd ../../src/interface_r
-# look at README.md
-# when editing interface_r/src/config.mk:
-1) TARGET=cpu # can be chosen
-# On Ubuntu 16.04 LST, have to make link below because R stuff split:
-sudo bash
-cd /usr/lib/R/
-ln -s /usr/share/R/include .
-# then can follow rest of README.md
 
-# test R package
+look at README.md
+when editing interface_r/src/config.mk:
+     1) TARGET=cpu # can be chosen
+     2) On Ubuntu 16.04 LST, have to make link below because R stuff split:
+        sudo bash
+        cd /usr/lib/R/
+        ln -s /usr/share/R/include .
+then can follow rest of README.md
+
+test R package
+------
 cd examples
 R CMD BATCH simple.R
 
