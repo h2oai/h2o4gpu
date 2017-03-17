@@ -5,8 +5,8 @@
 #include "pogs_c.h"
 
 // Change these two definitions to switch between float and double.
-#define POGS PogsD
-typedef double real_t;
+#define POGS PogsS
+typedef float real_t;
 
 // Uniform random value in [a, b)
 inline real_t runif(real_t a, real_t b) {
@@ -22,7 +22,7 @@ inline real_t max(real_t a, real_t b) {
 //   minimize (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 int main() {
   // Define input variables.
-  size_t m = 5000;
+  size_t m = 7000;
   size_t n = 100000;
   real_t *A = (real_t *) malloc(m * n * sizeof(real_t));
   real_t *b = (real_t *) malloc(m * sizeof(real_t));
@@ -93,12 +93,13 @@ int main() {
   real_t rho = (real_t) 1;
   real_t abs_tol = (real_t) 1e-4;
   real_t rel_tol = (real_t) 1e-3;
-  unsigned int max_iter = 2000u;
+  unsigned int max_iter = 50u;
   int verbose = 2;
   int adaptive_rho = 1;
   int gap_stop = 0;
 
   // Solve
+  printf("START\n");
   POGS(ord, m, n, A,
       f_a, f_b, f_c, f_d, f_e, f_h,
       g_a, g_b, g_c, g_d, g_e, g_h,
