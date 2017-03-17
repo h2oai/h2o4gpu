@@ -1,5 +1,5 @@
 # Change this target between cpu and gpu
-TARGET=cpu
+TARGET=gpu
 
 # set R_HOME, R_INC, and R_LIB to the the R install dir,
 # the R header dir, and the R shared library dir on your system
@@ -18,7 +18,7 @@ ARCH := $(shell uname -m)
 # replace these five lines with
 # CUDA_LIB := <path to your cuda shared libraries>
 ifeq ($(ARCH), i386)
-    CUDA_LIB := $(CUDA_HOME)/lib
+    CUDA_LIB := $(CUDA_HOME)/lib64
 else
     CUDA_LIB := $(CUDA_HOME)/lib64
 endif
@@ -28,7 +28,7 @@ ifeq ($(OS), Darwin)
     ifeq ($(ARCH), x86_64)
         DEVICEOPTS := -m64
     endif
-    CUDA_LIB := $(CUDA_HOME)/lib
+    CUDA_LIB := $(CUDA_HOME)/lib64
     R_FRAMEWORK := -F$(R_HOME)/.. -framework R
     RPATH := -rpath $(CUDA_LIB)
 endif

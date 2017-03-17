@@ -22,8 +22,8 @@ inline real_t max(real_t a, real_t b) {
 //   minimize (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 int main() {
   // Define input variables.
-  size_t m = 100;
-  size_t n = 1000;
+  size_t m = 5000;
+  size_t n = 100000;
   real_t *A = (real_t *) malloc(m * n * sizeof(real_t));
   real_t *b = (real_t *) malloc(m * sizeof(real_t));
   real_t *x_true = (real_t *) malloc(n * sizeof(real_t));
