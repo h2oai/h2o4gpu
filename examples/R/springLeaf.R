@@ -5,17 +5,17 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-N<-10000  ## ok for accuracy tests
+#N<-1000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
-f <- "gunzip -c ~/kaggle/springleaf/input/train.csv.zip"
+f <- "~/kaggle/springleaf/input/train.csv"
 
 response <- 'target'
 family <- "gaussian"
-#family <- "binomial" ## FIXME: Buggy?
-pogs<-TRUE
+#family <- "binomial"
+pogs  <-TRUE
 glmnet<-TRUE
-h2o<-TRUE
+h2o   <-TRUE
 
 
 ## DATA PREP
@@ -62,10 +62,9 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5, lambda=c(0)) #TODO: Disable lambda search (no longer use nlambda=100)
+  pogs = cv.pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5)
   e1 <- proc.time()
-  pogs_pred_y = predict(pogs, valid_x, type="response")
-  pogs_pred_y = pogs_pred_y / norm(pogs_pred_y)
+  pogs_pred_y = predict(pogs$pogsnet.fit, valid_x, type="response")
 
   print("POGS GPU: ")
   print(e1-s1)
@@ -80,10 +79,17 @@ if (pogs) {
 
 ## GLMNET
 if (glmnet) {
+  require(doMC)
+  registerDoMC(cores=10)
+  if (family=="binomial") {
+    y = as.factor(train_y)
+  } else {
+    y = train_y
+  }
   s2 <- proc.time()
-  glmnet = glmnet(x = train_x, y = train_y, family = family, alpha = 0.5, lambda=c(0))
+  glmnet = cv.glmnet(nfolds=10, parallel=TRUE, x = train_x, y = y, family = family, alpha = 0.5)
   e2 <- proc.time()
-  glmnet_pred_y = predict(glmnet, valid_x, type="response")
+  glmnet_pred_y = predict(glmnet$glmnet.fit, valid_x, type="response")
 
   print("GLMNET CPU")
   print(e2-s2)
@@ -99,7 +105,7 @@ if (glmnet) {
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, solver="IRLSM", lambda=c(0))
+  h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE, solver="IRLSM")
   e3 <- proc.time()
   h2opreds <- h2o.predict(h2omodel, valid.hex)
 
@@ -111,10 +117,3 @@ if (h2o) {
     h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]]))
   }
 }
-
-# Results on dual Intel(R) Xeon(R) CPU E5-2687W and Titan X (Pascal)
-# dual Xeon costs about $1300 and 1 Titan costs about $1300.
-# N=140000 train/test: 80%/20%
-# pogs-gpu: 50s
-# h2o-cpu: 111s
-# Perf/Price boost with gpu: 2.22X
