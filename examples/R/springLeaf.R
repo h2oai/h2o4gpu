@@ -5,7 +5,7 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-#N<-1000  ## ok for accuracy tests
+#N<-100  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
@@ -64,11 +64,13 @@ if (pogs) {
   s1 <- proc.time()
   pogs = cv.pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5)
   e1 <- proc.time()
-  pogs_pred_y = predict(pogs$pogsnet.fit, valid_x, type="response")
+  print(paste0("lambda_1se=",pogs$lambda.1se))
+  pogs_pred_y = predict(pogs$pogsnet.fit, s=pogs$lambda.1se, valid_x, type="response")
 
   print("POGS GPU: ")
   print(e1-s1)
   pogspreds <- as.h2o(pogs_pred_y)
+  summary(pogspreds)
   if (family == "gaussian") {
     h2o.rmse(h2o.make_metrics(pogspreds[,1], valid.hex[[response]]))
   } else {
@@ -89,11 +91,13 @@ if (glmnet) {
   s2 <- proc.time()
   glmnet = cv.glmnet(nfolds=10, parallel=TRUE, x = train_x, y = y, family = family, alpha = 0.5)
   e2 <- proc.time()
-  glmnet_pred_y = predict(glmnet$glmnet.fit, valid_x, type="response")
+  print(paste0("lambda_1se=",glmnet$lambda.1se))
+  glmnet_pred_y = predict(glmnet$glmnet.fit, s=glmnet$lambda.1se, valid_x, type="response")
 
   print("GLMNET CPU")
   print(e2-s2)
   glmnetpreds <- as.h2o(glmnet_pred_y)
+  summary(glmnetpreds)
   if (family == "gaussian") {
     h2o.rmse(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]]))
   } else {
@@ -106,8 +110,20 @@ if (glmnet) {
 if (h2o) {
   s3 <- proc.time()
   h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE)
+  regpath = h2o.getGLMFullRegularizationPath(h2omodel)
+  n = dim(regpath$coefficients)[1]
+  coefs = NULL
+  for (i in 1:n) {
+    if (h2omodel@model$lambda_1se == regpath$lambdas[i]) {
+      print(paste0("lambda_1se=",regpath$lambdas[i]))
+      coefs = regpath$coefficients[i,]
+      break
+    }
+  }
+  h2omodel2 <- h2o.makeGLMModel(h2omodel,coefs)
   e3 <- proc.time()
-  h2opreds <- h2o.predict(h2omodel, valid.hex)
+  h2opreds <- h2o.predict(h2omodel2, valid.hex)
+  summary(h2opreds)
 
   print("H2O CPU ")
   print(e3-s3)
