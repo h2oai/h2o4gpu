@@ -117,3 +117,24 @@ if (h2o) {
     h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]]))
   }
 }
+
+
+### Results i7-5820k / Titan-X Pascal
+### Elastic Net full regularization path with 10-fold CV
+
+#POGS GPU
+#   user  system elapsed 
+#390.832  61.132 452.642 
+#rmse 0.4220073
+
+#GLMNET CPU - multithreaded
+#     user    system   elapsed 
+#14039.984    10.092  2147.720 
+#rmse 0.4220078
+
+#H2O CPU
+#     user    system   elapsed 
+#  270.644    22.264 22098.499 
+#rmse 0.3879998
+
+
