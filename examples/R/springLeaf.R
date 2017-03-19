@@ -105,7 +105,7 @@ if (glmnet) {
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE, solver="IRLSM")
+  h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE)
   e3 <- proc.time()
   h2opreds <- h2o.predict(h2omodel, valid.hex)
 
@@ -132,9 +132,9 @@ if (h2o) {
 #14039.984    10.092  2147.720 
 #rmse 0.4220078
 
-#H2O CPU
+#H2O CPU (IRLSM)
 #     user    system   elapsed 
-#  270.644    22.264 22098.499 
+#  270.644    22.264 22098.499
 #rmse 0.3879998
 
 
