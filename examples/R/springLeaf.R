@@ -3,9 +3,13 @@ library(pogs)
 library(glmnet)
 library(data.table)
 
-N<-100000
-H <- 0.8*N
-f <- "/tmp/train.csv" # kaggle springleaf
+Nmax<-145232
+#N<-Nmax #100000
+N<-140000
+H <- round(0.8*N,digits=0) # should use test.csv.zip instead of split
+# also, arbitrary splits cause issues for h2o: "Can not make vectors of different length compatible" when using N<-Nmax
+#https://www.kaggle.com/c/springleaf-marketing-response/data
+f <- "gunzip -c ../data/springleaf/train.csv.zip" # kaggle springleaf
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
@@ -99,3 +103,10 @@ if (h2o) {
     h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]]))
   }
 }
+
+# Results on dual Intel(R) Xeon(R) CPU E5-2687W and Titan X (Pascal)
+# dual Xeon costs about $4000 and 1 Titan costs about $1000.
+# N=140000 train/test: 80%/20%
+# pogs-gpu: 50s
+# h2o-cpu: 111s
+# Perf/Price boost with gpu: 9X
