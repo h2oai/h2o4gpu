@@ -3,32 +3,44 @@ library(pogs)
 library(glmnet)
 library(data.table)
 
-Nmax<-145232
-#N<-Nmax #100000
-N<-140000
-H <- round(0.8*N,digits=0) # should use test.csv.zip instead of split
-# also, arbitrary splits cause issues for h2o: "Can not make vectors of different length compatible" when using N<-Nmax
 #https://www.kaggle.com/c/springleaf-marketing-response/data
-f <- "gunzip -c ../data/springleaf/train.csv.zip" # kaggle springleaf
+N<-145231 ## max
+N<-10000  ## ok for accuracy tests
+H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
+#f <- "gunzip -c ../data/springleaf/train.csv.zip"
+f <- "gunzip -c ~/kaggle/springleaf/input/train.csv.zip"
+
 response <- 'target'
 family <- "gaussian"
-#family <- "binomial"
+#family <- "binomial" ## FIXME: Buggy?
 pogs<-TRUE
-glmnet<-FALSE
+glmnet<-TRUE
 h2o<-TRUE
 
 
 ## DATA PREP
 df <- fread(f, nrows=N)
-df <- df[,sapply(df, is.numeric), with=FALSE]
+
+df[['ID']] <- NULL ## ignore ID
+
+## label encoding ## FIXME: leads to NAs?
 df[is.na(df)] <- 0
+#feature.names <- setdiff(names(df), response)
+#for (f in feature.names) {
+#  if (class(df[[f]])=="character") {
+#    levels <- unique(c(df[[f]]))
+#    df[[f]] <- as.integer(factor(df[[f]], levels=levels))
+#  }
+#}
+df <- df[,sapply(df, is.numeric), with=FALSE]
+#df <- data.table(scale(as.data.frame(df)))
 
 file <- paste0("/tmp/train.",N,".csv")
 fwrite(df, file)
-print(file)
 
 h2o.init(nthreads=-1)
 df.hex <- h2o.importFile(file)
+summary(df.hex)
 
 train.hex <- df.hex[1:H,]
 valid.hex <- df.hex[(H+1):N,]
@@ -47,12 +59,10 @@ valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
 valid_y  <- as.numeric(as.vector(valid[[response]]))
 
 
-
-
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5) #TODO: Disable lambda search (no longer use nlambda=100)
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5, lambda=c(0)) #TODO: Disable lambda search (no longer use nlambda=100)
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
   pogs_pred_y = pogs_pred_y / norm(pogs_pred_y)
@@ -68,11 +78,10 @@ if (pogs) {
 }
 
 
-
 ## GLMNET
 if (glmnet) {
   s2 <- proc.time()
-  glmnet = glmnet(x = train_x, y = train_y, family = family, alpha = 0.5, lambda=c(1e-5))
+  glmnet = glmnet(x = train_x, y = train_y, family = family, alpha = 0.5, lambda=c(0))
   e2 <- proc.time()
   glmnet_pred_y = predict(glmnet, valid_x, type="response")
 
@@ -87,11 +96,10 @@ if (glmnet) {
 }
 
 
-
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5)
+  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, solver="IRLSM", lambda=c(0))
   e3 <- proc.time()
   h2opreds <- h2o.predict(h2omodel, valid.hex)
 
@@ -105,8 +113,8 @@ if (h2o) {
 }
 
 # Results on dual Intel(R) Xeon(R) CPU E5-2687W and Titan X (Pascal)
-# dual Xeon costs about $4000 and 1 Titan costs about $1000.
+# dual Xeon costs about $1300 and 1 Titan costs about $1300.
 # N=140000 train/test: 80%/20%
 # pogs-gpu: 50s
 # h2o-cpu: 111s
-# Perf/Price boost with gpu: 9X
+# Perf/Price boost with gpu: 2.22X

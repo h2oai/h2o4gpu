@@ -392,7 +392,11 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
     }
   }
   fit$beta = Matrix(soln$x[,1:last], sparse=TRUE)
-  fit$df = apply(soln$x[-1,1:last], 2, function(x) { sum(x != 0) })
+  if (nlambda>1) {
+    fit$df = apply(soln$x[-1,1:last], 2, function(x) { sum(x != 0) })
+  } else {
+    fit$df = NULL #sum(soln$x[-1,1:last]!=0) ## not sure what to do here
+  }
   fit$lambda = lambda[1:last]
   fit$call = match.call()
   fit$dev.ratio = fit$dev.ratio[1:last]
