@@ -156,7 +156,7 @@ if (h2o) {
 
 
 
-### fa59cfe3ad Dual Xeon / GTX1080
+### e3b7d0f6f1c0 Dual Xeon / GTX1080
 ### Elastic Net full regularization path with 10-fold CV
 
 #POGS GPU
