@@ -5,14 +5,14 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-#N<-100  ## ok for accuracy tests
+N<-10000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
 
 response <- 'target'
-family <- "gaussian"
-#family <- "binomial"
+#family <- "gaussian"
+family <- "binomial"
 pogs  <-TRUE
 glmnet<-TRUE
 h2o   <-TRUE
@@ -135,7 +135,7 @@ if (h2o) {
 }
 
 
-### Results i7-5820k / Titan-X Pascal
+### 569674a1dfa i7-5820k / Titan-X Pascal
 ### Elastic Net full regularization path with 10-fold CV
 
 #POGS GPU
@@ -153,4 +153,28 @@ if (h2o) {
 #  270.644    22.264 22098.499
 #rmse 0.3879998
 
+
+
+
+### fa59cfe3ad Dual Xeon / GTX1080
+### Elastic Net full regularization path with 10-fold CV
+
+#POGS GPU
+#lambda_1se=2105060.83223774
+#   user  system elapsed
+#532.176 114.980 647.744
+#rmse 0.4118603
+
+#GLMNET CPU
+#lambda_1se=0.000515305983455443
+#    user   system  elapsed
+#7144.016   81.388 1521.256
+#0.3886783
+
+#H2O CPU
+#    user   system  elapsed
+#lambda_1se=0.000900507965438238
+#     user    system   elapsed
+#  359.588    61.212 14413.293
+#0.3890318
 
