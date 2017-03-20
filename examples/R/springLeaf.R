@@ -5,14 +5,14 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-N<-10000  ## ok for accuracy tests
+#N<-10000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
 
 response <- 'target'
-#family <- "gaussian"
-family <- "binomial"
+family <- "gaussian"
+#family <- "binomial"
 pogs  <-TRUE
 glmnet<-TRUE
 h2o   <-TRUE
@@ -62,7 +62,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = cv.pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5)
+  pogs = cv.pogsnet(nfolds=10, x = train_x, y = train_y, family = family, alpha = 0.5)
   e1 <- proc.time()
   print(paste0("lambda_1se=",pogs$lambda.1se))
   pogs_pred_y = predict(pogs$pogsnet.fit, s=pogs$lambda.1se, valid_x, type="response")
@@ -169,12 +169,11 @@ if (h2o) {
 #lambda_1se=0.000515305983455443
 #    user   system  elapsed
 #7144.016   81.388 1521.256
-#0.3886783
+#rmse 0.3886783
 
 #H2O CPU
 #    user   system  elapsed
 #lambda_1se=0.000900507965438238
 #     user    system   elapsed
 #  359.588    61.212 14413.293
-#0.3890318
-
+#rmse 0.3890318
