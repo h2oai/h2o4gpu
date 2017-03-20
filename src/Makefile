@@ -6,8 +6,16 @@ OBJDIR=build
 
 
 # C++ Flags
-CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
+#CXX=g++
+#CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
+
+CXX=icpc
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp  -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+
+
+
+#CXX=icc
+#CXXFLAGS=$(IFLAGS) -g -O3 -Wall -openmp -xHost
 
 # CUDA Flags
 CUXX=nvcc

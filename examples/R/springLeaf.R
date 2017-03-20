@@ -61,6 +61,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 
 ## POGS GPU
 if (pogs) {
+  print("BEGIN POGS")
   s1 <- proc.time()
   pogs = cv.pogsnet(x = train_x, y = train_y, family = family, alpha = 0.5)
   e1 <- proc.time()
@@ -76,11 +77,13 @@ if (pogs) {
   } else {
     h2o.auc(h2o.make_metrics(pogspreds[,1], valid.hex[[response]]))
   }
+  print("END POGS")
 }
 
 
 ## GLMNET
 if (glmnet) {
+  print("BEGIN GLMNET")
   require(doMC)
   registerDoMC(cores=10)
   if (family=="binomial") {
@@ -103,11 +106,13 @@ if (glmnet) {
   } else {
     h2o.auc(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]]))
   }
+  print("END GLMNET")
 }
 
 
 ## H2O
 if (h2o) {
+  print("BEGIN H2O")
   s3 <- proc.time()
   h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE)
   regpath = h2o.getGLMFullRegularizationPath(h2omodel)
@@ -132,6 +137,7 @@ if (h2o) {
   } else {
     h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]]))
   }
+  print("END H2O")
 }
 
 
