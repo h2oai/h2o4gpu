@@ -2,8 +2,8 @@
 POGSROOT=../../src
 
 # C Flags
-CC=gcc
-CFLAGS=$(IFLAGS) -O3 -I$(POGSROOT)/interface_c -Wall -std=c99
+CC=icpc
+CFLAGS=$(IFLAGS) -O3 -I$(POGSROOT)/interface_c -Wall
 LDFLAGS_=-lstdc++ -lm
 
 # CUDA Flags
