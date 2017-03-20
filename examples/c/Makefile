@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # C Flags
-CC=icpc
+CC=icc
 CFLAGS=$(IFLAGS) -O3 -I$(POGSROOT)/interface_c -Wall
 LDFLAGS_=-lstdc++ -lm
 
