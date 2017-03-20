@@ -1,0 +1,46 @@
+Loading required package: Matrix
+Loading required package: SuppDists
+Warning messages:
+1: In remove("a", "b") : object 'a' not found
+2: In remove("a", "b") : object 'b' not found
+
+
+   R Benchmark 2.5
+   ===============
+Number of times each test is run__________________________:  3
+
+   I. Matrix calculation
+   ---------------------
+Creation, transp., deformation of a 2500x2500 matrix (sec):  0.902666666666667 
+2400x2400 normal distributed random matrix ^1000____ (sec):  0.678 
+Sorting of 7,000,000 random values__________________ (sec):  0.663333333333332 
+2800x2800 cross-product matrix (b = a' * a)_________ (sec):  4.74866666666667 
+Linear regr. over a 3000x3000 matrix (c = a \ b')___ (sec):  1.543 
+                      --------------------------------------------
+                 Trimmed geom. mean (2 extremes eliminated):  0.981087347868168 
+
+   II. Matrix functions
+   --------------------
+FFT over 2,400,000 random values____________________ (sec):  0.235666666666667 
+Eigenvalues of a 640x640 random matrix______________ (sec):  0.391666666666666 
+Determinant of a 2500x2500 random matrix____________ (sec):  1.69533333333334 
+Cholesky decomposition of a 3000x3000 matrix________ (sec):  0.223666666666666 
+Inverse of a 1600x1600 random matrix________________ (sec):  4.92166666666666 
+                      --------------------------------------------
+                Trimmed geom. mean (2 extremes eliminated):  0.538877384212927 
+
+   III. Programmation
+   ------------------
+3,500,000 Fibonacci numbers calculation (vector calc)(sec):  0.345666666666664 
+Creation of a 3000x3000 Hilbert matrix (matrix calc) (sec):  0.24 
+Grand common divisors of 400,000 pairs (recursion)__ (sec):  0.311666666666667 
+Creation of a 500x500 Toeplitz matrix (loops)_______ (sec):  0.305000000000002 
+Escoufier's method on a 45x45 matrix (mixed)________ (sec):  0.260000000000005 
+                      --------------------------------------------
+                Trimmed geom. mean (2 extremes eliminated):  0.291287052619074 
+
+
+Total time for all 15 tests_________________________ (sec):  17.466 
+Overall mean (sum of I, II and III trimmed means/3)_ (sec):  0.536010056450495 
+                      --- End of test ---
+
