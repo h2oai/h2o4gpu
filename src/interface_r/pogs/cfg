@@ -1,1 +1,0 @@
-cp -r ../../gpu ../../cpu ../../include src/
