@@ -13,7 +13,7 @@ f <- "~/kaggle/springleaf/input/train.csv"
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
-pogs  <-TRUE
+pogs  <-FALSE
 glmnet<-TRUE
 h2o   <-TRUE
 alpha <- 1 ## Lasso
@@ -110,7 +110,7 @@ if (glmnet) {
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(nfolds=nfolds, x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE)
+  h2omodel <- h2o.glm(nfolds=nfolds, x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
   regpath = h2o.getGLMFullRegularizationPath(h2omodel)
   n = dim(regpath$coefficients)[1]
   coefs = NULL
@@ -178,3 +178,26 @@ if (h2o) {
 #     user    system   elapsed
 #  359.588    61.212 14413.293
 #rmse 0.3890318
+
+
+
+### Latest timing for f8d241e
+
+#POGS GPU
+#lambda_1se=27340705.2636287
+#   user  system elapsed 
+#216.668  49.136 265.898 
+#rmse 0.422007
+
+#GLMNET CPU
+#lambda_1se=0.000542334850133602
+#    user   system  elapsed
+#7739.856   14.752 1823.866
+#rmse 0.3892373
+
+## H2O with COORDINATE_DESCENT_NAIVE (tomas_COD_update branch 8d0220a02724a6c)
+#lambda_1se=0.00104014509806017
+#   user  system elapsed 
+#  9.392   1.024 727.941 
+#rmse 0.3901852
+
