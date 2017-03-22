@@ -16,7 +16,7 @@ LassoPath
 def LassoPath(m, n, gpu=False, double_precision=False, nlambda=50):
   # set solver cpu/gpu according to input args
   if gpu and pogs.SolverGPU is None:
-    print "\nGPU solver unavailable, using CPU solver\n"
+    print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
   Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
@@ -58,7 +58,7 @@ def LassoPath(m, n, gpu=False, double_precision=False, nlambda=50):
   # use problem data A to create solver 
   s = Solver(A) 
 
-  for i in xrange(nlambda):
+  for i in range(nlambda):
     _lambda= exp( (log(lambda_max)*(nlambda-1-i)+1e-2*log(lambda_max)*i )/ (nlambda-1))
 
     g.c[:]=_lambda
@@ -85,7 +85,7 @@ def LassoPath(m, n, gpu=False, double_precision=False, nlambda=50):
   return runtime
 
 if __name__ == "__main__":
-   print "Solve time:\t{:.2e} seconds".format(LassoPath(200,1000))
+   print("Solve time:\t{:.2e} seconds".format(LassoPath(200,1000)))
 
 
 

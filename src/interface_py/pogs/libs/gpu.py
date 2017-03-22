@@ -36,9 +36,9 @@ try:
 	pogsGPU.pogs_finish_single.restype = None
 	pogsGPU.pogs_finish_double.restype = None
 
-	print '\nLoaded POGS GPU library.'
+	print('\nLoaded POGS GPU library.')
 except:
-	print '\nWarning: POGS GPU shared object (dynamic library) not found at ' + lib_path
+	print('\nWarning: POGS GPU shared object (dynamic library) not found at ' + lib_path)
 	pogsGPU=None
 
 

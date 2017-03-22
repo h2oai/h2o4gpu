@@ -44,7 +44,7 @@ class BaseSolver(object):
 		
 
 		except AssertionError:
-			print "data must be a (m x n) numpy ndarray or scipy csc_matrix containing float32 or float64 values"
+			print("data must be a (m x n) numpy ndarray or scipy csc_matrix containing float32 or float64 values")
 
 
 
@@ -52,7 +52,7 @@ class BaseSolver(object):
 		if not self.work:
 			self.__init__(A, lib, **kwargs)
 		else:
-			print "POGS_work data structure already intialized, cannot re-initialize without calling finish()"
+			print("POGS_work data structure already intialized, cannot re-initialize without calling finish()")
 	 
 	def solve(self, f, g, **kwargs):
 		try:
@@ -73,7 +73,7 @@ class BaseSolver(object):
 			change_solution(self.pysolution, **kwargs)
 			 
 			if not self.work:
-				print "no viable POGS_work pointer to call solve(). call Solver.init( args... ) first"
+				print("no viable POGS_work pointer to call solve(). call Solver.init( args... ) first")
 				return 
 			elif not self.double_precision:
 				self.lib.pogs_solve_single(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info),
@@ -89,14 +89,14 @@ class BaseSolver(object):
 										cptr(g.d,c_double), cptr(g.e,c_double), cptr(g.h,c_int))
 			 
 		except AssertionError:
-			print "\nf and g must be objects of type FunctionVector with:"
-			print ">length of f = m, # of rows in solver's data matrix A"
-			print ">length of g = n, # of columns in solver's data matrix A"
+			print("\nf and g must be objects of type FunctionVector with:")
+			print(">length of f = m, # of rows in solver's data matrix A")
+			print(">length of g = n, # of columns in solver's data matrix A")
 
 	 
 	def finish(self):
 		if not self.work:
-			print "no viable POGS_work pointer to call finish(). call Solver.init( args... ) first"
+			print("no viable POGS_work pointer to call finish(). call Solver.init( args... ) first")
 			pass
 		elif not self.double_precision:
 			self.lib.pogs_finish_single(self.work)
@@ -104,7 +104,7 @@ class BaseSolver(object):
 		else:
 			self.lib.pogs_finish_double(self.work)
 			self.work = None
-		print "shutting down... POGS_work freed in C++"
+		print("shutting down... POGS_work freed in C++")
 
 	def __delete__(self):
 		self.finish()

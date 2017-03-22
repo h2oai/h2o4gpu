@@ -6,7 +6,7 @@ import pogs as pogs
 def main(argv):
     gpu = len(argv)>0 and argv[0] in ["-g","-gpu","-G","-GPU"]
     if gpu and not pogs.SolverGPU:
-        print "\nPOGS GPU library not compiled, please call again without `-g/gpu/G/GPU` option\n"
+        print("\nPOGS GPU library not compiled, please call again without `-g/gpu/G/GPU` option\n")
         return
     Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
 
@@ -22,7 +22,7 @@ def main(argv):
     wt_1_under=35
     wt_2 =1
 
-    for i in xrange(m):
+    for i in range(m):
         if np.random.rand()>0.75:
             # f.a[i]=1 (from initialization)
             f.b[i]=1
@@ -47,7 +47,7 @@ def main(argv):
 
     # solve
     s.solve(f,g)
-    print pogs.STATUS[s.info.status]
+    print((pogs.STATUS[s.info.status]))
 
     # tear down solver
     s.finish()

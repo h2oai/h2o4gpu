@@ -135,14 +135,14 @@ def change_settings(settings, **kwargs):
 
 
 def make_settings(double_precision=False, **kwargs):
-	rho = kwargs['rho'] if 'rho' in kwargs.keys() else DEFAULTS['rho'] 
-	relt = kwargs['abs_tol'] if 'abs_tol' in kwargs.keys() else DEFAULTS['abs_tol'] 
-	abst = kwargs['rel_tol'] if 'rel_tol' in kwargs.keys() else DEFAULTS['rel_tol'] 
-	maxit = kwargs['max_iters'] if 'max_iters' in kwargs.keys() else DEFAULTS['max_iters'] 
-	verb = kwargs['verbose'] if 'verbose' in kwargs.keys() else DEFAULTS['verbose'] 
-	adap = kwargs['adaptive_rho'] if 'adaptive_rho' in kwargs.keys() else DEFAULTS['adaptive_rho'] 
-	gaps = kwargs['gap_stop'] if 'gap_stop' in kwargs.keys() else DEFAULTS['gap_stop']
-	warm = kwargs['warm_start'] if 'warm_start' in kwargs.keys() else DEFAULTS['warm_start']
+	rho = kwargs['rho'] if 'rho' in list(kwargs.keys()) else DEFAULTS['rho'] 
+	relt = kwargs['abs_tol'] if 'abs_tol' in list(kwargs.keys()) else DEFAULTS['abs_tol'] 
+	abst = kwargs['rel_tol'] if 'rel_tol' in list(kwargs.keys()) else DEFAULTS['rel_tol'] 
+	maxit = kwargs['max_iters'] if 'max_iters' in list(kwargs.keys()) else DEFAULTS['max_iters'] 
+	verb = kwargs['verbose'] if 'verbose' in list(kwargs.keys()) else DEFAULTS['verbose'] 
+	adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(kwargs.keys()) else DEFAULTS['adaptive_rho'] 
+	gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else DEFAULTS['gap_stop']
+	warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else DEFAULTS['warm_start']
 	if double_precision:
 		return SettingsD(rho, relt, abst, maxit, verb, adap, gaps, warm)
 	else:

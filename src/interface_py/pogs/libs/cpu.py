@@ -35,9 +35,9 @@ try:
 	pogsCPU.pogs_finish_single.restype = None
 	pogsCPU.pogs_finish_double.restype = None
 
-	print '\nLoaded POGS CPU library'
+	print('\nLoaded POGS CPU library')
 except OSError:
-	print '\nWarning: POGS CPU shared object (dynamic library) not found at ' + lib_path
+	print('\nWarning: POGS CPU shared object (dynamic library) not found at ' + lib_path)
 	pogsCPU=None
 
 

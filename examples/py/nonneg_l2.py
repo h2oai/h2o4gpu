@@ -14,7 +14,7 @@ See <pogs>/matlab/examples/nonneg_l2.m for detailed description.
 def NonNegL2(m,n, gpu=False, double_precision=False):
   # set solver cpu/gpu according to input args
   if gpu and pogs.SolverGPU is None:
-    print "\nGPU solver unavailable, using CPU solver\n"
+    print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
   Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
@@ -61,7 +61,7 @@ def NonNegL2(m,n, gpu=False, double_precision=False):
   return t
 
 if __name__ == "__main__":
-   print "Solve time:\t{:.2e} seconds".format(NonNegL2(1000,200))
+   print("Solve time:\t{:.2e} seconds".format(NonNegL2(1000,200)))
 
 
 
