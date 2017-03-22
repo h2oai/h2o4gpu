@@ -41,5 +41,3 @@
 # Entire build directory #
 /src/build/*
 
-# Markdown preview #
-*README.html
