@@ -20,6 +20,7 @@ double Lasso(size_t m, size_t n) {
   std::normal_distribution<T> n_dist(static_cast<T>(0),
                                      static_cast<T>(1));
 
+  double t0 = timer<double>();
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = n_dist(generator);
 
@@ -64,6 +65,8 @@ double Lasso(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     g.emplace_back(kAbs, static_cast<T>(0.2) * lambda_max);
 
+  double t1 = timer<double>();
+  printf("Time to create data: %f\n", t1-t0);
   double t = timer<double>();
   pogs_data.Solve(f, g);
 
