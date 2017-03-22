@@ -33,7 +33,7 @@ T Asum(std::vector<T> *v) {
 // LassoPath
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
-// for 50 values of \lambda.
+// for 100 values of \lambda.
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(size_t m, size_t n) {
