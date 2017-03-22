@@ -5,7 +5,7 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-#N<-10000  ## ok for accuracy tests
+#N<-1000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
@@ -16,7 +16,8 @@ family <- "gaussian"
 pogs  <-TRUE
 glmnet<-TRUE
 h2o   <-TRUE
-
+alpha <- 1 ## Lasso
+nfolds <- 10
 
 ## DATA PREP
 df <- fread(f, nrows=N)
@@ -62,7 +63,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = cv.pogsnet(nfolds=10, x = train_x, y = train_y, family = family, alpha = 0.5)
+  pogs = cv.pogsnet(nfolds=nfolds, x = train_x, y = train_y, family = family, alpha = alpha)
   e1 <- proc.time()
   print(paste0("lambda_1se=",pogs$lambda.1se))
   pogs_pred_y = predict(pogs$pogsnet.fit, s=pogs$lambda.1se, valid_x, type="response")
@@ -72,9 +73,9 @@ if (pogs) {
   pogspreds <- as.h2o(pogs_pred_y)
   summary(pogspreds)
   if (family == "gaussian") {
-    h2o.rmse(h2o.make_metrics(pogspreds[,1], valid.hex[[response]]))
+    print(h2o.rmse(h2o.make_metrics(pogspreds[,1], valid.hex[[response]])))
   } else {
-    h2o.auc(h2o.make_metrics(pogspreds[,1], valid.hex[[response]]))
+    print(h2o.auc(h2o.make_metrics(pogspreds[,1], valid.hex[[response]])))
   }
 }
 
@@ -82,14 +83,14 @@ if (pogs) {
 ## GLMNET
 if (glmnet) {
   require(doMC)
-  registerDoMC(cores=10)
+  registerDoMC(cores=nfolds)
   if (family=="binomial") {
     y = as.factor(train_y)
   } else {
     y = train_y
   }
   s2 <- proc.time()
-  glmnet = cv.glmnet(nfolds=10, parallel=TRUE, x = train_x, y = y, family = family, alpha = 0.5)
+  glmnet = cv.glmnet(nfolds=nfolds, parallel=TRUE, x = train_x, y = y, family = family, alpha = alpha)
   e2 <- proc.time()
   print(paste0("lambda_1se=",glmnet$lambda.1se))
   glmnet_pred_y = predict(glmnet$glmnet.fit, s=glmnet$lambda.1se, valid_x, type="response")
@@ -99,9 +100,9 @@ if (glmnet) {
   glmnetpreds <- as.h2o(glmnet_pred_y)
   summary(glmnetpreds)
   if (family == "gaussian") {
-    h2o.rmse(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]]))
+    print(h2o.rmse(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]])))
   } else {
-    h2o.auc(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]]))
+    print(h2o.auc(h2o.make_metrics(glmnetpreds[,1], valid.hex[[response]])))
   }
 }
 
@@ -109,7 +110,7 @@ if (glmnet) {
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(nfolds=10, x=cols, y=response, training_frame=train.hex, family=family, alpha = 0.5, lambda_search=TRUE)
+  h2omodel <- h2o.glm(nfolds=nfolds, x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE)
   regpath = h2o.getGLMFullRegularizationPath(h2omodel)
   n = dim(regpath$coefficients)[1]
   coefs = NULL
@@ -128,9 +129,9 @@ if (h2o) {
   print("H2O CPU ")
   print(e3-s3)
   if (family == "gaussian") {
-    h2o.rmse(h2o.make_metrics(h2opreds[,1], valid.hex[[response]]))
+    print(h2o.rmse(h2o.make_metrics(h2opreds[,1], valid.hex[[response]])))
   } else {
-    h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]]))
+    print(h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]])))
   }
 }
 
