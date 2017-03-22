@@ -15,7 +15,7 @@ family <- "gaussian"
 #family <- "binomial"
 pogs  <-TRUE
 glmnet<-TRUE
-h2o   <-TRUE
+h2o   <-FALSE
 
 
 ## DATA PREP

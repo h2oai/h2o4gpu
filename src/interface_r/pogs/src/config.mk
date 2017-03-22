@@ -46,7 +46,7 @@ ifeq ($(TARGET), gpu)
     LD_FLAGS=-L"$(R_LIB)" -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse
 else
 #    LD_FLAGS=blas2cblas.cpp $(shell R CMD config BLAS_LIBS)
-    LD_FLAGS=blas2cblas.cpp -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+    LD_FLAGS=blas2cblas.cpp -L/usr/local/cuda/lib64 -lnvblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 endif
 LD_FLAGS+=$(R_FRAMEWORK)
 

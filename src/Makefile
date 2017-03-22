@@ -10,7 +10,7 @@ OBJDIR=build
 #CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
 
 CXX=icpc
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp  -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp -lnvblas  -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
 
 
 
@@ -19,7 +19,7 @@ CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp  -lmkl_gf_lp64 -lmkl_gn
 
 # CUDA Flags
 CUXX=nvcc
-CUFLAGS=$(IFLAGS) -arch=sm_20 -Xcompiler -fPIC #-DDEBUG
+CUFLAGS=$(IFLAGS) -Xcompiler -fPIC #-DDEBUG
 
 
 # POGS header files.

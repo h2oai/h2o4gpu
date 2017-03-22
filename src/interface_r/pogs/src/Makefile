@@ -4,12 +4,12 @@
 # C++ Flags
 CXX=icpc
 #CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp  -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp -L/usr/local/cuda/lib64/ -lnvblas  -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
 
 
 # CUDA Flags
 CUXX=$(CUDA_HOME)/bin/nvcc
-CUFLAGS=$(IFLAGS) -arch=sm_20 -Xcompiler -fPIC #-DDEBUG
+CUFLAGS=$(IFLAGS) -Xcompiler -fPIC #-DDEBUG
 
 # Bulid directory
 OBJDIR=build

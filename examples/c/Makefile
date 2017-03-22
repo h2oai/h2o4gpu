@@ -15,7 +15,7 @@ ifeq ($(UNAME), Darwin)
 LDFLAGS=$(LDFLAGS_) -framework Accelerate
 CULDFLAGS=-lm -L/usr/local/cuda/lib $(CULDFLAGS_)
 else
-LDFLAGS=$(LDFLAGS_) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread #-lopenblas
+LDFLAGS=$(LDFLAGS_) -L/usr/local/cuda/lib64 -nvblas -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread #-lopenblas
 CULDFLAGS=-lm -L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
@@ -32,6 +32,8 @@ gpu: lasso.c
 	$(MAKE) -C $(POGSROOT)/interface_c pogs_c.o
 	$(CC) $(CFLAGS) -o run $< $(POGSROOT)/interface_c/pogs_c.o \
 		$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+
+all: gpu
 
 clean:
 	rm -f *.o *~ *~ run 
