@@ -47,7 +47,7 @@ class Pogs {
   int _Init();
 
   // Output.
-  T *_x, *_y, *_mu, *_lambda, _optval;
+  T *_x, *_y, *_mu, *_lambda, _optval, _time;
   unsigned int _final_iter;
 
   // Parameters.
@@ -79,7 +79,7 @@ class Pogs {
   unsigned int GetVerbose()     const { return _verbose; }
   bool         GetAdaptiveRho() const { return _adaptive_rho; }
   bool         GetGapStop()     const { return _gap_stop; }
-
+  T            GetTime()        const { return _time; }
 
   // Setters for parameters and initial values.
   void SetRho(T rho)                       { _rho = rho; }
