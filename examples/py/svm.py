@@ -22,7 +22,7 @@ def Svm(m,n, gpu=False, double_precision=False):
   #   X = [randn(m/2, n) + ones(m/2, n); randn(m/2, n) - ones(m/2, n)]
   #   yhat = [ones(m/2, 1); -ones(m/2, 1)]
   #   A = [(-yhat * ones(1, n)) .* X, -yhat]
-  ind_half = floor(m/2.)
+  ind_half = int(floor(m/2.))
 
   X=randn(m,n)
   X[:ind_half,:]+=1
