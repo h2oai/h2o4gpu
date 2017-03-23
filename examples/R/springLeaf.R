@@ -181,7 +181,7 @@ if (h2o) {
 
 
 
-### Latest timing for f8d241e
+### Latest timing for f8d241e on mr-dl1
 
 #POGS GPU
 #lambda_1se=27340705.2636287
@@ -207,3 +207,27 @@ if (h2o) {
 #  9.392   1.024 727.941 
 #rmse 0.3901852
 
+
+
+## Latest timing for 5cb02b84a on ovaclokka
+## Titan-X Pascal / i7 5820k
+
+#POGS GPU
+#   user  system elapsed 
+#167.172  26.736 193.956 
+#rmse 0.422007
+
+#POGS CPU
+#    user   system  elapsed 
+#8813.880  622.592  875.563 
+#rmse 0.4166237
+
+#GLMNET CPU
+#     user    system   elapsed 
+#16185.664    11.280  2541.528 
+#rmse 0.3888805
+
+#H2O CPU (COD)
+#    user   system  elapsed 
+#   9.428    0.380 1154.257 
+#rmse 0.3901853
