@@ -143,4 +143,7 @@ $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu
 
 clean:
 	rm -rf pogs.a build/ *.dSYM
+	find -name "*.so" -delete
+	find -name "*.a" -delete
+	find -name "*.o" -delete
 
