@@ -11,12 +11,11 @@ where `XXX` is one of the following
 
 Hint: Use `getwd()` to get the current directory.
 
-#### To build from scratch
+#### To build and install from scratch
 1. Modify `<path-to-pogs-root>/src/interface_r/pogs/src/config.mk` by settingx
    `TARGET=[cpu/gpu]`, to target the respective platform.
    Also update `CUDA_HOME` if necessary.
 2. In your terminal, navigate to `cd <path-to-pogs-root>/src/interface_r`
    and execute `R CMD INSTALL --build pogs` (or `R CMD build pogs` for
-   a non-compiled package).
-3. Now you can install the package with the command above.
+   a non-compiled package) to install the R package.
 
