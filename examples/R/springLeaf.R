@@ -14,8 +14,8 @@ response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
 pogs  <-TRUE
-glmnet<-FALSE
-h2o   <-FALSE
+glmnet<-TRUE
+h2o   <-TRUE
 alpha <- 1 ## Lasso
 nfolds <- 10
 
