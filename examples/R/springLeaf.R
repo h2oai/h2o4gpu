@@ -13,9 +13,9 @@ f <- "~/kaggle/springleaf/input/train.csv"
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
-pogs  <-FALSE
-glmnet<-TRUE
-h2o   <-TRUE
+pogs  <-TRUE
+glmnet<-FALSE
+h2o   <-FALSE
 alpha <- 1 ## Lasso
 nfolds <- 10
 
@@ -188,6 +188,12 @@ if (h2o) {
 #   user  system elapsed 
 #216.668  49.136 265.898 
 #rmse 0.422007
+
+#POGS CPU
+#lambda_1se=7432811.98777276
+#     user    system   elapsed 
+#25356.744  8514.276   993.101 
+#rmse 0.4166237
 
 #GLMNET CPU
 #lambda_1se=0.000542334850133602
