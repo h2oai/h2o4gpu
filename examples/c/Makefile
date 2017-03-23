@@ -4,18 +4,17 @@ POGSROOT=../../src
 # C Flags
 CC=gcc
 CFLAGS=$(IFLAGS) -O3 -I$(POGSROOT)/interface_c -Wall -std=c99
-LDFLAGS_=-lstdc++ -lm
+LDFLAGS_=-lstdc++ -lm -fopenmp
 
 # CUDA Flags
 CULDFLAGS_=-lstdc++ -lcudart -lcublas -lcusparse
 
 # Check System Args.
-UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
 LDFLAGS=$(LDFLAGS_) -framework Accelerate
-CULDFLAGS=-lm -L/usr/local/cuda/lib $(CULDFLAGS_)
+CULDFLAGS=-lm -L/usr/local/cuda/lib64 $(CULDFLAGS_)
 else
-LDFLAGS=$(LDFLAGS_) -lopenblas
+LDFLAGS=$(LDFLAGS_) -L/home/jon/lib -L/usr/local/cuda/lib64     -L/usr/lib/   -lmagma -lcublas -lcudart -lopenblas #-lopenblas
 CULDFLAGS=-lm -L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 

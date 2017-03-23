@@ -1,5 +1,6 @@
 # Instructions
-# 1. To build with openmp set IFLAGS=-fopenmp
+# 1. To build with openmp set
+IFLAGS=-fopenmp
 
 # Bulid directory
 OBJDIR=build
@@ -7,7 +8,7 @@ OBJDIR=build
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC  #-DDEBUG # -Wconversion
 
 # CUDA Flags
 CUXX=nvcc
