@@ -1,4 +1,4 @@
-#include <cublas_v2.h>
+#include <cublas.h>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_matrix.cuh"
@@ -25,6 +25,10 @@ struct GpuData {
   cublasHandle_t handle;
   GpuData(const T *orig_data) : orig_data(orig_data) {
     cublasCreate(&handle);
+    //int numdevices=4;
+    //int devices[4] = {0,1,2,3};
+    //cublasXtDeviceSelect(handle, numdevices, devices);
+    //cublasXtSetBlockDim(handle, 64);
     DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {

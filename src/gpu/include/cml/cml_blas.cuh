@@ -2,6 +2,7 @@
 #define CML_BLAS_CUH_
 
 #include <cublas_v2.h>
+#include <cublasXt.h>
 #include <thrust/device_ptr.h>
 #include <thrust/functional.h>
 #include <thrust/transform_reduce.h>
@@ -243,7 +244,7 @@ cublasStatus_t blas_trsv(cublasHandle_t handle, cublasFillMode_t uplo,
 
 // Syrk.
 template <CBLAS_ORDER O>
-cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
+cublasStatus_t blas_syrk(cublasXtHandle_t handle, cublasFillMode_t uplo,
                          cublasOperation_t trans, const float alpha,
                          const matrix<float, O> *A, const float beta,
                          matrix<float, O> *C) {
@@ -252,7 +253,7 @@ cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
     uplo = InvFillMode(uplo);
     trans = InvOp(trans);
   }
-  cublasStatus_t err = cublasSsyrk(handle, uplo, trans,
+  cublasStatus_t err = cublasXtSsyrk(handle, uplo, trans,
       static_cast<int>(C->size1), k, &alpha, A->data, static_cast<int>(A->tda),
       &beta, C->data, static_cast<int>(C->tda));
   CublasCheckError(err);
@@ -260,7 +261,7 @@ cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
 }
 
 template <CBLAS_ORDER O>
-cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
+cublasStatus_t blas_syrk(cublasXtHandle_t handle, cublasFillMode_t uplo,
                          cublasOperation_t trans, const double alpha,
                          const matrix<double, O> *A, const double beta,
                          matrix<double, O> *C) {
@@ -269,7 +270,7 @@ cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
     uplo = InvFillMode(uplo);
     trans = InvOp(trans);
   }
-  cublasStatus_t err = cublasDsyrk(handle, uplo, trans,
+  cublasStatus_t err = cublasXtDsyrk(handle, uplo, trans,
       static_cast<int>(C->size1), k, &alpha, A->data, static_cast<int>(A->tda),
       &beta, C->data, static_cast<int>(C->tda));
   CublasCheckError(err);
@@ -278,19 +279,19 @@ cublasStatus_t blas_syrk(cublasHandle_t handle, cublasFillMode_t uplo,
 
 // Gemm.
 template <CBLAS_ORDER O>
-cublasStatus_t blas_gemm(cublasHandle_t handle, cublasOperation_t transa,
+cublasStatus_t blas_gemm(cublasXtHandle_t handle, cublasOperation_t transa,
                          cublasOperation_t transb, const float alpha,
                          const matrix<float, O> *A, const matrix<float, O> *B,
                          const float beta, matrix<float, O> *C) {
   int k = transa == CUBLAS_OP_N ? A->size2 : A->size1;
   cublasStatus_t err;
   if (O == CblasColMajor)
-    err = cublasSgemm(handle, transa, transb, static_cast<int>(C->size1),
+    err = cublasXtSgemm(handle, transa, transb, static_cast<int>(C->size1),
         static_cast<int>(C->size2), k, &alpha, A->data,
         static_cast<int>(A->tda), B->data, static_cast<int>(B->tda), &beta,
         C->data, static_cast<int>(C->tda));
   else
-    err = cublasSgemm(handle, transb, transa, static_cast<int>(C->size2),
+    err = cublasXtSgemm(handle, transb, transa, static_cast<int>(C->size2),
         static_cast<int>(C->size1), k, &alpha, B->data,
         static_cast<int>(B->tda), A->data, static_cast<int>(A->tda), &beta,
         C->data, static_cast<int>(C->tda));
@@ -299,19 +300,19 @@ cublasStatus_t blas_gemm(cublasHandle_t handle, cublasOperation_t transa,
 }
 
 template <CBLAS_ORDER O>
-cublasStatus_t blas_gemm(cublasHandle_t handle, cublasOperation_t transa,
+cublasStatus_t blas_gemm(cublasXtHandle_t handle, cublasOperation_t transa,
                          cublasOperation_t transb, const double alpha,
                          const matrix<double, O> *A, const matrix<double, O> *B,
                          const double beta, matrix<double, O> *C) {
   int k = transa == CUBLAS_OP_N ? A->size2 : A->size1;
   cublasStatus_t err;
   if (O == CblasColMajor)
-    err = cublasDgemm(handle, transa, transb, static_cast<int>(C->size1),
+    err = cublasXtDgemm(handle, transa, transb, static_cast<int>(C->size1),
         static_cast<int>(C->size2), k, &alpha, A->data,
         static_cast<int>(A->tda), B->data, static_cast<int>(B->tda), &beta,
         C->data, static_cast<int>(C->tda));
   else
-    err = cublasDgemm(handle, transb, transa, static_cast<int>(C->size2),
+    err = cublasXtDgemm(handle, transb, transa, static_cast<int>(C->size2),
         static_cast<int>(C->size1), k, &alpha, B->data,
         static_cast<int>(B->tda), A->data, static_cast<int>(A->tda), &beta,
         C->data, static_cast<int>(C->tda));

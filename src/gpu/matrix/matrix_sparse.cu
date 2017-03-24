@@ -1,4 +1,4 @@
-#include <cublas_v2.h>
+#include <cublas.h>
 #include <cusparse.h>
 
 #include "cml/cml_spblas.cuh"
@@ -24,17 +24,24 @@ template <typename T>
 struct GpuData {
   const T *orig_data;
   const POGS_INT *orig_ptr, *orig_ind;
+  //cublasXtHandle_t d_hdl;
   cublasHandle_t d_hdl;
   cusparseHandle_t s_hdl;
   cusparseMatDescr_t descr;
   GpuData(const T *data, const POGS_INT *ptr, const POGS_INT *ind)
       : orig_data(data), orig_ptr(ptr), orig_ind(ind) {
+    //cublasXtCreate(&d_hdl);
     cublasCreate(&d_hdl);
+    //int numdevices=4;
+    //int devices[4] = {0,1,2,3};
+    //cublasXtDeviceSelect(d_hdl, numdevices, devices);
+    //cublasXtSetBlockDim(handle, 64);
     cusparseCreate(&s_hdl);
     cusparseCreateMatDescr(&descr);
     DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
+    //cublasXtDestroy(d_hdl);
     cublasDestroy(d_hdl);
     cusparseDestroy(s_hdl);
     cusparseDestroyMatDescr(descr);

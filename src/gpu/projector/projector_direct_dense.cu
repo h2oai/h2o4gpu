@@ -1,4 +1,4 @@
-#include <cublas_v2.h>
+#include <cublas.h>
 
 #include <algorithm>
 #include <limits>
@@ -21,10 +21,31 @@ struct GpuData {
   cublasHandle_t handle;
   GpuData() : AA(0), L(0), s(static_cast<T>(-1.)) {
     cublasCreate(&handle);
+    //int numdevices=4;
+    //int devices[4] = {0,1,2,3};
+    //cublasXtDeviceSelect(handle, numdevices, devices);
+    //cublasXtSetBlockDim(handle, 64);
     CUDA_CHECK_ERR();
   }
   ~GpuData() {
     cublasDestroy(handle);
+    CUDA_CHECK_ERR();
+  }
+};
+template<typename T>
+struct GpuDataXt {
+  T *AA, *L, s;
+  cublasXtHandle_t handle;
+  GpuDataXt() : AA(0), L(0), s(static_cast<T>(-1.)) {
+    cublasXtCreate(&handle);
+    //int numdevices=4;
+    //int devices[4] = {0,1,2,3};
+    //cublasXtDeviceSelect(handle, numdevices, devices);
+    //cublasXtSetBlockDim(handle, 64);
+    CUDA_CHECK_ERR();
+  }
+  ~GpuDataXt() {
+    cublasXtDestroy(handle);
     CUDA_CHECK_ERR();
   }
 };
@@ -66,7 +87,7 @@ int ProjectorDirect<T, M>::Init() {
   this->_done_init = true;
   ASSERT(_A.IsInit());
 
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+  GpuDataXt<T> *info = reinterpret_cast<GpuDataXt<T>*>(this->_info);
 
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 
@@ -110,8 +131,8 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
     return 1;
 
   // Get Cublas handle
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-  cublasHandle_t hdl = info->handle;
+  GpuDataXt<T> *info = reinterpret_cast<GpuDataXt<T>*>(this->_info);
+  cublasXtHandle_t hdl = info->handle;
 
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 

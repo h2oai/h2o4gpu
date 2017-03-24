@@ -117,10 +117,13 @@ __global__ void __block_trsv(T *A, uint iter, uint n, uint tda) {
 
 // Cholesky.
 template <typename T, CBLAS_ORDER O>
-cublasStatus_t linalg_cholesky_decomp(cublasHandle_t handle,
+cublasStatus_t linalg_cholesky_decomp(cublasXtHandle_t handle,
                                       matrix<T, O> *A) {
+
+// ISSUE: no GetStream for Xt handle
   cudaStream_t stm;
   cublasStatus_t err = cublasGetStream(handle, &stm);
+  //cublasStatus_t err = CUBLAS_STATUS_SUCCESS;
 
   uint num_tiles = (A->size1 + kTileSize - 1u) / kTileSize;
 

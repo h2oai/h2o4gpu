@@ -121,6 +121,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Create cuBLAS handle.
   cublasHandle_t hdl;
   cublasCreate(&hdl);
+  //cublasXtHandle_t hdl;
+  //cublasXtCreate(&hdl);
+  //int numdevices=4;
+  //int devices[4] = {0,1,2,3};
+  //cublasXtDeviceSelect(handle, numdevices, devices);
+  //cublasXtSetBlockDim(handle, 64);
   CUDA_CHECK_ERR();
 
   // Allocate data for ADMM variables.
@@ -397,6 +403,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
   cml::vector_free(&ztemp);
+  //cublasXtDestroy(hdl);
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
 

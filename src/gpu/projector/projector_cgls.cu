@@ -1,4 +1,4 @@
-#include <cublas_v2.h>
+#include <cublas.h>
 
 #include <algorithm>
 #include <limits>
@@ -24,6 +24,10 @@ struct GpuData {
   cublasHandle_t handle;
   GpuData() {
     cublasCreate(&handle);
+    //int numdevices=4;
+    //int devices[4] = {0,1,2,3};
+    //cublasXtDeviceSelect(handle, numdevices, devices);
+    //cublasXtSetBlockDim(handle, 64);
     CUDA_CHECK_ERR();
   }
   ~GpuData() {
