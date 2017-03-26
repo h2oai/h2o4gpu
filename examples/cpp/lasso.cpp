@@ -79,7 +79,7 @@ double Lasso(size_t m, size_t n) {
   fprintf(stdout,"BEGIN SOLVE\n");
   pogs_data.Solve(f, g);
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 0 tfd %g ts %g\n",t1-t0,tf-t);
+  fprintf(stdout,"END SOLVE: type 0 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);
 
   return tf-t;
 }

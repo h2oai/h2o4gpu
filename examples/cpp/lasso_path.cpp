@@ -114,7 +114,7 @@ double LassoPath(size_t m, size_t n) {
     x_last = x;
   }
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 tfd %g ts %g\n",t1-t0,tf-t);
+  fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);
 
   return tf-t;
 }

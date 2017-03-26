@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <math.h>
 
 #include "examples.h"
 
@@ -12,15 +13,32 @@ int main() {
   t = Logistic<real_t>(7000, 100000);
   printf("Solver Time: %e sec\n", t);
   */
- 
 
-  printf("\nLasso.\n");
-  t = Lasso<real_t>(100000, 2000);
-  printf("Solver Time: %e sec\n", t);
+  double lmax=6;
+  double lstep=0.1;
+  double lm,ln;
+  int m,n;
 
-  printf("\nLasso Path.\n");
-  t = LassoPath<real_t>(100000, 2000);
-  printf("Solver Time: %e sec\n", t);
+  for(lm=0;lm<=lmax;lm+=lstep){
+    for(ln=0;ln<=lmax;ln+=lstep){
+
+      m = (int)round(pow(10,lm));
+      n = (int)round(pow(10,ln));
+      if(n<8) continue;
+  
+      printf("\nLasso: m=%d n=%d.\n",m,n);
+      t = Lasso<real_t>(m, n);
+      printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
+      
+      printf("\nLasso Path: m=%d n=%d.\n",m,n);
+      t = LassoPath<real_t>(m, n);
+      printf("LassoPath m=%d n=%d Solver Time: %e sec\n", m,n,t);
+      fflush(stdout);
+      fflush(stderr);
+    }
+  }
+
+
   /*
   printf("\nLinear Program in Equality Form.\n");
   t = LpEq<real_t>(1000, 200);
