@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <random>
 #include <vector>
 
@@ -20,6 +23,7 @@ double Lasso(size_t m, size_t n) {
   std::normal_distribution<T> n_dist(static_cast<T>(0),
                                      static_cast<T>(1));
 
+  fprintf(stdout,"BEGIN FILL DATA\n");
   double t0 = timer<double>();
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = n_dist(generator);
@@ -65,12 +69,19 @@ double Lasso(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     g.emplace_back(kAbs, static_cast<T>(0.2) * lambda_max);
 
+  fprintf(stdout,"END FILL DATA\n");
+  
   double t1 = timer<double>();
   printf("Time to create data: %f\n", t1-t0);
   double t = timer<double>();
-  pogs_data.Solve(f, g);
 
-  return timer<double>() - t;
+
+  fprintf(stdout,"BEGIN SOLVE\n");
+  pogs_data.Solve(f, g);
+  double tf = timer<double>();
+  fprintf(stdout,"END SOLVE: type 0 tfd %g ts %g\n",t1-t0,tf-t);
+
+  return tf-t;
 }
 
 template double Lasso<double>(size_t m, size_t n);

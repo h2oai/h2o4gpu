@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <limits>
 #include <random>
 #include <vector>
@@ -43,6 +46,8 @@ double LassoPath(size_t m, size_t n) {
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
   // Generate data
+  fprintf(stdout,"BEGIN FILL DATA\n");
+  double t0 = timer<double>();
   std::default_random_engine generator;
   std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
                                            static_cast<T>(1));
@@ -85,7 +90,11 @@ double LassoPath(size_t m, size_t n) {
 
   for (unsigned int i = 0; i < n; ++i)
     g.emplace_back(kAbs);
-  
+
+  double t1 = timer<double>();
+  fprintf(stdout,"END FILL DATA\n");
+
+  fprintf(stdout,"BEGIN SOLVE\n");
   double t = timer<double>();
   for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
@@ -104,8 +113,10 @@ double LassoPath(size_t m, size_t n) {
       break;
     x_last = x;
   }
+  double tf = timer<double>();
+  fprintf(stdout,"END SOLVE: type 1 tfd %g ts %g\n",t1-t0,tf-t);
 
-  return timer<double>() - t;
+  return tf-t;
 }
 
 template double LassoPath<double>(size_t m, size_t n);
