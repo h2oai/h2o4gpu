@@ -14,7 +14,7 @@ int main() {
   printf("Solver Time: %e sec\n", t);
   */
 
-  double lmax=6;
+  double lmax=7;
   double lstep=0.1;
   double lm,ln;
   int m,n;
@@ -25,7 +25,9 @@ int main() {
       m = (int)round(pow(10,lm));
       n = (int)round(pow(10,ln));
       if(n<8) continue;
-  
+
+      if(n*m*4.0/1024.0/1024.0/1024.0>12.0) continue;
+
       printf("\nLasso: m=%d n=%d.\n",m,n);
       t = Lasso<real_t>(m, n);
       printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);

@@ -149,7 +149,6 @@
                 << __BLUE << __func__ << "\n" \
                 << __RED << "ERROR_CUDA: " << cudaGetErrorString(err) \
                 << __RESET << std::endl; \
-      exit(EXIT_FAILURE); \
     } \
   } while (0)
 #endif
