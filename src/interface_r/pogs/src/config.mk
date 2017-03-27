@@ -3,9 +3,9 @@ TARGET=gpu
 
 # set R_HOME, R_INC, and R_LIB to the the R install dir,
 # the R header dir, and the R shared library dir on your system
-R_HOME := $(shell R RHOME)
-R_INC := $(R_HOME)/include
-R_LIB := $(R_HOME)/lib
+R_LIBHOME := $(shell R RHOME)
+R_INC := $(shell R CMD config --cppflags)
+R_LIB := $(R_LIBHOME)/lib
 
 # replace these three lines with
 # CUDA_HOME := <path to your cuda install>
@@ -29,7 +29,7 @@ ifeq ($(OS), Darwin)
         DEVICEOPTS := -m64
     endif
     CUDA_LIB := $(CUDA_HOME)/lib64
-    R_FRAMEWORK := -F$(R_HOME)/.. -framework R
+    R_FRAMEWORK := -F$(R_LIBHOME)/.. -framework R
     RPATH := -rpath $(CUDA_LIB)
 endif
 
@@ -38,7 +38,7 @@ endif
 ################################################################################
 
 #compiler/preprocessor options
-HDR=-Iinclude -I"$(R_INC)"
+HDR=-Iinclude $(R_INC)
 
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DPOGS_SINGLE=0

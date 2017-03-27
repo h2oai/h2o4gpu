@@ -4,15 +4,19 @@
 # Bulid directory
 OBJDIR=build
 
+RLIBHOME := $(shell R RHOME)
+RINCLUDEHOME := $(shell R CMD config --cppflags)
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC #-DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  #-DDEBUG # -Wconversion
 
 # CUDA Flags
-CUXX=nvcc
-CUFLAGS=$(IFLAGS) -arch=sm_61 -Xcompiler -fPIC #-DDEBUG
+CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64
+CUFLAGS=$(IFLAGS) -arch=sm_61 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) #-DDEBUG
 
+# Load local (e.g. R) specific config
+include config.mk
 
 # POGS header files.
 POGS_HDR=\
