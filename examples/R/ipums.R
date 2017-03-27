@@ -16,6 +16,7 @@ file <- "/tmp/train.csv"
 
 if (FALSE) {
   ## DATA PREP
+  # created with 'head -n 4000001 ipums_2000-2015.csv > ipums_2000-2015_head4M.csv'
   f <- "~/ipums_2000-2015_head4M.csv"
   df <- fread(f)
   N <- nrow(df)
@@ -33,12 +34,14 @@ if (FALSE) {
   #  }
   #}
   df <- df[1:N,sapply(df, is.numeric), with=FALSE]
+  df <- df[,apply(df, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
   #df <- data.table(scale(as.data.frame(df)))
   fwrite(df, file)
   q()
 } else {
   df <- fread(file)
   N <- nrow(df)
+  summary(df)
 }
 H <- round(0.8*N)
 
@@ -50,10 +53,23 @@ train_y  <- as.numeric(as.vector(train[[response]]))
 valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
 valid_y  <- as.numeric(as.vector(valid[[response]]))
 
+
+## H2O used to compute the metrics
+h2o.init(nthreads=-1)
+df.hex <- h2o.importFile(file)
+summary(df.hex)
+train.hex <- df.hex[1:H,]
+valid.hex <- df.hex[(H+1):N,]
+if (family=="binomial") {
+  train.hex[[response]] <- as.factor(train.hex[[response]])
+  valid.hex[[response]] <- as.factor(valid.hex[[response]])
+}
+
+
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=c(0))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=c(0)) ## TODO: disable L1/L2 in the backend when passing lambda=0
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
@@ -95,22 +111,10 @@ if (glmnet) {
 
 ## H2O
 if (h2o) {
-
-	h2o.init(nthreads=-1)
-	df.hex <- h2o.importFile(file)
-	summary(df.hex)
-
-	train.hex <- df.hex[1:H,]
-	valid.hex <- df.hex[(H+1):N,]
-	if (family=="binomial") {
-	  train.hex[[response]] <- as.factor(train.hex[[response]])
-	  valid.hex[[response]] <- as.factor(valid.hex[[response]])
-	}
-
   s3 <- proc.time()
-  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda=0, solver="COORDINATE_DESCENT_NAIVE")
+  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda=0)
   e3 <- proc.time()
-  h2opreds <- h2o.predict(h2omodel2, valid.hex)
+  h2opreds <- h2o.predict(h2omodel, valid.hex)
   summary(h2opreds)
 
   print("H2O CPU ")
