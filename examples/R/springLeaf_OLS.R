@@ -66,7 +66,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=lambda)
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=lambda, params=list(max_iter=1))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
