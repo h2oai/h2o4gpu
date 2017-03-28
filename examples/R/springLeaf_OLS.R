@@ -5,7 +5,7 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-N<-10000  ## ok for accuracy tests
+#N<-10000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
@@ -122,3 +122,20 @@ if (h2o) {
     print(h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]])))
   }
 }
+
+#[1] "POGS GPU: "
+#   user  system elapsed 
+#  2.916   1.288   4.204 
+#  |======================================================================| 100%
+#[1] 0.4814968
+#
+#[1] "GLMNET CPU"
+#   user  system elapsed 
+#431.420   0.684 432.133 
+#  |======================================================================| 100%
+#[1] 0.3883085
+#
+#[1] "H2O CPU "
+#   user  system elapsed 
+#  2.236   0.116  55.697 
+#[1] 0.3890118
