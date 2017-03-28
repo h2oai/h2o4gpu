@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <random>
 #include <vector>
@@ -17,33 +18,14 @@ double Lasso(size_t m, size_t n) {
   std::vector<T> A(m * n);
   std::vector<T> b(m);
 
-  std::default_random_engine generator;
-  std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
-                                           static_cast<T>(1));
-  std::normal_distribution<T> n_dist(static_cast<T>(0),
-                                     static_cast<T>(1));
 
-  fprintf(stdout,"BEGIN FILL DATA\n");
-  double t0 = timer<double>();
-  for (unsigned int i = 0; i < m * n; ++i)
-    A[i] = n_dist(generator);
+  
+#include "readorgen.c"
 
-  std::vector<T> x_true(n);
-  for (unsigned int i = 0; i < n; ++i)
-    x_true[i] = u_dist(generator) < static_cast<T>(0.8)
-        ? static_cast<T>(0) : n_dist(generator) / static_cast<T>(std::sqrt(n));
 
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-  for (unsigned int i = 0; i < m; ++i)
-    for (unsigned int j = 0; j < n; ++j)
-      b[i] += A[i * n + j] * x_true[j];
-      // b[i] += A[i + j * m] * x_true[j];
-
-  for (unsigned int i = 0; i < m; ++i)
-    b[i] += static_cast<T>(0.5) * n_dist(generator);
-
+  ////////////////////
+  // set lambda for regularization
+  ////////////////////
   T lambda_max = static_cast<T>(0);
 #ifdef _OPENMP
 #pragma omp parallel for reduction(max : lambda_max)
@@ -56,6 +38,9 @@ double Lasso(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
+  ////////////////////
+  // setup pogs
+  ////////////////////
   pogs::MatrixDense<T> A_('r', m, n, A.data());
   pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
   std::vector<FunctionObj<T> > f;
@@ -67,7 +52,7 @@ double Lasso(size_t m, size_t n) {
 
   g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    g.emplace_back(kAbs, static_cast<T>(0.2) * lambda_max);
+    g.emplace_back(kZero, static_cast<T>(0.2) * lambda_max);
 
   fprintf(stdout,"END FILL DATA\n");
   
@@ -76,7 +61,12 @@ double Lasso(size_t m, size_t n) {
   double t = timer<double>();
 
 
+  ////////////////////
+  // Solve with pogs
+  ////////////////////
   fprintf(stdout,"BEGIN SOLVE\n");
+  pogs_data.SetAdaptiveRho(false); // trying
+  pogs_data.SetVerbose(4u);
   pogs_data.Solve(f, g);
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 0 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);

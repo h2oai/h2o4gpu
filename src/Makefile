@@ -12,7 +12,7 @@ CXX=g++
 CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  #-DDEBUG # -Wconversion
 
 # CUDA Flags
-CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64
+CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
 CUFLAGS=$(IFLAGS) -arch=sm_61 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) #-DDEBUG
 
 # Load local (e.g. R) specific config

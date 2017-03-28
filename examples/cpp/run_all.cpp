@@ -14,32 +14,21 @@ int main() {
   printf("Solver Time: %e sec\n", t);
   */
 
-  double lmax=7;
-  double lstep=0.1;
-  double lm,ln;
-  int m,n;
+  int m=2000000;
+  //  int n=212;
+  int n=213;
 
-  for(lm=0;lm<=lmax;lm+=lstep){
-    for(ln=0;ln<=lmax;ln+=lstep){
+  printf("\nLasso: m=%d n=%d.\n",m,n);
+  t = Lasso<real_t>(m, n);
+  printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
 
-      m = (int)round(pow(10,lm));
-      n = (int)round(pow(10,ln));
-      if(n<8) continue;
-
-      if(n*m*4.0/1024.0/1024.0/1024.0>12.0) continue;
-
-      printf("\nLasso: m=%d n=%d.\n",m,n);
-      t = Lasso<real_t>(m, n);
-      printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
-      
-      printf("\nLasso Path: m=%d n=%d.\n",m,n);
-      t = LassoPath<real_t>(m, n);
-      printf("LassoPath m=%d n=%d Solver Time: %e sec\n", m,n,t);
-      fflush(stdout);
-      fflush(stderr);
-    }
-  }
-
+  /*
+  printf("\nLasso Path: m=%d n=%d.\n",m,n);
+  t = LassoPath<real_t>(m, n);
+  printf("LassoPath m=%d n=%d Solver Time: %e sec\n", m,n,t);
+  fflush(stdout);
+  fflush(stderr);
+  */
 
   /*
   printf("\nLinear Program in Equality Form.\n");

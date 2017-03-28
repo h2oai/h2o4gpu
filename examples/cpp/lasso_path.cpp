@@ -45,29 +45,11 @@ double LassoPath(size_t m, size_t n) {
   std::vector<T> b(m);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
-  // Generate data
-  fprintf(stdout,"BEGIN FILL DATA\n");
-  double t0 = timer<double>();
-  std::default_random_engine generator;
-  std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
-                                           static_cast<T>(1));
-  std::normal_distribution<T> n_dist(static_cast<T>(0),
-                                     static_cast<T>(1));
 
-  for (unsigned int i = 0; i < m * n; ++i)
-    A[i] = n_dist(generator);
+#include "readorgen.c"
 
-  std::vector<T> x_true(n);
-  for (unsigned int i = 0; i < n; ++i)
-    x_true[i] = u_dist(generator) < 0.8 ? 0 : n_dist(generator) / n;
 
-  for (unsigned int i = 0; i < m; ++i) {
-    for (unsigned int j = 0; j < n; ++j)
-      b[i] += A[i * n + j] * x_true[j];
-      // b[i] += A[i + j * m] * x_true[j];
-    b[i] += static_cast<T>(0.5) * n_dist(generator);
-  }
-
+  
   T lambda_max = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
@@ -91,6 +73,10 @@ double LassoPath(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     g.emplace_back(kAbs);
 
+
+
+
+  
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
 
@@ -98,7 +84,7 @@ double LassoPath(size_t m, size_t n) {
   double t = timer<double>();
   for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
-        static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
+			 static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
 
     for (unsigned int i = 0; i < n; ++i)
       g[i].c = lambda;

@@ -1,4 +1,6 @@
 #include "pogs.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
@@ -69,6 +71,7 @@ int Pogs<T, M, P>::_Init() {
     return 1;
   _done_init = true;
 
+  PUSH_RANGE("Pogs.Init",1);
   size_t m = _A.Rows();
   size_t n = _A.Cols();
 
@@ -84,7 +87,7 @@ int Pogs<T, M, P>::_Init() {
   _A.Equil(_de, _de + m);
   _P.Init();
   CUDA_CHECK_ERR();
-
+  POP_RANGE;
   return 0;
 }
 
@@ -113,11 +116,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     _Init();
 
   // Extract values from pogs_data
+  PUSH_RANGE("Pogs.Extract",3);
   size_t m = _A.Rows();
   size_t n = _A.Cols();
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
+  POP_RANGE;
 
+  PUSH_RANGE("Pogs.Alloc",4);
   // Create cuBLAS handle.
   cublasHandle_t hdl;
   cublasCreate(&hdl);
@@ -144,7 +150,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
+  POP_RANGE;
 
+  PUSH_RANGE("Pogs.Scale",5);
   // Scale f and g to account for diagonal scaling e and d.
   thrust::transform(f_gpu.begin(), f_gpu.end(),
       thrust::device_pointer_cast(d.data), f_gpu.begin(),
@@ -153,7 +161,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       thrust::device_pointer_cast(e.data), g_gpu.begin(),
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   CUDA_CHECK_ERR();
+  POP_RANGE;
 
+  PUSH_RANGE("Pogs.Lambda",6);
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
     cml::vector_memcpy(&xtemp, _x);
@@ -172,7 +182,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&zt, &ztemp);
     CUDA_CHECK_ERR();
   }
+  POP_RANGE;
 
+  PUSH_RANGE("Pogs.Guess",7);
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
     // Alternating projections to satisfy 
@@ -196,6 +208,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     ASSERT(false);
   }
   _init_x = _init_lambda = false;
+  POP_RANGE;
 
   // Save initialization time.
   double time_init = timer<double>() - t0;
@@ -223,15 +236,23 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
 
   for (;; ++k) {
+#ifdef USE_NVTX
+    char mystring[100];
+    sprintf(mystring,"Pogs.%d",k);
+    PUSH_RANGE(mystring,8);
+#endif
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
+    PUSH_RANGE("Pogs.axpy",9);
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     ProxEval(g_gpu, _rho, x.data, x12.data);
     ProxEval(f_gpu, _rho, y.data, y12.data);
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     // Compute gap, optval, and tolerances.
+    PUSH_RANGE("Pogs.gapoptvaltol",9);
     cml::blas_axpy(hdl, -kOne, &z12, &z);
     cml::blas_dot(hdl, &z, &z12, &gap);
     gap = std::abs(gap);
@@ -240,21 +261,27 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
     eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     // Apply over relaxation.
+    PUSH_RANGE("Pogs.orelax",9);
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     // Project onto y = Ax.
+    PUSH_RANGE("Pogs.project",9);
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     // Calculate residuals.
+    PUSH_RANGE("Pogs.resid",9);
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
@@ -283,11 +310,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       }
     }
     CUDA_CHECK_ERR();
+    POP_RANGE;
+
 
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
-    if (_verbose > 2 && k % 10  == 0 ||
+    if (_verbose > 3 && k % 1  == 0 ||
+        _verbose > 2 && k % 10  == 0 ||
         _verbose > 1 && k % 100 == 0 ||
         _verbose > 1 && converged) {
       T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
@@ -302,13 +332,16 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
     // Update dual variable.
+    PUSH_RANGE("Pogs.update",9);
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     // Rescale rho.
     if (_adaptive_rho) {
+      PUSH_RANGE("Pogs.rescalerho",9);
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         if (_rho < kRhoMax) {
@@ -335,8 +368,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         delta = kDeltaMin;
       }
       CUDA_CHECK_ERR();
-    }
-  }
+      POP_RANGE;
+    } // end adaptive_rho
+    POP_RANGE; // pop at end of loop iteration
+  }// end for loop in k
 
   // Get optimal value
   _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
@@ -374,6 +409,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
 
   // Scale x, y, lambda and mu for output.
+  PUSH_RANGE("Scale",8);
   cml::vector_memcpy(&ztemp, &zt);
   cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
   cml::blas_axpy(hdl, kOne, &z12, &ztemp);
@@ -383,8 +419,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
+  POP_RANGE;
 
   // Copy results to output.
+  PUSH_RANGE("Copy",8);
   cml::vector_memcpy(_x, &x12);
   cml::vector_memcpy(_y, &y12);
   cml::vector_memcpy(_mu, &xtemp);
@@ -399,6 +437,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&ztemp);
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
+  POP_RANGE;
 
   return status;
 }
