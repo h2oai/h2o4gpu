@@ -19,10 +19,12 @@ h2o   <-TRUE
 alpha <- 1 ## Lasso
 lambda <- c(0) ## no regularization
 
+file <- paste0("/tmp/train.",N,".csv")
+if (FALSE) {
 ## DATA PREP
-DT <- fread(f, nrows=N)
+  DT <- fread(f, nrows=N)
 
-DT[['ID']] <- NULL ## ignore ID
+  DT[['ID']] <- NULL ## ignore ID
 
 ## label encoding
 #feature.names <- setdiff(names(DT), response)
@@ -32,16 +34,19 @@ DT[['ID']] <- NULL ## ignore ID
 #    DT[[f]] <- as.integer(factor(DT[[f]], levels=levels))
 #  }
 #}
-DT[is.na(DT)] <- 0
-DT <- DT[,sapply(DT, is.numeric), with=FALSE]
-DT <- DT[,apply(DT, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
-cols <- setdiff(names(DT),c(response))
-for (c in cols) {
-  DT[,(c):=scale(DT[[c]])]
-}
+  DT[is.na(DT)] <- 0
+  DT <- DT[,sapply(DT, is.numeric), with=FALSE]
+  DT <- DT[,apply(DT, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
+  cols <- setdiff(names(DT),c(response))
+  for (c in cols) {
+    DT[,(c):=scale(DT[[c]])]
+  }
 
-file <- paste0("/tmp/train.",N,".csv")
-fwrite(DT, file)
+  fwrite(DT, file)
+} else {
+  DT <- fread(file)
+  cols <- setdiff(names(DT),c(response))
+}
 
 h2o.init(nthreads=-1)
 df.hex <- h2o.importFile(file)
