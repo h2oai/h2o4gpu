@@ -1,4 +1,5 @@
 #define USE_NVTX 1
+//#undef USE_NVTX
 
 #ifdef USE_NVTX
 #include "nvToolsExt.h"

@@ -31,6 +31,10 @@ gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
+all: gpu
+
+default: gpu
+
 clean:
 	rm -f *.o *~ *~ run
 	rm -rf *.dSYM

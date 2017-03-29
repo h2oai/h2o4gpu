@@ -128,12 +128,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   }
 
   // Solve.
-  PUSH_RANGE("Pogs.Solve",1);
+  PUSH_RANGE("Solve",1);
   info->status = pogs_data.Solve(*f, *g);
   POP_RANGE;
   
   // Retrieve solver output & state
-  PUSH_RANGE("Pogs.Get",2);
+  PUSH_RANGE("Get",2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -168,12 +168,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   }
 
   // Solve.
-  PUSH_RANGE("Pogs.Solve",1);
+  PUSH_RANGE("Solve",1);
   info->status = pogs_data.Solve(*f, *g);
   POP_RANGE;
 
   // Retrieve solver output & state
-  PUSH_RANGE("Pogs.Get",2);
+  PUSH_RANGE("Get",2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -208,12 +208,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   }
 
   // Solve.
-  PUSH_RANGE("Pogs.Solve",1);
+  PUSH_RANGE("Solve",1);
   info->status = pogs_data.Solve(*f, *g);
   POP_RANGE;
 
   // Retrieve solver output & state
-  PUSH_RANGE("Pogs.Get",2);
+  PUSH_RANGE("Get",2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -248,12 +248,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   }
 
   // Solve.
-  PUSH_RANGE("Pogs.Solve",1);
+  PUSH_RANGE("Solve",1);
   info->status = pogs_data.Solve(*f, *g);
   POP_RANGE;
 
   // Retrieve solver output & state
-  PUSH_RANGE("Pogs.Get",1);
+  PUSH_RANGE("Get",1);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();

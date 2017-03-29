@@ -71,7 +71,7 @@ int Pogs<T, M, P>::_Init() {
     return 1;
   _done_init = true;
 
-  PUSH_RANGE("Pogs.Init",1);
+  PUSH_RANGE("Init",1);
   size_t m = _A.Rows();
   size_t n = _A.Cols();
 
@@ -116,14 +116,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     _Init();
 
   // Extract values from pogs_data
-  PUSH_RANGE("Pogs.Extract",3);
+  PUSH_RANGE("Extract",3);
   size_t m = _A.Rows();
   size_t n = _A.Cols();
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
   POP_RANGE;
 
-  PUSH_RANGE("Pogs.Alloc",4);
+  PUSH_RANGE("Alloc",4);
   // Create cuBLAS handle.
   cublasHandle_t hdl;
   cublasCreate(&hdl);
@@ -152,7 +152,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   CUDA_CHECK_ERR();
   POP_RANGE;
 
-  PUSH_RANGE("Pogs.Scale",5);
+  PUSH_RANGE("Scale",5);
   // Scale f and g to account for diagonal scaling e and d.
   thrust::transform(f_gpu.begin(), f_gpu.end(),
       thrust::device_pointer_cast(d.data), f_gpu.begin(),
@@ -163,7 +163,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   CUDA_CHECK_ERR();
   POP_RANGE;
 
-  PUSH_RANGE("Pogs.Lambda",6);
+  PUSH_RANGE("Lambda",6);
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
     cml::vector_memcpy(&xtemp, _x);
@@ -184,7 +184,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
   POP_RANGE;
 
-  PUSH_RANGE("Pogs.Guess",7);
+  PUSH_RANGE("Guess",7);
   // Make an initial guess for (x0 or lambda0).
   if (_init_x && !_init_lambda) {
     // Alternating projections to satisfy 
@@ -238,13 +238,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   for (;; ++k) {
 #ifdef USE_NVTX
     char mystring[100];
-    sprintf(mystring,"Pogs.%d",k);
+    sprintf(mystring,"S%d",k);
     PUSH_RANGE(mystring,8);
 #endif
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
-    PUSH_RANGE("Pogs.axpy",9);
+    PUSH_RANGE("axpy",9);
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     ProxEval(g_gpu, _rho, x.data, x12.data);
     ProxEval(f_gpu, _rho, y.data, y12.data);
@@ -252,7 +252,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     POP_RANGE;
 
     // Compute gap, optval, and tolerances.
-    PUSH_RANGE("Pogs.gapoptvaltol",9);
+    PUSH_RANGE("gapoptvaltol",9);
     cml::blas_axpy(hdl, -kOne, &z12, &z);
     cml::blas_dot(hdl, &z, &z12, &gap);
     gap = std::abs(gap);
@@ -264,7 +264,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     POP_RANGE;
 
     // Apply over relaxation.
-    PUSH_RANGE("Pogs.orelax",9);
+    PUSH_RANGE("orelax",9);
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &ztemp);
@@ -272,7 +272,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     POP_RANGE;
 
     // Project onto y = Ax.
-    PUSH_RANGE("Pogs.project",9);
+    PUSH_RANGE("project",9);
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
@@ -281,7 +281,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     POP_RANGE;
 
     // Calculate residuals.
-    PUSH_RANGE("Pogs.resid",9);
+    PUSH_RANGE("resid",9);
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
     cudaDeviceSynchronize();
@@ -332,7 +332,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
     // Update dual variable.
-    PUSH_RANGE("Pogs.update",9);
+    PUSH_RANGE("update",9);
     cml::blas_axpy(hdl, kAlpha, &z12, &zt);
     cml::blas_axpy(hdl, kOne - kAlpha, &zprev, &zt);
     cml::blas_axpy(hdl, -kOne, &z, &zt);
@@ -341,7 +341,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Rescale rho.
     if (_adaptive_rho) {
-      PUSH_RANGE("Pogs.rescalerho",9);
+      PUSH_RANGE("rescalerho",9);
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {
         if (_rho < kRhoMax) {
