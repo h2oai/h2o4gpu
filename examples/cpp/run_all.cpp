@@ -14,7 +14,7 @@ int main() {
   printf("Solver Time: %e sec\n", t);
   */
 
-  int m=2000000;
+  int m=450001;
   //  int n=212;
   int n=213;
 

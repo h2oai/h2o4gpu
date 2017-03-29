@@ -65,8 +65,8 @@ double Lasso(size_t m, size_t n) {
   // Solve with pogs
   ////////////////////
   fprintf(stdout,"BEGIN SOLVE\n");
-  pogs_data.SetAdaptiveRho(false); // trying
-  pogs_data.SetMaxIter(5u);
+  //  pogs_data.SetAdaptiveRho(false); // trying
+  //  pogs_data.SetMaxIter(5u);
 #ifdef __CUDACC__
   //  cudaProfilerStart();
 #endif
