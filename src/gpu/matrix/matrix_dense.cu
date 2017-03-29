@@ -158,7 +158,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
         AbsF<T>());
   }
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
   // If numel(A) is not a multiple of 8, then we need to set the last couple
@@ -171,13 +171,13 @@ int MatrixDense<T>::Equil(T *d, T *e) {
       __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
           num_el - num_chars * 8, AbsF<T>());
     }
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
 
   // Perform Sinkhorn-Knopp equilibration.
   SinkhornKnopp(this, d, e);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
@@ -188,7 +188,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
         IdentityF<T>());
   }
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
   // Deal with last few entries if num_el is not a multiple of 8.
@@ -200,7 +200,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
       __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
           num_el - num_chars * 8, IdentityF<T>());
     }
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
 
@@ -212,29 +212,29 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     thrust::transform(thrust::device_pointer_cast(e),
         thrust::device_pointer_cast(e + this->_n),
         thrust::device_pointer_cast(e), SqrtF<T>());
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
 
   // Compute A := D * A * E.
   MultDiag(d, e, this->_m, this->_n, _ord, _data);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
   // Scale A to have norm of 1 (in the kNormNormalize norm).
   T normA = NormEst(hdl, kNormNormalize, *this);
   CUDA_CHECK_ERR();
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   cml::vector<T> a_vec = cml::vector_view_array(_data, num_el);
   cml::vector_scale(&a_vec, 1 / normA);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
 
   // Scale d and e to account for normalization of A.
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
   cml::vector_scale(&d_vec, 1 / sqrt(normA));
   cml::vector_scale(&e_vec, 1 / sqrt(normA));
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
 
   DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
       cml::blas_nrm2(hdl, &d_vec), cml::blas_nrm2(hdl, &e_vec));

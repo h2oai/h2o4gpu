@@ -13,9 +13,15 @@
 
 #include "cml/cml_defs.cuh"
 
+#ifdef CUDCHECKERR
 #define CudaCheckError(val) cml::__CudaCE((val), __func__, __FILE__, __LINE__)
 #define CublasCheckError(val) cml::__CublasCE((val), __func__, __FILE__, __LINE__)
 #define CusparseCheckError(val) cml::__CuspCE((val), __func__, __FILE__, __LINE__)
+#else
+#define CudaCheckError(val)
+#define CublasCheckError(val)
+#define CusparseCheckError(val)
+#endif
 
 namespace cml {
 

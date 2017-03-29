@@ -179,7 +179,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&xtemp, _x);
     cml::vector_div(&xtemp, &e);
     _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
     cml::vector_memcpy(&z, &ztemp);
     CUDA_CHECK_ERR();
   }
@@ -187,7 +187,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&ytemp, _lambda);
     cml::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
     cml::blas_scal(hdl, -kOne / _rho, &ztemp);
     cml::vector_memcpy(&zt, &ztemp);
     CUDA_CHECK_ERR();
@@ -206,7 +206,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
       _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data,
           kProjTolIni);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize(); // not needed, as blas's are cuda call and will follow sequentially on device
       CUDA_CHECK_ERR();
       cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);
       cml::blas_scal(hdl, -kOne, &zprev);
@@ -286,7 +286,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     CUDA_CHECK_ERR();
     POP_RANGE("project",9);
 
@@ -294,12 +294,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     PUSH_RANGE("resid",9);
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
 
     cml::vector_memcpy(&ztemp, &z12);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     nrm_r = cml::blas_nrm2(hdl, &ztemp);
 
     // Calculate exact residuals only if necessary.
@@ -307,14 +307,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     if ((nrm_r < eps_pri && nrm_s < eps_dua) || use_exact_stop) {
       cml::vector_memcpy(&ztemp, &z12);
       _A.Mul('n', kOne, x12.data, -kOne, ytemp.data);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
       nrm_r = cml::blas_nrm2(hdl, &ytemp);
       if ((nrm_r < eps_pri) || use_exact_stop) {
         cml::vector_memcpy(&ztemp, &z12);
         cml::blas_axpy(hdl, kOne, &zt, &ztemp);
         cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
         _A.Mul('t', kOne, ytemp.data, kOne, xtemp.data);
-        cudaDeviceSynchronize();
+        wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
         nrm_s = _rho * cml::blas_nrm2(hdl, &xtemp);
         exact = true;
       }

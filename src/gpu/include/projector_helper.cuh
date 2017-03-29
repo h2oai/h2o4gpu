@@ -25,7 +25,7 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   cml::vector_memcpy(&x_, x);
   cml::vector_memcpy(&y_, y);
   A->Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   T nrm_r = cml::blas_nrm2(hdl, &y_)  / std::sqrt(A->Rows());
   DEBUG_EXPECT_EQ_EPS(nrm_r, static_cast<T>(0.), tol);
 
@@ -34,9 +34,9 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   cml::vector_memcpy(&y_, y0);
   const cml::vector<T> x0_vec = cml::vector_view_array(x0, A->Cols());
   A->Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   A->Mul('t', static_cast<T>(1.), y_.data, s, x_.data);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
   cml::blas_axpy(hdl, -s, &x0_vec, &x_);
   T nrm_kkt = cml::blas_nrm2(hdl, &x_) / std::sqrt(A->Cols());
   DEBUG_EXPECT_EQ_EPS(nrm_kkt, static_cast<T>(0.), tol);

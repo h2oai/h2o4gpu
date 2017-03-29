@@ -165,13 +165,13 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();
       POP_RANGE("P4a",1);
 
       PUSH_RANGE("P4b",1);
       cml::linalg_cholesky_decomp(hdl, &L);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();
       POP_RANGE("P4b",1);
     }
@@ -203,7 +203,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
       POP_RANGE("P5d",1);
     }
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   } else {
     PUSH_RANGE("P6a",1);
@@ -226,12 +226,12 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize();
       CUDA_CHECK_ERR();
       POP_RANGE("P7a",1);
       PUSH_RANGE("P7b",1);
       cml::linalg_cholesky_decomp(hdl, &L);
-      cudaDeviceSynchronize();
+      wrapcudaDeviceSynchronize();
       CUDA_CHECK_ERR();
       POP_RANGE("P7b",1);
     }
@@ -263,7 +263,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
       POP_RANGE("P8d",1);
     }
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
 
@@ -272,7 +272,8 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   CheckProjection(&_A, x0, y0, x, y, s,
       static_cast<T>(1e3) * std::numeric_limits<T>::epsilon());
 #endif
-
+  cudaDeviceSynchronize(); // added
+  
   info->s = s;
   return 0;
 }

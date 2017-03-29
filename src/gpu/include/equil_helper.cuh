@@ -111,7 +111,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
   cml::vector<T> x = cml::vector_alloc<T>(A->Cols());
   cml::vector<T> Sx = cml::vector_alloc<T>(A->Rows());
   cml::rand(x.data, x.size);
-  cudaDeviceSynchronize();
+  wrapcudaDeviceSynchronize();
 
   unsigned int i = 0;
   for (i = 0; i < kNormEstMaxIter; ++i) {
@@ -122,9 +122,9 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
 #endif
     norm_est_last = norm_est;
     A->Mul('n', static_cast<T>(1.), x.data, static_cast<T>(0.), Sx.data);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     A->Mul('t', static_cast<T>(1.), Sx.data, static_cast<T>(0.), x.data);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     T normx = cml::blas_nrm2(hdl, &x);
     T normSx = cml::blas_nrm2(hdl, &Sx);
     cml::vector_scale(&x, 1 / normx);
@@ -158,28 +158,28 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
 #endif
     // e := 1 ./ (A' * d).
     A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     cml::vector_add_constant(&e_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Rows());
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(e),
         thrust::device_pointer_cast(e + e_vec.size),
         thrust::device_pointer_cast(e), ReciprF<T>(A->Rows()));
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 
     // d := 1 ./ (A' * e).
     A->Mul('n', static_cast<T>(1.), e, static_cast<T>(0.), d);
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     cml::vector_add_constant(&d_vec,
         static_cast<T>(kSinkhornConst) * (A->Rows() + A->Cols()) / A->Cols());
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     thrust::transform(thrust::device_pointer_cast(d),
         thrust::device_pointer_cast(d + d_vec.size),
         thrust::device_pointer_cast(d), ReciprF<T>(A->Cols()));
-    cudaDeviceSynchronize();
+    wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     POP_RANGE(mystring,8);
   }

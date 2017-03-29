@@ -142,7 +142,11 @@
 
 #ifdef __CUDACC__
 #ifdef CUDCHECKERR
+
+#define wrapcudaDeviceSynchronize() cudaDeviceSynchronize()
+
 #define CUDA_CHECK_ERR() \
+  cudaDeviceSynchronize(); // synch first to get status *right now* for debugging purposes
   do { \
     cudaError_t err = cudaGetLastError(); \
     if (err != cudaSuccess) { \
@@ -153,6 +157,7 @@
     } \
   } while (0)
 #else
+#define wrapcudaDeviceSynchronize()
 #define CUDA_CHECK_ERR()
 #endif
 #endif
