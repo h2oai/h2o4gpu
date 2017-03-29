@@ -102,20 +102,21 @@ template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
   double t0 = timer<double>();
+  // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
   // Constants for adaptive-rho and over-relaxation.
-  const T kDeltaMin   = static_cast<T>(1.05);
-  const T kGamma      = static_cast<T>(1.01);
-  const T kTau        = static_cast<T>(0.8);
-  const T kAlpha      = static_cast<T>(1.7);
-  const T kRhoMin     = static_cast<T>(1e-4);
-  const T kRhoMax     = static_cast<T>(1e4);
-  const T kKappa      = static_cast<T>(0.4);
-  const T kOne        = static_cast<T>(1.0);
-  const T kZero       = static_cast<T>(0.0);
-  const T kProjTolMax = static_cast<T>(1e-8);
-  const T kProjTolMin = static_cast<T>(1e-2);
-  const T kProjTolPow = static_cast<T>(1.3);
-  const T kProjTolIni = static_cast<T>(1e-5);
+  const T kDeltaMin   = static_cast<T>(1.05); // for adaptive rho and rescaling
+  const T kGamma      = static_cast<T>(1.01); // for adaptive rho and rescaling
+  const T kTau        = static_cast<T>(0.8); // for adaptive rho and rescaling
+  const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
+  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
+  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
+  const T kKappa      = static_cast<T>(0.4); // for adaptive rho and rescaling
+  const T kOne        = static_cast<T>(1.0); // definition
+  const T kZero       = static_cast<T>(0.0); // definition
+  const T kProjTolMax = static_cast<T>(1e-8); // Projection tolerance
+  const T kProjTolMin = static_cast<T>(1e-2); // Projection tolerance
+  const T kProjTolPow = static_cast<T>(1.3); // Projection tolerance
+  const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
   bool use_exact_stop = true;
 
   // Initialize Projector P and Matrix A.
@@ -232,7 +233,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   }
   if (_verbose > 1) {
     Printf(__HBAR__
-        " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
+        " Iter | pri res    | pri tol | dua res    | dua tol |   gap      | eps gap |"
         " pri obj\n" __HBAR__);
   }
 
@@ -273,7 +274,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("gapoptvaltol",9);
 
-    // Apply over relaxation.
+    // Apply over relaxation  (optional, can set kAlpha to 1 to disable)
+    // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.3
     PUSH_RANGE("orelax",9);
     cml::vector_memcpy(&ztemp, &zt);
     cml::blas_axpy(hdl, kAlpha, &z12, &ztemp);
@@ -331,7 +333,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         _verbose > 1 && k % 100 == 0 ||
         _verbose > 1 && converged) {
       T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
-      Printf("%5d : %.2e  %.2e  %.2e  %.2e  %.2e  %.2e % .2e\n",
+      Printf("%5d : %.2e <? %.2e  %.2e  <? %.2e  %.2e  <? %.2e % .2e\n",
           k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
     }
 
@@ -349,7 +351,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("update",9);
 
-    // Rescale rho.
+    // Rescale rho (optional)
+    // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.1
     if (_adaptive_rho) {
       PUSH_RANGE("rescalerho",9);
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
@@ -380,6 +383,16 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       CUDA_CHECK_ERR();
       POP_RANGE("rescalerho",9);
     } // end adaptive_rho
+    else{
+      if(0==1){// not adaptive or statically adaptive for testing
+        if(k>60){
+          _rho = 1.0 + 3.375286e+02*(double)((double)(k-60.0)/(128.0-60.0));
+        }
+        else _rho = 1.0;
+        if (_verbose > 3)
+          Printf("- rho %e\n", _rho);
+      }
+    }
     POP_RANGE(mystring,8); // pop at end of loop iteration
   }// end for loop in k
 
@@ -409,13 +422,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     Printf(__HBAR__
         "Error Metrics:\n"
         "Pri: "
-        "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e\n"
+        "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e (goal: %0.2e)\n"
         "Dua: "
-        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e\n"
+        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e (goal: %0.2e)\n"
         "Gap: "
-        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e\n"
-        __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
-        _rel_tol * gap / eps_gap);
+        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e (goal: %0.2e)\n"
+           __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol, _rel_tol * nrm_s / eps_dua, _rel_tol,
+           _rel_tol * gap / eps_gap,_rel_tol);
   }
 
   // Scale x, y, lambda and mu for output.
