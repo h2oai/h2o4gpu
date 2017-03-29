@@ -11,6 +11,8 @@
 #include "projector_helper.cuh"
 #include "util.h"
 
+#include "pogs.h"
+
 namespace pogs {
 
 namespace {
@@ -70,32 +72,46 @@ int ProjectorDirect<T, M>::Init() {
 
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 
+  PUSH_RANGE("AA0",1);
   cudaMalloc(&(info->AA), min_dim * min_dim * sizeof(T));
   cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
   cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
   cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
   CUDA_CHECK_ERR();
+  POP_RANGE;
 
   cublasOperation_t op_type = _A.Rows() > _A.Cols()
       ? CUBLAS_OP_T : CUBLAS_OP_N;
 
   // Compute AA
   if (_A.Order() == MatrixDense<T>::ROW) {
+    PUSH_RANGE("AA1",1);
     const cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    POP_RANGE;
+    PUSH_RANGE("AA2",1);
     cml::matrix<T, CblasRowMajor> AA = cml::matrix_view_array<T, CblasRowMajor>
         (info->AA, min_dim, min_dim);
+    POP_RANGE;
+    PUSH_RANGE("AA3",1);
     cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
+    POP_RANGE;
   } else {
+    PUSH_RANGE("AA1",1);
     const cml::matrix<T, CblasColMajor> A =
         cml::matrix_view_array<T, CblasColMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    POP_RANGE;
+    PUSH_RANGE("AA2",1);
     cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
         (info->AA, min_dim, min_dim);
+    POP_RANGE;
+    PUSH_RANGE("AA3",1);
     cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
+    POP_RANGE;
   }
   CUDA_CHECK_ERR();
 
@@ -113,6 +129,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
 
+  PUSH_RANGE("P0",1);
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 
   // Set up views for raw vectors.
@@ -125,76 +142,126 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   cml::vector_memcpy(&x_vec, &x0_vec);
   cml::vector_memcpy(&y_vec, &y0_vec);
   CUDA_CHECK_ERR();
+  POP_RANGE;
 
   if (_A.Order() == MatrixDense<T>::ROW) {
+    PUSH_RANGE("P1",1);
     const cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    POP_RANGE;
+    PUSH_RANGE("P2",1);
     cml::matrix<T, CblasRowMajor> AA = cml::matrix_view_array<T, CblasRowMajor>
         (info->AA, min_dim, min_dim);
+    POP_RANGE;
+    PUSH_RANGE("P3",1);
     cml::matrix<T, CblasRowMajor> L = cml::matrix_view_array<T, CblasRowMajor>
         (info->L, min_dim, min_dim);
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     if (s != info->s) {
+      PUSH_RANGE("P4a",1);
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
+      POP_RANGE;
+
+      PUSH_RANGE("P4b",1);
       cml::linalg_cholesky_decomp(hdl, &L);
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
+      POP_RANGE;
     }
     if (_A.Rows() > _A.Cols()) {
+      PUSH_RANGE("P5a",1);
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P5b",1);
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P5c",1);
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
+      POP_RANGE;
     } else {
+      PUSH_RANGE("P5a",1);
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(-1.), &y_vec);
+      POP_RANGE;
+      PUSH_RANGE("P5a",1);
       cml::linalg_cholesky_svx(hdl, &L, &y_vec);
+      POP_RANGE;
+      PUSH_RANGE("P5a",1);
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P5a",1);
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
+      POP_RANGE;
     }
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   } else {
+    PUSH_RANGE("P6a",1);
     const cml::matrix<T, CblasColMajor> A =
         cml::matrix_view_array<T, CblasColMajor>
         (_A.Data(), _A.Rows(), _A.Cols());
+    POP_RANGE;
+    PUSH_RANGE("P6b",1);
     cml::matrix<T, CblasColMajor> AA = cml::matrix_view_array<T, CblasColMajor>
         (info->AA, min_dim, min_dim);
+    POP_RANGE;
+    PUSH_RANGE("P6c",1);
     cml::matrix<T, CblasColMajor> L = cml::matrix_view_array<T, CblasColMajor>
         (info->L, min_dim, min_dim);
     CUDA_CHECK_ERR();
+    POP_RANGE;
 
     if (s != info->s) {
+      PUSH_RANGE("P7a",1);
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L);
       cml::vector_add_constant(&diagL, s);
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
+      POP_RANGE;
+      PUSH_RANGE("P7b",1);
       cml::linalg_cholesky_decomp(hdl, &L);
       cudaDeviceSynchronize();
       CUDA_CHECK_ERR();
+      POP_RANGE;
     }
     if (_A.Rows() > _A.Cols()) {
+      PUSH_RANGE("P8a",1);
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P8b",1);
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P8c",1);
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
+      POP_RANGE;
     } else {
+      PUSH_RANGE("P8a",1);
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(-1.), &y_vec);
+      POP_RANGE;
+      PUSH_RANGE("P8b",1);
       cml::linalg_cholesky_svx(hdl, &L, &y_vec);
+      POP_RANGE;
+      PUSH_RANGE("P8c",1);
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(-1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
+      POP_RANGE;
+      PUSH_RANGE("P8d",1);
       cml::blas_axpy(hdl, static_cast<T>(1.), &y0_vec, &y_vec);
+      POP_RANGE;
     }
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();

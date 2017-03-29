@@ -71,7 +71,7 @@ int Pogs<T, M, P>::_Init() {
     return 1;
   _done_init = true;
 
-  PUSH_RANGE("Init",1);
+  PUSH_RANGE("Malloc",1);
   size_t m = _A.Rows();
   size_t n = _A.Cols();
 
@@ -82,12 +82,19 @@ int Pogs<T, M, P>::_Init() {
   cudaMemset(_z, 0, (m + n) * sizeof(T));
   cudaMemset(_zt, 0, (m + n) * sizeof(T));
   CUDA_CHECK_ERR();
-
+ 
   _A.Init();
+  POP_RANGE;
+
+  PUSH_RANGE("Eq",1);
   _A.Equil(_de, _de + m);
+  POP_RANGE;
+
+  PUSH_RANGE("Init",1);
   _P.Init();
   CUDA_CHECK_ERR();
   POP_RANGE;
+
   return 0;
 }
 
@@ -112,8 +119,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   bool use_exact_stop = true;
 
   // Initialize Projector P and Matrix A.
-  if (!_done_init)
+  if (!_done_init){
+    PUSH_RANGE("Init",1);
     _Init();
+    POP_RANGE;
+    }
 
   // Extract values from pogs_data
   PUSH_RANGE("Extract",3);
