@@ -9,7 +9,7 @@ CXX=g++
 CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -I$(CUDA_HOME)/include -DUSE_NVTX=1
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -I$(CUDA_HOME)/include -DUSE_NVTX=1 #-DCUDCHECKERR
 
 # Check System Args.
 UNAME = $(shell uname -s)

@@ -141,6 +141,7 @@
   } while (0)
 
 #ifdef __CUDACC__
+#ifdef CUDCHECKERR
 #define CUDA_CHECK_ERR() \
   do { \
     cudaError_t err = cudaGetLastError(); \
@@ -151,6 +152,9 @@
                 << __RESET << std::endl; \
     } \
   } while (0)
+#else
+#define CUDA_CHECK_ERR()
+#endif
 #endif
 
 #define EXPECT(statement) \
