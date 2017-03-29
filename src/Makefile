@@ -13,7 +13,7 @@ CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  #-DDE
 
 # CUDA Flags
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -arch=sm_61 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) #-DDEBUG
+CUFLAGS=$(IFLAGS) -gencode arch=compute_20,code=sm_20 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) -DUSE_NVTX=1 #-DDEBUG
 
 # Load local (e.g. R) specific config
 include config.mk
@@ -82,6 +82,9 @@ GPU_OBJ=$(OBJDIR)/gpu/pogs.o
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
+all: default
+
+default: clean gpu
 
 # Build all
 cpu: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)

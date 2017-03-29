@@ -9,7 +9,7 @@ CXX=g++
 CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -I$(CUDA_HOME)/include
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -I$(CUDA_HOME)/include -DUSE_NVTX=1
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -21,6 +21,10 @@ LDFLAGS=-lm -lblas
 CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
+all: gpu
+
+default: gpu
+
 # CPU
 cpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
@@ -31,9 +35,6 @@ gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
-all: gpu
-
-default: gpu
 
 clean:
 	rm -f *.o *~ *~ run

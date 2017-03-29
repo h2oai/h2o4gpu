@@ -1,4 +1,4 @@
-#define USE_NVTX 1
+//#define USE_NVTX 1
 //#undef USE_NVTX
 
 #ifdef USE_NVTX
@@ -19,10 +19,10 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
     eventAttrib.message.ascii = name; \
     nvtxRangePushEx(&eventAttrib); \
   }
-#define POP_RANGE nvtxRangePop();
+#define POP_RANGE(name,cid) nvtxRangePop();
 #else
 #define PUSH_RANGE(name,cid)
-#define POP_RANGE
+#define POP_RANGE(name,cid)
 #endif
 
 
