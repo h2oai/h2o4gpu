@@ -9,12 +9,15 @@
 #include "matrix/matrix.h"
 #include "util.h"
 
+#include "pogs.h"
+
 namespace pogs {
 namespace {
 
 // Different norm types.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 
+// HARDCODED: Constants
 // TODO: Figure out a better value for this constant
 const double kSinkhornConst        = 1e-8;
 const double kNormEstTol           = 1e-3;
@@ -112,6 +115,11 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
 
   unsigned int i = 0;
   for (i = 0; i < kNormEstMaxIter; ++i) {
+#ifdef USE_NVTX
+    char mystring[100];
+    sprintf(mystring,"No%d",i);
+    PUSH_RANGE(mystring,8);
+#endif
     norm_est_last = norm_est;
     A->Mul('n', static_cast<T>(1.), x.data, static_cast<T>(0.), Sx.data);
     cudaDeviceSynchronize();
@@ -123,6 +131,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
     norm_est = normx / normSx;
     if (abs(norm_est_last - norm_est) < kTol * norm_est)
       break;
+    POP_RANGE(mystring,8);
   }
   DEBUG_EXPECT_LT(i, kNormEstMaxIter);
 
@@ -142,6 +151,11 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
   cml::vector_set_all(&e_vec, static_cast<T>(1.));
 
   for (unsigned int k = 0; k < kEquilIter; ++k) {
+#ifdef USE_NVTX
+    char mystring[100];
+    sprintf(mystring,"Eq%d",k);
+    PUSH_RANGE(mystring,8);
+#endif
     // e := 1 ./ (A' * d).
     A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
     cudaDeviceSynchronize();
@@ -167,6 +181,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
         thrust::device_pointer_cast(d), ReciprF<T>(A->Cols()));
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
+    POP_RANGE(mystring,8);
   }
 }
 

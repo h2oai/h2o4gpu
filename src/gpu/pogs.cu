@@ -90,10 +90,10 @@ int Pogs<T, M, P>::_Init() {
   _A.Equil(_de, _de + m);
   POP_RANGE("Eq",1);
 
-  PUSH_RANGE("Init",1);
+//  PUSH_RANGE("Init1",1);
   _P.Init();
   CUDA_CHECK_ERR();
-  POP_RANGE("Init",1);
+//  POP_RANGE("Init1",1);
 
   return 0;
 }
@@ -120,9 +120,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Initialize Projector P and Matrix A.
   if (!_done_init){
-    PUSH_RANGE("Init",1);
+//    PUSH_RANGE("Init2",1);
     _Init();
-    POP_RANGE("Init",1);
+//    POP_RANGE("Init2",1);
     }
 
   // Extract values from pogs_data
