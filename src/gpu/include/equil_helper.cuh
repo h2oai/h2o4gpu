@@ -17,7 +17,6 @@ namespace {
 // Different norm types.
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 
-// HARDCODED: Constants
 // TODO: Figure out a better value for this constant
 const double kSinkhornConst        = 1e-8;
 const double kNormEstTol           = 1e-3;
@@ -182,6 +181,11 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
     POP_RANGE(mystring,8);
+
+    // TODO: Need check to when to stop when sufficiently doubly stochastic (\Sum_i a_{ij}=1 and \Sum_j a_{ij}=1 -- all rows and all columns sum to 1)
+
+
+    
   }
 }
 

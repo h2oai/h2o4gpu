@@ -12,11 +12,12 @@
 #include "projector_helper.cuh"
 #include "util.h"
 
+#include "equil_helper.cuh"
+
 namespace pogs {
 
 namespace {
 
-int kMaxIter = 100;
 bool kCglsQuiet = true;
 
 template<typename T>
@@ -90,6 +91,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   // y := y0 - Ax0;
   _A.Mul('n', static_cast<T>(-1.), x0, static_cast<T>(1.), y);
 
+  int kMaxIter = 100;
   // Minimize ||Ax - b||_2^2 + s||x||_2^2
   cgls::Solve(hdl, Gemv<T, M>(_A), static_cast<cgls::INT>(_A.Rows()),
       static_cast<cgls::INT>(_A.Cols()), y, x, s, tol, kMaxIter, kCglsQuiet);
@@ -107,6 +109,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
 
 #ifdef DEBUG
   // Verify that projection was successful.
+  T kTol = static_cast<T>(kNormEstTol);
   CheckProjection(&_A, x0, y0, x, y, s, static_cast<T>(1e1 * kTol));
 #endif
 

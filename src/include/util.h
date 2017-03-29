@@ -145,8 +145,9 @@
 
 #define wrapcudaDeviceSynchronize() cudaDeviceSynchronize()
 
+// synch first to get status *right now* for debugging purposes
 #define CUDA_CHECK_ERR() \
-  cudaDeviceSynchronize(); // synch first to get status *right now* for debugging purposes
+  cudaDeviceSynchronize();\
   do { \
     cudaError_t err = cudaGetLastError(); \
     if (err != cudaSuccess) { \

@@ -14,7 +14,9 @@ int main() {
   printf("Solver Time: %e sec\n", t);
   */
 
-  int m=450001;
+  //  int m=450016; // BARELY succeeds in 2000 iterations with n=213 and no adpative rho.  Fails with adaptive rho.  No big changes with Eq constant changes.
+  int  m=450000; // fails without adaptive rho, works perfectly fine with adaptive rho.
+  //  int m=450050;
   //  int n=212;
   int n=213;
 
