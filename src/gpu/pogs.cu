@@ -341,9 +341,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
 
+
     // Break if converged or there are nans
     if (converged || k == _max_iter - 1){ // || cml::vector_any_isnan(&zt))
       _final_iter = k;
+#ifdef USE_NVTX
+      POP_RANGE(mystring,Step,8); // pop at end of loop iteration
+#endif
       break;
     }
 
