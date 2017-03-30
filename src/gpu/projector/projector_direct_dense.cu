@@ -86,6 +86,8 @@ int ProjectorDirect<T, M>::Init() {
 
   // Compute AA (i.e. Gramian matrix)
   PUSH_RANGE("AAcompute(gram)",AAcompute,1);
+  double t0 = timer<double>();
+
   if (_A.Order() == MatrixDense<T>::ROW) {
     const cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>
@@ -104,6 +106,9 @@ int ProjectorDirect<T, M>::Init() {
     cml::blas_syrk(info->handle, CUBLAS_FILL_MODE_LOWER, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
   }
+
+  double t1 = timer<double>() - t0;
+  printf("Time to compute the Gram: %f\n", t1);
   CUDA_CHECK_ERR();
   POP_RANGE("AAcompute(gram)",AAcompute,1);
 
@@ -137,6 +142,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   CUDA_CHECK_ERR();
   POP_RANGE("P1alloc",P1alloc,2);
 
+  double t0 = timer<double>();
   if (_A.Order() == MatrixDense<T>::ROW) {
     PUSH_RANGE("P1(row)",P1row,2);
     const cml::matrix<T, CblasRowMajor> A =
@@ -256,6 +262,9 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
     CUDA_CHECK_ERR();
   }
   POP_RANGE("P1",P1,1);
+
+  double t1 = timer<double>() - t0;
+  printf("Time to compute the Gram: %f\n", t1);
 
 #ifdef DEBUG
   // Verify that projection was successful.

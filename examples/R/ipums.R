@@ -18,36 +18,37 @@ if (FALSE) {
   ## DATA PREP
   # created with 'head -n 4000001 ipums_2000-2015.csv > ipums_2000-2015_head4M.csv'
   f <- "~/ipums_2000-2015_head4M.csv"
-  df <- fread(f)
-  N <- nrow(df)
+  DT <- fread(f)
+  N <- nrow(DT)
   N <- 0.5*N
 
-  #df[['ID']] <- NULL ## ignore ID
-
   ## label encoding ## FIXME: leads to NAs?
-  df[is.na(df)] <- 0
-  #feature.names <- setdiff(names(df), response)
+  #feature.names <- setdiff(names(DT), response)
   #for (f in feature.names) {
-  #  if (class(df[[f]])=="character") {
-  #    levels <- unique(c(df[[f]]))
-  #    df[[f]] <- as.integer(factor(df[[f]], levels=levels))
+  #  if (class(DT[[f]])=="character") {
+  #    levels <- unique(c(DT[[f]]))
+  #    DT[[f]] <- as.integer(factor(DT[[f]], levels=levels))
   #  }
   #}
-  df <- df[1:N,sapply(df, is.numeric), with=FALSE]
-  df <- df[,apply(df, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
-  #df <- data.table(scale(as.data.frame(df)))
-  fwrite(df, file)
+  DT[is.na(DT)] <- 0
+  DT <- DT[,sapply(DT, is.numeric), with=FALSE]
+  DT <- DT[,apply(DT, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
+  cols <- setdiff(names(DT),c(response))
+  for (c in cols) {
+    DT[,(c):=scale(DT[[c]])]
+  }
+  fwrite(DT, file)
   q()
 } else {
-  df <- fread(file)
-  N <- nrow(df)
-  summary(df)
+  DT <- fread(file)
+  N <- nrow(DT)
+  summary(DT)
 }
 H <- round(0.8*N)
 
-train <- df[1:H,]
-valid <- df[(H+1):N,]
-cols <- setdiff(names(df), c(response))
+train <- DT[1:H,]
+valid <- DT[(H+1):N,]
+cols <- setdiff(names(DT), c(response))
 train_x  <- as.matrix(as.data.frame(train[,cols,with=FALSE]))
 train_y  <- as.numeric(as.vector(train[[response]]))
 valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
@@ -55,7 +56,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 
 
 ## H2O used to compute the metrics
-h2o.init(nthreads=-1)
+h2o.init(nthreads=-1,max_mem_size='100g')
 df.hex <- h2o.importFile(file)
 summary(df.hex)
 train.hex <- df.hex[1:H,]
@@ -69,7 +70,7 @@ if (family=="binomial") {
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=c(0)) ## TODO: disable L1/L2 in the backend when passing lambda=0
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=c(0), params=list(max_iter=1))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 

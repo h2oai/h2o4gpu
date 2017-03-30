@@ -7,6 +7,7 @@
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
 #include "util.h"
+#include "timer.h"
 
 namespace pogs {
 
@@ -92,10 +93,21 @@ int MatrixDense<T>::Init() {
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
+  double t0 = timer<double>();
+
   // Copy Matrix to GPU.
   cudaMalloc(&_data, this->_m * this->_n * sizeof(T));
+
+  double t1 = timer<double>();
+
   cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),
       cudaMemcpyHostToDevice);
+
+  double t2 = timer<double>();
+
+  printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+  printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+
   DEBUG_CUDA_CHECK_ERR();
 
   return 0;

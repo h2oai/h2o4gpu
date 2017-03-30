@@ -13,7 +13,7 @@ LassoPath
    See <pogs>/matlab/examples/lasso_path.m for detailed description.
 '''
 
-def LassoPath(m, n, gpu=False, double_precision=False, nlambda=50):
+def LassoPath(m, n, gpu=True, double_precision=False, nlambda=50):
   # set solver cpu/gpu according to input args
   if gpu and pogs.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
@@ -85,7 +85,7 @@ def LassoPath(m, n, gpu=False, double_precision=False, nlambda=50):
   return runtime
 
 if __name__ == "__main__":
-   print("Solve time:\t{:.2e} seconds".format(LassoPath(200,1000)))
+   print("Solve time:\t{:.2e} seconds".format(LassoPath(200000,1000)))
 
 
 
