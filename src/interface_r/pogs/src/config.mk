@@ -43,7 +43,7 @@ HDR=-Iinclude $(R_INC)
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DPOGS_SINGLE=0
 ifeq ($(TARGET), gpu)
-    LD_FLAGS=-L"$(R_LIB)" -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse
+    LD_FLAGS=-L"$(R_LIB)" -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lnvToolsExt
 else
     LD_FLAGS=blas2cblas.cpp $(shell R CMD config BLAS_LIBS)
 endif
