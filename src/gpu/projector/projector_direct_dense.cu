@@ -84,8 +84,8 @@ int ProjectorDirect<T, M>::Init() {
   cublasOperation_t op_type = _A.Rows() > _A.Cols()
       ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  // Compute AA
-  PUSH_RANGE("AAcompute",AAcompute,1);
+  // Compute AA (i.e. Gramian matrix)
+  PUSH_RANGE("AAcompute(gram)",AAcompute,1);
   if (_A.Order() == MatrixDense<T>::ROW) {
     const cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>
@@ -105,7 +105,7 @@ int ProjectorDirect<T, M>::Init() {
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
   }
   CUDA_CHECK_ERR();
-  POP_RANGE("AAcompute",AAcompute,1);
+  POP_RANGE("AAcompute(gram)",AAcompute,1);
 
   return 0;
 }
@@ -159,6 +159,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       POP_RANGE("P1r_diagonal",P1r_diagonal,2);
 
       PUSH_RANGE("P1r_cholesky_decomp",P1r_cholesky_decomp,2);
+      // L contains A, now get cholesky L
       cml::linalg_cholesky_decomp(hdl, &L);
       wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();
@@ -166,13 +167,16 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
     }
     if (_A.Rows() > _A.Cols()) {
       PUSH_RANGE("P1r_gemv(r>c)",P1r_gemvrgc,2);
+      // 1*A*y + 1*x -> x
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
       POP_RANGE("P1r_gemv(r>c)",P1r_gemvrgc,2);
       PUSH_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
+      // Solve LL^T x=b for x
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
       POP_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
       PUSH_RANGE("P1r_gemv2",P1r_gemv2,2);
+      // 1*A*x + 0*y -> y
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
       POP_RANGE("P1r_gemv2",P1r_gemv2,2);

@@ -155,10 +155,12 @@ template <typename T, CBLAS_ORDER O>
 cublasStatus_t linalg_cholesky_svx(cublasHandle_t handle,
                                    const matrix<T, O> *L, vector<T> *x) {
   cublasStatus_t err;
+  // Solves Ly=b where b is assigned as x, and output y is x.
   err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, //The non-transpose operation
       CUBLAS_DIAG_NON_UNIT, L, x);
   CublasCheckError(err);
 
+  // Solve L^Tx = y (inputted as x) for x and store solution in x-named C variable
   err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, //The transpose operation
       CUBLAS_DIAG_NON_UNIT, L, x);
   CublasCheckError(err);
