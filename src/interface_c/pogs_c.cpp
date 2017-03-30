@@ -128,12 +128,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   }
 
   // Solve.
-  PUSH_RANGE("Solve",1);
+  PUSH_RANGE("Solve",Solve,1);
   info->status = pogs_data.Solve(*f, *g);
-  POP_RANGE("Solve",1);
+  POP_RANGE("Solve",Solve,1);
   
   // Retrieve solver output & state
-  PUSH_RANGE("Get",2);
+  PUSH_RANGE("Get",Get,2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -146,7 +146,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
   memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
-  POP_RANGE("Get",2);
+  POP_RANGE("Get",Get,2);
 }
 
 template<typename T>
@@ -168,12 +168,12 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   }
 
   // Solve.
-  PUSH_RANGE("Solve",1);
+  PUSH_RANGE("Solve",Solve,1);
   info->status = pogs_data.Solve(*f, *g);
-  POP_RANGE("Solve",1);
+  POP_RANGE("Solve",Solve,1);
 
   // Retrieve solver output & state
-  PUSH_RANGE("Get",2);
+  PUSH_RANGE("Get",Get,2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -186,7 +186,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
   memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
-  POP_RANGE("Get",2);
+  POP_RANGE("Get",Get,2);
 }
 
 template<typename T>
@@ -208,12 +208,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   }
 
   // Solve.
-  PUSH_RANGE("Solve",1);
+  PUSH_RANGE("Solve",Solve,1);
   info->status = pogs_data.Solve(*f, *g);
-  POP_RANGE("Solve",1);
+  POP_RANGE("Solve",Solve,1);
 
   // Retrieve solver output & state
-  PUSH_RANGE("Get",2);
+  PUSH_RANGE("Get",Get,2);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -226,7 +226,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
   memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
-  POP_RANGE("Get",2);
+  POP_RANGE("Get",Get,2);
 }
 
 template<typename T>
@@ -248,12 +248,12 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   }
 
   // Solve.
-  PUSH_RANGE("Solve",1);
+  PUSH_RANGE("Solve",Solve,1);
   info->status = pogs_data.Solve(*f, *g);
-  POP_RANGE("Solve",1);
+  POP_RANGE("Solve",Solve,1);
 
   // Retrieve solver output & state
-  PUSH_RANGE("Get",1);
+  PUSH_RANGE("Get",Get,1);
   info->obj = pogs_data.GetOptval();
   info->iter = pogs_data.GetFinalIter();
   info->rho = pogs_data.GetRho();
@@ -266,7 +266,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   memcpy(solution->y, pogs_data.GetY(), m * sizeof(T));
   memcpy(solution->mu, pogs_data.GetMu(), n * sizeof(T));  
   memcpy(solution->nu, pogs_data.GetLambda(), m * sizeof(T));
-  POP_RANGE("Get",1);
+  POP_RANGE("Get",Get,1);
 }
 
 

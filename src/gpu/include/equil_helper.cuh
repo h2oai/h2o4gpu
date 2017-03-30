@@ -8,6 +8,7 @@
 #include "cml/cml_vector.cuh"
 #include "matrix/matrix.h"
 #include "util.h"
+#include "timer.h"
 
 #include "pogs.h"
 
@@ -117,7 +118,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
 #ifdef USE_NVTX
     char mystring[100];
     sprintf(mystring,"No%d",i);
-    PUSH_RANGE(mystring,8);
+    PUSH_RANGE(mystring,No,8);
 #endif
     norm_est_last = norm_est;
     A->Mul('n', static_cast<T>(1.), x.data, static_cast<T>(0.), Sx.data);
@@ -130,7 +131,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
     norm_est = normx / normSx;
     if (abs(norm_est_last - norm_est) < kTol * norm_est)
       break;
-    POP_RANGE(mystring,8);
+    POP_RANGE(mystring,No,8);
   }
 #ifndef DEBUG
   fprintf(stderr,"Norm2Est iterations=%d",i);
@@ -156,7 +157,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
 #ifdef USE_NVTX
     char mystring[100];
     sprintf(mystring,"Eq%d",k);
-    PUSH_RANGE(mystring,8);
+    PUSH_RANGE(mystring,Eq,8);
 #endif
     // e := 1 ./ (A' * d).
     A->Mul('t', static_cast<T>(1.), d, static_cast<T>(0.), e);
@@ -184,7 +185,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
 #ifdef USE_NVTX
-    POP_RANGE(mystring,8);
+    POP_RANGE(mystring,Eq,8);
 #endif
 
     // TODO: Need check to when to stop when sufficiently doubly stochastic (\Sum_i a_{ij}=1 and \Sum_j a_{ij}=1 -- all rows and all columns sum to 1)
