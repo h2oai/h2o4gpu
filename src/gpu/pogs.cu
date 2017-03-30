@@ -107,7 +107,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kDeltaMin   = static_cast<T>(1.05); // for adaptive rho and rescaling
   const T kGamma      = static_cast<T>(1.01); // for adaptive rho and rescaling
   const T kTau        = static_cast<T>(0.8); // for adaptive rho and rescaling
-  const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
+  const T kAlpha      = static_cast<T>(1.0); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
   const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
   const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
   const T kKappa      = static_cast<T>(0.4); // for adaptive rho and rescaling
@@ -252,18 +252,18 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   for (;; ++k) {
 #ifdef USE_NVTX
     char mystring[100];
-    sprintf(mystring,"S%d",k);
+    sprintf(mystring,"Step%d",k);
     PUSH_RANGE(mystring,8);
 #endif
     cml::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators g and f based upon chosen problem setup
-    PUSH_RANGE("axpy",9);
+    PUSH_RANGE("Evaluate_fg",9);
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     ProxEval(g_gpu, _rho, x.data, x12.data);
     ProxEval(f_gpu, _rho, y.data, y12.data);
     CUDA_CHECK_ERR();
-    POP_RANGE("axpy",9);
+    POP_RANGE("Evaluate_fg",9);
 
     // Compute gap, optval, and tolerances.
     PUSH_RANGE("gapoptvaltol",9);
@@ -396,7 +396,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           Printf("- rho %e\n", _rho);
       }
     }
+#ifdef USE_NVTX
     POP_RANGE(mystring,8); // pop at end of loop iteration
+#endif
   }// end for loop in k
 
 

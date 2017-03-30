@@ -132,6 +132,9 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
       break;
     POP_RANGE(mystring,8);
   }
+#ifndef DEBUG
+  fprintf(stderr,"Norm2Est iterations=%d",i);
+#endif
   DEBUG_EXPECT_LT(i, kNormEstMaxIter);
 
   cml::vector_free(&x);
@@ -180,13 +183,19 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
         thrust::device_pointer_cast(d), ReciprF<T>(A->Cols()));
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
+#ifdef USE_NVTX
     POP_RANGE(mystring,8);
+#endif
 
     // TODO: Need check to when to stop when sufficiently doubly stochastic (\Sum_i a_{ij}=1 and \Sum_j a_{ij}=1 -- all rows and all columns sum to 1)
 
 
     
-  }
+  }// end over Sinkhorn Knopp iterations
+#ifndef DEBUG
+  fprintf(stderr,"Sinkhorn Knopp iterations=%d",k);
+#endif
+
 }
 
 }  // namespace

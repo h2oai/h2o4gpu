@@ -21,7 +21,7 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
     nvtxRangePushEx(&eventAttrib); \
   }
 #define POP_RANGE(name,cid) { \
-    fprintf(stderr,"START: name=%s cid=%d\n",name,cid); \
+    fprintf(stderr,"STOP:  name=%s cid=%d\n",name,cid); \
     nvtxRangePop(); \
   }
 #else

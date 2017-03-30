@@ -9,11 +9,11 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) # -DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) -DDEBUG # -Wconversion
 
 # CUDA Flags
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) -DUSE_NVTX=1 #-DCUDCHECKERR -DDEBUG
+CUFLAGS=$(IFLAGS) -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
