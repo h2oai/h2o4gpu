@@ -115,7 +115,7 @@ __global__ void __block_trsv(T *A, uint iter, uint n, uint tda) {
 
 }  // namespace
 
-// Cholesky.
+/// Cholesky decomposition
 template <typename T, CBLAS_ORDER O>
 cublasStatus_t linalg_cholesky_decomp(cublasHandle_t handle,
                                       matrix<T, O> *A) {
@@ -150,15 +150,16 @@ cublasStatus_t linalg_cholesky_decomp(cublasHandle_t handle,
   return err;
 }
 
+/// Solves L*x = b and L'*x = b for x
 template <typename T, CBLAS_ORDER O>
 cublasStatus_t linalg_cholesky_svx(cublasHandle_t handle,
                                    const matrix<T, O> *L, vector<T> *x) {
   cublasStatus_t err;
-  err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N,
+  err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N, //The non-transpose operation
       CUBLAS_DIAG_NON_UNIT, L, x);
   CublasCheckError(err);
 
-  err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T,
+  err = blas_trsv(handle, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, //The transpose operation
       CUBLAS_DIAG_NON_UNIT, L, x);
   CublasCheckError(err);
 

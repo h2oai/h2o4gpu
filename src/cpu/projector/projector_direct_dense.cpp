@@ -76,6 +76,7 @@ int ProjectorDirect<T, M>::Init() {
         (_A.Data(), _A.Rows(), _A.Cols());
     gsl::matrix<T, CblasRowMajor> AA = gsl::matrix_view_array<T, CblasRowMajor>
         (info->AA, min_dim, min_dim);
+    //C := alpha*A*A' + beta*C
     gsl::blas_syrk(CblasLower, op_type,
         static_cast<T>(1.), &A, static_cast<T>(0.), &AA);
   } else {
@@ -122,15 +123,18 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
         (info->L, min_dim, min_dim);
 
     if (s != info->s) {
-      gsl::matrix_memcpy(&L, &AA);
+      gsl::matrix_memcpy(&L, &AA); // originally from AA := A*A'
       gsl::vector<T> diagL = gsl::matrix_diagonal(&L);
       gsl::vector_add_constant(&diagL, s);
       gsl::linalg_cholesky_decomp(&L);
     }
     if (_A.Rows() > _A.Cols()) {
+      // 1*A*y + 1*x -> x
       gsl::blas_gemv(CblasTrans, static_cast<T>(1.), &A, &y_vec,
           static_cast<T>(1.), &x_vec);
+      // Solve L*x = 0 for x -> x
       gsl::linalg_cholesky_svx(&L, &x_vec);
+      // 1*A*x+0*y -> y
       gsl::blas_gemv(CblasNoTrans, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
     } else {

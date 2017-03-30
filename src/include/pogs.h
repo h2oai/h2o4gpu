@@ -8,6 +8,7 @@ const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x00
 const int num_colors = sizeof(colors)/sizeof(uint32_t);
 
 #define PUSH_RANGE(name,cid) { \
+    fprintf(stderr,"START: name=%s cid=%d\n",name,cid); \
     int color_id = cid; \
     color_id = color_id%num_colors;\
     nvtxEventAttributes_t eventAttrib = {0}; \
@@ -19,7 +20,10 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
     eventAttrib.message.ascii = name; \
     nvtxRangePushEx(&eventAttrib); \
   }
-#define POP_RANGE(name,cid) nvtxRangePop();
+#define POP_RANGE(name,cid) { \
+    fprintf(stderr,"START: name=%s cid=%d\n",name,cid); \
+    nvtxRangePop(); \
+  }
 #else
 #define PUSH_RANGE(name,cid)
 #define POP_RANGE(name,cid)

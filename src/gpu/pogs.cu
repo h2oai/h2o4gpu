@@ -179,9 +179,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   if (_init_x) {
     cml::vector_memcpy(&xtemp, _x);
     cml::vector_div(&xtemp, &e);
-    _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data);
+    _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data); // y = kOne*A*x + kZero*y
     wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
-    cml::vector_memcpy(&z, &ztemp);
+    cml::vector_memcpy(&z, &ztemp); // ztemp->z TODO: Bug or wrong?
     CUDA_CHECK_ERR();
   }
   if (_init_lambda) {
@@ -189,8 +189,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
     wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
-    cml::blas_scal(hdl, -kOne / _rho, &ztemp);
-    cml::vector_memcpy(&zt, &ztemp);
+    cml::blas_scal(hdl, -kOne / _rho, &ztemp); // ztemp = ztemp * (-kOne/_rho)
+    cml::vector_memcpy(&zt, &ztemp); // ztemp->z
     CUDA_CHECK_ERR();
   }
   POP_RANGE("Lambda",6);
@@ -209,11 +209,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           kProjTolIni);
       wrapcudaDeviceSynchronize(); // not needed, as blas's are cuda call and will follow sequentially on device
       CUDA_CHECK_ERR();
-      cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);
+      cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);// alpha*X + Y -> Y
       cml::blas_scal(hdl, -kOne, &zprev);
     }
     // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
-    cml::vector_memcpy(&zt, &zprev);
+    cml::vector_memcpy(&zt, &zprev); // zprev->zt
     cml::blas_scal(hdl, -kOne / _rho, &zt);
   } else if (_init_lambda && !_init_x) {
     ASSERT(false);
@@ -246,6 +246,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
 
+
+
+  // LOOP until satisfy convergence criteria
   for (;; ++k) {
 #ifdef USE_NVTX
     char mystring[100];
@@ -254,7 +257,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 #endif
     cml::vector_memcpy(&zprev, &z);
 
-    // Evaluate Proximal Operators
+    // Evaluate Proximal Operators g and f based upon chosen problem setup
     PUSH_RANGE("axpy",9);
     cml::blas_axpy(hdl, -kOne, &zt, &z);
     ProxEval(g_gpu, _rho, x.data, x12.data);
@@ -274,7 +277,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("gapoptvaltol",9);
 
-    // Apply over relaxation  (optional, can set kAlpha to 1 to disable)
+    // Apply over relaxation  (optional, can set kAlpha to 1, above, to disable)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.3
     PUSH_RANGE("orelax",9);
     cml::vector_memcpy(&ztemp, &zt);
@@ -292,7 +295,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("project",9);
 
-    // Calculate residuals.
+    // Calculate residuals nrm_s and nrm_r
     PUSH_RANGE("resid",9);
     cml::vector_memcpy(&ztemp, &zprev);
     cml::blas_axpy(hdl, -kOne, &z, &ztemp);
@@ -396,6 +399,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     POP_RANGE(mystring,8); // pop at end of loop iteration
   }// end for loop in k
 
+
+  
   // Get optimal value
   _optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
 
@@ -426,11 +431,12 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         "Dua: "
         "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e (goal: %0.2e)\n"
         "Gap: "
-        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e (goal: %0.2e)\n"
+        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e (goal: %0.2e, gap checked=%d)\n"
            __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol, _rel_tol * nrm_s / eps_dua, _rel_tol,
-           _rel_tol * gap / eps_gap,_rel_tol);
+           _rel_tol * gap / eps_gap,_rel_tol,_gap_stop);
   }
 
+  
   // Scale x, y, lambda and mu for output.
   PUSH_RANGE("Scale",8);
   cml::vector_memcpy(&ztemp, &zt);

@@ -113,6 +113,8 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   const cml::vector<T> x_vec = cml::vector_view_array<T>(x, this->_n);
   cml::vector<T> y_vec = cml::vector_view_array<T>(y, this->_m);
 
+  //  Performs the matrix-vector operations y := alpha*A*x + beta*y or y := alpha*A'*x + beta*y where alpha and beta are scalars, x and y are vectors and A is an m by n matrix
+  //https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/u_nla.htm#CIAFEAFG
   if (_ord == ROW) {
     cml::matrix<T, CblasRowMajor> A =
         cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n);
