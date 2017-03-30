@@ -400,7 +400,7 @@
     if ((a) - (b) > eps || (b) - (a) > eps) { \
       std::cout << __FILE__ << ":" << __LINE__ << ":" \
                 << __BLUE << __func__ << "\n" \
-                << __RED << "EXPECT_FAILED: " << (a) << " == " << (b) \
+                << __RED << "EXPECT_FAILED: " << a << "-" << b << " within tol of " << (eps) \
                 << __RESET << std::endl; \
     } \
   } while (0)

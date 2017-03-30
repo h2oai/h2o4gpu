@@ -27,6 +27,9 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   A->Mul('n', static_cast<T>(1.), x_.data, static_cast<T>(-1.), y_.data);
   wrapcudaDeviceSynchronize();
   T nrm_r = cml::blas_nrm2(hdl, &y_)  / std::sqrt(A->Rows());
+#ifdef DEBUG
+  fprintf(stderr,"CHECKPROJECTION: nrm_r/tol=%g <1?\n",nrm_r/tol);
+#endif
   DEBUG_EXPECT_EQ_EPS(nrm_r, static_cast<T>(0.), tol);
 
   // Check KKT
@@ -39,6 +42,9 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
   wrapcudaDeviceSynchronize();
   cml::blas_axpy(hdl, -s, &x0_vec, &x_);
   T nrm_kkt = cml::blas_nrm2(hdl, &x_) / std::sqrt(A->Cols());
+#ifdef DEBUG
+  fprintf(stderr,"CHECKPROJECTION: nrm_kkt/tol=%g <1?\n",nrm_kkt/tol);
+#endif
   DEBUG_EXPECT_EQ_EPS(nrm_kkt, static_cast<T>(0.), tol);
 
   cml::vector_free(&x_);
