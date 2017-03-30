@@ -130,6 +130,8 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   return 0;
 }
 
+  // Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
+  // See https://arxiv.org/pdf/1610.03871.pdf for more information
 template <typename T>
 int MatrixDense<T>::Equil(T *d, T *e) {
   DEBUG_ASSERT(this->_done_init);
@@ -177,7 +179,7 @@ int MatrixDense<T>::Equil(T *d, T *e) {
     CUDA_CHECK_ERR();
   }
 
-  // Perform Sinkhorn-Knopp equilibration.
+  // Perform Sinkhorn-Knopp equilibration to obtain a doubly stochastic matrix.
   SinkhornKnopp(this, d, e);
   wrapcudaDeviceSynchronize();
 
