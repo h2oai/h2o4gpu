@@ -119,6 +119,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
   bool use_exact_stop = true;
 
+  //  PUSH_RANGE("PogsSolve",PogsSolve,1);
+
+  
   // Initialize Projector P and Matrix A.
   if (!_done_init){
 //    PUSH_RANGE("Init2",Init2,1);
@@ -126,6 +129,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 //    POP_RANGE("Init2",Init2,1);
     }
 
+
+  
   // Extract values from pogs_data
   PUSH_RANGE("PogsExtract",PogsExtract,3);
   size_t m = _A.Rows();
@@ -253,7 +258,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 #ifdef USE_NVTX
     char mystring[100];
     sprintf(mystring,"Step%d",k);
-    PUSH_RANGE(mystring,Step,8);
+    PUSH_RANGE(mystring,Step,1);
 #endif
     cml::vector_memcpy(&zprev, &z);
 
@@ -346,7 +351,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     if (converged || k == _max_iter - 1){ // || cml::vector_any_isnan(&zt))
       _final_iter = k;
 #ifdef USE_NVTX
-      POP_RANGE(mystring,Step,8); // pop at end of loop iteration
+      POP_RANGE(mystring,Step,1); // pop at end of loop iteration
 #endif
       break;
     }
@@ -403,7 +408,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       }
     }
 #ifdef USE_NVTX
-    POP_RANGE(mystring,Step,8); // pop at end of loop iteration
+    POP_RANGE(mystring,Step,1); // pop at end of loop iteration
 #endif
   }// end for loop in k
 
@@ -446,7 +451,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   
   // Scale x, y, lambda and mu for output.
-  PUSH_RANGE("Scale",Scale,8);
+  PUSH_RANGE("Scale",Scale,1);
   cml::vector_memcpy(&ztemp, &zt);
   cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
   cml::blas_axpy(hdl, kOne, &z12, &ztemp);
@@ -456,10 +461,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   cml::vector_div(&y12, &d);
   cml::vector_mul(&x12, &e);
-  POP_RANGE("Scale",Scale,8);
+  POP_RANGE("Scale",Scale,1);
 
   // Copy results to output.
-  PUSH_RANGE("Copy",Copy,8);
+  PUSH_RANGE("Copy",Copy,1);
   cml::vector_memcpy(_x, &x12);
   cml::vector_memcpy(_y, &y12);
   cml::vector_memcpy(_mu, &xtemp);
@@ -474,7 +479,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&ztemp);
   cublasDestroy(hdl);
   CUDA_CHECK_ERR();
-  POP_RANGE("Copy",Copy,8);
+  POP_RANGE("Copy",Copy,1);
+
+  //  POP_RANGE("PogsSolve",PogsSolve,1);
 
   return status;
 }
