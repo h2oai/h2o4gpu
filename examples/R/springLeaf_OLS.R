@@ -13,11 +13,10 @@ f <- "~/kaggle/springleaf/input/train.csv"
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
-pogs  <-TRUE
+pogs  <-FALSE
 glmnet<-FALSE
-h2o   <-FALSE
-alpha <- 1 ## Lasso
-lambda <- c(0) ## no regularization
+h2o   <-TRUE
+alpha <- 0.5
 
 file <- paste0("/tmp/train.",N,".csv")
 if (FALSE) {
@@ -71,7 +70,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, params=list(max_iter=1000))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha)
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
@@ -95,7 +94,7 @@ if (glmnet) {
     y = train_y
   }
   s2 <- proc.time()
-  glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha, lambda=lambda)
+  glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha)
   e2 <- proc.time()
   glmnet_pred_y = predict(glmnet, valid_x, type="response")
 
@@ -114,7 +113,7 @@ if (glmnet) {
 ## H2O
 if (h2o) {
   s3 <- proc.time()
-  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=FALSE, lambda=lambda)
+  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
   e3 <- proc.time()
   h2opreds <- h2o.predict(h2omodel, valid.hex)
   summary(h2opreds)
@@ -128,6 +127,7 @@ if (h2o) {
   }
 }
 
+## lambda=0
 #[1] "POGS GPU: "
 #   user  system elapsed 
 #  2.916   1.288   4.204 
@@ -144,3 +144,18 @@ if (h2o) {
 #   user  system elapsed 
 #  2.236   0.116  55.697 
 #[1] 0.3890118
+
+
+## lambda-search, no cv, alpha=0.5
+## ovaclokka
+
+#[1] "POGS GPU: "
+#   user  system elapsed 
+#127.260  33.552 161.747 
+#[1] 0.4219142
+
+#[1] "H2O CPU "
+#   user  system elapsed 
+#  1.676   0.032 133.124 
+#[1] 0.388865
+#
