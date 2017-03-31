@@ -22,6 +22,21 @@ double Lasso(size_t m, size_t n) {
   
 #include "readorgen.c"
 
+  std::vector<T> x_true(n);
+  for (unsigned int i = 0; i < n; ++i)
+    x_true[i] = u_dist(generator) < static_cast<T>(0.8)
+        ? static_cast<T>(0) : n_dist(generator) / static_cast<T>(std::sqrt(n));
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+  for (unsigned int i = 0; i < m; ++i)
+    for (unsigned int j = 0; j < n; ++j)
+      b[i] += A[i * n + j] * x_true[j];
+      // b[i] += A[i + j * m] * x_true[j];
+
+  for (unsigned int i = 0; i < m; ++i)
+    b[i] += static_cast<T>(0.5) * n_dist(generator);
 
   ////////////////////
   // set lambda for regularization
@@ -52,7 +67,7 @@ double Lasso(size_t m, size_t n) {
 
   g.reserve(n);
   for (unsigned int i = 0; i < n; ++i)
-    g.emplace_back(kZero, static_cast<T>(0.2) * lambda_max);
+    g.emplace_back(kAbs, static_cast<T>(0.2) * lambda_max);
 
   fprintf(stdout,"END FILL DATA\n");
   

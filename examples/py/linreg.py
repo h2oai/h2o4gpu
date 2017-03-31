@@ -4,12 +4,9 @@ from numpy.random import rand, randn
 
 
 '''
-Lasso
+Linear regression
 
-  minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
-
-See <pogs>/matlab/examples/lasso.m for detailed description.
-template <typename T>
+  minimize    (1/2) ||Ax - b||_2^2
 '''
 
 def Lasso(m,n, gpu=True, double_precision=False):
@@ -32,19 +29,14 @@ def Lasso(m,n, gpu=True, double_precision=False):
   # b= A*x_true + v (noise)
   b=A.dot(x_true)+0.5*randn(m)
 
-  # lambda
-  lambda_max = max(abs(A.T.dot(b)))
-
-
   # f(Ax) = ||Ax - b||_2^2
   f = pogs.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
   f.h[:]=pogs.FUNCTION["SQUARE"]
 
-  # g(x) = 0.2*lambda_max*||x||_1
+  # g(x) = 0
   g = pogs.FunctionVector(n,double_precision=double_precision)
-  g.a[:] = 0.2*lambda_max 
-  g.h[:] = pogs.FUNCTION["ABS"]
+  g.h[:] = pogs.FUNCTION["ZERO"]
 
   # use problem data A to create solver 
   s = Solver(A) 
@@ -61,5 +53,5 @@ def Lasso(m,n, gpu=True, double_precision=False):
   return t
 
 if __name__ == "__main__":
-   print("Solve time:\t{:.2e} seconds".format(Lasso(10000000,100)))
+   print("Solve time:\t{:.2e} seconds".format(Lasso(1000,100)))
 

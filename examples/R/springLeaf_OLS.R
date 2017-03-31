@@ -14,8 +14,8 @@ response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
 pogs  <-TRUE
-glmnet<-TRUE
-h2o   <-TRUE
+glmnet<-FALSE
+h2o   <-FALSE
 alpha <- 1 ## Lasso
 lambda <- c(0) ## no regularization
 
@@ -71,7 +71,7 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=lambda, params=list(max_iter=1))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, params=list(max_iter=1000))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 

@@ -3,6 +3,12 @@
 // choose to generate or read-in data
   int generate=1;
 
+    std::default_random_engine generator;
+    std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
+					     static_cast<T>(1));
+    std::normal_distribution<T> n_dist(static_cast<T>(0),
+				       static_cast<T>(1));
+
 
 // READ-IN DATA
   double t0 = timer<double>();
@@ -50,12 +56,6 @@
   }
   else{
     // GENERATE DATA
-    std::default_random_engine generator;
-    std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
-					     static_cast<T>(1));
-    std::normal_distribution<T> n_dist(static_cast<T>(0),
-				       static_cast<T>(1));
-  
     fprintf(stdout,"BEGIN FILL DATA\n");
     for (unsigned int i = 0; i < m * n; ++i)
       A[i] = n_dist(generator);

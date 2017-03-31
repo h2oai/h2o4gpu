@@ -73,6 +73,8 @@ int Pogs<T, M, P>::_Init() {
   _done_init = true;
 
   PUSH_RANGE("Malloc",Malloc,1);
+  double t0 = timer<double>();
+
   size_t m = _A.Rows();
   size_t n = _A.Cols();
 
@@ -96,6 +98,8 @@ int Pogs<T, M, P>::_Init() {
   _P.Init();
   CUDA_CHECK_ERR();
 //  POP_RANGE("Init1",Init1,1);
+
+  printf("Time to allocate data structures: %f\n", timer<double>() - t0);
 
   return 0;
 }
@@ -230,6 +234,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Save initialization time.
   double time_init = timer<double>() - t0;
+  printf("Time to initialize: %f\n", time_init);
 
   // Signal start of execution.
   if (_verbose > 0) {
