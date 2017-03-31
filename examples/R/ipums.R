@@ -14,7 +14,7 @@ alpha <- 0.5 ## Lasso
 
 file <- "/tmp/train.csv"
 
-if (FALSE) {
+if (TRUE) {
   ## DATA PREP
   # created with 'head -n 4000001 ipums_2000-2015.csv > ipums_2000-2015_head4M.csv'
   f <- "~/ipums_2000-2015_head4M.csv"

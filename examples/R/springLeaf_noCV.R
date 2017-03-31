@@ -5,7 +5,7 @@ library(data.table)
 
 #https://www.kaggle.com/c/springleaf-marketing-response/data
 N<-145231 ## max
-#N<-10000  ## ok for accuracy tests
+N<-10000  ## ok for accuracy tests
 H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 f <- "~/kaggle/springleaf/input/train.csv"
@@ -13,13 +13,13 @@ f <- "~/kaggle/springleaf/input/train.csv"
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
-pogs  <-FALSE
+pogs  <-TRUE
 glmnet<-FALSE
 h2o   <-TRUE
 alpha <- 0.5
 
 file <- paste0("/tmp/train.",N,".csv")
-if (FALSE) {
+if (TRUE) {
 ## DATA PREP
   DT <- fread(f, nrows=N)
 
@@ -40,7 +40,6 @@ if (FALSE) {
   for (c in cols) {
     DT[,(c):=scale(DT[[c]])]
   }
-
   fwrite(DT, file)
 } else {
   DT <- fread(file)
