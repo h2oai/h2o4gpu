@@ -53,5 +53,5 @@ def Lasso(m,n, gpu=True, double_precision=False):
   return t
 
 if __name__ == "__main__":
-   print("Solve time:\t{:.2e} seconds".format(Lasso(10000000,100)))
+   print("Solve time:\t{:.2e} seconds".format(Lasso(1000,100)))
 
