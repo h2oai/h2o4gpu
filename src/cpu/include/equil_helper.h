@@ -137,11 +137,13 @@ T Norm2Est(const Matrix<T> *A) {
 ///////////////////////// Modified Sinkhorn Knopp //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
+void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
   gsl::vector<T> d_vec = gsl::vector_view_array<T>(d, A->Rows());
   gsl::vector<T> e_vec = gsl::vector_view_array<T>(e, A->Cols());
   gsl::vector_set_all(&d_vec, static_cast<T>(1.));
   gsl::vector_set_all(&e_vec, static_cast<T>(1.));
+
+  if(!equillocal) return;
 
   for (unsigned int k = 0; k < kEquilIter; ++k) {
     // e := 1 ./ (A' * d).

@@ -34,6 +34,7 @@
 // - uint max_iter     : Maximum number of iterations (recommended 1e3-2e3).
 // - int quiet         : Output to screen if quiet = 0.
 // - int adaptive_rho  : No adaptive rho update if adaptive_rho = 0.
+// - int equil         : No equilibration if equil = 0.
 // - int gap_stop      : Additionally use the gap as a stopping criteria.
 //
 // Output arguments (real_t is either double or float)
@@ -84,19 +85,19 @@ template <typename T>
 struct PogsSettings{
   T rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
-  int adaptive_rho, gap_stop, warm_start;
+  int adaptive_rho, equil, gap_stop, warm_start;
 };
 
 struct PogsSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
-  int adaptive_rho, gap_stop, warm_start;
+  int adaptive_rho, equil, gap_stop, warm_start;
 };
 
 struct PogsSettingsD{
   double rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
-  int adaptive_rho, gap_stop, warm_start;
+  int adaptive_rho, equil, gap_stop, warm_start;
 };
 
 

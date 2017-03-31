@@ -143,6 +143,7 @@ The keyword arguments are:
 + `gap_stop`: boolean, default = True
 + `rho`:			float, default = 1 (first run) or  final value from previous run
 + `adaptive_rho`:	boolean, default = True
++ `equil`:          boolean, default = True
 + `warm start`:		boolean, default = False
 
 *solver intialization*

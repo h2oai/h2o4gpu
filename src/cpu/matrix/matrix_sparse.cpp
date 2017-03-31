@@ -153,7 +153,7 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T *d, T *e) {
+int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -188,7 +188,7 @@ int MatrixSparse<T>::Equil(T *d, T *e) {
   }
 
   // Perform Sinkhorn-Knopp equilibration.
-  SinkhornKnopp(this, d, e);
+  SinkhornKnopp(this, d, e, equillocal);
 
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.

@@ -147,12 +147,14 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
 ///////////////////////// Modified Sinkhorn Knopp //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SinkhornKnopp(const Matrix<T> *A, T *d, T *e) {
+void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, A->Rows());
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, A->Cols());
   cml::vector_set_all(&d_vec, static_cast<T>(1.));
   cml::vector_set_all(&e_vec, static_cast<T>(1.));
 
+  if(!equillocal) return;
+  
   for (unsigned int k = 0; k < kEquilIter; ++k) {
 #ifdef USE_NVTX
     char mystring[100];

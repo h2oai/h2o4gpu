@@ -32,7 +32,7 @@ class MatrixSparse : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T *d, T *e);
+  int Equil(T *d, T *e, bool equillocal);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;

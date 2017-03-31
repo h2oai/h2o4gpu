@@ -40,6 +40,7 @@ DEFAULTS['rel_tol']		=	1e-4 	# rel_tol = 1e-4
 DEFAULTS['max_iters']	=	2500 	# max_iters = 2500
 DEFAULTS['verbose']		=	2 		# verbose = 2
 DEFAULTS['adaptive_rho']=	1 		# adaptive_rho = True
+DEFAULTS['equil']=	        1 		# equil = True
 DEFAULTS['gap_stop']	=	1		# gap_stop = True
 DEFAULTS['warm_start']	=	0 		# warm_start = False
 
@@ -56,6 +57,7 @@ class SettingsS(Structure):
 				('max_iters', c_uint), 
 				('verbose', c_uint), 
 				('adaptive_rho', c_int), 
+				('equil', c_int), 
 				('gap_stop', c_int),
 				('warm_start', c_int)]
 
@@ -66,6 +68,7 @@ class SettingsD(Structure):
 				('max_iters', c_uint), 
 				('verbose', c_uint), 
 				('adaptive_rho', c_int), 
+				('equil', c_int), 
 				('gap_stop', c_int),
 				('warm_start', c_int)]
 
@@ -125,6 +128,7 @@ def change_settings(settings, **kwargs):
 	if 'max_iters' in kwargs: settings.max_iters=kwargs['max_iters']
 	if 'verbose' in kwargs: settings.verbose=kwargs['verbose']
 	if 'adaptive_rho' in kwargs: settings.adaptive_rho=kwargs['adaptive_rho']
+	if 'equil' in kwargs: settings.equil=kwargs['equil']
 	if 'gap_stop' in kwargs: settings.gap_stop=kwargs['gap_stop']
 	
 	# warm_start must be specified each time it is desired
@@ -141,12 +145,13 @@ def make_settings(double_precision=False, **kwargs):
 	maxit = kwargs['max_iters'] if 'max_iters' in list(kwargs.keys()) else DEFAULTS['max_iters'] 
 	verb = kwargs['verbose'] if 'verbose' in list(kwargs.keys()) else DEFAULTS['verbose'] 
 	adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(kwargs.keys()) else DEFAULTS['adaptive_rho'] 
+	equil = kwargs['equil'] if 'equil' in list(kwargs.keys()) else DEFAULTS['equil'] 
 	gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else DEFAULTS['gap_stop']
 	warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else DEFAULTS['warm_start']
 	if double_precision:
-		return SettingsD(rho, relt, abst, maxit, verb, adap, gaps, warm)
+		return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm)
 	else:
-		return SettingsS(rho, relt, abst, maxit, verb, adap, gaps, warm)
+		return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm)
 
 def change_solution(pysolution, **kwargs):
 	try:

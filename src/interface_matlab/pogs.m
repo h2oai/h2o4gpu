@@ -40,6 +40,7 @@
 %                   operator.
 %                 + adaptive_rho (default true): Change rho adaptively to
 %                   speed up conversion.
+%                 + equil (default true): Do equilibration.
 %                 + quiet (default false): Set flag to true, to disable
 %                   output to console.
 %

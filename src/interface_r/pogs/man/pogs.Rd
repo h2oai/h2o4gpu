@@ -16,7 +16,7 @@ optional and each field which is specified must be a vector of length 1 or nrow(
 optional and each field which is specified must be a vector of length 1 or ncol(A).}
 
 \item{params}{List of parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
-max_iter=1000, quiet=FALSE, adaptive_rho=TRUE).
+max_iter=1000, quiet=FALSE, adaptive_rho=TRUE, equil=TRUE).
 All parameters are optional and take on a default value if not specified.}
 }
 \description{

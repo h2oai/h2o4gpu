@@ -195,6 +195,17 @@ int PopulateParams(const mxArray *params, pogs::Pogs<T, M, P> *pogs_data) {
     pogs_data->SetAdaptiveRho(
         GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
+  int equil_idx = mxGetFieldNumber(params, "equil");
+  if (equil_idx != -1) {
+    mxArray *arr = mxGetFieldByNumber(params, 0, equil_idx);
+    if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
+      mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+          "Parameter equil must have dimension (1,1)");
+      return 1;
+    }
+    pogs_data->SetEquil(
+        GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr)));
+  }
   int gap_stop_idx = mxGetFieldNumber(params, "gap_stop");
   if (gap_stop_idx != -1) {
     mxArray *arr = mxGetFieldByNumber(params, 0, gap_stop_idx);

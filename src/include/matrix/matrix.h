@@ -23,7 +23,7 @@ class Matrix {
   virtual int Init() = 0;
 
   // Method to equilibrate and return equilibration vectors.
-  virtual int Equil(T *d, T *e) = 0;
+  virtual int Equil(T *d, T *e, bool equillocal) = 0;
 
   // Method to multiply by A and A^T.
   virtual int Mul(char trans, T alpha, const T *x, T beta, T *y) const = 0;

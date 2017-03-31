@@ -56,6 +56,7 @@ Pogs<T, M, P>::Pogs(const M &A)
       _init_iter(kInitIter),
       _verbose(kVerbose),
       _adaptive_rho(kAdaptiveRho),
+      _equil(kEquil),
       _gap_stop(kGapStop),
       _init_x(false), _init_lambda(false) {
   _x = new T[_A.Cols()]();
@@ -87,8 +88,9 @@ int Pogs<T, M, P>::_Init() {
   POP_RANGE("Malloc",Malloc,1);
 
   PUSH_RANGE("Eq",Eq,1);
-  _A.Equil(_de, _de + m);
+  _A.Equil(_de, _de + m, _equil);
   POP_RANGE("Eq",Eq,1);
+  
 
 //  PUSH_RANGE("Init1",Init1,1);
   _P.Init();
@@ -189,7 +191,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&z, &ztemp); // ztemp->z TODO: Bug or wrong?
     CUDA_CHECK_ERR();
   }
-  if (_init_lambda) {
+  if (_init_lambda && _rho!=0) {
     cml::vector_memcpy(&ytemp, _lambda);
     cml::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
@@ -202,7 +204,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   PUSH_RANGE("Guess",Guess,7);
   // Make an initial guess for (x0 or lambda0).
-  if (_init_x && !_init_lambda) {
+  if (_init_x && !_init_lambda && _rho!=0) {
     // Alternating projections to satisfy 
     //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
     //   2. \mu = -A^T\lambda
@@ -281,6 +283,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_dua = _rho * (sqrtn_atol + _rel_tol * cml::blas_nrm2(hdl, &x));
     CUDA_CHECK_ERR();
     POP_RANGE("gapoptvaltol",gapoptvaltol,9);
+
+#ifdef DEBUG 
+    fprintf(stderr,"DEBUG1: %g %g\n",sqrtm_atol,cml::blas_nrm2(hdl, &y12));
+#endif
 
     // Apply over relaxation  (optional, can set kAlpha to 1, above, to disable)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.3
@@ -367,7 +373,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Rescale rho (optional)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.1
-    if (_adaptive_rho) {
+    if (_adaptive_rho && _rho!=0) {
       PUSH_RANGE("rescalerho",rescalerho,9);
       if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
           kTau * static_cast<T>(k) > static_cast<T>(kd)) {

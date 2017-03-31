@@ -49,6 +49,7 @@ namespace pogs {
 
 static const std::string POGS_VERSION = "0.2.0";
 
+// TODO: Choose default constants better
 // Defaults.
 const double       kAbsTol      = 1e-4;
 const double       kRelTol      = 1e-3;
@@ -57,6 +58,7 @@ const unsigned int kVerbose     = 2u;   // 0...4
 const unsigned int kMaxIter     = 2500u;
 const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
+const bool         kEquil       = true;
 const bool         kGapStop     = false;
 
 // Status messages
@@ -88,7 +90,7 @@ class Pogs {
   // Parameters.
   T _abs_tol, _rel_tol;
   unsigned int _max_iter, _init_iter, _verbose;
-  bool _adaptive_rho, _gap_stop, _init_x, _init_lambda;
+  bool _adaptive_rho, _equil, _gap_stop, _init_x, _init_lambda;
 
  public:
   // Constructor and Destructor.
@@ -113,6 +115,7 @@ class Pogs {
   unsigned int GetInitIter()    const { return _init_iter; }
   unsigned int GetVerbose()     const { return _verbose; }
   bool         GetAdaptiveRho() const { return _adaptive_rho; }
+  bool         GetEquil()       const { return _equil; }
   bool         GetGapStop()     const { return _gap_stop; }
   T            GetTime()        const { return _time; }
 
@@ -124,6 +127,7 @@ class Pogs {
   void SetInitIter(unsigned int init_iter) { _init_iter = init_iter; }
   void SetVerbose(unsigned int verbose)    { _verbose = verbose; }
   void SetAdaptiveRho(bool adaptive_rho)   { _adaptive_rho = adaptive_rho; }
+  void SetEquil(bool equil)                { _equil = equil; }
   void SetGapStop(bool gap_stop)           { _gap_stop = gap_stop; }
   void SetInitX(const T *x) {
     memcpy(_x, x, _A.Cols() * sizeof(T));

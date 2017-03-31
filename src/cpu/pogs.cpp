@@ -51,6 +51,7 @@ Pogs<T, M, P>::Pogs(const M &A)
       _init_iter(kInitIter),
       _verbose(kVerbose),
       _adaptive_rho(kAdaptiveRho),
+      _equil(kEquil),
       _gap_stop(kGapStop),
       _init_x(false), _init_lambda(false) {
   _x = new T[_A.Cols()]();
@@ -80,7 +81,7 @@ int Pogs<T, M, P>::_Init() {
   memset(_zt, 0, (m + n) * sizeof(T));
 
   _A.Init();
-  _A.Equil(_de, _de + m);
+  _A.Equil(_de, _de + m, _equil);
   _P.Init();
 
   return 0;

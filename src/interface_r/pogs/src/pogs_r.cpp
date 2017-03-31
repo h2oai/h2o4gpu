@@ -98,6 +98,10 @@ void PopulateParams(SEXP params, pogs::Pogs<T, M, P> *pogs_data) {
   if (adaptive_rho != R_NilValue)
     pogs_data->SetAdaptiveRho(LOGICAL(adaptive_rho)[0]);
 
+  SEXP equil = getListElement(params, "equil");
+  if (equil != R_NilValue)
+    pogs_data->SetEquil(LOGICAL(equil)[0]);
+
   SEXP gap_stop = getListElement(params, "gap_stop");
   if (gap_stop != R_NilValue)
     pogs_data->SetGapStop(LOGICAL(gap_stop)[0]);

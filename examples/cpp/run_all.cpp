@@ -16,8 +16,8 @@ int main() {
 
   //  int m=450016; // BARELY succeeds in 2000 iterations with n=213 and no adpative rho.  Fails with adaptive rho.  No big changes with Eq constant changes.
 
-
-  int m=450000; // testing, succeeds with or without adaptive rho
+  int m=5000;
+  //  int m=450000; // testing, succeeds with adaptive rho, but fails without adaptive rho
   //  int m=450020; // testing, fails with or without adaptive rho
 
   

@@ -119,6 +119,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
+  pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
 
   // Optionally, feed in warm start variables
@@ -159,6 +160,7 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
+  pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
 
   // Optionally, feed in warm start variables
@@ -199,6 +201,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
+  pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
 
   // Optionally, feed in warm start variables
@@ -239,6 +242,7 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   pogs_data.SetMaxIter(settings->max_iters);
   pogs_data.SetVerbose(settings->verbose);
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
+  pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
 
   // Optionally, feed in warm start variables

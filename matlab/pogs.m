@@ -43,6 +43,7 @@ function [x, y, factors, n_iter] = pogs(prox_f, prox_g, obj_fn, A, params, facto
 %                 + quiet (default false): Set flag to true, to disable
 %                   output to console.
 %                 + adaptive_rho (default true): Adaptively choose rho.
+%                 + equil (default true): Do equilibration.
 %                 + indirect (default false): Uses LSQR instead of LDL (not implemented yet).
 %                 + approx_res (default false): Use approximate residuals for stopping.
 %
@@ -95,6 +96,7 @@ MAXITR = get_or_default(params, 'MAXITR', 10000);
 quiet = get_or_default(params, 'quiet', false);
 norml = get_or_default(params, 'norml', true);
 ada_rho = get_or_default(params, 'adaptive_rho', true);
+equil = get_or_default(params, 'equil', true);
 indirect = get_or_default(params, 'indirect', false);
 approx_res = get_or_default(params, 'approx_res', false);
 

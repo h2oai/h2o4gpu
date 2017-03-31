@@ -42,13 +42,13 @@ enum STATUS { POGS_SUCCESS,    // Converged succesfully.
 struct PogsSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
-  int adaptive_rho, gap_stop, warm_start;
+  int adaptive_rho, equil, gap_stop, warm_start;
 };
 
 struct PogsSettingsD{
   double rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
-  int adaptive_rho, gap_stop, warm_start;
+  int adaptive_rho, equil, gap_stop, warm_start;
 };
 
 struct PogsInfoS{

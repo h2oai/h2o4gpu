@@ -96,6 +96,7 @@ int main() {
   unsigned int max_iter = 50u;
   int verbose = 2;
   int adaptive_rho = 1;
+  int equil = 1;
   int gap_stop = 0;
 
   // Solve
@@ -103,7 +104,7 @@ int main() {
   POGS(ord, m, n, A,
       f_a, f_b, f_c, f_d, f_e, f_h,
       g_a, g_b, g_c, g_d, g_e, g_h,
-      rho, abs_tol, rel_tol, max_iter, verbose, adaptive_rho, gap_stop,
+       rho, abs_tol, rel_tol, max_iter, verbose, adaptive_rho, equil, gap_stop,
       x, y, l, &optval, &final_iter);
   printf("Lasso optval = %e, final iter = %u\n", optval, final_iter);
 
