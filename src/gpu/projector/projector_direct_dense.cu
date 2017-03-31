@@ -263,10 +263,10 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   }
   POP_RANGE("P1",P1,1);
 
+#ifdef DEBUG
   double t1 = timer<double>() - t0;
   printf("Time to compute Cholesky decomp and backward solve: %f\n", t1);
 
-#ifdef DEBUG
   // Verify that projection was successful.
   CheckProjection(&_A, x0, y0, x, y, s,
       static_cast<T>(1e3) * std::numeric_limits<T>::epsilon());
