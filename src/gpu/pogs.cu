@@ -94,7 +94,7 @@ int Pogs<T, M, P>::_Init() {
 
   ncclComm_t* comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nDev);
   NCCLCHECK(ncclCommInitAll(comms, nDev, dList.data())); // initialize communicator (One communicator per process)
-  printf("# Using devices\n");
+  printf("# NCCL: Using devices\n");
   for (int g = 0; g < nDev; ++g) {
     int cudaDev;
     int rank;
