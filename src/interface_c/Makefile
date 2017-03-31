@@ -28,7 +28,7 @@ endif
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC
 
 # POGS static libraries
 POGSLIB=\
