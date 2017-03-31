@@ -195,12 +195,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     cml::vector_memcpy(&z, &ztemp); // ztemp->z TODO: Bug or wrong?
     CUDA_CHECK_ERR();
   }
-  if (_init_lambda && _rho!=0) {
+  if (_init_lambda) {
     cml::vector_memcpy(&ytemp, _lambda);
     cml::vector_div(&ytemp, &d);
     _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
     wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
-    cml::blas_scal(hdl, -kOne / _rho, &ztemp); // ztemp = ztemp * (-kOne/_rho)
+    if(_rho!=0) cml::blas_scal(hdl, -kOne / _rho, &ztemp); // ztemp = ztemp * (-kOne/_rho)
+    else cml::blas_scal(hdl, kZero, &ztemp); // ztemp = ztemp * (-kOne/_rho)
     cml::vector_memcpy(&zt, &ztemp); // ztemp->z
     CUDA_CHECK_ERR();
   }
@@ -208,7 +209,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   PUSH_RANGE("Guess",Guess,7);
   // Make an initial guess for (x0 or lambda0).
-  if (_init_x && !_init_lambda && _rho!=0) {
+  if (_init_x && !_init_lambda) {
     // Alternating projections to satisfy 
     //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
     //   2. \mu = -A^T\lambda
@@ -225,7 +226,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
     // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
     cml::vector_memcpy(&zt, &zprev); // zprev->zt
-    cml::blas_scal(hdl, -kOne / _rho, &zt);
+    if(_rho!=0) cml::blas_scal(hdl, -kOne / _rho, &zt);
+    else  cml::blas_scal(hdl, kZero, &zt);
   } else if (_init_lambda && !_init_x) {
     ASSERT(false);
   }
