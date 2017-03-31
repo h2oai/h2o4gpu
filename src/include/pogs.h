@@ -1,14 +1,13 @@
+#ifdef __JETBRAINS_IDE__
+    #define __host__
+    #define __device__
+#endif
 
 #ifdef USE_NVTX
 #include "nvToolsExt.h"
 
 const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff , 0x00f0ffff , 0x000fffff  , 0x00f0f0ff , 0x000ff0f0 };
 const int num_colors = sizeof(colors)/sizeof(uint32_t);
-
-#ifdef __JETBRAINS_IDE__
-    #define __host__
-    #define __device__
-#endif
 
 // whether push/pop timer is enabled (1) or not (0)
 //#define PUSHPOPTIMER 1
