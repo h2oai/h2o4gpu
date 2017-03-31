@@ -14,7 +14,6 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 //#define PUSHPOPTIMER 1
 
 #define PUSH_RANGE(name,tid,cid) \
-double timer##tid = timer<double>();            \
   { \
     fprintf(stderr,"START: name=%s cid=%d\n",name,cid); \
     int color_id = cid; \
@@ -27,7 +26,9 @@ double timer##tid = timer<double>();            \
     eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII; \
     eventAttrib.message.ascii = name; \
     nvtxRangePushEx(&eventAttrib); \
-  }
+  }\
+    double timer##tid = timer<double>();
+
 #define POP_RANGE(name,tid,cid) {                                       \
     fprintf(stderr,"STOP:  name=%s cid=%d duration=%g\n",name,cid,timer<double>() - timer##tid);  \
     nvtxRangePop(); \
