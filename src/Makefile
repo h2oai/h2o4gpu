@@ -1,5 +1,3 @@
-# Instructions
-# 1. To build with openmp set IFLAGS=-fopenmp
 
 # Bulid directory
 OBJDIR=build
@@ -9,11 +7,22 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) #-DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) -DUSE_NCCL=1 #-DUSE_NVTX=1 -DDEBUG # -Wconversion
 
 # CUDA Flags
+NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
+                -gencode=arch=compute_50,code=sm_50 \
+                -gencode=arch=compute_52,code=sm_52 \
+                -gencode=arch=compute_52,code=compute_52
+
+CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
+CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
+CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
+CXXFLAGS  += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
+
+# Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG
+CUFLAGS=$(IFLAGS) -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) -DUSE_NCCL=1 #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config

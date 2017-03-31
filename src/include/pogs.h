@@ -3,6 +3,38 @@
     #define __device__
 #endif
 
+#ifdef USE_NCCL
+#include "nccl.h"
+
+#include <curand.h>
+#include <cerrno>
+#include <string>
+
+// Check CUDA calls
+#define CUDACHECK(cmd) do {                         \
+    cudaError_t e = cmd;                              \
+    if( e != cudaSuccess ) {                          \
+      printf("Cuda failure %s:%d '%s'\n",             \
+             __FILE__,__LINE__,cudaGetErrorString(e));   \
+      exit(EXIT_FAILURE);                             \
+    }                                                 \
+  } while(0)
+
+// Propagate errors up
+#define NCCLCHECK(cmd) do {                         \
+    ncclResult_t r = cmd;                             \
+    if (r!= ncclSuccess) {                            \
+      printf("NCCL failure %s:%d '%s'\n",             \
+             __FILE__,__LINE__,ncclGetErrorString(r));   \
+      exit(EXIT_FAILURE);                             \
+    }                                                 \
+  } while(0)
+
+
+#endif // end if USE_NCCL defined
+
+
+
 #ifdef USE_NVTX
 #include "nvToolsExt.h"
 
