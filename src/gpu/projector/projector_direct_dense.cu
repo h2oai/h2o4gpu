@@ -264,7 +264,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   POP_RANGE("P1",P1,1);
 
   double t1 = timer<double>() - t0;
-  printf("Time to compute Cholesky decomp: %f\n", t1);
+  printf("Time to compute Cholesky decomp and backward solve: %f\n", t1);
 
 #ifdef DEBUG
   // Verify that projection was successful.
