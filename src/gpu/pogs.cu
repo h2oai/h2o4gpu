@@ -123,7 +123,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolMin = static_cast<T>(1e-2); // Projection tolerance
   const T kProjTolPow = static_cast<T>(1.3); // Projection tolerance
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
-  bool use_exact_stop = true;
+  bool use_exact_stop = false;
 
   //  PUSH_RANGE("PogsSolve",PogsSolve,1);
 
