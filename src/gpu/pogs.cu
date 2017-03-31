@@ -113,7 +113,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kDeltaMin   = static_cast<T>(1.05); // for adaptive rho and rescaling
   const T kGamma      = static_cast<T>(1.01); // for adaptive rho and rescaling
   const T kTau        = static_cast<T>(0.8); // for adaptive rho and rescaling
-  const T kAlpha      = static_cast<T>(1.0); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
+  const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
   const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
   const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
   const T kKappa      = static_cast<T>(0.4); // for adaptive rho and rescaling
