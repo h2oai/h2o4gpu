@@ -73,7 +73,7 @@ score <- function(model, preds) {
 if (pogs) {
   s1 <- proc.time()
   pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1e-5, max_iter=10000, adaptive_rho=FALSE, equil=TRUE))
+                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=200, adaptive_rho=FALSE, equil=TRUE))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
