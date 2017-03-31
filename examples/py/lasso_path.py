@@ -1,5 +1,5 @@
 import pogs as pogs
-import numpy as np
+import scipy as sp
 from numpy import abs, exp, float32, float64, log, max, sum, zeros
 from numpy.random import rand, randn
 
@@ -55,8 +55,11 @@ def LassoPath(m, n, gpu=True, double_precision=False, nlambda=50):
   # timer
   runtime = 0.
 
-  # use problem data A to create solver 
-  s = Solver(A) 
+  # use problem data A to create solver
+
+  #s = Solver(sp.sparse.csr_matrix(A))
+  #s = Solver(sp.sparse.csc_matrix(A))
+  s = Solver(A)
 
   for i in range(nlambda):
     _lambda= exp( (log(lambda_max)*(nlambda-1-i)+1e-2*log(lambda_max)*i )/ (nlambda-1))
