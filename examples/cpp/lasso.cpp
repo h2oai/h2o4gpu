@@ -92,6 +92,7 @@ double Lasso(size_t m, size_t n) {
     pogs_data.SetEquil(false); // trying
     pogs_data.SetRho(1E-4);
     pogs_data.SetVerbose(4);
+    pogs_data.SetMaxIter(1u);
   }
   else if(1==0){
     pogs_data.SetVerbose(4);

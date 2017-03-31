@@ -28,8 +28,8 @@ double timer##tid = timer<double>();            \
     nvtxRangePop(); \
   }
 #else
-#define PUSH_RANGE(name,cid)
-#define POP_RANGE(name,cid)
+#define PUSH_RANGE(name,tid,cid)
+#define POP_RANGE(name,tid,cid)
 #endif
 
 

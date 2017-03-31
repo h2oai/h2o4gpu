@@ -154,8 +154,8 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
   cml::vector_set_all(&e_vec, static_cast<T>(1.));
 
   if(!equillocal) return;
-  
-  for (unsigned int k = 0; k < kEquilIter; ++k) {
+  unsigned int k;
+  for (k = 0; k < kEquilIter; ++k) {
 #ifdef USE_NVTX
     char mystring[100];
     sprintf(mystring,"Eq%d",k);

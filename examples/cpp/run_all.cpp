@@ -16,7 +16,7 @@ int main() {
 
   //  int m=450016; // BARELY succeeds in 2000 iterations with n=213 and no adpative rho.  Fails with adaptive rho.  No big changes with Eq constant changes.
 
-  int m=5000;
+  //int m=5000;
   //  int m=450000; // testing, succeeds with adaptive rho, but fails without adaptive rho
   //  int m=450020; // testing, fails with or without adaptive rho
 
@@ -26,6 +26,9 @@ int main() {
   //  int n=212;
   int n=213;
 
+  int m=2000000; // benchmark
+
+  
   printf("\nLasso: m=%d n=%d.\n",m,n);
   t = Lasso<real_t>(m, n);
   printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
