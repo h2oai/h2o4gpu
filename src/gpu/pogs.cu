@@ -66,6 +66,9 @@ Pogs<T, M, P>::Pogs(const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
+#ifdef USE_NCCL
+      _comms(0),_nDev(0),
+#endif
       _init_x(false), _init_lambda(false) {
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
@@ -92,15 +95,15 @@ int Pogs<T, M, P>::_Init() {
   for (int i = 0; i < nDev; ++i)
     dList[i] = i % nVis;
 
-  ncclComm_t* comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nDev);
-  NCCLCHECK(ncclCommInitAll(comms, nDev, dList.data())); // initialize communicator (One communicator per process)
+  ncclComm_t* _comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nDev);
+  NCCLCHECK(ncclCommInitAll(_comms, nDev, dList.data())); // initialize communicator (One communicator per process)
   printf("# NCCL: Using devices\n");
   for (int g = 0; g < nDev; ++g) {
     int cudaDev;
     int rank;
     cudaDeviceProp prop;
-    NCCLCHECK(ncclCommCuDevice(comms[g], &cudaDev));
-    NCCLCHECK(ncclCommUserRank(comms[g], &rank));
+    NCCLCHECK(ncclCommCuDevice(_comms[g], &cudaDev));
+    NCCLCHECK(ncclCommUserRank(_comms[g], &rank));
     CUDACHECK(cudaGetDeviceProperties(&prop, cudaDev));
     printf("#   Rank %2d uses device %2d [0x%02x] %s\n", rank, cudaDev,
            prop.pciBusID, prop.name);
@@ -543,6 +546,12 @@ Pogs<T, M, P>::~Pogs() {
   _de = _z = _zt = 0;
   CUDA_CHECK_ERR();
 
+#ifdef USE_NCCL
+  for(int i=0; i<_nDev; ++i)
+    ncclCommDestroy(_comms[i]);
+  free(_comms);
+#endif
+  
   delete [] _x;
   delete [] _y;
   delete [] _mu;

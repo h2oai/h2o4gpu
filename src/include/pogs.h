@@ -117,6 +117,12 @@ class Pogs {
   T *_de, *_z, *_zt, _rho;
   bool _done_init;
 
+  // NCCL communicator
+#ifdef USE_NCCL
+  ncclComm_t* _comms;
+  int _nDev;
+#endif
+
   // Setup matrix _A and solver _LS
   int _Init();
 
