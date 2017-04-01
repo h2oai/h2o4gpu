@@ -2,87 +2,106 @@ library(h2o)
 library(pogs)
 library(glmnet)
 library(data.table)
-
-#https://www.kaggle.com/c/springleaf-marketing-response/data
-N<-145231 ## max
-#N<-10000  ## ok for accuracy tests
-H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
-#f <- "gunzip -c ../data/springleaf/train.csv.zip"
-f <- "~/kaggle/springleaf/input/train.csv"
-
-response <- 'target'
+  
+pogs  <-TRUE
+glmnet<-TRUE
+h2o   <-FALSE
+alpha <- .5
 family <- "gaussian"
 #family <- "binomial"
-pogs  <-TRUE
-glmnet<-FALSE
-h2o   <-FALSE
-alpha <- 0.5
 
-file <- paste0("/tmp/train.",N,".csv")
+ 
 if (FALSE) {
-## DATA PREP
-  DT <- fread(f, nrows=N)
+  #https://www.kaggle.com/c/springleaf-marketing-response/data
+  N<-145231 ## max
+  N<-10000  ## ok for accuracy tests
+  H <- round(0.8*N) ## need to split into train/test since kaggle test set has no labels
+  #f <- "gunzip -c ../data/springleaf/train.csv.zip"
+  f <- "~/kaggle/springleaf/input/train.csv"
+  response <- 'target'
 
-  DT[['ID']] <- NULL ## ignore ID
-
-## label encoding
-#feature.names <- setdiff(names(DT), response)
-#for (f in feature.names) {
-#  if (class(DT[[f]])=="character") {
-#    levels <- unique(c(DT[[f]]))
-#    DT[[f]] <- as.integer(factor(DT[[f]], levels=levels))
-#  }
-#}
-  DT[is.na(DT)] <- 0
-  DT <- DT[,sapply(DT, is.numeric), with=FALSE]
-  DT <- DT[,apply(DT, 2, var, na.rm=TRUE) != 0, with=FALSE] ## drop const cols
-  cols <- setdiff(names(DT),c(response))
-  for (c in cols) {
-    DT[,(c):=scale(DT[[c]])]
+  file <- paste0("/tmp/train.",N,".csv")
+  if (FALSE) {
+    ## DATA PREP
+    DT <- fread(f, nrows=N)
+    
+    DT[['ID']] <- NULL ## ignore ID
+    
+    ## label encoding
+    #feature.names <- setdiff(names(DT), response)
+    #for (f in feature.names) {
+    #  if (class(DT[[f]])=="character") {
+    #    levels <- unique(c(DT[[f]]))
+    #    DT[[f]] <- as.integer(factor(DT[[f]], levels=levels))
+    #  }
+    #}
+    DT[is.na(DT)] <- 0
+    DT <- DT[,sapply(DT, is.numeric), with=FALSE]
+    DT <- DT[,apply(DT, 2, var, na.rm=TRUE) > 0, with=FALSE] ## drop const cols
+    #  cols <- names(DT)
+    cols <- setdiff(names(DT),c(response))
+    for (c in cols) {
+      DT[,(c):=scale(DT[[c]])]
+    }
+    DT <- DT[,apply(DT, 2, var, na.rm=TRUE) > 0.1, with=FALSE] ## drop near-const cols
+    fwrite(DT, file)
+  } else {
+    DT <- fread(file)
+    cols <- setdiff(names(DT),c(response))
   }
-  fwrite(DT, file)
+  
+  train <- DT[1:H,]
+  valid <- DT[(H+1):N,]
+  
+  train_x  <- as.matrix(as.data.frame(train[,cols,with=FALSE]))
+  train_y  <- as.numeric(as.vector(train[[response]]))
+  valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
+  valid_y  <- as.numeric(as.vector(valid[[response]]))
 } else {
-  DT <- fread(file)
-  cols <- setdiff(names(DT),c(response))
+  
+  # Generate synthetic data
+  set.seed(19875)  # Set seed for reproducibility
+  n <- 10000  # Number of observations
+  p <- 1000  # Number of predictors included in model
+  real_p <- 100  # Number of true predictors
+  x <- matrix(rnorm(n*p), nrow=n, ncol=p)
+  y <- apply(x[,1:real_p], 1, sum) + rnorm(n)
+  
+  # Split data into train and validation
+  train_rows <- sample(1:n, .8*n)
+  train_x <- x[train_rows, ]
+  valid_x <- x[-train_rows, ]
+  train_y <- y[train_rows]
+  valid_y <- y[-train_rows]
 }
 
 
-
-train <- DT[1:H,]
-valid <- DT[(H+1):N,]
-
-train_x  <- as.matrix(as.data.frame(train[,cols,with=FALSE]))
-train_y  <- as.numeric(as.vector(train[[response]]))
-valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
-valid_y  <- as.numeric(as.vector(valid[[response]]))
-
-validLoss <- function(x) {
-  sqrt(mean((x-valid_y)^2))
-}
-
-score <- function(model, preds) {
-  rmse = apply(preds, 2, validLoss)
+score <- function(model, preds, actual) {
+  rmse = apply(preds, 2, function(x) sqrt(mean((x-actual)^2)))
   r = cbind(lambda=log10(rev(model$lambda)), rmse)
   plot(r)
   print(paste0("RMSE: ", min(rmse)))
   idx = which(rmse==min(rmse))
+  print(paste0("best lambda index: ", idx))
   print(paste0("lambda: ", (rev(model$lambda)[idx])))
 }
 
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=200, adaptive_rho=FALSE, equil=TRUE))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
+                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
+                   #max_iter=200, 
+                 adaptive_rho=FALSE, equil=TRUE))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
   print("POGS GPU: ")
   print(e1-s1)
   
-  score(pogs, pogs_pred_y)
+  score(pogs, pogs_pred_y, valid_y)
+  plot(pogs)
 }
-
 
 ## GLMNET
 if (glmnet) {
@@ -99,7 +118,8 @@ if (glmnet) {
   print("GLMNET CPU")
   print(e2-s2)
   
-  score(glmnet, glmnet_pred_y)
+  score(glmnet, glmnet_pred_y, valid_y)
+  plot(glmnet)
 }
 
 
@@ -140,4 +160,34 @@ if (h2o) {
   plot(rmse)
   print(min(rmse))
 }
+
+## Proposed solution for fast GPU solver
+## Idea: Build the model in the projected space
+
+## One-time projection of training data
+AtA <- (t(train_x) %*% train_x)
+Atb <- (t(train_x) %*% train_y)
+## One-time projection of validation data
+validAtA <- t(valid_x) %*% valid_x
+validAtb <- t(valid_x) %*% valid_y
+
+## From now on, do all these on tiny data (still GPU, do a lot of things at once)
+L <- t(chol(AtA))         ## get L of cholesky factorization: L Lt = At A
+z <- forwardsolve(L, Atb) ## solve L z = At b
+
+## Solve Lt x = z with all L1/L2 regularization terms
+model <- glmnet(x=t(L), y=z, family=family, alpha=alpha) ## TODO: can cheaply add CV, alpha search etc.
+
+## Validation
+
+## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
+p <- predict(model, valid_x, type="response")
+score(model, p, valid_y)
+plot(model)
+
+## Option 2) Faster: Can even find the lowest RMSE of the model in the projected space!
+Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
+rmse = apply(Atp, 2, function(x) sqrt(mean((x-validAtb)^2))) ## projected rmse 
+idx = which(rmse==min(rmse))
+print(paste0("best lambda index: ", idx)) ## same optimal model found as in full validation space!
 
