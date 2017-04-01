@@ -2,7 +2,8 @@ library(h2o)
 library(pogs)
 library(glmnet)
 library(data.table)
-  
+
+
 pogs  <-TRUE
 glmnet<-TRUE
 h2o   <-FALSE
@@ -59,20 +60,42 @@ if (FALSE) {
   valid_y  <- as.numeric(as.vector(valid[[response]]))
 } else {
   
-  # Generate synthetic data
-  set.seed(19875)  # Set seed for reproducibility
-  n <- 10000  # Number of observations
-  p <- 1000  # Number of predictors included in model
-  real_p <- 100  # Number of true predictors
-  x <- matrix(rnorm(n*p), nrow=n, ncol=p)
-  y <- apply(x[,1:real_p], 1, sum) + rnorm(n)
+  # # Generate synthetic data
+  # set.seed(19875)  # Set seed for reproducibility
+  # n <- 10000  # Number of observations
+  # p <- 1000  # Number of predictors included in model
+  # real_p <- 100  # Number of true predictors
+  # x <- matrix(rnorm(n*p), nrow=n, ncol=p)
+  # y <- apply(x[,1:real_p], 1, sum) + rnorm(n)
+  # 
+  df <- iris[,-5]
+  cuts <- apply(df[,c(2,3)], 2, cut, c(-Inf,seq(0, 10, 0.1), Inf))
+  cuts <- cbind(as.data.frame(cuts), df[,c(1,4)])
+  df <- data.frame(model.matrix(~.-1,cuts))
+  n <- nrow(df)
+  p <- ncol(df)
   
   # Split data into train and validation
   train_rows <- sample(1:n, .8*n)
+  const_cols <- which(apply(df[train_rows,], 2, sd) ==0)
+  df <- df[,-const_cols]
+  df <- df + 0.01* matrix(rnorm(n*p), nrow=n, ncol=p) ## optional: add noise
+  
+  summary(df)
+  response <- "Petal.Width"
+  
+  x <- as.matrix(df[,setdiff(names(df),response)])
+  y <- as.matrix(df[[response]])
   train_x <- x[train_rows, ]
   valid_x <- x[-train_rows, ]
   train_y <- y[train_rows]
   valid_y <- y[-train_rows]
+  
+  ## Quick H2O model
+  library(h2o)
+  h2o.init()
+  h2oglm <- h2o.glm(nfolds=5,training_frame=as.h2o(df[train_rows,]),validation_frame=as.h2o(df[-train_rows,]),y=response,lambda_search = TRUE)
+  h2oglm
 }
 
 
@@ -81,16 +104,18 @@ score <- function(model, preds, actual) {
   r = cbind(lambda=log10(rev(model$lambda)), rmse)
   plot(r)
   print(paste0("RMSE: ", min(rmse)))
-  idx = which(rmse==min(rmse))
-  print(paste0("best lambda index: ", idx))
-  print(paste0("lambda: ", (rev(model$lambda)[idx])))
+  idx = which(rev(rmse)==min(rmse))
+  print(paste0("best lambda: ", idx, "-th largest"))
+  print(paste0("lambda: ", model$lambda)[idx])
+  print(paste0("dofs: ", model$df)[idx])
+  plot(model, xvar="lambda")
 }
 
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
   pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
+                 params=list(rel_tol=1e-6, abs_tol=1e-6, rho=1,
                    #max_iter=200, 
                  adaptive_rho=FALSE, equil=TRUE))
   e1 <- proc.time()
@@ -100,7 +125,6 @@ if (pogs) {
   print(e1-s1)
   
   score(pogs, pogs_pred_y, valid_y)
-  plot(pogs)
 }
 
 ## GLMNET
@@ -119,11 +143,11 @@ if (glmnet) {
   print(e2-s2)
   
   score(glmnet, glmnet_pred_y, valid_y)
-  plot(glmnet)
 }
 
 
-## H2O
+## H2O 
+## SEE ABOVE FOR MODEL ON DATA CREATION
 if (h2o) {
   h2o.init(nthreads=-1)
   df.hex <- h2o.importFile(file)
@@ -175,7 +199,7 @@ validAtb <- t(valid_x) %*% valid_y
 L <- t(chol(AtA))         ## get L of cholesky factorization: L Lt = At A
 z <- forwardsolve(L, Atb) ## solve L z = At b
 
-## Solve Lt x = z with all L1/L2 regularization terms
+## Solve Lt x = z with MSE loss and all L1/L2 regularization terms
 model <- glmnet(x=t(L), y=z, family=family, alpha=alpha) ## TODO: can cheaply add CV, alpha search etc.
 
 ## Validation
@@ -183,11 +207,10 @@ model <- glmnet(x=t(L), y=z, family=family, alpha=alpha) ## TODO: can cheaply ad
 ## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
 p <- predict(model, valid_x, type="response")
 score(model, p, valid_y)
-plot(model)
 
 ## Option 2) Faster: Can even find the lowest RMSE of the model in the projected space!
 Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
 rmse = apply(Atp, 2, function(x) sqrt(mean((x-validAtb)^2))) ## projected rmse 
-idx = which(rmse==min(rmse))
-print(paste0("best lambda index: ", idx)) ## same optimal model found as in full validation space!
+idx = which(rev(rmse)==min(rmse))
+print(paste0("best lambda: ", idx, "-th largest"))
 
