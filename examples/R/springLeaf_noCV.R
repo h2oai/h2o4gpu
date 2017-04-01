@@ -2,12 +2,12 @@ library(h2o)
 library(pogs)
 library(glmnet)
 library(data.table)
-
+h2o.init(nthreads=-1)
 
 pogs  <-TRUE
 glmnet<-TRUE
-h2o   <-FALSE
-alpha <- .5
+h2o   <-TRUE
+alpha <- 0.8
 family <- "gaussian"
 #family <- "binomial"
 
@@ -90,12 +90,6 @@ if (FALSE) {
   valid_x <- x[-train_rows, ]
   train_y <- y[train_rows]
   valid_y <- y[-train_rows]
-  
-  ## Quick H2O model
-  library(h2o)
-  h2o.init()
-  h2oglm <- h2o.glm(nfolds=5,training_frame=as.h2o(df[train_rows,]),validation_frame=as.h2o(df[-train_rows,]),y=response,lambda_search = TRUE)
-  h2oglm
 }
 
 
@@ -115,9 +109,9 @@ score <- function(model, preds, actual) {
 if (pogs) {
   s1 <- proc.time()
   pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
-                 params=list(rel_tol=1e-6, abs_tol=1e-6, rho=1,
+                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
                    #max_iter=200, 
-                 adaptive_rho=FALSE, equil=TRUE))
+                 adaptive_rho=TRUE, equil=FALSE))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 
@@ -149,41 +143,54 @@ if (glmnet) {
 ## H2O 
 ## SEE ABOVE FOR MODEL ON DATA CREATION
 if (h2o) {
-  h2o.init(nthreads=-1)
-  df.hex <- h2o.importFile(file)
-  train.hex <- df.hex[1:H,]
-  valid.hex <- df.hex[(H+1):N,]
   
-  if (family=="binomial") {
-    train.hex[[response]] <- as.factor(train.hex[[response]])
-    valid.hex[[response]] <- as.factor(valid.hex[[response]])
-  }
   
-  s3 <- proc.time()
-  h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
-  e3 <- proc.time()
-  h2opreds <- h2o.predict(h2omodel, valid.hex)
-  summary(h2opreds)
+  ## Quick H2O model
 
-  print("H2O CPU ")
-  print(e3-s3)
+  h2oglm <- h2o.glm(alpha=alpha,training_frame=as.h2o(df[train_rows,]),validation_frame=as.h2o(df[-train_rows,]),y=response,lambda_search = TRUE)
+  h2oglm
+  print("H2O CPU")
+  print(h2o.rmse(h2o.performance(h2oglm,valid=TRUE)))
   
-  regpath = h2o.getGLMFullRegularizationPath(h2omodel)
-  n = dim(regpath$coefficients)[1]
-  coefs = NULL
-  for (i in 1:n) {
-    coefs = regpath$coefficients[i,]
-    h2omodel2 <- h2o.makeGLMModel(h2omodel,coefs)
-    h2opreds <- h2o.predict(h2omodel2, valid.hex)
-    if (family == "gaussian") {
-      rmse[i] <- h2o.rmse(h2o.make_metrics(h2opreds[,1], valid.hex[[response]]))
-    } else {
-      #h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]])))
+  if (FALSE) {
+    df.hex <- h2o.importFile(file)
+    train.hex <- df.hex[1:H,]
+    valid.hex <- df.hex[(H+1):N,]
+    
+    if (family=="binomial") {
+      train.hex[[response]] <- as.factor(train.hex[[response]])
+      valid.hex[[response]] <- as.factor(valid.hex[[response]])
     }
+    
+    s3 <- proc.time()
+    h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
+    e3 <- proc.time()
+    h2opreds <- h2o.predict(h2omodel, valid.hex)
+    summary(h2opreds)
+    
+    print("H2O CPU ")
+    print(e3-s3)
+    
+    regpath = h2o.getGLMFullRegularizationPath(h2omodel)
+    n = dim(regpath$coefficients)[1]
+    coefs = NULL
+    for (i in 1:n) {
+      coefs = regpath$coefficients[i,]
+      h2omodel2 <- h2o.makeGLMModel(h2omodel,coefs)
+      h2opreds <- h2o.predict(h2omodel2, valid.hex)
+      if (family == "gaussian") {
+        rmse[i] <- h2o.rmse(h2o.make_metrics(h2opreds[,1], valid.hex[[response]]))
+      } else {
+        #h2o.auc(h2o.make_metrics(h2opreds[,3], valid.hex[[response]])))
+      }
+    }
+    plot(rmse)
+    print(min(rmse))
   }
-  plot(rmse)
-  print(min(rmse))
 }
+
+
+print("FAST SOLVER IN PROJECTED SPACE")
 
 ## Proposed solution for fast GPU solver
 ## Idea: Build the model in the projected space
