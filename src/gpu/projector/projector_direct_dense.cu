@@ -37,6 +37,8 @@ struct GpuData {
 template <typename T, typename M>
 ProjectorDirect<T, M>::ProjectorDirect(const M& A)
     : _A(A) {
+
+  fprintf(stderr,"Rows=%d Cols=%d\n",_A.Rows(),_A.Cols());
   // Set GPU specific this->_info.
   GpuData<T> *info = new GpuData<T>();
   this->_info = reinterpret_cast<void*>(info);
@@ -78,6 +80,7 @@ int ProjectorDirect<T, M>::Init() {
   cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
   cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
   cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
+  fprintf(stderr,"TEST: r=%d c=%d : %d %d\n",_A.Rows(), _A.Cols(), (int)min_dim,(int)sizeof(T));
   CUDA_CHECK_ERR();
   POP_RANGE("AAalloc",AAalloc,1);
 

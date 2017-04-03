@@ -57,6 +57,8 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
+  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,m,n);
+  
   // Set GPU specific _info.
   GpuData<T> *info = new GpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
