@@ -43,6 +43,8 @@ DEFAULTS['adaptive_rho']=	1 		# adaptive_rho = True
 DEFAULTS['equil']=	        1 		# equil = True
 DEFAULTS['gap_stop']	=	1		# gap_stop = True
 DEFAULTS['warm_start']	=	0 		# warm_start = False
+DEFAULTS['nDev']=	1 		# number of cuda devices =1
+DEFAULTS['wDev']=	0 		# which cuda devices (0)
 
 # pointers to C types
 c_int_p = POINTER(c_int)
@@ -59,7 +61,9 @@ class SettingsS(Structure):
 				('adaptive_rho', c_int), 
 				('equil', c_int), 
 				('gap_stop', c_int),
-				('warm_start', c_int)]
+				('warm_start', c_int),
+				('nDev', c_int), 
+				('wDev', c_int)]
 
 class SettingsD(Structure):
 	_fields_ = [('rho', c_double), 
@@ -70,7 +74,9 @@ class SettingsD(Structure):
 				('adaptive_rho', c_int), 
 				('equil', c_int), 
 				('gap_stop', c_int),
-				('warm_start', c_int)]
+				('warm_start', c_int),
+				('nDev', c_int), 
+				('wDev', c_int)]
 
 class InfoS(Structure):
 	_fields_ = [('iter', c_uint), 
@@ -136,6 +142,8 @@ def change_settings(settings, **kwargs):
 		settings.warm_start=kwargs['warm_start']
 	else:
 		settings.warm_start=0
+	if 'nDev' in kwargs: settings.nDev=kwargs['nDev']
+	if 'wDev' in kwargs: settings.wDev=kwargs['wDev']
 
 
 def make_settings(double_precision=False, **kwargs):
@@ -148,10 +156,12 @@ def make_settings(double_precision=False, **kwargs):
 	equil = kwargs['equil'] if 'equil' in list(kwargs.keys()) else DEFAULTS['equil'] 
 	gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else DEFAULTS['gap_stop']
 	warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else DEFAULTS['warm_start']
+	ndev = kwargs['nDev'] if 'nDev' in list(kwargs.keys()) else DEFAULTS['nDev'] 
+	wdev = kwargs['wDev'] if 'wDev' in list(kwargs.keys()) else DEFAULTS['wDev'] 
 	if double_precision:
-		return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm)
+		return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm, ndev, wdev)
 	else:
-		return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm)
+		return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm, ndev, wdev)
 
 def change_solution(pysolution, **kwargs):
 	try:

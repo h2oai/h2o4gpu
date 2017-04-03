@@ -29,6 +29,8 @@ typedef struct {
 } PerThreadData;
 
 
+
+
 #define __HBAR__ \
 "----------------------------------------------------------------------------\n"
 
@@ -66,8 +68,9 @@ Pogs<T, M, P>::Pogs(const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
+      _nDev(1),_wDev(0),
 #ifdef USE_NCCL
-      _comms(0),_nDev(0),
+      _comms(0),
 #endif
       _init_x(false), _init_lambda(false) {
   _x = new T[_A.Cols()]();
@@ -83,22 +86,47 @@ int Pogs<T, M, P>::_Init() {
     return 1;
   _done_init = true;
 
-#ifdef USE_NCCL
-  
-  // initialize nccl
+  //  int _nDev=1; // number of cuda devices to use
+  //  int _wDev=0; // which cuda device(s) to use
+
+  // get number of devices visible/available
   int nVis = 0;
   CUDACHECK(cudaGetDeviceCount(&nVis));
+  for (int i = 0; i < nVis; i++){
+    cudaDeviceProp props;
+    CUDACHECK(cudaGetDeviceProperties(&props, i));
+    printf("Visible: Compute %d.%d CUDA device: [%s] : cudadeviceid: %2d of %2d devices [0x%02x] mpc=%d\n", props.major, props.minor, props.name, i, nVis, props.pciBusID, props.multiProcessorCount);
+  }
+  
+  // get device ID
+  int devID;
+  CUDACHECK(cudaGetDevice(&devID));
+  cudaDeviceProp props;
+  // get device properties
+  CUDACHECK(cudaGetDeviceProperties(&props, devID));
 
-  // Choose nDev
-  int nDev = 4;
-  std::vector<int> dList(nDev);
-  for (int i = 0; i < nDev; ++i)
+  for (int i = 0; i < _nDev; i++){
+    if(i==0 && i==_nDev-1) i=_wDev; // force to chosen device
+    cudaDeviceProp props;
+    CUDACHECK(cudaGetDeviceProperties(&props, i));
+    CUDACHECK(cudaSetDevice(i));
+    //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+    printf("Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,i);
+
+    
+  }
+  
+#ifdef USE_NCCL
+  // initialize nccl
+
+  std::vector<int> dList(_nDev);
+  for (int i = 0; i < _nDev; ++i)
     dList[i] = i % nVis;
 
-  ncclComm_t* _comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nDev);
-  NCCLCHECK(ncclCommInitAll(_comms, nDev, dList.data())); // initialize communicator (One communicator per process)
+  ncclComm_t* _comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*_nDev);
+  NCCLCHECK(ncclCommInitAll(_comms, _nDev, dList.data())); // initialize communicator (One communicator per process)
   printf("# NCCL: Using devices\n");
-  for (int g = 0; g < nDev; ++g) {
+  for (int g = 0; g < _nDev; ++g) {
     int cudaDev;
     int rank;
     cudaDeviceProp prop;

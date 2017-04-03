@@ -145,6 +145,8 @@ The keyword arguments are:
 + `adaptive_rho`:	boolean, default = True
 + `equil`:          boolean, default = True
 + `warm start`:		boolean, default = False
++ `nDev`:		    int, default = 1
++ `wDev`:		    int, default = 1
 
 *solver intialization*
 + `x_init`: `numpy.ndarray` (float32/64), initial guess for primal variable x (warm start)

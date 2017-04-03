@@ -105,6 +105,14 @@ void PopulateParams(SEXP params, pogs::Pogs<T, M, P> *pogs_data) {
   SEXP gap_stop = getListElement(params, "gap_stop");
   if (gap_stop != R_NilValue)
     pogs_data->SetGapStop(LOGICAL(gap_stop)[0]);
+
+  SEXP nDev = getListElement(params, "nDev");
+  if (nDev != R_NilValue)
+    pogs_data->SetnDev(INTEGER(nDev)[0]);
+
+  SEXP wDev = getListElement(params, "wDev");
+  if (wDev != R_NilValue)
+    pogs_data->SetwDev(INTEGER(wDev)[0]);
 }
 
 template <typename T>

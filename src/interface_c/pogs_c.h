@@ -36,6 +36,8 @@
 // - int adaptive_rho  : No adaptive rho update if adaptive_rho = 0.
 // - int equil         : No equilibration if equil = 0.
 // - int gap_stop      : Additionally use the gap as a stopping criteria.
+// - int nDev          : Choose number of cuda devices
+// - int wDev          : Choose which cuda device(s)
 //
 // Output arguments (real_t is either double or float)
 // - real_t *x         : Array for solution vector x.
@@ -86,18 +88,21 @@ struct PogsSettings{
   T rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
+  int nDev,wDev;
 };
 
 struct PogsSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
+  int nDev,wDev;
 };
 
 struct PogsSettingsD{
   double rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
+  int nDev,wDev;
 };
 
 

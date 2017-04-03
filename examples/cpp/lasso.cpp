@@ -19,24 +19,14 @@ double Lasso(size_t m, size_t n) {
   std::vector<T> b(m);
 
 
-  
+  fprintf(stdout,"START FILL DATA\n");
+  double t0 = timer<double>();
 #include "readorgen.c"
+  double t1 = timer<double>();
+  fprintf(stdout,"END FILL DATA\n");
+  printf("Time to create data: %f\n", t1-t0);
 
-  std::vector<T> x_true(n);
-  for (unsigned int i = 0; i < n; ++i)
-    x_true[i] = u_dist(generator) < static_cast<T>(0.8)
-        ? static_cast<T>(0) : n_dist(generator) / static_cast<T>(std::sqrt(n));
 
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-  for (unsigned int i = 0; i < m; ++i)
-    for (unsigned int j = 0; j < n; ++j)
-      b[i] += A[i * n + j] * x_true[j];
-      // b[i] += A[i + j * m] * x_true[j];
-
-  for (unsigned int i = 0; i < m; ++i)
-    b[i] += static_cast<T>(0.5) * n_dist(generator);
 
   ////////////////////
   // set lambda for regularization
@@ -69,10 +59,6 @@ double Lasso(size_t m, size_t n) {
   for (unsigned int i = 0; i < n; ++i)
     g.emplace_back(kAbs, static_cast<T>(0.2) * lambda_max);
 
-  fprintf(stdout,"END FILL DATA\n");
-  
-  double t1 = timer<double>();
-  printf("Time to create data: %f\n", t1-t0);
   double t = timer<double>();
 
 

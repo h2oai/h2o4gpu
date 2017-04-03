@@ -43,6 +43,8 @@
 %                 + equil (default true): Do equilibration.
 %                 + quiet (default false): Set flag to true, to disable
 %                   output to console.
+%                 + nDev (default 1): number of cuda devices
+%                 + wDev (default 0): which cuda devices
 %
 %   Outputs:
 %   x         - The partial solution x^\star to the optimization problem.

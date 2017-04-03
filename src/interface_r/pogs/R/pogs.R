@@ -17,7 +17,7 @@
 #' @param g List with fields a, b, c, d, e, and h. All fields except h are
 #' optional and each field which is specified must be a vector of length 1 or ncol(A).
 #' @param params List of parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
-#' max_iter=1000, quiet=FALSE, adaptive_rho=TRUE, equil=TRUE).
+#' max_iter=1000, quiet=FALSE, adaptive_rho=TRUE, equil=TRUE, nDev=1, wDev=0).
 #' All parameters are optional and take on a default value if not specified.
 #' @examples
 #' # Specify Lasso problem.
@@ -113,10 +113,10 @@ pogs <- function(A, f, g, params=list()) {
  
   # Check fields in params.
   if (length(params) > 0 && is.null(names(params))) {
-    stop("params must be a named list (elements abs_tol, rel_tol, rho, max_iter, verbose, adaptive_rho, equil, gap_stop)")
+    stop("params must be a named list (elements abs_tol, rel_tol, rho, max_iter, verbose, adaptive_rho, equil, gap_stop, nDev, wDev)")
   }
   for (name in names(params)) {
-    if (!any(name == c("rel_tol", "abs_tol", "rho", "max_iter", "verbose", "adaptive_rho", "equil", "gap_stop"))) {
+    if (!any(name == c("rel_tol", "abs_tol", "rho", "max_iter", "verbose", "adaptive_rho", "equil", "gap_stop", "nDev", "wDev"))) {
       stop(cat("pogs(): field params$", name, " unknown!", sep=""))
     }
     if (!is.numeric(params[[name]]) && name != "adaptive_rho" && name != "equil" && name != "gap_stop") {

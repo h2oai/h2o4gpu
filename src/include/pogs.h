@@ -3,13 +3,6 @@
     #define __device__
 #endif
 
-#ifdef USE_NCCL
-#include "nccl.h"
-
-#include <curand.h>
-#include <cerrno>
-#include <string>
-
 // Check CUDA calls
 #define CUDACHECK(cmd) do {                         \
     cudaError_t e = cmd;                              \
@@ -19,6 +12,15 @@
       exit(EXIT_FAILURE);                             \
     }                                                 \
   } while(0)
+
+
+
+#ifdef USE_NCCL
+#include "nccl.h"
+
+#include <curand.h>
+#include <cerrno>
+#include <string>
 
 // Propagate errors up
 #define NCCLCHECK(cmd) do {                         \
@@ -97,6 +99,8 @@ const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
 const bool         kEquil       = true;
 const bool         kGapStop     = false;
+const int          knDev        = 1;
+const int          kwDev        = 0;
 
 // Status messages
 enum PogsStatus { POGS_SUCCESS,    // Converged successfully.
@@ -117,10 +121,11 @@ class Pogs {
   T *_de, *_z, *_zt, _rho;
   bool _done_init;
 
+  // cuda number of devices and which device(s) to use
+  int _nDev,_wDev;
   // NCCL communicator
 #ifdef USE_NCCL
   ncclComm_t* _comms;
-  int _nDev;
 #endif
 
   // Setup matrix _A and solver _LS
@@ -161,6 +166,8 @@ class Pogs {
   bool         GetEquil()       const { return _equil; }
   bool         GetGapStop()     const { return _gap_stop; }
   T            GetTime()        const { return _time; }
+  int          GetnDev()        const { return _nDev; }
+  int          GetwDev()        const { return _wDev; }
 
   // Setters for parameters and initial values.
   void SetRho(T rho)                       { _rho = rho; }
@@ -172,6 +179,8 @@ class Pogs {
   void SetAdaptiveRho(bool adaptive_rho)   { _adaptive_rho = adaptive_rho; }
   void SetEquil(bool equil)                { _equil = equil; }
   void SetGapStop(bool gap_stop)           { _gap_stop = gap_stop; }
+  void SetnDev(int nDev)    { _nDev = nDev; }
+  void SetwDev(int wDev)    { _wDev = wDev; }
   void SetInitX(const T *x) {
     memcpy(_x, x, _A.Cols() * sizeof(T));
     _init_x = true;

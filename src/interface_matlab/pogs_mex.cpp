@@ -216,6 +216,28 @@ int PopulateParams(const mxArray *params, pogs::Pogs<T, M, P> *pogs_data) {
     }
     pogs_data->SetGapStop(GetVal<bool>(mxGetData(arr), 0, mxGetClassID(arr)));
   }
+  int nDev_idx = mxGetFieldNumber(params, "nDev");
+  if (nDev_idx != -1) {
+    mxArray *arr = mxGetFieldByNumber(params, 0, nDev_idx);
+    if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
+      mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+          "Parameter nDev must have dimension (1,1)");
+      return 1;
+    }
+    pogs_data->SetnDev(
+        GetVal<int>(mxGetData(arr), 0, mxGetClassID(arr)));
+  }
+  int wDev_idx = mxGetFieldNumber(params, "wDev");
+  if (wDev_idx != -1) {
+    mxArray *arr = mxGetFieldByNumber(params, 0, wDev_idx);
+    if (mxGetM(arr) != 1 || mxGetN(arr) != 1) {
+      mexErrMsgIdAndTxt("MATLAB:pogs:dimensionMismatch",
+          "Parameter wDev must have dimension (1,1)");
+      return 1;
+    }
+    pogs_data->SetwDev(
+        GetVal<int>(mxGetData(arr), 0, mxGetClassID(arr)));
+  }
 
   return 0;
 }

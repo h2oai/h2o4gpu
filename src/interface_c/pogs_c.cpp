@@ -121,6 +121,8 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixDense<T> > &pogs_data, std::vector<
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
+  pogs_data.SetnDev(static_cast<int>(settings->nDev));
+  pogs_data.SetwDev(static_cast<int>(settings->wDev));
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
@@ -162,6 +164,8 @@ void PogsRun(pogs::PogsDirect<T, pogs::MatrixSparse<T> > &pogs_data, std::vector
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
+  pogs_data.SetnDev(static_cast<int>(settings->nDev));
+  pogs_data.SetwDev(static_cast<int>(settings->wDev));
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
@@ -203,6 +207,8 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixDense<T> > &pogs_data, std::vecto
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
+  pogs_data.SetnDev(static_cast<int>(settings->nDev));
+  pogs_data.SetwDev(static_cast<int>(settings->wDev));
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
@@ -244,6 +250,8 @@ void PogsRun(pogs::PogsIndirect<T, pogs::MatrixSparse<T> > &pogs_data, const std
   pogs_data.SetAdaptiveRho(static_cast<bool>(settings->adaptive_rho));
   pogs_data.SetEquil(static_cast<bool>(settings->equil));
   pogs_data.SetGapStop(static_cast<bool>(settings->gap_stop));
+  pogs_data.SetnDev(static_cast<int>(settings->nDev));
+  pogs_data.SetwDev(static_cast<int>(settings->wDev));
 
   // Optionally, feed in warm start variables
   if (static_cast<bool>(settings->warm_start)){
