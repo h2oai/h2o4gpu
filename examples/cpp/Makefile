@@ -6,10 +6,10 @@ EXSRC=lasso.cpp lasso_path.cpp logistic.cpp lp_eq.cpp lp_ineq.cpp nonneg_l2.cpp 
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -DUSE_NCCL=1 #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion #-DUSE_NCCL=1 #-DDEBUG
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -lnccl -I$(CUDA_HOME)/include -DUSE_NCCL=1 #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt  -I$(CUDA_HOME)/include #-lnccl -DUSE_NCCL=1 #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG
 
 # Check System Args.
 UNAME = $(shell uname -s)

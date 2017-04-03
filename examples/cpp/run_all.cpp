@@ -28,18 +28,19 @@ int main() {
 
   int m=2000000; // benchmark
 
-  
+  /*  
   printf("\nLasso: m=%d n=%d.\n",m,n);
   t = Lasso<real_t>(m, n);
   printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
-
-  /*
+  */
+  
+  
   printf("\nLasso Path: m=%d n=%d.\n",m,n);
   t = LassoPath<real_t>(m, n);
   printf("LassoPath m=%d n=%d Solver Time: %e sec\n", m,n,t);
   fflush(stdout);
   fflush(stderr);
-  */
+  
 
   /*
   printf("\nLinear Program in Equality Form.\n");

@@ -82,6 +82,7 @@ double LassoPath(size_t m, size_t n) {
 
   fprintf(stdout,"BEGIN SOLVE\n");
   double t = timer<double>();
+    // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
   for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
 			 static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
@@ -95,8 +96,8 @@ double LassoPath(size_t m, size_t n) {
     for (unsigned int i = 0; i < n; ++i)
       x[i] = pogs_data.GetX()[i];
 
-    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
-      break;
+    ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
+    //      break;
     x_last = x;
   }
   double tf = timer<double>();

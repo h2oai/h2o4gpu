@@ -109,9 +109,9 @@ score <- function(model, preds, actual) {
 if (pogs) {
   s1 <- proc.time()
   pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
+                 params=list(rel_tol=1e-3, abs_tol=1e-3, rho=1,
                    #max_iter=200, 
-                 adaptive_rho=TRUE, equil=FALSE))
+                 adaptive_rho=TRUE, equil=TRUE))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
 

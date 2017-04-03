@@ -68,9 +68,9 @@
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for (unsigned int i = 0; i < m; ++i)
-      for (unsigned int j = 0; j < n; ++j)
-	b[i] += A[i * n + j] * x_true[j];
+    for (unsigned int i = 0; i < m; ++i) // rows
+      for (unsigned int j = 0; j < n; ++j) // columns
+	b[i] += A[i * n + j] * x_true[j]; // C(0-indexed) row-major order
     // b[i] += A[i + j * m] * x_true[j];
 
     for (unsigned int i = 0; i < m; ++i)

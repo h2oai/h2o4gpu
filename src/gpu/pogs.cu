@@ -254,6 +254,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     //   2. \mu = -A^T\lambda
     cml::vector_set_all(&zprev, kZero);
     for (unsigned int i = 0; i < kInitIter; ++i) {
+#ifdef USE_NVTX
+        char mystring[100];
+    sprintf(mystring,"GStep%d",i);
+    PUSH_RANGE(mystring,GStep,1);
+#endif
       ProjSubgradEval(g_gpu, xprev.data, x.data, xtemp.data);
       ProjSubgradEval(f_gpu, yprev.data, y.data, ytemp.data);
       _P.Project(xtemp.data, ytemp.data, kOne, xprev.data, yprev.data,
@@ -262,6 +267,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       CUDA_CHECK_ERR();
       cml::blas_axpy(hdl, -kOne, &ztemp, &zprev);// alpha*X + Y -> Y
       cml::blas_scal(hdl, -kOne, &zprev);
+#ifdef USE_NVTX
+        POP_RANGE(mystring,GStep,1);
+#endif
     }
     // xt = -1 / \rho * \mu, yt = -1 / \rho * \lambda.
     cml::vector_memcpy(&zt, &zprev); // zprev->zt
