@@ -46,7 +46,11 @@ double LassoPath(size_t m, size_t n) {
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
 
+  fprintf(stdout,"BEGIN FILL DATA\n");
+  double t0 = timer<double>();
 #include "readorgen.c"
+  double t1 = timer<double>();
+  fprintf(stdout,"END FILL DATA\n");
 
 
   
@@ -77,8 +81,6 @@ double LassoPath(size_t m, size_t n) {
 
 
   
-  double t1 = timer<double>();
-  fprintf(stdout,"END FILL DATA\n");
 
   fprintf(stdout,"BEGIN SOLVE\n");
   double t = timer<double>();
