@@ -3,6 +3,7 @@ POGSROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp
+EXSRC2=lasso.cpp lasso_path.openmp.cpp
 
 # C++ Flags
 CXX=g++
@@ -35,9 +36,9 @@ gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
-gpualt: run_all.cpp examples.h lasso.cpp lasso_path.openmp.cpp
+gpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o runalt $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) -o runalt $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
 
 clean:

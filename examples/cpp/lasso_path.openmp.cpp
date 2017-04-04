@@ -67,10 +67,10 @@ double LassoPath(size_t m, size_t n) {
   int nDevall=4;
 
 #ifdef _OPENMP
-  int nopenmpthreads0=omp_get_num_threads();
+  int nopenmpthreads0=omp_get_max_threads();
 #define MIN(a,b) ((a)<(b)?(a):(b))
   omp_set_num_threads(MIN(nopenmpthreads0,nDevall));
-  int nopenmpthreads=omp_get_num_threads();
+  int nopenmpthreads=omp_get_max_threads();
   nDevall = nopenmpthreads; // openmp threads = cuda devices used
   fprintf(stdout,"Number of original threads=%d.  Number of threads for cuda=%d\n",nopenmpthreads0,nopenmpthreads);
 
@@ -88,6 +88,7 @@ double LassoPath(size_t m, size_t n) {
   std::vector<std::vector<FunctionObj<T> > > f(nDevall);
   std::vector<std::vector<FunctionObj<T> > > g(nDevall);
 
+  //#pragma omp parallel for
   for(unsigned int i=0;i<nDevall;i++){
 
     A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>('r', m, n, A.data() ));
@@ -98,6 +99,7 @@ double LassoPath(size_t m, size_t n) {
 
     
     pogs_data[i]->SetnDev(1); // set how many cuda devices to use internally in pogs
+    //    pogs_data[i]->SetwDev(i); // set which cuda device to use
     pogs_data[i]->SetwDev(i); // set which cuda device to use
 
 
@@ -127,17 +129,19 @@ double LassoPath(size_t m, size_t n) {
 
     // choose cuda device
     int wDev=i%nDevall;
+    //    int wDev=0;
 
+    fprintf(stderr,"i=%d lambda=%g wDev=%d\n",i,lambda,wDev);
     // assign lambda
     for (unsigned int j = 0; j < n; ++j) g[wDev][j].c = lambda;
-
+    
     pogs_data[wDev]->Solve(f[wDev], g[wDev]);
-
-    std::vector<T> x(n);
-    for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev]->GetX()[j];
+    
+    //      std::vector<T> x(n);
+    //      for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev]->GetX()[j];
     ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
     //      break;
-    x_last = x;
+    //x_last = x;
   }
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);
