@@ -118,7 +118,7 @@ double LassoPath(size_t m, size_t n) {
   }
 
   fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
-  //#pragma omp parallel for
+#pragma omp parallel for
   for (unsigned int i = 0; i < nlambda; ++i){
 
     // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
