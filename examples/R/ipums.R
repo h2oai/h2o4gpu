@@ -24,8 +24,8 @@ response <- "INCEARN"
 
 file <- paste0("/tmp/train.csv")
 if (TRUE) {
-  DT <- fread(f, nrows=10000, colClasses = "double")
-  #DT[,c('HHINCOME','INCWAGE'):=NULL]
+  DT <- fread(f, nrows=50000, colClasses = "double")
+  DT[,c('HHINCOME','INCWAGE'):=NULL]
 
   ## label encoding
   #feature.names <- setdiff(names(DT), response)
