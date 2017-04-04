@@ -12,7 +12,7 @@ family <- "gaussian"
 #family <- "binomial"
 
 
-#https://www.kaggle.com/c/springleaf-marketing-response/data
+#https://www.kaggle.com/c/springleaf-marketing-response/data  
 #N<-145231 ## max
 #f <- "gunzip -c ../data/springleaf/train.csv.zip"
 #f <- "~/kaggle/springleaf/input/train.csv"
@@ -25,7 +25,7 @@ response <- "INCEARN"
 file <- paste0("/tmp/train.csv")
 if (TRUE) {
   DT <- fread(f, nrows=10000, colClasses = "double")
-  DT[,c('HHINCOME','INCWAGE'):=NULL]
+  #DT[,c('HHINCOME','INCWAGE'):=NULL]
 
   ## label encoding
   #feature.names <- setdiff(names(DT), response)
@@ -51,7 +51,7 @@ if (TRUE) {
   ## standardize the data (and add a little noise)
   cols <- setdiff(names(DT),c(response))
   for (c in cols) {
-    DT[,(c):=scale(DT[[c]]) + 0.01*rnorm(nrow(DT))]
+    DT[,(c):=scale(DT[[c]])]
   }
   
   fwrite(DT, file)
@@ -72,7 +72,6 @@ train_y  <- as.numeric(as.vector(train[[response]]))
 valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
 valid_y  <- as.numeric(as.vector(valid[[response]]))
 
-
 score <- function(model, preds, actual) {
   rmse = apply(preds, 2, function(x) sqrt(mean((x-actual)^2)))
   r = cbind(lambda=log10((model$lambda)), rmse)
@@ -83,8 +82,9 @@ score <- function(model, preds, actual) {
   print(paste0("lambda: ", model$lambda)[idx])
   print(paste0("dofs: ", model$df)[idx])
   print(paste0("number of coefs: ", length(which(model$beta[,idx]!=0))))
-  #print(which(model$beta[,idx]!=0))
+  #print(model$beta[which(model$beta[,idx]!=0),idx])
   plot(model, xvar="lambda")
+  coef(model, s=model$lambda[idx])
 }
 
 ## POGS GPU
@@ -100,7 +100,7 @@ if (pogs) {
   print("POGS GPU: ")
   print(e1-s1)
   
-  score(pogs, pogs_pred_y, valid_y)
+  pogsbeta <- score(pogs, pogs_pred_y, valid_y)
 }
 
 ## GLMNET
@@ -118,7 +118,7 @@ if (glmnet) {
   print("GLMNET CPU")
   print(e2-s2)
   
-  score(glmnet, glmnet_pred_y, valid_y)
+  glmnetbeta <- score(glmnet, glmnet_pred_y, valid_y)
 }
 
 
@@ -188,19 +188,17 @@ validAtA <- t(valid_x) %*% valid_x
 validAtb <- t(valid_x) %*% valid_y
 
 ## From now on, do all these on tiny data (still GPU, do a lot of things at once)
-Lt <- chol(AtA)         ## get Lt of cholesky factorization: L Lt = At A
-z <- forwardsolve(t(Lt), Atb) ## solve L z = At b
-
-## Solve Lt x = z with MSE loss and all L1/L2 regularization terms, lambda path, everything.
+L <- t(chol(AtA+1e-5*diag(nrow(AtA))))         ## get L of cholesky factorization: L Lt = At A
+z <- forwardsolve(L, Atb) ## solve L z = At b
 
 system.time(
-#  for (al in (alpha*100+1)) {
-  for (al in seq(1,101,10)) {
+  for (al in (alpha*100+1)) {
+#  for (al in seq(1,101,10)) {
     a <- 0.01*(al-1)
     print(paste0("alpha: ", a))
     
     ## FAST - always a small gram matrix given.
-    model <- glmnet(x=Lt, y=z, family=family, alpha=a)
+    model <- glmnet(x=t(L), y=z, family=family, alpha=a)
 
     ## SLOW -- too small data?
     # model <- pogsnet(x = train_x, y = train_y, family = family, alpha = a, lambda=NULL, cutoff=FALSE,
@@ -210,15 +208,18 @@ system.time(
 
     ## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
     p <- predict(model, valid_x, type="response")
-    score(model, p, valid_y)
+    modelbeta <- score(model, p, valid_y)
    
     ## Option 2) Faster: Can even find the lowest RMSE of the model in the projected space!
     ## NOT AS ACCURATE?!
-#    Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
-#    rmse = apply(Atp, 2, function(x) sqrt(mean((x-validAtb)^2))) ## projected rmse 
-#    idx = which(rmse==min(rmse))
-#    print(paste0("best lambda: ", idx, "-th largest"))
-#    plot(rmse)
+    Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
+    rmse = apply(Atp, 2, function(x) sqrt(mean((x-validAtb)^2))) ## projected rmse 
+    r = cbind(lambda=log10((model$lambda)), rmse)
+    plot(r)
+    print(paste0("RMSE: ", min(rmse)))
+    idx = which((rmse)==min(rmse))
+    print(paste0("best lambda: ", idx, "-th largest"))
+    #plot(rmse)
     print("")
   }
 )
