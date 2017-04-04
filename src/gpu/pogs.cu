@@ -95,7 +95,7 @@ int Pogs<T, M, P>::_Init() {
   for (int i = 0; i < nVis; i++){
     cudaDeviceProp props;
     CUDACHECK(cudaGetDeviceProperties(&props, i));
-    printf("Visible: Compute %d.%d CUDA device: [%s] : cudadeviceid: %2d of %2d devices [0x%02x] mpc=%d\n", props.major, props.minor, props.name, i, nVis, props.pciBusID, props.multiProcessorCount);
+    printf("Visible: Compute %d.%d CUDA device: [%s] : cudadeviceid: %2d of %2d devices [0x%02x] mpc=%d\n", props.major, props.minor, props.name, i, nVis, props.pciBusID, props.multiProcessorCount); fflush(stdout);
   }
   
   // get device ID
@@ -111,7 +111,7 @@ int Pogs<T, M, P>::_Init() {
     CUDACHECK(cudaGetDeviceProperties(&props, i));
     CUDACHECK(cudaSetDevice(i));
     //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
-    printf("Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,i);
+    printf("Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,i); fflush(stdout);
 
     
   }
@@ -134,7 +134,7 @@ int Pogs<T, M, P>::_Init() {
     NCCLCHECK(ncclCommUserRank(_comms[g], &rank));
     CUDACHECK(cudaGetDeviceProperties(&prop, cudaDev));
     printf("#   Rank %2d uses device %2d [0x%02x] %s\n", rank, cudaDev,
-           prop.pciBusID, prop.name);
+           prop.pciBusID, prop.name); fflush(stdout);
   }
 #endif
 
@@ -144,6 +144,7 @@ int Pogs<T, M, P>::_Init() {
 
   size_t m = _A.Rows();
   size_t n = _A.Cols();
+  fprintf(stderr,"in pogs: m=%d n=%d\n",m,n); fflush(stderr);
 
   cudaMalloc(&_de, (m + n) * sizeof(T));
   cudaMalloc(&_z, (m + n) * sizeof(T));

@@ -83,42 +83,37 @@ double LassoPath(size_t m, size_t n) {
 
   
   // Set up pogs datastructure A_, pogs_data, f, g
-  std::vector<pogs::MatrixDense<T> > A_;
-  std::vector<pogs::PogsDirect<T, pogs::MatrixDense<T> > > pogs_data;
+  std::vector<std::unique_ptr<pogs::MatrixDense<T> > > A_(nDevall);
+  std::vector<std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > > > pogs_data(nDevall);
   std::vector<std::vector<FunctionObj<T> > > f(nDevall);
   std::vector<std::vector<FunctionObj<T> > > g(nDevall);
-  A_.reserve(nDevall);
-  pogs_data.reserve(nDevall);
 
   for(unsigned int i=0;i<nDevall;i++){
 
-    A_.emplace_back(pogs::MatrixDense<T>('r', m, n, A.data()));
-    pogs_data.emplace_back(pogs::PogsDirect<T, pogs::MatrixDense<T> >(A_[i]));
+    A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>('r', m, n, A.data() ));
+    pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >( *(A_[i]) ));
     
-    f[i].reserve(m);
-    g[i].reserve(n);
-        
     for (unsigned int j = 0; j < m; ++j) f[i].emplace_back(kSquare, static_cast<T>(1), b[j]);
     for (unsigned int j = 0; j < n; ++j) g[i].emplace_back(kAbs);
 
     
-    pogs_data[i].SetnDev(1); // set how many cuda devices to use internally in pogs
-    pogs_data[i].SetwDev(i); // set which cuda device to use
+    pogs_data[i]->SetnDev(1); // set how many cuda devices to use internally in pogs
+    pogs_data[i]->SetwDev(i); // set which cuda device to use
 
 
     if(0==1){
-      pogs_data[i].SetAdaptiveRho(false); // trying
-      pogs_data[i].SetRho(1.0);
-      //  pogs_data[i].SetMaxIter(5u);
-      pogs_data[i].SetMaxIter(1u);
-      pogs_data[i].SetVerbose(4);
+      pogs_data[i]->SetAdaptiveRho(false); // trying
+      pogs_data[i]->SetRho(1.0);
+      //  pogs_data[i]->SetMaxIter(5u);
+      pogs_data[i]->SetMaxIter(1u);
+      pogs_data[i]->SetVerbose(4);
     }
     else if(1==1){ // debug
-      //    pogs_data[i].SetAdaptiveRho(false); // trying
-      //    pogs_data[i].SetEquil(false); // trying
-      //    pogs_data[i].SetRho(1E-4);
-      pogs_data[i].SetVerbose(4);
-      //    pogs_data[i].SetMaxIter(1u);
+      //    pogs_data[i]->SetAdaptiveRho(false); // trying
+      //    pogs_data[i]->SetEquil(false); // trying
+      //    pogs_data[i]->SetRho(1E-4);
+      pogs_data[i]->SetVerbose(4);
+      //    pogs_data[i]->SetMaxIter(1u);
     }
   }
 
@@ -136,10 +131,10 @@ double LassoPath(size_t m, size_t n) {
     // assign lambda
     for (unsigned int j = 0; j < n; ++j) g[wDev][j].c = lambda;
 
-    pogs_data[wDev].Solve(f[wDev], g[wDev]);
+    pogs_data[wDev]->Solve(f[wDev], g[wDev]);
 
     std::vector<T> x(n);
-    for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev].GetX()[j];
+    for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev]->GetX()[j];
     ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
     //      break;
     x_last = x;

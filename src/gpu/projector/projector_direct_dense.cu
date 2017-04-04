@@ -38,7 +38,7 @@ template <typename T, typename M>
 ProjectorDirect<T, M>::ProjectorDirect(const M& A)
     : _A(A) {
 
-  fprintf(stderr,"Rows=%d Cols=%d\n",_A.Rows(),_A.Cols());
+  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",_A.Rows(),_A.Cols(),_A.IsInit()); fflush(stderr);
   // Set GPU specific this->_info.
   GpuData<T> *info = new GpuData<T>();
   this->_info = reinterpret_cast<void*>(info);
