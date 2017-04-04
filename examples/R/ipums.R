@@ -25,6 +25,7 @@ response <- "INCEARN"
 file <- paste0("/tmp/train.csv")
 if (TRUE) {
   DT <- fread(f, nrows=10000, colClasses = "double")
+  DT[,c('HHINCOME','INCWAGE'):=NULL]
 
   ## label encoding
   #feature.names <- setdiff(names(DT), response)
@@ -82,6 +83,7 @@ score <- function(model, preds, actual) {
   print(paste0("lambda: ", model$lambda)[idx])
   print(paste0("dofs: ", model$df)[idx])
   print(paste0("number of coefs: ", length(which(model$beta[,idx]!=0))))
+  #print(which(model$beta[,idx]!=0))
   plot(model, xvar="lambda")
 }
 
@@ -198,7 +200,7 @@ system.time(
     print(paste0("alpha: ", a))
     
     ## FAST - always a small gram matrix given.
-    model <- glmnet(x=Lt, y=z, family=family, alpha=a, standardize=FALSE, thresh=1e-7)
+    model <- glmnet(x=Lt, y=z, family=family, alpha=a)
 
     ## SLOW -- too small data?
     # model <- pogsnet(x = train_x, y = train_y, family = family, alpha = a, lambda=NULL, cutoff=FALSE,
