@@ -79,7 +79,7 @@ if (FALSE) {
   train_rows <- sample(1:n, .8*n)
   const_cols <- which(apply(df[train_rows,], 2, sd) ==0)
   df <- df[,-const_cols]
-  df <- df + 0.01* matrix(rnorm(n*p), nrow=n, ncol=p) ## optional: add noise
+  #df <- df + 0.01* matrix(rnorm(n*p), nrow=n, ncol=p) ## optional: add noise
   
   summary(df)
   response <- "Petal.Width"
@@ -95,10 +95,10 @@ if (FALSE) {
 
 score <- function(model, preds, actual) {
   rmse = apply(preds, 2, function(x) sqrt(mean((x-actual)^2)))
-  r = cbind(lambda=log10(rev(model$lambda)), rmse)
+  r = cbind(lambda=log10((model$lambda)), rmse)
   plot(r)
   print(paste0("RMSE: ", min(rmse)))
-  idx = which(rev(rmse)==min(rmse))
+  idx = which((rmse)==min(rmse))
   print(paste0("best lambda: ", idx, "-th largest"))
   print(paste0("lambda: ", model$lambda)[idx])
   print(paste0("dofs: ", model$df)[idx])
@@ -203,7 +203,7 @@ validAtA <- t(valid_x) %*% valid_x
 validAtb <- t(valid_x) %*% valid_y
 
 ## From now on, do all these on tiny data (still GPU, do a lot of things at once)
-L <- t(chol(AtA))         ## get L of cholesky factorization: L Lt = At A
+L <- t(chol(AtA+1e-5*diag(nrow(AtA))))         ## get L of cholesky factorization: L Lt = At A
 z <- forwardsolve(L, Atb) ## solve L z = At b
 
 ## Solve Lt x = z with MSE loss and all L1/L2 regularization terms
@@ -218,6 +218,5 @@ score(model, p, valid_y)
 ## Option 2) Faster: Can even find the lowest RMSE of the model in the projected space!
 Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
 rmse = apply(Atp, 2, function(x) sqrt(mean((x-validAtb)^2))) ## projected rmse 
-idx = which(rev(rmse)==min(rmse))
+idx = which((rmse)==min(rmse))
 print(paste0("best lambda: ", idx, "-th largest"))
-
