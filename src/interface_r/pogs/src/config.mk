@@ -38,7 +38,7 @@ endif
 ################################################################################
 
 #compiler/preprocessor options
-HDR=-Iinclude $(R_INC)
+HDR=-Iinclude $(R_INC) -I$(CUDA_HOME)/include
 
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DPOGS_SINGLE=0
