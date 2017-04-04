@@ -538,10 +538,11 @@ getmin <- function(lambda, cvm, cvsd) {
 #' @param lambda List of lambda values for which CV should be performed.
 #' @param nfolds Number of folds.
 #' @param foldid Optional vector of values between 1 and nfolds, assigning
+#' @param cutoff Discard values of lambda for which beta remains unchanged (estimated on the full dataset)
 #' datapoint to cv-fold.
 #' @param ... Other parameters to pogsnet.
 #' @export
-cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid, ...) {
+cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutoff=TRUE, ...) {
   # Check input data
   if(!is.null(lambda) && length(lambda) < 2) {
     stop("Need more than one value of lambda for cv.pogsnet")
@@ -553,7 +554,7 @@ cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid, ...) {
   } else {
     weights = as.double(weights)
   }
-  if(missing(foldid)) {
+  if(is.null(foldid)) {
     foldid = sample(rep(seq(nfolds), length=N))
   } else {
     nfolds = max(foldid)
@@ -565,7 +566,7 @@ cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid, ...) {
   # Create initial pogsnet call (mostly for sequence of lambdas)
   pogsnet.call = match.call(expand.dots=TRUE)
   pogsnet.call[[1]] = as.name("pogsnet") 
-  pogsnet.object = pogsnet(x, y, weights=weights, lambda=lambda, ...)
+  pogsnet.object = pogsnet(x, y, weights=weights, lambda=lambda, cutoff=cutoff,...)
   pogsnet.object$call = pogsnet.call
   lambda = pogsnet.object$lambda
 
