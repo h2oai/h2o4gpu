@@ -64,9 +64,9 @@ valid_y  <- as.numeric(as.vector(valid[[response]]))
 if (pogs) {
   s1 <- proc.time()
   pogs = cv.pogsnet(nfolds=nfolds, x = train_x, y = train_y, family = family, alpha = alpha)
-  e1 <- proc.time()
   print(paste0("lambda_1se=",pogs$lambda.1se))
   pogs_pred_y = predict(pogs$pogsnet.fit, s=pogs$lambda.1se, valid_x, type="response")
+  e1 <- proc.time()
 
   print("POGS GPU: ")
   print(e1-s1)
