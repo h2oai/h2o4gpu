@@ -48,7 +48,7 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 
 #define PUSH_RANGE(name,tid,cid) \
   { \
-    fprintf(stderr,"START: name=%s cid=%d\n",name,cid); \
+    fprintf(stderr,"START: name=%s cid=%d\n",name,cid); fflush(stderr); \
     int color_id = cid; \
     color_id = color_id%num_colors;\
     nvtxEventAttributes_t eventAttrib = {0}; \
@@ -63,7 +63,7 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
     double timer##tid = timer<double>();
 
 #define POP_RANGE(name,tid,cid) {                                       \
-    fprintf(stderr,"STOP:  name=%s cid=%d duration=%g\n",name,cid,timer<double>() - timer##tid);  \
+    fprintf(stderr,"STOP:  name=%s cid=%d duration=%g\n",name,cid,timer<double>() - timer##tid); fflush(stderr); \
     nvtxRangePop(); \
   }
 #else

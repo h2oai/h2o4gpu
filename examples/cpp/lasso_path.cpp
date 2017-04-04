@@ -8,7 +8,6 @@
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
-#include <omp.h>
 
 using namespace pogs;
 
@@ -46,14 +45,15 @@ double LassoPath(size_t m, size_t n) {
   std::vector<T> b(m);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
-  fprintf(stdout,"START FILL DATA\n");
+
+  fprintf(stdout,"BEGIN FILL DATA\n");
   double t0 = timer<double>();
 #include "readorgen.c"
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
 
 
-  // constant across openmp threads  
+  
   T lambda_max = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
@@ -63,83 +63,41 @@ double LassoPath(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  // number of openmp threads = number of cuda devices to use
-  int nDevall=4;
+  // Set up pogs datastructure.
+  pogs::MatrixDense<T> A_('r', m, n, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  std::vector<FunctionObj<T> > f;
+  std::vector<FunctionObj<T> > g;
+  f.reserve(m);
+  g.reserve(n);
 
-#ifdef _OPENMP
-  int nopenmpthreads0=omp_get_num_threads();
-#define MIN(a,b) ((a)<(b)?(a):(b))
-  omp_set_num_threads(MIN(nopenmpthreads0,nDevall));
-  int nopenmpthreads=omp_get_num_threads();
-  nDevall = nopenmpthreads; // openmp threads = cuda devices used
-  fprintf(stdout,"Number of original threads=%d.  Number of threads for cuda=%d\n",nopenmpthreads0,nopenmpthreads);
+  for (unsigned int i = 0; i < m; ++i)
+    f.emplace_back(kSquare, static_cast<T>(1), b[i]);
+
+  for (unsigned int i = 0; i < n; ++i)
+    g.emplace_back(kAbs);
+
+
+
 
   
-#else
-#error Need OpenMP
-#endif
 
-
-
-  
-  // Set up pogs datastructure A_, pogs_data, f, g
-  std::vector<pogs::MatrixDense<T> > A_;
-  std::vector<pogs::PogsDirect<T, pogs::MatrixDense<T> > > pogs_data;
-  std::vector<std::vector<FunctionObj<T> > > f(nDevall);
-  std::vector<std::vector<FunctionObj<T> > > g(nDevall);
-  A_.reserve(nDevall);
-  pogs_data.reserve(nDevall);
-
-  for(unsigned int i=0;i<nDevall;i++){
-
-    A_.emplace_back(pogs::MatrixDense<T>('r', m, n, A.data()));
-    pogs_data.emplace_back(pogs::PogsDirect<T, pogs::MatrixDense<T> >(A_[i]));
-    
-    f[i].reserve(m);
-    g[i].reserve(n);
-        
-    for (unsigned int j = 0; j < m; ++j) f[i].emplace_back(kSquare, static_cast<T>(1), b[j]);
-    for (unsigned int j = 0; j < n; ++j) g[i].emplace_back(kAbs);
-
-    
-    pogs_data[i].SetnDev(1); // set how many cuda devices to use internally in pogs
-    pogs_data[i].SetwDev(i); // set which cuda device to use
-
-
-    if(0==1){
-      pogs_data[i].SetAdaptiveRho(false); // trying
-      pogs_data[i].SetRho(1.0);
-      //  pogs_data[i].SetMaxIter(5u);
-      pogs_data[i].SetMaxIter(1u);
-      pogs_data[i].SetVerbose(4);
-    }
-    else if(1==1){ // debug
-      //    pogs_data[i].SetAdaptiveRho(false); // trying
-      //    pogs_data[i].SetEquil(false); // trying
-      //    pogs_data[i].SetRho(1E-4);
-      pogs_data[i].SetVerbose(4);
-      //    pogs_data[i].SetMaxIter(1u);
-    }
-  }
-
-  fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
-  //#pragma omp parallel for
-  for (unsigned int i = 0; i < nlambda; ++i){
-
+  fprintf(stdout,"BEGIN SOLVE\n");
+  double t = timer<double>();
     // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
+  for (unsigned int i = 0; i < nlambda; ++i) {
     T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
-                         static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
+			 static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
 
-    // choose cuda device
-    int wDev=i%nDevall;
+    for (unsigned int i = 0; i < n; ++i)
+      g[i].c = lambda;
 
-    // assign lambda
-    for (unsigned int j = 0; j < n; ++j) g[wDev][j].c = lambda;
-
-    pogs_data[wDev].Solve(f[wDev], g[wDev]);
+    pogs_data.Solve(f, g);
 
     std::vector<T> x(n);
-    for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev].GetX()[j];
+    for (unsigned int i = 0; i < n; ++i)
+      x[i] = pogs_data.GetX()[i];
+
     ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
     //      break;
     x_last = x;
