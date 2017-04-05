@@ -27,6 +27,7 @@ if(generate==0){
       
     double dum;
     size_t Ai,Aj;
+    int count=0;
     for (unsigned int i = 0; i < dAm; ++i){// rows
       Ai=i;
       //fprintf(stderr,"row=%d\n",i);
@@ -34,12 +35,12 @@ if(generate==0){
       for (unsigned int j = 0; j < dAn; ++j){ // columns
         if(j!=TARGETCOL-1){
           Aj++;
-          fscanf(file,"%lf",&dum);
-          A[Ai*n+Aj]=dum;
+          count += fscanf(file,"%lf",&dum);
+          A[Ai*n+Aj]=(float)dum;
         }
         else if(j==TARGETCOL-1){
-          fscanf(file,"%lf",&dum);
-          b[Ai]=-dum;
+          count += fscanf(file,"%lf",&dum);
+          b[Ai]=-(float)dum;
         }
       }
     }

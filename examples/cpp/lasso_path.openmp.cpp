@@ -1,10 +1,10 @@
+#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
-
 #include <limits>
-#include <random>
 #include <vector>
 
+#include "../../src/include/matrix/matrix_dense.h"
+#include "../../src/include/pogs.h"
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
@@ -15,10 +15,11 @@ using namespace pogs;
 template <typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
   T max_diff = 0;
+  size_t len = v1->size();
 #ifdef _OPENMP
 #pragma omp parallel for reduction(max : max_diff)
 #endif
-  for (unsigned int i = 0; i < v1->size(); ++i)
+  for (size_t i = 0; i < len; ++i)
     max_diff = std::max(max_diff, std::abs((*v1)[i] - (*v2)[i]));
   return max_diff;
 }
@@ -26,10 +27,11 @@ T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
 template <typename T>
 T Asum(std::vector<T> *v) {
   T asum = 0;
+  size_t len = v->size();
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : asum)
 #endif
-  for (unsigned int i = 0; i < v->size(); ++i)
+  for (size_t i = 0; i < len; ++i)
     asum += std::abs((*v)[i]);
   return asum;
 }
@@ -41,7 +43,7 @@ T Asum(std::vector<T> *v) {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(size_t m, size_t n) {
-  unsigned int nlambda = 100;
+  int nlambda = 100;
   std::vector<T> A(m * n);
   std::vector<T> b(m);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
@@ -64,7 +66,7 @@ double LassoPath(size_t m, size_t n) {
   }
 
   // number of openmp threads = number of cuda devices to use
-  int nDevall=4;
+  int nDevall=2;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -79,8 +81,6 @@ double LassoPath(size_t m, size_t n) {
 #error Need OpenMP
 #endif
 
-
-
   
   // Set up pogs datastructure A_, pogs_data, f, g
   std::vector<std::unique_ptr<pogs::MatrixDense<T> > > A_(nDevall);
@@ -89,7 +89,7 @@ double LassoPath(size_t m, size_t n) {
   std::vector<std::vector<FunctionObj<T> > > g(nDevall);
 
   //#pragma omp parallel for
-  for(unsigned int i=0;i<nDevall;i++){
+  for(int i=0;i<nDevall;i++){
 
     A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>('r', m, n, A.data() ));
     pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >( *(A_[i]) ));
@@ -99,9 +99,7 @@ double LassoPath(size_t m, size_t n) {
 
     
     pogs_data[i]->SetnDev(1); // set how many cuda devices to use internally in pogs
-    //    pogs_data[i]->SetwDev(i); // set which cuda device to use
     pogs_data[i]->SetwDev(i); // set which cuda device to use
-
 
     if(0==1){
       pogs_data[i]->SetAdaptiveRho(false); // trying
@@ -121,15 +119,15 @@ double LassoPath(size_t m, size_t n) {
 
   fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
 #pragma omp parallel for
-  for (unsigned int i = 0; i < nlambda; ++i){
+  for (int i = 0; i < nlambda; ++i){
 
     // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
-    T lambda = std::exp((std::log(lambda_max) * (nlambda - 1 - i) +
-                         static_cast<T>(1e-2) * std::log(lambda_max) * i) / (nlambda - 1));
+    T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
+                         static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
 
     // choose cuda device
     int wDev=i%nDevall;
-    //    int wDev=0;
+    //int wDev=0;
 
     fprintf(stderr,"i=%d lambda=%g wDev=%d\n",i,lambda,wDev);
     // assign lambda
@@ -144,7 +142,7 @@ double LassoPath(size_t m, size_t n) {
     //x_last = x;
   }
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);
+  fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
 
   return tf-t;
 }
