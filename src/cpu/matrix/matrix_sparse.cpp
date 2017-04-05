@@ -44,7 +44,7 @@ T NormEst(NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
+MatrixSparse<T>::MatrixSparse(int ignored, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
     : Matrix<T>(m, n), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
@@ -57,7 +57,7 @@ MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
 }
 
 template <typename T>
-MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
+MatrixSparse<T>::MatrixSparse(int ignored, const MatrixSparse<T>& A)
     : Matrix<T>(A._m, A._n), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 

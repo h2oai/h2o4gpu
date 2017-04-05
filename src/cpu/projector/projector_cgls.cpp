@@ -31,7 +31,7 @@ struct Gemv : cgls::Gemv<T> {
 }  // namespace
 
 template <typename T, typename M>
-ProjectorCgls<T, M>::ProjectorCgls(const M& A)
+ProjectorCgls<T, M>::ProjectorCgls(int ignored, const M& A)
     : _A(A) { }
 
 template <typename T, typename M>

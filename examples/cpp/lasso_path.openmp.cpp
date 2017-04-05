@@ -41,7 +41,7 @@ T Asum(std::vector<T> *v) {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(size_t m, size_t n) {
-  int nlambda = 100;
+  int nlambda = 50;
   // number of openmp threads = number of cuda devices to use
   int nGPUs=2;
 
@@ -96,7 +96,7 @@ double LassoPath(size_t m, size_t n) {
   //pogs_data.SetMaxIter(1u);
 
 
-  int N=10;
+  int N=5;
   fprintf(stdout,"BEGIN SOLVE\n"); 
 #pragma omp parallel for
   for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1

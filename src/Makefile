@@ -7,7 +7,7 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  -DUSE_NVTX=1 -DDEBUG #-DUSE_NCCL # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  #-DUSE_NVTX=1 -DDEBUG #-DUSE_NCCL # -Wconversion
 
 # CUDA Flags
 NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
@@ -22,7 +22,7 @@ CXXFLAGS  += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  -DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR # -DUSE_NCCL
+CUFLAGS=$(IFLAGS) -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR # -DUSE_NCCL
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config

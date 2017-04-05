@@ -44,7 +44,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
+MatrixDense<T>::MatrixDense(int ignored, char ord, size_t m, size_t n, const T *data)
     : Matrix<T>(m, n), _data(0) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -55,7 +55,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
 }
 
 template <typename T>
-MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
+MatrixDense<T>::MatrixDense(int ignored, const MatrixDense<T>& A)
     : Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
 
   CpuData<T> *info_A = reinterpret_cast<CpuData<T>*>(A._info);

@@ -25,8 +25,8 @@ int main() {
   //  int m=450050;
   //  int n=212;
 
-  int m=10000; // benchmark
-  int n=500;
+  int m=100000; // benchmark
+  int n=10000;
 
   /*
   printf("\nLasso: m=%d n=%d.\n",m,n);

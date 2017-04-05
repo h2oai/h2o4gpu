@@ -150,7 +150,7 @@ int Pogs<T, M, P>::_Init() {
 
   size_t m = _A.Rows();
   size_t n = _A.Cols();
-  fprintf(stderr,"in pogs: m=%d n=%d\n",m,n); fflush(stderr);
+  fprintf(stderr,"in pogs: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
 
   cudaMalloc(&_de, (m + n) * sizeof(T));
   cudaMalloc(&_z, (m + n) * sizeof(T));

@@ -7,10 +7,10 @@ EXSRC2=lasso.cpp lasso_path.openmp.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp -DDEBUG #-DUSE_NCCL=1 #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DDEBUG #-DUSE_NCCL=1 #-DDEBUG
 
 # CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt  -I$(CUDA_HOME)/include -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #-lnccl -DUSE_NCCL=1 #
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt  -I$(CUDA_HOME)/include #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #-lnccl -DUSE_NCCL=1 #
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -30,6 +30,10 @@ default: gpualt
 cpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+
+cpualt: run_all.cpp examples.h $(EXSRC2)
+	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CXXFLAGS) -o runalt $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
