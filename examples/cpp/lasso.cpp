@@ -46,9 +46,13 @@ double Lasso(size_t m, size_t n) {
   ////////////////////
   // setup pogs
   ////////////////////
+  fprintf(stderr,"MatrixDense\n"); fflush(stderr);
   pogs::MatrixDense<T> A_('r', m, n, A.data());
+  fprintf(stderr,"PogsDirect\n"); fflush(stderr);
   pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<FunctionObj<T> > f;
+  fprintf(stderr,"g\n"); fflush(stderr);
   std::vector<FunctionObj<T> > g;
 
   f.reserve(m);
@@ -77,8 +81,9 @@ double Lasso(size_t m, size_t n) {
     //    pogs_data.SetAdaptiveRho(false); // trying
     //    pogs_data.SetEquil(false); // trying
     //    pogs_data.SetRho(1E-4);
+    fprintf(stderr,"sets\n"); fflush(stderr);
     pogs_data.SetVerbose(4);
-    //    pogs_data.SetMaxIter(1u);
+    pogs_data.SetMaxIter(5u);
   }
   else if(1==0){
     pogs_data.SetVerbose(4);
@@ -86,6 +91,7 @@ double Lasso(size_t m, size_t n) {
 #ifdef __CUDACC__
   //  cudaProfilerStart();
 #endif
+  fprintf(stderr,"Solve\n"); fflush(stderr);
   pogs_data.Solve(f, g);
 #ifdef __CUDACC__
   //  cudaProfilerStop();

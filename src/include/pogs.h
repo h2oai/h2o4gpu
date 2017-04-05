@@ -142,7 +142,7 @@ class Pogs {
 
  public:
   // Constructor and Destructor.
-  Pogs(const M &A);
+  Pogs(int wDev, const M &A);
   ~Pogs();
   
   // Solve for specific objective.

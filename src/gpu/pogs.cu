@@ -53,7 +53,7 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 }  // namespace
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+Pogs<T, M, P>::Pogs(int wDev, const M &A)
     : _A(A), _P(_A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -73,6 +73,10 @@ Pogs<T, M, P>::Pogs(const M &A)
       _comms(0),
 #endif
       _init_x(false), _init_lambda(false) {
+
+  _wDev=wDev;
+  CUDACHECK(cudaSetDevice(_wDev));
+
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
@@ -85,10 +89,12 @@ int Pogs<T, M, P>::_Init() {
   if (_done_init)
     return 1;
   _done_init = true;
+  CUDACHECK(cudaSetDevice(_wDev));
 
+
+#ifdef _DEBUG
   //  int _nDev=1; // number of cuda devices to use
   //  int _wDev=0; // which cuda device(s) to use
-
   // get number of devices visible/available
   int nVis = 0;
   CUDACHECK(cudaGetDeviceCount(&nVis));
@@ -104,7 +110,9 @@ int Pogs<T, M, P>::_Init() {
   cudaDeviceProp props;
   // get device properties
   CUDACHECK(cudaGetDeviceProperties(&props, devID));
+#endif
 
+#ifdef USE_NCCL
   for (int i = 0; i < _nDev; i++){
     if(i==0 && i==_nDev-1) i=_wDev; // force to chosen device
     cudaDeviceProp props;
@@ -112,11 +120,9 @@ int Pogs<T, M, P>::_Init() {
     CUDACHECK(cudaSetDevice(i));
     //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
     printf("Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,i); fflush(stdout);
-
-    
   }
-  
-#ifdef USE_NCCL
+
+
   // initialize nccl
 
   std::vector<int> dList(_nDev);
@@ -200,8 +206,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   if (!_done_init){
 //    PUSH_RANGE("Init2",Init2,1);
     _Init();
-//    POP_RANGE("Init2",Init2,1);
-    }
+    //    POP_RANGE("Init2",Init2,1);
+  }
+  CUDACHECK(cudaSetDevice(_wDev));
 
 
   
@@ -577,6 +584,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
+  CUDACHECK(cudaSetDevice(_wDev));
+
   cudaFree(_de);
   cudaFree(_z);
   cudaFree(_zt);
@@ -598,21 +607,15 @@ Pogs<T, M, P>::~Pogs() {
 
 // Explicit template instantiation.
 #if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
-template class Pogs<double, MatrixDense<double>,
-    ProjectorDirect<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixDense<double>,
-    ProjectorCgls<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixSparse<double>,
-    ProjectorCgls<double, MatrixSparse<double> > >;
+template class Pogs<double, MatrixDense <double>, ProjectorDirect<double, MatrixDense <double> > >;
+template class Pogs<double, MatrixDense <double>, ProjectorCgls<double,   MatrixDense <double> > >;
+template class Pogs<double, MatrixSparse<double>, ProjectorCgls<double,   MatrixSparse<double> > >;
 #endif
 
 #if !defined(POGS_SINGLE) || POGS_SINGLE==1
-template class Pogs<float, MatrixDense<float>,
-    ProjectorDirect<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixDense<float>,
-    ProjectorCgls<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixSparse<float>,
-    ProjectorCgls<float, MatrixSparse<float> > >;
+template class Pogs<float, MatrixDense<float>,  ProjectorDirect<float, MatrixDense<float> > >;
+template class Pogs<float, MatrixDense<float>,  ProjectorCgls<float, MatrixDense<float> > >;
+template class Pogs<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
 #endif
 
 }  // namespace pogs

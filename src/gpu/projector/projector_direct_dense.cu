@@ -35,18 +35,35 @@ struct GpuData {
 }  // namespace
 
 template <typename T, typename M>
-ProjectorDirect<T, M>::ProjectorDirect(const M& A)
-    : _A(A) {
+ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
+  : _wDev(0), _A(A) {
+
+  _wDev = wDev;
+  CUDACHECK(cudaSetDevice(_wDev));
 
   fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",_A.Rows(),_A.Cols(),_A.IsInit()); fflush(stderr);
+
+#ifdef _DEBUG
+  //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+  cudaDeviceProp props;
+  CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
+  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
+#endif
+
   // Set GPU specific this->_info.
+  PUSH_RANGE("PDnew","PDnew",1);
   GpuData<T> *info = new GpuData<T>();
   this->_info = reinterpret_cast<void*>(info);
+  POP_RANGE("PDnew","PDnew",1);
 }
 
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+
 
   if (info->AA) {
     cudaFree(info->AA);
@@ -69,7 +86,10 @@ int ProjectorDirect<T, M>::Init() {
   if (this->_done_init)
     return 1;
   this->_done_init = true;
+
+  CUDACHECK(cudaSetDevice(_wDev));
   ASSERT(_A.IsInit());
+
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
@@ -124,8 +144,8 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   DEBUG_EXPECT(this->_done_init);
   if (!this->_done_init || s < static_cast<T>(0.))
     return 1;
+  CUDACHECK(cudaSetDevice(_wDev));
 
-  PUSH_RANGE("P1",P1,1);
   // Get Cublas handle
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
@@ -264,8 +284,8 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
-  POP_RANGE("P1",P1,1);
 
+  PUSH_RANGE("P2",P2,1);
 #ifdef DEBUG
   double t1 = timer<double>() - t0;
   printf("Time to compute Cholesky decomp and backward solve: %f\n", t1);
@@ -275,6 +295,7 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       static_cast<T>(1e3) * std::numeric_limits<T>::epsilon());
 #endif
   cudaDeviceSynchronize(); // added synch
+  POP_RANGE("P2",P2,1);
   
   info->s = s;
   return 0;

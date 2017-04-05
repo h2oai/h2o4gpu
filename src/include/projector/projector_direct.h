@@ -11,12 +11,14 @@ class ProjectorDirect : Projector<T, M> {
  private:
   const M& _A;
 
+  int _wDev;
+
   // Get rid of copy constructor and assignment operator.
   ProjectorDirect(const Projector<T, M>& A);
   ProjectorDirect<M, T>& operator=(const ProjectorDirect<T, M>& P);
 
  public:
-  ProjectorDirect(const M& A);
+  ProjectorDirect(int wDev, const M& A);
   ~ProjectorDirect();
   
   int Init();

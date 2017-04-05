@@ -3,8 +3,6 @@
 #include <limits>
 #include <vector>
 
-#include "../../src/include/matrix/matrix_dense.h"
-#include "../../src/include/pogs.h"
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
@@ -82,19 +80,30 @@ double LassoPath(size_t m, size_t n) {
 #endif
 
   
-  // Set up pogs datastructure A_, pogs_data, f, g
+  // Set up pogs datastructures: A_, pogs_data, f, g as pointers
+  // Require pointers, because don't want to call consructor yet as that allocates cuda memory, etc.
+  fprintf(stderr,"MatrixDense\n"); fflush(stderr);
   std::vector<std::unique_ptr<pogs::MatrixDense<T> > > A_(nDevall);
+  fprintf(stderr,"PogsDirect\n"); fflush(stderr);
   std::vector<std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > > > pogs_data(nDevall);
+  fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<std::vector<FunctionObj<T> > > f(nDevall);
+  fprintf(stderr,"g\n"); fflush(stderr);
   std::vector<std::vector<FunctionObj<T> > > g(nDevall);
 
+  
+  
   //#pragma omp parallel for
   for(int i=0;i<nDevall;i++){
 
-    A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>('r', m, n, A.data() ));
-    pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >( *(A_[i]) ));
+    fprintf(stderr,"MatrixDense Assign: %d\n",i); fflush(stderr);
+    A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>(i, 'r', m, n, A.data() ));
+    fprintf(stderr,"PogsDirect Assign: %d\n",i); fflush(stderr);
+    pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >(i, *(A_[i]) ));
     
+    fprintf(stderr,"f assign: %d\n",i); fflush(stderr);
     for (unsigned int j = 0; j < m; ++j) f[i].emplace_back(kSquare, static_cast<T>(1), b[j]);
+    fprintf(stderr,"g assign: %d\n",i); fflush(stderr);
     for (unsigned int j = 0; j < n; ++j) g[i].emplace_back(kAbs);
 
     
