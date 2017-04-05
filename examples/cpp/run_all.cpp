@@ -24,20 +24,20 @@ int main() {
   //  int  m=450000; // fails without adaptive rho, works perfectly fine with adaptive rho.
   //  int m=450050;
   //  int n=212;
-  int n=213;
 
-  int m=2000000; // benchmark
+  int m=10000; // benchmark
+  int n=500;
 
-  /*  
+  /*
   printf("\nLasso: m=%d n=%d.\n",m,n);
   t = Lasso<real_t>(m, n);
   printf("Lasso m=%d n=%d Solver Time: %e sec\n", m,n,t);
-  */
-  
+    */
   
   printf("\nLasso Path: m=%d n=%d.\n",m,n);
   t = LassoPath<real_t>(m, n);
   printf("LassoPath m=%d n=%d Solver Time: %e sec\n", m,n,t);
+
   fflush(stdout);
   fflush(stderr);
   

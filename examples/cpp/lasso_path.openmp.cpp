@@ -12,7 +12,7 @@
 
 using namespace pogs;
 
-template <typename T>
+template<typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
   T max_diff = 0;
   size_t len = v1->size();
@@ -24,7 +24,7 @@ T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
   return max_diff;
 }
 
-template <typename T>
+template<typename T>
 T Asum(std::vector<T> *v) {
   T asum = 0;
   size_t len = v->size();
@@ -41,21 +41,38 @@ T Asum(std::vector<T> *v) {
 //
 // for 100 values of \lambda.
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
-template <typename T>
+template<typename T>
 double LassoPath(size_t m, size_t n) {
   int nlambda = 100;
+  int nGPUs = 2; //==nthreads
+
+#ifdef _OPENMP
+  int nopenmpthreads0=omp_get_max_threads();
+#define MIN(a,b) ((a)<(b)?(a):(b))
+  omp_set_num_threads(MIN(nopenmpthreads0,nGPUs));
+  fprintf(stdout,"Number of original threads=%d.  Number of threads for cuda=%d\n",nopenmpthreads0,omp_get_max_threads());
+#else
+#error Need OpenMP
+#endif
+
+  class Results { //FIXME: add to this
+    double alpha;
+    std::vector<double> lambdas;
+    double rmse;
+  };
+
+  int N = 10;
+  std::vector<Results> res(N);
+
   std::vector<T> A(m * n);
   std::vector<T> b(m);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
-
-  fprintf(stdout,"START FILL DATA\n");
+  fprintf(stdout, "START FILL DATA\n");
   double t0 = timer<double>();
 #include "readorgen.c"
   double t1 = timer<double>();
-  fprintf(stdout,"END FILL DATA\n");
+  fprintf(stdout, "END FILL DATA\n");
 
-
-  // constant across openmp threads  
   T lambda_max = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
@@ -65,86 +82,72 @@ double LassoPath(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  // number of openmp threads = number of cuda devices to use
-  int nDevall=2;
+  double t = timer<double>();
 
-#ifdef _OPENMP
-  int nopenmpthreads0=omp_get_max_threads();
-#define MIN(a,b) ((a)<(b)?(a):(b))
-  omp_set_num_threads(MIN(nopenmpthreads0,nDevall));
-  int nopenmpthreads=omp_get_max_threads();
-  nDevall = nopenmpthreads; // openmp threads = cuda devices used
-  fprintf(stdout,"Number of original threads=%d.  Number of threads for cuda=%d\n",nopenmpthreads0,nopenmpthreads);
-
-  
-#else
-#error Need OpenMP
-#endif
-
-  
-  // Set up pogs datastructure A_, pogs_data, f, g
-  std::vector<std::unique_ptr<pogs::MatrixDense<T> > > A_(nDevall);
-  std::vector<std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > > > pogs_data(nDevall);
-  std::vector<std::vector<FunctionObj<T> > > f(nDevall);
-  std::vector<std::vector<FunctionObj<T> > > g(nDevall);
-
-  //#pragma omp parallel for
-  for(int i=0;i<nDevall;i++){
-
-    A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>('r', m, n, A.data() ));
-    pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >( *(A_[i]) ));
-    
-    for (unsigned int j = 0; j < m; ++j) f[i].emplace_back(kSquare, static_cast<T>(1), b[j]);
-    for (unsigned int j = 0; j < n; ++j) g[i].emplace_back(kAbs);
-
-    
-    pogs_data[i]->SetnDev(1); // set how many cuda devices to use internally in pogs
-    pogs_data[i]->SetwDev(i); // set which cuda device to use
-
-    if(0==1){
-      pogs_data[i]->SetAdaptiveRho(false); // trying
-      pogs_data[i]->SetRho(1.0);
-      //  pogs_data[i]->SetMaxIter(5u);
-      pogs_data[i]->SetMaxIter(1u);
-      pogs_data[i]->SetVerbose(4);
-    }
-    else if(1==1){ // debug
-      //    pogs_data[i]->SetAdaptiveRho(false); // trying
-      //    pogs_data[i]->SetEquil(false); // trying
-      //    pogs_data[i]->SetRho(1E-4);
-      pogs_data[i]->SetVerbose(4);
-      //    pogs_data[i]->SetMaxIter(1u);
-    }
-  }
-
-  fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
 #pragma omp parallel for
-  for (int i = 0; i < nlambda; ++i){
+  for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1
+    int me = omp_get_thread_num();
 
-    // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
-    T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                         static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
+    double alpha = (double)a/N;
+    fprintf(stdout, "Thread %d does alpha=%f\n", me, alpha);
 
-    // choose cuda device
-    int wDev=i%nDevall;
-    //int wDev=0;
+    //if (me % 2 == 0) continue;   // this fails
+    if (me % 2 == 1) continue; // this works
 
-    fprintf(stderr,"i=%d lambda=%g wDev=%d\n",i,lambda,wDev);
-    // assign lambda
-    for (unsigned int j = 0; j < n; ++j) g[wDev][j].c = lambda;
-    
-    pogs_data[wDev]->Solve(f[wDev], g[wDev]);
-    
-    //      std::vector<T> x(n);
-    //      for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev]->GetX()[j];
-    ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
-    //      break;
-    //x_last = x;
+    pogs::MatrixDense<T> A_('r', m, n, A.data());
+    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+    std::vector<FunctionObj<T> > f;
+    std::vector<FunctionObj<T> > g;
+    f.reserve(m);
+    g.reserve(n);
+    // each GPU does a subset of alphas
+
+
+    for (unsigned int j = 0; j < m; ++j)
+      f.emplace_back(kSquare, static_cast<T>(1-alpha), b[j]);
+    for (unsigned int j = 0; j < n; ++j)
+      g.emplace_back(kZero); //FIXME: add alpha*L1 term
+
+    pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
+    pogs_data.SetwDev(me); // which GPU?
+
+    pogs_data.SetAdaptiveRho(false); // trying
+    pogs_data.SetEquil(false); // trying
+    //    pogs_data.SetRho(1E-4);
+    pogs_data.SetVerbose(4);
+    pogs_data.SetMaxIter(1u);
+
+    fprintf(stdout, "BEGIN SOLVE\n");
+
+
+    // work per thread: fixed alpha, do all lambdas
+    for (int i = 0; i < nlambda; ++i) {
+
+      // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
+      T lambda = std::exp(
+          (std::log(lambda_max) * ((float) nlambda - 1.0f - (float) i)
+           + static_cast<T>(1e-2) * std::log(lambda_max)
+           * (float) i) / ((float) nlambda - 1.0f));
+
+      fprintf(stderr, "i=%d lambda=%g thread=%d\n", i, lambda, me);
+      // assign lambda
+      for (unsigned int j = 0; j < n; ++j)
+        g[j].c = lambda;
+
+      pogs_data.Solve(f, g);
+
+      //      std::vector<T> x(n);
+      //      for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[wDev]->GetX()[j];
+      ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
+      //      break;
+      //x_last = x;
+    }
   }
-  double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
 
-  return tf-t;
+  double tf = timer<double>();
+  fprintf(stdout, "END SOLVE: type 1 m %d n %d tfd %g ts %g\n", (int) m,
+      (int) n, t1 - t0, tf - t);
+  return tf - t;
 }
 
 template double LassoPath<double>(size_t m, size_t n);

@@ -22,7 +22,7 @@ LDFLAGS=-lm -lblas
 CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
-all: gpu
+all: gpualt
 
 default: gpu
 
