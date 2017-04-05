@@ -15,13 +15,13 @@ bool VerifyPogsWork(void * work){
 
 //Dense Direct
 template <typename T>
-void * PogsInit(size_t m, size_t n, const T *A, const char ord){
+void * PogsInit(int wDev, size_t m, size_t n, const T *A, const char ord){
     
     bool directbit = true, densebit = true, rowmajorbit = ord == 'r';
     // bool directbit = true, densebit = true, rowmajorbit = O == ROW_MAJ;
 
     // char ord = rowmajorbit ? 'r' : 'c';
-    pogs::MatrixDense<T> A_(ord,m,n,A);
+    pogs::MatrixDense<T> A_(wDev,ord,m,n,A);
     pogs::PogsDirect<T,pogs::MatrixDense<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
     PogsWork * work;
@@ -43,7 +43,7 @@ void * PogsInit(size_t m, size_t n, const T *A, const char ord){
 
 
     //create new pogs_data object
-    pogs_data = new pogs::PogsDirect<T,pogs::MatrixDense<T> >(A_);
+    pogs_data = new pogs::PogsDirect<T,pogs::MatrixDense<T> >(wDev, A_);
 
     // create new pogs work struct
     work = new PogsWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
@@ -55,13 +55,13 @@ void * PogsInit(size_t m, size_t n, const T *A, const char ord){
 
 //Sparse Indirect
 template <typename T>
-void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord){
+void * PogsInit(int wDev, size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord){
     
     // bool directbit = false, densebit = false, rowmajorbit = O == ROW_MAJ;
     bool directbit = false, densebit = false, rowmajorbit = ord == 'r';
 
     // char ord = rowmajorbit ? 'r' : 'c';
-    pogs::MatrixSparse<T> A_(ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
+    pogs::MatrixSparse<T> A_(wDev, ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
     pogs::PogsIndirect<T,pogs::MatrixSparse<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
     PogsWork * work;
@@ -80,7 +80,7 @@ void * PogsInit(size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzin
       g->emplace_back(static_cast<Function>(kZero), static_cast<T>(1), static_cast<T>(0), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0));   
 
     //create pogs_data object
-    pogs_data = new pogs::PogsIndirect<T, pogs::MatrixSparse<T> >(A_);
+    pogs_data = new pogs::PogsIndirect<T, pogs::MatrixSparse<T> >(wDev, A_);
 
     // create new pogs work struct
     work = new PogsWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(pogs_data), static_cast<void *>(f), static_cast<void *>(g));
