@@ -15,14 +15,15 @@ NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
                 -gencode=arch=compute_52,code=sm_52 \
                 -gencode=arch=compute_52,code=compute_52
 
+CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
 CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
 CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
-CXXFLAGS  += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
 CUFLAGS=$(IFLAGS) -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR # -DUSE_NCCL
+CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
