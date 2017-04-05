@@ -68,13 +68,13 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
-      _nDev(1),_wDev(0),
+      _nDev(1), //FIXME - allow larger comm groups
+      _wDev(wDev),
 #ifdef USE_NCCL
       _comms(0),
 #endif
       _init_x(false), _init_lambda(false) {
 
-  _wDev=wDev;
   CUDACHECK(cudaSetDevice(_wDev));
 
   _x = new T[_A.Cols()]();

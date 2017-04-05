@@ -47,9 +47,9 @@ double Lasso(size_t m, size_t n) {
   // setup pogs
   ////////////////////
   fprintf(stderr,"MatrixDense\n"); fflush(stderr);
-  pogs::MatrixDense<T> A_('r', m, n, A.data());
+  pogs::MatrixDense<T> A_(0, 'r', m, n, A.data());
   fprintf(stderr,"PogsDirect\n"); fflush(stderr);
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(0, A_);
   fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<FunctionObj<T> > f;
   fprintf(stderr,"g\n"); fflush(stderr);
@@ -97,7 +97,7 @@ double Lasso(size_t m, size_t n) {
   //  cudaProfilerStop();
 #endif
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 0 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);
+  fprintf(stdout,"END SOLVE: type 0 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
 
   return tf-t;
 }

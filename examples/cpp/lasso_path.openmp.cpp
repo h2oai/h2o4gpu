@@ -80,11 +80,13 @@ double LassoPath(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-#pragma omp parallel {
+  double t = timer<double>();
+#pragma omp parallel 
+{
   int me = omp_get_thread_num();
   // create class objects that creates cuda memory, cpu memory, etc.
-  pogs::MatrixDense<T> > A_(me, 'r', m, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > > pogs_data(me, A_);
+  pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
 
   pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
   //pogs_data.SetAdaptiveRho(false); // trying
@@ -94,7 +96,8 @@ double LassoPath(size_t m, size_t n) {
   //pogs_data.SetMaxIter(1u);
 
 
-  fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
+  int N=10;
+  fprintf(stdout,"BEGIN SOLVE\n"); 
 #pragma omp parallel for
   for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1
     double alpha = (double)a/N;
@@ -113,7 +116,7 @@ double LassoPath(size_t m, size_t n) {
       T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
             static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
 
-      fprintf(stderr,"me=%d a=%d alpha=%g i=%d lambda=%g me=%d\n",me,a,alpha,i,lambda);
+      fprintf(stderr,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);
 
       // assign lambda
       for (unsigned int j = 0; j < n; ++j) g[j].c = lambda;
