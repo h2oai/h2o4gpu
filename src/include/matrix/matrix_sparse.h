@@ -25,7 +25,7 @@ class MatrixSparse : public Matrix<T> {
  public:
   MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
       const POGS_INT *ptr, const POGS_INT *ind);
-  MatrixSparse(const MatrixSparse<T>& A);
+  MatrixSparse(int wDev, const MatrixSparse<T>& A);
   ~MatrixSparse();
 
   // Call this before any other method.

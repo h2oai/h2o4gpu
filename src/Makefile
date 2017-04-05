@@ -128,7 +128,6 @@ $(OBJDIR)/gpu/matrix: $(OBJDIR)/gpu
 $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 	mkdir -p $@ 
 
-
 # POGS CPU objects
 $(OBJDIR)/cpu/pogs.o: cpu/pogs.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu
 	$(CXX) -I include -Icpu/include $< $(CXXFLAGS) -c -o $@ 
@@ -163,4 +162,3 @@ clean:
 	find -name "*.so" -delete
 	find -name "*.a" -delete
 	find -name "*.o" -delete
-

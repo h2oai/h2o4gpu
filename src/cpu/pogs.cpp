@@ -38,7 +38,7 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 }  // namespace
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+Pogs<T, M, P>::Pogs(int ignored, const M &A)
     : _A(A), _P(_A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),

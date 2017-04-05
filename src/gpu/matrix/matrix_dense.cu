@@ -61,7 +61,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,m,n);
+  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -71,10 +71,10 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
 #endif
   
   // Set GPU specific _info.
-  PUSH_RANGE("MDnew","MDnew",1);
+  PUSH_RANGE("MDnew",MDnew,1);
   GpuData<T> *info = new GpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
-  POP_RANGE("MDnew","MDnew",1);
+  POP_RANGE("MDnew",MDnew,1);
 }
 
 template <typename T>
@@ -84,11 +84,11 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   _wDev = wDev;
   CUDACHECK(cudaSetDevice(_wDev));
 
-  PUSH_RANGE("MDnew","MDnew",2);
+  PUSH_RANGE("MDnew",MDnew,2);
   GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info);
   GpuData<T> *info = new GpuData<T>(info_A->orig_data);
   this->_info = reinterpret_cast<void*>(info);
-  POP_RANGE("MDnew","MDnew",2);
+  POP_RANGE("MDnew",MDnew,2);
 }
 
 template <typename T>
@@ -114,7 +114,7 @@ int MatrixDense<T>::Init() {
   this->_done_init = true;
   CUDACHECK(cudaSetDevice(_wDev));
 
-  PUSH_RANGE("MDinit","MDinit",1);
+  PUSH_RANGE("MDinit",MDinit,1);
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
   double t0 = timer<double>();
@@ -128,7 +128,7 @@ int MatrixDense<T>::Init() {
       cudaMemcpyHostToDevice);
 
   double t2 = timer<double>();
-  POP_RANGE("MDinit","MDinit",1);
+  POP_RANGE("MDinit",MDinit,1);
 
   printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
   printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);

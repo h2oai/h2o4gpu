@@ -54,7 +54,7 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::Pogs(int wDev, const M &A)
-    : _A(A), _P(_A),
+    : _A(wDev, A), _P(wDev, _A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),

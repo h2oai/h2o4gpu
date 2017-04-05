@@ -80,70 +80,47 @@ double LassoPath(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-
-
-
-  
-  // Set up pogs datastructures: A_, pogs_data, f, g as pointers
-  // Require pointers, because don't want to call constructor yet as that allocates cuda memory, etc.
-  std::vector<std::unique_ptr<pogs::MatrixDense<T> > > A_(nGPUs);
-  std::vector<std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > > > pogs_data(nGPUs);
-
-
+#pragma omp parallel {
+  int me = omp_get_thread_num();
   // create class objects that creates cuda memory, cpu memory, etc.
-  // Avoid doing for each alpha or lambda
-  for(int i=0;i<nGPUs;i++){
+  pogs::MatrixDense<T> > A_(me, 'r', m, n, A.data());
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > > pogs_data(me, A_);
 
-    A_[i] = std::unique_ptr<pogs::MatrixDense<T> >(new pogs::MatrixDense<T>(i, 'r', m, n, A.data() ));
-    pogs_data[i] = std::unique_ptr<pogs::PogsDirect<T, pogs::MatrixDense<T> > >(new pogs::PogsDirect<T, pogs::MatrixDense<T> >(i, *(A_[i]) ));
+  pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
+  //pogs_data.SetAdaptiveRho(false); // trying
+  //pogs_data.SetEquil(false); // trying
+  //pogs_data.SetRho(1E-4);
+  pogs_data.SetVerbose(4);
+  //pogs_data.SetMaxIter(1u);
 
-    pogs_data[i]->SetnDev(1); // set how many cuda devices to use internally in pogs
-    pogs_data[i]->SetwDev(i); // set which cuda device to use
 
-    if(0==1){
-      pogs_data[i]->SetAdaptiveRho(false); // trying
-      pogs_data[i]->SetRho(1.0);
-      //  pogs_data[i]->SetMaxIter(5u);
-      pogs_data[i]->SetMaxIter(1u);
-      pogs_data[i]->SetVerbose(4);
-    }
-    else if(1==1){ // debug
-      //    pogs_data[i]->SetAdaptiveRho(false); // trying
-      //    pogs_data[i]->SetEquil(false); // trying
-      //    pogs_data[i]->SetRho(1E-4);
-      pogs_data[i]->SetVerbose(4);
-      //    pogs_data[i]->SetMaxIter(1u);
-    }
-  }
-
-  
   fprintf(stdout,"BEGIN SOLVE\n"); double t = timer<double>();
 #pragma omp parallel for
   for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1
-    int me = omp_get_thread_num();
     double alpha = (double)a/N;
-    
+
     // setup f,g as functions of alpha
     std::vector<FunctionObj<T> > f;
     std::vector<FunctionObj<T> > g;
+    f.reserve(m);
+    g.reserve(n);
     for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, static_cast<T>(1-alpha), b[j]);
-    for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
-    
-    
+    for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs); //FIXME alpha*L1
+
     for (int i = 0; i < nlambda; ++i){
-      
+
       // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
       T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                           static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
-      
+            static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
+
       fprintf(stderr,"me=%d a=%d alpha=%g i=%d lambda=%g me=%d\n",me,a,alpha,i,lambda);
 
       // assign lambda
       for (unsigned int j = 0; j < n; ++j) g[j].c = lambda;
 
       // Solve
-      pogs_data[me]->Solve(f, g);
-      
+      pogs_data.Solve(f, g);
+
       //      std::vector<T> x(n);
       //      for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[me]->GetX()[j];
       ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
@@ -151,6 +128,7 @@ double LassoPath(size_t m, size_t n) {
       //x_last = x;
     }// over lambda
   }// over alpha
+}
 
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);

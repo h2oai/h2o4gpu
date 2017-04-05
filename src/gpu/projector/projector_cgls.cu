@@ -47,7 +47,7 @@ struct Gemv : cgls::Gemv<T> {
 }  // namespace
 
 template <typename T, typename M>
-ProjectorCgls<T, M>::ProjectorCgls(const M& A)
+ProjectorCgls<T, M>::ProjectorCgls(int wDev, const M& A)
     : _A(A) {
   // Set GPU specific this->_info.
   GpuData<T> *info = new GpuData<T>();

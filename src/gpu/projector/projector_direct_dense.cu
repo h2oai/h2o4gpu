@@ -41,7 +41,7 @@ ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
   _wDev = wDev;
   CUDACHECK(cudaSetDevice(_wDev));
 
-  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",_A.Rows(),_A.Cols(),_A.IsInit()); fflush(stderr);
+  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
 
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -51,10 +51,10 @@ ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
 #endif
 
   // Set GPU specific this->_info.
-  PUSH_RANGE("PDnew","PDnew",1);
+  PUSH_RANGE("PDnew",PDnew,1);
   GpuData<T> *info = new GpuData<T>();
   this->_info = reinterpret_cast<void*>(info);
-  POP_RANGE("PDnew","PDnew",1);
+  POP_RANGE("PDnew",PDnew,1);
 }
 
 template <typename T, typename M>
@@ -100,7 +100,7 @@ int ProjectorDirect<T, M>::Init() {
   cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
   cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
   cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
-  fprintf(stderr,"TEST: r=%d c=%d : %d %d\n",_A.Rows(), _A.Cols(), (int)min_dim,(int)sizeof(T));
+  fprintf(stderr,"TEST: r=%d c=%d : %d %d\n",(int)_A.Rows(), (int)_A.Cols(), (int)min_dim,(int)sizeof(T));
   CUDA_CHECK_ERR();
   POP_RANGE("AAalloc",AAalloc,1);
 

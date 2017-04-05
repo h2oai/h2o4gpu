@@ -78,7 +78,7 @@ MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
 }
 
 template <typename T>
-MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
+MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
     : Matrix<T>(A._m, A._n), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 

@@ -16,7 +16,7 @@ class ProjectorCgls : Projector<T, M> {
   ProjectorCgls<M, T>& operator=(const ProjectorCgls<T, M>& P);
 
  public:
-  ProjectorCgls(const M& A);
+  ProjectorCgls(int wDev, const M& A);
   ~ProjectorCgls();
   
   int Init();
