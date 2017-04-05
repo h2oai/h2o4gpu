@@ -253,13 +253,13 @@ void IntToInt(size_t n, const T1 *in, T2 *out) {
 
 // Wrapper for graph pogs. Populates pogs_data structure and calls pogs.
 template <typename T>
-void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void SolverWrapDn(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
 
   // Initialize Pogs data structure
-  pogs::MatrixDense<T> A_('c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  pogs::MatrixDense<T> A_(wDev,'c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev,A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -313,7 +313,7 @@ void SolverWrapDn(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 }
 
 template <typename T>
-void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void SolverWrapSp(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   mwIndex *mw_row_ind = mxGetIr(prhs[0]);
   mwIndex *mw_col_ptr = mxGetJc(prhs[0]);
   T *val = reinterpret_cast<T*>(mxGetData(prhs[0]));
@@ -327,8 +327,8 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   IntToInt(n + 1, mw_col_ptr, col_ptr);
 
   // Initialize Pogs data structure
-  pogs::MatrixSparse<T> A('c', m, n, nnz, val, col_ptr, row_ind);
-  pogs::PogsIndirect<T, pogs::MatrixSparse<T> > pogs_data(A);
+  pogs::MatrixSparse<T> A(wDev, 'c', m, n, nnz, val, col_ptr, row_ind);
+  pogs::PogsIndirect<T, pogs::MatrixSparse<T> > pogs_data(wDev, A);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -383,7 +383,7 @@ void SolverWrapSp(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   delete [] col_ptr;
 }
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void mexFunction(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // Check number of arguments.
   if (nrhs < 3 || nrhs > 4) {
     mexErrMsgIdAndTxt("MATLAB:pogs:insufficientInputArgs",
@@ -447,14 +447,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   if (mxIsSparse(prhs[0])) {
     if (class_id_A == mxDOUBLE_CLASS)
-      SolverWrapSp<double>(nlhs, plhs, nrhs, prhs);
+      SolverWrapSp<double>(wDev, nlhs, plhs, nrhs, prhs);
     else if (class_id_A == mxSINGLE_CLASS)
-      SolverWrapSp<float>(nlhs, plhs, nrhs, prhs);
+      SolverWrapSp<float>(wDev, nlhs, plhs, nrhs, prhs);
   } else {
     if (class_id_A == mxDOUBLE_CLASS)
-      SolverWrapDn<double>(nlhs, plhs, nrhs, prhs);
+      SolverWrapDn<double>(wDev, nlhs, plhs, nrhs, prhs);
     else if (class_id_A == mxSINGLE_CLASS)
-      SolverWrapDn<float>(nlhs, plhs, nrhs, prhs);
+      SolverWrapDn<float>(wDev, nlhs, plhs, nrhs, prhs);
   }
 }
 
