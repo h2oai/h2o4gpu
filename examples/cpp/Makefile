@@ -24,7 +24,7 @@ endif
 
 all: gpualt
 
-default: gpu
+default: gpualt
 
 # CPU
 cpu: run_all.cpp examples.h $(EXSRC)
