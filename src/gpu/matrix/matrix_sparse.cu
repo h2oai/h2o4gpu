@@ -62,7 +62,7 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
+MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
     : Matrix<T>(m, n), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
