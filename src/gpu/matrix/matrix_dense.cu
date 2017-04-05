@@ -53,8 +53,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
-  : _wDev(0), Matrix<T>(m, n), _data(0) {
-  _wDev = wDev;
+  : _wDev(wDev), Matrix<T>(m, n), _data(0) {
   CUDACHECK(cudaSetDevice(_wDev));
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');

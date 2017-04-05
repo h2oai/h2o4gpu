@@ -540,9 +540,14 @@ getmin <- function(lambda, cvm, cvsd) {
 #' @param foldid Optional vector of values between 1 and nfolds, assigning
 #' @param cutoff Discard values of lambda for which beta remains unchanged (estimated on the full dataset)
 #' datapoint to cv-fold.
+#' @param params Other parameters to pogsnet
 #' @param ... Other parameters to pogsnet.
 #' @export
-cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutoff=TRUE, ...) {
+cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutoff=TRUE, params=list(), ...) {
+  library(foreach)
+  library(doMC)
+  registerDoMC(2) ## FIXME: as many as there are GPUs
+
   # Check input data
   if(!is.null(lambda) && length(lambda) < 2) {
     stop("Need more than one value of lambda for cv.pogsnet")
@@ -566,23 +571,24 @@ cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutof
   # Create initial pogsnet call (mostly for sequence of lambdas)
   pogsnet.call = match.call(expand.dots=TRUE)
   pogsnet.call[[1]] = as.name("pogsnet") 
-  pogsnet.object = pogsnet(x, y, weights=weights, lambda=lambda, cutoff=cutoff,...)
+  pogsnet.object = pogsnet(x, y, weights=weights, lambda=lambda, cutoff=cutoff, params=params, ...)
   pogsnet.object$call = pogsnet.call
   lambda = pogsnet.object$lambda
 
   # Containers for prediction result
   predmat = matrix(NA, length(y), length(lambda))
   nlams = double(nfolds)
-  
+
   # Begin CV
-  for(i in seq(nfolds)) {
+  foreach(i=1:nfolds) %dopar% {
+    params[["wDev"]] = i%%2L
     which = (foldid == i)
     if(is.matrix(y)) {
       y_sub = y[!which,] 
     } else {
       y_sub = y[!which]
     }
-    pogsnet.fit = pogsnet(x[!which, , drop=FALSE], y_sub, lambda=lambda, weights=weights[!which], cutoff=FALSE, ...)
+    pogsnet.fit = pogsnet(x[!which, , drop=FALSE], y_sub, lambda=lambda, weights=weights[!which], cutoff=FALSE, params=params, ...)
     nlami = length(pogsnet.fit$lambda)
     predmat[which, seq(nlami)] = predict(pogsnet.fit, x[which, , drop=FALSE], type="response")
   }

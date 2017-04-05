@@ -51,7 +51,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   }
 
   // Populate f_pogs.
-  #pragma omp parellel for
+  #pragma omp parallel for
   for (unsigned int i = 0; i < n; ++i) {
     #pragma unroll
     for (unsigned int j = 0; j < kNumParam; ++j) {
@@ -123,17 +123,22 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
   size_t n = INTEGER(Adim)[1];
   unsigned int num_obj = length(fin);
 
-  pogs::MatrixDense<T> A_dense('c', m, n, REAL(A));
+  int wDev = 0;
+  SEXP pw = getListElement(params, "wDev");
+  if (pw != R_NilValue)
+    wDev = INTEGER(pw)[0];
+
+  pogs::MatrixDense<T> A_dense(wDev, 'c', m, n, REAL(A));
 
   // Initialize Pogs data structure
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_dense);
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_dense);
   std::vector<FunctionObj<T> > f, g;
 
   f.reserve(m);
   g.reserve(n);
 
   // Populate parameters.
-  PopulateParams(params, &pogs_data);
+  PopulateParams(params, &pogs_data); //also sets wDev again
 
   // Allocate space for factors if more than one objective.
   int err = 0;
