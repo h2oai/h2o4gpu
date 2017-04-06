@@ -82,11 +82,19 @@ double LassoPath(size_t m, size_t n) {
   //pogs_data.SetVerbose(4);
   //pogs_data.SetMaxIter(1u);
 
+  char filename[100];
+  sprintf(filename,"me%d.txt",me);
+  FILE * fil = fopen(filename,"wt");
+  if(fil==NULL){
+    fprintf(stderr,"Cannot open filename=%s\n",filename);
+    exit(0);
+  }
 
   int N=3;
-  fprintf(stdout,"BEGIN SOLVE\n"); 
-#pragma omp parallel for
-  for (int a = 0; a <= N; ++a) { //alpha search
+  fprintf(stdout,"BEGIN SOLVE\n");
+  int a;
+#pragma omp for
+  for (a = 0; a <= N; ++a) { //alpha search
     double alpha = (double)a/N;
 
     // setup f,g as functions of alpha
@@ -103,7 +111,7 @@ double LassoPath(size_t m, size_t n) {
       T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
             static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
 
-      fprintf(stderr,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);
+      fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);fflush(fil);
 
       // assign lambda
       for (unsigned int j = 0; j < n; ++j) {
