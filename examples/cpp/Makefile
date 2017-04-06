@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lasso_path.cpp
+EXSRC=lasso.cpp elastic_net.cpp
 EXSRC2=lasso.cpp elastic_net.cpp
 
 # C++ Flags
@@ -33,7 +33,7 @@ cpu: run_all.cpp examples.h $(EXSRC)
 
 cpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o runalt $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
@@ -42,7 +42,7 @@ gpu: run_all.cpp examples.h $(EXSRC)
 
 gpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o runalt $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
 
 clean:
