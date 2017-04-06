@@ -11,33 +11,21 @@
 using namespace pogs;
 
 template <typename T>
-T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
-  T max_diff = 0;
-  size_t len = v1->size();
-#ifdef _OPENMP
-#pragma omp parallel for reduction(max : max_diff)
-#endif
-  for (size_t i = 0; i < len; ++i)
-    max_diff = std::max(max_diff, std::abs((*v1)[i] - (*v2)[i]));
-  return max_diff;
+T getRMSE(const T *v1, std::vector<T> *v2) {
+  T rmse = 0;
+  size_t len = v2->size();
+  for (size_t i = 0; i < len; ++i) {
+    T d = v1[i] - (*v2)[i];
+    rmse += d*d;
+  }
+  rmse /= (T)len;
+  return std::sqrt(rmse);
 }
 
-template <typename T>
-T Asum(std::vector<T> *v) {
-  T asum = 0;
-  size_t len = v->size();
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+ : asum)
-#endif
-  for (size_t i = 0; i < len; ++i)
-    asum += std::abs((*v)[i]);
-  return asum;
-}
-
-// LassoPath
-//   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
+// Elastic Net
+//   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
-// for 100 values of \lambda.
+// for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(size_t m, size_t n) {
@@ -61,7 +49,6 @@ double LassoPath(size_t m, size_t n) {
   // allocate matrix problem to solve
   std::vector<T> A(m * n);
   std::vector<T> b(m);
-  std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
   fprintf(stdout,"START FILL DATA\n");
   double t0 = timer<double>();
@@ -107,8 +94,8 @@ double LassoPath(size_t m, size_t n) {
     std::vector<FunctionObj<T> > g;
     f.reserve(m);
     g.reserve(n);
-    for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, static_cast<T>(1-alpha), b[j]);
-    for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs); //FIXME alpha*L1
+    for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j]);
+    for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
     for (int i = 0; i < nlambda; ++i){
 
@@ -119,16 +106,15 @@ double LassoPath(size_t m, size_t n) {
       fprintf(stderr,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);
 
       // assign lambda
-      for (unsigned int j = 0; j < n; ++j) g[j].c = lambda;
+      for (unsigned int j = 0; j < n; ++j) {
+        g[j].c = alpha*lambda; //for L1
+        g[j].e = (1-alpha)*lambda; //for L2
+      }
 
       // Solve
       pogs_data.Solve(f, g);
 
-      //      std::vector<T> x(n);
-      //      for (unsigned int j = 0; j < n; ++j) x[j] = pogs_data[me]->GetX()[j];
-      ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
-      //      break;
-      //x_last = x;
+      fprintf(stderr,"train RMSE: %f\n", getRMSE(pogs_data.GetY(), &b));
     }// over lambda
   }// over alpha
 }
