@@ -69,63 +69,64 @@ double LassoPath(size_t m, size_t n) {
 
   double t = timer<double>();
 #pragma omp parallel 
-{
-  int me = omp_get_thread_num();
-  // create class objects that creates cuda memory, cpu memory, etc.
-  pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
+  {
+    int me = omp_get_thread_num();
+    // create class objects that creates cuda memory, cpu memory, etc.
+    pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
+    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
 
-  pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-  //pogs_data.SetAdaptiveRho(false); // trying
-  //pogs_data.SetEquil(false); // trying
-  //pogs_data.SetRho(1E-4);
-  //pogs_data.SetVerbose(4);
-  //pogs_data.SetMaxIter(1u);
+    pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
+    //pogs_data.SetAdaptiveRho(false); // trying
+    //pogs_data.SetEquil(false); // trying
+    //pogs_data.SetRho(1E-4);
+    //pogs_data.SetVerbose(4);
+    //pogs_data.SetMaxIter(1u);
 
-  char filename[100];
-  sprintf(filename,"me%d.txt",me);
-  FILE * fil = fopen(filename,"wt");
-  if(fil==NULL){
-    fprintf(stderr,"Cannot open filename=%s\n",filename);
-    exit(0);
-  }
+    char filename[100];
+    sprintf(filename,"me%d.txt",me);
+    FILE * fil = fopen(filename,"wt");
+    if(fil==NULL){
+      fprintf(stderr,"Cannot open filename=%s\n",filename);
+      exit(0);
+    }
 
-  int N=3;
-  fprintf(stdout,"BEGIN SOLVE\n");
-  int a;
+    int N=3;
+    fprintf(stdout,"BEGIN SOLVE\n");
+    int a;
 #pragma omp for
-  for (a = 0; a <= N; ++a) { //alpha search
-    double alpha = (double)a/N;
+    for (a = 0; a <= N; ++a) { //alpha search
+      double alpha = (double)a/N;
 
-    // setup f,g as functions of alpha
-    std::vector<FunctionObj<T> > f;
-    std::vector<FunctionObj<T> > g;
-    f.reserve(m);
-    g.reserve(n);
-    for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j]);
-    for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
+      // setup f,g as functions of alpha
+      std::vector<FunctionObj<T> > f;
+      std::vector<FunctionObj<T> > g;
+      f.reserve(m);
+      g.reserve(n);
+      for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j]);
+      for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
-    for (int i = 0; i < nlambda; ++i){
+      for (int i = 0; i < nlambda; ++i){
 
-      // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
-      T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-            static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
+        // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
+        T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
+                             static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
 
-      fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);fflush(fil);
+        fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);fflush(fil);
 
-      // assign lambda
-      for (unsigned int j = 0; j < n; ++j) {
-        g[j].c = static_cast<float>(alpha*lambda); //for L1
-        g[j].e = static_cast<float>((1-alpha)*lambda); //for L2
-      }
+        // assign lambda
+        for (unsigned int j = 0; j < n; ++j) {
+          g[j].c = static_cast<float>(alpha*lambda); //for L1
+          g[j].e = static_cast<float>((1-alpha)*lambda); //for L2
+        }
 
-      // Solve
-      pogs_data.Solve(f, g);
+        // Solve
+        pogs_data.Solve(f, g);
 
-      fprintf(stderr,"train RMSE: %f\n", getRMSE(pogs_data.GetY(), &b));
-    }// over lambda
-  }// over alpha
-}
+        fprintf(stderr,"train RMSE: %f\n", getRMSE(pogs_data.GetY(), &b));
+      }// over lambda
+    }// over alpha
+    if(fil!=NULL) fclose(fil);
+  } // end parallel region
 
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
