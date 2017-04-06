@@ -6,7 +6,7 @@ library(data.table)
 library(MatrixModels)
 h2o.init(nthreads=-1)
 
-pogs  <-FALSE
+pogs  <-TRUE
 glmnet<-FALSE
 h2o   <-TRUE
 alpha <- .5
@@ -22,19 +22,25 @@ if (FALSE) {
   #DT = DT[INCTOT!=9999999]
   DT[,c('HHINCOME','INCWAGE','INCTOT','FTOTINC',"INCBUS00",'INCSS',"INCWELFR","INCINVST", "INCRETIR", "INCSUPP", "INCOTHER"):=NULL] ## drop highly correlated columns
   ncol(DT)
-  DT[,CLUSTER:=as.factor(as.numeric(CLUSTER %% (max(CLUSTER)-min(CLUSTER)+1)))]
+  #DT[,CLUSTER:=as.factor(as.numeric(CLUSTER %% (max(CLUSTER)-min(CLUSTER)+1)))]
+  DT[,CLUSTER:=NULL] ## has > 30k factors
   
   ## label-encoding of categoricals
   feature.names <- setdiff(names(DT), response)
+  sum <- 0
   for (ff in feature.names) {
-    if ((tt <- uniqueN(DT[[ff]])) < 100) {
+    tt <- uniqueN(DT[[ff]])
+    if (tt < 1000 && tt > 1) {
       DT[, (ff):=factor(DT[[ff]])]  
-      #print(ff)
+      print(paste0(ff,"has ",tt," levels"))
+      sum <- sum + tt
     }
     if (tt < 2) {
+      print(paste0("dropping constant column: ", ff))
       DT[, (ff):=NULL]
     }
   }
+  print(sum)
   ncol(DT)
   DT
   
@@ -56,7 +62,13 @@ if (FALSE) {
   ncol(DT)
   
   ## one-hot encode the categoricals, but keep everything dense
-  DT <- as.data.table(model.matrix(DT[[response]]~.-1, data = DT, sparse=FALSE))[,(response):=DT[[response]]]
+  DT2 <- as.data.table(model.matrix(DT[[response]]~., data = DT[,c(catCols), with=FALSE], sparse=FALSE))
+  ncol(DT2)
+  
+  DT2[,(numCols):=DT[,c(numCols), with=FALSE]]
+  ncol(DT2)
+  
+  DT <- DT2
   ncol(DT)
   
   ## all cols are now numeric
