@@ -89,16 +89,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
 #pragma omp parallel 
   {
     int me = omp_get_thread_num();
-    // create class objects that creates cuda memory, cpu memory, etc.
-    pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
-    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
-
-    pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-    //pogs_data.SetAdaptiveRho(false); // trying
-    //pogs_data.SetEquil(false); // trying
-    //pogs_data.SetRho(1E-4);
-    //pogs_data.SetVerbose(4);
-    //pogs_data.SetMaxIter(1u);
 
     char filename[100];
     sprintf(filename,"me%d.txt",me);
@@ -107,6 +97,22 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       fprintf(stderr,"Cannot open filename=%s\n",filename);
       exit(0);
     }
+
+    double t0 = timer<double>();
+    fprintf(fil,"Moving data to the GPU. Starting at %g\n", t0);
+    // create class objects that creates cuda memory, cpu memory, etc.
+    pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
+    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
+    double t1 = timer<double>();
+    fprintf(fil,"Done moving data to the GPU. Stopping at %g\n", t1);
+    fprintf(fil,"Done moving data to the GPU. Took %g secs\n", t1-t0);
+
+    pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
+    //pogs_data.SetAdaptiveRho(false); // trying
+    //pogs_data.SetEquil(false); // trying
+    //pogs_data.SetRho(1E-4);
+    //pogs_data.SetVerbose(4);
+    //pogs_data.SetMaxIter(1u);
 
     int N=nAlphas; // number of alpha's
     if(N % nGPUs!=0){
@@ -121,8 +127,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       const T lambda_max = lambda_max0/(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
       // set lambda_min
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
-      fprintf(stdout, "lambda_max: %f\n", lambda_max);
-      fprintf(stdout, "lambda_min: %f\n", lambda_min);
+      fprintf(fil, "lambda_max: %f\n", lambda_max);
+      fprintf(fil, "lambda_min: %f\n", lambda_min);
 
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
@@ -134,21 +140,22 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j], weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
-      fprintf(stdout,"alpha%f\n", alpha);
+      fprintf(fil,"alpha%f\n", alpha);
       for (int i = 0; i < nlambda; ++i){
 
         // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
         T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) + lambda_min * (float)i) / ((float)nlambda - 1.0f));
-        fprintf(stdout,"lambda %d = %f\n", i, lambda);
+        fprintf(fil,"lambda %d = %f\n", i, lambda);
 
         // assign lambda
         for (unsigned int j = 0; j < n; ++j) {
           g[j].c = static_cast<T>(alpha*lambda*penalty_factor); //for L1
           g[j].e = static_cast<T>((1.0-alpha)*lambda*penalty_factor); //for L2
         }
-        fprintf(stdout, "c/e: %f %f\n", g[0].c, g[0].e);
+        fprintf(fil, "c/e: %f %f\n", g[0].c, g[0].e);
 
         // Solve
+        fprintf(fil, "Starting to solve at %g\n", timer<double>());
         pogs_data.Solve(f, g);
 
         fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g trainRMSE: %f\n",me,a,alpha,i,lambda,getRMSE(pogs_data.GetY(), &b));fflush(fil);
