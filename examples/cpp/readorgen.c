@@ -22,8 +22,7 @@ if(generate==0){
   }
   else{
 
-    // tail -n +2 /tmp/train.csv > /tmp/trainnonhead.csv
-    // sed 's/,/ /g' /tmp/trainnonhead.csv > /tmp/train.txt
+    // tail -n +2 /tmp/train.csv | sed 's/,/ /g' > /tmp/train.txt
       
     double dum;
     size_t Ai,Aj;
@@ -55,6 +54,7 @@ if(generate==0){
  }
  else{
    // GENERATE DATA
+//#pragma omp parallel for //FIXME - test this
    for (unsigned int i = 0; i < m * n; ++i)
      A[i] = n_dist(generator);
 
