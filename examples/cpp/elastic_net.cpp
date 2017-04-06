@@ -124,7 +124,7 @@ double LassoPath(size_t m, size_t n) {
         // Solve
         pogs_data.Solve(f, g);
 
-        fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g train RMSE: %f\n",me,a,alpha,i,lambda,getRMSE(pogs_data.GetY(), &b));fflush(fil);
+        fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g trainRMSE: %f\n",me,a,alpha,i,lambda,getRMSE(pogs_data.GetY(), &b));fflush(fil);
       }// over lambda
     }// over alpha
     if(fil!=NULL) fclose(fil);
