@@ -31,7 +31,7 @@ template <typename T>
 double LassoPath(size_t m, size_t n) {
   int nlambda = 50;
   // number of openmp threads = number of cuda devices to use
-  int nGPUs=2;
+  int nGPUs=4;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -90,12 +90,15 @@ double LassoPath(size_t m, size_t n) {
       exit(0);
     }
 
-    int N=3;
+    int N=12; // N+1 a's
+    if(N % nGPUs!=0){
+      fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
+    }
     fprintf(stdout,"BEGIN SOLVE\n");
     int a;
 #pragma omp for
-    for (a = 0; a <= N; ++a) { //alpha search
-      double alpha = (double)a/N;
+    for (a = 0; a < N; ++a) { //alpha search
+      double alpha = (double)a/(N-1);
 
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
