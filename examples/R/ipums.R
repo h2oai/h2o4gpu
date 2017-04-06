@@ -12,76 +12,12 @@ h2o   <-FALSE
 alpha <- .5
 family <- "gaussian"
 
-f <- "~/ipums_2000-2015_head4M.csv"
+f <- "~/ipums_2000-2015.csv"
 response <- "INCEARN"
 
-file <- paste0("/tmp/train.csv")
-if (FALSE) {
-  DT <- fread(f, nrows=100000)
-  DT = DT[INCEARN>100] ## only keep rows with valid response (0 is ok)
-  #DT = DT[INCTOT!=9999999]
-  DT[,c('HHINCOME','INCWAGE','INCTOT','FTOTINC',"INCBUS00",'INCSS',"INCWELFR","INCINVST", "INCRETIR", "INCSUPP", "INCOTHER"):=NULL] ## drop highly correlated columns
-  ncol(DT)
-  #DT[,CLUSTER:=as.factor(as.numeric(CLUSTER %% (max(CLUSTER)-min(CLUSTER)+1)))]
-  DT[,CLUSTER:=NULL] ## has > 30k factors
-  
-  ## label-encoding of categoricals
-  feature.names <- setdiff(names(DT), response)
-  sum <- 0
-  for (ff in feature.names) {
-    tt <- uniqueN(DT[[ff]])
-    if (tt < 1000 && tt > 1) {
-      DT[, (ff):=factor(DT[[ff]])]  
-      print(paste0(ff,"has ",tt," levels"))
-      sum <- sum + tt
-    }
-    if (tt < 2) {
-      print(paste0("dropping constant column: ", ff))
-      DT[, (ff):=NULL]
-    }
-  }
-  print(sum)
-  ncol(DT)
-  DT
-  
-  numCols <- names(DT)[which(sapply(DT, is.numeric))]
-  catCols <- names(DT)[which(sapply(DT, is.factor))]
-  numCols
-  catCols
-  
-  
-  ## impute missing values, drop near-const cols and standardize the data
-  cols <- setdiff(numCols,c(response))
-  for (c in cols) {
-    DT[!is.finite(DT[[c]]), (c):=mean(DT[[c]], na.rm=TRUE)]
-    if (!is.finite(sd(DT[[c]])) || sd(DT[[c]])<1e-4) 
-      DT[,(c):=NULL]
-    else
-      DT[,(c):=scale(as.numeric(DT[[c]]))]
-  }
-  ncol(DT)
-  
-  ## one-hot encode the categoricals, but keep everything dense
-  DT2 <- as.data.table(model.matrix(DT[[response]]~., data = DT[,c(catCols), with=FALSE], sparse=FALSE))
-  ncol(DT2)
-  
-  DT2[,(numCols):=DT[,c(numCols), with=FALSE]]
-  ncol(DT2)
-  
-  DT <- DT2[,-1] ## drop intercept
-  ncol(DT)
-  
-  ## all cols are now numeric
-  all(sapply(DT, is.numeric))
-
-  ## check validity of data
-  all(!is.na(DT))
-  all(sapply(DT, function(x) all(is.finite(x))))
-  
-  ## TODO: vtreat
-  fwrite(DT, file)
-  quit()
-  
+file <- paste0("train.csv")
+if (TRUE) {
+  source("ipums_prep.R")
 } else {
   DT <- fread(file)
 }
