@@ -16,7 +16,7 @@ f <- "~/ipums_2000-2015_head4M.csv"
 response <- "INCEARN"
 
 file <- paste0("/tmp/train.csv")
-if (FALSE) {
+if (TRUE) {
   DT <- fread(f, nrows=100000)
   DT = DT[INCEARN>100] ## only keep rows with valid response (0 is ok)
   #DT = DT[INCTOT!=9999999]
@@ -68,7 +68,7 @@ if (FALSE) {
   DT2[,(numCols):=DT[,c(numCols), with=FALSE]]
   ncol(DT2)
   
-  DT <- DT2
+  DT <- DT2[,-1] ## drop intercept
   ncol(DT)
   
   ## all cols are now numeric
@@ -80,6 +80,7 @@ if (FALSE) {
   
   ## TODO: vtreat
   fwrite(DT, file)
+  quit()
   
 } else {
   DT <- fread(file)
