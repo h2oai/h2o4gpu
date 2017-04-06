@@ -7,7 +7,7 @@ library(MatrixModels)
 h2o.init(nthreads=-1)
 
 pogs  <-FALSE
-glmnet<-TRUE
+glmnet<-FALSE
 h2o   <-FALSE
 alpha <- .5
 family <- "gaussian"
@@ -242,11 +242,10 @@ system.time(
     ## FAST - always a small gram matrix given.
     model <- glmnet(x=t(L), y=z, family=family, alpha=a)
     
-    ## SLOW -- too small data?
-    # model <- pogsnet(x = train_x, y = train_y, family = family, alpha = a, lambda=NULL, cutoff=FALSE,
-    #                         params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
-    #                                     max_iter=10000,
-    #                                     adaptive_rho=FALSE, equil=TRUE))
+    ## INACCURATE
+    #model <- pogsnet(x = t(L), y = z, family = family, alpha = a, lambda=NULL, cutoff=FALSE
+    #                         #,params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=10000, adaptive_rho=FALSE, equil=TRUE)
+    #)
     
     ## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
     p <- predict(model, valid_x, type="response")
