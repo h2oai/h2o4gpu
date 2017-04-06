@@ -78,9 +78,8 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
-  : _wDev(0), Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
+  : _wDev(wDev), Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
 
-  _wDev = wDev;
   CUDACHECK(cudaSetDevice(_wDev));
 
   PUSH_RANGE("MDnew",MDnew,2);

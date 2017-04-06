@@ -38,7 +38,7 @@ class MatrixDense : public Matrix<T> {
   // Getters
   const T* Data() const { return _data; }
   Ord Order() const { return _ord; }
-  int WDEV() const { return _wDev; }
+  int wDev() const { return _wDev; }
 };
 
 }  // namespace pogs
