@@ -31,7 +31,7 @@ template <typename T>
 double LassoPath(size_t m, size_t n) {
   int nlambda = 50;
   // number of openmp threads = number of cuda devices to use
-  int nGPUs=2;
+  int nGPUs=1;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
