@@ -98,7 +98,7 @@ double LassoPath(size_t m, size_t n) {
 
   int N=5;
   fprintf(stdout,"BEGIN SOLVE\n"); 
-#pragma omp parallel for
+#pragma omp for
   for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1
     double alpha = (double)a/N;
 
