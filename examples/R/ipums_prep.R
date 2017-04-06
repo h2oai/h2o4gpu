@@ -13,7 +13,7 @@ response <- "INCEARN"
 DT <- fread("~/ipums_2000-2015.csv", nrows=100000)
 print(ncol(DT))
 
-## only keep rows with income of at least 100 dollars
+## only keep rows with income of >100 dollars
 DT = DT[INCEARN>100]
 
 ## drop highly correlated columns
