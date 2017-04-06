@@ -467,7 +467,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // choose: 1 = Pogs Boyd method
     // choose: 2 = Original Boyd method of balancing residuals
     // choose: 3 = Spectral method by Zheng et al. 2015
-    int whichadap=2;
+    int whichadap=1;
 
     if(_adaptive_rho && _rho!=0){
       if (whichadap==1){
