@@ -1,7 +1,7 @@
 
 
 // choose to generate or read-in data
-int generate=1;
+int generate=0;
 
 std::default_random_engine generator;
 std::uniform_real_distribution<T> u_dist(static_cast<T>(0),
@@ -12,7 +12,7 @@ std::normal_distribution<T> n_dist(static_cast<T>(0),
 
 // READ-IN DATA
 if(generate==0){
-  size_t TARGETCOL=42;
+  size_t TARGETCOL=9733;
   size_t dAm=m; // rows
   size_t dAn=n+1; // columns
   FILE * file = fopen("/tmp/train.txt","rt");
@@ -22,8 +22,7 @@ if(generate==0){
   }
   else{
 
-    // tail -n +2 /tmp/train.csv > /tmp/trainnonhead.csv
-    // sed 's/,/ /g' /tmp/trainnonhead.csv > /tmp/train.txt
+    // tail -n +2 /tmp/train.csv | sed 's/,/ /g' > /tmp/train.txt
       
     double dum;
     size_t Ai,Aj;
@@ -55,6 +54,7 @@ if(generate==0){
  }
  else{
    // GENERATE DATA
+//#pragma omp parallel for //FIXME - test this
    for (unsigned int i = 0; i < m * n; ++i)
      A[i] = n_dist(generator);
 

@@ -344,25 +344,18 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
   f = list()
   g = list()
   if (family == "gaussian") {
-    if (nlambda==1 && lambda[[1]] == 0) {
-      f[[1]] = list(h = kSquare(), c = weights, b = y)
-      g[[1]] = list(h = kZero())
-      print("OLS")
+    if (is.null(lambda)) {
+      if (intercept) {
+        lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / (alpha + 1e-3)
+      } else {
+        lambda.max = max(abs(t(x) %*% y)) / (alpha + 1e-3)
+      }
+      lambda.min = lambda.max * lambda.min.ratio
+        lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
     }
-    else {
-      if (is.null(lambda)) {
-        if (intercept) {
-          lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / (alpha + 1e-3)
-        } else {
-          lambda.max = max(abs(t(x) %*% y)) / (alpha + 1e-3)
-        }
-        lambda.min = lambda.max * lambda.min.ratio
-          lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
-      }
-      for (i in 1:nlambda) {
-        f[[i]] = list(h = kSquare(), c = weights, b = y)
-          g[[i]] = list(h = kAbs(), c = alpha * lambda[i] * penalty.factor, e = (1 - alpha) * lambda[i] * penalty.factor)
-      }
+    for (i in 1:nlambda) {
+      f[[i]] = list(h = kSquare(), c = weights, b = y)
+      g[[i]] = list(h = kAbs(), c = alpha * lambda[i] * penalty.factor, e = (1 - alpha) * lambda[i] * penalty.factor)
     }
   } else if (family == "binomial") {
     if (is.null(lambda)) {

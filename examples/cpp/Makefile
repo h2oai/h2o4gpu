@@ -3,7 +3,7 @@ POGSROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp
-EXSRC2=lasso.cpp lasso_path.openmp.cpp
+EXSRC2=lasso.cpp elastic_net.cpp
 
 # C++ Flags
 CXX=g++

@@ -36,9 +36,8 @@ struct GpuData {
 
 template <typename T, typename M>
 ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
-  : _wDev(0), _A(A) {
+  : _wDev(wDev), _A(A) {
 
-  _wDev = wDev;
   CUDACHECK(cudaSetDevice(_wDev));
 
   fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);

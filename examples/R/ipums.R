@@ -16,7 +16,7 @@ f <- "~/ipums_2000-2015_head4M.csv"
 response <- "INCEARN"
 
 file <- paste0("/tmp/train.csv")
-if (TRUE) {
+if (FALSE) {
   DT <- fread(f, nrows=100000)
   DT = DT[INCEARN>100] ## only keep rows with valid response (0 is ok)
   #DT = DT[INCTOT!=9999999]
@@ -105,13 +105,13 @@ dim(valid)
 train_x  <- as.matrix((train[,cols,with=FALSE]))
 dim(train_x)
 
-train_y  <- train[[response]]
+train_y  <- as.numeric(train[[response]])
 length(train_y)
 
 valid_x  <- as.matrix((valid[,cols,with=FALSE]))
 dim(valid_x)
 
-valid_y  <- valid[[response]]
+valid_y  <- as.numeric(valid[[response]])
 length(valid_y)
 
 score <- function(model, preds, actual) {
@@ -132,10 +132,10 @@ score <- function(model, preds, actual) {
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
-                             max_iter=20000, 
-                             adaptive_rho=TRUE, equil=TRUE, wDev=0L))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE
+                 ,params=list(#rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=20000,
+                             adaptive_rho=TRUE, equil=FALSE, wDev=0L)
+  )
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
   
@@ -243,11 +243,10 @@ system.time(
     ## FAST - always a small gram matrix given.
     model <- glmnet(x=t(L), y=z, family=family, alpha=a)
     
-    ## SLOW -- too small data?
-    # model <- pogsnet(x = train_x, y = train_y, family = family, alpha = a, lambda=NULL, cutoff=FALSE,
-    #                         params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
-    #                                     max_iter=10000,
-    #                                     adaptive_rho=FALSE, equil=TRUE))
+    ## INACCURATE
+    #model <- pogsnet(x = t(L), y = z, family = family, alpha = a, lambda=NULL, cutoff=FALSE
+    #                         #,params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=10000, adaptive_rho=FALSE, equil=TRUE)
+    #)
     
     ## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
     p <- predict(model, valid_x, type="response")
