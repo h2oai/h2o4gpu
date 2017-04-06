@@ -28,10 +28,9 @@ T getRMSE(const T *v1, std::vector<T> *v2) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double LassoPath(size_t m, size_t n) {
-  int nlambda = 50;
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
+  int nlambda = nLambdas;
   // number of openmp threads = number of cuda devices to use
-  int nGPUs=4;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -90,7 +89,7 @@ double LassoPath(size_t m, size_t n) {
       exit(0);
     }
 
-    int N=16; // number of alpha's
+    int N=nAlphas; // number of alpha's
     if(N % nGPUs!=0){
       fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
     }
@@ -136,6 +135,6 @@ double LassoPath(size_t m, size_t n) {
   return tf-t;
 }
 
-template double LassoPath<double>(size_t m, size_t n);
-template double LassoPath<float>(size_t m, size_t n);
+template double ElasticNet<double>(size_t m, size_t n, int, int, int);
+template double ElasticNet<float>(size_t m, size_t n, int, int, int);
 
