@@ -463,46 +463,68 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Rescale rho (optional)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.1
-    if (_adaptive_rho && _rho!=0) {
-      PUSH_RANGE("rescalerho",rescalerho,9);
-      if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
-          kTau * static_cast<T>(k) > static_cast<T>(kd)) {
-        if (_rho < kRhoMax) {
-          _rho *= delta;
-          cml::blas_scal(hdl, 1 / delta, &zt);
-          delta = kGamma * delta;
-          ku = k;
-          if (_verbose > 3)
-            Printf("+ rho %e\n", _rho);
+    //    http://www.cs.umd.edu/sites/default/files/scholarly_papers/ZhengXu.pdf or https://arxiv.org/abs/1605.07246
+    // choose: 1 = Pogs Boyd method
+    // choose: 2 = Original Boyd method of balancing residuals
+    // choose: 3 = Spectral method by Zheng et al. 2015
+    int whichadap=2;
+
+    if(_adaptive_rho && _rho!=0){
+      if (whichadap==1){
+        PUSH_RANGE("rescalerho",rescalerho,9);
+        if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri &&
+            kTau * static_cast<T>(k) > static_cast<T>(kd)) {
+          if (_rho < kRhoMax) {
+            _rho *= delta;
+            cml::blas_scal(hdl, 1 / delta, &zt);
+            delta = kGamma * delta;
+            ku = k;
+            if (_verbose > 3)
+              Printf("+ rho %e\n", _rho);
+          }
+        } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
+                   kTau * static_cast<T>(k) > static_cast<T>(ku)) {
+          if (_rho > kRhoMin) {
+            _rho /= delta;
+            cml::blas_scal(hdl, delta, &zt);
+            delta = kGamma * delta;
+            kd = k;
+            if (_verbose > 3)
+              Printf("- rho %e\n", _rho);
+          }
+        } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
+          xi *= kKappa;
+        } else {
+          delta = kDeltaMin;
         }
-      } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri &&
-          kTau * static_cast<T>(k) > static_cast<T>(ku)) {
-        if (_rho > kRhoMin) {
-          _rho /= delta;
-          cml::blas_scal(hdl, delta, &zt);
-          delta = kGamma * delta;
-          kd = k;
-          if (_verbose > 3)
-            Printf("- rho %e\n", _rho);
+        CUDA_CHECK_ERR();
+        POP_RANGE("rescalerho",rescalerho,9);
+      } // end adaptive_rho==1
+      else if (whichadap==2) {
+        PUSH_RANGE("rescalerho",rescalerho,9);
+        if (nrm_s < xi * eps_dua && nrm_r > xi * eps_pri) {
+          if (_rho < kRhoMax) {
+            _rho *= delta;
+            cml::blas_scal(hdl, 1 / delta, &zt);
+            delta = kGamma * delta;
+            if (_verbose > 3)
+              Printf("+ rho %e\n", _rho);
+          }
+        } else if (nrm_s > xi * eps_dua && nrm_r < xi * eps_pri) {
+          if (_rho > kRhoMin) {
+            _rho /= delta;
+            cml::blas_scal(hdl, delta, &zt);
+            delta = kGamma * delta;
+            if (_verbose > 3)
+              Printf("- rho %e\n", _rho);
+          }
         }
-      } else if (nrm_s < xi * eps_dua && nrm_r < xi * eps_pri) {
-        xi *= kKappa;
-      } else {
-        delta = kDeltaMin;
-      }
-      CUDA_CHECK_ERR();
-      POP_RANGE("rescalerho",rescalerho,9);
+        else {
+          delta = kDeltaMin;
+        }      CUDA_CHECK_ERR();
+        POP_RANGE("rescalerho",rescalerho,9);
+      } // end adaptive_rho==2
     } // end adaptive_rho
-    else{
-      if(0==1){// not adaptive or statically adaptive for testing
-        if(k>60){
-          _rho = 1.0 + 3.375286e+02*(double)((double)(k-60.0)/(128.0-60.0));
-        }
-        else _rho = 1.0;
-        if (_verbose > 3)
-          Printf("- rho %e\n", _rho);
-      }
-    }
 #ifdef USE_NVTX
     POP_RANGE(mystring,Step,1); // pop at end of loop iteration
 #endif
