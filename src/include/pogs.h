@@ -170,7 +170,7 @@ class Pogs {
   int          GetwDev()        const { return _wDev; }
 
   void printMe(std::ostream &os) const {
-    os << "Model parameters:\n";
+    os << "Model parameters: ";
     std::string sep = ", ";
     os << "lambda: " << _lambda << sep;
     os << "rho: " << _rho << sep;
