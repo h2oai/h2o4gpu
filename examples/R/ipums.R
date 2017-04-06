@@ -2,75 +2,104 @@ library(h2o)
 library(pogs)
 library(glmnet)
 library(data.table)
+#library(feather)
+library(MatrixModels)
 h2o.init(nthreads=-1)
 
-pogs  <-TRUE
-glmnet<-TRUE
+pogs  <-FALSE
+glmnet<-FALSE
 h2o   <-TRUE
 alpha <- .5
 family <- "gaussian"
-#family <- "binomial"
 
-
-#https://www.kaggle.com/c/springleaf-marketing-response/data  
-#N<-145231 ## max
-#f <- "gunzip -c ../data/springleaf/train.csv.zip"
-#f <- "~/kaggle/springleaf/input/train.csv"
-#response <- 'target'
 f <- "~/ipums_2000-2015_head4M.csv"
 response <- "INCEARN"
-#f <- "~/h2o-3/smalldata/junit/weather.csv"
-#response <- 'Pressure3pm'
 
 file <- paste0("/tmp/train.csv")
-if (TRUE) {
-  DT <- fread(f, nrows=50000, colClasses = "double")
-  DT[,c('HHINCOME','INCWAGE'):=NULL]
-
-  ## label encoding
-  #feature.names <- setdiff(names(DT), response)
-  #for (f in feature.names) {
-  #  if (class(DT[[f]])=="character") {
-  #    levels <- unique(c(DT[[f]]))
-  #    DT[[f]] <- as.integer(factor(DT[[f]], levels=levels))
-  #  }
-  #}
+if (FALSE) {
+  DT <- fread(f, nrows=100000)
+  DT = DT[INCEARN>100] ## only keep rows with valid response (0 is ok)
+  #DT = DT[INCTOT!=9999999]
+  DT[,c('HHINCOME','INCWAGE','INCTOT','FTOTINC',"INCBUS00",'INCSS',"INCWELFR","INCINVST", "INCRETIR", "INCSUPP", "INCOTHER"):=NULL] ## drop highly correlated columns
+  ncol(DT)
+  DT[,CLUSTER:=as.factor(as.numeric(CLUSTER %% (max(CLUSTER)-min(CLUSTER)+1)))]
+  
+  ## label-encoding of categoricals
+  feature.names <- setdiff(names(DT), response)
+  for (ff in feature.names) {
+    if ((tt <- uniqueN(DT[[ff]])) < 100) {
+      DT[, (ff):=factor(DT[[ff]])]  
+      #print(ff)
+    }
+    if (tt < 2) {
+      DT[, (ff):=NULL]
+    }
+  }
+  ncol(DT)
+  DT
+  
+  numCols <- names(DT)[which(sapply(DT, is.numeric))]
+  catCols <- names(DT)[which(sapply(DT, is.factor))]
+  numCols
+  catCols
   
   
-  ## only keep numeric columns
-  DT[,which(!sapply(DT, is.numeric)):=NULL]
-  
-  ## impute missing values and drop near-const cols
-  cols <- setdiff(names(DT),c(response))
+  ## impute missing values, drop near-const cols and standardize the data
+  cols <- setdiff(numCols,c(response))
   for (c in cols) {
-    DT[is.na(DT[[c]]), (c):=mean(DT[[c]], na.rm=TRUE)]
-    if (is.na(sd(DT[[c]])) || sd(DT[[c]])<1e-4) 
+    DT[!is.finite(DT[[c]]), (c):=mean(DT[[c]], na.rm=TRUE)]
+    if (!is.finite(sd(DT[[c]])) || sd(DT[[c]])<1e-4) 
       DT[,(c):=NULL]
+    else
+      DT[,(c):=scale(as.numeric(DT[[c]]))]
   }
+  ncol(DT)
   
-  ## standardize the data (and add a little noise)
-  cols <- setdiff(names(DT),c(response))
-  for (c in cols) {
-    DT[,(c):=scale(DT[[c]])]
-  }
+  ## one-hot encode the categoricals, but keep everything dense
+  DT <- as.data.table(model.matrix(DT[[response]]~.-1, data = DT, sparse=FALSE))[,(response):=DT[[response]]]
+  ncol(DT)
   
+  ## all cols are now numeric
+  all(sapply(DT, is.numeric))
+
+  ## check validity of data
+  all(!is.na(DT))
+  all(sapply(DT, function(x) all(is.finite(x))))
+  
+  ## TODO: vtreat
   fwrite(DT, file)
+  
 } else {
   DT <- fread(file)
-  cols <- setdiff(names(DT),c(response))
 }
+
+cols <- setdiff(names(DT),c(response))
+
 n <- nrow(DT)
 p <- ncol(DT)
+n
+p
 
+set.seed(1234)
 train_rows <- sample(1:n, .8*n)
 
 train <- DT[train_rows,]
 valid <- DT[-train_rows,]
 
-train_x  <- as.matrix(as.data.frame(train[,cols,with=FALSE]))
-train_y  <- as.numeric(as.vector(train[[response]]))
-valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
-valid_y  <- as.numeric(as.vector(valid[[response]]))
+dim(train)
+dim(valid)
+
+train_x  <- as.matrix((train[,cols,with=FALSE]))
+dim(train_x)
+
+train_y  <- train[[response]]
+length(train_y)
+
+valid_x  <- as.matrix((valid[,cols,with=FALSE]))
+dim(valid_x)
+
+valid_y  <- valid[[response]]
+length(valid_y)
 
 score <- function(model, preds, actual) {
   rmse = apply(preds, 2, function(x) sqrt(mean((x-actual)^2)))
@@ -93,7 +122,7 @@ if (pogs) {
   pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
                  params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
                              max_iter=20000, 
-                             adaptive_rho=TRUE, equil=TRUE))
+                             adaptive_rho=TRUE, equil=TRUE, wDev=0L))
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
   
@@ -125,22 +154,23 @@ if (glmnet) {
 ## H2O 
 ## SEE ABOVE FOR MODEL ON DATA CREATION
 if (h2o) {
-  
-  
   ## Quick H2O model
-  
-  h2oglm <- h2o.glm(alpha=alpha,training_frame=as.h2o(train),y=response,lambda_search = TRUE)
-  h2oglm
-  print("H2O CPU")
-  print(h2o.rmse(h2o.performance(h2oglm,newdata=as.h2o(valid))))
-  
-  print("StdDev of Response")
-  print(sd(valid[[response]]))
-  
   if (FALSE) {
+    h2oglm <- h2o.glm(alpha=alpha,training_frame=as.h2o(train),y=response,lambda_search = TRUE)
+    h2oglm
+    print("H2O CPU")
+    print(h2o.rmse(h2o.performance(h2oglm,newdata=as.h2o(valid))))
+    
+    print("StdDev of Response")
+    print(sd(valid[[response]]))
+  } else {
     df.hex <- h2o.importFile(file)
-    train.hex <- df.hex[1:H,]
-    valid.hex <- df.hex[(H+1):N,]
+    n<-nrow(df.hex)
+    set.seed(1234)
+    train_rows <- sample(1:n, .8*n)
+    
+    train.hex <- df.hex[sort(train_rows),]
+    valid.hex <- df.hex[-sort(train_rows),]
     
     if (family=="binomial") {
       train.hex[[response]] <- as.factor(train.hex[[response]])
@@ -148,7 +178,7 @@ if (h2o) {
     }
     
     s3 <- proc.time()
-    h2omodel <- h2o.glm(x=cols, y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
+    h2omodel <- h2o.glm(x=names(train.hex), y=response, training_frame=train.hex, family=family, alpha = alpha, lambda_search=TRUE, solver="COORDINATE_DESCENT_NAIVE")
     e3 <- proc.time()
     h2opreds <- h2o.predict(h2omodel, valid.hex)
     summary(h2opreds)
@@ -193,23 +223,23 @@ z <- forwardsolve(L, Atb) ## solve L z = At b
 
 system.time(
   for (al in (alpha*100+1)) {
-#  for (al in seq(1,101,10)) {
+    #  for (al in seq(1,101,10)) {
     a <- 0.01*(al-1)
     print(paste0("alpha: ", a))
     
     ## FAST - always a small gram matrix given.
     model <- glmnet(x=t(L), y=z, family=family, alpha=a)
-
+    
     ## SLOW -- too small data?
     # model <- pogsnet(x = train_x, y = train_y, family = family, alpha = a, lambda=NULL, cutoff=FALSE,
     #                         params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
     #                                     max_iter=10000,
     #                                     adaptive_rho=FALSE, equil=TRUE))
-
+    
     ## Option 1) Benchmark: Score normally on full validation set using the "regular" coefficients
     p <- predict(model, valid_x, type="response")
     modelbeta <- score(model, p, valid_y)
-   
+    
     ## Option 2) Faster: Can even find the lowest RMSE of the model in the projected space!
     ## NOT AS ACCURATE?!
     Atp <- as.matrix(validAtA %*% model$beta) + model$a0         ## projected prediction
