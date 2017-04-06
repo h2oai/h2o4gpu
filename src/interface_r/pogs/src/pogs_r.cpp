@@ -27,7 +27,6 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   char alpha[] = "h\0a\0b\0c\0d\0e\0";
 
   SEXP param_data[kNumParam] = {R_NilValue};
-  #pragma unroll
   for (unsigned int i = 0; i < kNumParam; ++i)
     param_data[i] = getListElement(f, &alpha[i * 2]);
 
@@ -35,7 +34,6 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   double real_params[] = {1.0, 0.0, 1.0, 0.0, 0.0};
 
   // Find index and pointer to data of (h, a, b, c, d, e) in struct if present.
-  #pragma unroll
   for (unsigned int i = 0; i < kNumParam; ++i) {
     if (param_data[i] != R_NilValue) {
       // If parameter is scalar, then repeat it.
@@ -53,7 +51,6 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   // Populate f_pogs.
   #pragma omp parallel for
   for (unsigned int i = 0; i < n; ++i) {
-    #pragma unroll
     for (unsigned int j = 0; j < kNumParam; ++j) {
       if (param_data[j] != R_NilValue) {
         if (j == 0) {
@@ -63,7 +60,6 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
         }
       }
     }
-
     f_pogs->push_back(FunctionObj<double>(func_param, real_params[0],
          real_params[1], real_params[2], real_params[3], real_params[4]));
   }
