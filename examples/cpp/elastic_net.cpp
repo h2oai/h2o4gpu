@@ -118,7 +118,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
     if(N % nGPUs!=0){
       fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
     }
-    fprintf(stdout,"BEGIN SOLVE\n");
+    fprintf(fil,"BEGIN SOLVE\n");
+    fflush(fil);
     int a;
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
@@ -129,6 +130,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
+      fflush(fil);
 
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
@@ -156,6 +158,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
 
         // Solve
         fprintf(fil, "Starting to solve at %g\n", timer<double>());
+        fflush(fil);
         pogs_data.Solve(f, g);
 
         fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g trainRMSE: %f\n",me,a,alpha,i,lambda,getRMSE(pogs_data.GetY(), &b));fflush(fil);
