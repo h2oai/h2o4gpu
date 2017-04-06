@@ -6,7 +6,7 @@ library(data.table)
 library(MatrixModels)
 h2o.init(nthreads=-1)
 
-pogs  <-FALSE
+pogs  <-TRUE
 glmnet<-FALSE
 h2o   <-FALSE
 alpha <- .5
@@ -16,7 +16,7 @@ f <- "~/ipums_2000-2015_head4M.csv"
 response <- "INCEARN"
 
 file <- paste0("/tmp/train.csv")
-if (TRUE) {
+if (FALSE) {
   DT <- fread(f, nrows=100000)
   DT = DT[INCEARN>100] ## only keep rows with valid response (0 is ok)
   #DT = DT[INCTOT!=9999999]
@@ -105,13 +105,13 @@ dim(valid)
 train_x  <- as.matrix((train[,cols,with=FALSE]))
 dim(train_x)
 
-train_y  <- train[[response]]
+train_y  <- as.numeric(train[[response]])
 length(train_y)
 
 valid_x  <- as.matrix((valid[,cols,with=FALSE]))
 dim(valid_x)
 
-valid_y  <- valid[[response]]
+valid_y  <- as.numeric(valid[[response]])
 length(valid_y)
 
 score <- function(model, preds, actual) {
