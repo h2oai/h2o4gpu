@@ -90,7 +90,7 @@ double LassoPath(size_t m, size_t n) {
       exit(0);
     }
 
-    int N=12; // N+1 a's
+    int N=16; // number of alpha's
     if(N % nGPUs!=0){
       fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
     }
