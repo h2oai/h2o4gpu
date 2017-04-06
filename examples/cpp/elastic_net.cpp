@@ -56,15 +56,18 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
   fprintf(stdout,"END FILL DATA\n");
 
 
-  // set lambda max
-  T lambda_max = static_cast<T>(0);
+  // set lambda max 0 (i.e. base lambda_max)
+  T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < m; ++i)
       //u += A[i * n + j] * b[i];
       u += A[i + j * m] * b[i];
-    lambda_max = std::max(lambda_max, std::abs(u));
+    lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
+  // set lambda_min_ratio
+  T lambda_min_ratio = (m<n ? static_cast<T>(0.01) : static_cast<T>(0.001)); // like pogs.R
+ 
 
   double t = timer<double>();
 #pragma omp parallel 
@@ -99,26 +102,33 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
     for (a = 0; a < N; ++a) { //alpha search
       double alpha = (double)a/(N>1 ? N-1 : 1);
 
+      T lambda_max = lambda_max0/(alpha+static_cast<T>(1E-3)); // actual lambda_max like pogs.R
+      // set lambda_min
+      T lambda_min = lambda_min_ratio * static_cast<T>(std::log(lambda_max)); // like pogs.R
+      
+
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
       std::vector<FunctionObj<T> > g;
       f.reserve(m);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-      for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j]);
+      T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
+      T penalty_factor = static_cast<T>(1.0); // like pogs.R
+      for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j], weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
       for (int i = 0; i < nlambda; ++i){
 
         // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
         T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                             static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
+                             lambda_min * (float)i) / ((float)nlambda - 1.0f));
 
 
         // assign lambda
         for (unsigned int j = 0; j < n; ++j) {
-          g[j].c = static_cast<T>(alpha*lambda); //for L1
-          g[j].e = static_cast<T>((1.0-alpha)*lambda); //for L2
+          g[j].c = static_cast<T>(alpha*lambda*penalty_factor); //for L1
+          g[j].e = static_cast<T>((1.0-alpha)*lambda*penalty_factor); //for L2
         }
 
         // Solve
