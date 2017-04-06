@@ -6,9 +6,9 @@ library(data.table)
 library(MatrixModels)
 h2o.init(nthreads=-1)
 
-pogs  <-TRUE
-glmnet<-FALSE
-h2o   <-TRUE
+pogs  <-FALSE
+glmnet<-TRUE
+h2o   <-FALSE
 alpha <- .5
 family <- "gaussian"
 
