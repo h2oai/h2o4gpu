@@ -117,8 +117,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
 
         // assign lambda
         for (unsigned int j = 0; j < n; ++j) {
-          g[j].c = static_cast<float>(alpha*lambda); //for L1
-          g[j].e = static_cast<float>((1-alpha)*lambda); //for L2
+          g[j].c = static_cast<T>(alpha*lambda); //for L1
+          g[j].e = static_cast<T>((1-alpha)*lambda); //for L2
         }
 
         // Solve
