@@ -30,6 +30,10 @@ T getRMSE(const T *v1, std::vector<T> *v2) {
 template <typename T>
 double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
   int nlambda = nLambdas;
+  if (nlambda <= 1) {
+    fprintf(stderr,"Must use nlambda > 1\n");
+    exit(-1);
+  }
   // number of openmp threads = number of cuda devices to use
 
 #ifdef _OPENMP
@@ -55,19 +59,31 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
 
+  double mean_y = 0;
+  for (unsigned int i = 0; i < m; ++i) {
+    mean_y += b[i];
+  }
+  mean_y /= (double)m;
+  const T mean_b = static_cast<T>(mean_y);
+  fprintf(stdout,"Mean b: %f\n", mean_b);
+  T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
+  fprintf(stdout,"weights %f\n", weights);
 
   // set lambda max 0 (i.e. base lambda_max)
   T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
-    for (unsigned int i = 0; i < m; ++i)
+    for (unsigned int i = 0; i < m; ++i) {
       //u += A[i * n + j] * b[i];
-      u += A[i + j * m] * b[i];
-    lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
+      u += A[i + j * m] * (b[i] - mean_b);
+    }
+    lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
+  fprintf(stdout,"lambda_max0 %f\n", lambda_max0);
   // set lambda_min_ratio
   T lambda_min_ratio = (m<n ? static_cast<T>(0.01) : static_cast<T>(0.001)); // like pogs.R
- 
+  fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
+
 
   double t = timer<double>();
 #pragma omp parallel 
@@ -100,12 +116,13 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
     int a;
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
-      double alpha = (double)a/(N>1 ? N-1 : 1);
+      const T alpha = static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
 
-      T lambda_max = lambda_max0/(alpha+static_cast<T>(1E-3)); // actual lambda_max like pogs.R
+      const T lambda_max = lambda_max0/(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
       // set lambda_min
-      T lambda_min = lambda_min_ratio * static_cast<T>(std::log(lambda_max)); // like pogs.R
-      
+      const T lambda_min = lambda_min_ratio * static_cast<T>(std::log(lambda_max)); // like pogs.R
+      fprintf(stdout, "lambda_max: %f\n", lambda_max);
+      fprintf(stdout, "lambda_min: %f\n", lambda_min);
 
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
@@ -113,23 +130,23 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       f.reserve(m);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-      T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
       for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j], weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
+      fprintf(stdout,"alpha%f\n", alpha);
       for (int i = 0; i < nlambda; ++i){
 
         // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
-        T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                             lambda_min * (float)i) / ((float)nlambda - 1.0f));
-
+        T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) + lambda_min * (float)i) / ((float)nlambda - 1.0f));
+        fprintf(stdout,"lambda %d = %f\n", i, lambda);
 
         // assign lambda
         for (unsigned int j = 0; j < n; ++j) {
           g[j].c = static_cast<T>(alpha*lambda*penalty_factor); //for L1
           g[j].e = static_cast<T>((1.0-alpha)*lambda*penalty_factor); //for L2
         }
+        fprintf(stdout, "c/e: %f %f\n", g[0].c, g[0].e);
 
         // Solve
         pogs_data.Solve(f, g);

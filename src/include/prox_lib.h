@@ -39,8 +39,8 @@ enum Function { kAbs,       // f(x) = |x|
                 kSquare,    // f(x) = (1/2) x^2
                 kZero };    // f(x) = 0
 
-// Object associated with the generic function c * f(a * x - b) + d * x.
-// Parameters a and c default to 1, while b and d default to 0.
+// Object associated with the generic function c * f(a * x - b) + d * x + e * x * x.
+// Parameters a and c default to 1, while b, d and e default to 0.
 template <typename T>
 struct FunctionObj {
   Function h;

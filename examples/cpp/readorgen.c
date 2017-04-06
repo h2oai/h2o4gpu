@@ -39,7 +39,7 @@ if(generate==0){
         }
         else if(j==TARGETCOL-1){
           count += fscanf(file,"%lf",&dum);
-          b[Ai]=-(float)dum;
+          b[Ai]=(float)dum;
         }
       }
     }

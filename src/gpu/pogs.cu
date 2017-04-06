@@ -75,8 +75,6 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 #endif
       _init_x(false), _init_lambda(false) {
 
-  printMe(std::cout);
-
   CUDACHECK(cudaSetDevice(_wDev));
 
   _x = new T[_A.Cols()]();
@@ -183,6 +181,7 @@ int Pogs<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
+  fprintf(stderr, "c(l1): %f, e(l2): %f", g[0].c, g[0].e);
   double t0 = timer<double>();
   // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
   // Constants for adaptive-rho and over-relaxation.
@@ -325,10 +324,11 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Signal start of execution.
   if (_verbose > 0) {
+    printMe(std::cout, g[0].c, g[0].e);
     Printf(__HBAR__
-        "           POGS v%s - Proximal Graph Solver                      \n"
-        "           (c) Christopher Fougner, Stanford University 2014-2015\n",
-        POGS_VERSION.c_str());
+      "           H2O.ai Proximal Graph Solver\n"
+      "           (c) H2O.ai, Inc., 2017\n",
+      POGS_VERSION.c_str());
   }
   if (_verbose > 1) {
     Printf(__HBAR__

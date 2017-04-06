@@ -54,7 +54,6 @@ Pogs<T, M, P>::Pogs(int ignored, const M &A)
       _equil(kEquil),
       _gap_stop(kGapStop),
       _init_x(false), _init_lambda(false) {
-  printMe(std::cout);
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
@@ -186,9 +185,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Signal start of execution.
   if (_verbose > 0) {
+    printMe(std::cout, g[0].c, g[0].e);
     Printf(__HBAR__
-        "           POGS v%s - Proximal Graph Solver                      \n"
-        "           (c) Christopher Fougner, Stanford University 2014-2015\n",
+        "           H2O.ai Proximal Graph Solver\n"
+        "           (c) H2O.ai, Inc., 2017\n",
         POGS_VERSION.c_str());
   }
   if (_verbose > 1) {
