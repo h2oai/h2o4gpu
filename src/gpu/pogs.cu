@@ -181,7 +181,6 @@ int Pogs<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
-  fprintf(stderr, "c(l1): %f, e(l2): %f", g[0].c, g[0].e);
   double t0 = timer<double>();
   // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
   // Constants for adaptive-rho and over-relaxation.

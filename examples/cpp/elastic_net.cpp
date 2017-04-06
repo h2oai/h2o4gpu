@@ -120,7 +120,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
 
       const T lambda_max = lambda_max0/(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
       // set lambda_min
-      const T lambda_min = lambda_min_ratio * static_cast<T>(std::log(lambda_max)); // like pogs.R
+      const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(stdout, "lambda_max: %f\n", lambda_max);
       fprintf(stdout, "lambda_min: %f\n", lambda_min);
 
