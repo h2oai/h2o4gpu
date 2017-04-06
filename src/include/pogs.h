@@ -13,7 +13,7 @@
     }                                                 \
   } while(0)
 
-
+#include <sstream>
 
 #ifdef USE_NCCL
 #include "nccl.h"
@@ -168,6 +168,24 @@ class Pogs {
   T            GetTime()        const { return _time; }
   int          GetnDev()        const { return _nDev; }
   int          GetwDev()        const { return _wDev; }
+
+  void printMe(std::ostream &os) const {
+    os << "Model parameters:\n";
+    std::string sep = ", ";
+    os << "lambda: " << _lambda << sep;
+    os << "rho: " << _rho << sep;
+    os << "rel_tol: " << _rel_tol << sep;
+    os << "abs_tol: " << _abs_tol << sep;
+    os << "max_iter: " << _max_iter << sep;
+    os << "init_iter: " << _init_iter << sep;
+    os << "verbose: " << _verbose << sep;
+    os << "adaptive_rho: " << _adaptive_rho << sep;
+    os << "equil: " << _equil << sep;
+    os << "gap_stop: " << _gap_stop << sep;
+    os << "nDev: " << _nDev << sep;
+    os << "wDev: " << _wDev;
+    os << std::endl;
+  }
 
   // Setters for parameters and initial values.
   void SetRho(T rho)                       { _rho = rho; }

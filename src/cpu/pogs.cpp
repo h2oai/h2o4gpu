@@ -54,6 +54,7 @@ Pogs<T, M, P>::Pogs(int ignored, const M &A)
       _equil(kEquil),
       _gap_stop(kGapStop),
       _init_x(false), _init_lambda(false) {
+  printMe(std::cout);
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();

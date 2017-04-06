@@ -75,6 +75,8 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 #endif
       _init_x(false), _init_lambda(false) {
 
+  printMe(std::cout);
+
   CUDACHECK(cudaSetDevice(_wDev));
 
   _x = new T[_A.Cols()]();
