@@ -104,6 +104,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
       std::vector<FunctionObj<T> > g;
       f.reserve(m);
       g.reserve(n);
+      // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
       for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, b[j]);
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
