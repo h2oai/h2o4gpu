@@ -98,7 +98,7 @@ double LassoPath(size_t m, size_t n) {
     int a;
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
-      double alpha = (double)a/(N-1);
+      double alpha = (double)a/(N>1 ? N-1 : 1);
 
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
@@ -114,7 +114,6 @@ double LassoPath(size_t m, size_t n) {
         T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
                              static_cast<T>(1e-2) * std::log(lambda_max) * (float)i) / ((float)nlambda - 1.0f));
 
-        fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g\n",me,a,alpha,i,lambda);fflush(fil);
 
         // assign lambda
         for (unsigned int j = 0; j < n; ++j) {
@@ -125,7 +124,7 @@ double LassoPath(size_t m, size_t n) {
         // Solve
         pogs_data.Solve(f, g);
 
-        fprintf(fil,"train RMSE: %f\n", getRMSE(pogs_data.GetY(), &b));
+        fprintf(fil,"me=%d a=%d alpha=%g i=%d lambda=%g train RMSE: %f\n",me,a,alpha,i,lambda,getRMSE(pogs_data.GetY(), &b));fflush(fil);
       }// over lambda
     }// over alpha
     if(fil!=NULL) fclose(fil);
