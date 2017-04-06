@@ -43,7 +43,7 @@ template <typename T>
 double LassoPath(size_t m, size_t n) {
   int nlambda = 50;
   // number of openmp threads = number of cuda devices to use
-  int nGPUs=2;
+  int nGPUs=1;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -96,7 +96,7 @@ double LassoPath(size_t m, size_t n) {
   //pogs_data.SetMaxIter(1u);
 
 
-  int N=5;
+  int N=1;
   fprintf(stdout,"BEGIN SOLVE\n"); 
 #pragma omp parallel for
   for (int a = 0; a < N; ++a) { //alpha search FIXME: enable alpha=1 (a==N) once we have L1
