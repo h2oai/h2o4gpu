@@ -31,7 +31,7 @@ template <typename T>
 double LassoPath(size_t m, size_t n) {
   int nlambda = 50;
   // number of openmp threads = number of cuda devices to use
-  int nGPUs=1;
+  int nGPUs=2;
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -75,7 +75,7 @@ double LassoPath(size_t m, size_t n) {
   pogs::MatrixDense<T> A_(me, 'r', m, n, A.data());
   pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
 
-  pogs_data.SetnDev(2); // set how many cuda devices to use internally in pogs
+  pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
   //pogs_data.SetAdaptiveRho(false); // trying
   //pogs_data.SetEquil(false); // trying
   //pogs_data.SetRho(1E-4);
@@ -83,7 +83,7 @@ double LassoPath(size_t m, size_t n) {
   //pogs_data.SetMaxIter(1u);
 
 
-  int N=2;
+  int N=3;
   fprintf(stdout,"BEGIN SOLVE\n"); 
 #pragma omp parallel for
   for (int a = 0; a <= N; ++a) { //alpha search
