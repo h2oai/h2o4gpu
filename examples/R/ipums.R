@@ -132,10 +132,11 @@ score <- function(model, preds, actual) {
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
-                 params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
-                             max_iter=20000, 
-                             adaptive_rho=TRUE, equil=TRUE, wDev=0L))
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE
+                 ,params=list(rel_tol=1e-4, abs_tol=1e-4, rho=1,
+                             max_iter=20000,
+                             adaptive_rho=FALSE, equil=FALSE, wDev=0L)
+  )
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
   
