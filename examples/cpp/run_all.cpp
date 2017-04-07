@@ -27,13 +27,14 @@ int main(int argc, char **argv) {
 
   int rows=55776; // benchmark
   int cols=9733-1;
-  if (argc!=4) {
-    printf("usage: %s %s", argv[0], " <nGPUs> <nLambdas> <nAlphas>\n");
+  if (argc!=5) {
+    printf("usage: %s %s", argv[0], " <nGPUs> <nLambdas> <nAlphas> <validFraction>\n");
     exit(-1);
   }
   int nGPUs=atoi(argv[1]);
   int nLambdas=atoi(argv[2]);
   int nAlphas=atoi(argv[3]);
+  double validationFraction=atof(argv[4]);
 
   /*
   printf("\nLasso: rows=%d n=%d.\n",rows,n);
@@ -41,9 +42,9 @@ int main(int argc, char **argv) {
   printf("Lasso rows=%d n=%d Solver Time: %e sec\n", rows,n,t);
   */
   
-  printf("\nElastic Net: rows=%d cols=%d ngpus=%d nlambdas=%d nalphas=%d\n",rows,cols,nGPUs,nLambdas,nAlphas);
-  t = ElasticNet<real_t>(rows, cols, nGPUs, nLambdas, nAlphas);
-  printf("\nElastic Net: rows=%d cols=%d ngpus=%d nlambdas=%d nalphas=%d time=%e secs\n",rows,cols,nGPUs,nLambdas,nAlphas,t);
+  printf("\nElastic Net: rows=%d cols=%d ngpus=%d nlambdas=%d nalphas=%d validFraction=%g\n",rows,cols,nGPUs,nLambdas,nAlphas,validationFraction);
+  t = ElasticNet<real_t>(rows, cols, nGPUs, nLambdas, nAlphas, validationFraction);
+  printf("\nElastic Net: rows=%d cols=%d ngpus=%d nlambdas=%d nalphas=%d validFraction=%g time=%e secs\n",rows,cols,nGPUs,nLambdas,nAlphas,validationFraction,t);
 
   fflush(stdout);
   fflush(stderr);
