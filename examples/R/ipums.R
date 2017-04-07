@@ -83,21 +83,26 @@ if (pogs) {
 
 ## GLMNET
 if (glmnet) {
-  for (alpha in seq(0,1,1./15.)) {
-  if (family=="binomial") {
-    y = as.factor(train_y)
-  } else {
-    y = train_y
-  }
-  s2 <- proc.time()
-  glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha)
-  e2 <- proc.time()
-  glmnet_pred_y = predict(glmnet, valid_x, type="response")
-  
-  print("GLMNET CPU")
-  print(e2-s2)
-  print(paste0("alpha:", alpha))
-  glmnetbeta <- score(glmnet, glmnet_pred_y, valid_y)
+  library(foreach)
+  library(doMC)
+  registerDoMC(16)
+  foreach(a=1:16) %dopar% {
+    alpha = (a-1)/15
+
+    if (family=="binomial") {
+      y = as.factor(train_y)
+    } else {
+      y = train_y
+    }
+    s2 <- proc.time()
+    glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha)
+    e2 <- proc.time()
+    glmnet_pred_y = predict(glmnet, valid_x, type="response")
+    
+    print("GLMNET CPU")
+    print(e2-s2)
+    print(paste0("alpha:", alpha))
+    glmnetbeta <- score(glmnet, glmnet_pred_y, valid_y)
   }
 }
 
@@ -118,7 +123,6 @@ if (h2o) {
     df.hex <- h2o.importFile(file)
     n<-nrow(df.hex)
     set.seed(1234)
-    train_rows <- sample(1:n, .8*n)
     
     train.hex <- df.hex[sort(train_rows),]
     valid.hex <- df.hex[-sort(train_rows),]
