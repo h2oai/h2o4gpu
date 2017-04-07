@@ -74,14 +74,17 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     std::vector <T> b(m);
 
     fprintf(stdout, "START FILL DATA\n");
+    fflush(stdout);
     double t0 = timer<double>();
 
 #include "readorgen.c"
 
     double t1 = timer<double>();
     fprintf(stdout, "END FILL DATA. Took %g secs\n", t1-t0);
+    fflush(stdout);
 
     fprintf(stdout, "START TRAIN/VALID SPLIT\n");
+    fflush(stdout);
     // Split A/b into train/valid, via head/tail
     size_t mValid = static_cast<size_t>(m * validFraction);
     mTrain = m - mValid;
@@ -104,6 +107,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
       }
     }
     fprintf(stdout, "END TRAIN/VALID SPLIT\n");
+    fflush(stdout);
   }
 
   fprintf(stdout, "Rows in training data: %d\n", (int)trainY.size());
@@ -152,8 +156,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 //  warmstart(1000000,nGPUs);
 //#endif
   fprintf(stdout,"waiting for AWS GPUs to go live.");
+  fflush(stdout);
   sleep(200);
   fprintf(stdout,"AWS ready - starting with GLM.");
+  fflush(stdout);
 
   double t = timer<double>();
   double t0 = 0;
