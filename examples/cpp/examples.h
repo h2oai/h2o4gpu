@@ -10,7 +10,7 @@ template <typename T>
 double LassoPath(size_t m, size_t n);
 
 template <typename T>
-double ElasticNet(size_t m, size_t n, int, int, int);
+double ElasticNet(size_t m, size_t n, int, int, int, double);
 
 template <typename T>
 double Logistic(size_t m, size_t n);
