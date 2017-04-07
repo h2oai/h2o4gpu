@@ -52,7 +52,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 #ifdef HAVECUDA
   // warm-up GPUs
   extern int warmstart(int N, int nGPUs);
-  warmstart(10,nGPUs);
+  warmstart(1000000,nGPUs);
 #endif
     
 
@@ -248,8 +248,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
           }
         }
         double validRMSE = getRMSE(&validPreds[0], &validY);
-        fprintf(fil,   "me=%d a=%d alpha=%g i=%d lambda=%g dof=%d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
-        fprintf(stdout,"me=%d a=%d alpha=%g i=%d lambda=%g dof=%d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
+        fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
+        fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
       }// over lambda
     }// over alpha
     if(fil!=NULL) fclose(fil);

@@ -15,7 +15,7 @@
 
 #include <sstream>
 
-#ifdef USE_NCCL
+#ifdef USE_NCCL2
 #include "nccl.h"
 
 #include <curand.h>
@@ -124,7 +124,7 @@ class Pogs {
   // cuda number of devices and which device(s) to use
   int _nDev,_wDev;
   // NCCL communicator
-#ifdef USE_NCCL
+#ifdef USE_NCCL2
   ncclComm_t* _comms;
 #endif
 
