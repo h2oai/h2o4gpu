@@ -12,7 +12,7 @@ h2oai.glm.8.gpu            342      30895   aws p2.16xlarge
 h2oai.glm.16.gpu           184      30895   aws p2.16xlarge
 glmnet.2.cpu               354      31019   mr-dl1
 
-## Reference: Single non-linear models (not tuned, to get to same or better accuracy)
+## Reference: Single non-linear models (not tuned, best effort baseline models)
 #algo                     runtime   RMSE    Notes
 h2o.glm                      5      42000   not converged
 h2o.dl                      37      30299   mr-dl1
