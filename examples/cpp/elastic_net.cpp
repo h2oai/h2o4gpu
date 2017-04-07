@@ -150,11 +150,35 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
 
-//#ifdef HAVECUDA
-//  // warm-up GPUs
-//  extern int warmstart(int N, int nGPUs);
-//  warmstart(1000000,nGPUs);
-//#endif
+
+#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
+#define DOP2PCHECK 1 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
+#define DOBWCHECK 1
+
+#if(DOWARMSTART)
+#ifdef HAVECUDA
+  // warm-up GPUs
+  extern int warmstart(int N, int nGPUs);
+  warmstart(1000000,nGPUs);
+#endif
+#endif
+  
+#if(DOP2PCHECK)  
+#ifdef HAVECUDA
+  // do peer-to-peer bandwidth check
+  extern int p2pbwcheck(void);
+  p2pbwcheck();
+#endif
+#endif
+
+#if(DOBWCHECK)  
+#ifdef HAVECUDA
+  // do bandwidth check
+  extern int bwcheck(void);
+  bwcheck();
+#endif
+#endif
+  
 /*
   fprintf(stdout,"waiting for AWS GPUs to go live.");
   fflush(stdout);

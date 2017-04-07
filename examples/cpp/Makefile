@@ -7,22 +7,12 @@ EXSRC2=lasso.cpp elastic_net.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp -DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 
 
 # CUDA Flags
-NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
-                -gencode=arch=compute_50,code=sm_50 \
-                -gencode=arch=compute_52,code=sm_52 \
-                -gencode=arch=compute_52,code=compute_52
-
 CUDA_LIB=$(CUDA_HOME)/lib64
-CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
-CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
-CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
-
-# CUDA Flags
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -lrt   -I$(CUDA_HOME)/include  -lnccl -lcuda -lcurand -DUSE_NCCL=1 #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -lrt -I$(CUDA_HOME)/include  -lnccl -lcuda -lcurand #-DUSE_NCCL=1 #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -55,7 +45,6 @@ gpu: run_all.cpp examples.h $(EXSRC)
 gpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
-#	ar cr warmstart.o $^
 
 
 clean:

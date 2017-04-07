@@ -87,7 +87,7 @@ GPU_MTX_OBJ=\
 GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
-GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o
+GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o
 
 
 # Set vpath for build
@@ -150,6 +150,10 @@ $(OBJDIR)/gpu/pogs.o: gpu/pogs.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
+$(OBJDIR)/gpu/p2pbwcheck.o: gpu/p2pbwcheck.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
+$(OBJDIR)/gpu/bwcheck.o: gpu/bwcheck.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix
