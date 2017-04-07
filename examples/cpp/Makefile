@@ -24,15 +24,6 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 # CUDA Flags
 CULDFLAGS_=-lcudart -lcublas -lcusparse -lnvToolsExt -lrt   -I$(CUDA_HOME)/include  -lnccl -lcuda -lcurand -DUSE_NCCL=1 #-DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
 
-
-# Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
-CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
-CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
-#-gencode arch=compute_20,code=sm_20
-
-
-
 # Check System Args.
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
@@ -63,7 +54,7 @@ gpu: run_all.cpp examples.h $(EXSRC)
 
 gpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 #	ar cr warmstart.o $^
 
 

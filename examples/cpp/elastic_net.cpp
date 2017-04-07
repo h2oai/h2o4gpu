@@ -49,9 +49,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   }
   // number of openmp threads = number of cuda devices to use
 
+#ifdef HAVECUDA
   // warm-up GPUs
   extern int warmstart(int N, int nGPUs);
   warmstart(10,nGPUs);
+#endif
     
 
 #ifdef _OPENMP
