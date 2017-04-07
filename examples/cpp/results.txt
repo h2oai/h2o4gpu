@@ -2,12 +2,12 @@
 algo          maxtime    vrmse   dofs lambda  alpha
 glmnet          354      31019   2156 2172.59 0.066
 h2oai.16.gpu    184      30895   3085 137388  1 
-h2oai.8.gpu    342             
-h2oai.4.gpu    586
-h2oai.2.gpu   1022
-h2oai.1.gpu   1525
-h2oai.64.1.cpu   running
-h2oai.40.cpu   running
+h2oai.8.gpu    342       30895
+h2oai.4.gpu    586       30895
+h2oai.2.gpu   1022       30895
+h2oai.1.gpu   1525       30895
+h2oai.64.1.cpu   running 30895
+h2oai.40.cpu   running   30895
 
 ## For reference (to get to same or better accuracy)
 algo          maxtime    vrmse
