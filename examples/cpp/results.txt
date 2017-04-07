@@ -4,7 +4,7 @@
 ## GLM: build 1600 regularized elastic net models (100 lambdas x 16 alphas)
 
 #algo                    runtime    RMSE    Notes
-h2oai.glm.2.cpu         running     42000   mr-dl1 - bug - didn't converge
+h2oai.glm.2.cpu           6139      42092   mr-dl1 - bug - didn't converge
 h2oai.glm.1.gpu           1525      30895   aws p2.16xlarge
 h2oai.glm.2.gpu           1022      30895   aws p2.16xlarge
 h2oai.glm.4.gpu            586      30895   aws p2.16xlarge
