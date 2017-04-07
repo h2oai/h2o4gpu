@@ -123,8 +123,8 @@ const vector<T> vector_view_array(const T *base, size_t n) {
 
 template <typename T>
 void vector_memcpy(vector<T> *x, const vector<T> *y) {
-  cudaError_t err;
   if (x->stride == 1 && y->stride == 1) {
+    cudaError_t err;
     err = cudaMemcpy(reinterpret_cast<void*>(x->data),
         reinterpret_cast<const void*>(y->data), x->size * sizeof(T),
         cudaMemcpyDefault);
