@@ -70,7 +70,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _gap_stop(kGapStop),
       _nDev(1), //FIXME - allow larger comm groups
       _wDev(wDev),
-#ifdef USE_NCCL
+#ifdef USE_NCCL2
       _comms(0),
 #endif
       _init_x(false), _init_lambda(false) {
@@ -112,7 +112,7 @@ int Pogs<T, M, P>::_Init() {
   CUDACHECK(cudaGetDeviceProperties(&props, devID));
 #endif
 
-#ifdef USE_NCCL
+#ifdef USE_NCCL2
   for (int i = 0; i < _nDev; i++){
     if(i==0 && i==_nDev-1) i=_wDev; // force to chosen device
     cudaDeviceProp props;
@@ -615,7 +615,7 @@ Pogs<T, M, P>::~Pogs() {
   _de = _z = _zt = 0;
   CUDA_CHECK_ERR();
 
-#ifdef USE_NCCL
+#ifdef USE_NCCL2
   for(int i=0; i<_nDev; ++i)
     ncclCommDestroy(_comms[i]);
   free(_comms);

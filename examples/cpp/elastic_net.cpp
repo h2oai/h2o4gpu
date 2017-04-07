@@ -36,6 +36,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
   }
   // number of openmp threads = number of cuda devices to use
 
+  // warm-up GPUs
+  extern int warmstart(int N, int nGPUs);
+  warmstart(10,nGPUs);
+    
+
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -175,6 +180,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
 
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
+
+
 
   return tf-t;
 }

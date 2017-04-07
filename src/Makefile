@@ -7,7 +7,7 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME)  #-DUSE_NVTX=1 -DDEBUG #-DUSE_NCCL # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) -DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
 
 # CUDA Flags
 NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
@@ -22,7 +22,7 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR # -DUSE_NCCL
+CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME)  -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 
@@ -87,7 +87,7 @@ GPU_MTX_OBJ=\
 GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
-GPU_OBJ=$(OBJDIR)/gpu/pogs.o
+GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o
 
 
 # Set vpath for build
@@ -147,6 +147,9 @@ $(OBJDIR)/pogs_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR)
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
 
 $(OBJDIR)/gpu/pogs.o: gpu/pogs.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
+
+$(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix
