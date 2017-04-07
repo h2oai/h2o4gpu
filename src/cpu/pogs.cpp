@@ -98,14 +98,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kAlpha      = static_cast<T>(1.7);
   const T kRhoMin     = static_cast<T>(1e-4);
   const T kRhoMax     = static_cast<T>(1e4);
-  const T kKappa      = static_cast<T>(0.9);
+  const T kKappa      = static_cast<T>(0.4);
   const T kOne        = static_cast<T>(1.0);
   const T kZero       = static_cast<T>(0.0);
   const T kProjTolMax = static_cast<T>(1e-8);
   const T kProjTolMin = static_cast<T>(1e-2);
   const T kProjTolPow = static_cast<T>(1.3);
   const T kProjTolIni = static_cast<T>(1e-5);
-  bool use_exact_stop = true;
+  bool use_exact_stop = false;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
