@@ -1,0 +1,22 @@
+## regularized elastic net: 100 lambdas, 16 alphas -> 1600 models
+algo          maxtime    vrmse   dofs lambda  alpha
+glmnet          354      31019   2156 2172.59 0.066
+h2oai.16.gpu    184      30895   3085 137388  1 
+h2oai.8.gpu    342             
+h2oai.4.gpu    586
+h2oai.2.gpu   1022
+h2oai.1.gpu   1525
+h2oai.64.1.cpu   running
+h2oai.40.cpu   running
+
+## For reference (to get to same or better accuracy)
+algo          maxtime    vrmse
+h2o glm         SECS     41000! - almost random predictions
+h2o dl          36.6     30299
+h2o dl          180      29485
+h2o gbm         45       30759
+h2o gbm         142      28087
+h2o xgboost     62       28060
+h2o xgboost gpu TBD      TBD
+deepwater gpu   TBD      TBD
+TensorFlow SGD  TBD      TBD
