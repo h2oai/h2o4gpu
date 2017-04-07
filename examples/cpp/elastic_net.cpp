@@ -49,12 +49,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   }
   // number of openmp threads = number of cuda devices to use
 
-#ifdef HAVECUDA
-  // warm-up GPUs
-  extern int warmstart(int N, int nGPUs);
-  warmstart(1000000,nGPUs);
-#endif
-    
 
 #ifdef _OPENMP
   int nopenmpthreads0=omp_get_max_threads();
@@ -152,6 +146,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
 
+#ifdef HAVECUDA
+  // warm-up GPUs
+  extern int warmstart(int N, int nGPUs);
+  warmstart(1000000,nGPUs);
+#endif
 
   double t = timer<double>();
   double t0 = 0;
