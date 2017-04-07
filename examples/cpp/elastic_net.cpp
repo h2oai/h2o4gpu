@@ -152,7 +152,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas) {
         // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
         //T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) + lambda_min * (float)i) / ((float)nlambda - 1.0f));
         T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                             std::log(1e-2f*lambda_max) * (float)i) / ((float)nlambda - 1.0f));
+                             std::log(1e-4f*lambda_max) * (float)i) / ((float)nlambda - 1.0f));
         fprintf(fil,"lambda %d = %f\n", i, lambda);
 
         // assign lambda
