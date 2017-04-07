@@ -146,11 +146,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
 
-#ifdef HAVECUDA
-  // warm-up GPUs
-  extern int warmstart(int N, int nGPUs);
-  warmstart(1000000,nGPUs);
-#endif
+//#ifdef HAVECUDA
+//  // warm-up GPUs
+//  extern int warmstart(int N, int nGPUs);
+//  warmstart(1000000,nGPUs);
+//#endif
+  fprintf(stdout,"waiting for AWS GPUs to go live.");
+  sleep(200);
+  fprintf(stdout,"AWS ready - starting with GLM.");
 
   double t = timer<double>();
   double t0 = 0;
