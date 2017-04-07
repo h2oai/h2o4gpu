@@ -7,8 +7,8 @@ library(MatrixModels)
 h2o.init(nthreads=-1)
 
 pogs  <-FALSE
-glmnet<-FALSE
-h2o   <-TRUE
+glmnet<-TRUE
+h2o   <-FALSE
 alpha <- .5
 family <- "gaussian"
 
@@ -30,7 +30,7 @@ n
 p
 
 set.seed(1234)
-train_rows <- sample(1:n, .8*n)
+train_rows <- 1:0.8*n #sample(1:n, .8*n)
 
 train <- DT[train_rows,]
 valid <- DT[-train_rows,]
