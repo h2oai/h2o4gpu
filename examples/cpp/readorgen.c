@@ -15,7 +15,7 @@ if(generate==0){
   size_t TARGETCOL=9733;
   size_t dAm=m; // rows
   size_t dAn=n+1; // columns
-  FILE * file = fopen("/tmp/train.txt","rt");
+  FILE * file = fopen("train.txt","rt");
   if(file==NULL){
     fprintf(stderr,"Cannot read file.\n");
     exit(1);
