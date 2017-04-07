@@ -16,7 +16,7 @@ f <- "~/ipums_2000-2015.csv"
 response <- "INCEARN"
 
 file <- paste0("train.csv")
-if (TRUE) {
+if (FALSE) {
   source("ipums_prep.R")
 } else {
   DT <- fread(file)
@@ -30,7 +30,7 @@ n
 p
 
 set.seed(1234)
-train_rows <- 1:0.8*n #sample(1:n, .8*n)
+train_rows <- 1:(floor(0.8*n)+1) #sample(1:n, .8*n)
 
 train <- DT[train_rows,]
 valid <- DT[-train_rows,]
@@ -83,6 +83,7 @@ if (pogs) {
 
 ## GLMNET
 if (glmnet) {
+  for (alpha in seq(0,1,1./15.)) {
   if (family=="binomial") {
     y = as.factor(train_y)
   } else {
@@ -95,8 +96,9 @@ if (glmnet) {
   
   print("GLMNET CPU")
   print(e2-s2)
-  
+  print(paste0("alpha:", alpha))
   glmnetbeta <- score(glmnet, glmnet_pred_y, valid_y)
+  }
 }
 
 
@@ -201,6 +203,7 @@ system.time(
     print("")
   }
 )
+
 
 
 
