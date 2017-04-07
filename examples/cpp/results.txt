@@ -1,22 +1,29 @@
-## regularized elastic net: 100 lambdas, 16 alphas -> 1600 models
-algo          maxtime    vrmse   dofs lambda  alpha
-glmnet          354      31019   2156 2172.59 0.066
-h2oai.16.gpu    184      30895   3085 137388  1 
-h2oai.8.gpu    342       30895
-h2oai.4.gpu    586       30895
-h2oai.2.gpu   1022       30895
-h2oai.1.gpu   1525       30895
-h2oai.64.1.cpu   running 30895
-h2oai.40.cpu   running   30895
+## Single node benchmarks on Census dataset (55k rows, 10k cols)
+## 80%/20% train/validation split - RMSE calculated on validation split
 
-## For reference (to get to same or better accuracy)
-algo          maxtime    vrmse
-h2o glm         SECS     41000! - almost random predictions
-h2o dl          36.6     30299
-h2o dl          180      29485
-h2o gbm         45       30759
-h2o gbm         142      28087
-h2o xgboost     62       28060
-h2o xgboost gpu TBD      TBD
-deepwater gpu   TBD      TBD
-TensorFlow SGD  TBD      TBD
+## GLM: build 1600 regularized elastic net models (100 lambdas x 16 alphas)
+
+#algo                    runtime    RMSE    Notes
+h2oai.glm.2.cpu         running     42000   mr-dl1 - bug - didn't converge
+h2oai.glm.1.gpu           1525      30895   aws p2.16xlarge
+h2oai.glm.2.gpu           1022      30895   aws p2.16xlarge
+h2oai.glm.4.gpu            586      30895   aws p2.16xlarge
+h2oai.glm.8.gpu            342      30895   aws p2.16xlarge
+h2oai.glm.16.gpu           184      30895   aws p2.16xlarge
+glmnet.2.cpu               354      31019   mr-dl1
+
+## Reference: Single non-linear models (not tuned, best effort baseline models)
+#algo                     runtime   RMSE    Notes
+h2o.glm                      5      42000   not converged
+h2o.dl                      37      30299   mr-dl1
+h2o.dl                     180      29485   mr-dl1
+h2o.gbm.dense              142      28087   mr-dl1
+h2o.drf.dense              720      31387   ova - only 5 trees - 144 sec/tree
+h2o.xgboost.cpu.dense      148      29295   ova
+h2o.xgboost.cpu.sparse      62      28060   mr-dl1
+h2o.xgboost.gpu.sparse      28      29243   ova
+h2o.lightgbm.cpu.sparse     29      29286   ova
+h2o.deepwater.mxnet.1.gpu  225      36721   not converged
+Spark.ml                   TBD       TBD
+scikit-learn               TBD       TBD
+TensorFlow.tf.learn        TBD       TBD
