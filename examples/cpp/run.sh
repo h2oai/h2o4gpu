@@ -1,14 +1,19 @@
 #!/bin/bash
-mkdir -p ec2.100.16.0.2
-git reflog | head -n1 | awk '{print $1}' > ec2.100.16.0.2/sha
+L=100
+A=16
+V=0.2
+DIR=$HOSTNAME.$L.$A.$V
+
+mkdir -p $DIR
+git reflog | head -n1 | awk '{print $1}' > $DIR/sha
 make gpualt
 make cpualt
 for i in 16 8 4 2 1; do
-   mkdir -p ec2.100.16.0.2/gpu.$i
-   ./h2oai-glm-gpu $i 100 16 0.2 2>&1 | tee ec2.100.16.0.2/gpu.$i/pogs.ec2.100.16.0.2.gpu.$i.log
-   mv me*txt ec2.100.16.0.2/gpu.$i/
+   mkdir -p $DIR/gpu.$i
+   ./h2oai-glm-gpu $i $L $A $V 2>&1 | tee $DIR/gpu.$i/pogs.$DIR.gpu.$i.log
+   mv me*txt $DIR/gpu.$i/
 done
-mkdir -p ec2.100.16.0.2/cpu
-./h2oai-glm-cpu 1 100 16 0.2 2>&1 | tee ec2.100.16.0.2/cpu/pogs.ec2.100.16.0.2.cpu.log
-mv me*txt ec2.100.16.0.2/cpu/
+mkdir -p $DIR/cpu
+./h2oai-glm-cpu 1 $L $A $V 2>&1 | tee $DIR/cpu/pogs.$DIR.cpu.log
+mv me*txt $DIR/cpu/
 
