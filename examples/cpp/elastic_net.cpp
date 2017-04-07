@@ -155,11 +155,13 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 //  extern int warmstart(int N, int nGPUs);
 //  warmstart(1000000,nGPUs);
 //#endif
+/*
   fprintf(stdout,"waiting for AWS GPUs to go live.");
   fflush(stdout);
   sleep(200);
   fprintf(stdout,"AWS ready - starting with GLM.");
   fflush(stdout);
+*/
 
   double t = timer<double>();
   double t0 = 0;
