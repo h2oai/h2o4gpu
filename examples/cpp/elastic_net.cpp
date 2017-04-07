@@ -178,12 +178,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
     t0 = timer<double>();
     fprintf(fil,"Moving data to the GPU. Starting at %21.15g\n", t0);
+    fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
     pogs::MatrixDense<T> A_(me, 'r', mTrain, n, trainX.data());
     pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
     t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);
     fprintf(fil,"Done moving data to the GPU. Took %g secs\n", t1-t0);
+    fflush(fil);
 
     pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
     //pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
