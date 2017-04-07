@@ -189,7 +189,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     for (a = 0; a < N; ++a) { //alpha search
       const T alpha = static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
       T lambda_max = lambda_max0/(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
-      if (alpha==0) lambda_max*=100.0;
+      if (alpha==1) lambda_max*=100.0;
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
