@@ -4,6 +4,7 @@ A=16
 V=0.2
 DIR=$HOSTNAME.$L.$A.$V.`git reflog | head -n1 | awk '{print $1}'`
 
+rm -f me*.txt
 mkdir -p $DIR
 make gpualt
 make cpualt
