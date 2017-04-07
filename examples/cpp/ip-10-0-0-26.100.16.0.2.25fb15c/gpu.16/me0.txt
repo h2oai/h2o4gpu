@@ -1,0 +1,407 @@
+Moving data to the GPU. Starting at      1491541295.68686
+Done moving data to the GPU. Stopping at      1491541339.53427
+Done moving data to the GPU. Took 43.8461 secs
+BEGIN SOLVE
+lambda_max: 34832948.000000
+lambda_min: 3.483295
+alpha0.000000
+lambda 0 = 34832924.000000
+c/e: 0.000000 34832924.000000
+Starting to solve at      1491541339.54107
+me: 0 a: 0 alpha: 0 i: 0 lambda: 3.48329e+07 dof: 7358 trainRMSE: 37291.410156 validRMSE: 42643.226562
+lambda 1 = 29599388.000000
+c/e: 0.000000 29599388.000000
+Starting to solve at      1491541407.25438
+me: 0 a: 0 alpha: 0 i: 1 lambda: 2.95994e+07 dof: 7408 trainRMSE: 37291.410156 validRMSE: 42643.226562
+lambda 2 = 25152222.000000
+c/e: 0.000000 25152222.000000
+Starting to solve at      1491541407.46189
+me: 0 a: 0 alpha: 0 i: 2 lambda: 2.51522e+07 dof: 7500 trainRMSE: 37291.410156 validRMSE: 42643.226562
+lambda 3 = 21373138.000000
+c/e: 0.000000 21373138.000000
+Starting to solve at      1491541407.71849
+me: 0 a: 0 alpha: 0 i: 3 lambda: 2.13731e+07 dof: 7551 trainRMSE: 37291.410156 validRMSE: 42643.222656
+lambda 4 = 18161926.000000
+c/e: 0.000000 18161926.000000
+Starting to solve at      1491541407.92738
+me: 0 a: 0 alpha: 0 i: 4 lambda: 1.81619e+07 dof: 7652 trainRMSE: 37291.410156 validRMSE: 42643.218750
+lambda 5 = 15433155.000000
+c/e: 0.000000 15433155.000000
+Starting to solve at      1491541408.13824
+me: 0 a: 0 alpha: 0 i: 5 lambda: 1.54332e+07 dof: 7767 trainRMSE: 37291.410156 validRMSE: 42643.210938
+lambda 6 = 13114372.000000
+c/e: 0.000000 13114372.000000
+Starting to solve at      1491541408.34118
+me: 0 a: 0 alpha: 0 i: 6 lambda: 1.31144e+07 dof: 7882 trainRMSE: 37291.410156 validRMSE: 42643.207031
+lambda 7 = 11143979.000000
+c/e: 0.000000 11143979.000000
+Starting to solve at      1491541408.54634
+me: 0 a: 0 alpha: 0 i: 7 lambda: 1.1144e+07 dof: 8022 trainRMSE: 37291.410156 validRMSE: 42643.199219
+lambda 8 = 9469649.000000
+c/e: 0.000000 9469649.000000
+Starting to solve at      1491541408.74924
+me: 0 a: 0 alpha: 0 i: 8 lambda: 9.46965e+06 dof: 8188 trainRMSE: 37291.410156 validRMSE: 42643.191406
+lambda 9 = 8046857.000000
+c/e: 0.000000 8046857.000000
+Starting to solve at      1491541408.95168
+me: 0 a: 0 alpha: 0 i: 9 lambda: 8.04686e+06 dof: 8343 trainRMSE: 37291.410156 validRMSE: 42643.183594
+lambda 10 = 6837842.000000
+c/e: 0.000000 6837842.000000
+Starting to solve at      1491541409.15409
+me: 0 a: 0 alpha: 0 i: 10 lambda: 6.83784e+06 dof: 8573 trainRMSE: 37309.046875 validRMSE: 42643.171875
+lambda 11 = 5810483.500000
+c/e: 0.000000 5810483.500000
+Starting to solve at      1491541409.69158
+me: 0 a: 0 alpha: 0 i: 11 lambda: 5.81048e+06 dof: 8737 trainRMSE: 37311.851562 validRMSE: 42643.160156
+lambda 12 = 4937476.500000
+c/e: 0.000000 4937476.500000
+Starting to solve at      1491541409.96552
+me: 0 a: 0 alpha: 0 i: 12 lambda: 4.93748e+06 dof: 8864 trainRMSE: 37311.851562 validRMSE: 42643.144531
+lambda 13 = 4195640.500000
+c/e: 0.000000 4195640.500000
+Starting to solve at      1491541410.16772
+me: 0 a: 0 alpha: 0 i: 13 lambda: 4.19564e+06 dof: 8938 trainRMSE: 37311.851562 validRMSE: 42643.125000
+lambda 14 = 3565255.250000
+c/e: 0.000000 3565255.250000
+Starting to solve at      1491541410.37009
+me: 0 a: 0 alpha: 0 i: 14 lambda: 3.56526e+06 dof: 9041 trainRMSE: 37317.238281 validRMSE: 42643.101562
+lambda 15 = 3029592.750000
+c/e: 0.000000 3029592.750000
+Starting to solve at      1491541410.71304
+me: 0 a: 0 alpha: 0 i: 15 lambda: 3.02959e+06 dof: 9138 trainRMSE: 37319.761719 validRMSE: 42643.078125
+lambda 16 = 2574406.000000
+c/e: 0.000000 2574406.000000
+Starting to solve at      1491541410.98168
+me: 0 a: 0 alpha: 0 i: 16 lambda: 2.57441e+06 dof: 9193 trainRMSE: 37324.589844 validRMSE: 42643.046875
+lambda 17 = 2187609.500000
+c/e: 0.000000 2187609.500000
+Starting to solve at      1491541411.32701
+me: 0 a: 0 alpha: 0 i: 17 lambda: 2.18761e+06 dof: 9256 trainRMSE: 37329.058594 validRMSE: 42643.007812
+lambda 18 = 1858930.000000
+c/e: 0.000000 1858930.000000
+Starting to solve at       1491541411.6694
+me: 0 a: 0 alpha: 0 i: 18 lambda: 1.85893e+06 dof: 9317 trainRMSE: 37333.144531 validRMSE: 42642.960938
+lambda 19 = 1579630.125000
+c/e: 0.000000 1579630.125000
+Starting to solve at      1491541412.01238
+me: 0 a: 0 alpha: 0 i: 19 lambda: 1.57963e+06 dof: 9369 trainRMSE: 37336.925781 validRMSE: 42642.910156
+lambda 20 = 1342297.000000
+c/e: 0.000000 1342297.000000
+Starting to solve at      1491541412.35647
+me: 0 a: 0 alpha: 0 i: 20 lambda: 1.3423e+06 dof: 9421 trainRMSE: 37342.003906 validRMSE: 42642.847656
+lambda 21 = 1140621.125000
+c/e: 0.000000 1140621.125000
+Starting to solve at      1491541412.76931
+me: 0 a: 0 alpha: 0 i: 21 lambda: 1.14062e+06 dof: 9454 trainRMSE: 37346.402344 validRMSE: 42642.773438
+lambda 22 = 969247.312500
+c/e: 0.000000 969247.312500
+Starting to solve at      1491541413.28423
+me: 0 a: 0 alpha: 0 i: 22 lambda: 969247 dof: 9486 trainRMSE: 37348.988281 validRMSE: 42642.691406
+lambda 23 = 823620.187500
+c/e: 0.000000 823620.187500
+Starting to solve at       1491541413.6283
+me: 0 a: 0 alpha: 0 i: 23 lambda: 823620 dof: 9546 trainRMSE: 37353.515625 validRMSE: 42642.589844
+lambda 24 = 699875.187500
+c/e: 0.000000 699875.187500
+Starting to solve at      1491541414.11083
+me: 0 a: 0 alpha: 0 i: 24 lambda: 699875 dof: 9557 trainRMSE: 37356.332031 validRMSE: 42642.484375
+lambda 25 = 594721.125000
+c/e: 0.000000 594721.125000
+Starting to solve at      1491541414.52414
+me: 0 a: 0 alpha: 0 i: 25 lambda: 594721 dof: 9575 trainRMSE: 37359.519531 validRMSE: 42642.332031
+lambda 26 = 505366.156250
+c/e: 0.000000 505366.156250
+Starting to solve at      1491541415.01717
+me: 0 a: 0 alpha: 0 i: 26 lambda: 505366 dof: 9589 trainRMSE: 37362.058594 validRMSE: 42642.156250
+lambda 27 = 429436.906250
+c/e: 0.000000 429436.906250
+Starting to solve at      1491541415.50164
+me: 0 a: 0 alpha: 0 i: 27 lambda: 429437 dof: 9600 trainRMSE: 37364.562500 validRMSE: 42641.953125
+lambda 28 = 364915.031250
+c/e: 0.000000 364915.031250
+Starting to solve at      1491541416.05421
+me: 0 a: 0 alpha: 0 i: 28 lambda: 364915 dof: 9603 trainRMSE: 37366.722656 validRMSE: 42641.703125
+lambda 29 = 310088.000000
+c/e: 0.000000 310088.000000
+Starting to solve at      1491541416.67585
+me: 0 a: 0 alpha: 0 i: 29 lambda: 310088 dof: 9604 trainRMSE: 37367.925781 validRMSE: 42641.417969
+lambda 30 = 263498.250000
+c/e: 0.000000 263498.250000
+Starting to solve at      1491541417.22821
+me: 0 a: 0 alpha: 0 i: 30 lambda: 263498 dof: 9612 trainRMSE: 37368.617188 validRMSE: 42641.101562
+lambda 31 = 223908.890625
+c/e: 0.000000 223908.890625
+Starting to solve at      1491541417.71333
+me: 0 a: 0 alpha: 0 i: 31 lambda: 223909 dof: 9623 trainRMSE: 37369.125000 validRMSE: 42640.718750
+lambda 32 = 190267.109375
+c/e: 0.000000 190267.109375
+Starting to solve at      1491541418.19727
+me: 0 a: 0 alpha: 0 i: 32 lambda: 190267 dof: 9635 trainRMSE: 37369.480469 validRMSE: 42640.257812
+lambda 33 = 161680.234375
+c/e: 0.000000 161680.234375
+Starting to solve at      1491541418.75413
+me: 0 a: 0 alpha: 0 i: 33 lambda: 161680 dof: 9635 trainRMSE: 37369.699219 validRMSE: 42639.734375
+lambda 34 = 137388.281250
+c/e: 0.000000 137388.281250
+Starting to solve at      1491541419.23655
+me: 0 a: 0 alpha: 0 i: 34 lambda: 137388 dof: 9636 trainRMSE: 37369.781250 validRMSE: 42639.117188
+lambda 35 = 116746.132812
+c/e: 0.000000 116746.132812
+Starting to solve at      1491541419.71866
+me: 0 a: 0 alpha: 0 i: 35 lambda: 116746 dof: 9636 trainRMSE: 37369.773438 validRMSE: 42638.425781
+lambda 36 = 99205.484375
+c/e: 0.000000 99205.484375
+Starting to solve at      1491541420.13193
+me: 0 a: 0 alpha: 0 i: 36 lambda: 99205.5 dof: 9637 trainRMSE: 37369.566406 validRMSE: 42637.570312
+lambda 37 = 84300.093750
+c/e: 0.000000 84300.093750
+Starting to solve at      1491541420.61693
+me: 0 a: 0 alpha: 0 i: 37 lambda: 84300.1 dof: 9637 trainRMSE: 37369.371094 validRMSE: 42636.640625
+lambda 38 = 71634.343750
+c/e: 0.000000 71634.343750
+Starting to solve at      1491541421.03061
+me: 0 a: 0 alpha: 0 i: 38 lambda: 71634.3 dof: 9638 trainRMSE: 37368.953125 validRMSE: 42635.457031
+lambda 39 = 60871.507812
+c/e: 0.000000 60871.507812
+Starting to solve at      1491541421.58371
+me: 0 a: 0 alpha: 0 i: 39 lambda: 60871.5 dof: 9646 trainRMSE: 37368.492188 validRMSE: 42634.050781
+lambda 40 = 51725.855469
+c/e: 0.000000 51725.855469
+Starting to solve at      1491541422.06787
+me: 0 a: 0 alpha: 0 i: 40 lambda: 51725.9 dof: 9646 trainRMSE: 37367.917969 validRMSE: 42632.460938
+lambda 41 = 43954.167969
+c/e: 0.000000 43954.167969
+Starting to solve at      1491541422.53579
+me: 0 a: 0 alpha: 0 i: 41 lambda: 43954.2 dof: 9646 trainRMSE: 37367.167969 validRMSE: 42630.542969
+lambda 42 = 37350.191406
+c/e: 0.000000 37350.191406
+Starting to solve at      1491541423.00393
+me: 0 a: 0 alpha: 0 i: 42 lambda: 37350.2 dof: 9646 trainRMSE: 37366.496094 validRMSE: 42628.457031
+lambda 43 = 31738.474609
+c/e: 0.000000 31738.474609
+Starting to solve at      1491541423.39998
+me: 0 a: 0 alpha: 0 i: 43 lambda: 31738.5 dof: 9647 trainRMSE: 37365.082031 validRMSE: 42625.511719
+lambda 44 = 26969.869141
+c/e: 0.000000 26969.869141
+Starting to solve at      1491541424.01014
+me: 0 a: 0 alpha: 0 i: 44 lambda: 26969.9 dof: 9647 trainRMSE: 37364.199219 validRMSE: 42622.824219
+lambda 45 = 22917.753906
+c/e: 0.000000 22917.753906
+Starting to solve at       1491541424.5286
+me: 0 a: 0 alpha: 0 i: 45 lambda: 22917.8 dof: 9647 trainRMSE: 37362.414062 validRMSE: 42619.214844
+lambda 46 = 19474.433594
+c/e: 0.000000 19474.433594
+Starting to solve at        1491541425.122
+me: 0 a: 0 alpha: 0 i: 46 lambda: 19474.4 dof: 9650 trainRMSE: 37360.859375 validRMSE: 42615.542969
+lambda 47 = 16548.460938
+c/e: 0.000000 16548.460938
+Starting to solve at      1491541425.67862
+me: 0 a: 0 alpha: 0 i: 47 lambda: 16548.5 dof: 9651 trainRMSE: 37358.203125 validRMSE: 42611.074219
+lambda 48 = 14062.107422
+c/e: 0.000000 14062.107422
+Starting to solve at      1491541426.53748
+me: 0 a: 0 alpha: 0 i: 48 lambda: 14062.1 dof: 9652 trainRMSE: 37354.238281 validRMSE: 42606.027344
+lambda 49 = 11949.331055
+c/e: 0.000000 11949.331055
+Starting to solve at      1491541427.81673
+me: 0 a: 0 alpha: 0 i: 49 lambda: 11949.3 dof: 9652 trainRMSE: 37351.226562 validRMSE: 42600.070312
+lambda 50 = 10153.982422
+c/e: 0.000000 10153.982422
+Starting to solve at      1491541428.83021
+me: 0 a: 0 alpha: 0 i: 50 lambda: 10154 dof: 9652 trainRMSE: 37347.390625 validRMSE: 42593.343750
+lambda 51 = 8628.386719
+c/e: 0.000000 8628.386719
+Starting to solve at      1491541429.93939
+me: 0 a: 0 alpha: 0 i: 51 lambda: 8628.39 dof: 9652 trainRMSE: 37342.089844 validRMSE: 42585.687500
+lambda 52 = 7331.998535
+c/e: 0.000000 7331.998535
+Starting to solve at       1491541431.4484
+me: 0 a: 0 alpha: 0 i: 52 lambda: 7332 dof: 9652 trainRMSE: 37337.390625 validRMSE: 42577.003906
+lambda 53 = 6230.389160
+c/e: 0.000000 6230.389160
+Starting to solve at      1491541432.74641
+me: 0 a: 0 alpha: 0 i: 53 lambda: 6230.39 dof: 9652 trainRMSE: 37330.449219 validRMSE: 42567.597656
+lambda 54 = 5294.297852
+c/e: 0.000000 5294.297852
+Starting to solve at      1491541434.60753
+me: 0 a: 0 alpha: 0 i: 54 lambda: 5294.3 dof: 9652 trainRMSE: 37324.152344 validRMSE: 42556.648438
+lambda 55 = 4498.846191
+c/e: 0.000000 4498.846191
+Starting to solve at      1491541436.29243
+me: 0 a: 0 alpha: 0 i: 55 lambda: 4498.85 dof: 9652 trainRMSE: 37315.847656 validRMSE: 42545.125000
+lambda 56 = 3822.908936
+c/e: 0.000000 3822.908936
+Starting to solve at      1491541438.38741
+me: 0 a: 0 alpha: 0 i: 56 lambda: 3822.91 dof: 9652 trainRMSE: 37307.769531 validRMSE: 42531.023438
+lambda 57 = 3248.531982
+c/e: 0.000000 3248.531982
+Starting to solve at      1491541440.43899
+me: 0 a: 0 alpha: 0 i: 57 lambda: 3248.53 dof: 9652 trainRMSE: 37298.628906 validRMSE: 42517.582031
+lambda 58 = 2760.450439
+c/e: 0.000000 2760.450439
+Starting to solve at       1491541442.1364
+me: 0 a: 0 alpha: 0 i: 58 lambda: 2760.45 dof: 9652 trainRMSE: 37288.449219 validRMSE: 42502.726562
+lambda 59 = 2345.702393
+c/e: 0.000000 2345.702393
+Starting to solve at      1491541444.30482
+me: 0 a: 0 alpha: 0 i: 59 lambda: 2345.7 dof: 9652 trainRMSE: 37279.421875 validRMSE: 42486.480469
+lambda 60 = 1993.269043
+c/e: 0.000000 1993.269043
+Starting to solve at      1491541446.25054
+me: 0 a: 0 alpha: 0 i: 60 lambda: 1993.27 dof: 9652 trainRMSE: 37268.113281 validRMSE: 42470.472656
+lambda 61 = 1693.786743
+c/e: 0.000000 1693.786743
+Starting to solve at      1491541448.86537
+me: 0 a: 0 alpha: 0 i: 61 lambda: 1693.79 dof: 9652 trainRMSE: 37257.484375 validRMSE: 42453.156250
+lambda 62 = 1439.302002
+c/e: 0.000000 1439.302002
+Starting to solve at      1491541451.48885
+me: 0 a: 0 alpha: 0 i: 62 lambda: 1439.3 dof: 9651 trainRMSE: 37244.285156 validRMSE: 42433.378906
+lambda 63 = 1223.050781
+c/e: 0.000000 1223.050781
+Starting to solve at      1491541454.70385
+me: 0 a: 0 alpha: 0 i: 63 lambda: 1223.05 dof: 9652 trainRMSE: 37235.222656 validRMSE: 42415.398438
+lambda 64 = 1039.291748
+c/e: 0.000000 1039.291748
+Starting to solve at      1491541456.17928
+me: 0 a: 0 alpha: 0 i: 64 lambda: 1039.29 dof: 9652 trainRMSE: 37223.195312 validRMSE: 42399.945312
+lambda 65 = 883.141907
+c/e: 0.000000 883.141907
+Starting to solve at       1491541458.4846
+me: 0 a: 0 alpha: 0 i: 65 lambda: 883.142 dof: 9652 trainRMSE: 37212.589844 validRMSE: 42383.167969
+lambda 66 = 750.453003
+c/e: 0.000000 750.453003
+Starting to solve at      1491541461.28924
+me: 0 a: 0 alpha: 0 i: 66 lambda: 750.453 dof: 9652 trainRMSE: 37199.671875 validRMSE: 42364.539062
+lambda 67 = 637.700073
+c/e: 0.000000 637.700073
+Starting to solve at      1491541464.64384
+me: 0 a: 0 alpha: 0 i: 67 lambda: 637.7 dof: 9652 trainRMSE: 37191.121094 validRMSE: 42347.906250
+lambda 68 = 541.887695
+c/e: 0.000000 541.887695
+Starting to solve at      1491541466.12093
+me: 0 a: 0 alpha: 0 i: 68 lambda: 541.888 dof: 9652 trainRMSE: 37180.007812 validRMSE: 42335.156250
+lambda 69 = 460.470978
+c/e: 0.000000 460.470978
+Starting to solve at      1491541468.54065
+me: 0 a: 0 alpha: 0 i: 69 lambda: 460.471 dof: 9652 trainRMSE: 37171.406250 validRMSE: 42322.808594
+lambda 70 = 391.286865
+c/e: 0.000000 391.286865
+Starting to solve at      1491541470.70355
+me: 0 a: 0 alpha: 0 i: 70 lambda: 391.287 dof: 9652 trainRMSE: 37162.160156 validRMSE: 42310.250000
+lambda 71 = 332.497406
+c/e: 0.000000 332.497406
+Starting to solve at      1491541473.08281
+me: 0 a: 0 alpha: 0 i: 71 lambda: 332.497 dof: 9652 trainRMSE: 37154.007812 validRMSE: 42300.066406
+lambda 72 = 282.540588
+c/e: 0.000000 282.540588
+Starting to solve at      1491541475.10356
+me: 0 a: 0 alpha: 0 i: 72 lambda: 282.541 dof: 9652 trainRMSE: 37144.093750 validRMSE: 42289.000000
+lambda 73 = 240.089981
+c/e: 0.000000 240.089981
+Starting to solve at      1491541477.60241
+me: 0 a: 0 alpha: 0 i: 73 lambda: 240.09 dof: 9652 trainRMSE: 37136.300781 validRMSE: 42280.199219
+lambda 74 = 204.017227
+c/e: 0.000000 204.017227
+Starting to solve at      1491541478.99856
+me: 0 a: 0 alpha: 0 i: 74 lambda: 204.017 dof: 9652 trainRMSE: 37128.062500 validRMSE: 42273.644531
+lambda 75 = 173.364365
+c/e: 0.000000 173.364365
+Starting to solve at       1491541481.2648
+me: 0 a: 0 alpha: 0 i: 75 lambda: 173.364 dof: 9652 trainRMSE: 37120.148438 validRMSE: 42266.378906
+lambda 76 = 147.316986
+c/e: 0.000000 147.316986
+Starting to solve at      1491541483.42443
+me: 0 a: 0 alpha: 0 i: 76 lambda: 147.317 dof: 9652 trainRMSE: 37111.371094 validRMSE: 42259.601562
+lambda 77 = 125.183128
+c/e: 0.000000 125.183128
+Starting to solve at      1491541485.70408
+me: 0 a: 0 alpha: 0 i: 77 lambda: 125.183 dof: 9652 trainRMSE: 37103.296875 validRMSE: 42255.515625
+lambda 78 = 106.374809
+c/e: 0.000000 106.374809
+Starting to solve at      1491541486.90034
+me: 0 a: 0 alpha: 0 i: 78 lambda: 106.375 dof: 9652 trainRMSE: 37093.132812 validRMSE: 42242.281250
+lambda 79 = 90.392334
+c/e: 0.000000 90.392334
+Starting to solve at      1491541489.82985
+me: 0 a: 0 alpha: 0 i: 79 lambda: 90.3923 dof: 9652 trainRMSE: 37085.117188 validRMSE: 42236.882812
+lambda 80 = 76.811172
+c/e: 0.000000 76.811172
+Starting to solve at      1491541490.81372
+me: 0 a: 0 alpha: 0 i: 80 lambda: 76.8112 dof: 9652 trainRMSE: 37077.054688 validRMSE: 42234.761719
+lambda 81 = 65.270569
+c/e: 0.000000 65.270569
+Starting to solve at      1491541492.67213
+me: 0 a: 0 alpha: 0 i: 81 lambda: 65.2706 dof: 9652 trainRMSE: 37067.742188 validRMSE: 42229.757812
+lambda 82 = 55.463898
+c/e: 0.000000 55.463898
+Starting to solve at        1491541494.835
+me: 0 a: 0 alpha: 0 i: 82 lambda: 55.4639 dof: 9652 trainRMSE: 37058.054688 validRMSE: 42225.339844
+lambda 83 = 47.130630
+c/e: 0.000000 47.130630
+Starting to solve at      1491541496.94682
+me: 0 a: 0 alpha: 0 i: 83 lambda: 47.1306 dof: 9652 trainRMSE: 37047.964844 validRMSE: 42219.367188
+lambda 84 = 40.049412
+c/e: 0.000000 40.049412
+Starting to solve at      1491541499.09504
+me: 0 a: 0 alpha: 0 i: 84 lambda: 40.0494 dof: 9652 trainRMSE: 37037.152344 validRMSE: 42216.820312
+lambda 85 = 34.032131
+c/e: 0.000000 34.032131
+Starting to solve at      1491541501.13794
+me: 0 a: 0 alpha: 0 i: 85 lambda: 34.0321 dof: 9652 trainRMSE: 37026.921875 validRMSE: 42219.824219
+lambda 86 = 28.918919
+c/e: 0.000000 28.918919
+Starting to solve at      1491541502.24695
+me: 0 a: 0 alpha: 0 i: 86 lambda: 28.9189 dof: 9652 trainRMSE: 37012.886719 validRMSE: 42204.039062
+lambda 87 = 24.573948
+c/e: 0.000000 24.573948
+Starting to solve at      1491541504.78838
+me: 0 a: 0 alpha: 0 i: 87 lambda: 24.5739 dof: 9652 trainRMSE: 37004.812500 validRMSE: 42209.550781
+lambda 88 = 20.881805
+c/e: 0.000000 20.881805
+Starting to solve at      1491541505.41227
+me: 0 a: 0 alpha: 0 i: 88 lambda: 20.8818 dof: 9652 trainRMSE: 36992.113281 validRMSE: 42214.148438
+lambda 89 = 17.744385
+c/e: 0.000000 17.744385
+Starting to solve at      1491541507.40035
+me: 0 a: 0 alpha: 0 i: 89 lambda: 17.7444 dof: 9652 trainRMSE: 36980.433594 validRMSE: 42223.601562
+lambda 90 = 15.078350
+c/e: 0.000000 15.078350
+Starting to solve at      1491541509.26962
+me: 0 a: 0 alpha: 0 i: 90 lambda: 15.0784 dof: 9652 trainRMSE: 36967.855469 validRMSE: 42233.734375
+lambda 91 = 12.812879
+c/e: 0.000000 12.812879
+Starting to solve at      1491541511.41858
+me: 0 a: 0 alpha: 0 i: 91 lambda: 12.8129 dof: 9652 trainRMSE: 36953.007812 validRMSE: 42252.179688
+lambda 92 = 10.887789
+c/e: 0.000000 10.887789
+Starting to solve at      1491541513.78642
+me: 0 a: 0 alpha: 0 i: 92 lambda: 10.8878 dof: 9652 trainRMSE: 36943.175781 validRMSE: 42289.832031
+lambda 93 = 9.251936
+c/e: 0.000000 9.251936
+Starting to solve at      1491541514.78476
+me: 0 a: 0 alpha: 0 i: 93 lambda: 9.25194 dof: 9652 trainRMSE: 36924.757812 validRMSE: 42295.292969
+lambda 94 = 7.861863
+c/e: 0.000000 7.861863
+Starting to solve at       1491541517.9786
+me: 0 a: 0 alpha: 0 i: 94 lambda: 7.86186 dof: 9652 trainRMSE: 36915.453125 validRMSE: 42359.031250
+lambda 95 = 6.680645
+c/e: 0.000000 6.680645
+Starting to solve at       1491541518.9425
+me: 0 a: 0 alpha: 0 i: 95 lambda: 6.68065 dof: 9652 trainRMSE: 36898.042969 validRMSE: 42422.425781
+lambda 96 = 5.676902
+c/e: 0.000000 5.676902
+Starting to solve at      1491541521.66658
+me: 0 a: 0 alpha: 0 i: 96 lambda: 5.6769 dof: 9652 trainRMSE: 36890.238281 validRMSE: 42541.578125
+lambda 97 = 4.823967
+c/e: 0.000000 4.823967
+Starting to solve at       1491541522.5085
+me: 0 a: 0 alpha: 0 i: 97 lambda: 4.82397 dof: 9652 trainRMSE: 36857.550781 validRMSE: 42546.472656
+lambda 98 = 4.099183
+c/e: 0.000000 4.099183
+Starting to solve at       1491541528.1655
+me: 0 a: 0 alpha: 0 i: 98 lambda: 4.09918 dof: 9652 trainRMSE: 36853.066406 validRMSE: 42729.468750
+lambda 99 = 3.483294
+c/e: 0.000000 3.483294
+Starting to solve at      1491541528.60286
+me: 0 a: 0 alpha: 0 i: 99 lambda: 3.48329 dof: 9652 trainRMSE: 36844.593750 validRMSE: 42980.089844
