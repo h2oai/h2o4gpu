@@ -1,7 +1,5 @@
 
 
-// choose to generate or read-in data
-int generate=0;
 
 std::default_random_engine generator;
 std::uniform_real_distribution<T> u_dist(static_cast<T>(0),

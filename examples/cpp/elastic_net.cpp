@@ -77,11 +77,18 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     fflush(stdout);
     double t0 = timer<double>();
 
+
+    // choose to generate or read-in data
+    int generate=0;    
 #include "readorgen.c"
+  
 
     double t1 = timer<double>();
     fprintf(stdout, "END FILL DATA. Took %g secs\n", t1-t0);
     fflush(stdout);
+
+
+
 
     fprintf(stdout, "START TRAIN/VALID SPLIT\n");
     fflush(stdout);

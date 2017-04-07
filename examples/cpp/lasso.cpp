@@ -21,6 +21,7 @@ double Lasso(size_t m, size_t n) {
 
   fprintf(stdout,"START FILL DATA\n");
   double t0 = timer<double>();
+  int generate=1;
 #include "readorgen.c"
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
