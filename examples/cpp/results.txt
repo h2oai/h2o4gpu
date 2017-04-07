@@ -18,7 +18,7 @@ h2o.glm                      5      42000   not converged
 h2o.dl                      37      30299   mr-dl1
 h2o.dl                     180      29485   mr-dl1
 h2o.gbm.dense              142      28087   mr-dl1
-h2o.drf.dense              720      31387   ova
+h2o.drf.dense              720      31387   ova - only 5 trees - 144 sec/tree
 h2o.xgboost.cpu.dense      148      29295   ova
 h2o.xgboost.cpu.sparse      62      28060   mr-dl1
 h2o.xgboost.gpu.sparse      28      29243   ova
