@@ -14,7 +14,8 @@ glmnet.2.cpu               354      31019   mr-dl1
 
 ## Reference: Single non-linear models (not tuned, best effort baseline models)
 #algo                     runtime   RMSE    Notes
-h2o.glm                      5      42000   not converged
+h2o.glm                     20      30883   alpha=0.5, LBFGS, disable early stopping, lambda_min_ratio=1e-7
+h2o.glm                     600     30557   alpha=0.5, AUTO, early stopping, beta_epsilon=1e-5, lambda_min_ratio=1e-7
 h2o.dl                      37      30299   mr-dl1
 h2o.dl                     180      29485   mr-dl1
 h2o.gbm.dense              142      28087   mr-dl1
