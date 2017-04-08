@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <limits>
 #include <vector>
+#include <cassert>
 
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
@@ -12,23 +13,23 @@ using namespace pogs;
 
 template <typename T>
 T getRMSE(const T *v1, std::vector<T> *v2) {
-  T rmse = 0;
+  double rmse = 0;
   size_t len = v2->size();
   for (size_t i = 0; i < len; ++i) {
-    T d = v1[i] - (*v2)[i];
+    double d = v1[i] - (*v2)[i];
     rmse += d*d;
   }
-  rmse /= (T)len;
-  return std::sqrt(rmse);
+  rmse /= (double)len;
+  return static_cast<T>(std::sqrt(rmse));
 }
 
 template <typename T>
-double getSD(std::vector<T>& v, T mean) {
-  double sd = 0;
+T getVar(std::vector<T>& v, T mean) {
+  double var = 0;
   for (size_t i = 0; i < v.size(); ++i) {
-    sd += (v[i]-mean) * (v[i]-mean);
+    var += (v[i]-mean) * (v[i]-mean);
   }
-  return sqrt(sd/v.size()-1);
+  return static_cast<T>(var/(v.size()-1));
 }
 
 // Elastic Net
@@ -123,21 +124,24 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+  T sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
   fprintf(stdout,"Mean trainY: %f\n", meanTrainY);
-  fprintf(stdout,"StDev trainY: %f\n", getSD(trainY, meanTrainY));
-  for (size_t i=0; i<trainY.size(); ++i) trainY[i] -= meanTrainY;
-  meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-  fprintf(stdout,"Mean trainY: %f\n", meanTrainY);
-  fprintf(stdout,"StDev trainY: %f\n", getSD(trainY, meanTrainY));
+  fprintf(stdout,"StdDev trainY: %f\n", sdTrainY);
+  // standardize the response for training data
+  for (size_t i=0; i<trainY.size(); ++i) {
+    trainY[i] -= meanTrainY;
+    trainY[i] /= sdTrainY;
+  }
 
-  // Validation mean and stddev //TODO: refactor
+  // Validation mean and stddev
   T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
   fprintf(stdout,"Mean validY: %f\n", meanValidY);
-  fprintf(stdout,"StDev validY: %f\n", getSD(validY, meanValidY));
-  for (size_t i=0; i<validY.size(); ++i) validY[i] -= meanValidY;
-  meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-  fprintf(stdout,"Mean validY: %f\n", meanValidY);
-  fprintf(stdout,"StDev validY: %f\n", getSD(validY, meanValidY));
+  fprintf(stdout,"StdDev validY: %f\n", std::sqrt(getVar(validY, meanValidY)));
+  // standardize the response the same way as for training data ("apply fitted transform during scoring")
+  for (size_t i=0; i<validY.size(); ++i) {
+    validY[i] -= meanTrainY;
+    validY[i] /= sdTrainY;
+  }
 
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
   fprintf(stdout,"weights %f\n", weights);
@@ -147,7 +151,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += trainX[i + j * mTrain] * (trainY[i] - meanTrainY);
+      u += trainX[i + j * mTrain] * (trainY[i] - 0 /*meanTrainY after standardization*/);
     }
     //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
@@ -282,13 +286,26 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
           }
         }
 
-        double trainRMSE = getRMSE(pogs_data.GetY(), &trainY);
+        std::vector<T> trainPreds(trainY.size());
+        for (size_t i=0; i<trainY.size(); ++i) {
+          for (size_t j=0; j<n; ++j) {
+            trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
+          }
+          // reverse standardization
+          trainPreds[i]*=sdTrainY; //scale
+          trainPreds[i]+=meanTrainY; //intercept
+          //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+        }
+        double trainRMSE = getRMSE(&trainPreds[0], &trainY);
+
         std::vector<T> validPreds(validY.size());
         for (size_t i=0; i<validY.size(); ++i) {
-          validPreds[i]=meanValidY;
           for (size_t j=0; j<n; ++j) {
-            validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j];
+            validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
           }
+          // reverse (fitted) standardization
+          validPreds[i]*=sdTrainY; //scale
+          validPreds[i]+=meanTrainY; //intercept
         }
         double validRMSE = getRMSE(&validPreds[0], &validY);
         fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
