@@ -36,7 +36,8 @@
 *.pyc
 
 # IPything Notebook
-*ipynb*
+# *ipynb*
+.ipynb_checkpoints
 
 # Entire build directory #
 /src/build/*
