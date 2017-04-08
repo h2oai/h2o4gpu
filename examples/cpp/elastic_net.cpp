@@ -124,8 +124,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
   fprintf(stdout,"Mean trainY: %f\n", meanTrainY);
-  fprintf(stdout,"StDev trainY: %f\n", getSD(trainY, meanTrainY));
-  for (size_t i=0; i<trainY.size(); ++i) trainY[i] -= meanTrainY;
+  T stdDevTrainY = getSD(trainY, meanTrainY);
+  fprintf(stdout,"StDev trainY: %f\n", stdDevTrainY);
+  for (size_t i=0; i<trainY.size(); ++i) {
+    trainY[i] -= meanTrainY;
+    trainY[i] /= stdDevTrainY;
+  }
   meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
   fprintf(stdout,"Mean trainY: %f\n", meanTrainY);
   fprintf(stdout,"StDev trainY: %f\n", getSD(trainY, meanTrainY));
@@ -134,7 +138,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
   fprintf(stdout,"Mean validY: %f\n", meanValidY);
   fprintf(stdout,"StDev validY: %f\n", getSD(validY, meanValidY));
-  for (size_t i=0; i<validY.size(); ++i) validY[i] -= meanValidY;
+  // standardize the response the same way as for training data ("apply fitted transform during scoring")
+  for (size_t i=0; i<validY.size(); ++i) {
+    validY[i] -= meanTrainY;
+    validY[i] /= stdDevTrainY;
+  }
   meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
   fprintf(stdout,"Mean validY: %f\n", meanValidY);
   fprintf(stdout,"StDev validY: %f\n", getSD(validY, meanValidY));
@@ -154,7 +162,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   }
   fprintf(stdout,"lambda_max0 %f\n", lambda_max0);
   // set lambda_min_ratio
-  T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1e-10; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
 
 
