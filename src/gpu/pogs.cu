@@ -235,7 +235,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> z12   = cml::vector_calloc<T>(m + n);
   CUDA_CHECK_ERR();
 
-  // Create views for x and y components.
+  // Create views for x and y components (same memory space used, not value copy)
   cml::vector<T> d     = cml::vector_subvector(&de, 0, m);
   cml::vector<T> e     = cml::vector_subvector(&de, m, n);
   cml::vector<T> x     = cml::vector_subvector(&z, 0, n);
@@ -249,35 +249,39 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   CUDA_CHECK_ERR();
   POP_RANGE("PogsAlloc",PogsAlloc,4);
 
+  
   PUSH_RANGE("PogsScale",PogsScale,5);
   // Scale f and g to account for diagonal scaling e and d.
+  // f/d -> f
   thrust::transform(f_gpu.begin(), f_gpu.end(),
       thrust::device_pointer_cast(d.data), f_gpu.begin(),
       ApplyOp<T, thrust::divides<T> >(thrust::divides<T>()));
+  // g*e -> g
   thrust::transform(g_gpu.begin(), g_gpu.end(),
       thrust::device_pointer_cast(e.data), g_gpu.begin(),
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   CUDA_CHECK_ERR();
   POP_RANGE("PogsScale",PogsScale,5);
 
+
   PUSH_RANGE("Lambda",Lambda,6);
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
-    cml::vector_memcpy(&xtemp, _x);
-    cml::vector_div(&xtemp, &e);
-    _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data); // y = kOne*A*x + kZero*y
+    cml::vector_memcpy(&xtemp, _x); // _x->xtemp
+    cml::vector_div(&xtemp, &e); // xtemp/e -> xtemp
+    _A.Mul('n', kOne, xtemp.data, kZero, ytemp.data); // kOne*A*x + kZero*y -> y
     wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
-    cml::vector_memcpy(&z, &ztemp); // ztemp->z TODO: Bug or wrong?
+    cml::vector_memcpy(&z, &ztemp); // ztemp->z (xtemp and ytemp are views of ztemp)
     CUDA_CHECK_ERR();
   }
   if (_init_lambda) {
-    cml::vector_memcpy(&ytemp, _lambda);
-    cml::vector_div(&ytemp, &d);
-    _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data);
+    cml::vector_memcpy(&ytemp, _lambda); // _lambda->ytemp
+    cml::vector_div(&ytemp, &d); // ytemp/d -> ytemp
+    _A.Mul('t', -kOne, ytemp.data, kZero, xtemp.data); // -kOne*y+kZero*x -> x
     wrapcudaDeviceSynchronize(); // not needed, as vector_memory is cuda call and will follow sequentially on device
     if(_rho!=0) cml::blas_scal(hdl, -kOne / _rho, &ztemp); // ztemp = ztemp * (-kOne/_rho)
     else cml::blas_scal(hdl, kZero, &ztemp); // ztemp = ztemp * (-kOne/_rho)
-    cml::vector_memcpy(&zt, &ztemp); // ztemp->z
+    cml::vector_memcpy(&zt, &ztemp); // ztemp->zt
     CUDA_CHECK_ERR();
   }
   POP_RANGE("Lambda",Lambda,6);
@@ -288,7 +292,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Alternating projections to satisfy 
     //   1. \lambda \in \partial f(y), \mu \in \partial g(x)
     //   2. \mu = -A^T\lambda
-    cml::vector_set_all(&zprev, kZero);
+    cml::vector_set_all(&zprev, kZero); // zprev = kZero
     for (unsigned int i = 0; i < kInitIter; ++i) {
 #ifdef USE_NVTX
         char mystring[100];
@@ -358,17 +362,17 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
     // Evaluate Proximal Operators g and f based upon chosen problem setup
     PUSH_RANGE("Evaluate_fg",Evaluate_fg,9);
-    cml::blas_axpy(hdl, -kOne, &zt, &z);
-    ProxEval(g_gpu, _rho, x.data, x12.data);
-    ProxEval(f_gpu, _rho, y.data, y12.data);
+    cml::blas_axpy(hdl, -kOne, &zt, &z); // -kOne*zt+z -> z
+    ProxEval(g_gpu, _rho, x.data, x12.data); // Evaluate g(rho,x)->x12
+    ProxEval(f_gpu, _rho, y.data, y12.data); // Evaluate f(rho,y)->y12
     CUDA_CHECK_ERR();
     POP_RANGE("Evaluate_fg",Evaluate_fg,9);
 
     // Compute gap, optval, and tolerances.
     PUSH_RANGE("gapoptvaltol",gapoptvaltol,9);
-    cml::blas_axpy(hdl, -kOne, &z12, &z);
-    cml::blas_dot(hdl, &z, &z12, &gap);
-    gap = std::abs(gap);
+    cml::blas_axpy(hdl, -kOne, &z12, &z); // -kOne*z12+z->z
+    cml::blas_dot(hdl, &z, &z12, &gap); // z*z12 -> gap
+    gap = std::abs(gap); // |gap| -> gap
     eps_gap = sqrtmn_atol + _rel_tol * cml::blas_nrm2(hdl, &z) *
         cml::blas_nrm2(hdl, &z12);
     eps_pri = sqrtm_atol + _rel_tol * cml::blas_nrm2(hdl, &y12);
@@ -598,26 +602,30 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   
   // Scale x, y, lambda and mu for output.
   PUSH_RANGE("Scale",Scale,1);
-  cml::vector_memcpy(&ztemp, &zt);
-  cml::blas_axpy(hdl, -kOne, &zprev, &ztemp);
-  cml::blas_axpy(hdl, kOne, &z12, &ztemp);
-  cml::blas_scal(hdl, -_rho, &ztemp);
-  cml::vector_mul(&ytemp, &d);
-  cml::vector_div(&xtemp, &e);
 
-  cml::vector_div(&y12, &d);
-  cml::vector_mul(&x12, &e);
+  // xtemp and ytemp are views of ztemp, so these operations apply to xtemp and ytemp as well
+  cml::vector_memcpy(&ztemp, &zt); // zt->ztemp
+  cml::blas_axpy(hdl, -kOne, &zprev, &ztemp); // -kOne*zprev+ztemp->ztemp
+  cml::blas_axpy(hdl, kOne, &z12, &ztemp); // kOne*z12+ztemp->ztemp
+  cml::blas_scal(hdl, -_rho, &ztemp); // -_rho*ztemp -> ztemp
+
+  // operatons on limited views of ztemp
+  cml::vector_mul(&ytemp, &d); // ytemp*d -> ytemp
+  cml::vector_div(&xtemp, &e); // xtemp*e -> xtemp
+
+  cml::vector_div(&y12, &d); // y12*d -> y12
+  cml::vector_mul(&x12, &e); // x12*d -> x12
   POP_RANGE("Scale",Scale,1);
 
   // Copy results to output.
   PUSH_RANGE("Copy",Copy,1);
-  cml::vector_memcpy(_x, &x12);
-  cml::vector_memcpy(_y, &y12);
-  cml::vector_memcpy(_mu, &xtemp);
-  cml::vector_memcpy(_lambda, &ytemp);
+  cml::vector_memcpy(_x, &x12); // x12->_x
+  cml::vector_memcpy(_y, &y12); // y12->_y
+  cml::vector_memcpy(_mu, &xtemp); // xtemp->_mu
+  cml::vector_memcpy(_lambda, &ytemp); // ytemp->_lambda
 
   // Store z.
-  cml::vector_memcpy(&z, &zprev);
+  cml::vector_memcpy(&z, &zprev); // zprev->z
 
   // Free memory.
   cml::vector_free(&z12);

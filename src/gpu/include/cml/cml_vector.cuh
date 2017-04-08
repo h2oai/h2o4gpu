@@ -69,7 +69,7 @@ vector<T> vector_alloc(size_t n) {
 }
 
 template <typename T>
-void vector_set_all(vector<T> *v, T x) {
+void vector_set_all(vector<T> *v, T x) { // set all v to x
   uint grid_dim = calc_grid_dim(v->size, kBlockSize);
   __set_vector<<<grid_dim, kBlockSize>>>(v->data, x, v->stride, v->size);
 }
@@ -122,7 +122,7 @@ const vector<T> vector_view_array(const T *base, size_t n) {
 
 
 template <typename T>
-void vector_memcpy(vector<T> *x, const vector<T> *y) {
+void vector_memcpy(vector<T> *x, const vector<T> *y) { // y->x
   if (x->stride == 1 && y->stride == 1) {
     cudaError_t err;
     err = cudaMemcpy(reinterpret_cast<void*>(x->data),
@@ -137,7 +137,7 @@ void vector_memcpy(vector<T> *x, const vector<T> *y) {
 }
 
 template <typename T>
-void vector_memcpy(vector<T> *x, const T *y) {
+void vector_memcpy(vector<T> *x, const T *y) { // y->x
   cudaError_t err;
   if (x->stride == 1)
      err = cudaMemcpy(reinterpret_cast<void*>(x->data),
@@ -152,7 +152,7 @@ void vector_memcpy(vector<T> *x, const T *y) {
 }
 
 template <typename T>
-void vector_memcpy(T *x, const vector<T> *y) {
+void vector_memcpy(T *x, const vector<T> *y) { // y->x
   cudaError_t err;
   if (y->stride == 1)
      err = cudaMemcpy(reinterpret_cast<void*>(x),
@@ -177,7 +177,7 @@ void vector_print(const vector<T> *x) {
 }
 
 template <typename T>
-void vector_scale(vector<T> *a, T x) {
+void vector_scale(vector<T> *a, T x) { // a*x -> x
   strided_range<thrust::device_ptr<T> > idx(
       thrust::device_pointer_cast(a->data),
       thrust::device_pointer_cast(a->data + a->stride * a->size), a->stride);
@@ -186,7 +186,7 @@ void vector_scale(vector<T> *a, T x) {
 }
 
 template <typename T>
-void vector_mul(vector<T> *a, const vector<T> *b) {
+void vector_mul(vector<T> *a, const vector<T> *b) { // a*b -> a
   strided_range<thrust::device_ptr<T> > idx_a(
       thrust::device_pointer_cast(a->data),
       thrust::device_pointer_cast(a->data + a->stride * a->size), a->stride);
@@ -198,7 +198,7 @@ void vector_mul(vector<T> *a, const vector<T> *b) {
 }
 
 template <typename T>
-void vector_div(vector<T> *a, const vector<T> *b) {
+void vector_div(vector<T> *a, const vector<T> *b) { // a*b -> a
   strided_range<thrust::device_ptr<T> > idx_a(
       thrust::device_pointer_cast(a->data),
       thrust::device_pointer_cast(a->data + a->stride * a->size), a->stride);
@@ -210,7 +210,7 @@ void vector_div(vector<T> *a, const vector<T> *b) {
 }
 
 template <typename T>
-void vector_add_constant(vector<T> *a, const T x) {
+void vector_add_constant(vector<T> *a, const T x) { // a+x -> a
   strided_range<thrust::device_ptr<T> > idx(
       thrust::device_pointer_cast(a->data),
       thrust::device_pointer_cast(a->data + a->stride * a->size), a->stride);
