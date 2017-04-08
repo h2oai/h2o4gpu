@@ -211,6 +211,37 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   CUDACHECK(cudaSetDevice(_wDev));
 
 
+  // Notes on variable names:
+  //
+  // Original Boyd ADMM paper solves:
+  // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf
+  // Minimize: f(x) + g(z)
+  // Subject to: Ax + Bz = c
+  // Primary variable: x
+  // Dual variable: z
+  // Step size: \rho
+  // Where for Lasso: f(x) = (1/2)||x-b||_2^2 and g(z) = \lambda||z||_1 with constraint x=Az
+  //
+  // Pogs paper and code:
+  // http://foges.github.io/pogs/ and http://stanford.edu/~boyd/papers/pogs.html
+  // Minimize: f(y) + g(x) for a variety (but limited set) of f and g shown in src/include/prox_lib.h
+  // Subject to: y = Ax (always)
+  // Where for Lasso: f(y) = (1/2)||y-b||_2^2 and g(x) = \lambda||x||_1 and constraint is y=Ax
+  // Primary variable: y
+  // Dual variable: x
+  // Step size or Proximal parameter: \rho
+  // Intermediate variable: z
+  // Internally pogs code uses \mu and \nu scaled variables, performs pre-conditioning using e and d.
+  // \lambda_{max} = ||A^T b|| makes sense if have (1/2) in front of f(y) for Lasso
+  //
+  // Pogs overall steps:
+  // 1) Precondition A using d and e and renormalize variables and all equations using d and e
+  // 2) Compute Gramian: A^T A only once
+  // 3) Cholesky of gram: Only compute cholesky once -- s and info->s in Project just kOne=1 and just ensure GPU has cholesky already.  Could have put into Init with Gramian)
+  // 4) Project: Solve L L^T x = b for x by forward and backward solve (Ly=b for y and then y=L^T x for x)
+  // 5) Repeat #4, until convergence from primary (min Ax-b) and dual (min f(y)+g(x)) residuals
+  
+  
   
   // Extract values from pogs_data
   PUSH_RANGE("PogsExtract",PogsExtract,3);
@@ -363,8 +394,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Evaluate Proximal Operators g and f based upon chosen problem setup
     PUSH_RANGE("Evaluate_fg",Evaluate_fg,9);
     cml::blas_axpy(hdl, -kOne, &zt, &z); // -kOne*zt+z -> z
-    ProxEval(g_gpu, _rho, x.data, x12.data); // Evaluate g(rho,x)->x12
-    ProxEval(f_gpu, _rho, y.data, y12.data); // Evaluate f(rho,y)->y12
+    ProxEval(g_gpu, _rho, x.data, x12.data); // Evaluate g(rho,x)->x12 (x^{1/2} in paper)
+    ProxEval(f_gpu, _rho, y.data, y12.data); // Evaluate f(rho,y)->y12 (y^{1/2} in paper)
     CUDA_CHECK_ERR();
     POP_RANGE("Evaluate_fg",Evaluate_fg,9);
 
@@ -397,6 +428,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     PUSH_RANGE("project",project,9);
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
+    // (x^{k+1},y^{k+1} := Project(x^{k+1/2}+\tilde{x}^k , y^{k+1/2}+\tilde{y}^k)
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     //cudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     CUDA_CHECK_ERR();
@@ -554,7 +586,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
           delta = kDeltaMin;
         }
         CUDA_CHECK_ERR();
-      } // end adaptive_rho==1
+      } // end adaptive_rho==3
       POP_RANGE("adaprho",adaprho,9);
     } // end adaptive_rho
 #ifdef USE_NVTX
