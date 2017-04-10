@@ -2,6 +2,8 @@
  * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
  */
 
+#ifdef USE_NCCL
+
 #include <cstdio>
 #include <vector>
 
@@ -419,3 +421,10 @@ int p2pbwcheck(void)
 
     return(EXIT_SUCCESS);
 }
+
+#else
+int p2pbwcheck(void)
+{
+  return(0);
+}
+#endif

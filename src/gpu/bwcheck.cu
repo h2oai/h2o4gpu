@@ -19,6 +19,8 @@
  * ./bandwidthTest [option]...
  */
 
+#ifdef USE_NCCL
+
 // CUDA runtime
 #include <cuda_runtime.h>
 
@@ -1027,3 +1029,8 @@ void printHelp(void)
     printf("--end=[SIZE]\tEnding transfer size in bytes\n");
     printf("--increment=[SIZE]\tIncrement size in bytes\n");
 }
+#else
+int bwcheck(void){
+  return(0);
+}
+#endif

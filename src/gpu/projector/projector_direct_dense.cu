@@ -177,10 +177,11 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
     CUDA_CHECK_ERR();
     POP_RANGE("P1(row)",P1row,2);
 
+    fprintf(stderr,"YOU: s=%g info->s=%g\n",s,info->s);
     if (s != info->s) {
       PUSH_RANGE("P1r_diagonal",P1r_diagonal,2);
       cml::matrix_memcpy(&L, &AA);
-      cml::vector<T> diagL = cml::matrix_diagonal(&L);
+      cml::vector<T> diagL = cml::matrix_diagonal(&L); // vector view of diagonal of L
       cml::vector_add_constant(&diagL, s);
       wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();

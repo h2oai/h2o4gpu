@@ -2,6 +2,7 @@
  * Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
  ************************************************************************/
 
+#ifdef USE_NCCL
 
 
 #include <chrono>
@@ -186,3 +187,8 @@ int warmstart(int N, int nDev) {
     return(EXIT_SUCCESS);
 }
 
+#else
+int warmstart(int N, int nDev){
+  return(0);
+}
+#endif
