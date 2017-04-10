@@ -39,6 +39,7 @@ T getVar(std::vector<T>& v, T mean) {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, double validFraction) {
+
   int nlambda = nLambdas;
   if (nlambda <= 1) {
     fprintf(stderr, "Must use nlambda > 1\n");
@@ -64,6 +65,9 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 #error Need OpenMP
 #endif
 
+
+
+  
   std::vector <T> trainX;
   std::vector <T> validX;
   std::vector <T> trainY;

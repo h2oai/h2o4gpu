@@ -25,6 +25,10 @@ int main(int argc, char **argv) {
   //  int rows=450050;
   //  int cols=212;
 
+  //  extern int bwcheck(void);
+  //  bwcheck();
+  //  return(0);
+
   int rows=55776; // benchmark
   int cols=9733-1;
   if (argc!=5) {

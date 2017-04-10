@@ -19,7 +19,7 @@
  * ./bandwidthTest [option]...
  */
 
-#ifdef USE_NCCL
+#if 1
 
 // CUDA runtime
 #include <cuda_runtime.h>

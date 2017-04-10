@@ -2,7 +2,7 @@
  * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
  */
 
-#ifdef USE_NCCL
+#if 1
 
 #include <cstdio>
 #include <vector>
