@@ -49,6 +49,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   }
 
   // Populate f_pogs.
+  f_pogs->resize(n);
   #pragma omp parallel for
   for (unsigned int i = 0; i < n; ++i) {
     for (unsigned int j = 0; j < kNumParam; ++j) {
@@ -60,8 +61,8 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
         }
       }
     }
-    f_pogs->push_back(FunctionObj<double>(func_param, real_params[0],
-         real_params[1], real_params[2], real_params[3], real_params[4]));
+    (*f_pogs)[i]=FunctionObj<double>(func_param, real_params[0],
+         real_params[1], real_params[2], real_params[3], real_params[4]);
   }
 }
 
