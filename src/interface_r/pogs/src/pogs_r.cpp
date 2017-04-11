@@ -9,6 +9,7 @@
 
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
+#include "../../../include/prox_lib.h"
 
 SEXP getListElement(SEXP list, const char *str) {
   SEXP elmt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
@@ -30,7 +31,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
   for (unsigned int i = 0; i < kNumParam; ++i)
     param_data[i] = getListElement(f, &alpha[i * 2]);
 
-  Function func_param;
+  Function func_param = kZero;
   double real_params[] = {1.0, 0.0, 1.0, 0.0, 0.0};
 
   // Find index and pointer to data of (h, a, b, c, d, e) in struct if present.
