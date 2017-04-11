@@ -45,10 +45,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     fprintf(stderr, "Must use nlambda > 1\n");
     exit(-1);
   }
-  if (static_cast<size_t>(validFraction*m) <= 1) {
-    fprintf(stderr, "Must use larger validFraction\n");
-    exit(-1);
-  }
   // number of openmp threads = number of cuda devices to use
 
 
@@ -65,9 +61,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 #error Need OpenMP
 #endif
 
-
-
-  
   std::vector <T> trainX;
   std::vector <T> validX;
   std::vector <T> trainY;
@@ -77,6 +70,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     // allocate matrix problem to solve
     std::vector <T> A(m * n);
     std::vector <T> b(m);
+    fprintf(stdout, "Rows: %d\n", m);
+    fprintf(stdout, "Cols: %d\n", n);
 
     fprintf(stdout, "START FILL DATA\n");
     fflush(stdout);
@@ -86,14 +81,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     // choose to generate or read-in data
     int generate=0;    
 #include "readorgen.c"
-  
 
     double t1 = timer<double>();
     fprintf(stdout, "END FILL DATA. Took %g secs\n", t1-t0);
     fflush(stdout);
-
-
-
 
     fprintf(stdout, "START TRAIN/VALID SPLIT\n");
     fflush(stdout);
@@ -103,27 +94,32 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
     // Alloc
     trainX.resize(mTrain * n);
-    validX.resize(mValid * n);
     trainY.resize(mTrain);
-    validY.resize(mValid);
+
     for (int i = 0; i < mTrain; ++i) { //rows
       trainY[i] = b[i];
       for (int j = 0; j < n; ++j) { //cols
         trainX[i * n + j] = A[i * n + j];
       }
     }
-    for (int i = 0; i < mValid; ++i) { //rows
-      validY[i] = b[mTrain + i];
-      for (int j = 0; j < n; ++j) { //cols
-        validX[i * n + j] = A[(mTrain + i) * n + j];
+    if (mValid>0) {
+      validX.resize(mValid * n);
+      validY.resize(mValid);
+      for (int i = 0; i < mValid; ++i) { //rows
+        validY[i] = b[mTrain + i];
+        for (int j = 0; j < n; ++j) { //cols
+          validX[i * n + j] = A[(mTrain + i) * n + j];
+        }
       }
     }
     fprintf(stdout, "END TRAIN/VALID SPLIT\n");
     fflush(stdout);
   }
-
+  fprintf(stdout, "ok1\n");
+  fflush(stdout);
   fprintf(stdout, "Rows in training data: %d\n", (int)trainY.size());
-  fprintf(stdout, "Rows in validation data: %d\n", (int)validY.size());
+  fflush(stdout);
+  fprintf(stdout, "ok2\n");
 
 
   // Training mean and stddev
@@ -136,15 +132,20 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     trainY[i] -= meanTrainY;
     trainY[i] /= sdTrainY;
   }
+  fflush(stdout);
 
   // Validation mean and stddev
-  T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-  fprintf(stdout,"Mean validY: %f\n", meanValidY);
-  fprintf(stdout,"StdDev validY: %f\n", std::sqrt(getVar(validY, meanValidY)));
-  // standardize the response the same way as for training data ("apply fitted transform during scoring")
-  for (size_t i=0; i<validY.size(); ++i) {
-    validY[i] -= meanTrainY;
-    validY[i] /= sdTrainY;
+  if (!validY.empty()) {
+    fprintf(stdout, "Rows in validation data: %d\n", (int)validY.size());
+    T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    fprintf(stdout,"Mean validY: %f\n", meanValidY);
+    fprintf(stdout,"StdDev validY: %f\n", std::sqrt(getVar(validY, meanValidY)));
+    // standardize the response the same way as for training data ("apply fitted transform during scoring")
+    for (size_t i=0; i<validY.size(); ++i) {
+      validY[i] -= meanTrainY;
+      validY[i] /= sdTrainY;
+    }
+    fflush(stdout);
   }
 
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
@@ -302,16 +303,19 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
         }
         double trainRMSE = getRMSE(&trainPreds[0], &trainY);
 
-        std::vector<T> validPreds(validY.size());
-        for (size_t i=0; i<validY.size(); ++i) {
-          for (size_t j=0; j<n; ++j) {
-            validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
+        double validRMSE = -1;
+        if (!validY.empty()) {
+          std::vector<T> validPreds(validY.size());
+          for (size_t i=0; i<validY.size(); ++i) {
+            for (size_t j=0; j<n; ++j) {
+              validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
+            }
+            // reverse (fitted) standardization
+            validPreds[i]*=sdTrainY; //scale
+            validPreds[i]+=meanTrainY; //intercept
           }
-          // reverse (fitted) standardization
-          validPreds[i]*=sdTrainY; //scale
-          validPreds[i]+=meanTrainY; //intercept
+          validRMSE = getRMSE(&validPreds[0], &validY);
         }
-        double validRMSE = getRMSE(&validPreds[0], &validY);
         fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
         fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
       }// over lambda

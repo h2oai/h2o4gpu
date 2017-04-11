@@ -10,7 +10,7 @@ std::normal_distribution<T> n_dist(static_cast<T>(0),
 
 // READ-IN DATA
 if(generate==0){
-  size_t TARGETCOL=9733;
+  size_t TARGETCOL=n+1;
   size_t dAm=m; // rows
   size_t dAn=n+1; // columns
   FILE * file = fopen("train.txt","rt");
