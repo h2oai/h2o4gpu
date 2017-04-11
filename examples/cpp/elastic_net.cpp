@@ -70,8 +70,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     // allocate matrix problem to solve
     std::vector <T> A(m * n);
     std::vector <T> b(m);
-    fprintf(stdout, "Rows: %d\n", m);
-    fprintf(stdout, "Cols: %d\n", n);
 
     fprintf(stdout, "START FILL DATA\n");
     fflush(stdout);
@@ -115,12 +113,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     fprintf(stdout, "END TRAIN/VALID SPLIT\n");
     fflush(stdout);
   }
-  fprintf(stdout, "ok1\n");
-  fflush(stdout);
   fprintf(stdout, "Rows in training data: %d\n", (int)trainY.size());
   fflush(stdout);
-  fprintf(stdout, "ok2\n");
-
 
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();

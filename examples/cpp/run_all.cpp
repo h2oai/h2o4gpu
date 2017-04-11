@@ -1,10 +1,8 @@
 #include <cstdio>
-#include <math.h>
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <string>
 #include <iterator>
 #include "examples.h"
 
@@ -34,29 +32,30 @@ int main(int argc, char **argv) {
   //  bwcheck();
   //  return(0);
 
-/*
-  int rows=55776; // benchmark
-  int cols=9733-1;
-*/
-  //FIXME: why isn't this working??
-  std::ifstream ifs("./train.txt");
-  int rows = static_cast<int>(std::count(std::istream_iterator<char>(ifs), std::istream_iterator<char>(), '\n'));
-  std::string line;
-  std::getline(ifs, line);
-  std::stringstream ss(line);
-  int cols = 0;
-  std::string buf;
-  while (ss >> buf) cols++;
-  cols--; //don't count target column
-
-  printf("rows: %d\n", rows);
-  printf("cols: %d\n", cols);
-  ifs.close();
-
   if (argc!=5) {
     printf("usage: %s %s", argv[0], " <nGPUs> <nLambdas> <nAlphas> <validFraction>\n");
     exit(-1);
   }
+
+  std::ifstream ifs("./train.txt");
+  std::string line;
+  int rows=0;
+  int cols = 0;
+  while (std::getline(ifs, line)) {
+    if (rows==0) {
+      std::string buf;
+      std::stringstream ss(line);
+      while (ss >> buf) cols++;
+    }
+    //std::cout << line << std::endl;
+    rows++;
+  }
+  cols--; //don't count target column
+
+  printf("rows: %d\n", rows); fflush(stdout);
+  printf("cols (w/o response): %d\n", cols); fflush(stdout);
+  ifs.close();
+
   int nGPUs=atoi(argv[1]);
   int nLambdas=atoi(argv[2]);
   int nAlphas=atoi(argv[3]);
