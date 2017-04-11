@@ -361,7 +361,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     printMe(std::cout, g[0].c, g[0].e);
     //printData(std::cout); //only works for data in host memory!
     Printf(__HBAR__
-      "           H2O.ai Proximal Graph Solver\n"
+      "           H2O AI GLM\n"
       "           Version: %s\n"
       "           (c) H2O.ai, Inc., 2017\n",
       POGS_VERSION.c_str());

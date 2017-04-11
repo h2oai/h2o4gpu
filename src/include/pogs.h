@@ -88,7 +88,7 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 
 namespace pogs {
 
-static const std::string POGS_VERSION = "0.2.0";
+static const std::string POGS_VERSION = "0.3.1";
 
 // TODO: Choose default constants better
 // Defaults.
