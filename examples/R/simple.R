@@ -15,7 +15,7 @@ x        <- as.matrix(data.frame(age, bmi_p, xfactors))
 
 
 #model = pogsnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
-model = pogsnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-8, intercept=TRUE, params=list(max_iter=200))
+model = pogsnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-7, intercept=TRUE, params=list(max_iter=2500))
 print(paste0("RMSEPOGS:",mean((predict(model, x)-asthma)^2)))
 
 #library(h2o)
