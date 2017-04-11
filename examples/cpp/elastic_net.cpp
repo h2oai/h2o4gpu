@@ -153,7 +153,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = 1e-8; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 
@@ -226,7 +226,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     //pogs_data.SetEquil(false); // trying
     //pogs_data.SetRho(1E-4);
     //pogs_data.SetVerbose(4);
-    pogs_data.SetMaxIter(200);
+    //pogs_data.SetMaxIter(200);
 
     int N=nAlphas; // number of alpha's
     if(N % nGPUs!=0){
@@ -238,7 +238,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
       const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
-      T lambda_max = lambda_max0/(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
+      T lambda_max = 10*lambda_max0; ///(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
