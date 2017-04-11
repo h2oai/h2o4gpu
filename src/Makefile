@@ -95,7 +95,7 @@ VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
 all: default
 
-default: clean gpu
+default: gpu
 
 # Build all
 cpu: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)

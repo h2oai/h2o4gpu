@@ -18,4 +18,5 @@ Hint: Use `getwd()` to get the current directory.
 2. In your terminal, navigate to `cd <path-to-pogs-root>/src/interface_r`
    and execute `R CMD INSTALL --build pogs` (or `R CMD build pogs` for
    a non-compiled package) to install the R package.
+   For a parallel R build with 32 cores, do: MAKE="make -j32" R CMD INSTALL --build pogs .
 
