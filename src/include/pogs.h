@@ -78,6 +78,8 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 #include <cstring>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <iterator>
 
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
@@ -184,6 +186,11 @@ class Pogs {
     os << "gap_stop: " << _gap_stop << sep;
     os << "nDev: " << _nDev << sep;
     os << "wDev: " << _wDev;
+    os << std::endl;
+  }
+  void printData(std::ostream &os) const {
+    os << "Model training data: ";
+    std::copy(_A.Data(), _A.Data() + _A.Rows()*_A.Cols(), std::ostream_iterator<T>(std::cout, "\n"));
     os << std::endl;
   }
 

@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cstring>
-#include <limits>
 
 #include "gsl/cblas.h"
 #include "gsl/gsl_blas.h"

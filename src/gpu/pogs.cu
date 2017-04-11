@@ -359,6 +359,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Signal start of execution.
   if (_verbose > 0) {
     printMe(std::cout, g[0].c, g[0].e);
+    //printData(std::cout); //only works for data in host memory!
     Printf(__HBAR__
       "           H2O.ai Proximal Graph Solver\n"
       "           Version: %s\n"
