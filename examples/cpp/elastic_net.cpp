@@ -120,10 +120,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   cout << "Mean trainY: " << meanTrainY << endl;
   cout << "StdDev trainY: " << sdTrainY << endl;
   // standardize the response for training data
+/*
   for (size_t i=0; i<trainY.size(); ++i) {
     trainY[i] -= meanTrainY;
     trainY[i] /= sdTrainY;
   }
+*/
 
   // Validation mean and stddev
   if (!validY.empty()) {
@@ -131,11 +133,13 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     cout << "Mean validY: " << meanValidY << endl;
     cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
+/*
     // standardize the response the same way as for training data ("apply fitted transform during scoring")
     for (size_t i=0; i<validY.size(); ++i) {
       validY[i] -= meanTrainY;
       validY[i] /= sdTrainY;
     }
+*/
   }
 
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
@@ -146,7 +150,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += trainX[i + j * mTrain] * (trainY[i] - 0 /*meanTrainY after standardization*/);
+      u += trainX[i + j * mTrain] * (trainY[i] - meanTrainY /*meanTrainY after standardization*/);
     }
     //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
@@ -286,10 +290,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
           for (size_t j=0; j<n; ++j) {
             trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
+/*
           // reverse standardization
           trainPreds[i]*=sdTrainY; //scale
           trainPreds[i]+=meanTrainY; //intercept
           //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+*/
         }
         double trainRMSE = getRMSE(&trainPreds[0], &trainY);
 
@@ -300,9 +306,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
             for (size_t j=0; j<n; ++j) {
               validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
+/*
             // reverse (fitted) standardization
             validPreds[i]*=sdTrainY; //scale
             validPreds[i]+=meanTrainY; //intercept
+*/
           }
           validRMSE = getRMSE(&validPreds[0], &validY);
         }
