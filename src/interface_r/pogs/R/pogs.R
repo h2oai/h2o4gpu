@@ -443,7 +443,8 @@ predict.pogsnet <- function(object, newx, s=NULL, type=c("link", "response", "cl
     beta = object$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
       object$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
   }
-  fitted = as.matrix(cbind2(1, newx) %*% beta)
+  fitted = as.matrix(cbind2(1, newx) %*% beta) ## iff intercept=TRUE during fitting
+  #fitted = as.matrix(newx %*% beta)           ## iff intercept=FALSE during fitting
   if (any(class(object) == "binomial")) {
     if (type == "response") {
       fitted = 1 / (1 + exp(-fitted))
