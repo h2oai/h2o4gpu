@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstring>
 #include <vector>
+#include <iterator>
+#include <iostream>
 
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
@@ -126,6 +128,10 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
   if (pw != R_NilValue)
     wDev = INTEGER(pw)[0];
 
+  //column major data (R data frame)
+//  std::cout << "A cols = " << INTEGER(GET_DIM(A))[0] << std::endl;
+//  std::cout << "A rows = " << INTEGER(GET_DIM(A))[1] << std::endl;
+//  std::copy(REAL(A), REAL(A) + m*n, std::ostream_iterator<T>(std::cout, "\n"));
   pogs::MatrixDense<T> A_dense(wDev, 'c', m, n, REAL(A));
 
   // Initialize Pogs data structure
