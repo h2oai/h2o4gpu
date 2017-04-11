@@ -10,39 +10,26 @@ std::normal_distribution<T> n_dist(static_cast<T>(0),
 
 // READ-IN DATA
 if(generate==0){
-  size_t TARGETCOL=n+1;
-  size_t dAm=m; // rows
-  size_t dAn=n+1; // columns
+  size_t R=m; // rows
+  size_t C=n+1; // columns
   FILE * file = fopen("train.txt","rt");
   if(file==NULL){
     fprintf(stderr,"Cannot read file.\n");
     exit(1);
   }
   else{
-
-    // tail -n +2 /tmp/train.csv | sed 's/,/ /g' > /tmp/train.txt
-      
-    double dum;
-    size_t Ai,Aj;
+    // Expect space-separated file with response in last column, no header
+    double v;
     int count=0;
-    for (unsigned int i = 0; i < dAm; ++i){// rows
-      Ai=i;
-      //fprintf(stderr,"row=%d\n",i);
-      Aj=0;
-      for (unsigned int j = 0; j < dAn; ++j){ // columns
-        if(j!=TARGETCOL-1){
-          Aj++;
-          count += fscanf(file,"%lf",&dum);
-          A[Ai*n+Aj]=(float)dum;
-        }
-        else if(j==TARGETCOL-1){
-          count += fscanf(file,"%lf",&dum);
-          b[Ai]=(float)dum;
-        }
+    for (unsigned int i = 0; i < R; ++i){// rows
+      for (unsigned int j = 0; j < C-1; ++j){ // columns
+        count += fscanf(file,"%lf",&v);
+        A[i*n+j]=(float)v;
       }
+      count += fscanf(file,"%lf",&v);
+      b[i]=(float)v;
     }
     for (unsigned int i = 0; i < m * n; ++i){
-      //fprintf(stderr,"A[%d]=%g\n",i,A[i]);
       if(!std::isfinite(A[i])) fprintf(stderr,"NF: A[%d]=%g\n",i,A[i]);
     }
     for (unsigned int i = 0; i < m; ++i){
