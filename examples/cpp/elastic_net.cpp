@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 #include <cassert>
+#include <iostream>
 
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
@@ -10,6 +11,7 @@
 #include <omp.h>
 
 using namespace pogs;
+using namespace std;
 
 template <typename T>
 T getRMSE(const T *v1, std::vector<T> *v2) {
@@ -42,20 +44,19 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
-    fprintf(stderr, "Must use nlambda > 1\n");
+    cerr << "Must use nlambda > 1\n";
     exit(-1);
   }
   // number of openmp threads = number of cuda devices to use
 
 
 #ifdef _OPENMP
-  int nopenmpthreads0=omp_get_max_threads();
+  int omt=omp_get_max_threads();
 #define MIN(a,b) ((a)<(b)?(a):(b))
-  omp_set_num_threads(MIN(nopenmpthreads0,nGPUs));
-  int nopenmpthreads=omp_get_max_threads();
-  nGPUs = nopenmpthreads; // openmp threads = cuda devices used
-  fprintf(stdout,"Number of original threads=%d.  Number of threads for cuda=%d\n",nopenmpthreads0,nopenmpthreads);
-
+  omp_set_num_threads(MIN(omt,nGPUs));
+  int nth=omp_get_max_threads();
+  nGPUs=nth; // openmp threads = cuda devices used
+  cout << "Number of original threads=" << omt << " Number of threads for cuda=" << nth << endl;
 
 #else
 #error Need OpenMP
@@ -71,21 +72,17 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     std::vector <T> A(m * n);
     std::vector <T> b(m);
 
-    fprintf(stdout, "START FILL DATA\n");
-    fflush(stdout);
+    cout << "START FILL DATA\n" << endl;
     double t0 = timer<double>();
-
 
     // choose to generate or read-in data
     int generate=0;    
 #include "readorgen.c"
 
     double t1 = timer<double>();
-    fprintf(stdout, "END FILL DATA. Took %g secs\n", t1-t0);
-    fflush(stdout);
+    cout << "END FILL DATA. Took " << t1-t0 << " secs" << endl;
 
-    fprintf(stdout, "START TRAIN/VALID SPLIT\n");
-    fflush(stdout);
+    cout << "START TRAIN/VALID SPLIT" << endl;
     // Split A/b into train/valid, via head/tail
     size_t mValid = static_cast<size_t>(m * validFraction);
     mTrain = m - mValid;
@@ -96,8 +93,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
     for (int i = 0; i < mTrain; ++i) { //rows
       trainY[i] = b[i];
+//      cout << "y[" << i << "] = " << b[i] << endl;
       for (int j = 0; j < n; ++j) { //cols
         trainX[i * n + j] = A[i * n + j];
+//        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
       }
     }
     if (mValid>0) {
@@ -110,40 +109,37 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
         }
       }
     }
-    fprintf(stdout, "END TRAIN/VALID SPLIT\n");
+    cout << "END TRAIN/VALID SPLIT" << endl;
     fflush(stdout);
   }
-  fprintf(stdout, "Rows in training data: %d\n", (int)trainY.size());
-  fflush(stdout);
+  cout << "Rows in training data: " << trainY.size() << endl;
 
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
   T sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
-  fprintf(stdout,"Mean trainY: %f\n", meanTrainY);
-  fprintf(stdout,"StdDev trainY: %f\n", sdTrainY);
+  cout << "Mean trainY: " << meanTrainY << endl;
+  cout << "StdDev trainY: " << sdTrainY << endl;
   // standardize the response for training data
   for (size_t i=0; i<trainY.size(); ++i) {
     trainY[i] -= meanTrainY;
     trainY[i] /= sdTrainY;
   }
-  fflush(stdout);
 
   // Validation mean and stddev
   if (!validY.empty()) {
-    fprintf(stdout, "Rows in validation data: %d\n", (int)validY.size());
+    cout << "Rows in validation data: " << validY.size() << endl;
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    fprintf(stdout,"Mean validY: %f\n", meanValidY);
-    fprintf(stdout,"StdDev validY: %f\n", std::sqrt(getVar(validY, meanValidY)));
+    cout << "Mean validY: " << meanValidY << endl;
+    cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
     // standardize the response the same way as for training data ("apply fitted transform during scoring")
     for (size_t i=0; i<validY.size(); ++i) {
       validY[i] -= meanTrainY;
       validY[i] /= sdTrainY;
     }
-    fflush(stdout);
   }
 
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
-  fprintf(stdout,"weights %f\n", weights);
+  cout << "weights " << weights << endl;
 
   // set lambda max 0 (i.e. base lambda_max)
   T lambda_max0 = static_cast<T>(0);
@@ -155,10 +151,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
   }
-  fprintf(stdout,"lambda_max0 %f\n", lambda_max0);
+  cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
   T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
-  fprintf(stdout,"lambda_min_ratio %f\n", lambda_min_ratio);
+  cout << "lambda_min_ratio" << lambda_min_ratio << endl;
 
 
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
@@ -224,12 +220,13 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     fflush(fil);
 
     pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-    //pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
+//    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
+//    pogs_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in pogs
     //pogs_data.SetAdaptiveRho(false); // trying
     //pogs_data.SetEquil(false); // trying
     //pogs_data.SetRho(1E-4);
     //pogs_data.SetVerbose(4);
-    //pogs_data.SetMaxIter(1u);
+//    pogs_data.SetMaxIter(1000);
 
     int N=nAlphas; // number of alpha's
     if(N % nGPUs!=0){
