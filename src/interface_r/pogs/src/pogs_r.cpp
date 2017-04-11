@@ -50,7 +50,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
 
   // Populate f_pogs.
   f_pogs->resize(n);
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for (unsigned int i = 0; i < n; ++i) {
     for (unsigned int j = 0; j < kNumParam; ++j) {
       if (param_data[j] != R_NilValue) {
