@@ -1,11 +1,10 @@
 # Change this target between cpu and gpu
 TARGET=gpu
 
-# set R_HOME, R_INC, and R_LIB to the the R install dir,
 # the R header dir, and the R shared library dir on your system
-R_LIBHOME := $(shell R RHOME)
+R_PATH := $(shell R RHOME)
 R_INC := $(shell R CMD config --cppflags)
-R_LIB := $(R_LIBHOME)/lib
+R_LIB := $(shell R CMD config --ldflags)
 
 # replace these three lines with
 # CUDA_HOME := <path to your cuda install>
@@ -29,7 +28,7 @@ ifeq ($(OS), Darwin)
         DEVICEOPTS := -m64
     endif
     CUDA_LIB := $(CUDA_HOME)/lib64
-    R_FRAMEWORK := -F$(R_LIBHOME)/.. -framework R
+    R_FRAMEWORK := -F$(R_PATH)/.. -framework R
     RPATH := -rpath $(CUDA_LIB)
 endif
 
@@ -43,7 +42,7 @@ HDR=-Iinclude $(R_INC) -I$(CUDA_HOME)/include
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DPOGS_SINGLE=0
 ifeq ($(TARGET), gpu)
-    LD_FLAGS=-L"$(R_LIB)" -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lnvToolsExt # -lnccl
+    LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lnvToolsExt # -lnccl
 else
     LD_FLAGS=blas2cblas.cpp $(shell R CMD config BLAS_LIBS)
 endif
