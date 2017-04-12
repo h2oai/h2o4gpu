@@ -143,6 +143,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 */
   }
 
+
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
   cout << "weights " << weights << endl;
 
@@ -162,9 +163,20 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 
+  
+
+
+  // for source, create class objects that creates cuda memory, cpu memory, etc.
+  int sourceDev=0;
+  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, trainX.data());
+  // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
+  
+
+
+
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
-#define DOP2PCHECK 1 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
-#define DOBWCHECK 1
+#define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
+#define DOBWCHECK 0
 
 #if(DOWARMSTART)
 #ifdef HAVECUDA
@@ -198,6 +210,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   fflush(stdout);
 */
 
+
+  
   double t = timer<double>();
   double t0 = 0;
   double t1 = 0;
@@ -217,7 +231,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     fprintf(fil,"Moving data to the GPU. Starting at %21.15g\n", t0);
     fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
-    pogs::MatrixDense<T> A_(me, 'r', mTrain, n, trainX.data());
+    pogs::MatrixDense<T> A_(me, Asource_);
     pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
     t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);

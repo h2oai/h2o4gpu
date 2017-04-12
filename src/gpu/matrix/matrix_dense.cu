@@ -22,8 +22,8 @@ const NormTypes kNormNormalize   = kNormFro;
 
 template<typename T>
 struct GpuData {
-  const T *orig_data;
-  cublasHandle_t handle;
+  const T *orig_data; // pointer to data on CPU
+  cublasHandle_t handle; // handle for data on GPU
   GpuData(const T *orig_data) : orig_data(orig_data) {
     cublasCreate(&handle);
     DEBUG_CUDA_CHECK_ERR();
@@ -71,9 +71,23 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   
   // Set GPU specific _info.
   PUSH_RANGE("MDnew",MDnew,1);
-  GpuData<T> *info = new GpuData<T>(data);
+  GpuData<T> *info = new GpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   this->_info = reinterpret_cast<void*>(info);
   POP_RANGE("MDnew",MDnew,1);
+
+
+  // Copy Matrix to GPU.
+  PUSH_RANGE("MDsend",MDsend,1);
+  //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
+  double t0 = timer<double>();
+  cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
+  double t1 = timer<double>();
+  cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+  double t2 = timer<double>();
+  printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+  printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+  POP_RANGE("MDsend",MDsend,1);
+
 }
 
 template <typename T>
@@ -81,13 +95,43 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   : _wDev(wDev), Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
 
   CUDACHECK(cudaSetDevice(_wDev));
-
+  
   PUSH_RANGE("MDnew",MDnew,2);
-  GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info);
-  GpuData<T> *info = new GpuData<T>(info_A->orig_data);
-  this->_info = reinterpret_cast<void*>(info);
+  GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info); // cast from void to GpuData
+  GpuData<T> *info = new GpuData<T>(info_A->orig_data); // create new GpuData structure with point to CPU data
+  this->_info = reinterpret_cast<void*>(info); // back to cast as void
   POP_RANGE("MDnew",MDnew,2);
+
+  if(A._wDev == _wDev){ // if on same device
+    // Copy Matrix from CPU to GPU.
+    PUSH_RANGE("MDsend",MDsend,1);
+    //    GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // back to cast as GpuData
+    double t0 = timer<double>();
+    cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
+    double t1 = timer<double>();
+    cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from CPU to GPU
+    double t2 = timer<double>();
+    printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+    printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+    POP_RANGE("MDsend",MDsend,1);
+
+    
+  }
+  else{
+    // Copy Matrix to from source GPU to this GPU
+    PUSH_RANGE("MDcopy",MDcopy,1);
+    //GpuData<T> *info = reinterpret_cast<GpuData<T>*>(_info); // cast void -> GpuData
+    double t0 = timer<double>();
+    cudaMalloc(&_data, A._m * A._n * sizeof(T)); // allocate on GPU
+    double t1 = timer<double>();
+    cudaMemcpyPeer(_data, _wDev, A._data, A._wDev, A._m * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+    double t2 = timer<double>();
+    printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+    printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+    POP_RANGE("MDcopy",MDcopy,1);
+  }
 }
+
 
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
@@ -113,23 +157,7 @@ int MatrixDense<T>::Init() {
   CUDACHECK(cudaSetDevice(_wDev));
 
   PUSH_RANGE("MDinit",MDinit,1);
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-
-  double t0 = timer<double>();
-
-  // Copy Matrix to GPU.
-  cudaMalloc(&_data, this->_m * this->_n * sizeof(T));
-
-  double t1 = timer<double>();
-
-  cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),
-      cudaMemcpyHostToDevice);
-
-  double t2 = timer<double>();
   POP_RANGE("MDinit",MDinit,1);
-
-  printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
-  printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
 
   DEBUG_CUDA_CHECK_ERR();
 
