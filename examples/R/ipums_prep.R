@@ -4,6 +4,7 @@ if (TRUE) {
   install.packages("MatrixModels", repos='http://cran.us.r-project.org')
 }
 require(data.table)   
+require(feather)
 require(MatrixModels) 
 
 response <- "INCEARN"
@@ -70,4 +71,5 @@ all(sapply(DT, is.numeric))
 all(sapply(DT, function(x) all(is.finite(x))))
 
 ## save preprocessed file as CSV
-fwrite(DT, "train.csv")
+fwrite(DT, "ipums.csv")
+write_feather(DT, "ipums.feather")
