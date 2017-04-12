@@ -1,7 +1,7 @@
 [POGS](https://github.com/h2oai/pogs)
 
 Based upon https://github.com/foges/pogs
-====
+-----
 
 Proximal Graph Solver (POGS) is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). 
 
