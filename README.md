@@ -1,10 +1,54 @@
-[POGS](http://foges.github.io/pogs)
+[POGS](https://github.com/h2oai/pogs)
+
+Based upon https://github.com/foges/pogs
 ====
 
 Proximal Graph Solver (POGS) is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers](http://foges.github.io/pogs/ref/admm) (ADMM). 
 
+Requirements
+------
+R, CUDA8 for GPU version
+
+On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running pogs.
+------
+
+sudo nvidia-smi -pm 1
+
+
+To compile gpu version:
+------
+
+cd src ; make ; cd ../examples/cpp ; make
+
+To run gpu version if one has 16 gpus (e.g. on AWS), where first and 3rd argument should be same for any number of GPUs.  Dataset is currently small called simple.txt, but ask Arno or Jon for the larger census-based data set to highlight 100% multiple-GPU usage.
+------
+
+
+./h2oai-glm-gpu 16 100 16 0.2
+
+
+
+install R package (assume in pogs base directory to start with)
+------
+cd src/interface_r
+Edit interface_r/src/config.mk and choose TARGET as cpu or gpu (currently defaulted to gpu).
+R CMD INSTALL --build pogs
+
+test R package
+------
+cd ../../
+cd examples/R
+R CMD BATCH simple.R
+
+
+
+
+Details
+-----------------------------------
+
 - The GitHub.io page contains [Documentation](http://foges.github.io/pogs).
-- We recently posted a [paper](http://stanford.edu/~boyd/papers/pogs.html) online, with details about the implementation, as well as many numerical examples.
+- A [paper](http://stanford.edu/~boyd/papers/pogs.html) online, with details about the implementation, as well as many numerical examples.
+
 
 ----
 A graph form problem can be expressed as
@@ -68,59 +112,7 @@ Authors
 Chris Fougner, with input from Stephen Boyd. The basic algorithm is from ["Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd"][block_splitting].
 
 
-Requirements
-------
-R, CUDA8 for GPU version
 
-To compile cpu version:
-------
-
-cd src ; make cpu
-
-   c library now in build/pogs.a, build/pogs_link.o, and build/cpu/pogs.o
-
-test (will compile as well if not already done)
-
-cd ../examples/c
-make cpu
-./run
-
-can change n and m to, say, m=5000 and n=100000
-105seconds for m=5000 and n=100000 on 16 core (32 hyperthreaded) Xeon E5-2687W
-can also test C++ in examples/cpp and examples/cpp_sp and test matlab in examples/matlab
-
-install R package
-------
-cd ../../src/interface_r
-
-look at README.md
-when editing interface_r/src/config.mk:
-     1) TARGET=cpu # can be chosen
-     2) On Ubuntu 16.04 LST, have to make link below because R stuff split:
-        sudo bash
-        cd /usr/lib/R/
-        ln -s /usr/share/R/include .
-then can follow rest of README.md
-
-test R package
-------
-cd examples/R
-R CMD BATCH simple.R
-
-
-
-
-To compile gpu version, as above, just replace "cpu" with "gpu" and if compile interface yourself, then install that package.
------
-
-for examples/c/lasso.c
-    ./run
-17s for m=5000 and n=100000 on Titan X (Pascal)
-So about 6X faster on 1 GPU than 16 core 3.1Ghz 20MB Cache Xeon (hyperthreading with 32 threads)
-
-for interface_r, in src/interface_r/src/config.mk:
-1) TARGET=cpu -> TARGET=gpu
-2) $(CUDA_HOME)/lib -> $(CUDA_HOME)/lib64 
 
 
 
