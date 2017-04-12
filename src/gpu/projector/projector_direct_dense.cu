@@ -153,10 +153,10 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   size_t min_dim = std::min(_A.Rows(), _A.Cols());
 
   // Set up views for raw vectors.
-  cml::vector<T> y_vec = cml::vector_view_array(y, _A.Rows());
-  const cml::vector<T> y0_vec = cml::vector_view_array(y0, _A.Rows());
-  cml::vector<T> x_vec = cml::vector_view_array(x, _A.Cols());
-  const cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols());
+  cml::vector<T> y_vec = cml::vector_view_array(y, _A.Rows()); // y^{k+1/2} to be updated to y^{k+1}
+  const cml::vector<T> y0_vec = cml::vector_view_array(y0, _A.Rows()); // \tilde{y}^{k} input only
+  cml::vector<T> x_vec = cml::vector_view_array(x, _A.Cols()); // x^{k+1/2} to be updated to x^{k+1}
+  const cml::vector<T> x0_vec = cml::vector_view_array(x0, _A.Cols()); // \tilde{x}^{k} input only
 
   // Set (x, y) = (x0, y0).
   cml::vector_memcpy(&x_vec, &x0_vec);
@@ -181,13 +181,13 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
       PUSH_RANGE("P1r_diagonal",P1r_diagonal,2);
       cml::matrix_memcpy(&L, &AA);
       cml::vector<T> diagL = cml::matrix_diagonal(&L); // vector view of diagonal of L
-      cml::vector_add_constant(&diagL, s);
+      cml::vector_add_constant(&diagL, s); // add s=kOne=1 to diagonal of L
       wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();
       POP_RANGE("P1r_diagonal",P1r_diagonal,2);
 
       PUSH_RANGE("P1r_cholesky_decomp",P1r_cholesky_decomp,2);
-      // L contains A, now get cholesky L
+      // L input contains AA + I, L on output has cholesky of input
       cml::linalg_cholesky_decomp(hdl, &L);
       wrapcudaDeviceSynchronize(); // not needed as next call is cuda call that will occur sequentially on device
       CUDA_CHECK_ERR();
@@ -200,11 +200,11 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
           static_cast<T>(1.), &x_vec);
       POP_RANGE("P1r_gemv(r>c)",P1r_gemvrgc,2);
       PUSH_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
-      // Solve LL^T x=b for x
+      // Solve LL^T x=b for x (where output for x_vec:= x^{k+1} := (A^T A + I)^{-1} (c + A^t d) in pogs paper)
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
       POP_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
       PUSH_RANGE("P1r_gemv2",P1r_gemv2,2);
-      // 1*A*x + 0*y -> y
+      // 1*A*x + 0*y -> y (y^{k+1} := A x^{k+1} in pogs paper)
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
       POP_RANGE("P1r_gemv2",P1r_gemv2,2);

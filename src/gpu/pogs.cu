@@ -430,20 +430,24 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     T proj_tol = kProjTolMin / std::pow(static_cast<T>(k + 1), kProjTolPow);
     proj_tol = std::max(proj_tol, kProjTolMax);
     // (x^{k+1},y^{k+1}) := Project(x^{k+1/2}+\tilde{x}^k , y^{k+1/2}+\tilde{y}^k)
+    // xtemp.data: \tilde{x}^k
+    // ytemp.data: \tilde{y}^k
+    // x.data: x^{k+1/2}
+    // y.data: y^{k+1/2}
     _P.Project(xtemp.data, ytemp.data, kOne, x.data, y.data, proj_tol);
     //cudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     CUDA_CHECK_ERR();
     POP_RANGE("project",project,9);
 
-    // Calculate residuals nrm_s and nrm_r
+    // Calculate residuals nrm_s (dual residual) and nrm_r (primary residual)
     PUSH_RANGE("resid",resid,9);
     cml::vector_memcpy(&ztemp, &zprev);
-    cml::blas_axpy(hdl, -kOne, &z, &ztemp);
+    cml::blas_axpy(hdl, -kOne, &z, &ztemp); // -1*z + ztemp -> ztemp
     wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     nrm_s = _rho * cml::blas_nrm2(hdl, &ztemp);
 
-    cml::vector_memcpy(&ztemp, &z12);
-    cml::blas_axpy(hdl, -kOne, &z, &ztemp);
+    cml::vector_memcpy(&ztemp, &z12); // z12 has both x^{k+1/2} and y^{k+1/2}
+    cml::blas_axpy(hdl, -kOne, &z, &ztemp); // -1*z + ztemp -> ztemp (i.e. -x^k + x^{k+1/2} -> xtemp and -y^k + y^{k+1/2} -> ytemp)
     wrapcudaDeviceSynchronize(); // not needed, as next call is cuda call and will follow sequentially on device
     nrm_r = cml::blas_nrm2(hdl, &ztemp);
 
