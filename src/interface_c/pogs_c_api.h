@@ -76,10 +76,10 @@ struct PogsSolutionD{
 
 
 
-void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A);
-void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A);
-void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
-void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
+void * pogs_init_dense_single(int wDev, enum ORD ord, size_t m, size_t n, const float *A);
+void * pogs_init_dense_double(int wDev, enum ORD ord, size_t m, size_t n, const double *A);
+void * pogs_init_sparse_single(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
+void * pogs_init_sparse_double(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
 int pogs_solve_single(void *work, struct PogsSettingsS *settings, struct PogsSolutionS *solution, struct PogsInfoS *info,
                       const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
                       const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h);

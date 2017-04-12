@@ -23,6 +23,7 @@ class BaseSolver(object):
 			self.n = A.shape[1]
 			self.A=A				
 			self.lib=lib
+			self.wDev=0
 
 			self.double_precision = A.dtype == c_double
 			self.settings = make_settings(self.double_precision, **kwargs)
@@ -32,14 +33,14 @@ class BaseSolver(object):
 			self.order = ORD["ROW_MAJ"] if (self.CSR or self.dense) else ORD["COL_MAJ"]
 			 
 			if self.dense and not self.double_precision:
-				self.work = self.lib.pogs_init_dense_single(self.order, self.m, self.n, cptr(A,c_float))
+				self.work = self.lib.pogs_init_dense_single(self.wDev, self.order, self.m, self.n, cptr(A,c_float))
 			elif self.dense:
-				self.work = self.lib.pogs_init_dense_double(self.order, self.m, self.n, cptr(A,c_double))
+				self.work = self.lib.pogs_init_dense_double(self.wDev, self.order, self.m, self.n, cptr(A,c_double))
 			elif not self.double_precision:
-				self.work = self.lib.pogs_init_sparse_single(self.order, self.m, self.n, A.nnz, cptr(A.data,c_float), 
+				self.work = self.lib.pogs_init_sparse_single(self.wDev, self.order, self.m, self.n, A.nnz, cptr(A.data,c_float),
 														 cptr(A.indices,c_int), cptr(A.indptr,c_int))
 			else:
-				self.work = self.lib.pogs_init_sparse_double(self.order, self.m, self.n, A.nnz, cptr(A.data,c_double),
+				self.work = self.lib.pogs_init_sparse_double(self.wDev, self.order, self.m, self.n, A.nnz, cptr(A.data,c_double),
 														 cptr(A.indices,c_int), cptr(A.indptr,c_int))
 		
 

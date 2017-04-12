@@ -11,10 +11,10 @@ try:
 	pogsGPU = CDLL(lib_path)
 
 	#argument types
-	pogsGPU.pogs_init_dense_single.argtypes = [c_int, c_size_t, c_size_t, c_float_p]
-	pogsGPU.pogs_init_dense_double.argtypes = [c_int, c_size_t, c_size_t, c_double_p]
-	pogsGPU.pogs_init_sparse_single.argtypes = [c_int, c_size_t, c_size_t, c_size_t, c_float_p, c_int_p, c_int_p]
-	pogsGPU.pogs_init_sparse_double.argtypes = [c_int, c_size_t, c_size_t, c_size_t, c_double_p, c_int_p, c_int_p]
+	pogsGPU.pogs_init_dense_single.argtypes = [c_int, c_int, c_size_t, c_size_t, c_float_p]
+	pogsGPU.pogs_init_dense_double.argtypes = [c_int, c_int, c_size_t, c_size_t, c_double_p]
+	pogsGPU.pogs_init_sparse_single.argtypes = [c_int, c_int, c_size_t, c_size_t, c_size_t, c_float_p, c_int_p, c_int_p]
+	pogsGPU.pogs_init_sparse_double.argtypes = [c_int, c_int, c_size_t, c_size_t, c_size_t, c_double_p, c_int_p, c_int_p]
 	pogsGPU.pogs_solve_single.argtypes = [c_void_p, settings_s_p, solution_s_p, info_s_p,
 										c_float_p, c_float_p, c_float_p, c_float_p, c_float_p, c_int_p,
 										c_float_p, c_float_p, c_float_p, c_float_p, c_float_p, c_int_p]

@@ -21,15 +21,15 @@ LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
-LDFLAGS=-lm -lblas
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse   -lcuda -lcurand  #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHEC\
+LDFLAGS=-lm -lblas -lgomp
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand -lgomp #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHEC\
 KERR -DDEBUG # 
 SHARED=so
 endif
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion 
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -fopenmp -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion 
 
 # POGS static libraries
 POGSLIB=\

@@ -353,20 +353,19 @@ void PogsShutdown(void * work){
 extern "C" {
 
 
-void * pogs_init_dense_single(enum ORD ord, size_t m, size_t n, const float *A){
-    return ord == COL_MAJ ? PogsInit<float>(m,n,A,'c') : PogsInit<float>(m,n,A,'r');   
+void * pogs_init_dense_single(int wDev, enum ORD ord, size_t m, size_t n, const float *A){
+    return ord == COL_MAJ ? PogsInit<float>(wDev, m,n,A,'c') : PogsInit<float>(wDev, m,n,A,'r');
 }
-void * pogs_init_dense_double(enum ORD ord, size_t m, size_t n, const double *A){
-    return ord == COL_MAJ ? PogsInit<double>(m,n,A,'c') : PogsInit<double>(m,n,A,'r');   
+void * pogs_init_dense_double(int wDev, enum ORD ord, size_t m, size_t n, const double *A){
+    return ord == COL_MAJ ? PogsInit<double>(wDev, m,n,A,'c') : PogsInit<double>(wDev, m,n,A,'r');
 }
-void * pogs_init_sparse_single(enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers){
-  return ord == COL_MAJ ? PogsInit<float>(m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<float>(m,n,nnz,nzvals,indices,pointers,'r');   
+void * pogs_init_sparse_single(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers){
+  return ord == COL_MAJ ? PogsInit<float>(wDev, m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<float>(wDev, m,n,nnz,nzvals,indices,pointers,'r');
 
 
 }
-void * pogs_init_sparse_double(enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers){
-  return ord == COL_MAJ ? PogsInit<double>(m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<double>(m,n,nnz,nzvals,indices,pointers,'r');   
-
+void * pogs_init_sparse_double(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers){
+  return ord == COL_MAJ ? PogsInit<double>(wDev, m,n,nnz,nzvals,indices,pointers,'c') : PogsInit<double>(wDev, m,n,nnz,nzvals,indices,pointers,'r');
 }
 
 int pogs_solve_single(void *work, PogsSettingsS *settings, PogsSolutionS *solution, PogsInfoS *info,
