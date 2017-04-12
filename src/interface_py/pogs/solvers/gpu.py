@@ -2,7 +2,7 @@ from pogs.libs.gpu import pogsGPU
 from pogs.solvers.base import BaseSolver
 
 if not pogsGPU:
-	print('\nWarning: Cannot create a POGS GPU Solver instance without linking Python module to a compiled POGS GPU libirary')
+	print('\nWarning: Cannot create a POGS GPU Solver instance without linking Python module to a compiled POGS GPU library')
 	print('> Setting pogs.SolverGPU=None')
 	print('> Use pogs.SolverCPU(args...) or add CUDA libraries to $PATH and re-run setup.py\n\n')
 	SolverGPU=None

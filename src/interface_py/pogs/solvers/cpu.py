@@ -3,7 +3,7 @@ from pogs.solvers.base import BaseSolver
 
 
 if not pogsCPU:
-	print('\nWarning: Cannot create a POGS CPU Solver instance without linking Python module to a compiled POGS CPU libirary')
+	print('\nWarning: Cannot create a POGS CPU Solver instance without linking Python module to a compiled POGS CPU library')
 	print('> Setting pogs.SolverCPU=None')
 	SolverCPU=None
 else:

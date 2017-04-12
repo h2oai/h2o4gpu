@@ -41,6 +41,14 @@ cd examples/R
 R CMD BATCH simple.R
 
 
+install python package (assume in pogs base directory to start with)
+-----
+cd src/interface_py
+python setup.py clean --all
+rm -rf pogs.egg-info
+rm -rf pogs/__pycache__/
+python setup.py install
+
 
 
 Details

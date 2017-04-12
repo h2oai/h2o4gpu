@@ -22,13 +22,14 @@ CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=-lm -lblas
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse   -lcuda -lcurand  #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHEC\
+KERR -DDEBUG # 
 SHARED=so
 endif
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion 
 
 # POGS static libraries
 POGSLIB=\
@@ -41,6 +42,9 @@ POGSLIB=\
 CUPOGSLIB=\
 	$(POGSROOT)/build/pogs_link.o \
 	$(POGSROOT)/build/gpu/pogs.o \
+	$(POGSROOT)/build/gpu/warmstart.o \
+	$(POGSROOT)/build/gpu/p2pbwcheck.o \
+	$(POGSROOT)/build/gpu/bwcheck.o \
 	$(POGSROOT)/build/gpu/matrix/matrix_dense.o \
 	$(POGSROOT)/build/gpu/matrix/matrix_sparse.o \
 	$(POGSROOT)/build/gpu/projector/projector_direct_dense.o \
