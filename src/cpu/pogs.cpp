@@ -17,9 +17,6 @@
 
 #include "timer.h"
 
-#define __HBAR__ \
-"----------------------------------------------------------------------------\n"
-
 namespace pogs {
 
 namespace {
@@ -59,6 +56,7 @@ Pogs<T, M, P>::Pogs(int ignored, const M &A)
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
   _lambda = new T[_A.Rows()]();
+  printLegalNotice();
 }
 
 template <typename T, typename M, typename P>

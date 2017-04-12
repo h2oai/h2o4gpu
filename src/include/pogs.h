@@ -104,6 +104,10 @@ const bool         kGapStop     = false;
 const int          knDev        = 1;
 const int          kwDev        = 0;
 
+#define __HBAR__ \
+"----------------------------------------------------------------------------\n"
+
+
 // Status messages
 enum PogsStatus { POGS_SUCCESS,    // Converged successfully.
                   POGS_INFEASIBLE, // Problem likely infeasible.
@@ -192,6 +196,17 @@ class Pogs {
     os << "Model training data: ";
     std::copy(_A.Data(), _A.Data() + _A.Rows()*_A.Cols(), std::ostream_iterator<T>(std::cout, "\n"));
     os << std::endl;
+  }
+  void printLegalNotice() {
+    Printf(__HBAR__
+        "           H2O AI GLM\n"
+        "           Version: %s\n"
+        "           (c) H2O.ai, Inc., 2017\n"
+        "           based on\n"
+        "           POGS 0.2.0 - Proximal Graph Solver\n"
+        "           (c) Christopher Fougner, Stanford University 2014-2015\n"
+        __HBAR__,
+        POGS_VERSION.c_str());
   }
 
   // Setters for parameters and initial values.

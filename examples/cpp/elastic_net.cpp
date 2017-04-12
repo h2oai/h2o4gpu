@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <random>
 
 #include "matrix/matrix_dense.h"
 #include "pogs.h"

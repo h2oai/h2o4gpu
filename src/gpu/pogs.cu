@@ -76,6 +76,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _init_x(false), _init_lambda(false) {
 
   CUDACHECK(cudaSetDevice(_wDev));
+  printLegalNotice();
 
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
