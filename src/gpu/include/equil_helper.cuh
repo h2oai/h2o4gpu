@@ -196,7 +196,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
     
   }// end over Sinkhorn Knopp iterations
 #ifndef DEBUG
-  fprintf(stderr,"Sinkhorn Knopp iterations=%d",k);
+  fprintf(stderr,"Sinkhorn Knopp iterations=%d\n",k);
 #endif
 
 }
