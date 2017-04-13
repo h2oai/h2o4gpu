@@ -23,7 +23,7 @@ for task in ["AlphaLambda", "Single"]:
   ax = mydf.plot.barh(figsize = (15,10), width = 0.7, logx = True, color = ['dodgerblue', 'lightcoral'])
 
   for i in ax.patches:
-      ax.text(i.get_width()+1, i.get_y()+.1, \
+      ax.text(np.exp(np.log(i.get_width())+0.05), i.get_y()+.1, \
               str(int((i.get_width()))), fontsize=16, color='k')
 
   ax.legend(ncol=3, loc="best", frameon=True)
