@@ -102,20 +102,8 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   this->_info = reinterpret_cast<void*>(info); // back to cast as void
   POP_RANGE("MDnew",MDnew,2);
 
-  if(A._wDev == _wDev){ // if on same device
-    // Copy Matrix from CPU to GPU.
-    PUSH_RANGE("MDsend",MDsend,1);
-    //    GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // back to cast as GpuData
-    double t0 = timer<double>();
-    cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
-    double t1 = timer<double>();
-    cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from CPU to GPU
-    double t2 = timer<double>();
-    printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
-    printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
-    POP_RANGE("MDsend",MDsend,1);
-
-    
+  if(A._wDev == _wDev){ // if on same device, just copy pointer
+    _data = A._data;
   }
   else{
     // Copy Matrix to from source GPU to this GPU
