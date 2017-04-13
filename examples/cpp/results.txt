@@ -5,7 +5,7 @@
 
 #algo                    runtime    RMSE    Notes
 h2oai.glm.2.cpu           6139      42092   mr-dl1 - bug - didn't converge
-h2oai.glm.1.gpu           1525      30895   aws p2.16xlarge
+h2oai.glm.1.gpu           1525      30895   aws p2.16xlarge (POGS: didn't standardize the response, lambda_min_ratio=1e-7, lambda_max*=10)
 h2oai.glm.2.gpu           1022      30895   aws p2.16xlarge
 h2oai.glm.4.gpu            586      30895   aws p2.16xlarge
 h2oai.glm.8.gpu            342      30895   aws p2.16xlarge
@@ -14,12 +14,10 @@ glmnet.2.cpu               354      31019   mr-dl1
 
 ## Reference: Single non-linear models (not tuned, best effort baseline models)
 #algo                     runtime   RMSE    Notes
-h2o.glm                     20      30883   alpha=0.5, LBFGS, disable early stopping, lambda_min_ratio=1e-7
-h2o.glm                     600     30557   alpha=0.5, AUTO, early stopping, beta_epsilon=1e-5, lambda_min_ratio=1e-7
-h2o.dl                      37      30299   mr-dl1
-h2o.dl                     180      29485   mr-dl1
-h2o.gbm.dense              142      28087   mr-dl1
-h2o.drf.dense              720      31387   ova - only 5 trees - 144 sec/tree
+h2o.glm                     50      29622   mr-dl1 AUTO, lambda_search, alpha=0.5
+h2o.dl                      60      29496   mr-dl1 hidden=[50,50,50]
+h2o.gbm.dense              142      28087   mr-dl1 default
+h2o.drf.dense              720      31387   mr-dl1 default ova - only 5 trees - 144 sec/tree
 h2o.xgboost.cpu.dense      148      29295   ova
 h2o.xgboost.cpu.sparse      62      28060   mr-dl1
 h2o.xgboost.gpu.sparse      28      29243   ova
