@@ -17,6 +17,7 @@ AlphaLambda TensorFlow.tf.learn        NaN       NaN
 
 ## Reference: Single non-linear models (not tuned, best effort baseline models)
 #Lambda     h2o.glm                     50      29622   "56aded8 tomas_COD_update mr-dl1 AUTO (COD), lambda_search, alpha=0.5"
+Single      Vowpal.Wabbit              13       40496   "defaults, single-threaded"
 Single      h2o.glm                     2       31310   "56aded8 tomas_COD_update mr-dl1 AUTO (COD), single lambda, alpha=0.5"
 Single      h2o.dl                      60      29496   "mr-dl1 hidden=[50,50,50]"
 Single      h2o.gbm.dense              142      28087   "mr-dl1 default"
