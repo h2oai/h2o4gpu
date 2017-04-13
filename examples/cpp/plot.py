@@ -38,5 +38,5 @@ for task in ["AlphaLambda", "Single"]:
   # # axis can be inverted using below line
   #ax.invert_yaxis()
 
-  plt.savefig("results" + task + ".png")
+  plt.savefig("results" + task + ".png", dpi=200)
   plt.close()
