@@ -9,10 +9,10 @@ template <typename T>
 class MatrixDense : public Matrix<T> {
  public:
   enum Ord {ROW, COL};
-
- private:
   // TODO: This should be shared cpu/gpu pointer?
   T *_data;
+
+ private:
 
   int _wDev;
   Ord _ord;

@@ -4,6 +4,7 @@ POGSROOT=../../src
 # Example Files
 EXSRC=lasso.cpp elastic_net.cpp
 EXSRC2=lasso.cpp elastic_net.cpp
+EXSRC3=elastic_net_mapd.cpp
 
 # C++ Flags
 CXX=g++
@@ -24,9 +25,9 @@ LDFLAGS=-lm -lblas
 CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
-all: gpualt
+all: gpualt gpumapd
 
-default: gpualt
+default: gpualt gpumapd
 
 # CPU
 cpu: run_all.cpp examples.h $(EXSRC)
@@ -37,6 +38,10 @@ cpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
 
+cpumapd: run_all.cpp examples.h $(EXSRC3)
+	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
@@ -45,6 +50,10 @@ gpu: run_all.cpp examples.h $(EXSRC)
 gpualt: run_all.cpp examples.h $(EXSRC2)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+
+gpumapd: run_all.cpp examples.h $(EXSRC3)
+	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
 
 clean:
