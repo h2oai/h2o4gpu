@@ -1,8 +1,6 @@
 import pogs as pogs
-import scipy as sp
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, sum, zeros
-from numpy.random import rand, randn
 
 
 '''
@@ -54,7 +52,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
   #s = Solver(sp.sparse.csc_matrix(A))
   s = Solver(A)
 
-  for i in range(nlambda):
+  for i in list(range(nlambda)):
     _lambda= exp( (log(lambda_max)*(nlambda-1-i)+1e-2*log(lambda_max)*i )/ (nlambda-1))
 
     g.c[:]=    alpha*_lambda
@@ -82,4 +80,10 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
   return runtime
 
 if __name__ == "__main__":
-   print("Cannot run in standalone mode.")
+  from numpy.random import rand,randn
+  m=100
+  n=10
+  A=randn(m,n)
+  x_true=(randn(n)/n)*float64(randn(n)<0.8)
+  b=A.dot(x_true)+0.5*randn(m)
+  ElasticNet(A, b, gpu=True, double_precision=True, nlambda=100, alpha=0.5)
