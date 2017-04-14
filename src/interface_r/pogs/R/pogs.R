@@ -350,8 +350,12 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
       } else {
         lambda.max = max(abs(t(x) %*% y)) / max(alpha, 1e-2)
       }
+      if (alpha==1) {
+        lambda.max = 2*lambda.max
+        lambda.min.ratio = 0.5*lambda.min.ratio
+      }
       lambda.min = lambda.max * lambda.min.ratio
-        lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
+      lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
     }
     for (i in 1:nlambda) {
       f[[i]] = list(h = kSquare(), c = weights, b = y)

@@ -217,12 +217,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 
     pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in pogs
-    //pogs_data.SetAdaptiveRho(false); // trying
-    //pogs_data.SetEquil(false); // trying
-    //pogs_data.SetRho(1E-4);
+//    pogs_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in pogs
+//    pogs_data.SetAdaptiveRho(true);
+    //pogs_data.SetEquil(false);
+//    pogs_data.SetRho(1);
     //pogs_data.SetVerbose(4);
-    //pogs_data.SetMaxIter(200);
+//    pogs_data.SetMaxIter(20000);
 
     int N=nAlphas; // number of alpha's
     if(N % nGPUs!=0){
@@ -235,8 +235,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
-      const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
+      const T alpha = N == 1 ? 1 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
       T lambda_max = lambda_max0/std::max(static_cast<T>(1e-2), alpha); // same as H2O
+      if (alpha==1) {
+        lambda_max *= 2;
+        lambda_min_ratio /= 2;
+      }
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
