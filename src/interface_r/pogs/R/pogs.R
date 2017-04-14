@@ -346,9 +346,9 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
   if (family == "gaussian") {
     if (is.null(lambda)) {
       if (intercept) {
-        lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / (alpha + 1e-3)
+        lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / max(alpha, 1e-2)
       } else {
-        lambda.max = max(abs(t(x) %*% y)) / (alpha + 1e-3)
+        lambda.max = max(abs(t(x) %*% y)) / max(alpha, 1e-2)
       }
       lambda.min = lambda.max * lambda.min.ratio
         lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
@@ -443,7 +443,7 @@ predict.pogsnet <- function(object, newx, s=NULL, type=c("link", "response", "cl
     beta = object$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
       object$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
   }
-  fitted = as.matrix(cbind2(1, newx) %*% beta) ## iff intercept=TRUE during fitting
+  fitted = as.matrix(cbind2(1, newx) %*% beta) ## iff intercept=TRUE during fitting ## FIXME PUT INTO MODEL STATE
   #fitted = as.matrix(newx %*% beta)           ## iff intercept=FALSE during fitting
   if (any(class(object) == "binomial")) {
     if (type == "response") {
