@@ -184,7 +184,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Signal start of execution.
   if (_verbose > 0) {
-    printMe(std::cout, g[0].c, g[0].e);
+    printMe(std::cout, g[1].c, g[1].e);
 //    printData(std::cout); //debugging - print matrix A
     Printf(__HBAR__
         "           H2O AI GLM\n"

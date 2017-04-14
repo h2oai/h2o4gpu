@@ -359,7 +359,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Signal start of execution.
   if (_verbose > 0) {
-    printMe(std::cout, g[0].c, g[0].e);
+    printMe(std::cout, g[1].c, g[1].e); //debugging only: print the second since the first can be for intercept (which is then 0)
     //printData(std::cout); //only works for data in host memory!
     Printf(__HBAR__
       "           H2O AI GLM\n"
