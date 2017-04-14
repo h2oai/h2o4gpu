@@ -157,6 +157,8 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
     // Run solver.
     INTEGER(status)[i] = pogs_data.Solve(f, g);
 
+    for(unsigned int j=0;j<n;j++) fprintf(stdout,"pogs_r.cpp: f[%d].c=%g .e=%g\n",j,f[j].c,f[j].e);
+
     // Get Solution
     memcpy(REAL(x) + i * n, pogs_data.GetX(), n * sizeof(T));
     memcpy(REAL(y) + i * m, pogs_data.GetY(), m * sizeof(T));

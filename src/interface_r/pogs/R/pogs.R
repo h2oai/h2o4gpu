@@ -356,6 +356,8 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
     for (i in 1:nlambda) {
       f[[i]] = list(h = kSquare(), c = weights, b = y)
       g[[i]] = list(h = kAbs(), c = alpha * lambda[i] * penalty.factor, e = (1 - alpha) * lambda[i] * penalty.factor)
+#      print(paste0("Rfg i,f,g,lambda,alpha,pf:",i," ",f[[i]]," ",g[[i]]," ",lambda[i]," ",alpha," ",penalty.factor))
+      print(paste0("Rfg i,lambda,alpha,pf:",i," ",lambda[i]," ",alpha," ",penalty.factor))
     }
   } else if (family == "binomial") {
     if (is.null(lambda)) {
