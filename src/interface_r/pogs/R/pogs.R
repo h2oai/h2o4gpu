@@ -392,6 +392,7 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
     }
   }
   fit$beta = Matrix(soln$x[,1:last], sparse=TRUE)
+  fit$intercept = intercept
   if (nlambda>1) {
     fit$df = apply(soln$x[-1,1:last], 2, function(x) { sum(x != 0) })
   } else {
@@ -443,8 +444,10 @@ predict.pogsnet <- function(object, newx, s=NULL, type=c("link", "response", "cl
     beta = object$beta[, lamlist$left, drop=FALSE] %*% Diagonal(x=lamlist$frac) + 
       object$beta[, lamlist$right, drop=FALSE] %*% Diagonal(x=1 - lamlist$frac)
   }
-  fitted = as.matrix(cbind2(1, newx) %*% beta) ## iff intercept=TRUE during fitting ## FIXME PUT INTO MODEL STATE
-  #fitted = as.matrix(newx %*% beta)           ## iff intercept=FALSE during fitting
+  if (object$intercept)
+    fitted = as.matrix(cbind2(1, newx) %*% beta)
+  else
+    fitted = as.matrix(newx %*% beta)
   if (any(class(object) == "binomial")) {
     if (type == "response") {
       fitted = 1 / (1 + exp(-fitted))
