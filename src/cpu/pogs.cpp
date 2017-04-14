@@ -104,7 +104,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolMin = static_cast<T>(1e-2);
   const T kProjTolPow = static_cast<T>(1.3);
   const T kProjTolIni = static_cast<T>(1e-5);
-  bool use_exact_stop = false;
+  bool use_exact_stop = true;
 
   // Initialize Projector P and Matrix A.
   if (!_done_init)
