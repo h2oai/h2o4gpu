@@ -357,15 +357,15 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   n+=intercept;
   cout << "Rows in training data: " << trainY.size() << endl;
 
-  // DEBUG START
-  for (int i=0;i<m;++i) {
-    for (int j=0;j<n;++j) {
-      cout << trainX[i*n+j] << " ";
-    }
-    cout << " -> " << trainY[i] << "\n";
-    cout << "\n";
-  }
-  // DEBUG END
+//  // DEBUG START
+//  for (int i=0;i<m;++i) {
+//    for (int j=0;j<n;++j) {
+//      cout << trainX[i*n+j] << " ";
+//    }
+//    cout << " -> " << trainY[i] << "\n";
+//    cout << "\n";
+//  }
+//  // DEBUG END
 
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
