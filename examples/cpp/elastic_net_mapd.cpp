@@ -50,7 +50,9 @@ T getVarV(std::vector<T>& v, T mean) {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
 template <typename T>
-double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction, void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
+                     size_t mTrain, size_t n, size_t mValid, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
+                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -76,7 +78,9 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord, siz
   // for source, create class objects that creates cuda memory, cpu memory, etc.
   // This takes-in raw GPU pointer 
   //  pogs::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
-  pogs::MatrixDense<T> Asource_(sourceDev, datatype, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
+  pogs::MatrixDense<T> Asource_(sourceDev, datatype, ord, mTrain, n, mValid,
+                                reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
+                                reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
 
 
@@ -234,15 +238,26 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord, siz
   return tf-t1;
 }
 
+// Upload to GPU and return GPU pointers
+template <typename T>
+void makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+             T* trainX, T * trainY, T* validX, T* validY,  //CPU
+             void**a, void**b, void**c, void**d)  // GPU
+{
+  // generate pointer to mimic mapd
+  pogs::MatrixDense <T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
+  *a = reinterpret_cast<void*>(Asource_._data);
+  *b = reinterpret_cast<void*>(Asource_._datay);
+  *c = reinterpret_cast<void*>(Asource_._vdata);
+  *d = reinterpret_cast<void*>(Asource_._vdatay);
+}
+
 // m and n are full data set size before splitting
 template <typename T>
 double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, double validFraction) {
 
   // read data and do train-valid split
-  std::vector <T> trainX;
-  std::vector <T> trainY;
-  std::vector <T> validX;
-  std::vector <T> validY;
+  std::vector <T> trainX, trainY, validX, validY;
   size_t mValid = static_cast<size_t>(m * validFraction);
   size_t mTrain = 0;
   {
@@ -254,11 +269,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     double t0 = timer<double>();
 
     // choose to generate or read-in data
-    int generate=0;    
+    int generate = 0;
+
 #include "readorgen.c"
 
     double t1 = timer<double>();
-    cout << "END FILL DATA. Took " << t1-t0 << " secs" << endl;
+    cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
 
     cout << "START TRAIN/VALID SPLIT" << endl;
     // Split A/b into train/valid, via head/tail
@@ -276,7 +292,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
         //        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
       }
     }
-    if (mValid>0) {
+    if (mValid > 0) {
       validX.resize(mValid * n);
       validY.resize(mValid);
       for (int i = 0; i < mValid; ++i) { //rows
@@ -291,8 +307,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   }
   cout << "Rows in training data: " << trainY.size() << endl;
 
-
-  
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
   T sdTrainY = std::sqrt(getVarV(trainY, meanTrainY));
@@ -321,8 +335,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 */
   }
 
-
-
+  // TODO: compute on the GPU - inside of ElasticNetPtr
   // set lambda max 0 (i.e. base lambda_max)
   T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
@@ -338,7 +351,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
-  
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
 #define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
 #define DOBWCHECK 0
@@ -350,8 +362,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   warmstart(1000000,nGPUs);
 #endif
 #endif
-  
-#if(DOP2PCHECK)  
+
+#if(DOP2PCHECK)
 #ifdef HAVECUDA
   // do peer-to-peer bandwidth check
   extern int p2pbwcheck(void);
@@ -359,41 +371,25 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 #endif
 #endif
 
-#if(DOBWCHECK)  
+#if(DOBWCHECK)
 #ifdef HAVECUDA
   // do bandwidth check
   extern int bwcheck(void);
   bwcheck();
 #endif
 #endif
-  
-/*
-  fprintf(stdout,"waiting for AWS GPUs to go live.");
-  fflush(stdout);
-  sleep(200);
-  fprintf(stdout,"AWS ready - starting with GLM.");
-  fflush(stdout);
-*/
+  // Push data from CPU to GPU
+  void* a;
+  void* b;
+  void* c;
+  void* d;
+  int sourceDev=0; //index of first GPU to own data
+  makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
 
-
-  // generate pointer to mimic mapd
-  int sourceDev=0;
-  // inputted data casted as const in function call
-  //  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, trainX.data()); // original, will still work
-  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data());
-
-
-  //  Asource_._m, Asource_._n
-  int datatype=1; // data pointers on GPU
-  double dt=ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, reinterpret_cast<void*>(Asource_._data), reinterpret_cast<void*>(Asource_._datay), reinterpret_cast<void*>(Asource_._vdata), reinterpret_cast<void*>(Asource_._vdatay));
-  return dt;
-
+  int datatype = 1;
+  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, a, b, c, d);
 }
-
-
 
 template double ElasticNet<double>(size_t m, size_t n, int, int, int, double);
 template double ElasticNet<float>(size_t m, size_t n, int, int, int, double);
-//template double ElasticNetptr<double>(size_t m, size_t n, int, double, double, int, int, double, std::vector <double> &, std::vector <double> &, std::vector <double> &, std::vector <double> &, void *, int);
-//template double ElasticNetptr<float>(size_t m, size_t n, int, float, float, int, int, double, std::vector <float> &, std::vector <float> &, std::vector <float> &, std::vector <float> &, void *, int);
 
