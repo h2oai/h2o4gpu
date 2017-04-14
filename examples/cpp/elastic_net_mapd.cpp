@@ -43,6 +43,79 @@ T getVarV(std::vector<T>& v, T mean) {
   return static_cast<T>(var/(v.size()-1));
 }
 
+template<typename T>
+void fillData(std::vector<T>& trainX, std::vector<T>& trainY,
+              std::vector<T>& validX, std::vector<T>& validY,
+              size_t m, size_t n, size_t mValid, int intercept) {
+// allocate matrix problem to solve
+  std::vector <T> A(m * n);
+  std::vector <T> b(m);
+
+  cout << "START FILL DATA\n" << endl;
+  double t0 = timer<double>();
+
+// choose to generate or read-in data
+  int generate = 0;
+
+#include "readorgen.c"
+
+  double t1 = timer<double>();
+  cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
+
+  cout << "START TRAIN/VALID SPLIT" << endl;
+// Split A/b into train/valid, via head/tail
+  size_t mTrain = m - mValid;
+
+// If intercept == 1, add one extra column at the end, all constant 1s
+  n += intercept;
+
+// Alloc
+  trainX.resize(mTrain * n);
+  trainY.resize(mTrain);
+
+  for (int i = 0; i < mTrain; ++i) { //rows
+    trainY[i] = b[i];
+//      cout << "y[" << i << "] = " << b[i] << endl;
+    for (int j = 0; j < n - intercept; ++j) { //cols
+      trainX[i * n + j] = A[i * (n-intercept) + j];
+//        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
+    }
+    if (intercept) {
+      trainX[i * n + n - 1] = 1;
+    }
+  }
+  if (mValid > 0) {
+    validX.resize(mValid * n);
+    validY.resize(mValid);
+    for (int i = 0; i < mValid; ++i) { //rows
+      validY[i] = b[mTrain + i];
+      for (int j = 0; j < n - intercept; ++j) { //cols
+        validX[i * n + j] = A[(mTrain + i) * (n-intercept) + j];
+      }
+      if (intercept) {
+        validX[i * n + n] = 1;
+      }
+    }
+  }
+  cout << "END TRAIN/VALID SPLIT" << endl;
+  fflush(stdout);
+}
+
+// Upload to GPU and return GPU pointers
+template <typename T>
+void makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+             T* trainX, T * trainY, T* validX, T* validY,  //CPU
+             void**a, void**b, void**c, void**d)  // GPU
+{
+  // generate pointer to mimic mapd
+  pogs::MatrixDense <T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
+  *a = reinterpret_cast<void*>(Asource_._data);
+  *b = reinterpret_cast<void*>(Asource_._datay);
+  *c = reinterpret_cast<void*>(Asource_._vdata);
+  *d = reinterpret_cast<void*>(Asource_._vdatay);
+}
+
+
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
@@ -51,8 +124,19 @@ T getVarV(std::vector<T>& v, T mean) {
 // m and n are training data size
 template <typename T>
 double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
-                     size_t mTrain, size_t n, size_t mValid, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
+                     size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
+                     double sdTrainY, double meanTrainY,
                      void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+
+  if (intercept!=0 and intercept!=1) {
+    cerr << "intercept must be a boolean: 0 or 1\n";
+    exit(-1);
+  }
+
+  if (validFraction<0 or validFraction>=1) {
+    cerr << "validFraction must be in [0, 1)\n";
+    exit(-1);
+  }
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -152,7 +236,7 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
       const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
-      T lambda_max = 10*lambda_max0; ///(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
+      T lambda_max = lambda_max0/std::max(static_cast<T>(1e-2), alpha); // same as H2O
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
@@ -167,31 +251,44 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
       T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
 
-      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]);//, weights); // pogs.R
-      for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
+      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
+      for (unsigned int j = 0; j < n-intercept; ++j) g.emplace_back(kAbs);
+      if (intercept) g.emplace_back(kZero);
+
+      // Regularization path: geometric series from lambda_max to lambda_min
+      std::vector<T> lambdas(nlambda);
+      double dec = std::pow(lambda_min_ratio, 1.0/(nlambda - 1.));
+      lambdas[0] = lambda_max;
+      for (int i = 1; i < nlambda; ++i)
+        lambdas[i] = lambdas[i-1] * dec;
 
       fprintf(fil,"alpha%f\n", alpha);
-      for (int i = 0; i < nlambda; ++i){
+      for (int i = 0; i < nlambda; ++i) {
+        T lambda = lambdas[i];
+        fprintf(fil, "lambda %d = %f\n", i, lambda);
 
-        // starts at lambda_max and goes down to 1E-2 lambda_max in exponential spacing
-        //T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) + lambda_min * (float)i) / ((float)nlambda - 1.0f));
-        T lambda = std::exp((std::log(lambda_max) * ((float)nlambda - 1.0f - (float)i) +
-                             std::log(lambda_min) * (float)i) / ((float)nlambda - 1.0f));
-        fprintf(fil,"lambda %d = %f\n", i, lambda);
-
-        // assign lambda
-        for (unsigned int j = 0; j < n; ++j) {
-          g[j].c = static_cast<T>(alpha*lambda*penalty_factor); //for L1
-          g[j].e = static_cast<T>((1.0-alpha)*lambda*penalty_factor); //for L2
+        // assign lambda (no penalty for intercept, the last coeff, if present)
+        for (unsigned int j = 0; j < n - intercept; ++j) {
+          g[j].c = static_cast<T>(alpha * lambda * penalty_factor); //for L1
+          g[j].e = static_cast<T>((1.0 - alpha) * lambda * penalty_factor); //for L2
+        }
+        if (intercept) {
+          g[n - 1].c = 0;
+          g[n - 1].e = 0;
         }
 
         // Solve
         fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
         fflush(fil);
         pogs_data.Solve(f, g);
+        if (intercept) {
+          fprintf(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
+          fprintf(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
+          fflush(stdout);
+        }
 
         size_t dof = 0;
-        for (size_t i=0; i<n; ++i) {
+        for (size_t i=0; i<n-intercept; ++i) {
           if (std::abs(pogs_data.GetX()[i]) > 1e-8) {
             dof++;
           }
@@ -201,12 +298,10 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
           for (size_t j=0; j<n; ++j) {
             trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
-          /*
           // reverse standardization
           trainPreds[i]*=sdTrainY; //scale
           trainPreds[i]+=meanTrainY; //intercept
           //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
-          */
         }
         double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
 
@@ -217,11 +312,9 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
             for (size_t j=0; j<n; ++j) {
               validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
-            /*
             // reverse (fitted) standardization
             validPreds[i]*=sdTrainY; //scale
             validPreds[i]+=meanTrainY; //intercept
-            */
           }
           validRMSE = getRMSE(mValid, &validPreds[0], validY);
         }
@@ -238,74 +331,26 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
   return tf-t1;
 }
 
-// Upload to GPU and return GPU pointers
-template <typename T>
-void makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
-             T* trainX, T * trainY, T* validX, T* validY,  //CPU
-             void**a, void**b, void**c, void**d)  // GPU
-{
-  // generate pointer to mimic mapd
-  pogs::MatrixDense <T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
-  *a = reinterpret_cast<void*>(Asource_._data);
-  *b = reinterpret_cast<void*>(Asource_._datay);
-  *c = reinterpret_cast<void*>(Asource_._vdata);
-  *d = reinterpret_cast<void*>(Asource_._vdatay);
-}
-
 // m and n are full data set size before splitting
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, double validFraction) {
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, double validFraction) {
 
   // read data and do train-valid split
-  std::vector <T> trainX, trainY, validX, validY;
+  std::vector<T> trainX, trainY, validX, validY;
   size_t mValid = static_cast<size_t>(m * validFraction);
-  size_t mTrain = 0;
-  {
-    // allocate matrix problem to solve
-    std::vector <T> A(m * n);
-    std::vector <T> b(m);
-
-    cout << "START FILL DATA\n" << endl;
-    double t0 = timer<double>();
-
-    // choose to generate or read-in data
-    int generate = 0;
-
-#include "readorgen.c"
-
-    double t1 = timer<double>();
-    cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
-
-    cout << "START TRAIN/VALID SPLIT" << endl;
-    // Split A/b into train/valid, via head/tail
-    mTrain = m - mValid;
-
-    // Alloc
-    trainX.resize(mTrain * n);
-    trainY.resize(mTrain);
-
-    for (int i = 0; i < mTrain; ++i) { //rows
-      trainY[i] = b[i];
-      //      cout << "y[" << i << "] = " << b[i] << endl;
-      for (int j = 0; j < n; ++j) { //cols
-        trainX[i * n + j] = A[i * n + j];
-        //        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
-      }
-    }
-    if (mValid > 0) {
-      validX.resize(mValid * n);
-      validY.resize(mValid);
-      for (int i = 0; i < mValid; ++i) { //rows
-        validY[i] = b[mTrain + i];
-        for (int j = 0; j < n; ++j) { //cols
-          validX[i * n + j] = A[(mTrain + i) * n + j];
-        }
-      }
-    }
-    cout << "END TRAIN/VALID SPLIT" << endl;
-    fflush(stdout);
-  }
+  size_t mTrain = m - mValid;
+  fillData(trainX, trainY, validX, validY, m, n, mValid, intercept);
+  n+=intercept;
   cout << "Rows in training data: " << trainY.size() << endl;
+
+//  // DEBUG START
+//  for (int i=0;i<m;++i) {
+//    for (int j=0;j<n;++j) {
+//      cout << trainX[i*n+j] << " ";
+//    }
+//    cout << "\n";
+//  }
+//  // DEBUG END
 
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
@@ -313,12 +358,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   cout << "Mean trainY: " << meanTrainY << endl;
   cout << "StdDev trainY: " << sdTrainY << endl;
   // standardize the response for training data
-/*
   for (size_t i=0; i<trainY.size(); ++i) {
     trainY[i] -= meanTrainY;
     trainY[i] /= sdTrainY;
   }
-*/
 
   // Validation mean and stddev
   if (!validY.empty()) {
@@ -326,13 +369,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     cout << "Mean validY: " << meanValidY << endl;
     cout << "StdDev validY: " << std::sqrt(getVarV(validY, meanValidY)) << endl;
-/*
     // standardize the response the same way as for training data ("apply fitted transform during scoring")
     for (size_t i=0; i<validY.size(); ++i) {
       validY[i] -= meanTrainY;
       validY[i] /= sdTrainY;
     }
-*/
   }
 
   // TODO: compute on the GPU - inside of ElasticNetPtr
@@ -341,14 +382,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += trainX[i + j * mTrain] * (trainY[i] - meanTrainY /*meanTrainY after standardization*/);
+      u += trainX[i + j * mTrain] * trainY[i];
     }
-    //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
-    lambda_max0 = std::max(lambda_max0, std::abs(u));
+    T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
+    lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = (m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
@@ -387,9 +428,9 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
 
   int datatype = 1;
-  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, a, b, c, d);
+  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, sdTrainY, meanTrainY, a, b, c, d);
 }
 
-template double ElasticNet<double>(size_t m, size_t n, int, int, int, double);
-template double ElasticNet<float>(size_t m, size_t n, int, int, int, double);
+template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, double);
+template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, double);
 

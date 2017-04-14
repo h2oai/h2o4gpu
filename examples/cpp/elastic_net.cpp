@@ -41,7 +41,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, double validFraction) {
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int ignored_intercept/*FIXME*/, double validFraction) {
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -341,6 +341,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   return tf-t1;
 }
 
-template double ElasticNet<double>(size_t m, size_t n, int, int, int, double);
-template double ElasticNet<float>(size_t m, size_t n, int, int, int, double);
+template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, double);
+template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, double);
 
