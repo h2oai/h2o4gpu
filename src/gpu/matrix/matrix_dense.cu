@@ -51,10 +51,16 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+  // original MatrixDense where only trainX and no trainY or validX or validY
+  // Used by elastic_net.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
-  : _wDev(wDev), Matrix<T>(m, n), _data(0) {
+  : _wDev(wDev), Matrix<T>(m, n, 0), _datatype(0),_data(0) {
   CUDACHECK(cudaSetDevice(_wDev));
+  _datay=NULL;
+  _vdata=NULL;
+  _vdatay=NULL;
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -70,11 +76,12 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
 #endif
   
   // Set GPU specific _info.
+
+
   PUSH_RANGE("MDnew",MDnew,1);
   GpuData<T> *info = new GpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   this->_info = reinterpret_cast<void*>(info);
   POP_RANGE("MDnew",MDnew,1);
-
 
   // Copy Matrix to GPU.
   PUSH_RANGE("MDsend",MDsend,1);
@@ -87,32 +94,202 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
   printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
   POP_RANGE("MDsend",MDsend,1);
+}
+  // datatype=0: CPU pointer to data
+  // datatype=1: GPU pointer to data
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data)
+  : _wDev(wDev), Matrix<T>(m, n, 0), _datatype(datatype),_data(0) {
+  CUDACHECK(cudaSetDevice(_wDev));
+  _datay=NULL;
+  _vdata=NULL;
+  _vdatay=NULL;
 
+  ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
+  _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+
+  
+  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
+  
+#ifdef _DEBUG
+  //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+  cudaDeviceProp props;
+  CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
+  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
+#endif
+  
+  // Set GPU specific _info.
+
+  if(datatype==1){
+    // source pointer is on this GPU
+    // no info->orig_data, so send 0 to GpuData
+    PUSH_RANGE("MDnew",MDnew,1);
+    GpuData<T> *info = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    this->_info = reinterpret_cast<void*>(info);
+    POP_RANGE("MDnew",MDnew,1);
+
+    // just copy GPU pointer
+    _data = data;
+  }
+  else{
+    fprintf(stderr,"Not setup to copy non constant CPU pointer to GPU\n");
+    exit(0);
+  }
+}
+  // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
+  // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
+  _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+
+  
+  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+  
+#ifdef _DEBUG
+  //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+  cudaDeviceProp props;
+  CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
+  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
+#endif
+
+
+  // source pointer is on CPU
+  // Set GPU specific _info.
+  PUSH_RANGE("MDnew",MDnew,1);
+  GpuData<T> *info = new GpuData<T>(data); // new structure (holds pointer to data and GPU handle)
+  GpuData<T> *infoy = new GpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
+  GpuData<T> *vinfo = new GpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
+  GpuData<T> *vinfoy = new GpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+  this->_info = reinterpret_cast<void*>(info);
+  this->_infoy = reinterpret_cast<void*>(infoy);
+  this->_vinfo = reinterpret_cast<void*>(vinfo);
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  POP_RANGE("MDnew",MDnew,1);
+
+
+  // Copy Matrix to GPU.
+  PUSH_RANGE("MDsend",MDsend,1);
+  //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
+  double t0 = timer<double>();
+  cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
+  cudaMalloc(&_datay, this->_m * sizeof(T)); // allocate on GPU
+  cudaMalloc(&_vdata, this->_mvalid * this->_n * sizeof(T)); // allocate on GPU
+  cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
+  double t1 = timer<double>();
+  cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+  cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+  cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+  cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+  double t2 = timer<double>();
+  printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+  printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+  POP_RANGE("MDsend",MDsend,1);
+}
+  // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
+  // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
+  // datatype=0: CPU pointer to data
+  // datatype=1: GPU pointer to data
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
+  _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+
+  
+  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+  
+#ifdef _DEBUG
+  //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+  cudaDeviceProp props;
+  CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
+  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
+#endif
+
+
+  if(datatype==1){
+    // source pointer is on GPU already
+    // Set GPU specific _info.
+    PUSH_RANGE("MDnew",MDnew,1);
+    GpuData<T> *info = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *infoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *vinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *vinfoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    this->_info = reinterpret_cast<void*>(info);
+    this->_infoy = reinterpret_cast<void*>(infoy);
+    this->_vinfo = reinterpret_cast<void*>(vinfo);
+    this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    POP_RANGE("MDnew",MDnew,1);
+
+
+    // Just copy pointer
+    _data = data;
+    _datay = datay;
+    _vdata = vdata;
+    _vdatay = vdatay;
+  }
+  else{
+    fprintf(stderr,"Not setup to copy non constant CPU pointer to GPU\n");
+    exit(0);
+  }
 }
 
+
+  // MatrixDense where input actual A object that contains all CPU information, but need to go from 1 GPU to multiple GPU
+  // Used by elastic_net_mapd.cpp inside openmp loop for each core
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
-  : _wDev(wDev), Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
+  : _wDev(wDev), Matrix<T>(A._m, A._n, A._mvalid), _data(0), _ord(A._ord) {
 
   CUDACHECK(cudaSetDevice(_wDev));
   
   PUSH_RANGE("MDnew",MDnew,2);
-  GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info); // cast from void to GpuData
-  GpuData<T> *info = new GpuData<T>(info_A->orig_data); // create new GpuData structure with point to CPU data
+  GpuData<T> *info_A   = reinterpret_cast<GpuData<T>*>(A._info); // cast from void to GpuData
+  GpuData<T> *infoy_A  = reinterpret_cast<GpuData<T>*>(A._infoy); // cast from void to GpuData
+  GpuData<T> *vinfo_A  = reinterpret_cast<GpuData<T>*>(A._vinfo); // cast from void to GpuData
+  GpuData<T> *vinfoy_A = reinterpret_cast<GpuData<T>*>(A._vinfoy); // cast from void to GpuData
+  
+  GpuData<T> *info;
+  GpuData<T> *infoy;
+  GpuData<T> *vinfo;
+  GpuData<T> *vinfoy;
+  if(A._data) info = new GpuData<T>(info_A->orig_data); // create new GpuData structure with point to CPU data
+  if(A._datay) infoy  = new GpuData<T>(infoy_A->orig_data); // create new GpuData structure with point to CPU data
+  if(A._vdata) vinfo  = new GpuData<T>(vinfo_A->orig_data); // create new GpuData structure with point to CPU data
+  if(A._vdatay) vinfoy = new GpuData<T>(vinfoy_A->orig_data); // create new GpuData structure with point to CPU data
+  
   this->_info = reinterpret_cast<void*>(info); // back to cast as void
+  this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
+  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void
   POP_RANGE("MDnew",MDnew,2);
 
+
   if(A._wDev == _wDev){ // if on same device, just copy pointer
-    _data = A._data;
+    _data   = A._data;
+    _datay  = A._datay;
+    _vdata  = A._vdata;
+    _vdatay = A._vdatay;
   }
   else{
     // Copy Matrix to from source GPU to this GPU
     PUSH_RANGE("MDcopy",MDcopy,1);
     //GpuData<T> *info = reinterpret_cast<GpuData<T>*>(_info); // cast void -> GpuData
     double t0 = timer<double>();
-    cudaMalloc(&_data, A._m * A._n * sizeof(T)); // allocate on GPU
+    if(A._data) cudaMalloc(&_data, A._m * A._n * sizeof(T)); // allocate on GPU
+    if(A._datay) cudaMalloc(&_datay, A._m * sizeof(T)); // allocate on GPU
+    if(A._vdata) cudaMalloc(&_vdata, A._mvalid * A._n * sizeof(T)); // allocate on GPU
+    if(A._vdatay) cudaMalloc(&_vdatay, A._mvalid * sizeof(T)); // allocate on GPU
     double t1 = timer<double>();
-    cudaMemcpyPeer(_data, _wDev, A._data, A._wDev, A._m * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+    if(A._data) cudaMemcpyPeer(_data, _wDev, A._data, A._wDev, A._m * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+    if(A._datay) cudaMemcpyPeer(_datay, _wDev, A._datay, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+    if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+    if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
     double t2 = timer<double>();
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
@@ -134,6 +311,21 @@ MatrixDense<T>::~MatrixDense() {
     this->_data = 0;
     DEBUG_CUDA_CHECK_ERR();
   }
+  if (this->_done_init && _datay) {
+    cudaFree(_datay);
+    this->_datay = 0;
+    DEBUG_CUDA_CHECK_ERR();
+  }
+  if (this->_done_init && _vdata) {
+    cudaFree(_vdata);
+    this->_vdata = 0;
+    DEBUG_CUDA_CHECK_ERR();
+  }
+  if (this->_done_init && _vdatay) {
+    cudaFree(_vdatay);
+    this->_vdatay = 0;
+    DEBUG_CUDA_CHECK_ERR();
+  }
 }
       
 template <typename T>
@@ -151,6 +343,70 @@ int MatrixDense<T>::Init() {
 
   return 0;
 }
+
+template <typename T>
+void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  if(datatype==1){
+    cudaMemcpy(*data, _data, size* sizeof(T),cudaMemcpyDeviceToHost);
+    CUDA_CHECK_ERR();
+  }
+  else{
+    *data = _data;
+  }
+
+  return;
+}
+template <typename T>
+void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  if(datatype==1){
+    cudaMemcpy(*data, _datay, size* sizeof(T),cudaMemcpyDeviceToHost);
+    CUDA_CHECK_ERR();
+  }
+  else{
+    *data = _datay;
+  }
+
+  return;
+}
+
+template <typename T>
+void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  if(datatype==1){
+    cudaMemcpy(*data, _vdata, size* sizeof(T),cudaMemcpyDeviceToHost);
+    CUDA_CHECK_ERR();
+  }
+  else{
+    *data = _vdata;
+  }
+
+  return;
+}
+template <typename T>
+void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  if(datatype==1){
+    cudaMemcpy(*data, _vdatay, size* sizeof(T),cudaMemcpyDeviceToHost);
+    CUDA_CHECK_ERR();
+  }
+  else{
+    *data = _vdatay;
+  }
+
+
+  return;
+}
+
 
 template <typename T>
 int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
@@ -182,6 +438,7 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 
   return 0;
 }
+
 
   // Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
   // See https://arxiv.org/pdf/1610.03871.pdf for more information

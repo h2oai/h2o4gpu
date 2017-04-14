@@ -15,11 +15,10 @@ using namespace pogs;
 using namespace std;
 
 template <typename T>
-T getRMSE(const T *v1, std::vector<T> *v2) {
+T getRMSE(size_t len, const T *v1, const T *v2) {
   double rmse = 0;
-  size_t len = v2->size();
   for (size_t i = 0; i < len; ++i) {
-    double d = v1[i] - (*v2)[i];
+    double d = v1[i] - v2[i];
     rmse += d*d;
   }
   rmse /= (double)len;
@@ -27,14 +26,22 @@ T getRMSE(const T *v1, std::vector<T> *v2) {
 }
 
 template <typename T>
-T getVar(std::vector<T>& v, T mean) {
+T getVar(size_t len, T *v, T mean) {
+  double var = 0;
+  for (size_t i = 0; i < len; ++i) {
+    var += (v[i]-mean) * (v[i]-mean);
+  }
+  return static_cast<T>(var/(len-1));
+}
+
+template <typename T>
+T getVarV(std::vector<T>& v, T mean) {
   double var = 0;
   for (size_t i = 0; i < v.size(); ++i) {
     var += (v[i]-mean) * (v[i]-mean);
   }
   return static_cast<T>(var/(v.size()-1));
 }
-
 
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
@@ -43,7 +50,7 @@ T getVar(std::vector<T>& v, T mean) {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
 template <typename T>
-double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction, std::vector <T> *trainX, std::vector <T> *trainY, std::vector <T> *validX, std::vector <T> *validY, void *sourceptr, int sourceDev) {
+double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction, void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -67,13 +74,32 @@ double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double l
 
 
   // for source, create class objects that creates cuda memory, cpu memory, etc.
-  pogs::MatrixDense<T> Asource_(sourceDev, 'r', m, n, reinterpret_cast<T *>(sourceptr));
+  // This takes-in raw GPU pointer 
+  //  pogs::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+  pogs::MatrixDense<T> Asource_(sourceDev, datatype, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
 
 
-
-
-
+  // temporarily get trainX, etc. from pogs (which may be on gpu)
+  T *trainX;
+  T *trainY;
+  T *validX;
+  T *validY;
+  if(datatype==1){
+    trainX=(T *)malloc(sizeof(T)*mTrain*n);
+    trainY=(T *)malloc(sizeof(T)*mTrain);
+    validX=(T *)malloc(sizeof(T)*mValid*n);
+    validY=(T *)malloc(sizeof(T)*mValid);
+  }
+  else{
+    // then will internally copy pointer so no need to allocate memory on CPU again
+  }
+  
+  Asource_.GetTrainX(datatype, mTrain*n, &trainX);
+  Asource_.GetTrainY(datatype, mTrain, &trainY);
+  Asource_.GetValidX(datatype, mValid*n, &validX);
+  Asource_.GetValidY(datatype, mValid, &validY);
+ 
   // Setup each thread's pogs
   double t = timer<double>();
   double t0 = 0;
@@ -117,6 +143,8 @@ double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double l
     fprintf(fil,"BEGIN SOLVE\n");
     fflush(fil);
     int a;
+
+
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
       const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
@@ -129,12 +157,13 @@ double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double l
       // setup f,g as functions of alpha
       std::vector<FunctionObj<T> > f;
       std::vector<FunctionObj<T> > g;
-      f.reserve(m);
+      f.reserve(mTrain);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
-      T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
-      for (unsigned int j = 0; j < m; ++j) f.emplace_back(kSquare, 1.0, (*trainY)[j]);//, weights); // pogs.R
+      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
+
+      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]);//, weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
       fprintf(fil,"alpha%f\n", alpha);
@@ -163,36 +192,36 @@ double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double l
             dof++;
           }
         }
-
-        std::vector<T> trainPreds((*trainY).size());
-        for (size_t i=0; i<(*trainY).size(); ++i) {
+        std::vector<T> trainPreds(mTrain);
+        for (size_t i=0; i<mTrain; ++i) {
           for (size_t j=0; j<n; ++j) {
-            trainPreds[i]+=pogs_data.GetX()[j]*(*trainX)[i*n+j]; //add predictions
+            trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
-/*
+          /*
           // reverse standardization
           trainPreds[i]*=sdTrainY; //scale
           trainPreds[i]+=meanTrainY; //intercept
           //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
-*/
+          */
         }
-        double trainRMSE = getRMSE(&trainPreds[0], &(*trainY));
+        double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
 
         double validRMSE = -1;
-        if (!(*validY).empty()) {
-          std::vector<T> validPreds((*validY).size());
-          for (size_t i=0; i<(*validY).size(); ++i) {
+        if (mValid>0) {
+          std::vector<T> validPreds(mValid);
+          for (size_t i=0; i<mValid; ++i) {
             for (size_t j=0; j<n; ++j) {
-              validPreds[i]+=pogs_data.GetX()[j]*(*validX)[i*n+j]; //add predictions
+              validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
-/*
+            /*
             // reverse (fitted) standardization
             validPreds[i]*=sdTrainY; //scale
             validPreds[i]+=meanTrainY; //intercept
-*/
+            */
           }
-          validRMSE = getRMSE(&validPreds[0], &(*validY));
+          validRMSE = getRMSE(mValid, &validPreds[0], validY);
         }
+
         fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
         fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
       }// over lambda
@@ -201,7 +230,7 @@ double ElasticNetptr(size_t m, size_t n, int nGPUs, double lambda_max0, double l
   } // end parallel region
 
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 m %d n %d twall %g tsolve %g\n",(int)m,(int)n,tf-t,tf-t1);
+  fprintf(stdout,"END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve %g\n",(int)mTrain,(int)n,(int)mValid,tf-t,tf-t1);
   return tf-t1;
 }
 
@@ -214,6 +243,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   std::vector <T> trainY;
   std::vector <T> validX;
   std::vector <T> validY;
+  size_t mValid = static_cast<size_t>(m * validFraction);
   size_t mTrain = 0;
   {
     // allocate matrix problem to solve
@@ -232,7 +262,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 
     cout << "START TRAIN/VALID SPLIT" << endl;
     // Split A/b into train/valid, via head/tail
-    size_t mValid = static_cast<size_t>(m * validFraction);
     mTrain = m - mValid;
 
     // Alloc
@@ -266,7 +295,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
   
   // Training mean and stddev
   T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-  T sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
+  T sdTrainY = std::sqrt(getVarV(trainY, meanTrainY));
   cout << "Mean trainY: " << meanTrainY << endl;
   cout << "StdDev trainY: " << sdTrainY << endl;
   // standardize the response for training data
@@ -282,7 +311,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
     cout << "Rows in validation data: " << validY.size() << endl;
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     cout << "Mean validY: " << meanValidY << endl;
-    cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
+    cout << "StdDev validY: " << std::sqrt(getVarV(validY, meanValidY)) << endl;
 /*
     // standardize the response the same way as for training data ("apply fitted transform during scoring")
     for (size_t i=0; i<validY.size(); ++i) {
@@ -347,13 +376,16 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, doub
 */
 
 
-  // generate source
+  // generate pointer to mimic mapd
   int sourceDev=0;
-  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, trainX.data());
+  // inputted data casted as const in function call
+  //  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, trainX.data()); // original, will still work
+  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data());
 
 
   //  Asource_._m, Asource_._n
-  double dt=ElasticNetptr<T>(mTrain, n, nGPUs, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, &trainX, &trainY, &validX, &validY, reinterpret_cast<void*>(Asource_._data), sourceDev);
+  int datatype=1; // data pointers on GPU
+  double dt=ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, reinterpret_cast<void*>(Asource_._data), reinterpret_cast<void*>(Asource_._datay), reinterpret_cast<void*>(Asource_._vdata), reinterpret_cast<void*>(Asource_._vdatay));
   return dt;
 
 }
