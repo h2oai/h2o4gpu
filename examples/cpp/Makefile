@@ -55,6 +55,9 @@ gpumapd: run_all.cpp examples.h $(EXSRC3)
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
 
+run: gpumapd
+	#./h2oai-glm-gpu-mapd 1 100 1 1 0
+	./h2oai-glm-gpu-mapd 1 100 1 0 0
 
 clean:
 	rm -f *.o *~ *~ run
