@@ -55,12 +55,49 @@ MatrixDense<T>::MatrixDense(int ignored, char ord, size_t m, size_t n, const T *
 }
 
 template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+    : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
+  _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+
+  CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
+  CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
+  CpuData<T> *vinfo = new CpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
+  CpuData<T> *vinfoy = new CpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+  this->_info = reinterpret_cast<void*>(info);
+  this->_infoy = reinterpret_cast<void*>(infoy);
+  this->_vinfo = reinterpret_cast<void*>(vinfo);
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+
+  _data = const_cast<T*>(data);
+  _datay = const_cast<T*>(datay);
+  _vdata = const_cast<T*>(vdata);
+  _vdatay = const_cast<T*>(vdatay);
+}
+
+template <typename T>
 MatrixDense<T>::MatrixDense(int ignored, const MatrixDense<T>& A)
     : Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
 
   CpuData<T> *info_A = reinterpret_cast<CpuData<T>*>(A._info);
   CpuData<T> *info = new CpuData<T>(info_A->orig_data);
   this->_info = reinterpret_cast<void*>(info);
+}
+
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(datatype),_data(data), _datay(datay), _vdata(vdata), _vdatay(vdatay) {
+  _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+
+  CpuData<T> *info = new CpuData<T>(0);
+  CpuData<T> *infoy = new CpuData<T>(0);
+  CpuData<T> *vinfo = new CpuData<T>(0);
+  CpuData<T> *vinfoy = new CpuData<T>(0);
+  this->_info = reinterpret_cast<void*>(info);
+  this->_infoy = reinterpret_cast<void*>(infoy);
+  this->_vinfo = reinterpret_cast<void*>(vinfo);
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy);
 }
 
 template <typename T>
@@ -88,19 +125,38 @@ int MatrixDense<T>::Init() {
 }
 
 template <typename T>
+void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
+  *data = _data;
+}
+template <typename T>
+void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
+  *data = _datay;
+}
+
+template <typename T>
+void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
+  *data = _vdata;
+}
+template <typename T>
+void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
+  *data = _vdatay;
+}
+
+
+  template <typename T>
 int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
-  DEBUG_EXPECT(this->_done_init);
-  if (!this->_done_init)
-    return 1;
+DEBUG_EXPECT(this->_done_init);
+if (!this->_done_init)
+  return 1;
 
-  const gsl::vector<T> x_vec = gsl::vector_view_array<T>(x, this->_n);
-  gsl::vector<T> y_vec = gsl::vector_view_array<T>(y, this->_m);
+const gsl::vector<T> x_vec = gsl::vector_view_array<T>(x, this->_n);
+gsl::vector<T> y_vec = gsl::vector_view_array<T>(y, this->_m);
 
-  if (_ord == ROW) {
-    gsl::matrix<T, CblasRowMajor> A =
-        gsl::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n);
-    gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta,
-        &y_vec);
+if (_ord == ROW) {
+  gsl::matrix<T, CblasRowMajor> A =
+      gsl::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n);
+  gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta,
+      &y_vec);
   } else {
     gsl::matrix<T, CblasColMajor> A =
         gsl::matrix_view_array<T, CblasColMajor>(_data, this->_m, this->_n);
@@ -252,6 +308,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
     MultCol(m, n, d, e, data);
   }
 }
+
 
 }  // namespace
 
