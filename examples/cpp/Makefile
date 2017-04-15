@@ -50,4 +50,6 @@ clean:
 	rm -rf runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
 	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-mapd
 	rm -rf *.dSYM
+	rm -rf core
+
 

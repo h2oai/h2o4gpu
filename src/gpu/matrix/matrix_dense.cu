@@ -95,8 +95,10 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
   POP_RANGE("MDsend",MDsend,1);
 }
-  // datatype=0: CPU pointer to data
-  // datatype=1: GPU pointer to data
+  // datatype=0: data CPU pointer to _data CPU pointer // NA
+  // datatype=1: data GPU pointer to _data GPU pointer
+  // datatype=2: data CPU pointer to _data GPU pointer // NA
+  // datatype=3: data CPU pointer to _data GPU pointer // NA
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data)
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(datatype),_data(0) {
