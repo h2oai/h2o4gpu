@@ -1,0 +1,38 @@
+# User Vars
+POGSROOT=../../src
+
+# Example Files
+EXSRC=elastic_net.cpp
+EXSRC2=elastic_net.cpp
+EXSRC3=elastic_net_mapd.cpp
+
+# C++ Flags
+CXX=g++
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+
+# Check System Args.
+UNAME = $(shell uname -s)
+ifeq ($(UNAME), Darwin)
+LDFLAGS=-lm -framework Accelerate
+else
+LDFLAGS=-lm -lblas
+endif
+
+all: cpu cpualt cpumapd
+
+default: cpualt cpumapd
+
+# CPU
+cpu: run_all.cpp examples.h $(EXSRC)
+	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+
+cpualt: run_all.cpp examples.h $(EXSRC2)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+
+cpumapd: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+
+clean:
+	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
+	rm -rf *.dSYM
+

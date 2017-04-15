@@ -1,0 +1,47 @@
+# User Vars
+POGSROOT=../../src
+
+# Example Files
+EXSRC=elastic_net.cpp
+EXSRC2=elastic_net.cpp
+EXSRC3=elastic_net_mapd.cpp
+
+# C++ Flags
+CXX=g++
+CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+
+
+# CUDA Flags
+CUDA_LIB=$(CUDA_HOME)/lib64
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include   -lcuda -lcurand #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
+
+# Check System Args.
+UNAME = $(shell uname -s)
+ifeq ($(UNAME), Darwin)
+CULDFLAGS=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS_)
+else
+CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
+endif
+
+all: gpu gpualt gpumapd
+
+default: gpualt gpumapd
+
+# GPU
+gpu: run_all.cpp examples.h $(EXSRC)
+	$(CXX) -DHAVECUDA $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
+
+gpualt: run_all.cpp examples.h $(EXSRC2)
+	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+
+gpumapd: run_all.cpp examples.h $(EXSRC3)
+	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+
+run: gpumapd
+	./h2oai-glm-gpu-mapd 1 100 1 1 0
+	#./h2oai-glm-gpu-mapd 1 100 1 0 0
+
+clean:
+	rm -f *.o *~ *~ rungpu h2oai-glm-gpu h2oai-glm-gpu-mapd
+	rm -rf *.dSYM
+
