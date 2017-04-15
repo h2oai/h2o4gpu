@@ -4,13 +4,13 @@ library(glmnet)
 library(data.table)
 #library(feather)
 library(MatrixModels)
-h2o.init(nthreads=-1)
 
-pogs  <-FALSE
+pogs  <-TRUE
 glmnet<-TRUE
 h2o   <-FALSE
-alpha <- .5
+alpha <- 1
 family <- "gaussian"
+intercept <- TRUE
 
 f <- "~/ipums_2000-2015.csv"
 response <- "INCEARN"
@@ -68,9 +68,8 @@ score <- function(model, preds, actual) {
 ## POGS GPU
 if (pogs) {
   s1 <- proc.time()
-  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE
-                 ,params=list(#rel_tol=1e-4, abs_tol=1e-4, rho=1, max_iter=20000,
-                             adaptive_rho=TRUE, equil=FALSE, wDev=0L)
+  pogs = pogsnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE, intercept=intercept, #lambda.min.ratio=1e-6,
+                 ,params=list(rel_tol=1e-4, abs_tol=1e-5, rho=1, max_iter=10000, adaptive_rho=FALSE, equil=FALSE, wDev=0L, verbose=4)
   )
   e1 <- proc.time()
   pogs_pred_y = predict(pogs, valid_x, type="response")
@@ -83,11 +82,12 @@ if (pogs) {
 
 ## GLMNET
 if (glmnet) {
-  library(foreach)
-  library(doMC)
-  registerDoMC(16)
-  foreach(a=1:16) %dopar% {
-    alpha = (a-1)/15
+#  library(foreach)
+#  library(doMC)
+#  registerDoMC(16)
+#  foreach(a=1:16) %dopar% {
+#    alpha = (a-1)/15
+    alpha = alpha
 
     if (family=="binomial") {
       y = as.factor(train_y)
@@ -95,7 +95,7 @@ if (glmnet) {
       y = train_y
     }
     s2 <- proc.time()
-    glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha)
+    glmnet = glmnet(x = train_x, y = y, family = family, alpha = alpha, standardize=FALSE, intercept=intercept)
     e2 <- proc.time()
     glmnet_pred_y = predict(glmnet, valid_x, type="response")
     
@@ -103,13 +103,15 @@ if (glmnet) {
     print(e2-s2)
     print(paste0("alpha:", alpha))
     glmnetbeta <- score(glmnet, glmnet_pred_y, valid_y)
-  }
+    print(glmnet)
+#  }
 }
 
 
 ## H2O 
 ## SEE ABOVE FOR MODEL ON DATA CREATION
 if (h2o) {
+  h2o.init(nthreads=-1)
   ## Quick H2O model
   if (FALSE) {
     h2oglm <- h2o.glm(alpha=alpha,training_frame=as.h2o(train),y=response,lambda_search = TRUE)
@@ -159,6 +161,7 @@ if (h2o) {
   }
 }
 
+quit()
 
 print("FAST SOLVER IN PROJECTED SPACE")
 
