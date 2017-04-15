@@ -346,11 +346,11 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
   if (family == "gaussian") {
     if (is.null(lambda)) {
       if (intercept) {
-        lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / max(alpha, 1e-2)
+        lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / max(alpha, 1e-3)
       } else {
-        lambda.max = max(abs(t(x) %*% y)) / max(alpha, 1e-2)
+        lambda.max = max(abs(t(x) %*% y)) / max(alpha, 1e-3)
       }
-      if (alpha==1) {
+      if (alpha==1 && nobs > 1e4) {
         lambda.max = 2*lambda.max
         lambda.min.ratio = 0.5*lambda.min.ratio
       }
