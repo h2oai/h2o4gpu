@@ -7,22 +7,23 @@ namespace pogs {
 
 template <typename T>
 class MatrixDense : public Matrix<T> {
+ private:
+  int _wDev;
+  int _datatype;
+
  public:
-  enum Ord {ROW, COL};
   // TODO: This should be shared cpu/gpu pointer?
   T *_data; // trainX
   T *_datay; // trainY
   T *_vdata;  // validX
   T *_vdatay; // validY
+  enum Ord {ROW, COL};
+
 
  private:
-
-  int _wDev;
-  int _datatype;
-  Ord _ord;
-
   // Get rid of assignment operator.
   MatrixDense<T>& operator=(const MatrixDense<T>& A);
+  Ord _ord;
 
  public:
   // Constructor (only sets variables)

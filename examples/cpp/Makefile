@@ -1,65 +1,53 @@
 # User Vars
 POGSROOT=../../src
 
-# Example Files
-EXSRC=lasso.cpp elastic_net.cpp
-EXSRC2=lasso.cpp elastic_net.cpp
-EXSRC3=elastic_net_mapd.cpp
+.NOTPARALLEL:
 
-# C++ Flags
-CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+all: cpuall gpuall
 
-
-# CUDA Flags
-CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include   -lcuda -lcurand #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
-
-# Check System Args.
-UNAME = $(shell uname -s)
-ifeq ($(UNAME), Darwin)
-LDFLAGS=-lm -framework Accelerate
-CULDFLAGS=-L/usr/local/cuda/lib -L/usr/local/lib $(CULDFLAGS_)
-else
-LDFLAGS=-lm -lblas
-CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
-endif
-
-all: gpualt gpumapd
-
-default: gpualt gpumapd
+default: gpuall
 
 # CPU
-cpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+cpuall: Makefile.cpu
+	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu cpu cpualt cpumapd
 
-cpualt: run_all.cpp examples.h $(EXSRC2)
-	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+cpu: Makefile.cpu
+	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu cpu
 
-cpumapd: run_all.cpp examples.h $(EXSRC3)
-	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/pogs.a $(LDFLAGS)
+cpualt: Makefile.cpu
+	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu cpualt
+
+cpumapd: Makefile.cpu
+	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu cpumapd
 
 # GPU
-gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o run $(EXSRC) $<	$(POGSROOT)/build/pogs.a  $(CULDFLAGS)
+gpuall: Makefile.gpu
+	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu gpu gpualt gpumapd
 
-gpualt: run_all.cpp examples.h $(EXSRC2)
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+gpu: Makefile.gpu
+	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu gpu
 
-gpumapd: run_all.cpp examples.h $(EXSRC3)
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/pogs.a $(CULDFLAGS)
+gpualt: Makefile.gpu
+	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu gpualt
+
+gpumapd: Makefile.gpu
+	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu gpumapd
 
 run: gpumapd
 	./h2oai-glm-gpu-mapd 1 100 1 1 0
 	#./h2oai-glm-gpu-mapd 1 100 1 0 0
 
 clean:
-	rm -f *.o *~ *~ run
+	rm -f *.o *~ *~
+	rm -rf runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
+	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-mapd
 	rm -rf *.dSYM
 

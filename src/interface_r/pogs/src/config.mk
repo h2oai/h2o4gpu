@@ -49,7 +49,7 @@ endif
 LD_FLAGS+=$(R_FRAMEWORK)
 
 pogs.so: $(TARGET) pogs_r.o
-	$(CXX) -o $@ -shared pogs_r.o $(OBJDIR)/pogs.a \
+	$(CXX) -o $@ -shared pogs_r.o $(OBJDIR)/$(TARGET)/pogs.a \
 	$(RPATH) $(LD_FLAGS) $(CXXFLAGS)
 
 blas2cblas.o: blas2cblas.cpp

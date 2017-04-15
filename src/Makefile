@@ -99,10 +99,10 @@ default: gpu
 
 # Build all
 cpu: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
-	ar cr $(OBJDIR)/pogs.a $^
+	ar cr $(OBJDIR)/cpu/pogs.a $^
 
-gpu: $(OBJDIR)/pogs_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
-	ar cr $(OBJDIR)/pogs.a $^
+gpu: $(OBJDIR)/gpu/pogs_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
+	ar cr $(OBJDIR)/gpu/pogs.a $^
 
 
 # Directories
@@ -143,7 +143,7 @@ $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
 # POGS GPU objects
-$(OBJDIR)/pogs_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR)
+$(OBJDIR)/gpu/pogs_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR)
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
 
 $(OBJDIR)/gpu/pogs.o: gpu/pogs.cu $(POGS_HDR) $(CML_HDR) | $(OBJDIR)/gpu

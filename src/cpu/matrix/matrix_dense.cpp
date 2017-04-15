@@ -44,8 +44,8 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixDense<T>::MatrixDense(int ignored, char ord, size_t m, size_t n, const T *data)
-    : Matrix<T>(m, n), _data(0) {
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
+  : Matrix<T>(m, n), _wDev(wDev), _data(0) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -56,7 +56,7 @@ MatrixDense<T>::MatrixDense(int ignored, char ord, size_t m, size_t n, const T *
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-    : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
   fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
@@ -77,8 +77,8 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
 }
 
 template <typename T>
-MatrixDense<T>::MatrixDense(int ignored, const MatrixDense<T>& A)
-    : Matrix<T>(A._m, A._n), _data(0), _ord(A._ord) {
+MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
+  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ord(A._ord) {
 
   CpuData<T> *info_A = reinterpret_cast<CpuData<T>*>(A._info);
   CpuData<T> *info = new CpuData<T>(info_A->orig_data);
@@ -87,7 +87,7 @@ MatrixDense<T>::MatrixDense(int ignored, const MatrixDense<T>& A)
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : _wDev(wDev), Matrix<T>(m, n, mValid), _datatype(datatype),_data(data), _datay(datay), _vdata(vdata), _vdatay(vdatay) {
+  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(data), _datay(datay), _vdata(vdata), _vdatay(vdatay) {
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   CpuData<T> *info = new CpuData<T>(0);

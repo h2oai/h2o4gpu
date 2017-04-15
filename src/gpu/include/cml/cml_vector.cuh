@@ -60,7 +60,8 @@ vector<T> vector_alloc(size_t n) {
   vector<T> vec;
   vec.size = n;
   vec.stride = 1;
-  cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&vec.data),
+  cudaError_t err;
+  err= cudaMalloc(reinterpret_cast<void**>(&vec.data),
       n * sizeof(T));
   CudaCheckError(err);
   if (err != cudaSuccess)
@@ -97,7 +98,8 @@ vector<T> vector_calloc(size_t n) {
 
 template<typename T>
 void vector_free(vector<T> *x) {
-  cudaError_t err = cudaFree(x->data);
+  cudaError_t err;
+  err= cudaFree(x->data);
   CudaCheckError(err);
 }
 
