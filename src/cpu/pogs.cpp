@@ -222,7 +222,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     eps_gap = sqrtmn_atol + _rel_tol * gsl::blas_nrm2(&z) *
         gsl::blas_nrm2(&z12);
     eps_pri = sqrtm_atol + _rel_tol * gsl::blas_nrm2(&y12);
-    eps_dua = sqrtn_atol + _rel_tol * _rho * gsl::blas_nrm2(&x);
+    eps_dua = _rho*(sqrtn_atol + _rel_tol * gsl::blas_nrm2(&x));
 
     // Apply over relaxation.
     gsl::vector_memcpy(&ztemp, &zt);

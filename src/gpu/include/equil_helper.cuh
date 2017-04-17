@@ -108,8 +108,8 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
   T kTol = static_cast<T>(kNormEstTol);
 
   T norm_est = 0, norm_est_last;
-  cml::vector<T> x = cml::vector_alloc<T>(A->Cols());
-  cml::vector<T> Sx = cml::vector_alloc<T>(A->Rows());
+  cml::vector<T> x = cml::vector_calloc<T>(A->Cols());
+  cml::vector<T> Sx = cml::vector_calloc<T>(A->Rows());
   cml::rand(x.data, x.size);
   wrapcudaDeviceSynchronize();
 
@@ -129,7 +129,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
     T normSx = cml::blas_nrm2(hdl, &Sx);
     cml::vector_scale(&x, 1 / normx);
     norm_est = normx / normSx;
-    if (abs(norm_est_last - norm_est) < kTol * norm_est)
+    if (std::abs(norm_est_last - norm_est) < kTol * norm_est)
       break;
     POP_RANGE(mystring,No,8);
   }

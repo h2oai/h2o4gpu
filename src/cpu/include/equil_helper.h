@@ -17,7 +17,7 @@ namespace {
 enum NormTypes { kNorm1, kNorm2, kNormFro };
 
 // TODO: Figure out a better value for this constant
-const double kSinkhornConst        = 1e-4;
+const double kSinkhornConst        = 1e-8;
 const double kNormEstTol           = 1e-3;
 const unsigned int kEquilIter      = 50u;
 const unsigned int kNormEstMaxIter = 50u;
@@ -110,8 +110,8 @@ T Norm2Est(const Matrix<T> *A) {
   T kTol = static_cast<T>(kNormEstTol);
 
   T norm_est = 0, norm_est_last;
-  gsl::vector<T> x = gsl::vector_alloc<T>(A->Cols());
-  gsl::vector<T> Sx = gsl::vector_alloc<T>(A->Rows());
+  gsl::vector<T> x = gsl::vector_calloc<T>(A->Cols());
+  gsl::vector<T> Sx = gsl::vector_calloc<T>(A->Rows());
   gsl::rand(x.data, x.size);
 
   unsigned int i = 0;

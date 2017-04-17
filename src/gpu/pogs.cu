@@ -191,14 +191,14 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
   const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
   const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
-  const T kKappa      = static_cast<T>(0.4); // for adaptive rho and rescaling
+  const T kKappa      = static_cast<T>(0.9); // for adaptive rho and rescaling
   const T kOne        = static_cast<T>(1.0); // definition
   const T kZero       = static_cast<T>(0.0); // definition
-  const T kProjTolMax = static_cast<T>(1e-8); // Projection tolerance
+  const T kProjTolMax = static_cast<T>(1e-6); // Projection tolerance
   const T kProjTolMin = static_cast<T>(1e-2); // Projection tolerance
   const T kProjTolPow = static_cast<T>(1.3); // Projection tolerance
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
-  bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
+  const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
   //  PUSH_RANGE("PogsSolve",PogsSolve,1);
 
