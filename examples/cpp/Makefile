@@ -43,7 +43,9 @@ gpumapd: Makefile.gpu
 
 run: gpumapd
 	./h2oai-glm-gpu-mapd 1 100 1 1 0
-	#./h2oai-glm-gpu-mapd 1 100 1 0 0
+
+runcpu: cpumapd
+	./h2oai-glm-gpu-mapd 1 100 1 1 0
 
 clean:
 	rm -f *.o *~ *~
