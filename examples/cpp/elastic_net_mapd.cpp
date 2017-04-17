@@ -20,6 +20,7 @@ T getRMSE(size_t len, const T *v1, const T *v2) {
   for (size_t i = 0; i < len; ++i) {
     double d = v1[i] - v2[i];
     rmse += d*d;
+    fprintf(stderr,"getRMSE: %d %21.15g %21.15g\n",i,v1[i],v2[i]); fflush(stderr);
   }
   rmse /= (double)len;
   return static_cast<T>(std::sqrt(rmse));
@@ -98,6 +99,13 @@ void fillData(std::vector<T>& trainX, std::vector<T>& trainY,
     }
   }
   cout << "END TRAIN/VALID SPLIT" << endl;
+  
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"fillData: i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+    }
+  }
+  
   fflush(stdout);
 }
 
@@ -167,6 +175,14 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
                                 reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
 
+  #ifndef HAVECUDA
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"INENPTR i=%d j=%d trainX=%21.15g\n",i,j,reinterpret_cast<T *>(trainXptr)[i*n+j]);
+    }
+  }
+  #endif
+  
 
   // temporarily get trainX, etc. from pogs (which may be on gpu)
   T *trainX;
@@ -187,7 +203,20 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
   Asource_.GetTrainY(datatype, mTrain, &trainY);
   Asource_.GetValidX(datatype, mValid*n, &validX);
   Asource_.GetValidY(datatype, mValid, &validY);
- 
+
+#ifndef HAVECUDA
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"AFTER GetTrainX i=%d j=%d trainX=%21.15g\n",i,j,reinterpret_cast<T *>(trainXptr)[i*n+j]);
+    }
+  }
+#endif
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"AFTER GetTrainX2 i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+    }
+  }
+
   // Setup each thread's pogs
   double t = timer<double>();
   double t0 = 0;
@@ -195,6 +224,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 #pragma omp parallel 
   {
     int me = omp_get_thread_num();
+
+    for (size_t i=0; i<mTrain; ++i) {
+      for (size_t j=0; j<n; ++j) {
+        fprintf(stderr,"omp1 i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+      }
+    }
 
     char filename[100];
     sprintf(filename,"me%d.txt",me);
@@ -216,8 +251,8 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
     fflush(fil);
 
     pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in pogs
+    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
+    pogs_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetAdaptiveRho(true);
     //pogs_data.SetEquil(false);
 //    pogs_data.SetRho(1);
@@ -254,6 +289,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
       T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
+      
+      for (size_t i=0; i<mTrain; ++i) {
+        for (size_t j=0; j<n; ++j) {
+          fprintf(stderr,"omp2 i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+        }
+      }
 
       for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
       for (unsigned int j = 0; j < n-intercept; ++j) g.emplace_back(kAbs);
@@ -266,8 +307,22 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
       for (int i = 1; i < nlambda; ++i)
         lambdas[i] = lambdas[i-1] * dec;
 
+      for (size_t i=0; i<mTrain; ++i) {
+        for (size_t j=0; j<n; ++j) {
+          fprintf(stderr,"omp3 i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+        }
+      }
+
+
       fprintf(fil,"alpha%f\n", alpha);
       for (int i = 0; i < nlambda; ++i) {
+
+        for (size_t i=0; i<mTrain; ++i) {
+          for (size_t j=0; j<n; ++j) {
+            fprintf(stderr,"inlambda i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+          }
+        }
+        
         T lambda = lambdas[i];
         fprintf(fil, "lambda %d = %f\n", i, lambda);
 
@@ -281,6 +336,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
           g[n - 1].e = 0;
         }
 
+        fprintf(stderr,"beforesolvePTR trainX=%ld\n",trainX);
+        for (size_t i=0; i<mTrain; ++i) {
+          for (size_t j=0; j<n; ++j) {
+            fprintf(stderr,"beforesolve i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+          }
+        }
         // Solve
         fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
         fflush(fil);
@@ -295,6 +356,15 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
         for (size_t i=0; i<n-intercept; ++i) {
           if (std::abs(pogs_data.GetX()[i]) > 1e-8) {
             dof++;
+          }
+        }
+        for (size_t j=0; j<n; ++j) {
+          fprintf(stderr,"beta[%d]=%21.15g\n",j,pogs_data.GetX()[j]); fflush(stderr);
+        }
+        fprintf(stderr,"aftersolvePTR trainX=%ld\n",trainX);
+        for (size_t i=0; i<mTrain; ++i) {
+          for (size_t j=0; j<n; ++j) {
+            fprintf(stderr,"aftersolve i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
           }
         }
         std::vector<T> trainPreds(mTrain);
@@ -440,7 +510,16 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   extern int bwcheck(void);
   bwcheck();
 #endif
+
 #endif
+
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"END: i=%d j=%d trainX=%21.15g\n",i,j,trainX[i*n+j]);
+    }
+  }
+
+  
   // Push data from CPU to GPU
   void* a;
   void* b;
@@ -448,6 +527,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   void* d;
   int sourceDev=0; //index of first GPU to own data
   makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
+
+#ifndef HAVECUDA
+  for (size_t i=0; i<mTrain; ++i) {
+    for (size_t j=0; j<n; ++j) {
+      fprintf(stderr,"aftermakePTr: i=%d j=%d trainX=%21.15g\n",i,j,static_cast<T*>(a)[i*n+j]);
+    }
+  }
+#endif
 
   int datatype = 1;
   return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, sdTrainY, meanTrainY, a, b, c, d);

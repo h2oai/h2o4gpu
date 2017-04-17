@@ -62,9 +62,11 @@ Pogs<T, M, P>::Pogs(int ignored, const M &A)
 template <typename T, typename M, typename P>
 int Pogs<T, M, P>::_Init() {
   DEBUG_EXPECT(!_done_init);
+  fprintf(stderr,"POGS1.1: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   if (_done_init)
     return 1;
   _done_init = true;
+  fprintf(stderr,"POGS1.2: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
 
   size_t m = _A.Rows();
   size_t n = _A.Cols();
@@ -78,10 +80,14 @@ int Pogs<T, M, P>::_Init() {
   memset(_de, 0, (m + n) * sizeof(T));
   memset(_z, 0, (m + n) * sizeof(T));
   memset(_zt, 0, (m + n) * sizeof(T));
+  fprintf(stderr,"POGS1.3: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
 
   _A.Init();
+  fprintf(stderr,"POGS1.4: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   _A.Equil(_de, _de + m, _equil);
+  fprintf(stderr,"POGS1.5: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   _P.Init();
+  fprintf(stderr,"POGS1.6: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
 
   return 0;
 }
@@ -106,9 +112,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolIni = static_cast<T>(1e-5);
   bool use_exact_stop = true;
 
+  fprintf(stderr,"POGS1: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
+
   // Initialize Projector P and Matrix A.
   if (!_done_init)
     _Init();
+
+  fprintf(stderr,"POGS2: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
 
   // Extract values from pogs_data
   size_t m = _A.Rows();
@@ -142,6 +152,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   std::transform(g_cpu.begin(), g_cpu.end(), e.data, g_cpu.begin(),
       ApplyOp<T, std::multiplies<T> >(std::multiplies<T>()));
 
+  fprintf(stderr,"POGS3: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
     gsl::vector_memcpy(&xtemp, _x);
@@ -198,6 +209,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         " pri obj\n" __HBAR__);
   }
 
+  fprintf(stderr,"POGS4: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   // Initialize scalars.
   T sqrtn_atol = std::sqrt(static_cast<T>(n)) * _abs_tol;
   T sqrtm_atol = std::sqrt(static_cast<T>(m)) * _abs_tol;
@@ -207,7 +219,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
 
+  fprintf(stderr,"POGS5: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   for (;; ++k) {
+    fprintf(stderr,"POGS6[%d]: %21.15g\n",k,reinterpret_cast<T*>(_A._data)[0]);
     gsl::vector_memcpy(&zprev, &z);
 
     // Evaluate Proximal Operators
@@ -262,7 +276,8 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Evaluate stopping criteria.
     converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
         (!_gap_stop || gap < eps_gap);
-    if ((_verbose > 2 && k % 10  == 0) ||
+    if ((_verbose > 3 && k % 1  == 0) ||
+        (_verbose > 2 && k % 10  == 0) ||
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
       T optval = FuncEval(f_cpu, y12.data) + FuncEval(g_cpu, x12.data);
@@ -310,6 +325,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       }
     }
   }
+  fprintf(stderr,"POGS7: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
 
   // Get optimal value
   _optval = FuncEval(f_cpu, y12.data) + FuncEval(g_cpu, x12.data);
@@ -345,6 +361,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         _rel_tol * gap / eps_gap);
   }
 
+  fprintf(stderr,"POGS8: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   // Scale x, y, lambda and mu for output.
   gsl::vector_memcpy(&ztemp, &zt);
   gsl::blas_axpy(-kOne, &zprev, &ztemp);
@@ -370,6 +387,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector_free(&zprev);
   gsl::vector_free(&ztemp);
 
+  fprintf(stderr,"POGS9: %21.15g\n",reinterpret_cast<T*>(_A._data)[0]);
   return status;
 }
 

@@ -11,9 +11,9 @@ template <typename T>
 class MatrixSparse : public Matrix<T> {
  public:
   enum Ord {ROW, COL};
+  T *_data;
 
  private:
-  T *_data;
   
   POGS_INT *_ptr, *_ind, _nnz;
 

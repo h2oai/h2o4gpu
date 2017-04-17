@@ -218,6 +218,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   if (!this->_done_init)
     return 1;
 
+  fprintf(stderr,"POGS1.4.1: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Number of elements in matrix.
   size_t num_el = this->_m * this->_n;
 
@@ -228,6 +229,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   sign = new unsigned char[num_sign_bytes];
   ASSERT(sign != 0);
 
+  fprintf(stderr,"POGS1.4.2: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
@@ -236,6 +238,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
     SetSign(_data, sign, num_chars, AbsF<T>());
   }
 
+  fprintf(stderr,"POGS1.4.3: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // If numel(A) is not a multiple of 8, then we need to set the last couple
   // of sign bits too. 
   if (num_el > num_chars * 8) {
@@ -247,10 +250,12 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
           num_el - num_chars * 8, AbsF<T>());
     }
   }
+  fprintf(stderr,"POGS1.4.4: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
 
   // Perform Sinkhorn-Knopp equilibration.
   SinkhornKnopp(this, d, e, equillocal);
 
+  fprintf(stderr,"POGS1.4.5: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
   // or A = sign(A) .* A if the 1-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
@@ -259,6 +264,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
     UnSetSign(_data, sign, num_chars, IdentityF<T>());
   }
 
+  fprintf(stderr,"POGS1.4.6: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Deal with last few entries if num_el is not a multiple of 8.
   if (num_el > num_chars * 8) {
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
@@ -270,6 +276,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
     }
   }
 
+  fprintf(stderr,"POGS1.4.7: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     std::transform(d, d + this->_m, d, SqrtF<T>());
@@ -279,17 +286,20 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   // Compute A := D * A * E.
   MultDiag(d, e, this->_m, this->_n, _ord, _data);
 
+  fprintf(stderr,"POGS1.4.8: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Scale A to have norm of 1 (in the kNormNormalize norm).
   T normA = NormEst(kNormNormalize, *this);
   gsl::vector<T> a_vec = gsl::vector_view_array(_data, num_el);
   gsl::vector_scale(&a_vec, 1 / normA);
 
+  fprintf(stderr,"POGS1.4.9: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   // Scale d and e to account for normalization of A.
   gsl::vector<T> d_vec = gsl::vector_view_array<T>(d, this->_m);
   gsl::vector<T> e_vec = gsl::vector_view_array<T>(e, this->_n);
   gsl::vector_scale(&d_vec, 1 / std::sqrt(normA));
   gsl::vector_scale(&e_vec, 1 / std::sqrt(normA));
 
+  fprintf(stderr,"POGS1.4.10: %21.15g\n",reinterpret_cast<T*>(this->_data)[0]);
   DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
       gsl::blas_nrm2(&d_vec), gsl::blas_nrm2(&e_vec));
 
