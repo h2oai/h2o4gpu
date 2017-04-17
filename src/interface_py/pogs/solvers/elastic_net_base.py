@@ -24,7 +24,7 @@ class ElasticNetBaseSolver(object):
         c=c_double_p
         d=c_double_p
         ## C++ CALL
-        status = self.lib.makePtr(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
+        status = self.lib.make_ptr_double(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
                          c_double_p(trainX), c_double_p(trainY), c_double_p(validX), c_double_p(validY),
                          byref(a), byref(b), byref(c), byref(d))
         assert status==0, "Failure uploading the data"
