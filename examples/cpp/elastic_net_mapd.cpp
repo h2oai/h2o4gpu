@@ -221,7 +221,7 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 //    pogs_data.SetAdaptiveRho(true);
     //pogs_data.SetEquil(false);
 //    pogs_data.SetRho(1);
-    //pogs_data.SetVerbose(4);
+    pogs_data.SetVerbose(5);
 //    pogs_data.SetMaxIter(20000);
 
     int N=nAlphas; // number of alpha's

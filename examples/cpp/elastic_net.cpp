@@ -244,7 +244,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     //pogs_data.SetAdaptiveRho(false); // trying
     //pogs_data.SetEquil(false); // trying
     //pogs_data.SetRho(1E-4);
-    //pogs_data.SetVerbose(4);
+    pogs_data.SetVerbose(5);
     //pogs_data.SetMaxIter(200);
 
     int N=nAlphas; // number of alpha's
@@ -273,8 +273,9 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
       f.reserve(mTrain);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
+      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
-      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]);//, weights); // pogs.R
+      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
       fprintf(fil,"alpha%f\n", alpha);
