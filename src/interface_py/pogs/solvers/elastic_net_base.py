@@ -5,6 +5,7 @@ from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
 
 class ElasticNetBaseSolver(object):
     def __init__(self, lib, nGPUs, ord, intercept, lambda_min_ratio, n_lambdas, n_alphas):
+        print("Trying to instantiate a elastic net base solver")
         assert lib and (lib==pogsElasticNetCPU or lib==pogsElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs

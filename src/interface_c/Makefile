@@ -39,8 +39,8 @@ POGSLIB=\
 	$(POGSROOT)/build/cpu/projector/projector_direct_dense.o \
 	$(POGSROOT)/build/cpu/projector/projector_cgls.o
 
+ #$(POGSROOT)/build/pogs_link.o
 CUPOGSLIB=\
-	$(POGSROOT)/build/pogs_link.o \
 	$(POGSROOT)/build/gpu/pogs.o \
 	$(POGSROOT)/build/gpu/warmstart.o \
 	$(POGSROOT)/build/gpu/p2pbwcheck.o \
@@ -65,6 +65,10 @@ libpogs: pogs_c.o
 libpogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(CULDFLAGS)
+
+pypogs_cpu: pogs_c.o
+	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(CXX) -shared -o $@.$(SHARED) $< $(POGSLIB) $(LDFLAGS)
 
 pypogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)

@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "/home/arno/pogs/src/interface_py/")
+#sys.path.insert(0, "/home/arno/pogs/src/interface_py/")
 import pogs as pogs
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
@@ -20,6 +20,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
     gpu=False
 
   Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
+  assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
   A=np.array(X, dtype='float64') if double_precision else np.array(X, dtype='float32')
 
@@ -38,7 +39,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
   validY = y
 
   ## First, get backend pointers
-  a,b,c,d = pogs.upload_data(gpu, sourceDev, trainX, trainY, validX, validY)
+  a,b,c,d = Solver.upload_data(sourceDev, trainX, trainY, validX, validY)
 
   ## TODO: compute these in C++ (CPU or GPU)
   lambda_max0 = max(abs(A.T.dot(b)))
