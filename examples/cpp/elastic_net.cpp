@@ -152,14 +152,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += trainX[i + j * mTrain] * (trainY[i] - meanTrainY /*meanTrainY after standardization*/);
+      u += trainX[i*n + j] * (trainY[i]);
     }
     //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = 1e-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = (m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 
@@ -256,8 +256,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     int a;
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
-      const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
-      T lambda_max = 10*lambda_max0; ///(alpha+static_cast<T>(1e-3f)); // actual lambda_max like pogs.R
+      const T alpha = N == 1 ? 1 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
+      T lambda_max = lambda_max0/std::max(static_cast<T>(1e-3), alpha); // same as H2O
+      if (alpha==1 && mTrain>10000) {
+        lambda_max *= 2;
+        lambda_min_ratio /= 2;
+      }
       const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
