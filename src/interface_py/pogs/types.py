@@ -49,7 +49,9 @@ DEFAULTS['wDev']=	0 		# which cuda devices (0)
 # pointers to C types
 c_int_p = POINTER(c_int)
 c_float_p = POINTER(c_float)
+c_float_pp = POINTER(POINTER(c_float))
 c_double_p = POINTER(c_double)
+c_double_pp = POINTER(POINTER(c_double))
 
 # POGS types
 class SettingsS(Structure):

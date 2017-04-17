@@ -124,19 +124,9 @@ void makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
 // m and n are training data size
 template <typename T>
 double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
-                     size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
+                     size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas,
                      double sdTrainY, double meanTrainY,
                      void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
-
-  if (intercept!=0 and intercept!=1) {
-    cerr << "intercept must be a boolean: 0 or 1\n";
-    exit(-1);
-  }
-
-  if (validFraction<0 or validFraction>=1) {
-    cerr << "validFraction must be in [0, 1)\n";
-    exit(-1);
-  }
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -347,6 +337,14 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 // m and n are full data set size before splitting
 template <typename T>
 double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, double validFraction) {
+  if (validFraction<0 or validFraction>=1) {
+    cerr << "validFraction must be in [0, 1)\n";
+    exit(-1);
+  }
+  if (intercept!=0 and intercept!=1) {
+    cerr << "intercept must be a boolean: 0 or 1\n";
+    exit(-1);
+  }
 
   // read data and do train-valid split
   std::vector<T> trainX, trainY, validX, validY;
@@ -445,7 +443,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
 
   int datatype = 1;
-  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, sdTrainY, meanTrainY, a, b, c, d);
+  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, meanTrainY, a, b, c, d);
 }
 
 template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, double);
