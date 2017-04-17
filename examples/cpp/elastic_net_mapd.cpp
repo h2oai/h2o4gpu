@@ -173,15 +173,10 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
   T *trainY;
   T *validX;
   T *validY;
-  if(datatype==1){
-    trainX=(T *)malloc(sizeof(T)*mTrain*n);
-    trainY=(T *)malloc(sizeof(T)*mTrain);
-    validX=(T *)malloc(sizeof(T)*mValid*n);
-    validY=(T *)malloc(sizeof(T)*mValid);
-  }
-  else{
-    // then will internally copy pointer so no need to allocate memory on CPU again
-  }
+  trainX=(T *)malloc(sizeof(T)*mTrain*n);
+  trainY=(T *)malloc(sizeof(T)*mTrain);
+  validX=(T *)malloc(sizeof(T)*mValid*n);
+  validY=(T *)malloc(sizeof(T)*mValid);
   
   Asource_.GetTrainX(datatype, mTrain*n, &trainX);
   Asource_.GetTrainY(datatype, mTrain, &trainY);

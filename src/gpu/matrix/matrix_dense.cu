@@ -356,7 +356,7 @@ void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
     CUDA_CHECK_ERR();
   }
   else{
-    *data = _data;
+    std::memcpy(*data, _data, size * sizeof(T));
   }
 
   return;
@@ -371,7 +371,7 @@ void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
     CUDA_CHECK_ERR();
   }
   else{
-    *data = _datay;
+    std::memcpy(*data, _datay, size * sizeof(T));
   }
 
   return;
@@ -387,7 +387,7 @@ void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
     CUDA_CHECK_ERR();
   }
   else{
-    *data = _vdata;
+    std::memcpy(*data, _vdata, size * sizeof(T));
   }
 
   return;
@@ -402,7 +402,7 @@ void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
     CUDA_CHECK_ERR();
   }
   else{
-    *data = _vdatay;
+    std::memcpy(*data, _vdatay, size * sizeof(T));
   }
 
 

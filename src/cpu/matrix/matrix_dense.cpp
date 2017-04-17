@@ -172,20 +172,20 @@ int MatrixDense<T>::Init() {
 
 template <typename T>
 void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
-  *data = _data;
+  std::memcpy(*data, _data, size * sizeof(T));
 }
 template <typename T>
 void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
-  *data = _datay;
+  std::memcpy(*data, _datay, size * sizeof(T));
 }
 
 template <typename T>
 void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
-  *data = _vdata;
+  std::memcpy(*data, _vdata, size * sizeof(T));
 }
 template <typename T>
 void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
-  *data = _vdatay;
+  std::memcpy(*data, _vdatay, size * sizeof(T));
 }
 
 
