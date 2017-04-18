@@ -7,32 +7,45 @@ Proximal Graph Solver (POGS) is a solver for convex optimization problems in _gr
 
 Requirements
 ------
-R, CUDA8 for GPU version
+R, CUDA8 for GPU version, OpenMP (unless remove -fopenmp from all Makefile's in all directories).
 
 On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running pogs.
 ------
 
 sudo nvidia-smi -pm 1
 
+or
+
+nvidia-persistenced --user foo --persistence-mode
+where "foo" is your username
+
 
 To compile gpu version:
 ------
 
-cd src ; make ; cd ../examples/cpp ; make
+cd src ; make -j ; cd ../examples/cpp ; make -j gpuall
 
 To run gpu version if one has 16 gpus (e.g. on AWS), where first and 3rd argument should be same for any number of GPUs.  Dataset is currently small called simple.txt, but ask Arno or Jon for the larger census-based data set to highlight 100% multiple-GPU usage.
 ------
 
 
-./h2oai-glm-gpu 16 100 16 0.2
+./h2oai-glm-gpu 16 100 16 1 0.2
 
+To compile cpu version:
+------
+
+cd src ; make -j cpu ; cd ../examples/cpp ; make -j cpuall
+
+For otherwise identical CPU run on all CPU's cores:
+
+./h2oai-glm-cpu 1 100 16 1 0.2
 
 
 install R package (assume in pogs base directory to start with)
 ------
 cd src/interface_r
 Edit interface_r/src/config.mk and choose TARGET as cpu or gpu (currently defaulted to gpu).
-R CMD INSTALL --build pogs
+MAKE="make -j" R CMD INSTALL --build pogs
 
 test R package
 ------
