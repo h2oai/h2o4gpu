@@ -93,7 +93,7 @@ GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
-all: default
+all: gpu cpu
 
 default: gpu
 
