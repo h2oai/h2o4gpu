@@ -214,10 +214,10 @@ namespace pogs {
             }
 
             fprintf(fil, "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", me, a, alpha,
-                    i, lambda, dof, trainRMSE, validRMSE);
+                    (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(fil);
             fprintf(stdout, "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", me, a,
-                    alpha, i, lambda, dof, trainRMSE, validRMSE);
+                    alpha, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(stdout);
           }// over lambda
         }// over alpha
@@ -255,6 +255,24 @@ namespace pogs {
                        float* trainX, float* trainY, float* validX, float* validY,
                        void**a, void**b, void**c, void**d) {
       return makePtr<float>(sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
+    }
+    double elastic_net_ptr_double(int sourceDev, int datatype, int nGPUs, int ord,
+                                  size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0,
+                                  double lambda_min_ratio, int nLambdas, int nAlphas,
+                                  double sdTrainY, double meanTrainY,
+                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+      return ElasticNetptr<double>(sourceDev, datatype, nGPUs, ord==1?'r':'c', mTrain, n, mValid,
+                           intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, sourceDev,
+                           trainXptr, trainYptr, validXptr, validYptr);
+    }
+    double elastic_net_ptr_float(int sourceDev, int datatype, int nGPUs, int ord,
+                                  size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0,
+                                  double lambda_min_ratio, int nLambdas, int nAlphas,
+                                  double sdTrainY, double meanTrainY,
+                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+      return ElasticNetptr<float>(sourceDev, datatype, nGPUs, ord==1?'r':'c', mTrain, n, mValid,
+                                   intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, sourceDev,
+                                   trainXptr, trainYptr, validXptr, validYptr);
     }
 
 #ifdef __cplusplus

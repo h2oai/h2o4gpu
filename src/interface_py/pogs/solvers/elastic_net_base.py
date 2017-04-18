@@ -9,7 +9,7 @@ class ElasticNetBaseSolver(object):
         assert lib and (lib==pogsElasticNetCPU or lib==pogsElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs
-        self.ord=ord
+        self.ord=1 if ord=='r' else 0
         self.intercept=intercept
         self.lambda_min_ratio=lambda_min_ratio
         self.n_lambdas=n_lambdas
@@ -19,38 +19,34 @@ class ElasticNetBaseSolver(object):
         mTrain = trainX.shape[0]
         mValid = validX.shape[0]
         n = validX.shape[1]
-        aa = c_void_p(0)
-        bb = c_void_p(0)
-        cc = c_void_p(0)
-        dd = c_void_p(0)
-        a=pointer(aa)
-        b=pointer(bb)
-        c=pointer(cc)
-        d=pointer(dd)
+        a = c_void_p(0)
+        b = c_void_p(0)
+        c = c_void_p(0)
+        d = c_void_p(0)
         A = cptr(trainX,c_double)
         B = cptr(trainY,c_double)
         C = cptr(validX,c_double)
         D = cptr(validY,c_double)
         ## C++ CALL
+        # ##TODO: float
         status = self.lib.make_ptr_double(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
-                                          A, B, C, D, ## input
-                                          a, b, c, d) ## output
+                                          A, B, C, D, pointer(a), pointer(b), pointer(c), pointer(d))
         assert status==0, "Failure uploading the data"
-        print(aa)
-        print(bb)
-        print(cc)
-        print(dd)
-        return aa, bb, cc, dd
+        print(a)
+        print(b)
+        print(c)
+        print(d)
+        return a, b, c, d
 
     def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d):
-        print("Implement!")
-        # ## C++ CALL
-        # self.solver.ElasticNetptr(sourceDev, 1, self.nGPUs, self.ord, mTrain, n, mValid,
-        #                           self.intercept, lambda_max0, self.lambda_min_ratio,
-        #                           self.n_lambdas, self.n_alphas,
-        #                           sdTrainY, meanTrainY, a, b, c, d)
-        # self.lib.ElasticNetptr(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info),
-        #                            cptr(f.a,c_double), cptr(f.b,c_double), cptr(f.c,c_double),
-        #                            cptr(f.d,c_double), cptr(f.e,c_double), cptr(f.h,c_int),
-        #                            cptr(g.a,c_double), cptr(g.b,c_double), cptr(g.c,c_double),
-        #                            cptr(g.d,c_double), cptr(g.e,c_double), cptr(g.h,c_int))
+        ## C++ CALL
+        # ##TODO: float
+        val = self.lib.elastic_net_ptr_double(
+            c_int(sourceDev), c_int(1), c_int(self.nGPUs),
+            c_int(self.ord), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
+            c_int(self.intercept), c_double(lambda_max0),
+            c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
+            c_double(sdTrainY), c_double(meanTrainY),
+            a, b, c, d)
+        print(val)
+        return val

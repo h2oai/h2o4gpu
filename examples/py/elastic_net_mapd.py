@@ -61,9 +61,9 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
 if __name__ == "__main__":
   from numpy.random import randn
-  m=100
-  n=10
+  m=1000
+  n=100
   A=randn(m,n)
   x_true=(randn(n)/n)*float64(randn(n)<0.8)
   b=A.dot(x_true)+0.5*randn(m)
-  ElasticNet(A, b, gpu=True, double_precision=True, nlambda=100, nalpha=1)
+  ElasticNet(A, b, gpu=True, double_precision=True, nlambda=100, nalpha=16)

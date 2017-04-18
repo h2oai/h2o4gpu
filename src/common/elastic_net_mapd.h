@@ -82,6 +82,17 @@ namespace pogs {
                        float* trainX, float* trainY, float* validX, float* validY,
                        void**a, void**b, void**c, void**d);
 
+    double elastic_net_ptr_double(int sourceDev, int datatype, int nGPUs, int ord,
+                                  size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0,
+                                  double lambda_min_ratio, int nLambdas, int nAlphas,
+                                  double sdTrainY, double meanTrainY,
+                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+    double elastic_net_ptr_float(int sourceDev, int datatype, int nGPUs, int ord,
+                         size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0,
+                         double lambda_min_ratio, int nLambdas, int nAlphas,
+                         double sdTrainY, double meanTrainY,
+                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+
 #ifdef __cplusplus
     }
 #endif
