@@ -7,7 +7,7 @@ namespace pogs {
 
 template <typename T>
 class MatrixDense : public Matrix<T> {
- private:
+ public:
   int _wDev;
   int _datatype;
 
@@ -28,10 +28,17 @@ class MatrixDense : public Matrix<T> {
  public:
   // Constructor (only sets variables)
   MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data);
+  MatrixDense(char ord, size_t m, size_t n, const T *data);
+  
   MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay);
+
   MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data);
+  
   MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
+
   MatrixDense(int wDev, const MatrixDense<T>& A);
+  MatrixDense(const MatrixDense<T>& A);
+
   ~MatrixDense();
 
   // Initialize matrix, call this before any other methods.

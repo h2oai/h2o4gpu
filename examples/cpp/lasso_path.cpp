@@ -48,6 +48,7 @@ double LassoPath(size_t m, size_t n) {
 
   fprintf(stdout,"BEGIN FILL DATA\n");
   double t0 = timer<double>();
+  int generate=0;
 #include "readorgen.c"
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
@@ -94,13 +95,13 @@ double LassoPath(size_t m, size_t n) {
 
     pogs_data.Solve(f, g);
 
-    std::vector<T> x(n);
-    for (unsigned int i = 0; i < n; ++i)
-      x[i] = pogs_data.GetX()[i];
+    //    std::vector<T> x(n);
+    //    for (unsigned int i = 0; i < n; ++i)
+    //      x[i] = pogs_data.GetX()[i];
 
     ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
     //      break;
-    x_last = x;
+    //x_last = x;
   }
   double tf = timer<double>();
   fprintf(stdout,"END SOLVE: type 1 m %d n %d tfd %g ts %g\n",m,n,t1-t0,tf-t);

@@ -65,7 +65,7 @@ template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
-    : Matrix<T>(m, n), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  : Matrix<T>(m, n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -78,14 +78,29 @@ MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_I
 }
 
 template <typename T>
+MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
+                              const T *data, const POGS_INT *ptr,
+                              const POGS_INT *ind)
+  : Matrix<T>(m, n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  MatrixSparse(_wDev, ord, m,n, nnz, data, ptr, ind);
+}
+
+template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
-    : Matrix<T>(A._m, A._n), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 
   GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info);
   GpuData<T> *info = new GpuData<T>(info_A->orig_data, info_A->orig_ptr,
       info_A->orig_ind);
   this->_info = reinterpret_cast<void*>(info);
+}
+
+template <typename T>
+MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
+  : Matrix<T>(A._m, A._n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+      _ord(A._ord) {
+  MatrixSparse(_wDev, A);
 }
 
 template <typename T>

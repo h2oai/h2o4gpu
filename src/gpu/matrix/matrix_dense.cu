@@ -29,7 +29,7 @@ struct GpuData {
     DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
-    cublasDestroy(handle);
+    if(handle!=NULL) cublasDestroy(handle);
     DEBUG_CUDA_CHECK_ERR();
   }
 };
@@ -66,7 +66,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
+  fprintf(stderr,"MatrixDense1: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -95,6 +95,10 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
   POP_RANGE("MDsend",MDsend,1);
 }
+template <typename T>
+MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
+  : MatrixDense<T>(0, ord, m, n, data){}
+
   // datatype=0: data CPU pointer to _data CPU pointer // NA
   // datatype=1: data GPU pointer to _data GPU pointer
   // datatype=2: data CPU pointer to _data GPU pointer // NA
@@ -111,7 +115,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-  fprintf(stderr,"ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
+  fprintf(stderr,"MatrixDense2: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -120,24 +124,40 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
 #endif
   
-  // Set GPU specific _info.
 
   if(datatype==1){
-    // source pointer is on this GPU
     // no info->orig_data, so send 0 to GpuData
     PUSH_RANGE("MDnew",MDnew,1);
     GpuData<T> *info = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     this->_info = reinterpret_cast<void*>(info);
     POP_RANGE("MDnew",MDnew,1);
+    
+  // source pointer is on this GPU
 
     // just copy GPU pointer
     _data = data;
   }
   else{
-    fprintf(stderr,"Not setup to copy non constant CPU pointer to GPU\n");
-    exit(0);
+    PUSH_RANGE("MDnew",MDnew,1);
+    GpuData<T> *info = new GpuData<T>(data); // new structure (holds pointer to data and GPU handle)
+    this->_info = reinterpret_cast<void*>(info);
+    POP_RANGE("MDnew",MDnew,1);
+
+  // Copy CPU Matrix to GPU.
+    PUSH_RANGE("MDsend",MDsend,1);
+    //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
+    double t0 = timer<double>();
+    cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
+    double t1 = timer<double>();
+    cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    double t2 = timer<double>();
+    printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+    printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+    POP_RANGE("MDsend",MDsend,1);
   }
 }
+
+
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
   // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
 template <typename T>
@@ -149,7 +169,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+  fprintf(stderr,"MatrixDense3: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -236,8 +256,37 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
     _vdatay = vdatay;
   }
   else{
-    fprintf(stderr,"Not setup to copy non constant CPU pointer to GPU\n");
-    exit(0);
+    // source pointer is on CPU
+    // Set GPU specific _info.
+    PUSH_RANGE("MDnew",MDnew,1);
+    GpuData<T> *info = new GpuData<T>(data); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *infoy = new GpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *vinfo = new GpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *vinfoy = new GpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+    this->_info = reinterpret_cast<void*>(info);
+    this->_infoy = reinterpret_cast<void*>(infoy);
+    this->_vinfo = reinterpret_cast<void*>(vinfo);
+    this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    POP_RANGE("MDnew",MDnew,1);
+
+
+    // Copy CPU Matrix to GPU.
+    PUSH_RANGE("MDsend",MDsend,1);
+    //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
+    double t0 = timer<double>();
+    cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
+    cudaMalloc(&_datay, this->_m * sizeof(T)); // allocate on GPU
+    cudaMalloc(&_vdata, this->_mvalid * this->_n * sizeof(T)); // allocate on GPU
+    cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
+    double t1 = timer<double>();
+    cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    double t2 = timer<double>();
+    printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
+    printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+    POP_RANGE("MDsend",MDsend,1);
   }
 }
 
@@ -299,6 +348,9 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   }
 }
 
+template <typename T>
+MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
+  : MatrixDense<T>(A._wDev, A){}
 
 template <typename T>
 MatrixDense<T>::~MatrixDense() {

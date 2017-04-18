@@ -42,12 +42,20 @@ ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
 
   fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
 
-#ifdef _DEBUG
-  //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
-  cudaDeviceProp props;
-  CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
-  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
-#endif
+  // Set GPU specific this->_info.
+  PUSH_RANGE("PDnew",PDnew,1);
+  GpuData<T> *info = new GpuData<T>();
+  this->_info = reinterpret_cast<void*>(info);
+  POP_RANGE("PDnew",PDnew,1);
+}
+
+template <typename T, typename M>
+ProjectorDirect<T, M>::ProjectorDirect(const M& A)
+  : _wDev(A._wDev), _A(A) {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
 
   // Set GPU specific this->_info.
   PUSH_RANGE("PDnew",PDnew,1);
@@ -55,6 +63,7 @@ ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
   this->_info = reinterpret_cast<void*>(info);
   POP_RANGE("PDnew",PDnew,1);
 }
+
 
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {

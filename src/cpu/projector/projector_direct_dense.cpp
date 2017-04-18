@@ -23,8 +23,16 @@ struct CpuData {
 }  // namespace
 
 template <typename T, typename M>
-ProjectorDirect<T, M>::ProjectorDirect(int ignored, const M& A)
-    : _A(A) {
+ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
+  : _wDev(wDev), _A(A) {
+  // Set CPU specific this->_info.
+  CpuData<T> *info = new CpuData<T>();
+  this->_info = reinterpret_cast<void*>(info);
+}
+template <typename T, typename M>
+ProjectorDirect<T, M>::ProjectorDirect(const M& A)
+  : _wDev(A._wDev), _A(A)
+{
   // Set CPU specific this->_info.
   CpuData<T> *info = new CpuData<T>();
   this->_info = reinterpret_cast<void*>(info);

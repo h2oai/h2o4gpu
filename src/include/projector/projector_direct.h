@@ -8,10 +8,11 @@ namespace pogs {
 // Minimizes ||Ax - y0||^2  + s ||x - x0||^2
 template <typename T, typename M>
 class ProjectorDirect : Projector<T, M> {
+ public:
+  int _wDev;
  private:
   const M& _A;
 
-  int _wDev;
 
   // Get rid of copy constructor and assignment operator.
   ProjectorDirect(const Projector<T, M>& A);
@@ -19,6 +20,7 @@ class ProjectorDirect : Projector<T, M> {
 
  public:
   ProjectorDirect(int wDev, const M& A);
+  ProjectorDirect(const M& A);
   ~ProjectorDirect();
   
   int Init();

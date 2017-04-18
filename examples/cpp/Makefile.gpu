@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=elastic_net.cpp
+EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_mapd.cpp
 
@@ -28,7 +28,7 @@ all: gpu gpualt gpumapd
 default: gpualt gpumapd
 
 # GPU
-gpu: run_all.cpp examples.h $(EXSRC)
+gpu: run_all_orig.cpp examples.h $(EXSRC)
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
 
 gpualt: run_all.cpp examples.h $(EXSRC2)

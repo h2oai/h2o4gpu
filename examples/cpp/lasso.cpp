@@ -21,7 +21,7 @@ double Lasso(size_t m, size_t n) {
 
   fprintf(stdout,"START FILL DATA\n");
   double t0 = timer<double>();
-  int generate=1;
+  int generate=0;
 #include "readorgen.c"
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
@@ -48,9 +48,9 @@ double Lasso(size_t m, size_t n) {
   // setup pogs
   ////////////////////
   fprintf(stderr,"MatrixDense\n"); fflush(stderr);
-  pogs::MatrixDense<T> A_(0, 'r', m, n, A.data());
+  pogs::MatrixDense<T> A_('r', m, n, A.data());
   fprintf(stderr,"PogsDirect\n"); fflush(stderr);
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(0, A_);
+  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
   fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<FunctionObj<T> > f;
   fprintf(stderr,"g\n"); fflush(stderr);
@@ -72,22 +72,22 @@ double Lasso(size_t m, size_t n) {
   ////////////////////
   fprintf(stdout,"BEGIN SOLVE\n");
   if(0==1){ // debug
-    pogs_data.SetAdaptiveRho(false); // trying
-    pogs_data.SetRho(1.0);
+    //    pogs_data.SetAdaptiveRho(false); // trying
+    //    pogs_data.SetRho(1.0);
     //  pogs_data.SetMaxIter(5u);
-    pogs_data.SetMaxIter(1u);
-    pogs_data.SetVerbose(4);
+    //    pogs_data.SetMaxIter(1u);
+    //    pogs_data.SetVerbose(4);
   }
   else if(1==1){ // debug
     //    pogs_data.SetAdaptiveRho(false); // trying
     //    pogs_data.SetEquil(false); // trying
     //    pogs_data.SetRho(1E-4);
-    fprintf(stderr,"sets\n"); fflush(stderr);
-    pogs_data.SetVerbose(4);
-    pogs_data.SetMaxIter(5u);
+    //    fprintf(stderr,"sets\n"); fflush(stderr);
+    //    pogs_data.SetVerbose(4);
+    //    pogs_data.SetMaxIter(5u);
   }
   else if(1==0){
-    pogs_data.SetVerbose(4);
+    //    pogs_data.SetVerbose(4);
   }
 #ifdef __CUDACC__
   //  cudaProfilerStart();

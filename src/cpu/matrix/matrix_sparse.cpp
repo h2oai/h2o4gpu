@@ -44,10 +44,10 @@ T NormEst(NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int ignored, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
+MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
-    : Matrix<T>(m, n), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  : Matrix<T>(m, n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -57,8 +57,8 @@ MatrixSparse<T>::MatrixSparse(int ignored, char ord, POGS_INT m, POGS_INT n, POG
 }
 
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int ignored, const MatrixSparse<T>& A)
-    : Matrix<T>(A._m, A._n), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
+  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 
   CpuData<T> *info_A = reinterpret_cast<CpuData<T>*>(A._info);

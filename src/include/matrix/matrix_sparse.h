@@ -10,6 +10,8 @@ typedef int POGS_INT;
 template <typename T>
 class MatrixSparse : public Matrix<T> {
  public:
+  int _wDev;
+ public:
   enum Ord {ROW, COL};
 
  private:
@@ -23,9 +25,12 @@ class MatrixSparse : public Matrix<T> {
   MatrixSparse<T>& operator=(const MatrixSparse<T>& A);
 
  public:
-  MatrixSparse(int ignored, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
+  MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
       const POGS_INT *ptr, const POGS_INT *ind);
-  MatrixSparse(int ignored, const MatrixSparse<T>& A);
+  MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
+      const POGS_INT *ptr, const POGS_INT *ind);
+  MatrixSparse(int wDev, const MatrixSparse<T>& A);
+  MatrixSparse(const MatrixSparse<T>& A);
   ~MatrixSparse();
 
   // Call this before any other method.
@@ -43,6 +48,7 @@ class MatrixSparse : public Matrix<T> {
   const POGS_INT* Ind() const { return _ind; }
   POGS_INT Nnz() const { return _nnz; }
   Ord Order() const { return _ord; }
+  int wDev() const { return _wDev; }
 };
 
 }  // namespace pogs

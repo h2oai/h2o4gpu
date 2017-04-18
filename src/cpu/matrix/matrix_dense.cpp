@@ -58,9 +58,21 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   this->_info = reinterpret_cast<void*>(info);
 
   // Copy Matrix to CPU
-  _data = const_cast<T*>(data);
+  if(1==0){ // can't because _data contents get modified
+    _data = const_cast<T*>(data);
+  }
+  else{
+    _data = new T[this->_m * this->_n];
+    ASSERT(_data != 0);
+    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+  }
 
 }
+template <typename T>
+MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
+  : MatrixDense<T>(0,ord,m,n,data){}
+
+
 
   // no use of datatype when on CPU
 template <typename T>
@@ -76,11 +88,17 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   // Set GPU specific _info.
   CpuData<T> *info = new CpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
+  if(1==1){
+    _data = data;
+  }
+  else{
+    _data = new T[this->_m * this->_n];
+    ASSERT(_data != 0);
+    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+  }
 
-  _data = const_cast<T*>(data);
 
 }
-
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
   : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
@@ -98,32 +116,77 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
 
-  _data = const_cast<T*>(data);
-  _datay = const_cast<T*>(datay);
-  _vdata = const_cast<T*>(vdata);
-  _vdatay = const_cast<T*>(vdatay);
+  if(1==0){ // can't because _data contents get modified
+    _data = const_cast<T*>(data);
+    _datay = const_cast<T*>(datay);
+    _vdata = const_cast<T*>(vdata);
+    _vdatay = const_cast<T*>(vdatay);
+  }
+  else{
+    _data = new T[this->_m * this->_n];
+    ASSERT(_data != 0);
+    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 
+
+    _datay = new T[this->_m];
+    ASSERT(_datay != 0);
+    memcpy(_datay, infoy->orig_data, this->_m * sizeof(T)); 
+    
+    _vdata = new T[this->_mvalid * this->_n];
+    ASSERT(_vdata != 0);
+    memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T)); 
+
+    _vdatay = new T[this->_mvalid];
+    ASSERT(_vdatay != 0);
+    memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
+  }
+  
 }
 
   // no use of datatype
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(data), _datay(datay), _vdata(vdata), _vdatay(vdatay) {
+  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
-  CpuData<T> *info = new CpuData<T>(0);
-  CpuData<T> *infoy = new CpuData<T>(0);
-  CpuData<T> *vinfo = new CpuData<T>(0);
-  CpuData<T> *vinfoy = new CpuData<T>(0);
+  CpuData<T> *info = new CpuData<T>(data);
+  CpuData<T> *infoy = new CpuData<T>(datay);
+  CpuData<T> *vinfo = new CpuData<T>(vdata);
+  CpuData<T> *vinfoy = new CpuData<T>(vdatay);
   this->_info = reinterpret_cast<void*>(info);
   this->_infoy = reinterpret_cast<void*>(infoy);
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+
+  if(1==0){
+    _data = const_cast<T*>(data);
+    _datay = const_cast<T*>(datay);
+    _vdata = const_cast<T*>(vdata);
+    _vdatay = const_cast<T*>(vdatay);
+  }
+  else{
+    _data = new T[this->_m * this->_n];
+    ASSERT(_data != 0);
+    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 
+
+    _datay = new T[this->_m];
+    ASSERT(_datay != 0);
+    memcpy(_datay, infoy->orig_data, this->_m * sizeof(T)); 
+    
+    _vdata = new T[this->_mvalid * this->_n];
+    ASSERT(_vdata != 0);
+    memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T)); 
+
+    _vdatay = new T[this->_mvalid];
+    ASSERT(_vdatay != 0);
+    memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
+  }
+
 }
   
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _wDev(wDev), _data(0), _ord(A._ord) {
+  : Matrix<T>(A._m, A._n, A._mvalid), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
 
   CpuData<T> *info_A   = reinterpret_cast<CpuData<T>*>(A._info); // cast from void to CpuData
   CpuData<T> *infoy_A  = reinterpret_cast<CpuData<T>*>(A._infoy); // cast from void to CpuData
@@ -139,25 +202,56 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   if(A._vdata) vinfo  = new CpuData<T>(vinfo_A->orig_data); // create new CpuData structure with point to CPU data
   if(A._vdatay) vinfoy = new CpuData<T>(vinfoy_A->orig_data); // create new CpuData structure with point to CPU data
 
-  this->_info = reinterpret_cast<void*>(info); // back to cast as void
-  this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
-  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
-  this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void          
+  if(A._data) this->_info = reinterpret_cast<void*>(info); // back to cast as void
+  if(A._datay) this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
+  if(A._vdata)  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
+  if(A._vdatay) this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void          
 
-  _data   = A._data;
-  _datay  = A._datay;
-  _vdata  = A._vdata;
-  _vdatay = A._vdatay;
+  if(1==1){
+    _data   = A._data;
+    _datay  = A._datay;
+    _vdata  = A._vdata;
+    _vdatay = A._vdatay;
+  }
+  else{
+    _data = new T[A._m * A._n];
+    ASSERT(_data != 0);
+    memcpy(_data, info_A->orig_data, A._m * A._n * sizeof(T)); 
+
+    _datay = new T[A._m];
+    ASSERT(_datay != 0);
+    memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T)); 
+    
+    _vdata = new T[A._mvalid * A._n];
+    ASSERT(_vdata != 0);
+    memcpy(_vdata, vinfo_A->orig_data, A._mvalid * A._n * sizeof(T)); 
+
+    _vdatay = new T[A._mvalid];
+    ASSERT(_vdatay != 0);
+    memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T)); 
+  }
 
   
 }
 
-
 template <typename T>
+MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
+  : MatrixDense<T>(A._wDev, A){}
+
+  template <typename T>
 MatrixDense<T>::~MatrixDense() {
   CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
-  delete info;
+  CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
+  CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
+  CpuData<T> *vinfoy = reinterpret_cast<CpuData<T>*>(this->_vinfoy);
+  if(info) delete info;
+  if(infoy) delete infoy;
+  if(vinfo) delete vinfo;
+  if(vinfoy) delete vinfoy;
   this->_info = 0;
+  this->_infoy = 0;
+  this->_vinfo = 0;
+  this->_vinfoy = 0;
 }
 
 template <typename T>

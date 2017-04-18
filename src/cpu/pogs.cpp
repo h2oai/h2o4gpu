@@ -35,9 +35,11 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
 }  // namespace
 
+
+    
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(int ignored, const M &A)
-    : _A(ignored, A), _P(ignored, _A),
+Pogs<T, M, P>::Pogs(int wDev, const M &A)
+    : _A(wDev, A), _P(wDev, _A),
       _de(0), _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
@@ -58,6 +60,32 @@ Pogs<T, M, P>::Pogs(int ignored, const M &A)
   _lambda = new T[_A.Rows()]();
   printLegalNotice();
 }
+
+template <typename T, typename M, typename P>
+Pogs<T, M, P>::Pogs(const M &A)
+  :_A(A._wDev,A), _P(_A._wDev,_A),
+      _de(0), _z(0), _zt(0),
+      _rho(static_cast<T>(kRhoInit)),
+      _done_init(false),
+      _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
+      _final_iter(0),
+      _abs_tol(static_cast<T>(kAbsTol)),
+      _rel_tol(static_cast<T>(kRelTol)),
+      _max_iter(kMaxIter),
+      _init_iter(kInitIter),
+      _verbose(kVerbose),
+      _adaptive_rho(kAdaptiveRho),
+      _equil(kEquil),
+      _gap_stop(kGapStop),
+      _init_x(false), _init_lambda(false) 
+{
+  _x = new T[_A.Cols()]();
+  _y = new T[_A.Rows()]();
+  _mu = new T[_A.Cols()]();
+  _lambda = new T[_A.Rows()]();
+  printLegalNotice();
+}
+
 
 template <typename T, typename M, typename P>
 int Pogs<T, M, P>::_Init() {

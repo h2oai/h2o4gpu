@@ -2,7 +2,7 @@
 POGSROOT=../../src
 
 # Example Files
-EXSRC=elastic_net.cpp
+EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_mapd.cpp
 
@@ -23,7 +23,7 @@ all: cpu cpualt cpumapd
 default: cpualt cpumapd
 
 # CPU
-cpu: run_all.cpp examples.h $(EXSRC)
+cpu: run_all_orig.cpp examples.h $(EXSRC)
 	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
 
 cpualt: run_all.cpp examples.h $(EXSRC2)
