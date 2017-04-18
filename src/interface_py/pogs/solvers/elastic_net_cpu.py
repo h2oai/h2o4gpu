@@ -1,5 +1,7 @@
 from pogs.libs.elastic_net_cpu import pogsElasticNetCPU
+print("pogsElasticNetCPU!=None: " + str(pogsElasticNetCPU!=None))
 from pogs.solvers.elastic_net_base import ElasticNetBaseSolver
+print("ElasticNetBaseSolver!=None: " + str(ElasticNetBaseSolver!=None))
 
 if not pogsElasticNetCPU:
 	print('\nWarning: Cannot create a POGS Elastic Net CPU Solver instance without linking Python module to a compiled POGS CPU library')

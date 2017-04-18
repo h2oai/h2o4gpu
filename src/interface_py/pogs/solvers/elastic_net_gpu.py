@@ -1,5 +1,7 @@
 from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
+print("pogsElasticNetGPU!=None: " + str(pogsElasticNetGPU!=None))
 from pogs.solvers.elastic_net_base import ElasticNetBaseSolver
+print("ElasticNetBaseSolver!=None: " + str(ElasticNetBaseSolver!=None))
 
 if not pogsElasticNetGPU:
 	print('\nWarning: Cannot create a POGS Elastic Net GPU Solver instance without linking Python module to a compiled POGS GPU library')
