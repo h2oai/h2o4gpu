@@ -124,12 +124,16 @@ void makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
 // m and n are training data size
 template <typename T>
 double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
-                     size_t mTrain, size_t n, size_t mValid, int intercept, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
+                     size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0, double lambda_min_ratio, int nLambdas, int nAlphas, double validFraction,
                      double sdTrainY, double meanTrainY,
                      void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
 
   if (intercept!=0 and intercept!=1) {
     cerr << "intercept must be a boolean: 0 or 1\n";
+    exit(-1);
+  }
+  if (standardize!=0 and standardize!=1) {
+    cerr << "standardize must be a boolean: 0 or 1\n";
     exit(-1);
   }
 
@@ -298,10 +302,12 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
           for (size_t j=0; j<n; ++j) {
             trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
-//          // reverse standardization
-//          trainPreds[i]*=sdTrainY; //scale
-//          trainPreds[i]+=meanTrainY; //intercept
-          //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+          if(standardize){
+            // reverse standardization
+            trainPreds[i]*=sdTrainY; //scale
+            trainPreds[i]+=meanTrainY; //intercept
+            //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+          }
         }
 //        // DEBUG START
 //        for (size_t j=0; j<n; ++j) {
@@ -325,9 +331,11 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
             for (size_t j=0; j<n; ++j) { //col
               validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
-//            // reverse (fitted) standardization
-//            validPreds[i]*=sdTrainY; //scale
-//            validPreds[i]+=meanTrainY; //intercept
+            if(standardize){
+              // reverse (fitted) standardization
+              validPreds[i]*=sdTrainY; //scale
+              validPreds[i]+=meanTrainY; //intercept
+            }
           }
           validRMSE = getRMSE(mValid, &validPreds[0], validY);
         }
@@ -346,7 +354,7 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 
 // m and n are full data set size before splitting
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, double validFraction) {
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
 
   // read data and do train-valid split
   std::vector<T> trainX, trainY, validX, validY;
@@ -371,25 +379,34 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   T sdTrainY = std::sqrt(getVarV(trainY, meanTrainY));
   cout << "Mean trainY: " << meanTrainY << endl;
   cout << "StdDev trainY: " << sdTrainY << endl;
-  // standardize the response for training data
-//  for (size_t i=0; i<trainY.size(); ++i) {
-//    trainY[i] -= meanTrainY;
-//    trainY[i] /= sdTrainY;
-//  }
-//  meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+  if(standardize){
+    // standardize the response for training data
+    for (size_t i=0; i<trainY.size(); ++i) {
+      trainY[i] -= meanTrainY;
+      trainY[i] /= sdTrainY;
+    }
+    meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+    sdTrainY = std::sqrt(getVarV(trainY, meanTrainY));
+  }
 
   // Validation mean and stddev
   if (!validY.empty()) {
     cout << "Rows in validation data: " << validY.size() << endl;
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    T sdValidY = std::sqrt(getVarV(validY, meanValidY));
     cout << "Mean validY: " << meanValidY << endl;
-    cout << "StdDev validY: " << std::sqrt(getVarV(validY, meanValidY)) << endl;
-    // standardize the response the same way as for training data ("apply fitted transform during scoring")
-//    for (size_t i=0; i<validY.size(); ++i) {
-//      validY[i] -= meanTrainY;
-//      validY[i] /= sdTrainY;
-//    }
+    cout << "StdDev validY: " << sdValidY << endl;
+    if(standardize){
+      // standardize the response the same way as for training data ("apply fitted transform during scoring")
+      for (size_t i=0; i<validY.size(); ++i) {
+        validY[i] -= meanTrainY;
+        validY[i] /= sdTrainY;
+      }
+      meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+      sdValidY = std::sqrt(getVarV(validY, meanValidY));
+    }
   }
+    
 
   // TODO: compute on the GPU - inside of ElasticNetPtr
   // set lambda max 0 (i.e. base lambda_max)
@@ -445,9 +462,9 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
 
   int datatype = 1;
-  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, sdTrainY, meanTrainY, a, b, c, d);
+  return ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, validFraction, sdTrainY, meanTrainY, a, b, c, d);
 }
 
-template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, double);
-template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, double);
+template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, int, double);
+template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, int, double);
 

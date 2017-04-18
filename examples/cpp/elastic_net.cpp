@@ -41,7 +41,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, double validFraction) {
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -130,12 +130,15 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   cout << "Mean trainY: " << meanTrainY << endl;
   cout << "StdDev trainY: " << sdTrainY << endl;
   // standardize the response for training data
-/*
-  for (size_t i=0; i<trainY.size(); ++i) {
-    trainY[i] -= meanTrainY;
-    trainY[i] /= sdTrainY;
+  if(standardize){
+    for (size_t i=0; i<trainY.size(); ++i) {
+      trainY[i] -= meanTrainY;
+      trainY[i] /= sdTrainY;
+    }
+    meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+    sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
   }
-*/
+
 
   // Validation mean and stddev
   if (!validY.empty()) {
@@ -143,15 +146,18 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     cout << "Mean validY: " << meanValidY << endl;
     cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
-/*
-    // standardize the response the same way as for training data ("apply fitted transform during scoring")
-    for (size_t i=0; i<validY.size(); ++i) {
-      validY[i] -= meanTrainY;
-      validY[i] /= sdTrainY;
-    }
-*/
-  }
 
+    if(standardize){
+      // standardize the response the same way as for training data ("apply fitted transform during scoring")
+      for (size_t i=0; i<validY.size(); ++i) {
+        validY[i] -= meanTrainY;
+        validY[i] /= sdTrainY;
+      }
+      meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+      cout << "Mean validY: " << meanValidY << endl;
+      cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
+    }
+  }
 
   T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
   cout << "weights " << weights << endl;
@@ -165,7 +171,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     for (unsigned int i = 0; i < mTrain; ++i) {
       u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainY);
     }
-    //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
@@ -321,12 +326,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
           for (size_t j=0; j<n; ++j) {
             trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
-/*
-          // reverse standardization
-          trainPreds[i]*=sdTrainY; //scale
-          trainPreds[i]+=meanTrainY; //intercept
-          //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
-*/
+          if(standardize){
+            // reverse standardization
+            trainPreds[i]*=sdTrainY; //scale
+            trainPreds[i]+=meanTrainY; //intercept
+            //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+          }
         }
         double trainRMSE = getRMSE(&trainPreds[0], &trainY);
 
@@ -337,11 +342,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
             for (size_t j=0; j<n; ++j) {
               validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
-/*
-            // reverse (fitted) standardization
-            validPreds[i]*=sdTrainY; //scale
-            validPreds[i]+=meanTrainY; //intercept
-*/
+            if(standardize){
+              // reverse (fitted) standardization
+              validPreds[i]*=sdTrainY; //scale
+              validPreds[i]+=meanTrainY; //intercept
+            }
           }
           validRMSE = getRMSE(&validPreds[0], &validY);
         }
@@ -356,7 +361,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   fprintf(stdout,"END SOLVE: type 1 m %d n %d twall %g tsolve %g\n",(int)mTrain,(int)n,tf-t,tf-t1);
   return tf-t1;
 }
-
-template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, double);
-template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, double);
-
+  
+template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, int, double);
+template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, int, double);
+ 
