@@ -38,11 +38,9 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
   validX = A
   validY = y
 
-  ## First, get backend pointers
-  a,b,c,d = Solver.upload_data(sourceDev, trainX, trainY, validX, validY)
 
   ## TODO: compute these in C++ (CPU or GPU)
-  lambda_max0 = max(abs(A.T.dot(b)))
+  lambda_max0 = max(abs(A.T.dot(y)))
   sdTrainY = np.sqrt(np.var(y))
   meanTrainY = np.mean(y)
   mTrain = trainX.shape[0]
@@ -51,6 +49,10 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
   ## Constructor
   enet = Solver(nGPUs, 'r', intercept, lambda_min_ratio, nLambdas, nAlphas)
+
+  ## First, get backend pointers
+  a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
+
 
   ## Solve
   enet.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d)

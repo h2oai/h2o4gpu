@@ -1,5 +1,5 @@
-from ctypes import byref, c_int, c_float, c_double, pointer, c_size_t
-from pogs.types import ORD, cptr, c_double_p, c_double_pp
+from ctypes import *
+from pogs.types import ORD, cptr, c_double_p, c_void_pp
 from pogs.libs.elastic_net_cpu import pogsElasticNetCPU
 from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
 
@@ -19,16 +19,28 @@ class ElasticNetBaseSolver(object):
         mTrain = trainX.shape[0]
         mValid = validX.shape[0]
         n = validX.shape[1]
-        a=c_double_p
-        b=c_double_p
-        c=c_double_p
-        d=c_double_p
+        aa = c_void_p(0)
+        bb = c_void_p(0)
+        cc = c_void_p(0)
+        dd = c_void_p(0)
+        a=pointer(aa)
+        b=pointer(bb)
+        c=pointer(cc)
+        d=pointer(dd)
+        A = cptr(trainX,c_double)
+        B = cptr(trainY,c_double)
+        C = cptr(validX,c_double)
+        D = cptr(validY,c_double)
         ## C++ CALL
         status = self.lib.make_ptr_double(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
-                         c_double_p(trainX), c_double_p(trainY), c_double_p(validX), c_double_p(validY),
-                         byref(a), byref(b), byref(c), byref(d))
+                                          A, B, C, D, ## input
+                                          a, b, c, d) ## output
         assert status==0, "Failure uploading the data"
-        return a, b, c, d
+        print(aa)
+        print(bb)
+        print(cc)
+        print(dd)
+        return aa, bb, cc, dd
 
     def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d):
         print("Implement!")

@@ -2,6 +2,7 @@ from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
 print("pogsElasticNetGPU!=None: " + str(pogsElasticNetGPU!=None))
 from pogs.solvers.elastic_net_base import ElasticNetBaseSolver
 print("ElasticNetBaseSolver!=None: " + str(ElasticNetBaseSolver!=None))
+from pogs.types import cptr, c_double
 
 if not pogsElasticNetGPU:
 	print('\nWarning: Cannot create a POGS Elastic Net GPU Solver instance without linking Python module to a compiled POGS GPU library')
@@ -14,8 +15,8 @@ else:
 			self.solver = ElasticNetBaseSolver(pogsElasticNetGPU,
 											   nGPUs, ord, intercept, lambda_min_ratio, n_lambdas, n_alphas)
 
-		def upload_data(gpu, sourceDev, trainX, trainY, validX, validY):
-			pogsElasticNetGPU.upload_data(gpu, sourceDev, trainX, trainY, validX, validY)
+		def upload_data(self, sourceDev, trainX, trainY, validX, validY):
+			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY)
 
 		def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d):
 			## C++ CALL

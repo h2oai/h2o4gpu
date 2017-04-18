@@ -58,21 +58,13 @@ PYCUDART=$(CUDAHOME)/libcudart.so
 
 .PHONY: default all
 default: all
-all: libpogs libpogs_gpu pypogs_gpu
+all: cpogs_cpu cpogs_gpu
 
-libpogs: pogs_c.o
+cpogs_cpu: pogs_c.o
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(POGSLIB) $(LDFLAGS)
 
-libpogs_gpu: pogs_c.o
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(CULDFLAGS)
-
-pypogs_cpu: pogs_c.o
-	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -shared -o $@.$(SHARED) $< $(POGSLIB) $(LDFLAGS)
-
-pypogs_gpu: pogs_c.o
+cpogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
 
