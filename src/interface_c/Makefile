@@ -37,10 +37,11 @@ POGSLIB=\
 	$(POGSROOT)/build/cpu/matrix/matrix_dense.o \
 	$(POGSROOT)/build/cpu/matrix/matrix_sparse.o \
 	$(POGSROOT)/build/cpu/projector/projector_direct_dense.o \
-	$(POGSROOT)/build/cpu/projector/projector_cgls.o
+	$(POGSROOT)/build/cpu/projector/projector_cgls.o \
+	$(POGSROOT)/build/common/elastic_net_mapd.o
 
 CUPOGSLIB=\
-	$(POGSROOT)/build/pogs_link.o \
+        $(POGSROOT)/build/gpu/pogs_link.o \
 	$(POGSROOT)/build/gpu/pogs.o \
 	$(POGSROOT)/build/gpu/warmstart.o \
 	$(POGSROOT)/build/gpu/p2pbwcheck.o \
@@ -48,25 +49,22 @@ CUPOGSLIB=\
 	$(POGSROOT)/build/gpu/matrix/matrix_dense.o \
 	$(POGSROOT)/build/gpu/matrix/matrix_sparse.o \
 	$(POGSROOT)/build/gpu/projector/projector_direct_dense.o \
-	$(POGSROOT)/build/gpu/projector/projector_cgls.o
+	$(POGSROOT)/build/gpu/projector/projector_cgls.o \
+	$(POGSROOT)/build/common/elastic_net_mapd.o
 
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so	
 
 
 .PHONY: default all
-default: pogs_c.o
-all: libpogs libpogs_gpu pypogs_gpu
+default: all
+all: cpogs_cpu cpogs_gpu
 
-libpogs: pogs_c.o
+cpogs_cpu: pogs_c.o
 	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(POGSLIB) $(LDFLAGS)
 
-libpogs_gpu: pogs_c.o
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(CULDFLAGS)
-
-pypogs_gpu: pogs_c.o
+cpogs_gpu: pogs_c.o
 	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(CXX) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
 

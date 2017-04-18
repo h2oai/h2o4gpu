@@ -89,7 +89,6 @@ int pogs_solve_double(void *work, struct PogsSettingsD *settings, struct PogsSol
 void pogs_finish_single(void * work);
 void pogs_finish_double(void * work);
 
-
 #ifdef __cplusplus
 }
 #endif

@@ -4,7 +4,7 @@ from pogs.types import c_int_p, c_float_p, c_double_p, settings_s_p, settings_d_
 
 
 ext = ".dylib" if os.uname()[0] == "Darwin" else ".so"
-lib_path = os.path.join(os.path.dirname(__file__),"../../pypogs_gpu" + ext)
+lib_path = os.path.join(os.path.dirname(__file__),"../../cpogs_gpu" + ext)
 
 
 try:

@@ -382,7 +382,6 @@ int pogs_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *soluti
 void pogs_finish_single(void * work){ return PogsShutdown<float>(work); }
 void pogs_finish_double(void * work){ return PogsShutdown<double>(work); }
 
-
 }
 
 
