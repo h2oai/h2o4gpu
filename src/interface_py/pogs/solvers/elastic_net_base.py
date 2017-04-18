@@ -5,7 +5,6 @@ from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
 
 class ElasticNetBaseSolver(object):
     def __init__(self, lib, nGPUs, ord, intercept, lambda_min_ratio, n_lambdas, n_alphas):
-        print("Trying to instantiate a elastic net base solver")
         assert lib and (lib==pogsElasticNetCPU or lib==pogsElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs
@@ -41,12 +40,10 @@ class ElasticNetBaseSolver(object):
     def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d):
         ## C++ CALL
         # ##TODO: float
-        val = self.lib.elastic_net_ptr_double(
+        self.lib.elastic_net_ptr_double(
             c_int(sourceDev), c_int(1), c_int(self.nGPUs),
             c_int(self.ord), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
             c_int(self.intercept), c_double(lambda_max0),
             c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
             c_double(sdTrainY), c_double(meanTrainY),
             a, b, c, d)
-        print(val)
-        return val
