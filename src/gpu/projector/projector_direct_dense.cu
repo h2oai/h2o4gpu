@@ -12,6 +12,8 @@
 #include "util.h"
 #include "timer.h"
 
+extern int checkwDev(int wDev);
+
 #include "pogs.h"
 
 namespace pogs {
@@ -38,6 +40,7 @@ template <typename T, typename M>
 ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
   : _wDev(wDev), _A(A) {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
   fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
@@ -53,6 +56,7 @@ template <typename T, typename M>
 ProjectorDirect<T, M>::ProjectorDirect(const M& A)
   : _wDev(A._wDev), _A(A) {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
   fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
@@ -68,6 +72,7 @@ ProjectorDirect<T, M>::ProjectorDirect(const M& A)
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);

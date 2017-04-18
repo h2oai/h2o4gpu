@@ -12,6 +12,10 @@
 #include <cerrno>
 #include <string>
 
+
+
+
+
 #define CUDACHECK(cmd) do {                         \
   cudaError_t e = cmd;                              \
   if( e != cudaSuccess ) {                          \

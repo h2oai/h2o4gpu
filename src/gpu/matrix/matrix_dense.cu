@@ -9,6 +9,8 @@
 #include "util.h"
 #include "timer.h"
 
+extern int checkwDev(int wDev);
+
 namespace pogs {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +59,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(0),_data(0) {
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _datay=NULL;
   _vdata=NULL;
@@ -106,6 +109,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data)
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(datatype),_data(0) {
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _datay=NULL;
   _vdata=NULL;
@@ -163,6 +167,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
   : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
@@ -218,6 +223,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
   : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
@@ -297,6 +303,7 @@ template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   : Matrix<T>(A._m, A._n, A._mvalid), _wDev(wDev), _data(0), _ord(A._ord) {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   
   PUSH_RANGE("MDnew",MDnew,2);
@@ -354,6 +361,7 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 

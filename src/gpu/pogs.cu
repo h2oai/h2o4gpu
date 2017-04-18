@@ -18,6 +18,7 @@
 #include "projector/projector_direct.h"
 #include "projector/projector_cgls.h"
 #include "util.h"
+#include "cuda_utils.h"
 
 #include "timer.h"
 
@@ -27,8 +28,6 @@ typedef struct {
   int size;
   cudaStream_t stream;
 } PerThreadData;
-
-
 
 
 #define __HBAR__ \
@@ -75,6 +74,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 #endif
       _init_x(false), _init_lambda(false) {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   printLegalNotice();
 
@@ -108,6 +108,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 #endif
       _init_x(false), _init_lambda(false) {
 
+  checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   printLegalNotice();
 
@@ -128,17 +129,6 @@ int Pogs<T, M, P>::_Init() {
 
 
 #ifdef _DEBUG
-  //  int _nDev=1; // number of cuda devices to use
-  //  int _wDev=0; // which cuda device(s) to use
-  // get number of devices visible/available
-  int nVis = 0;
-  CUDACHECK(cudaGetDeviceCount(&nVis));
-  for (int i = 0; i < nVis; i++){
-    cudaDeviceProp props;
-    CUDACHECK(cudaGetDeviceProperties(&props, i));
-    printf("Visible: Compute %d.%d CUDA device: [%s] : cudadeviceid: %2d of %2d devices [0x%02x] mpc=%d\n", props.major, props.minor, props.name, i, nVis, props.pciBusID, props.multiProcessorCount); fflush(stdout);
-  }
-  
   // get device ID
   int devID;
   CUDACHECK(cudaGetDevice(&devID));

@@ -3,6 +3,9 @@
     #define __device__
 #endif
 
+#include <sstream>
+#include <stdio.h>
+
 // Check CUDA calls
 #define CUDACHECK(cmd) do {                         \
     cudaError_t e = cmd;                              \
@@ -13,7 +16,6 @@
     }                                                 \
   } while(0)
 
-#include <sstream>
 
 #ifdef USE_NCCL2
 #include "nccl.h"
