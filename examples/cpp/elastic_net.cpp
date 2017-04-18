@@ -41,7 +41,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int ignored_intercept/*FIXME*/, double validFraction) {
+double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, double validFraction) {
 
   int nlambda = nLambdas;
   if (nlambda <= 1) {
@@ -88,6 +88,9 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     size_t mValid = static_cast<size_t>(m * validFraction);
     mTrain = m - mValid;
 
+    // If intercept == 1, add one extra column at the end, all constant 1s
+    n += intercept;
+
     // Alloc
     trainX.resize(mTrain * n);
     trainY.resize(mTrain);
@@ -95,9 +98,12 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     for (int i = 0; i < mTrain; ++i) { //rows
       trainY[i] = b[i];
 //      cout << "y[" << i << "] = " << b[i] << endl;
-      for (int j = 0; j < n; ++j) { //cols
-        trainX[i * n + j] = A[i * n + j];
+      for (int j = 0; j < n - intercept; ++j) { //cols
+        trainX[i * n + j] = A[i * (n-intercept) + j];
 //        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
+      }
+      if (intercept) {
+        trainX[i * n + n - 1] = 1;
       }
     }
     if (mValid>0) {
@@ -105,8 +111,11 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
       validY.resize(mValid);
       for (int i = 0; i < mValid; ++i) { //rows
         validY[i] = b[mTrain + i];
-        for (int j = 0; j < n; ++j) { //cols
-          validX[i * n + j] = A[(mTrain + i) * n + j];
+        for (int j = 0; j < n - intercept; ++j) { //cols
+          validX[i * n + j] = A[(mTrain + i) * (n-intercept) + j];
+        }
+        if (intercept) {
+          validX[i * n + n - 1] = 1;
         }
       }
     }
@@ -151,15 +160,17 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
+    T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
+    if (intercept) weights/=mTrain;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += trainX[i*n + j] * (trainY[i]);
+      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainY);
     }
     //lambda_max0 = weights * static_cast<T>(std::max(lambda_max0, std::abs(u)));
     lambda_max0 = std::max(lambda_max0, std::abs(u));
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = (m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1E-5; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 
