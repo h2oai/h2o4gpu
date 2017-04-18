@@ -230,7 +230,7 @@ double ElasticNetptr(int sourceDev, int datatype, int nGPUs, const char ord,
 
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
-      const T alpha = N == 1 ? 1 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
+      const T alpha = N == 1 ? 0.5 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
       T lambda_max = lambda_max0/std::max(static_cast<T>(1e-3), alpha); // same as H2O
       if (alpha==1 && mTrain>10000) {
         lambda_max *= 2;
