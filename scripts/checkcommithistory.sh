@@ -128,28 +128,29 @@ for i in `cat $hashfullpath`; do
       echo "NA" > outgpus2.txt
   fi
 
-  valcpu=`cat outcpu.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  # just pick last, add |sort -rg before tail to sort and get best
+  valcpu=`cat outcpu.txt |grep RMSE | awk '{print $14}' | tail -1`
   itercpu=`cat outcpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpu  ]]
   then
       valcpu="NA      "
       itercpu="NA "
   fi
-  valcpus=`cat outcpus.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valcpus=`cat outcpus.txt |grep RMSE | awk '{print $14}' | tail -1`
   itercpus=`cat outcpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpus  ]]
   then
       valcpus="NA      "
       itercpus="NA "
   fi
-  valcpu2=`cat outcpu2.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valcpu2=`cat outcpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
   itercpu2=`cat outcpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpu2  ]]
   then
       valcpu2="NA      "
       itercpu2="NA "
   fi
-  valcpus2=`cat outcpus2.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valcpus2=`cat outcpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
   itercpus2=`cat outcpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpus2  ]]
   then
@@ -158,28 +159,28 @@ for i in `cat $hashfullpath`; do
   fi
 
   # GPU
-  valgpu=`cat outgpu.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valgpu=`cat outgpu.txt |grep RMSE | awk '{print $14}' | tail -1`
   itergpu=`cat outgpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpu  ]]
   then
       valgpu="NA      "
       itergpu="NA "
   fi
-  valgpus=`cat outgpus.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valgpus=`cat outgpus.txt |grep RMSE | awk '{print $14}' | tail -1`
   itergpus=`cat outgpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpus  ]]
   then
       valgpus="NA      "
       itergpus="NA "
   fi
-  valgpu2=`cat outgpu2.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valgpu2=`cat outgpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
   itergpu2=`cat outgpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpu2  ]]
   then
       valgpu2="NA      "
       itergpu2="NA "
   fi
-  valgpus2=`cat outgpus2.txt |grep RMSE | awk '{print $14}'|sort -rg | tail -1`
+  valgpus2=`cat outgpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
   itergpus2=`cat outgpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpus2  ]]
   then
