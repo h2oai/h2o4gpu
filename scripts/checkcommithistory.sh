@@ -18,9 +18,9 @@ git reset --hard origin/master
 git log | grep "^commit\ [0-9]" | awk '{print $2}' > $hashfullpath
 popd
 
-rm -f $resultdir/results.log
-rm -f $resultdir/results2.log
-rm -f $resultdir/results3.log
+rm -f $resultdir/resultsR.log
+rm -f $resultdir/resultscpu.log
+rm -f $resultdir/resultsgpu.log
 for i in `cat $hashfullpath`; do
   echo "$i"
   cd $pogsdir
@@ -80,7 +80,7 @@ for i in `cat $hashfullpath`; do
       valh2ostd=`cat $resultdir/file.$i | grep '\[1\] \"H2OSTDRMSE' |awk '{print $2}'`
       valh2onostd=`cat $resultdir/file.$i | grep '\[1\] \"H2ONOSTDRMSE' |awk '{print $2}'`
 
-      echo $i $j $valpogs $itermax $valglmstd $valglmnostd $valh2ostd, $valh2onostd | tee -a $resultdir/results.log
+      echo $i $j $valpogs $itermax $valglmstd $valglmnostd $valh2ostd, $valh2onostd | tee -a $resultdir/resultsR.log
   done
 
   # C++
@@ -187,6 +187,6 @@ for i in `cat $hashfullpath`; do
       itergpus2="NA"
   fi
   
-  echo $i $j $valpogs $itermax $valcpu $itercpu $valcpus $itercpus $valcpu2 $itercpu2 $valcpus2 $itercpus2 | tee -a $resultdir/results2.log
-  echo $i $j $valpogs $itermax $valgpu $itergpu $valgpus $itergpus $valgpu2 $itergpu2 $valgpus2 $itergpus2 | tee -a $resultdir/results3.log
+  echo $i $j "R:"$valpogs $itermax "CPU10:"$valcpu $itercpu "CPU11:"$valcpus $itercpus "MAPD10:"$valcpu2 $itercpu2 "MAPD11:"$valcpus2 $itercpus2 | tee -a $resultdir/resultscpu.log
+  echo $i $j "R:"$valpogs $itermax "GPU10:"$valgpu $itergpu "GPU11:"$valgpus $itergpus "MAPD10:"$valgpu2 $itergpu2 "MAPD11:"$valgpus2 $itergpus2 | tee -a $resultdir/resultsgpu.log
 done

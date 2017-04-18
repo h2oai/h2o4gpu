@@ -16,8 +16,9 @@ sudo nvidia-smi -pm 1
 
 or
 
-nvidia-persistenced --user foo --persistence-mode
-where "foo" is your username
+#below doesn't seem to put into persistence mode, so just use above sudo version
+##nvidia-persistenced --user foo --persistence-mode
+##where "foo" is your username
 
 
 To compile gpu version:
