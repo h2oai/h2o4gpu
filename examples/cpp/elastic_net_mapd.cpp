@@ -8,7 +8,6 @@
 
 #include "../common/elastic_net_mapd.h"
 #include "timer.h"
-#include <omp.h>
 
 using namespace std;
 
