@@ -13,8 +13,8 @@ POGSPATH = os.path.join(BASEPATH, '../interface_c/')
 class PogsBuild(build):
   def run(self):
     NVCC = os.popen("which nvcc").read()!=""
-    CPULIB='libpogs'
-    GPULIB='pypogs_gpu'
+    CPULIB='cpogs_cpu'
+    GPULIB='cpogs_gpu'
     EXT=".dylib" if os.uname()[0] == "Darwin" else ".so"
 
     # run original build code

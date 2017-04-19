@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_int, c_uint, c_float, c_double, Structure
+from ctypes import POINTER, c_int, c_uint, c_void_p, c_float, c_double, Structure
 from numpy import float32, float64, zeros, ones, inf
 
 # POGS constants
@@ -49,6 +49,7 @@ DEFAULTS['wDev']=	0 		# which cuda devices (0)
 # pointers to C types
 c_int_p = POINTER(c_int)
 c_float_p = POINTER(c_float)
+c_void_pp = POINTER(c_void_p)
 c_double_p = POINTER(c_double)
 
 # POGS types

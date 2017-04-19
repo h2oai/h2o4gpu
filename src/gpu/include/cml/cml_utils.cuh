@@ -18,9 +18,9 @@
 #define CublasCheckError(val) cml::__CublasCE((val), __func__, __FILE__, __LINE__)
 #define CusparseCheckError(val) cml::__CuspCE((val), __func__, __FILE__, __LINE__)
 #else
-#define CudaCheckError(val)
-#define CublasCheckError(val)
-#define CusparseCheckError(val)
+#define CudaCheckError(val) assert(val==0);
+#define CublasCheckError(val) assert(val==0);
+#define CusparseCheckError(val) assert(val==0);
 #endif
 
 namespace cml {

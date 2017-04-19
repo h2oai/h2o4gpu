@@ -6,6 +6,7 @@
 #include "cml/cblas.h"
 #include "cml/cml_defs.cuh"
 #include "cml/cml_utils.cuh"
+#include <cassert>
 
 namespace cml {
 

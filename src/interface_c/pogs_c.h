@@ -195,7 +195,11 @@ int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, 
 template<typename T>
 void PogsShutdown(void * work);
 
-                
+template <typename T>
+int makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+            T* trainX, T * trainY, T* validX, T* validY,  //CPU
+            void**a, void**b, void**c, void**d); // GPU
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -214,7 +218,6 @@ int pogs_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *soluti
                       const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h);
 void pogs_finish_single(void * work);
 void pogs_finish_double(void * work);
-
 
 #ifdef __cplusplus
 }
