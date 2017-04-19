@@ -143,7 +143,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
     T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
-    //if (intercept) weights/=mTrain;
     for (unsigned int i = 0; i < mTrain; ++i) { //row
       u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
@@ -151,7 +150,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = 1E-5; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1E-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
