@@ -44,21 +44,24 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
   ## TODO: compute these in C++ (CPU or GPU)
   sdTrainY = np.sqrt(np.var(y))
+  print("sdTrainY: " + str(sdTrainY))
   meanTrainY = np.mean(y)
+  print("meanTrainY: " + str(meanTrainY))
   mTrain = trainX.shape[0]
   mValid = validX.shape[0] if validX != None else 0
   fortran = trainX.flags.f_contiguous
 
 
-  if intercept==1:
-    weights = 1.#/mTrain
+  weights = 1.#/mTrain
+  if intercept:
     lambda_max0 = weights * max(abs(A.T.dot(y-meanTrainY)))
   else:
     lambda_max0 = max(abs(A.T.dot(y)))
+  print("lambda_max0: " + str(lambda_max0))
 
   if intercept==1:
-    A = np.hstack([A, np.ones((A.shape[0],1))])
-    trainX = A
+    trainX = np.hstack([trainX, np.ones((trainX.shape[0],1))])
+    validX = np.hstack([validX, np.ones((validX.shape[0],1))])
 
   n = trainX.shape[1]
   print(mTrain)
@@ -83,9 +86,10 @@ if __name__ == "__main__":
 #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
-  df = pd.read_csv("../R/train.csv")
-  X = np.array(df.iloc[:,df.columns != 'INCEARN'], dtype='float64', order='C')
-  y = np.array(df.iloc[:,df.columns == 'INCEARN'], dtype='float64')
+  df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
+  print(df.shape)
+  X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float64', order='C')
+  y = np.array(df.iloc[:, df.shape[1]-1], dtype='float64')
   #print(X)
   #print(y)
   ElasticNet(X, y, gpu=True, double_precision=True, nlambda=100, nalpha=1)
