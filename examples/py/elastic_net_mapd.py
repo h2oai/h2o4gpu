@@ -65,7 +65,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
   print(n)
 
   ## Constructor
-  enet = Solver(nGPUs, 'c' if fortran else 'r', intercept, lambda_min_ratio, nLambdas, nAlphas)
+  enet = Solver(nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas)
 
   ## First, get backend pointers
   a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
@@ -83,9 +83,9 @@ if __name__ == "__main__":
 #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
-  df = pd.read_csv("../R/ipums.csv")
-  X = np.array(df.ix[:,:8549], dtype='float64', order='C')
-  y = np.array(df.ix[:,8549], dtype='float64')
+  df = pd.read_csv("../R/train.csv")
+  X = np.array(df.iloc[:,df.columns != 'INCEARN'], dtype='float64', order='C')
+  y = np.array(df.iloc[:,df.columns == 'INCEARN'], dtype='float64')
   #print(X)
   #print(y)
   ElasticNet(X, y, gpu=True, double_precision=True, nlambda=100, nalpha=1)
