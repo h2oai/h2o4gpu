@@ -181,6 +181,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
     ASSERT(_vdatay != 0);
     memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
   }
+#if 0
     if (ord=='r') {
       std::cout << m << std::endl;
       std::cout << n << std::endl;
@@ -201,8 +202,8 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
         }
         std::cout << " -> " << *(_datay + i);
       }
-
     }
+#endif
 
 }
   
