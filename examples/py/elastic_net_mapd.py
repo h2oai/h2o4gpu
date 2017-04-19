@@ -38,8 +38,8 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
   trainX = A
   trainY = y
-  validX = None
-  validY = None
+  validX = A
+  validY = y
 
 
   ## TODO: compute these in C++ (CPU or GPU)

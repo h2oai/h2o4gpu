@@ -102,8 +102,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   // Training mean and stddev
   T meanTrainY0 = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
   T sdTrainY0 = std::sqrt(pogs::getVarV(trainY, meanTrainY0));
-  T meanTrainYn;
-  T sdTrainYn;
+  T meanTrainYn = meanTrainY0;
+  T sdTrainYn = sdTrainY0;
   cout << "Mean trainY: " << meanTrainY0 << endl;
   cout << "StdDev trainY: " << sdTrainY0 << endl;
   if(standardize){
@@ -117,14 +117,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   }
 
   // Validation mean and stddev
-  T meanValidY0;
-  T sdValidY0;
-  T meanValidYn;
-  T sdValidYn;
   if (!validY.empty()) {
     cout << "Rows in validation data: " << validY.size() << endl;
-    meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
+    T meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    T sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
     cout << "Mean validY: " << meanValidY0 << endl;
     cout << "StdDev validY: " << sdValidY0 << endl;
     if (standardize) {
@@ -133,10 +129,10 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
         validY[i] -= meanTrainY0;
         validY[i] /= sdTrainY0;
       }
-      meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-      sdValidYn = std::sqrt(pogs::getVarV(validY, meanValidYn));
-      cout << "new Mean validY: " << meanValidYn << endl;
-      cout << "new StdDev validY: " << sdValidYn << endl;
+//      T meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+//      T sdValidYn = std::sqrt(pogs::getVarV(validY, meanValidYn));
+//      cout << "new Mean validY: " << meanValidYn << endl;
+//      cout << "new StdDev validY: " << sdValidYn << endl;
     }
   }
     

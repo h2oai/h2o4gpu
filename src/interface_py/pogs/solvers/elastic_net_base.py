@@ -18,7 +18,7 @@ class ElasticNetBaseSolver(object):
     def upload_data(self, sourceDev, trainX, trainY, validX, validY):
         mTrain = trainX.shape[0]
         mValid = validX.shape[0]
-        n = validX.shape[1]
+        n = trainX.shape[1]
         a = c_void_p(0)
         b = c_void_p(0)
         c = c_void_p(0)

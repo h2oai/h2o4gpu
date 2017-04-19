@@ -134,7 +134,7 @@ namespace pogs {
           g.reserve(n);
           // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
           T penalty_factor = static_cast<T>(1.0); // like pogs.R
-          T weights = static_cast<T>(1.0 / (static_cast<T>(mTrain))); // like pogs.R
+          T weights = 1/static_cast<T>(1.0 / (static_cast<T>(mTrain))); // like pogs.R
 
           for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
           for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
@@ -185,11 +185,9 @@ namespace pogs {
                 trainPreds[i] += pogs_data.GetX()[j] * trainX[i * n + j]; //add predictions
               }
             }
-            double trainRMSE;
-            if(standardize) trainRMSE = sdTrainY*getRMSE(mTrain, &trainPreds[0], trainY);
-            else trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
-
+            double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
             if(standardize){
+              trainRMSE *= sdTrainY;
               for (size_t i = 0; i < mTrain; ++i) {
                 // reverse standardization
                 trainPreds[i]*=sdTrainY; //scale
@@ -219,10 +217,9 @@ namespace pogs {
                   validPreds[i] += pogs_data.GetX()[j] * validX[i * n + j]; //add predictions
                 }
               }
-              if(standardize) validRMSE = sdTrainY*getRMSE(mValid, &validPreds[0], validY);
-              else validRMSE = getRMSE(mValid, &validPreds[0], validY);
-              
+              validRMSE = getRMSE(mValid, &validPreds[0], validY);
               if(standardize){
+                validRMSE *= sdTrainY;
                 for (size_t i = 0; i < mValid; ++i) { //row
                   // reverse (fitted) standardization
                   validPreds[i]*=sdTrainY; //scale
