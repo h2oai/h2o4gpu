@@ -181,6 +181,28 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
     ASSERT(_vdatay != 0);
     memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
   }
+    if (ord=='r') {
+      std::cout << m << std::endl;
+      std::cout << n << std::endl;
+      for (int i=0; i<m; ++i) {
+        std::cout << std::endl;
+        for (int j = 0; j < n; ++j) {
+          std::cout<< *(_data + i*n+j) << " ";
+        }
+        std::cout << " -> " << *(_datay + i);
+      }
+    } else {
+      std::cout << m << std::endl;
+      std::cout << n << std::endl;
+      for (int i=0; i<m; ++i) {
+        std::cout << std::endl;
+        for (int j = 0; j < n; ++j) {
+          std::cout<< *(_data + j*m+i) << " ";
+        }
+        std::cout << " -> " << *(_datay + i);
+      }
+
+    }
 
 }
   

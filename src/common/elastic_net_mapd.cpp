@@ -109,6 +109,8 @@ namespace pogs {
         int a;
 
 
+        fprintf(stderr, "lambda_max0: %f\n", lambda_max0);
+        fflush(stderr);
 #pragma omp for
         for (a = 0; a < N; ++a) { //alpha search
           const T alpha = N == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
@@ -118,6 +120,9 @@ namespace pogs {
             lambda_min_ratio /= 2;
           }
           const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
+          fprintf(stderr, "lambda_max: %f\n", lambda_max);
+          fprintf(stderr, "lambda_min: %f\n", lambda_min);
+          fflush(stderr);
           fprintf(fil, "lambda_max: %f\n", lambda_max);
           fprintf(fil, "lambda_min: %f\n", lambda_min);
           fflush(fil);
