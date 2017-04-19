@@ -348,7 +348,7 @@ pogsnet <- function(x, y, family=c("gaussian", "binomial"),
       if (intercept) {
         lambda.max = max(abs(t(x[,-1]) %*% (weights * (y - mean(y))))) / max(alpha, 1e-3)
       } else {
-        lambda.max = max(abs(t(x) %*% y)) / max(alpha, 1e-3)
+        lambda.max = max(abs(t(x) %*% (weights*y))) / max(alpha, 1e-3)
       }
       if (alpha==1 && nobs > 1e4) {
         lambda.max = 2*lambda.max
@@ -556,7 +556,7 @@ cv.pogsnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutof
   N = nrow(x)
   y = drop(y)
   if(missing(weights)) {
-    weights = rep(1.0, N)
+    weights = rep(1.0/as.double(N), N)
   } else {
     weights = as.double(weights)
   }
