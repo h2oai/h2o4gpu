@@ -51,7 +51,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
 
   if intercept==1:
-    weights = 1./mTrain
+    weights = 1.#/mTrain
     lambda_max0 = weights * max(abs(A.T.dot(y-meanTrainY)))
   else:
     lambda_max0 = max(abs(A.T.dot(y)))

@@ -143,7 +143,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
     T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
-    if (intercept) weights/=mTrain;
+    //if (intercept) weights/=mTrain;
     for (unsigned int i = 0; i < mTrain; ++i) { //row
       u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
