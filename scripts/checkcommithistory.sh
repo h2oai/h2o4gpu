@@ -16,8 +16,10 @@ cp examples/R/simple.R $resultdir
 git checkout master
 git reset --hard origin/master
 git log | grep "^commit\ [0-9]" | awk '{print $2}' > $hashfullpath
+#echo "c2a7fe6be5569c9c660717736d29372cae3f57cb"  > $hashfullpath
 popd
 
+rm -f $resultdir/fil.*
 rm -f $resultdir/resultsR.log
 rm -f $resultdir/resultscpu.log
 rm -f $resultdir/resultsgpu.log
@@ -44,11 +46,14 @@ for i in `cat $hashfullpath`; do
       cd pogs
       ./cfg
       cd src
+      text=""
       if [ $j -eq 0 ]
       then
+          text="gpu"
           sed -i 's/TARGET=gpu/TARGET=gpu/g' config.mk
           sed -i 's/TARGET=cpu/TARGET=gpu/g' config.mk
       else
+          text="cpu"
           sed -i 's/TARGET=gpu/TARGET=cpu/g' config.mk
           sed -i 's/TARGET=cpu/TARGET=cpu/g' config.mk
       fi          
@@ -80,78 +85,80 @@ for i in `cat $hashfullpath`; do
       valh2ostd=`cat $resultdir/file.$i | grep '\[1\] \"H2OSTDRMSE' |awk '{print $2}'`
       valh2onostd=`cat $resultdir/file.$i | grep '\[1\] \"H2ONOSTDRMSE' |awk '{print $2}'`
 
-      echo $i $j $valpogs $itermax $valglmstd $valglmnostd $valh2ostd, $valh2onostd | tee -a $resultdir/resultsR.log
+      echo $i $text $valpogs $itermax $valglmstd $valglmnostd $valh2ostd, $valh2onostd | tee -a $resultdir/resultsR.log
   done
 
   # C++
   cd $pogsdir/examples/cpp
   make -j all
+  make -j gpualt gpumapd cpualt cpumapd cpu gpu
 
   # get usage method
   #./runcpu
   usage=`./h2oai-glm-cpu &> use.txt ; cat use.txt | tail -1 | wc -w`
+  echo "usage=$usage"
   if [ $usage -eq 8 ]
   then
       # then can do standardize on/off
-      ./h2oai-glm-cpu 1 100 1 1 0 0 &> outcpu.txt
-      ./h2oai-glm-cpu 1 100 1 1 1 0 &> outcpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 0 0 &> outcpu2.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 1 0 &> outcpus2.txt
+      ./h2oai-glm-cpu 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu.txt
+      ./h2oai-glm-cpu 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus.txt
+      ./h2oai-glm-cpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu2.txt
+      ./h2oai-glm-cpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus2.txt
 
-      ./h2oai-glm-gpu 1 100 1 1 0 0 &> outgpu.txt
-      ./h2oai-glm-gpu 1 100 1 1 1 0 &> outgpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 0 0 &> outgpu2.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 1 0 &> outgpus2.txt
+      ./h2oai-glm-gpu 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu.txt
+      ./h2oai-glm-gpu 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus.txt
+      ./h2oai-glm-gpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu2.txt
+      ./h2oai-glm-gpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus2.txt
   fi
   if [ $usage -eq 7 ]
   then
       # then no standardization
-      ./h2oai-glm-cpu 1 100 1 1 0 &> outcpu.txt
-      echo "NA" > outcpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 0 &> outcpu2.txt
-      echo "NA" > outcpus2.txt
-      ./h2oai-glm-gpu 1 100 1 1 0 &> outgpu.txt
-      echo "NA" > outgpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 0 &> outgpu2.txt
-      echo "NA" > outgpus2.txt
+      ./h2oai-glm-cpu 1 100 1 1 0 &>  $resultdir/file.$i.cpu.txt
+      echo "NA" >  $resultdir/file.$i.cpus.txt
+      ./h2oai-glm-cpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.cpu2.txt
+      echo "NA" >  $resultdir/file.$i.cpus2.txt
+      ./h2oai-glm-gpu 1 100 1 1 0 &>  $resultdir/file.$i.gpu.txt
+      echo "NA" >  $resultdir/file.$i.gpus.txt
+      ./h2oai-glm-gpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.gpu2.txt
+      echo "NA" >  $resultdir/file.$i.gpus2.txt
   fi
   if [ $usage -eq 6 ]
   then
       # then no intercept or standardization
-      ./h2oai-glm-cpu 1 100 1 0 &> outcpu.txt
-      echo "NA" > outcpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 0 &> outcpu2.txt
-      echo "NA" > outcpus2.txt
-      ./h2oai-glm-gpu 1 100 1 0 &> outgpu.txt
-      echo "NA" > outgpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 0 &> outgpu2.txt
-      echo "NA" > outgpus2.txt
+      ./h2oai-glm-cpu 1 100 1 0 &>  $resultdir/file.$i.cpu.txt
+      echo "NA" >  $resultdir/file.$i.cpus.txt
+      ./h2oai-glm-cpu-mapd 1 100 1 0 &>  $resultdir/file.$i.cpu2.txt
+      echo "NA" >  $resultdir/file.$i.cpus2.txt
+      ./h2oai-glm-gpu 1 100 1 0 &>  $resultdir/file.$i.gpu.txt
+      echo "NA" >  $resultdir/file.$i.gpus.txt
+      ./h2oai-glm-gpu-mapd 1 100 1 0 &>  $resultdir/file.$i.gpu2.txt
+      echo "NA" >  $resultdir/file.$i.gpus2.txt
   fi
 
   # just pick last, add |sort -rg before tail to sort and get best
-  valcpu=`cat outcpu.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itercpu=`cat outcpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valcpu=`cat  $resultdir/file.$i.cpu.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itercpu=`cat  $resultdir/file.$i.cpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpu  ]]
   then
       valcpu="NA      "
       itercpu="NA "
   fi
-  valcpus=`cat outcpus.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itercpus=`cat outcpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valcpus=`cat  $resultdir/file.$i.cpus.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itercpus=`cat  $resultdir/file.$i.cpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpus  ]]
   then
       valcpus="NA      "
       itercpus="NA "
   fi
-  valcpu2=`cat outcpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itercpu2=`cat outcpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valcpu2=`cat  $resultdir/file.$i.cpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itercpu2=`cat  $resultdir/file.$i.cpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpu2  ]]
   then
       valcpu2="NA      "
       itercpu2="NA "
   fi
-  valcpus2=`cat outcpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itercpus2=`cat outcpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valcpus2=`cat  $resultdir/file.$i.cpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itercpus2=`cat  $resultdir/file.$i.cpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valcpus2  ]]
   then
       valcpus2="NA      "
@@ -159,29 +166,29 @@ for i in `cat $hashfullpath`; do
   fi
 
   # GPU
-  valgpu=`cat outgpu.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itergpu=`cat outgpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valgpu=`cat  $resultdir/file.$i.gpu.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itergpu=`cat  $resultdir/file.$i.gpu.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpu  ]]
   then
       valgpu="NA      "
       itergpu="NA "
   fi
-  valgpus=`cat outgpus.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itergpus=`cat outgpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valgpus=`cat  $resultdir/file.$i.gpus.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itergpus=`cat  $resultdir/file.$i.gpus.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpus  ]]
   then
       valgpus="NA      "
       itergpus="NA "
   fi
-  valgpu2=`cat outgpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itergpu2=`cat outgpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valgpu2=`cat  $resultdir/file.$i.gpu2.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itergpu2=`cat  $resultdir/file.$i.gpu2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpu2  ]]
   then
       valgpu2="NA      "
       itergpu2="NA "
   fi
-  valgpus2=`cat outgpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
-  itergpus2=`cat outgpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
+  valgpus2=`cat  $resultdir/file.$i.gpus2.txt |grep RMSE | awk '{print $14}' | tail -1`
+  itergpus2=`cat  $resultdir/file.$i.gpus2.txt | grep " : " |awk '{print $1}'|grep -v Iter|grep -v TEST|grep -v Time|sort -n|tail -1`
   if [[   -z  $valgpus2  ]]
   then
       valgpus2="NA      "

@@ -27,8 +27,7 @@ cd src ; make -j ; cd ../examples/cpp ; make -j gpuall
 To run gpu version if one has 16 gpus (e.g. on AWS), where first and 3rd argument should be same for any number of GPUs.  Dataset is currently small called simple.txt, but ask Arno or Jon for the larger census-based data set to highlight 100% multiple-GPU usage.
 ------
 
-
-./h2oai-glm-gpu 16 100 16 1 0.2
+./h2oai-glm-gpu 16 100 16 1 0 0.2
 
 To compile cpu version:
 ------
@@ -37,7 +36,7 @@ cd src ; make -j cpu ; cd ../examples/cpp ; make -j cpuall
 
 For otherwise identical CPU run on all CPU's cores:
 
-./h2oai-glm-cpu 1 100 16 1 0.2
+./h2oai-glm-cpu 1 100 16 1 0 0.2
 
 
 install R package (assume in pogs base directory to start with)
