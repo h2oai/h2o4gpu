@@ -159,8 +159,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     if(standardize){
       // standardize the response the same way as for training data ("apply fitted transform during scoring")
       for (size_t i=0; i<validY.size(); ++i) {
-        validY[i] -= meanValidY0;
-        validY[i] /= sdValidY0;
+        validY[i] -= meanTrainY0;
+        validY[i] /= sdTrainY0;
       }
       meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
       sdValidYn = std::sqrt(getVar(validY, meanValidYn));
