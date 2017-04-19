@@ -125,37 +125,47 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   cout << "Rows in training data: " << trainY.size() << endl;
 
   // Training mean and stddev
-  T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-  T sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
-  cout << "Mean trainY: " << meanTrainY << endl;
-  cout << "StdDev trainY: " << sdTrainY << endl;
+  T meanTrainY0 = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+  T sdTrainY0 = std::sqrt(getVar(trainY, meanTrainY0));
+  T meanTrainYn;
+  T sdTrainYn;
+  cout << "Mean trainY: " << meanTrainY0 << endl;
+  cout << "StdDev trainY: " << sdTrainY0 << endl;
   // standardize the response for training data
   if(standardize){
     for (size_t i=0; i<trainY.size(); ++i) {
-      trainY[i] -= meanTrainY;
-      trainY[i] /= sdTrainY;
+      trainY[i] -= meanTrainY0;
+      trainY[i] /= sdTrainY0;
     }
-    meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-    sdTrainY = std::sqrt(getVar(trainY, meanTrainY));
+    meanTrainYn = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+    sdTrainYn = std::sqrt(getVar(trainY, meanTrainYn));
+    cout << "new Mean trainY: " << meanTrainYn << endl;
+    cout << "new StdDev trainY: " << sdTrainYn << endl;
   }
 
 
   // Validation mean and stddev
+  T meanValidY0;
+  T sdValidY0;
+  T meanValidYn;
+  T sdValidYn;
   if (!validY.empty()) {
     cout << "Rows in validation data: " << validY.size() << endl;
-    T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    cout << "Mean validY: " << meanValidY << endl;
-    cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
+    meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    sdValidY0 = std::sqrt(getVar(validY, meanValidY0));
+    cout << "Mean validY: " << meanValidY0 << endl;
+    cout << "StdDev validY: " << sdValidY0 << endl;
 
     if(standardize){
       // standardize the response the same way as for training data ("apply fitted transform during scoring")
       for (size_t i=0; i<validY.size(); ++i) {
-        validY[i] -= meanTrainY;
-        validY[i] /= sdTrainY;
+        validY[i] -= meanValidY0;
+        validY[i] /= sdValidY0;
       }
-      meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-      cout << "Mean validY: " << meanValidY << endl;
-      cout << "StdDev validY: " << std::sqrt(getVar(validY, meanValidY)) << endl;
+      meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+      sdValidYn = std::sqrt(getVar(validY, meanValidYn));
+      cout << "new Mean validY: " << meanValidYn << endl;
+      cout << "new StdDev validY: " << sdValidYn << endl;
     }
   }
 
@@ -169,7 +179,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
     if (intercept) weights/=mTrain;
     for (unsigned int i = 0; i < mTrain; ++i) {
-      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainY);
+      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
     lambda_max0 = std::max(lambda_max0, std::abs(u));
   }
@@ -328,8 +338,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
           }
           if(standardize){
             // reverse standardization
-            trainPreds[i]*=sdTrainY; //scale
-            trainPreds[i]+=meanTrainY; //intercept
+            trainPreds[i]*=sdTrainY0; //scale
+            trainPreds[i]+=meanTrainY0; //intercept
             //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
           }
         }
@@ -344,8 +354,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
             }
             if(standardize){
               // reverse (fitted) standardization
-              validPreds[i]*=sdTrainY; //scale
-              validPreds[i]+=meanTrainY; //intercept
+              validPreds[i]*=sdTrainY0; //scale
+              validPreds[i]+=meanTrainY0; //intercept
             }
           }
           validRMSE = getRMSE(&validPreds[0], &validY);

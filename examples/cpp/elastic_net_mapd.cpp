@@ -100,33 +100,43 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
 //  // DEBUG END
 
   // Training mean and stddev
-  T meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-  T sdTrainY = std::sqrt(pogs::getVarV(trainY, meanTrainY));
-  cout << "Mean trainY: " << meanTrainY << endl;
-  cout << "StdDev trainY: " << sdTrainY << endl;
+  T meanTrainY0 = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+  T sdTrainY0 = std::sqrt(pogs::getVarV(trainY, meanTrainY0));
+  T meanTrainYn;
+  T sdTrainYn;
+  cout << "Mean trainY: " << meanTrainY0 << endl;
+  cout << "StdDev trainY: " << sdTrainY0 << endl;
   if(standardize){
     // standardize the response for training data
     for (size_t i=0; i<trainY.size(); ++i) {
-      trainY[i] -= meanTrainY;
-      trainY[i] /= sdTrainY;
+      trainY[i] -= meanTrainY0;
+      trainY[i] /= sdTrainY0;
     }
-    meanTrainY = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-    sdTrainY = std::sqrt(pogs::getVarV(trainY, meanTrainY));
+    meanTrainYn = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
+    sdTrainYn = std::sqrt(pogs::getVarV(trainY, meanTrainYn));
   }
 
   // Validation mean and stddev
+  T meanValidY0;
+  T sdValidY0;
+  T meanValidYn;
+  T sdValidYn;
   if (!validY.empty()) {
     cout << "Rows in validation data: " << validY.size() << endl;
-    T meanValidY = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    T sdValidY = std::sqrt(pogs::getVarV(validY, meanValidY));
-    cout << "Mean validY: " << meanValidY << endl;
-    cout << "StdDev validY: " << std::sqrt(pogs::getVarV(validY, meanValidY)) << endl;
+    meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
+    cout << "Mean validY: " << meanValidY0 << endl;
+    cout << "StdDev validY: " << sdValidY0 << endl;
     if (standardize) {
       // standardize the response the same way as for training data ("apply fitted transform during scoring")
       for (size_t i=0; i<validY.size(); ++i) {
-        validY[i] -= meanTrainY;
-        validY[i] /= sdTrainY;
+        validY[i] -= meanValidY0;
+        validY[i] /= sdValidY0;
       }
+      meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+      sdValidYn = std::sqrt(pogs::getVarV(validY, meanValidYn));
+      cout << "new Mean validY: " << meanValidYn << endl;
+      cout << "new StdDev validY: " << sdValidYn << endl;
     }
   }
     
@@ -139,9 +149,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
     if (intercept) weights/=mTrain;
     for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainY);
+      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
-    cout << u << endl;
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
@@ -185,7 +194,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   pogs::makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &a, &b, &c, &d);
 
   int datatype = 1;
-  return pogs::ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, meanTrainY, a, b, c, d);
+  return pogs::ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY0, meanTrainY0, a, b, c, d);
 }
 
 template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, int, double);

@@ -4,12 +4,13 @@ from pogs.libs.elastic_net_cpu import pogsElasticNetCPU
 from pogs.libs.elastic_net_gpu import pogsElasticNetGPU
 
 class ElasticNetBaseSolver(object):
-    def __init__(self, lib, nGPUs, ord, intercept, lambda_min_ratio, n_lambdas, n_alphas):
+    def __init__(self, lib, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas):
         assert lib and (lib==pogsElasticNetCPU or lib==pogsElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs
         self.ord=1 if ord=='r' else 0
         self.intercept=intercept
+        self.standardize=standardize
         self.lambda_min_ratio=lambda_min_ratio
         self.n_lambdas=n_lambdas
         self.n_alphas=n_alphas
@@ -43,7 +44,7 @@ class ElasticNetBaseSolver(object):
         self.lib.elastic_net_ptr_double(
             c_int(sourceDev), c_int(1), c_int(self.nGPUs),
             c_int(self.ord), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
-            c_int(self.intercept), c_double(lambda_max0),
+            c_int(self.intercept), c_int(self.standardize), c_double(lambda_max0),
             c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
             c_double(sdTrainY), c_double(meanTrainY),
             a, b, c, d)
