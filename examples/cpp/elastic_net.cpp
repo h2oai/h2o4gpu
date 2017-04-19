@@ -336,15 +336,21 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
           for (size_t j=0; j<n; ++j) {
             trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
-          if(standardize){
+        }
+        // score
+        double trainRMSE;
+        if(standardize) trainRMSE=sdTrainY0*getRMSE(&trainPreds[0], &trainY);
+        else trainRMSE=getRMSE(&trainPreds[0], &trainY);
+
+        if(standardize){
+          for (size_t i=0; i<trainY.size(); ++i) {
             // reverse standardization
             trainPreds[i]*=sdTrainY0; //scale
             trainPreds[i]+=meanTrainY0; //intercept
             //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
           }
         }
-        double trainRMSE = getRMSE(&trainPreds[0], &trainY);
-
+          
         double validRMSE = -1;
         if (!validY.empty()) {
           std::vector<T> validPreds(validY.size());
@@ -352,13 +358,16 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
             for (size_t j=0; j<n; ++j) {
               validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
-            if(standardize){
+          }
+          if(standardize) validRMSE = sdTrainY0*getRMSE(&validPreds[0], &validY);
+          else validRMSE = getRMSE(&validPreds[0], &validY);
+          if(standardize){
+            for (size_t i=0; i<validY.size(); ++i) {
               // reverse (fitted) standardization
               validPreds[i]*=sdTrainY0; //scale
               validPreds[i]+=meanTrainY0; //intercept
             }
           }
-          validRMSE = getRMSE(&validPreds[0], &validY);
         }
         fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
         fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);

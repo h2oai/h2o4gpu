@@ -184,7 +184,13 @@ namespace pogs {
               for (size_t j = 0; j < n; ++j) {
                 trainPreds[i] += pogs_data.GetX()[j] * trainX[i * n + j]; //add predictions
               }
-              if(standardize){
+            }
+            double trainRMSE;
+            if(standardize) trainRMSE = sdTrainY*getRMSE(mTrain, &trainPreds[0], trainY);
+            else trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
+
+            if(standardize){
+              for (size_t i = 0; i < mTrain; ++i) {
                 // reverse standardization
                 trainPreds[i]*=sdTrainY; //scale
                 trainPreds[i]+=meanTrainY; //intercept
@@ -203,7 +209,6 @@ namespace pogs {
 //          cout << "\n";
 //        }
 //        // DEBUG END
-            double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
 
             double validRMSE = -1;
             if (mValid > 0) {
@@ -213,13 +218,17 @@ namespace pogs {
                 for (size_t j = 0; j < n; ++j) { //col
                   validPreds[i] += pogs_data.GetX()[j] * validX[i * n + j]; //add predictions
                 }
-                if(standardize){
+              }
+              if(standardize) validRMSE = sdTrainY*getRMSE(mValid, &validPreds[0], validY);
+              else validRMSE = getRMSE(mValid, &validPreds[0], validY);
+              
+              if(standardize){
+                for (size_t i = 0; i < mValid; ++i) { //row
                   // reverse (fitted) standardization
                   validPreds[i]*=sdTrainY; //scale
                   validPreds[i]+=meanTrainY; //intercept
                 }
               }
-              validRMSE = getRMSE(mValid, &validPreds[0], validY);
             }
 
             fprintf(fil, "me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
