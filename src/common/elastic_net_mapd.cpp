@@ -6,6 +6,43 @@ using namespace std;
 
 namespace pogs {
 
+  bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter, bool verbose) {
+    if (val.size()-1 < 2*k) return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
+    vector<double> moving_avg(k+1); //one moving avg for the last k+1 scoring events (1 is reference, k consecutive attempts to improve)
+
+    // compute moving average(s)
+    for (int i=0;i<moving_avg.size();++i) {
+      moving_avg[i]=0;
+      int startidx=val.size()-2*k+i;
+      for (int j=0;j<k;++j)
+        moving_avg[i]+=val[startidx+j];
+      moving_avg[i]/=k;
+    }
+    if (verbose) {
+      cout << "JUnit: moving averages: ";
+      copy(moving_avg.begin(), moving_avg.end(), ostream_iterator<double>(cout, " "));
+      cout << endl;
+    }
+
+    // check if any of the moving averages is better than the reference (by at least tolerance relative improvement)
+    double ref = moving_avg[0];
+    bool improved = false;
+    for (int i=1;i<moving_avg.size();++i) {
+      if (moreIsBetter)
+        improved |= (moving_avg[i] > ref*(1+tolerance));
+      else
+        improved |= (moving_avg[i] < ref*(1-tolerance));
+    }
+    if (improved) {
+      if (improved && verbose)
+        cout << "improved from " << ref << " to " << (moreIsBetter ? *std::max_element(moving_avg.begin(), moving_avg.end()) : *std::min_element(moving_avg.begin(), moving_avg.end())) << endl;
+      return false;
+    }
+    else {
+      if (verbose) cout << "stopped." << endl;
+      return true;
+    }
+  }
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
@@ -114,7 +151,7 @@ namespace pogs {
         fflush(stderr);
 #pragma omp for
         for (a = 0; a < N; ++a) { //alpha search
-          const T alpha = N == 1 ? 1 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
+          const T alpha = N == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
           const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like pogs.R
           T lambda_max = lambda_max0 / std::max(static_cast<T>(1e-2), alpha); // same as H2O
           if (alpha == 1 && mTrain > 10000) {
@@ -149,6 +186,7 @@ namespace pogs {
             lambdas[i] = lambdas[i - 1] * dec;
 
           fprintf(fil, "alpha%f\n", alpha);
+          vector<double> scoring_history;
           for (int i = 0; i < nlambda; ++i) {
             T lambda = lambdas[i];
             fprintf(fil, "lambda %d = %f\n", i, lambda);
@@ -169,7 +207,7 @@ namespace pogs {
             if(i==0) pogs_data.ResetX(); // reset X if new alpha if expect much different solution
             pogs_data.Solve(f, g);
             if(pogs_data.GetFinalIter()==pogs_data.GetMaxIter()) pogs_data.ResetX(); // reset X if bad
-            
+
             if (intercept) {
               fprintf(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
               fprintf(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
@@ -245,6 +283,14 @@ namespace pogs {
             fflush(fil);
             fprintf(stdout, "%s.me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(stdout);
+            int k = 3; //TODO: ask the user for this parameter
+            scoring_history.push_back(mValid > 0 ? validRMSE : trainRMSE);
+            double tolerance = 0; // stop when not improved over 3 successive lambdas (averaged over window 3)
+            bool moreIsBetter = false;
+            bool verbose = true;
+            if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose)) {
+              break;
+            }
           }// over lambda
         }// over alpha
         if (fil != NULL) fclose(fil);
@@ -265,15 +311,15 @@ namespace pogs {
 
     template double ElasticNetptr<double>(int sourceDev, int datatype, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
-                                                double lambda_min_ratio, int nLambdas, int nAlphas,
-                                                double sdTrainY, double meanTrainY,
-                                                void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+                                          double lambda_min_ratio, int nLambdas, int nAlphas,
+                                          double sdTrainY, double meanTrainY,
+                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
     template double ElasticNetptr<float>(int sourceDev, int datatype, int nGPUs, const char ord,
                                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
-                                               double lambda_min_ratio, int nLambdas, int nAlphas,
-                                               double sdTrainY, double meanTrainY,
-                                               void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+                                         double lambda_min_ratio, int nLambdas, int nAlphas,
+                                         double sdTrainY, double meanTrainY,
+                                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
 #ifdef __cplusplus
     extern "C" {
@@ -296,16 +342,16 @@ namespace pogs {
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
       return ElasticNetptr<double>(sourceDev, datatype, nGPUs, ord==1?'r':'c', mTrain, n, mValid,
                                    intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, sourceDev,
-                           trainXptr, trainYptr, validXptr, validYptr);
+                                   trainXptr, trainYptr, validXptr, validYptr);
     }
     double elastic_net_ptr_float(int sourceDev, int datatype, int nGPUs, int ord,
-                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
-                                  double lambda_min_ratio, int nLambdas, int nAlphas,
-                                  double sdTrainY, double meanTrainY,
-                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+                                 size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
+                                 double lambda_min_ratio, int nLambdas, int nAlphas,
+                                 double sdTrainY, double meanTrainY,
+                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
       return ElasticNetptr<float>(sourceDev, datatype, nGPUs, ord==1?'r':'c', mTrain, n, mValid,
                                   intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY, sourceDev,
-                                   trainXptr, trainYptr, validXptr, validYptr);
+                                  trainXptr, trainYptr, validXptr, validYptr);
     }
 
 #ifdef __cplusplus
