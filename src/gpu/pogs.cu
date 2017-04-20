@@ -534,7 +534,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         _verbose > 1 && converged) {
       T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
       Printf("%5d : %.2e <? %.2e  %.2e  <? %.2e  %.2e  <? %.2e % .2e\n",
-          k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);
+             k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);fflush(stdout);
     }
 
 
@@ -686,7 +686,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         "Gap: "
         "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = %.2e (goal: %0.2e, gap checked=%d)\n"
            __HBAR__, _rel_tol * nrm_r / eps_pri, _rel_tol, _rel_tol * nrm_s / eps_dua, _rel_tol,
-           _rel_tol * gap / eps_gap,_rel_tol,_gap_stop);
+           _rel_tol * gap / eps_gap,_rel_tol,_gap_stop); fflush(stdout);
   }
 
   
@@ -760,6 +760,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 template <typename T, typename M, typename P>
 void Pogs<T, M, P>::ResetX(void) {
+  if (!_done_init)
+    _Init();
+  CUDACHECK(cudaSetDevice(_wDev));
+
   size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();

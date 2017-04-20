@@ -463,6 +463,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 template <typename T, typename M, typename P>
 void Pogs<T, M, P>::ResetX(void) {
+  if (!_done_init)
+    _Init();
+
   size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
