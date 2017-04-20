@@ -190,6 +190,7 @@ class Pogs {
   void printMe(std::ostream &os, T c, T e) const {
     os << "Model parameters: ";
     std::string sep = ", ";
+    os << "version: " << _GITHASH_ << sep;
     os << "c(l1): " << c << ", e(l2): " << e << sep;
     os << "rho: " << _rho << sep;
     os << "rel_tol: " << _rel_tol << sep;

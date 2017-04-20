@@ -73,7 +73,7 @@ namespace pogs {
         int me = omp_get_thread_num();
 
         char filename[100];
-        sprintf(filename, "me%d.txt", me);
+        sprintf(filename, "me%d.%s.txt", me, _GITHASH_);
         FILE *fil = fopen(filename, "wt");
         if (fil == NULL) {
           cerr << "Cannot open filename=" << filename << endl;
@@ -239,9 +239,9 @@ namespace pogs {
               }
             }
 
-            fprintf(fil, "me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
+            fprintf(fil, "me: %s %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(fil);
-            fprintf(stdout, "me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
+            fprintf(stdout, "me: %s %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(stdout);
           }// over lambda
         }// over alpha
