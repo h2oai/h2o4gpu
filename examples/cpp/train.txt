@@ -1,1 +1,1 @@
-/tmp/train.txt
+ipums.txt
