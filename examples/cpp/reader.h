@@ -34,8 +34,6 @@ int fillData(int generate, std::string name, size_t rows, size_t cols, T* A, T* 
       exit(1);
     } else {
       // Expect space-separated file with response in last column, no header
-      double v;
-      int count = 0;
       int maxlen = (n + 1) * 30;
       char line[maxlen];
       const char sep[] = " ,";
@@ -115,5 +113,6 @@ int fillData(int generate, std::string name, size_t rows, size_t cols, T* A, T* 
       b[i] += static_cast<T>(0.5) * n_dist(generator);
 
   }
+  return(0);
 }
 #endif
