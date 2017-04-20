@@ -41,8 +41,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
-
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
   int nlambda = nLambdas;
   if (nlambda <= 1) {
     cerr << "Must use nlambda > 1\n";
@@ -63,66 +62,16 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
 #error Need OpenMP
 #endif
 
-  std::vector <T> trainX;
-  std::vector <T> validX;
-  std::vector <T> trainY;
-  std::vector <T> validY;
-  size_t mTrain = 0;
-  {
-    // allocate matrix problem to solve
-    std::vector <T> A(m * n);
-    std::vector <T> b(m);
-
-    cout << "START FILL DATA\n" << endl;
-    double t0 = timer<double>();
-
-    // choose to generate or read-in data
-    int generate=0;
-    fillData(generate, "train.txt", m, n, &A[0], &b[0]);
-
-    double t1 = timer<double>();
-    cout << "END FILL DATA. Took " << t1-t0 << " secs" << endl;
-
-    cout << "START TRAIN/VALID SPLIT" << endl;
-    // Split A/b into train/valid, via head/tail
-    size_t mValid = static_cast<size_t>(m * validFraction);
-    mTrain = m - mValid;
-
-    // If intercept == 1, add one extra column at the end, all constant 1s
-    n += intercept;
-
-    // Alloc
-    trainX.resize(mTrain * n);
-    trainY.resize(mTrain);
-
-    for (int i = 0; i < mTrain; ++i) { //rows
-      trainY[i] = b[i];
-//      cout << "y[" << i << "] = " << b[i] << endl;
-      for (int j = 0; j < n - intercept; ++j) { //cols
-        trainX[i * n + j] = A[i * (n-intercept) + j];
-//        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
-      }
-      if (intercept) {
-        trainX[i * n + n - 1] = 1;
-      }
-    }
-    if (mValid>0) {
-      validX.resize(mValid * n);
-      validY.resize(mValid);
-      for (int i = 0; i < mValid; ++i) { //rows
-        validY[i] = b[mTrain + i];
-        for (int j = 0; j < n - intercept; ++j) { //cols
-          validX[i * n + j] = A[(mTrain + i) * (n-intercept) + j];
-        }
-        if (intercept) {
-          validX[i * n + n - 1] = 1;
-        }
-      }
-    }
-    cout << "END TRAIN/VALID SPLIT" << endl;
-    fflush(stdout);
-  }
-  cout << "Rows in training data: " << trainY.size() << endl;
+  // read data and do train-valid split
+  std::vector<T> trainX, trainY, validX, validY;
+  splitData(A, b, trainX, trainY, validX, validY, validFraction, intercept);
+  size_t m = trainY.size();
+  size_t mTrain = trainY.size();
+  size_t mValid = validY.size();
+  size_t n=trainX.size()/mTrain;
+  cout << "Rows in training data: " << mTrain << endl;
+  cout << "Rows in validation data: " << mValid << endl;
+  cout << "Cols in training data: " << n << endl;
 
   // Training mean and stddev
   T meanTrainY0 = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
@@ -166,9 +115,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
       cout << "new StdDev validY: " << sdValidYn << endl;
     }
   }
-
-  T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
-  cout << "weights " << weights << endl;
 
   // set lambda max 0 (i.e. base lambda_max)
   T lambda_max0 = static_cast<T>(0);
@@ -378,6 +324,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   return tf-t1;
 }
   
-template double ElasticNet<double>(size_t m, size_t n, int, int, int, int, int, double);
-template double ElasticNet<float>(size_t m, size_t n, int, int, int, int, int, double);
+template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, int, int, int, int, int, double);
+template double ElasticNet<float>(const std::vector<float> &A, const std::vector<float> &b, int, int, int, int, int, double);
  

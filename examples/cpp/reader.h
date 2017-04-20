@@ -5,30 +5,110 @@
 #include <random>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+
+#include <iterator>
+#include <algorithm>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 
 template<typename T>
-int fillData(int generate, std::string name, size_t rows, size_t cols, T* A, T* b) {
+void splitData(const std::vector<T>& A, const std::vector<T>& b,
+               std::vector<T>& trainX, std::vector<T>& trainY,
+               std::vector<T>& validX, std::vector<T>& validY,
+               double validFraction, int intercept) {
+  using namespace std;
+
+  cout << "START TRAIN/VALID SPLIT" << endl;
+// Split A/b into train/valid, via head/tail
+  size_t m = b.size();
+  size_t mValid = static_cast<size_t>(validFraction * static_cast<double>(m));
+  size_t mTrain = m - mValid;
+  size_t n = A.size() / m;
+
+// If intercept == 1, add one extra column at the end, all constant 1s
+  n += intercept;
+
+  trainX.resize(mTrain * n);
+  trainY.resize(mTrain);
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+  for (int i = 0; i < mTrain; ++i) { //rows
+    trainY[i] = b[i];
+//      cout << "y[" << i << "] = " << trainY[i] << endl;
+    for (int j = 0; j < n - intercept; ++j) { //cols
+      trainX[i * n + j] = A[i * (n-intercept) + j];
+//        cout << "X[" << i << ", " << j << "] = " << trainX[i*n+j] << endl;
+    }
+    if (intercept) {
+      trainX[i * n + n - 1] = 1;
+    }
+  }
+  if (mValid > 0) {
+    validX.resize(mValid * n);
+    validY.resize(mValid);
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < mValid; ++i) { //rows
+      validY[i] = b[mTrain + i];
+      for (int j = 0; j < n - intercept; ++j) { //cols
+        validX[i * n + j] = A[(mTrain + i) * (n-intercept) + j];
+      }
+      if (intercept) {
+        validX[i * n + n - 1] = 1;
+      }
+    }
+  }
+  cout << "END TRAIN/VALID SPLIT" << endl;
+  fflush(stdout);
+}
+
+template<typename T>
+int fillData(size_t m, size_t n, // only used if name.empty()
+             const std::string &file,
+             std::vector<T>& A, std::vector<T>& b) {
   std::default_random_engine generator;
   std::uniform_real_distribution <T> u_dist(static_cast<T>(0),
                                             static_cast<T>(1));
   std::normal_distribution <T> n_dist(static_cast<T>(0),
                                       static_cast<T>(1));
 
-  size_t m = rows;
-  size_t n = cols;
-
 // READ-IN DATA
-  if (generate == 0) {
-    size_t R = m; // rows
-    size_t C = n + 1; // columns
+  if (!file.empty()) {
+
+    std::ifstream ifs(file);
+    std::string line;
+    size_t rows=0;
+    size_t cols = 0;
+    while (std::getline(ifs, line)) {
+      if (rows==0) {
+        std::string buf;
+        std::stringstream ss(line);
+        while (ss >> buf) cols++;
+      }
+      //std::cout << line << std::endl;
+      rows++;
+    }
+    cols--; //don't count target column
+
+    printf("rows: %d\n", rows); fflush(stdout);
+    printf("cols (w/o response): %d\n", cols); fflush(stdout);
+    ifs.close();
+
+    size_t m = rows;
+    size_t n = cols;
+    A.resize(n*m);
+    b.resize(m);
 #ifdef _OPENMP
 #pragma omp parallel
 {
 #endif
-    std::ifstream ifs(name);
+    std::ifstream ifs(file);
     if (!ifs) {
       fprintf(stderr, "Cannot read file.\n");
       exit(1);
@@ -42,18 +122,18 @@ int fillData(int generate, std::string name, size_t rows, size_t cols, T* A, T* 
 #ifdef _OPENMP
       int id = omp_get_thread_num();
       int nth = omp_get_num_threads();
-      size_t len = R / nth;
+      size_t len = m / nth;
       size_t from = id*len;
       size_t to = (id+1)*len;
-      if (to > R) to = R;
-      if (id==nth-1) to = R;
+      if (to > m) to = m;
+      if (id==nth-1) to = m;
 #pragma omp critical
       {
         std::cout << "thread " << id << " reads lines " << from << "..." << to << std::endl;
       }
 #else
       size_t from = 0;
-      size_t to = R;
+      size_t to = m;
 #endif
       for (; i < from; ++i) ifs.getline(line, maxlen);
       for (; i < to; ++i) {
@@ -107,7 +187,6 @@ int fillData(int generate, std::string name, size_t rows, size_t cols, T* A, T* 
 #endif
     for (unsigned int i = 0; i < m; ++i) // rows
       for (unsigned int j = 0; j < n; ++j) // columns
-        b[i] += A[i * n + j] * x_true[j]; // C(0-indexed) row-major order
 
     for (unsigned int i = 0; i < m; ++i)
       b[i] += static_cast<T>(0.5) * n_dist(generator);

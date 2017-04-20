@@ -5,11 +5,14 @@
 #include <fstream>
 #include <iterator>
 #include "examples.h"
+#include "reader.h"
+#include "timer.h"
 
 typedef float real_t;
 
 int main(int argc, char **argv) {
   double t;
+  using namespace std;
 
   /*
   printf("\nLogistic Regression.\n");
@@ -32,33 +35,27 @@ int main(int argc, char **argv) {
   //  bwcheck();
   //  return(0);
 
+  size_t rows=0, cols=0;
 
-  std::ifstream ifs("./train.txt");
-  std::string line;
-  int rows=0;
-  int cols = 0;
-  while (std::getline(ifs, line)) {
-    if (rows==0) {
-      std::string buf;
-      std::stringstream ss(line);
-      while (ss >> buf) cols++;
-    }
-    //std::cout << line << std::endl;
-    rows++;
-  }
-  cols--; //don't count target column
-
+  std::vector<real_t> A;
+  std::vector<real_t> b;
+  cout << "START FILL DATA\n" << endl;
+  double t0 = timer<double>();
+  fillData(rows,cols,"train.txt", A, b);
+  double t1 = timer<double>();
+  rows=b.size();
+  cols=A.size()/b.size();
+  cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
   printf("rows: %d\n", rows); fflush(stdout);
   printf("cols (w/o response): %d\n", cols); fflush(stdout);
-  ifs.close();
 
   printf("\nLasso: rows=%d n=%d.\n",rows,cols);
-  t = Lasso<real_t>(rows, cols);
+  t = Lasso<real_t>(A,b);
   printf("Lasso rows=%d n=%d Solver Time: %e sec\n", rows,cols,t);
 
   
   printf("\nLassoPath: rows=%d n=%d.\n",rows,cols);
-  t = LassoPath<real_t>(rows, cols);
+  t = LassoPath<real_t>(A,b);
   printf("LassoPath rows=%d n=%d Solver Time: %e sec\n", rows,cols,t);
 
   fflush(stdout);

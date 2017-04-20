@@ -10,20 +10,9 @@
 //
 // See <pogs>/matlab/examples/lasso.m for detailed description.
 template <typename T>
-double Lasso(size_t m, size_t n) {
-  std::vector<T> A(m * n);
-  std::vector<T> b(m);
-
-
-  fprintf(stdout,"START FILL DATA\n");
-  double t0 = timer<double>();
-  int generate=0;
-  fillData(generate, "train.txt", m, n, &A[0], &b[0]);
-  double t1 = timer<double>();
-  fprintf(stdout,"END FILL DATA\n");
-  printf("Time to create data: %f\n", t1-t0);
-
-
+double Lasso(const std::vector<T>& A, const std::vector<T>& b) {
+  size_t m=b.size();
+  size_t n=A.size()/m;
 
   ////////////////////
   // set lambda for regularization
@@ -94,11 +83,11 @@ double Lasso(size_t m, size_t n) {
   //  cudaProfilerStop();
 #endif
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 0 m %d n %d tfd %g ts %g\n",(int)m,(int)n,t1-t0,tf-t);
+  fprintf(stdout,"END SOLVE: type 0 m %d n %d ts %g\n",(int)m,(int)n,tf-t);
 
   return tf-t;
 }
 
-template double Lasso<double>(size_t m, size_t n);
-template double Lasso<float>(size_t m, size_t n);
+template double Lasso<double>(const std::vector<double>& A, const std::vector<double>& b);
+template double Lasso<float>(const std::vector<float>& A, const std::vector<float>& b);
 

@@ -4,13 +4,13 @@
 #include <cstdlib>
 
 template <typename T>
-double Lasso(size_t m, size_t n);
+double Lasso(const std::vector<T>&A, const std::vector<T>&b);
 
 template <typename T>
-double LassoPath(size_t m, size_t n);
+double LassoPath(const std::vector<T>&A, const std::vector<T>&b);
 
 template <typename T>
-double ElasticNet(size_t m, size_t n, int, int, int, int, int, double);
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int, int, int, int, int, double);
 
 template <typename T>
 double Logistic(size_t m, size_t n);
