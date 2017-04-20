@@ -235,18 +235,24 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Signal start of execution.
   if (_verbose > 0) {
-    printMe(std::cout, g[1].c, g[1].e);
-//    printData(std::cout); //debugging - print matrix A
-    Printf(__HBAR__
-        "           H2O AI GLM\n"
-        "           Version: %s\n"
-        "           (c) H2O.ai, Inc., 2017\n",
-        POGS_VERSION.c_str());
+#pragma omp critical
+    {
+      printMe(std::cout, g[1].c, g[1].e);
+      //    printData(std::cout); //debugging - print matrix A
+      Printf(__HBAR__
+             "           H2O AI GLM\n"
+             "           Version: %s\n"
+             "           (c) H2O.ai, Inc., 2017\n",
+             POGS_VERSION.c_str());
+    }
   }
   if (_verbose > 1) {
-    Printf(__HBAR__
-        " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
-        " pri obj\n" __HBAR__);
+#pragma omp critical
+    {
+      Printf(__HBAR__
+             " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
+             " pri obj\n" __HBAR__);
+    }
   }
 
   // Initialize scalars.

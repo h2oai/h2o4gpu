@@ -88,7 +88,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   // Set GPU specific _info.
   CpuData<T> *info = new CpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
-  if(1==1){
+  if(1==0){ // can't in case original pointer came from one thread
     _data = data;
   }
   else{
@@ -124,21 +124,29 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   }
   else{
     // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
-    _data = new T[this->_m * this->_n];
-    ASSERT(_data != 0);
-    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 
+    if(info->orig_data){
+      _data = new T[this->_m * this->_n];
+      ASSERT(_data != 0);
+      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+    }
 
-    _datay = new T[this->_m];
-    ASSERT(_datay != 0);
-    memcpy(_datay, infoy->orig_data, this->_m * sizeof(T)); 
-    
-    _vdata = new T[this->_mvalid * this->_n];
-    ASSERT(_vdata != 0);
-    memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T)); 
+    if(infoy->orig_data){
+      _datay = new T[this->_m];
+      ASSERT(_datay != 0);
+      memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+    }
 
-    _vdatay = new T[this->_mvalid];
-    ASSERT(_vdatay != 0);
-    memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
+    if(vinfo->orig_data){
+      _vdata = new T[this->_mvalid * this->_n];
+      ASSERT(_vdata != 0);
+      memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
+    }
+
+    if(vinfoy->orig_data){
+      _vdatay = new T[this->_mvalid];
+      ASSERT(_vdatay != 0);
+      memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
+    }
   }
   
 }
@@ -159,7 +167,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
 
-  if(1==0){
+  if(1==0){ // can't do this in case input pointers were from one thread and this function called on multiple threads
     _data = const_cast<T*>(data);
     _datay = const_cast<T*>(datay);
     _vdata = const_cast<T*>(vdata);
@@ -167,21 +175,30 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   }
   else{
     // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
-    _data = new T[this->_m * this->_n];
-    ASSERT(_data != 0);
-    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 
 
-    _datay = new T[this->_m];
-    ASSERT(_datay != 0);
-    memcpy(_datay, infoy->orig_data, this->_m * sizeof(T)); 
-    
-    _vdata = new T[this->_mvalid * this->_n];
-    ASSERT(_vdata != 0);
-    memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T)); 
+    if(info->orig_data){
+      _data = new T[this->_m * this->_n];
+      ASSERT(_data != 0);
+      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+    }
 
-    _vdatay = new T[this->_mvalid];
-    ASSERT(_vdatay != 0);
-    memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T)); 
+    if(infoy->orig_data){
+      _datay = new T[this->_m];
+      ASSERT(_datay != 0);
+      memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+    }
+
+    if(vinfo->orig_data){
+      _vdata = new T[this->_mvalid * this->_n];
+      ASSERT(_vdata != 0);
+      memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
+    }
+
+    if(vinfoy->orig_data){
+      _vdatay = new T[this->_mvalid];
+      ASSERT(_vdatay != 0);
+      memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
+    }
   }
 #if 0
     if (ord=='r') {
@@ -232,28 +249,36 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   if(A._vdata)  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
   if(A._vdatay) this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void          
 
-  if(1==1){
+  if(A._wDev==wDev){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
     _data   = A._data;
     _datay  = A._datay;
     _vdata  = A._vdata;
     _vdatay = A._vdatay;
   }
   else{
-    _data = new T[A._m * A._n];
-    ASSERT(_data != 0);
-    memcpy(_data, info_A->orig_data, A._m * A._n * sizeof(T)); 
+    if(A._data){
+      _data = new T[A._m * A._n];
+      ASSERT(_data != 0);
+      memcpy(_data, info_A->orig_data, A._m * A._n * sizeof(T)); 
+    }
 
-    _datay = new T[A._m];
-    ASSERT(_datay != 0);
-    memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T)); 
+    if(A._datay){
+      _datay = new T[A._m];
+      ASSERT(_datay != 0);
+      memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T));
+    }
+
+    if(A._vdata){
+      _vdata = new T[A._mvalid * A._n];
+      ASSERT(_vdata != 0);
+      memcpy(_vdata, vinfo_A->orig_data, A._mvalid * A._n * sizeof(T));
+    }
     
-    _vdata = new T[A._mvalid * A._n];
-    ASSERT(_vdata != 0);
-    memcpy(_vdata, vinfo_A->orig_data, A._mvalid * A._n * sizeof(T)); 
-
-    _vdatay = new T[A._mvalid];
-    ASSERT(_vdatay != 0);
-    memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T)); 
+    if(A._vdatay){
+      _vdatay = new T[A._mvalid];
+      ASSERT(_vdatay != 0);
+      memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
+    }
   }
 
   
@@ -369,49 +394,52 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   size_t num_sign_bytes = (num_el + 7) / 8;
   sign = new unsigned char[num_sign_bytes];
   ASSERT(sign != 0);
-
-  // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    SetSign(_data, sign, num_chars, SquareF<T>());
-  } else {
-    SetSign(_data, sign, num_chars, AbsF<T>());
-  }
 
-  // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too. 
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      SetSignSingle(_data + num_chars * 8, sign + num_chars,
-          num_el - num_chars * 8, SquareF<T>());
+      SetSign(_data, sign, num_chars, SquareF<T>());
     } else {
-      SetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, AbsF<T>());
+      SetSign(_data, sign, num_chars, AbsF<T>());
+    }
+
+    // If numel(A) is not a multiple of 8, then we need to set the last couple
+    // of sign bits too. 
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        SetSignSingle(_data + num_chars * 8, sign + num_chars,
+                      num_el - num_chars * 8, SquareF<T>());
+      } else {
+        SetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                      num_el - num_chars * 8, AbsF<T>());
+      }
     }
   }
-
   // Perform Sinkhorn-Knopp equilibration.
   SinkhornKnopp(this, d, e, equillocal);
 
-  // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
-  // or A = sign(A) .* A if the 1-norm was equilibrated.
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    UnSetSign(_data, sign, num_chars, SqrtF<T>());
-  } else {
-    UnSetSign(_data, sign, num_chars, IdentityF<T>());
-  }
-
-  // Deal with last few entries if num_el is not a multiple of 8.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
+    // or A = sign(A) .* A if the 1-norm was equilibrated.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-     UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SqrtF<T>());
+      UnSetSign(_data, sign, num_chars, SqrtF<T>());
     } else {
-      UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, IdentityF<T>());
+      UnSetSign(_data, sign, num_chars, IdentityF<T>());
+    }
+
+    // Deal with last few entries if num_el is not a multiple of 8.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                        num_el - num_chars * 8, SqrtF<T>());
+      } else {
+        UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                        num_el - num_chars * 8, IdentityF<T>());
+      }
     }
   }
-
+  
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     std::transform(d, d + this->_m, d, SqrtF<T>());

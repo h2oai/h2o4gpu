@@ -67,8 +67,6 @@ namespace pogs {
 
       // Setup each thread's pogs
       double t = timer<double>();
-      double t0 = 0;
-      double t1 = 0;
 #pragma omp parallel
       {
         int me = omp_get_thread_num();
@@ -81,13 +79,13 @@ namespace pogs {
           exit(0);
         }
 
-        t0 = timer<double>();
+        double t0 = timer<double>();
         fprintf(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         fflush(fil);
         // create class objects that creates cuda memory, cpu memory, etc.
         pogs::MatrixDense<T> A_(me, Asource_);
         pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
-        t1 = timer<double>();
+        double t1 = timer<double>();
         fprintf(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
         fprintf(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
         fflush(fil);

@@ -182,8 +182,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
 
   
   double t = timer<double>();
-  double t0 = 0;
-  double t1 = 0;
 #pragma omp parallel 
   {
     int me = omp_get_thread_num();
@@ -196,13 +194,13 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
       exit(0);
     }
 
-    t0 = timer<double>();
+    double t0 = timer<double>();
     fprintf(fil,"Moving data to the GPU. Starting at %21.15g\n", t0);
     fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
     pogs::MatrixDense<T> A_(me, Asource_);
     pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
-    t1 = timer<double>();
+    double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);
     fprintf(fil,"Done moving data to the GPU. Took %g secs\n", t1-t0);
     fflush(fil);
@@ -211,7 +209,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
 //    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in pogs
     //pogs_data.SetAdaptiveRho(false); // trying
-    //pogs_data.SetEquil(false); // trying
+    pogs_data.SetEquil(false); // trying
     //pogs_data.SetRho(1E-4);
     //    pogs_data.SetVerbose(5);
     //pogs_data.SetMaxIter(200);
@@ -320,8 +318,8 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   } // end parallel region
 
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 m %d n %d twall %g tsolve %g\n",(int)mTrain,(int)n,tf-t,tf-t1);
-  return tf-t1;
+  fprintf(stdout,"END SOLVE: type 1 m %d n %d twall %g\n",(int)mTrain,(int)n,tf-t);
+  return tf-t;
 }
   
 template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, int, int, int, int, int, double);
