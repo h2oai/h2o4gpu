@@ -164,6 +164,7 @@ class Pogs {
   // Solve for specific objective.
   PogsStatus Solve(const std::vector<FunctionObj<T> >& f,
                    const std::vector<FunctionObj<T> >& g);
+  void ResetX(void);
 
   // Getters for solution variables and parameters.
   const T*     GetX()           const { return _x; }

@@ -459,6 +459,20 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   return status;
 }
 
+
+
+template <typename T, typename M, typename P>
+void Pogs<T, M, P>::ResetX(void) {
+  size_t m = _A.Rows();
+  size_t mvalid = _A.ValidRows();
+  size_t n = _A.Cols();
+  fprintf(stderr,"in pogs ResetX: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
+  
+  memset(_z, 0, (m + n) * sizeof(T));
+  memset(_zt, 0, (m + n) * sizeof(T));
+}
+  
+
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
   if(_de) delete [] _de;

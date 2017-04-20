@@ -64,6 +64,7 @@ namespace pogs {
       if(OLDPRED) Asource_.GetValidX(datatype, mValid * n, &validX);
       Asource_.GetValidY(datatype, mValid, &validY);
 
+
       // Setup each thread's pogs
       double t = timer<double>();
       double t0 = 0;
@@ -115,13 +116,13 @@ namespace pogs {
         fflush(stderr);
 #pragma omp for
         for (a = 0; a < N; ++a) { //alpha search
-          const T alpha = N == 1 ? 0 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
+          const T alpha = N == 1 ? 1 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
+          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like pogs.R
           T lambda_max = lambda_max0 / std::max(static_cast<T>(1e-2), alpha); // same as H2O
           if (alpha == 1 && mTrain > 10000) {
             lambda_max *= 2;
             lambda_min_ratio /= 2;
           }
-          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
           fprintf(stderr, "lambda_max: %f\n", lambda_max);
           fprintf(stderr, "lambda_min: %f\n", lambda_min);
           fflush(stderr);
@@ -167,7 +168,10 @@ namespace pogs {
             // Solve
             fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
             fflush(fil);
+            if(i==0) pogs_data.ResetX(); // reset X if new alpha if expect much different solution
             pogs_data.Solve(f, g);
+            if(pogs_data.GetFinalIter()==pogs_data.GetMaxIter()) pogs_data.ResetX(); // reset X if bad
+            
             if (intercept) {
               fprintf(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
               fprintf(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
