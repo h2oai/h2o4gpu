@@ -123,6 +123,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
     _vdatay = const_cast<T*>(vdatay);
   }
   else{
+    // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
     _data = new T[this->_m * this->_n];
     ASSERT(_data != 0);
     memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 
@@ -165,6 +166,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
     _vdatay = const_cast<T*>(vdatay);
   }
   else{
+    // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
     _data = new T[this->_m * this->_n];
     ASSERT(_data != 0);
     memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T)); 

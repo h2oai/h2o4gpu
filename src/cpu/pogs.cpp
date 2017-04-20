@@ -128,10 +128,7 @@ int Pogs<T, M, P>::_Init() {
   memset(_de, 0, (m + n) * sizeof(T));
   memset(_z, 0, (m + n) * sizeof(T));
   memset(_zt, 0, (m + n) * sizeof(T));
-
-  _xp = new T[n];
-  memset(_xp, 0, (n) * sizeof(T));
-  
+ 
   _A.Init();
   _A.Equil(_de, _de + m, _equil);
   _P.Init();
@@ -455,6 +452,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector_free(&z12);
   gsl::vector_free(&zprev);
   gsl::vector_free(&ztemp);
+  gsl::vector_free(&x12copy);
 
   return status;
 }

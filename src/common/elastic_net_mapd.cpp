@@ -50,10 +50,10 @@ namespace pogs {
 
 
       // temporarily get trainX, etc. from pogs (which may be on gpu)
-      T *trainX;
-      T *trainY;
-      T *validX;
-      T *validY;
+      T *trainX=NULL;
+      T *trainY=NULL;
+      T *validX=NULL;
+      T *validY=NULL;
       if(OLDPRED) trainX = (T *) malloc(sizeof(T) * mTrain * n);
       trainY = (T *) malloc(sizeof(T) * mTrain);
       if(OLDPRED) validX = (T *) malloc(sizeof(T) * mValid * n);
@@ -251,6 +251,13 @@ namespace pogs {
         }// over alpha
         if (fil != NULL) fclose(fil);
       } // end parallel region
+
+
+      // free any malloc's
+      if(trainX && OLDPRED) free(trainX);
+      if(trainY) free(trainY);
+      if(validX && OLDPRED) free(validX);
+      if(validY) free(validY);
 
       double tf = timer<double>();
       fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,
