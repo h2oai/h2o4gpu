@@ -169,6 +169,21 @@ void vector_memcpy(T *x, const vector<T> *y) { // y->x
 }
 
 template <typename T>
+void vector_memcpy(size_t num, size_t stride, T *x, const T *y) { // y->x
+  cudaError_t err;
+  if (stride == 1)
+     err = cudaMemcpy(reinterpret_cast<void*>(x),
+         reinterpret_cast<const void*>(y), num * sizeof(T),
+         cudaMemcpyDefault);
+  else
+    for (unsigned int i = 0; i < num; ++i)
+      err = cudaMemcpy(reinterpret_cast<void*>(x + i),
+          reinterpret_cast<const void*>(y + i), sizeof(T),
+          cudaMemcpyDefault);
+  CudaCheckError(err);
+}
+
+template <typename T>
 void vector_print(const vector<T> *x) {
   T* x_ = new T[x->size * x->stride];
   vector_memcpy(x_, x);

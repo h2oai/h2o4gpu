@@ -129,24 +129,31 @@ class Pogs {
   T *_de, *_z, *_zt, _rho;
   bool _done_init;
 
-  // cuda number of devices and which device(s) to use
-  int _nDev,_wDev;
-  // NCCL communicator
-#ifdef USE_NCCL2
-  ncclComm_t* _comms;
-#endif
-
-  // Setup matrix _A and solver _LS
-  int _Init();
-
-  // Output.
+  // Output for user (always on CPU)
   T *_x, *_y, *_mu, *_lambda, _optval, _time;
+  T *_trainPreds, *_validPreds;
+  // Output for internal post-processing (e.g. on GPU if GPU or on CPU if CPU)
+  T *_xp, *_trainPredsp, *_validPredsp;
+
+  T _trainrmse, _validrmse;
+  T _trainmean, _validmean;
+  T _trainstddev, _validstddev;
   unsigned int _final_iter;
 
   // Parameters.
   T _abs_tol, _rel_tol;
   unsigned int _max_iter, _init_iter, _verbose;
   bool _adaptive_rho, _equil, _gap_stop, _init_x, _init_lambda;
+    // cuda number of devices and which device(s) to use
+  int _nDev,_wDev;
+  // NCCL communicator
+#ifdef USE_NCCL2
+  ncclComm_t* _comms;
+#endif
+
+    // Setup matrix _A and solver _LS
+  int _Init();
+
 
  public:
   // Constructor and Destructor.
@@ -164,6 +171,8 @@ class Pogs {
   const T*     GetLambda()      const { return _lambda; }
   const T*     GetMu()          const { return _mu; }
   T            GetOptval()      const { return _optval; }
+  const T*     GettrainPreds()  const { return _trainPreds; }
+  const T*     GetvalidPreds()  const { return _validPreds; }
   unsigned int GetFinalIter()   const { return _final_iter; }
   T            GetRho()         const { return _rho; }
   T            GetRelTol()      const { return _rel_tol; }

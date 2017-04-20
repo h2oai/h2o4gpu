@@ -58,6 +58,11 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
+      _trainPreds(0), _validPreds(0),
+      _xp(0), _trainPredsp(0), _validPredsp(0),
+      _trainrmse(0),_validrmse(0),
+      _trainmean(0),_validmean(0),
+      _trainstddev(0),_validstddev(0),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -67,12 +72,14 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
+      _init_x(false), _init_lambda(false),
       _nDev(1), //FIXME - allow larger comm groups
-      _wDev(wDev),
+      _wDev(wDev)
 #ifdef USE_NCCL2
-      _comms(0),
+      ,_comms(0)
 #endif
-      _init_x(false), _init_lambda(false) {
+  
+{
 
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -82,6 +89,8 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
   _lambda = new T[_A.Rows()]();
+  _trainPreds = new T[_A.Rows()]();
+  _validPreds = new T[_A.ValidRows()]();
 }
 
   
@@ -92,6 +101,11 @@ Pogs<T, M, P>::Pogs(const M &A)
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
+      _trainPreds(0), _validPreds(0),
+      _xp(0), _trainPredsp(0), _validPredsp(0),
+      _trainrmse(0),_validrmse(0),
+      _trainmean(0),_validmean(0),
+      _trainstddev(0),_validstddev(0),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -101,12 +115,13 @@ Pogs<T, M, P>::Pogs(const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
+      _init_x(false), _init_lambda(false),
       _nDev(1), //FIXME - allow larger comm groups
-      _wDev(_A._wDev),
+      _wDev(_A._wDev)
 #ifdef USE_NCCL2
-      _comms(0),
+      ,comms(0)
 #endif
-      _init_x(false), _init_lambda(false) {
+{
 
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -116,6 +131,8 @@ Pogs<T, M, P>::Pogs(const M &A)
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
   _lambda = new T[_A.Rows()]();
+  _trainPreds = new T[_A.Rows()]();
+  _validPreds = new T[_A.ValidRows()]();
 }
 
   
@@ -174,6 +191,7 @@ int Pogs<T, M, P>::_Init() {
   double t0 = timer<double>();
 
   size_t m = _A.Rows();
+  size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
   fprintf(stderr,"in pogs: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
 
@@ -183,6 +201,15 @@ int Pogs<T, M, P>::_Init() {
   cudaMemset(_de, 0, (m + n) * sizeof(T));
   cudaMemset(_z, 0, (m + n) * sizeof(T));
   cudaMemset(_zt, 0, (m + n) * sizeof(T));
+
+  // local (i.e. GPU) values for _x and training predictions (i.e. predicted y from Atrain*_x)
+  cudaMalloc(&_xp, (n) * sizeof(T));
+  cudaMalloc(&_trainPredsp, (m) * sizeof(T));
+  cudaMalloc(&_validPredsp, (mvalid) * sizeof(T));
+  cudaMemset(_xp, 0, (n) * sizeof(T));
+  cudaMemset(_trainPredsp, 0, (m) * sizeof(T));
+  cudaMemset(_validPredsp, 0, (mvalid) * sizeof(T));
+
   CUDA_CHECK_ERR();
  
   _A.Init();
@@ -271,6 +298,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Extract values from pogs_data
   PUSH_RANGE("PogsExtract",PogsExtract,3);
   size_t m = _A.Rows();
+  size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
@@ -675,16 +703,44 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_mul(&ytemp, &d); // ytemp*d -> ytemp
   cml::vector_div(&xtemp, &e); // xtemp*e -> xtemp
 
+  cml::vector<T> x12copy = cml::vector_calloc<T>(n);
+  cml::vector_memcpy(&x12copy,&x12); // copy de version first to GPU
+  T * dcopy = new T[m]();
+  cml::vector_memcpy(dcopy,&d); // copy d to CPU
+  
   cml::vector_div(&y12, &d); // y12*d -> y12
   cml::vector_mul(&x12, &e); // x12*d -> x12
   POP_RANGE("Scale",Scale,1);
 
-  // Copy results to output.
+  // Copy results from GPU to CPU for output.
   PUSH_RANGE("Copy",Copy,1);
-  cml::vector_memcpy(_x, &x12); // x12->_x
+  cml::vector_memcpy(_x, &x12); // x12->_x (GPU->CPU with vector<T>* to T*)
+  cml::vector_memcpy(_xp, &x12); // x12->_xp (GPU->GPU but vector<T>* to T*)
   cml::vector_memcpy(_y, &y12); // y12->_y
   cml::vector_memcpy(_mu, &xtemp); // xtemp->_mu
   cml::vector_memcpy(_lambda, &ytemp); // ytemp->_lambda
+
+  // compute train predictions from trainPred = Atrain.xsolution
+  _A.Mul('n', static_cast<T>(1.), x12copy.data, static_cast<T>(0.), _trainPredsp); // _xp and _trainPredsp are both simple pointers on GPU
+  cml::vector_memcpy(m,1,_trainPreds, _trainPredsp); // pointer on GPU to pointer on CPU
+  for(unsigned int i=0;i<m;i++){
+    _trainPreds[i]/=dcopy[i];
+    //    fprintf(stderr,"Tp[%d]=%g\n",i,_trainPreds[i]);
+  }
+  if(dcopy) delete [] dcopy;
+  if(x12copy.data) cml::vector_free(&x12copy);
+  
+  if(mvalid>0){
+    // compute valid from validPreds = Avalid.xsolution
+    _A.Mulvalid('n', static_cast<T>(1.), _xp, static_cast<T>(0.), _validPredsp);
+    cml::vector_memcpy(mvalid,1,_validPreds, _validPredsp);
+  }
+  // compute rmse (not yet)
+    
+  // compute mean (not yet)
+
+  // compute stddev (not yet)
+  
 
   // Store z.
   cml::vector_memcpy(&z, &zprev); // zprev->z
@@ -693,7 +749,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_free(&z12);
   cml::vector_free(&zprev);
   cml::vector_free(&ztemp);
-  cublasDestroy(hdl);
+  if(hdl) cublasDestroy(hdl);
   CUDA_CHECK_ERR();
   POP_RANGE("Copy",Copy,1);
 
@@ -706,10 +762,13 @@ template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
   CUDACHECK(cudaSetDevice(_wDev));
 
-  cudaFree(_de);
-  cudaFree(_z);
-  cudaFree(_zt);
-  _de = _z = _zt = 0;
+  if(_de) cudaFree(_de);
+  if(_z) cudaFree(_z);
+  if(_zt) cudaFree(_zt);
+  if(_xp) cudaFree(_xp);
+  if(_trainPredsp) cudaFree(_trainPredsp);
+  if(_validPredsp) cudaFree(_validPredsp);
+  _de = _z = _zt = _xp = _trainPredsp = _validPredsp = 0;
   CUDA_CHECK_ERR();
 
 #ifdef USE_NCCL2
@@ -718,12 +777,16 @@ Pogs<T, M, P>::~Pogs() {
   free(_comms);
 #endif
   
-  delete [] _x;
-  delete [] _y;
-  delete [] _mu;
-  delete [] _lambda;
-  _x = _y = _mu = _lambda = 0;
+  if(_x) delete [] _x;
+  if(_y) delete [] _y;
+  if(_mu) delete [] _mu;
+  if(_lambda) delete [] _lambda;
+  if(_trainPreds) delete [] _trainPreds;
+  if(_validPreds) delete [] _validPreds;
+  _x = _y = _mu = _lambda = _trainPreds = _validPreds = 0;
 }
+
+
 
 // Explicit template instantiation.
 #if !defined(POGS_DOUBLE) || POGS_DOUBLE==1

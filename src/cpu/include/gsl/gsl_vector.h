@@ -114,6 +114,17 @@ void vector_memcpy(T *x, const vector<T> *y) {
 }
 
 template <typename T>
+  void vector_memcpy(size_t num, size_t stride, T *x, const T *y) {
+  if (stride == 1) {
+    memcpy(x, y, num * sizeof(T));
+  } else {
+    for (unsigned int i = 0; i < num; ++i) 
+      x[i] = y[i*stride];
+  }
+}
+
+
+template <typename T>
 void vector_print(const vector<T> *x) {
   for (unsigned int i = 0; i < x->size; ++i)
     printf("%e ", vector_get(x, i));

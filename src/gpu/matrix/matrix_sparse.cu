@@ -196,6 +196,39 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
+int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const {
+  DEBUG_ASSERT(this->_done_init);
+  if (!this->_done_init)
+    return 1;
+
+  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+
+  cml::vector<T> x_vec, y_vec;
+  if (trans == 'n' || trans == 'N') {
+    x_vec = cml::vector_view_array<T>(x, this->_n);
+    y_vec = cml::vector_view_array<T>(y, this->_mvalid);
+  } else {
+    x_vec = cml::vector_view_array<T>(x, this->_mvalid);
+    y_vec = cml::vector_view_array<T>(y, this->_n);
+  }
+
+  if (_ord == ROW) {
+    cml::spmat<T, POGS_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+        this->_n, _nnz);
+    cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
+        &A, &x_vec, beta, &y_vec);
+  } else {
+    cml::spmat<T, POGS_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+        this->_n, _nnz);
+    cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
+        &A, &x_vec, beta, &y_vec);
+  }
+  DEBUG_CUDA_CHECK_ERR();
+
+  return 0;
+}
+
+template <typename T>
 int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)

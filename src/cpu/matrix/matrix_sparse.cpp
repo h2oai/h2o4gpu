@@ -153,6 +153,34 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 }
 
 template <typename T>
+int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const {
+  DEBUG_ASSERT(this->_done_init);
+  if (!this->_done_init)
+    return 1;
+
+  gsl::vector<T> x_vec, y_vec;
+  if (trans == 'n' || trans == 'N') {
+    x_vec = gsl::vector_view_array<T>(x, this->_n);
+    y_vec = gsl::vector_view_array<T>(y, this->_mvalid);
+  } else {
+    x_vec = gsl::vector_view_array<T>(x, this->_mvalid);
+    y_vec = gsl::vector_view_array<T>(y, this->_n);
+  }
+
+  if (_ord == ROW) {
+    gsl::spmat<T, POGS_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+        this->_n, _nnz);
+    gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
+  } else {
+    gsl::spmat<T, POGS_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+        this->_n, _nnz);
+    gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
+  }
+
+  return 0;
+}
+
+template <typename T>
 int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)

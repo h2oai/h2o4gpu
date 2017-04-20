@@ -470,7 +470,6 @@ void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
   return;
 }
 
-
 template <typename T>
 int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
 
@@ -486,6 +485,7 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   cml::vector<T> y_vec = cml::vector_view_array<T>(y, this->_m);
 
   //  Performs the matrix-vector operations y := alpha*A*x + beta*y or y := alpha*A'*x + beta*y where alpha and beta are scalars, x and y are vectors and A is an m by n matrix
+  // _data is A on GPU
   //https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/u_nla.htm#CIAFEAFG
   if (_ord == ROW) {
     cml::matrix<T, CblasRowMajor> A =
@@ -495,6 +495,38 @@ int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   } else {
     cml::matrix<T, CblasColMajor> A =
         cml::matrix_view_array<T, CblasColMajor>(_data, this->_m, this->_n);
+    cml::blas_gemv(hdl, OpToCublasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
+  }
+  CUDA_CHECK_ERR();
+
+  return 0;
+}
+
+  template <typename T>
+int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const {
+
+  DEBUG_EXPECT(this->_done_init);
+  if (!this->_done_init)
+    return 1;
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+  cublasHandle_t hdl = info->handle;
+
+  const cml::vector<T> x_vec = cml::vector_view_array<T>(x, this->_n);
+  cml::vector<T> y_vec = cml::vector_view_array<T>(y, this->_mvalid);
+
+  //  Performs the matrix-vector operations y := alpha*A*x + beta*y or y := alpha*A'*x + beta*y where alpha and beta are scalars, x and y are vectors and A is an m by n matrix
+  // _vdata is A on GPU
+  //https://docs.oracle.com/cd/B19306_01/appdev.102/b14258/u_nla.htm#CIAFEAFG
+  if (_ord == ROW) {
+    cml::matrix<T, CblasRowMajor> A =
+        cml::matrix_view_array<T, CblasRowMajor>(_vdata, this->_mvalid, this->_n);
+    cml::blas_gemv(hdl, OpToCublasOp(trans), alpha, &A, &x_vec, beta,
+        &y_vec);
+  } else {
+    cml::matrix<T, CblasColMajor> A =
+        cml::matrix_view_array<T, CblasColMajor>(_vdata, this->_mvalid, this->_n);
     cml::blas_gemv(hdl, OpToCublasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   }
   CUDA_CHECK_ERR();

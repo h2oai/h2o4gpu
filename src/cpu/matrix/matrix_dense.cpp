@@ -329,6 +329,29 @@ if (_ord == ROW) {
   return 0;
 }
 
+  template <typename T>
+int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const {
+DEBUG_EXPECT(this->_done_init);
+if (!this->_done_init)
+  return 1;
+
+const gsl::vector<T> x_vec = gsl::vector_view_array<T>(x, this->_n);
+gsl::vector<T> y_vec = gsl::vector_view_array<T>(y, this->_mvalid);
+
+if (_ord == ROW) {
+  gsl::matrix<T, CblasRowMajor> A =
+      gsl::matrix_view_array<T, CblasRowMajor>(_vdata, this->_mvalid, this->_n);
+  gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta,
+      &y_vec);
+  } else {
+    gsl::matrix<T, CblasColMajor> A =
+        gsl::matrix_view_array<T, CblasColMajor>(_vdata, this->_mvalid, this->_n);
+    gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
+  }
+
+  return 0;
+}
+
 template <typename T>
 int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);

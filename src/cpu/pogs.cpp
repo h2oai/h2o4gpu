@@ -44,6 +44,11 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
+      _trainPreds(0), _validPreds(0),
+      _xp(0), _trainPredsp(0), _validPredsp(0),
+      _trainrmse(0),_validrmse(0),
+      _trainmean(0),_validmean(0),
+      _trainstddev(0),_validstddev(0),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -53,12 +58,19 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
-      _init_x(false), _init_lambda(false) {
+      _init_x(false), _init_lambda(false),
+      _nDev(0),
+      _wDev(wDev)
+{
+
+  printLegalNotice();
+  
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
   _lambda = new T[_A.Rows()]();
-  printLegalNotice();
+  _trainPreds = new T[_A.Rows()]();
+  _validPreds = new T[_A.ValidRows()]();
 }
 
 template <typename T, typename M, typename P>
@@ -68,6 +80,11 @@ Pogs<T, M, P>::Pogs(const M &A)
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
+      _trainPreds(0), _validPreds(0),
+      _xp(0), _trainPredsp(0), _validPredsp(0),
+      _trainrmse(0),_validrmse(0),
+      _trainmean(0),_validmean(0),
+      _trainstddev(0),_validstddev(0),
       _final_iter(0),
       _abs_tol(static_cast<T>(kAbsTol)),
       _rel_tol(static_cast<T>(kRelTol)),
@@ -77,13 +94,18 @@ Pogs<T, M, P>::Pogs(const M &A)
       _adaptive_rho(kAdaptiveRho),
       _equil(kEquil),
       _gap_stop(kGapStop),
-      _init_x(false), _init_lambda(false) 
+      _init_x(false), _init_lambda(false),
+      _nDev(0),
+      _wDev(_A._wDev)
 {
+  printLegalNotice();
+
   _x = new T[_A.Cols()]();
   _y = new T[_A.Rows()]();
   _mu = new T[_A.Cols()]();
   _lambda = new T[_A.Rows()]();
-  printLegalNotice();
+  _trainPreds = new T[_A.Rows()]();
+  _validPreds = new T[_A.ValidRows()]();
 }
 
 
@@ -107,6 +129,9 @@ int Pogs<T, M, P>::_Init() {
   memset(_z, 0, (m + n) * sizeof(T));
   memset(_zt, 0, (m + n) * sizeof(T));
 
+  _xp = new T[n];
+  memset(_xp, 0, (n) * sizeof(T));
+  
   _A.Init();
   _A.Equil(_de, _de + m, _equil);
   _P.Init();
@@ -140,6 +165,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Extract values from pogs_data
   size_t m = _A.Rows();
+  size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
   std::vector<FunctionObj<T> > f_cpu = f;
   std::vector<FunctionObj<T> > g_cpu = g;
@@ -381,6 +407,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector_mul(&ytemp, &d);
   gsl::vector_div(&xtemp, &e);
 
+  gsl::vector<T> x12copy = gsl::vector_calloc<T>(n);
+  gsl::vector_memcpy(&x12copy,&x12); // copy de version first
+  
   gsl::vector_div(&y12, &d);
   gsl::vector_mul(&x12, &e);
 
@@ -389,6 +418,35 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   gsl::vector_memcpy(_y, &y12);
   gsl::vector_memcpy(_mu, &xtemp);
   gsl::vector_memcpy(_lambda, &ytemp);
+
+  //  for(unsigned int i=0;i<m;i++){
+  //    for(unsigned int j=0;j<n;j++){
+  //      fprintf(stderr,"A[%d,%d]=%g\n",i,j,_A._data[j+i*n]);
+  //    }
+  //  }
+  //  for(unsigned int j=0;j<n;j++){
+  //    fprintf(stderr,"x[%d]=%g\n",j,_x[j]);
+  //  }
+  
+  // compute train predictions from trainPred = Atrain.xsolution
+  // _data is B = D*A*E
+  
+  _A.Mul('n', static_cast<T>(1.0), x12copy.data, static_cast<T>(0.), _trainPreds); // _x and _trainPreds are both pointers on CPU
+  for(unsigned int i=0;i<m;i++){
+    _trainPreds[i]/=d.data[i];
+    //    fprintf(stderr,"Tp[%d]=%g\n",i,_trainPreds[i]);
+  }
+  if(mvalid>0){
+    // compute valid from validPreds = Avalid.xsolution
+    _A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.), _validPreds);
+  }
+  // compute rmse (not yet)
+
+  // compute mean (not yet)
+
+  // compute stddev (not yet)
+
+  
 
   // Store z.
   gsl::vector_memcpy(&z, &zprev);
@@ -403,16 +461,18 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
-  delete [] _de;
-  delete [] _z;
-  delete [] _zt;
+  if(_de) delete [] _de;
+  if(_z) delete [] _z;
+  if(_zt) delete [] _zt;
   _de = _z = _zt = 0;
 
-  delete [] _x;
-  delete [] _y;
-  delete [] _mu;
-  delete [] _lambda;
-  _x = _y = _mu = _lambda = 0;
+  if(_x) delete [] _x;
+  if(_y) delete [] _y;
+  if(_mu) delete [] _mu;
+  if(_lambda) delete [] _lambda;
+  if(_trainPreds) delete [] _trainPreds;
+  if(_validPreds) delete [] _validPreds;
+  _x = _y = _mu = _lambda = _trainPreds = _validPreds = 0;
 }
 
 // Explicit template instantiation.

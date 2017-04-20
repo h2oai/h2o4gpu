@@ -49,6 +49,7 @@ class MatrixDense : public Matrix<T> {
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
+  int Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const;
 
   void GetTrainX(int datatype, size_t size, T**data) const;
   void GetTrainY(int datatype, size_t size, T**data) const;

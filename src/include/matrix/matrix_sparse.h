@@ -11,11 +11,16 @@ template <typename T>
 class MatrixSparse : public Matrix<T> {
  public:
   int _wDev;
+  int _datatype;
+  
  public:
+  T *_data;
+  T *_datay;
+  T *_vdata;
+  T *_vdatay;
   enum Ord {ROW, COL};
 
  private:
-  T *_data;
   
   POGS_INT *_ptr, *_ind, _nnz;
 
@@ -41,14 +46,19 @@ class MatrixSparse : public Matrix<T> {
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
+  int Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const;
 
   // Getters
   const T* Data() const { return _data; }
+  const T* Datay() const { return _datay; }
+  const T* vData() const { return _vdata; }
+  const T* vDatay() const { return _vdatay; }
   const POGS_INT* Ptr() const { return _ptr; }
   const POGS_INT* Ind() const { return _ind; }
   POGS_INT Nnz() const { return _nnz; }
   Ord Order() const { return _ord; }
   int wDev() const { return _wDev; }
+  int Datatype() const { return _datatype; }
 };
 
 }  // namespace pogs

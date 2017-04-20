@@ -1,5 +1,7 @@
 #include "elastic_net_mapd.h"
 
+#define OLDPRED 0
+
 using namespace std;
 
 namespace pogs {
@@ -52,14 +54,14 @@ namespace pogs {
       T *trainY;
       T *validX;
       T *validY;
-      trainX = (T *) malloc(sizeof(T) * mTrain * n);
+      if(OLDPRED) trainX = (T *) malloc(sizeof(T) * mTrain * n);
       trainY = (T *) malloc(sizeof(T) * mTrain);
-      validX = (T *) malloc(sizeof(T) * mValid * n);
+      if(OLDPRED) validX = (T *) malloc(sizeof(T) * mValid * n);
       validY = (T *) malloc(sizeof(T) * mValid);
 
-      Asource_.GetTrainX(datatype, mTrain * n, &trainX);
+      if(OLDPRED) Asource_.GetTrainX(datatype, mTrain * n, &trainX);
       Asource_.GetTrainY(datatype, mTrain, &trainY);
-      Asource_.GetValidX(datatype, mValid * n, &validX);
+      if(OLDPRED) Asource_.GetValidX(datatype, mValid * n, &validX);
       Asource_.GetValidY(datatype, mValid, &validY);
 
       // Setup each thread's pogs
@@ -178,6 +180,8 @@ namespace pogs {
                 dof++;
               }
             }
+
+#if(OLDPRED)
             std::vector <T> trainPreds(mTrain);
             for (size_t i = 0; i < mTrain; ++i) {
               trainPreds[i] = 0;
@@ -185,6 +189,9 @@ namespace pogs {
                 trainPreds[i] += pogs_data.GetX()[j] * trainX[i * n + j]; //add predictions
               }
             }
+#else
+            std::vector <T> trainPreds(&pogs_data.GettrainPreds()[0], &pogs_data.GettrainPreds()[0]+mTrain);
+#endif
             double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
             if(standardize){
               trainRMSE *= sdTrainY;
@@ -210,6 +217,7 @@ namespace pogs {
 
             double validRMSE = -1;
             if (mValid > 0) {
+#if(OLDPRED)
               std::vector <T> validPreds(mValid);
               for (size_t i = 0; i < mValid; ++i) { //row
                 validPreds[i] = 0;
@@ -217,6 +225,9 @@ namespace pogs {
                   validPreds[i] += pogs_data.GetX()[j] * validX[i * n + j]; //add predictions
                 }
               }
+#else
+              std::vector <T> validPreds(&pogs_data.GetvalidPreds()[0], &pogs_data.GetvalidPreds()[0]+mValid);
+#endif
               validRMSE = getRMSE(mValid, &validPreds[0], validY);
               if(standardize){
                 validRMSE *= sdTrainY;
