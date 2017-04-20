@@ -40,6 +40,9 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 
 }  // namespace
 
+  // TODO: Can have Equil (or whatever wants to modify _data) called by single core first when inporting data into _data.  Then rest of cores (in multi-threaded call to another MatrixDense(wDev,A) would not do equil and could pass only the pointer instead of creating new memory.
+  // TODO: For first core, could assign pointer if ok with input being modified.  Could have function call argument that allows user to say if ok to modify input data in order to save memory.
+  
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
