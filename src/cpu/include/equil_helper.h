@@ -60,9 +60,9 @@ struct SqrtF : std::unary_function<T, T> {
 
 template <typename T, typename F>
 void SetSign(T* x, unsigned char *sign, size_t size, F f) {
-  //#ifdef _OPENMP
-  //#pragma omp parallel for
-  //#endif
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
   for (unsigned int t = 0; t < size; ++t) {
     sign[t] = 0;
     for (unsigned int i = 0; i < 8; ++i) {
@@ -83,9 +83,9 @@ void SetSignSingle(T* x, unsigned char *sign, size_t bits, F f) {
 
 template <typename T, typename F>
 void UnSetSign(T* x, unsigned char *sign, size_t size, F f) {
-  //#ifdef _OPENMP
-  //#pragma omp parallel for
-  //#endif
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
   for (unsigned int t = 0; t < size; ++t) {
     for (unsigned int i = 0; i < 8; ++i) {
       x[8 * t + i] = (1 - 2 * static_cast<int>((sign[t] >> i) & 1)) *
