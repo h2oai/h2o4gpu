@@ -6,9 +6,12 @@ EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_mapd.cpp
 
+GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
+HASH=-D_GITHASH_=\"$(GITHASH)\"
+
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 
 
 # CUDA Flags

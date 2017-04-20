@@ -1,10 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
+#include "reader.h"
 #include <random>
-#include <vector>
-
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
@@ -22,7 +18,7 @@ double Lasso(size_t m, size_t n) {
   fprintf(stdout,"START FILL DATA\n");
   double t0 = timer<double>();
   int generate=0;
-#include "readorgen.c"
+  fillData(generate, "train.txt", m, n, &A[0], &b[0]);
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
   printf("Time to create data: %f\n", t1-t0);

@@ -5,7 +5,7 @@
 #include <cassert>
 #include <iostream>
 #include <random>
-
+#include "reader.h"
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
@@ -77,8 +77,8 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     double t0 = timer<double>();
 
     // choose to generate or read-in data
-    int generate=0;    
-#include "readorgen.c"
+    int generate=0;
+    fillData(generate, "train.txt", m, n, &A[0], &b[0]);
 
     double t1 = timer<double>();
     cout << "END FILL DATA. Took " << t1-t0 << " secs" << endl;

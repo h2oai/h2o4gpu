@@ -191,6 +191,7 @@ class Pogs {
   void printMe(std::ostream &os, T c, T e) const {
     os << "Model parameters: ";
     std::string sep = ", ";
+    os << "version: " << _GITHASH_ << sep;
     os << "c(l1): " << c << ", e(l2): " << e << sep;
     os << "rho: " << _rho << sep;
     os << "rel_tol: " << _rel_tol << sep;
@@ -213,13 +214,17 @@ class Pogs {
   void printLegalNotice() {
     Printf(__HBAR__
         "           H2O AI GLM\n"
-        "           Version: %s\n"
+        "           Version: %s %s\n"
+        "           Compiled: %s %s\n"
         "           (c) H2O.ai, Inc., 2017\n"
         "           based on\n"
         "           POGS 0.2.0 - Proximal Graph Solver\n"
         "           (c) Christopher Fougner, Stanford University 2014-2015\n"
         __HBAR__,
-        POGS_VERSION.c_str());
+        POGS_VERSION.c_str(),
+        _GITHASH_,
+        __DATE__,
+        __TIME__);
   }
 
   // Setters for parameters and initial values.

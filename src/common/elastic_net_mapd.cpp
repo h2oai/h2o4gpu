@@ -137,7 +137,7 @@ namespace pogs {
           g.reserve(n);
           // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
           T penalty_factor = static_cast<T>(1.0); // like pogs.R
-          T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
+          //T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
 
           for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]); // pogs.R
           for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);

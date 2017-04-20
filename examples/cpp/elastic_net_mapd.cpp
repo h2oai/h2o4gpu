@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include "reader.h"
 #include <random>
 
 #include "../common/elastic_net_mapd.h"
@@ -12,7 +13,7 @@
 using namespace std;
 
 template<typename T>
-void fillData(std::vector<T>& trainX, std::vector<T>& trainY,
+void splitData(std::vector<T>& trainX, std::vector<T>& trainY,
               std::vector<T>& validX, std::vector<T>& validY,
               size_t m, size_t n, size_t mValid, int intercept) {
 // allocate matrix problem to solve
@@ -24,8 +25,7 @@ void fillData(std::vector<T>& trainX, std::vector<T>& trainY,
 
 // choose to generate or read-in data
   int generate = 0;
-
-#include "readorgen.c"
+  fillData(generate, "train.txt", m, n, &A[0], &b[0]);
 
   double t1 = timer<double>();
   cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
@@ -43,10 +43,10 @@ void fillData(std::vector<T>& trainX, std::vector<T>& trainY,
 
   for (int i = 0; i < mTrain; ++i) { //rows
     trainY[i] = b[i];
-//      cout << "y[" << i << "] = " << b[i] << endl;
+//      cout << "y[" << i << "] = " << trainY[i] << endl;
     for (int j = 0; j < n - intercept; ++j) { //cols
       trainX[i * n + j] = A[i * (n-intercept) + j];
-//        cout << "X[" << i << ", " << j << "] = " << A[i*n+j] << endl;
+//        cout << "X[" << i << ", " << j << "] = " << trainX[i*n+j] << endl;
     }
     if (intercept) {
       trainX[i * n + n - 1] = 1;
@@ -85,7 +85,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   std::vector<T> trainX, trainY, validX, validY;
   size_t mValid = static_cast<size_t>(m * validFraction);
   size_t mTrain = m - mValid;
-  fillData(trainX, trainY, validX, validY, m, n, mValid, intercept);
+  splitData(trainX, trainY, validX, validY, m, n, mValid, intercept);
   n+=intercept;
   cout << "Rows in training data: " << trainY.size() << endl;
 
@@ -121,8 +121,6 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     cout << "Rows in validation data: " << validY.size() << endl;
     T meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     T sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
-    T meanValidYn = meanValidY0;
-    T sdValidYn = sdValidY0;
     cout << "Mean validY: " << meanValidY0 << endl;
     cout << "StdDev validY: " << sdValidY0 << endl;
     if (standardize) {
