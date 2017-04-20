@@ -46,13 +46,13 @@ all: gpu gpualt gpumapd
 default: gpualt gpumapd
 
 # GPU
-gpu: run_all_orig.cpp examples.h $(EXSRC)
+gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
 
-gpualt: run_all.cpp examples.h $(EXSRC2)
+gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
-gpumapd: run_all.cpp examples.h $(EXSRC3)
+gpumapd: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
 	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
 run: gpumapd

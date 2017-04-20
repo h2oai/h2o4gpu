@@ -41,13 +41,13 @@ all: cpu cpualt cpumapd
 default: cpualt cpumapd
 
 # CPU
-cpu: run_all_orig.cpp examples.h $(EXSRC)
+cpu: run_all_orig.cpp examples.h $(EXSRC) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
 
-cpualt: run_all.cpp examples.h $(EXSRC2)
+cpualt: run_all.cpp examples.h $(EXSRC2) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
 
-cpumapd: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a
+cpumapd: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
 
 clean:
