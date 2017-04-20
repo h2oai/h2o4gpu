@@ -169,15 +169,14 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
     }
   }
 
-  T weights = static_cast<T>(1.0); //TODO: Add per-obs weights
-  //static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
-  //  T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
+  T weights = static_cast<T>(1.0/(static_cast<T>(m))); // like pogs.R
   cout << "weights " << weights << endl;
 
   // set lambda max 0 (i.e. base lambda_max)
   T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n; ++j) {
     T u = 0;
+    T weights = static_cast<T>(1.0/mTrain); //TODO: Add per-obs weights
     for (unsigned int i = 0; i < mTrain; ++i) {
       u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
@@ -185,7 +184,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
   }
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
-  T lambda_min_ratio = 1E-7; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1E-5; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 
@@ -299,8 +298,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
       f.reserve(mTrain);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-      //      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
-      T weights = static_cast<T>(1.0);
+      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
       T penalty_factor = static_cast<T>(1.0); // like pogs.R
       for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);

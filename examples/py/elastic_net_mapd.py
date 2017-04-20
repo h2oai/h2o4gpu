@@ -52,11 +52,12 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
   fortran = trainX.flags.f_contiguous
 
 
-  weights = 1.#/mTrain
-  if intercept:
+  weights = 1./mTrain
+  if intercept==1:
     lambda_max0 = weights * max(abs(A.T.dot(y-meanTrainY)))
   else:
-    lambda_max0 = max(abs(A.T.dot(y)))
+    lambda_max0 = weights * max(abs(A.T.dot(y)))
+
   print("lambda_max0: " + str(lambda_max0))
 
   if intercept==1:
