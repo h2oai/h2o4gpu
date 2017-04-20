@@ -12,11 +12,11 @@ class Matrix {
 
   void *_info, *_infoy, *_vinfo, *_vinfoy;
 
-  bool _done_init;
+  bool _done_init, _done_alloc;
 
  public:
- Matrix(size_t m, size_t n) : _m(m), _n(n), _mvalid(0), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false) { };
- Matrix(size_t m, size_t n, size_t mValid) : _m(m), _n(n), _mvalid(mValid), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false) { };
+ Matrix(size_t m, size_t n) : _m(m), _n(n), _mvalid(0), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false) { };
+ Matrix(size_t m, size_t n, size_t mValid) : _m(m), _n(n), _mvalid(mValid), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false) { };
 
   virtual ~Matrix() { };
 

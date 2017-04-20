@@ -13,7 +13,10 @@
 
 int checkwDev(int wDev){
   int nVis = 0;
+#pragma omp critical
+  {
   CUDACHECK(cudaGetDeviceCount(&nVis));
+  }
   #ifdef _DEBUG
   for (int i = 0; i < nVis; i++){
     cudaDeviceProp props;
