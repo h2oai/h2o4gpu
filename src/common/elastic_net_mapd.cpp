@@ -253,9 +253,9 @@ namespace pogs {
       } // end parallel region
 
       double tf = timer<double>();
-      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve %g\n", (int) mTrain, (int) n,
-              (int) mValid, tf - t, tf - t1);
-      return tf - t1;
+      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,
+              (int) mValid, tf - t);
+      return tf - t;
     }
 
     template double ElasticNetptr<double>(int sourceDev, int datatype, int nGPUs, const char ord,
