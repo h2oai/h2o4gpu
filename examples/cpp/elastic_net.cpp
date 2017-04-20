@@ -209,7 +209,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
 //    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in pogs
     //pogs_data.SetAdaptiveRho(false); // trying
-    pogs_data.SetEquil(false); // trying
+    //pogs_data.SetEquil(false); // trying
     //pogs_data.SetRho(1E-4);
     //    pogs_data.SetVerbose(5);
     //pogs_data.SetMaxIter(200);
