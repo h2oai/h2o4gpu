@@ -239,9 +239,9 @@ namespace pogs {
               }
             }
 
-            fprintf(fil, "me: %s %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
+            fprintf(fil, "%s.me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(fil);
-            fprintf(stdout, "me: %s %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
+            fprintf(stdout, "%s.me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
             fflush(stdout);
           }// over lambda
         }// over alpha
