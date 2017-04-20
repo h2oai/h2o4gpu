@@ -1,3 +1,6 @@
+USEICC=0
+
+
 # User Vars
 POGSROOT=../../src
 
@@ -9,16 +12,28 @@ EXSRC3=elastic_net_mapd.cpp
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
+
 # C++ Flags
+ifeq ($(USEICC),0)
 CXX=g++
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+else
+CXX=icpc
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+endif
 
 # Check System Args.
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
 else
+
+ifeq ($(USEICC),0)
 LDFLAGS=-lm -lblas
+else
+LDFLAGS=-lm -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm 
+endif
+
 endif
 
 all: cpu cpualt cpumapd

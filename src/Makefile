@@ -1,3 +1,5 @@
+# For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
+USEICC=0
 
 # Bulid directory
 OBJDIR=build
@@ -9,8 +11,13 @@ GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
 # C++ Flags
+ifeq ($(USEICC),0)
 CXX=g++
 CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 $(HASH) -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+else
+CXX=icpc
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -std=c++11 -Wall -Wconversion -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread $(RINCLUDEHOME)  #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+endif
 
 # CUDA Flags
 NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
@@ -23,9 +30,17 @@ CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "
 CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
 CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 
+ifeq ($(USEICC),0)
+OPENMP=-fopenmp
+NVCCEXTRA=
+else
+OPENMP=-qopenmp
+NVCCEXTRA=-ccbin=icpc
+endif
+
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
-CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler -fopenmp $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
+CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
+CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 

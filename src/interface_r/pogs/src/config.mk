@@ -1,4 +1,5 @@
 # Change this target between cpu and gpu
+USEICC=0
 TARGET=gpu
 
 # the R header dir, and the R shared library dir on your system
@@ -41,6 +42,14 @@ HDR=-Iinclude $(R_INC) -I$(CUDA_HOME)/include
 
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DPOGS_SINGLE=0
+
+ifeq ($(USEICC),0)
+ICCSTUFF=
+else
+ICCSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+endif
+
+
 ifeq ($(TARGET), gpu)
     LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lnvToolsExt # -lnccl
 else
