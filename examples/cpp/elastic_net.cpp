@@ -280,7 +280,7 @@ double ElasticNet(size_t m, size_t n, int nGPUs, int nLambdas, int nAlphas, int 
 #pragma omp for
     for (a = 0; a < N; ++a) { //alpha search
       const T alpha = N == 1 ? 1 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
-      T lambda_max = lambda_max0/std::max(static_cast<T>(1e-3), alpha); // same as H2O
+      T lambda_max = lambda_max0/std::max(static_cast<T>(1e-2), alpha); // same as H2O
       if (alpha==1 && mTrain>10000) {
         lambda_max *= 2;
         lambda_min_ratio /= 2;
