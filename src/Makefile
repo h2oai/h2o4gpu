@@ -1,5 +1,6 @@
 # For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
 USEICC=0
+USEMKL=1
 
 # Bulid directory
 OBJDIR=build
@@ -10,13 +11,26 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
+LINKFLAGS=-fopenmp
+
+ifeq ($(USEICC),1)
+LINKFLAGS=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
+endif
+
+ifeq ($(USEMKL),1)$
+LINKFLAGS += -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
+ifeq ($(USEICC),1)$
+LINKFLAGS += -qopenmp
+endif
+endif
+
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 $(HASH) -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
 else
 CXX=icpc
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -std=c++11 -Wall -Wconversion -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread $(RINCLUDEHOME)  #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS) $(RINCLUDEHOME)  #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 endif
 
 # CUDA Flags

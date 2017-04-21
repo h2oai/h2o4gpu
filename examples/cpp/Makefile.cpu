@@ -1,4 +1,5 @@
 USEICC=0
+USEMKL=1
 
 
 # User Vars
@@ -12,14 +13,27 @@ EXSRC3=elastic_net_mapd.cpp
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
+LINKFLAGS=-fopenmp
+
+ifeq ($(USEICC),1)
+LINKFLAGS=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
+endif
+
+ifeq ($(USEMKL),1)$
+LINKFLAGS += -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
+ifeq ($(USEICC),1)$
+LINKFLAGS += -qopenmp
+endif
+endif
+
 
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 else
 CXX=icpc
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 endif
 
 # Check System Args.
@@ -28,10 +42,14 @@ ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
 else
 
-ifeq ($(USEICC),0)
 LDFLAGS=-lm -lblas
-else
-LDFLAGS=-lm -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm 
+
+ifeq ($(USEICC),1)
+LDFLAGS=-lm -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm
+endif
+
+ifeq ($(USEMKL),1)$
+LDFLAGS=-lm -fPIC -fopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm
 endif
 
 endif
