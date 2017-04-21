@@ -127,9 +127,6 @@ namespace pogs {
 #ifdef DEBUG
       cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
-
-#else
-#error Need OpenMP
 #endif
 
 
@@ -162,7 +159,11 @@ namespace pogs {
       double t = timer<double>();
 #pragma omp parallel
       {
+#ifdef _OPENMP
         int me = omp_get_thread_num();
+#else
+        int me=0;
+#endif
 
         char filename[100];
         sprintf(filename, "me%d.%s.%s.%d.txt", me, _GITHASH_,TEXTARCH,nGPUs);

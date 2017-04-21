@@ -9,7 +9,10 @@
 #include "matrix/matrix_dense.h"
 #include "pogs.h"
 #include "timer.h"
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 using namespace pogs;
 using namespace std;
@@ -57,9 +60,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   int nth=omp_get_max_threads();
   nGPUs=nth; // openmp threads = cuda devices used
   cout << "Number of original threads=" << omt << " Number of threads for cuda=" << nth << endl;
-
-#else
-#error Need OpenMP
 #endif
 
   // read data and do train-valid split
@@ -184,7 +184,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   double t = timer<double>();
 #pragma omp parallel 
   {
+#ifdef _OPENMP
     int me = omp_get_thread_num();
+#else
+    int me=0;
+#endif
 
     char filename[100];
     sprintf(filename,"me%d.txt",me);
