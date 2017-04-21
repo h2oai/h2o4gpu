@@ -193,7 +193,6 @@ int Pogs<T, M, P>::_Init() {
   size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
-  fprintf(stderr,"in pogs: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
 
   cudaMalloc(&_de, (m + n) * sizeof(T));
   cudaMalloc(&_z, (m + n) * sizeof(T));
@@ -225,7 +224,9 @@ int Pogs<T, M, P>::_Init() {
   CUDA_CHECK_ERR();
 //  POP_RANGE("Init1",Init1,1);
 
+#ifdef DEBUG
   printf("Time to allocate data structures: %f\n", timer<double>() - t0);
+#endif
 
   return 0;
 }
@@ -407,7 +408,9 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Save initialization time.
   double time_init = timer<double>() - t0;
+#ifdef DEBUG
   printf("Time to initialize: %f\n", time_init);
+#endif
 
   // Signal start of execution.
   if (_verbose > 0) {
@@ -767,7 +770,10 @@ void Pogs<T, M, P>::ResetX(void) {
   size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
+
+#ifdef DEBUG
   fprintf(stderr,"in pogs ResetX: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
+#endif
 
   cudaMemset(_z, 0, (m + n) * sizeof(T));
   cudaMemset(_zt, 0, (m + n) * sizeof(T));

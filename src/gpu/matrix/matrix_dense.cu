@@ -69,7 +69,9 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
+#ifdef DEBUG
   fprintf(stderr,"MatrixDense1: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
+#endif
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -103,8 +105,10 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
     double t1 = timer<double>();
     cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     double t2 = timer<double>();
+#ifdef DEBUG    
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+#endif
     POP_RANGE("MDsend",MDsend,1);
   }
 }
@@ -129,7 +133,9 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
+#ifdef DEBUG
   fprintf(stderr,"MatrixDense2: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
+#endif
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -181,8 +187,10 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       double t2 = timer<double>();
+#ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
       printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+#endif
       POP_RANGE("MDsend",MDsend,1);
     }
   }
@@ -201,7 +209,9 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
+#ifdef DEBUG
   fprintf(stderr,"MatrixDense3: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
+#endif
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -241,8 +251,10 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
     cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     double t2 = timer<double>();
+#ifdef DEBUG
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+#endif
     POP_RANGE("MDsend",MDsend,1);
   }
 }
@@ -256,11 +268,15 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
+#ifdef DEBUG
   fprintf(stderr,"%d\n", ord == 'r');
   fprintf(stderr,"%d\n", ord == 'c');
   fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+#endif
 
+#ifdef DEBUG
   fprintf(stderr,"MatrixDense4: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
+#endif
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -325,8 +341,10 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       double t2 = timer<double>();
+#ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
       printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+#endif
       POP_RANGE("MDsend",MDsend,1);
     }
   }
@@ -342,7 +360,9 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
+#ifdef DEBUG
   fprintf(stderr,"MatrixDense5: ord=%c m=%d n=%d mValid=%d\n",A._ord,A._m,A._n,A._mvalid);fflush(stderr);
+#endif
 
   PUSH_RANGE("MDnew",MDnew,2);
   GpuData<T> *info_A   = reinterpret_cast<GpuData<T>*>(A._info); // cast from void to GpuData
@@ -371,15 +391,15 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   POP_RANGE("MDnew",MDnew,2);
 
 
-  if(A._wDev == _wDev){ // if on same device, just copy pointer
-    _data   = A._data;
-    _datay  = A._datay;
-    _vdata  = A._vdata;
-    _vdatay = A._vdatay;
-  }
-  else{
-    if(!this->_done_alloc){
-      this->_done_alloc = true;
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
+    if(A._wDev == _wDev){ // if on same device, just copy pointer
+      _data   = A._data;
+      _datay  = A._datay;
+      _vdata  = A._vdata;
+      _vdatay = A._vdatay;
+    }
+    else{
       // Copy Matrix to from source GPU to this GPU
       PUSH_RANGE("MDcopy",MDcopy,1);
       //GpuData<T> *info = reinterpret_cast<GpuData<T>*>(_info); // cast void -> GpuData
@@ -394,12 +414,13 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
       if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       double t2 = timer<double>();
+#ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
       printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
+#endif
       POP_RANGE("MDcopy",MDcopy,1);
     }
   }
-  fprintf(stderr,"MatrixDense5TEST4\n");fflush(stderr);
 
 }
 

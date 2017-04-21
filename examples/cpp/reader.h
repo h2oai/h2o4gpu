@@ -127,10 +127,10 @@ int fillData(size_t m, size_t n, // only used if name.empty()
       size_t to = (id+1)*len;
       if (to > m) to = m;
       if (id==nth-1) to = m;
-#pragma omp critical
-      {
-        std::cout << "thread " << id << " reads lines " << from << "..." << to << std::endl;
-      }
+      //#pragma omp critical
+      //      {
+      //        std::cout << "thread " << id << " reads lines " << from << "..." << to << std::endl;
+      //      }
 #else
       size_t from = 0;
       size_t to = m;

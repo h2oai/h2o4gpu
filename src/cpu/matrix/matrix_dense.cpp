@@ -59,15 +59,24 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   // Set GPU specific _info.
   CpuData<T> *info = new CpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
-
+  CpuData<T> *infoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_infoy = reinterpret_cast<void*>(infoy);
+  CpuData<T> *vinfo = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_vinfo = reinterpret_cast<void*>(vinfo);
+  CpuData<T> *vinfoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  
   // Copy Matrix to CPU
-  if(1==0){ // can't because _data contents get modified
-    _data = const_cast<T*>(data);
-  }
-  else{
-    _data = new T[this->_m * this->_n];
-    ASSERT(_data != 0);
-    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
+    if(1==0){ // can't because _data contents get modified
+      _data = const_cast<T*>(data);
+    }
+    else{
+      _data = new T[this->_m * this->_n];
+      ASSERT(_data != 0);
+      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+    }
   }
 
 }
@@ -91,13 +100,23 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   // Set GPU specific _info.
   CpuData<T> *info = new CpuData<T>(data);
   this->_info = reinterpret_cast<void*>(info);
-  if(1==0){ // can't in case original pointer came from one thread
-    _data = data;
-  }
-  else{
-    _data = new T[this->_m * this->_n];
-    ASSERT(_data != 0);
-    memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+  CpuData<T> *infoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_infoy = reinterpret_cast<void*>(infoy);
+  CpuData<T> *vinfo = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_vinfo = reinterpret_cast<void*>(vinfo);
+  CpuData<T> *vinfoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
+    if(1==0){ // can't in case original pointer came from one thread
+      _data = data;
+    }
+    else{
+      _data = new T[this->_m * this->_n];
+      ASSERT(_data != 0);
+      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+    }
   }
 
 
@@ -108,7 +127,9 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
+#ifdef DEBUG
   fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+#endif
 
   CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
@@ -119,39 +140,42 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
 
-  if(1==0){ // can't because _data contents get modified
-    _data = const_cast<T*>(data);
-    _datay = const_cast<T*>(datay);
-    _vdata = const_cast<T*>(vdata);
-    _vdatay = const_cast<T*>(vdatay);
+
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
+    if(1==0){ // can't because _data contents get modified
+      _data = const_cast<T*>(data);
+      _datay = const_cast<T*>(datay);
+      _vdata = const_cast<T*>(vdata);
+      _vdatay = const_cast<T*>(vdatay);
+    }
+    else{
+      // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
+      if(info->orig_data){
+        _data = new T[this->_m * this->_n];
+        ASSERT(_data != 0);
+        memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+      }
+
+      if(infoy->orig_data){
+        _datay = new T[this->_m];
+        ASSERT(_datay != 0);
+        memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+      }
+
+      if(vinfo->orig_data){
+        _vdata = new T[this->_mvalid * this->_n];
+        ASSERT(_vdata != 0);
+        memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
+      }
+
+      if(vinfoy->orig_data){
+        _vdatay = new T[this->_mvalid];
+        ASSERT(_vdatay != 0);
+        memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
+      }
+    }
   }
-  else{
-    // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
-    if(info->orig_data){
-      _data = new T[this->_m * this->_n];
-      ASSERT(_data != 0);
-      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
-    }
-
-    if(infoy->orig_data){
-      _datay = new T[this->_m];
-      ASSERT(_datay != 0);
-      memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
-    }
-
-    if(vinfo->orig_data){
-      _vdata = new T[this->_mvalid * this->_n];
-      ASSERT(_vdata != 0);
-      memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
-    }
-
-    if(vinfoy->orig_data){
-      _vdatay = new T[this->_mvalid];
-      ASSERT(_vdatay != 0);
-      memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
-    }
-  }
-  
 }
 
   // no use of datatype
@@ -170,39 +194,44 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
 
-  if(1==0){ // can't do this in case input pointers were from one thread and this function called on multiple threads
-    _data = const_cast<T*>(data);
-    _datay = const_cast<T*>(datay);
-    _vdata = const_cast<T*>(vdata);
-    _vdatay = const_cast<T*>(vdatay);
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
+    if(1==0){ // can't do this in case input pointers were from one thread and this function called on multiple threads
+      _data = const_cast<T*>(data);
+      _datay = const_cast<T*>(datay);
+      _vdata = const_cast<T*>(vdata);
+      _vdatay = const_cast<T*>(vdatay);
+    }
+    else{
+      // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
+
+      if(info->orig_data){
+        _data = new T[this->_m * this->_n];
+        ASSERT(_data != 0);
+        memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+      }
+
+      if(infoy->orig_data){
+        _datay = new T[this->_m];
+        ASSERT(_datay != 0);
+        memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+      }
+
+      if(vinfo->orig_data){
+        _vdata = new T[this->_mvalid * this->_n];
+        ASSERT(_vdata != 0);
+        memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
+      }
+
+      if(vinfoy->orig_data){
+        _vdatay = new T[this->_mvalid];
+        ASSERT(_vdatay != 0);
+        memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
+      }
+    }
   }
-  else{
-    // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
 
-    if(info->orig_data){
-      _data = new T[this->_m * this->_n];
-      ASSERT(_data != 0);
-      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
-    }
-
-    if(infoy->orig_data){
-      _datay = new T[this->_m];
-      ASSERT(_datay != 0);
-      memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
-    }
-
-    if(vinfo->orig_data){
-      _vdata = new T[this->_mvalid * this->_n];
-      ASSERT(_vdata != 0);
-      memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
-    }
-
-    if(vinfoy->orig_data){
-      _vdatay = new T[this->_mvalid];
-      ASSERT(_vdatay != 0);
-      memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
-    }
-  }
+  
 #if 0
     if (ord=='r') {
       std::cout << m << std::endl;
@@ -243,47 +272,54 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   CpuData<T> *vinfo;
   CpuData<T> *vinfoy;
   if(A._data) info = new CpuData<T>(info_A->orig_data); // create new CpuData structure with point to CPU data
+  else info = new CpuData<T>(0);
   if(A._datay) infoy  = new CpuData<T>(infoy_A->orig_data); // create new CpuData structure with point to CPU data
+  else info = new CpuData<T>(0);
   if(A._vdata) vinfo  = new CpuData<T>(vinfo_A->orig_data); // create new CpuData structure with point to CPU data
+  else info = new CpuData<T>(0);
   if(A._vdatay) vinfoy = new CpuData<T>(vinfoy_A->orig_data); // create new CpuData structure with point to CPU data
+  else info = new CpuData<T>(0);
 
   if(A._data) this->_info = reinterpret_cast<void*>(info); // back to cast as void
   if(A._datay) this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
   if(A._vdata)  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
   if(A._vdatay) this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void          
 
-  if(A._wDev==wDev){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
-    _data   = A._data;
-    _datay  = A._datay;
-    _vdata  = A._vdata;
-    _vdatay = A._vdatay;
-  }
-  else{
-    if(A._data){
-      _data = new T[A._m * A._n];
-      ASSERT(_data != 0);
-      memcpy(_data, info_A->orig_data, A._m * A._n * sizeof(T)); 
-    }
-
-    if(A._datay){
-      _datay = new T[A._m];
-      ASSERT(_datay != 0);
-      memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T));
-    }
-
-    if(A._vdata){
-      _vdata = new T[A._mvalid * A._n];
-      ASSERT(_vdata != 0);
-      memcpy(_vdata, vinfo_A->orig_data, A._mvalid * A._n * sizeof(T));
-    }
+  if(!this->_done_alloc){
+    this->_done_alloc = true;
     
-    if(A._vdatay){
-      _vdatay = new T[A._mvalid];
-      ASSERT(_vdatay != 0);
-      memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
+    if(A._wDev==wDev){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
+      _data   = A._data;
+      _datay  = A._datay;
+      _vdata  = A._vdata;
+      _vdatay = A._vdatay;
+    }
+    else{
+      if(A._data){
+        _data = new T[A._m * A._n];
+        ASSERT(_data != 0);
+        memcpy(_data, info_A->orig_data, A._m * A._n * sizeof(T)); 
+      }
+
+      if(A._datay){
+        _datay = new T[A._m];
+        ASSERT(_datay != 0);
+        memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T));
+      }
+
+      if(A._vdata){
+        _vdata = new T[A._mvalid * A._n];
+        ASSERT(_vdata != 0);
+        memcpy(_vdata, vinfo_A->orig_data, A._mvalid * A._n * sizeof(T));
+      }
+    
+      if(A._vdatay){
+        _vdatay = new T[A._mvalid];
+        ASSERT(_vdatay != 0);
+        memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
+      }
     }
   }
-
   
 }
 

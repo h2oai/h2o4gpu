@@ -41,7 +41,7 @@ namespace pogs {
       *jump = (moving_avg.front() - moving_avg.back())/(DBL_EPSILON+ moving_avg.front()+ moving_avg.back());
     }
     else{
-      *jump=1E30;
+      *jump=DBL_MAX;
     }
 
       
@@ -133,14 +133,11 @@ namespace pogs {
         fprintf(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         fflush(fil);
         // create class objects that creates cuda memory, cpu memory, etc.
-        fprintf(stderr,"here1: me=%d\n",me);
-#pragma omp barrier
+#pragma omp barrier // not required barrier
         pogs::MatrixDense<T> A_(me, Asource_);
-        fprintf(stderr,"here2: me=%d\n",me);
-#pragma omp barrier
+#pragma omp barrier // required barrier for me=sourceDev so that Asource_._data (etc.) is not overwritten inside pogs_data(me=sourceDev) below before other cores copy data
         pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
-        fprintf(stderr,"here3: me=%d\n",me);
-#pragma omp barrier
+#pragma omp barrier // not required barrier
         double t1 = timer<double>();
         fprintf(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
         fprintf(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
@@ -207,13 +204,12 @@ namespace pogs {
           for (int i = 1; i < nlambda; ++i)
             lambdas[i] = lambdas[i - 1] * dec;
 
-          fprintf(fil, "alpha%f\n", alpha);
 
 
           // start lambda search
           vector<double> scoring_history;
           int gotX0=0;
-          double jump=1E30;
+          double jump=DBL_MAX;
           double norm=(mValid==0 ? sdTrainY : sdValidY);
           int skiplambdaamount=0;
           for (int i = 0; i < nlambda; ++i) {
@@ -240,7 +236,7 @@ namespace pogs {
             // Set tolerances more automatically (NOTE: that this competes with stopEarly() below in a good way so that it doesn't stop overly early just because errors are flat due to poor tolerance).
             // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
             // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
-            double jumpuse=1E30;
+            double jumpuse=DBL_MAX;
             double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
             pogs_data.SetRelTol(tol0); // set how many cuda devices to use internally in pogs
             pogs_data.SetAbsTol(tol0); // set how many cuda devices to use internally in pogs
