@@ -121,12 +121,15 @@ namespace pogs {
 #ifdef _OPENMP
       int omt=omp_get_max_threads();
 #define MIN(a,b) ((a)<(b)?(a):(b))
-      omp_set_num_threads(MIN(omt,nGPUs));
+      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
       int nth=omp_get_max_threads();
       nGPUs=nth; // openmp threads = cuda/cpu devices used
 #ifdef DEBUG
       cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
+      if (nAlphas % nGPUs != 0) {
+        DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n");
+      }
 #endif
 
 
@@ -194,10 +197,6 @@ namespace pogs {
 //    pogs_data.SetVerbose(5);
 //        pogs_data.SetMaxIter(100);
 
-        int N = nAlphas; // number of alpha's
-        if (N % nGPUs != 0) {
-          DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n");
-        }
         DEBUG_FPRINTF(fil, "BEGIN SOLVE\n");
         int a;
 
@@ -207,8 +206,8 @@ namespace pogs {
         T *L0 = new T[mTrain]();
         int gotpreviousX0=0;
 #pragma omp for
-        for (a = 0; a < N; ++a) { //alpha search
-          const T alpha = N == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(N > 1 ? N - 1 : 1);
+        for (a = 0; a < nAlphas; ++a) { //alpha search
+          const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
           const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like pogs.R
           T lambda_max = lambda_max0 / std::max(static_cast<T>(1e-2), alpha); // same as H2O
           if (alpha == 1 && mTrain > 10000) {

@@ -56,11 +56,18 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
 #ifdef _OPENMP
   int omt=omp_get_max_threads();
 #define MIN(a,b) ((a)<(b)?(a):(b))
-  omp_set_num_threads(MIN(omt,nGPUs));
+  omp_set_num_threads(MIN(omt,nGPUs)); // not necessary, but most useful mode so far
   int nth=omp_get_max_threads();
   nGPUs=nth; // openmp threads = cuda devices used
+#ifdef DEBUG
   cout << "Number of original threads=" << omt << " Number of threads for cuda=" << nth << endl;
 #endif
+
+  if(nAlphas % nGPUs!=0){
+    fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
+  }
+#endif
+
 
   // read data and do train-valid split
   std::vector<T> trainX, trainY, validX, validY;
@@ -221,16 +228,12 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
     //    pogs_data.SetVerbose(5);
     //pogs_data.SetMaxIter(200);
 
-    int N=nAlphas; // number of alpha's
-    if(N % nGPUs!=0){
-      fprintf(stderr,"NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n"); fflush(stderr);
-    }
     fprintf(fil,"BEGIN SOLVE\n");
     fflush(fil);
     int a;
 #pragma omp for
-    for (a = 0; a < N; ++a) { //alpha search
-      const T alpha = N == 1 ? 1 : static_cast<T>(a)/static_cast<T>(N>1 ? N-1 : 1);
+    for (a = 0; a < nAlphas; ++a) { //alpha search
+      const T alpha = nAlphas == 1 ? 1 : static_cast<T>(a)/static_cast<T>(nAlphas>1 ? nAlphas-1 : 1);
       T lambda_max = lambda_max0/std::max(static_cast<T>(1e-2), alpha); // same as H2O
       if (alpha==1 && mTrain>10000) {
         lambda_max *= 2;
