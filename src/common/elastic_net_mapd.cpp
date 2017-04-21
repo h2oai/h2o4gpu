@@ -120,8 +120,14 @@ namespace pogs {
         fprintf(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         fflush(fil);
         // create class objects that creates cuda memory, cpu memory, etc.
+        fprintf(stderr,"here1: me=%d\n",me);
+#pragma omp barrier
         pogs::MatrixDense<T> A_(me, Asource_);
+        fprintf(stderr,"here2: me=%d\n",me);
+#pragma omp barrier
         pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
+        fprintf(stderr,"here3: me=%d\n",me);
+#pragma omp barrier
         double t1 = timer<double>();
         fprintf(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
         fprintf(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
