@@ -38,7 +38,7 @@ class ElasticNetBaseSolver(object):
         print(d)
         return a, b, c, d
 
-    def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d):
+    def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d):
         ## C++ CALL
         # ##TODO: float
         self.lib.elastic_net_ptr_double(
@@ -47,4 +47,5 @@ class ElasticNetBaseSolver(object):
             c_int(self.intercept), c_int(self.standardize), c_double(lambda_max0),
             c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
             c_double(sdTrainY), c_double(meanTrainY),
+            c_double(sdValidY), c_double(meanValidY),
             a, b, c, d)

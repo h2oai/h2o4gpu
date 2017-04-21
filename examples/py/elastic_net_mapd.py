@@ -38,15 +38,18 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
 
   trainX = A
   trainY = y
-  validX = A
-  validY = y
-
+  validX = A# TODO FIXME
+  validY = y# TODO FIXME
 
   ## TODO: compute these in C++ (CPU or GPU)
   sdTrainY = np.sqrt(np.var(y))
   print("sdTrainY: " + str(sdTrainY))
   meanTrainY = np.mean(y)
   print("meanTrainY: " + str(meanTrainY))
+  sdValidY = np.sqrt(np.var(y))
+  print("sdValidY: " + str(sdValidY))
+  meanValidY = np.mean(y)
+  print("meanValidY: " + str(meanValidY))
   mTrain = trainX.shape[0]
   mValid = validX.shape[0] if validX != None else 0
   fortran = trainX.flags.f_contiguous
@@ -75,7 +78,7 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16):
   a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
 
   ## Solve
-  enet.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, a, b, c, d)
+  enet.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)
 
   return enet
 

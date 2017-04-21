@@ -62,10 +62,14 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   }
 
   // Validation mean and stddev
+  T meanValidY0 = meanTrainY0;
+  T sdValidY0 = sdTrainY0;
+  T meanValidYn = meanValidY0;
+  T sdValidYn = sdValidY0;
   if (!validY.empty()) {
+    meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
     cout << "Rows in validation data: " << validY.size() << endl;
-    T meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    T sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
     cout << "Mean validY: " << meanValidY0 << endl;
     cout << "StdDev validY: " << sdValidY0 << endl;
     if (standardize) {
@@ -75,6 +79,8 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
         validY[i] /= sdTrainY0;
       }
     }
+    meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
+    sdValidYn = std::sqrt(pogs::getVarV(validY, meanValidYn));
   }
     
 
@@ -130,7 +136,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   pogs::makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
 
   int datatype = 1;
-  return pogs::ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY0, meanTrainY0, aa, bb, cc, dd);
+  return pogs::ElasticNetptr<T>(sourceDev, datatype, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY0, meanTrainY0, sdValidY0, meanValidY0, aa, bb, cc, dd);
 }
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, int, int, int, int, int, double);

@@ -701,15 +701,15 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // operatons on limited views of ztemp
   cml::vector_mul(&ytemp, &d); // ytemp*d -> ytemp
-  cml::vector_div(&xtemp, &e); // xtemp*e -> xtemp
+  cml::vector_div(&xtemp, &e); // xtemp/e -> xtemp
 
   cml::vector<T> x12copy = cml::vector_calloc<T>(n);
   cml::vector_memcpy(&x12copy,&x12); // copy de version first to GPU
   T * dcopy = new T[m]();
   cml::vector_memcpy(dcopy,&d); // copy d to CPU
   
-  cml::vector_div(&y12, &d); // y12*d -> y12
-  cml::vector_mul(&x12, &e); // x12*d -> x12
+  cml::vector_div(&y12, &d); // y12/d -> y12
+  cml::vector_mul(&x12, &e); // x12*e -> x12
   POP_RANGE("Scale",Scale,1);
 
   // Copy results from GPU to CPU for output.

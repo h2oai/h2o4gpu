@@ -55,6 +55,7 @@ namespace pogs {
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
                          double sdTrainY, double meanTrainY,
+                         double sdValidY, double meanValidY,
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
     template<typename T>
@@ -90,11 +91,13 @@ namespace pogs {
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,
                                   double sdTrainY, double meanTrainY,
+                                  double sdValidY, double meanValidY,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
     double elastic_net_ptr_float(int sourceDev, int datatype, int nGPUs, int ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
                          double sdTrainY, double meanTrainY,
+                         double sdValidY, double meanValidY,
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
 #ifdef __cplusplus
