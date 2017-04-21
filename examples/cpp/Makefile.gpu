@@ -1,4 +1,4 @@
-USEICC=0
+USEICC=1
 
 # User Vars
 POGSROOT=../../src
@@ -15,12 +15,12 @@ HASH=-D_GITHASH_=\"$(GITHASH)\"
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O0 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 ICCSTUFF=
 else
 CXX=icpc
 ICCSTUFF=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(ICCSTUFF) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+CXXFLAGS=$(IFLAGS) -g -O0 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(ICCSTUFF) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 endif
 
 

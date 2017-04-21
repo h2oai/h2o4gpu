@@ -27,7 +27,11 @@ endif
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
+<<<<<<< Updated upstream
 CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+=======
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -O0 $(HASH) -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+>>>>>>> Stashed changes
 else
 CXX=icpc
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS) $(RINCLUDEHOME)  #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
@@ -54,7 +58,7 @@ endif
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
+CUFLAGS=$(IFLAGS) -std=c++11 -g -O0 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 
