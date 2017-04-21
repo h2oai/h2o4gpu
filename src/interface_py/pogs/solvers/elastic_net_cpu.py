@@ -8,8 +8,8 @@ if not pogsElasticNetCPU:
 	ElasticNetSolverCPU=None
 else:
 	class ElasticNetSolverCPU(object):
-		def __init__(self, nCPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas):
-			self.solver = ElasticNetBaseSolver(pogsElasticNetCPU, nCPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas)
+		def __init__(self, nCPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision):
+			self.solver = ElasticNetBaseSolver(pogsElasticNetCPU, nCPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision)
 
 		def upload_data(self, sourceDev, trainX, trainY, validX, validY):
 			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY)
