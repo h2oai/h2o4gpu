@@ -49,7 +49,10 @@ endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
 
 
 # CUDA Flags
@@ -71,9 +74,10 @@ OPENMP=-qopenmp
 NVCCEXTRA=-ccbin=icpc
 endif
 
+
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
+CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 
@@ -113,7 +117,7 @@ CPU_MTX_OBJ=\
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
-CPU_OBJ=$(OBJDIR)/cpu/pogs.o $(OBJDIR)/common/elastic_net_mapd.o 
+CPU_OBJ=$(OBJDIR)/cpu/pogs.o $(OBJDIR)/cpu/elastic_net_mapd.o 
 
 # GPU Specific headers and object files.
 CML_HDR=\
@@ -138,7 +142,7 @@ GPU_MTX_OBJ=\
 GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
-GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/common/elastic_net_mapd.o
+GPU_OBJ=$(OBJDIR)/gpu/pogs.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_mapd.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
@@ -184,9 +188,6 @@ $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 	mkdir -p $@ 
 
 
-# Common objects
-$(OBJDIR)/common/elastic_net_mapd.o: common/elastic_net_mapd.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
-	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -c -o $@ 
 
 # POGS CPU objects
 $(OBJDIR)/cpu/pogs.o: cpu/pogs.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu
@@ -200,6 +201,10 @@ $(OBJDIR)/cpu/projector/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/projector
 
 $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
+
+$(OBJDIR)/cpu/elastic_net_mapd.o: common/elastic_net_mapd.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
+	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -c -o $@ 
+
 
 # POGS GPU objects
 $(OBJDIR)/gpu/pogs_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR)
@@ -223,6 +228,10 @@ $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector
 
 $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
+
+$(OBJDIR)/gpu/elastic_net_mapd.o: common/elastic_net_mapd.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
+	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -$(CUDFLAGS) -c -o $@ 
+
 
 clean:
 	rm -rf pogs.a build/ *.dSYM

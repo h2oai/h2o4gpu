@@ -269,6 +269,7 @@
 #define DEBUG_EXPECT_LT(a, b)                    do { } while (0)
 #define DEBUG_EXPECT_NEQ(a, b)                   do { } while (0)
 #define DEBUG_PRINTF(message, ...)               do { } while (0)
+#define DEBUG_FPRINTF(thefile,message, ...)      do { } while (0)
 #define DEBUG_PRINT(message)                     do { } while (0)
 #define DEBUG_PRINTF_IF(statement, message, ...) do { } while (0)
 #define DEBUG_PRINT_IF(statement, message, ...)  do { } while (0)
@@ -460,12 +461,21 @@
         __GREEN); \
     printf(message, __VA_ARGS__); \
     printf("%s\n", __RESET); \
+    fflush(stdout); \
+  } while (0)
+
+#define DEBUG_FPRINTF(thefile, message, ...)     \
+  do { \
+    fprintf(thefile, message, __VA_ARGS__);      \
+    fprintf("\n"); \
+    fflush(thefile); \
   } while (0)
 
 #define DEBUG_PRINT(message) \
   do { \
     printf("%s:%d:%s%s\n%sMESSAGE: %s%s\n", __FILE__,  __LINE__, __BLUE, \
         __func__, __GREEN, message, __RESET); \
+    fflush(stdout); \
   } while (0)
 
 #define DEBUG_PRINTF_IF(statement, message, ...) \
@@ -475,6 +485,7 @@
           __GREEN); \
       printf(message, __VA_ARGS__); \
       printf("%s\n", __RESET); \
+      fflush(stdout); \
     } \
   } while (0)
 
@@ -483,6 +494,7 @@
     if ((statement)) { \
       printf("%s:%d:%s%s\n%sMESSAGE: %s%s\n", __FILE__,  __LINE__, __BLUE, \
           __func__, __GREEN, message, __RESET); \
+      fflush(stdout);                           \
     } \
   } while (0)
 

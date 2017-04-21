@@ -48,12 +48,16 @@ endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL=1  #-DUSE_NVTX=1 -DDEBUG
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
 
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) #  -lnccl -lnvToolsExt 
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -71,13 +75,13 @@ default: gpualt gpumapd
 
 # GPU
 gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) -DHAVECUDA $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
 
 gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
 gpumapd: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) -DHAVECUDA $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
 run: gpumapd
 	./h2oai-glm-gpu-mapd 1 100 1 1 0

@@ -133,9 +133,7 @@ T Norm2Est(cublasHandle_t hdl, const Matrix<T> *A) {
       break;
     POP_RANGE(mystring,No,8);
   }
-#ifndef DEBUG
-  fprintf(stderr,"Norm2Est iterations=%d",i);
-#endif
+  DEBUG_FPRINTF(stderr,"Norm2Est iterations=%d\n",i);
   DEBUG_EXPECT_LT(i, kNormEstMaxIter);
 
   cml::vector_free(&x);
@@ -195,9 +193,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 
     
   }// end over Sinkhorn Knopp iterations
-#ifndef DEBUG
-  fprintf(stderr,"Sinkhorn Knopp iterations=%d\n",k);
-#endif
+  DEBUG_FPRINTF(stderr,"Sinkhorn Knopp iterations=%d\n",k);
 
 }
 

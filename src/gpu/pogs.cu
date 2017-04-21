@@ -468,9 +468,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("gapoptvaltol",gapoptvaltol,9);
 
-#ifdef DEBUG 
-    fprintf(stderr,"DEBUG1: %g %g\n",sqrtm_atol,cml::blas_nrm2(hdl, &y12));
-#endif
+    DEBUG_FPRINTF(stderr,"DEBUG1: %g %g\n",sqrtm_atol,cml::blas_nrm2(hdl, &y12));
 
     // Apply over relaxation  (optional, can set kAlpha to 1, above, to disable)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.3
@@ -728,7 +726,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector_memcpy(m,1,_trainPreds, _trainPredsp); // pointer on GPU to pointer on CPU
   for(unsigned int i=0;i<m;i++){
     _trainPreds[i]/=dcopy[i];
-    //    fprintf(stderr,"Tp[%d]=%g\n",i,_trainPreds[i]);
+    //    DEBUG_FPRINTF(stderr,"Tp[%d]=%g\n",i,_trainPreds[i]);
   }
   if(dcopy) delete [] dcopy;
   if(x12copy.data) cml::vector_free(&x12copy);
@@ -771,9 +769,7 @@ void Pogs<T, M, P>::ResetX(void) {
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
 
-#ifdef DEBUG
-  fprintf(stderr,"in pogs ResetX: m=%d n=%d\n",(int)m,(int)n); fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"in pogs ResetX: m=%d n=%d\n",(int)m,(int)n);
 
   cudaMemset(_z, 0, (m + n) * sizeof(T));
   cudaMemset(_zt, 0, (m + n) * sizeof(T));

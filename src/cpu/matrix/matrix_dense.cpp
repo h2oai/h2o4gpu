@@ -127,9 +127,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
-#ifdef DEBUG
-  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
-#endif
+  DEBUG_FPRINTF(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
 
   CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)

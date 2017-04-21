@@ -43,7 +43,7 @@ ProjectorDirect<T, M>::ProjectorDirect(int wDev, const M& A)
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
+  DEBUG_FPRINTF(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit());
 
   // Set GPU specific this->_info.
   PUSH_RANGE("PDnew",PDnew,1);
@@ -59,7 +59,7 @@ ProjectorDirect<T, M>::ProjectorDirect(const M& A)
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-  fprintf(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit()); fflush(stderr);
+  DEBUG_FPRINTF(stderr,"Rows=%d Cols=%d done_init=%d\n",(int)_A.Rows(),(int)_A.Cols(),_A.IsInit());
 
   // Set GPU specific this->_info.
   PUSH_RANGE("PDnew",PDnew,1);

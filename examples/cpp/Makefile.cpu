@@ -51,7 +51,9 @@ endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 
 # Check System Args.
 UNAME = $(shell uname -s)

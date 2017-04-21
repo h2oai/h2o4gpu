@@ -69,9 +69,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-#ifdef DEBUG
-  fprintf(stderr,"MatrixDense1: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"MatrixDense1: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -133,9 +131,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-#ifdef DEBUG
-  fprintf(stderr,"MatrixDense2: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"MatrixDense2: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -209,9 +205,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   
-#ifdef DEBUG
-  fprintf(stderr,"MatrixDense3: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"MatrixDense3: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
   
 #ifdef _DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
@@ -268,15 +262,10 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-#ifdef DEBUG
-  fprintf(stderr,"%d\n", ord == 'r');
-  fprintf(stderr,"%d\n", ord == 'c');
-  fprintf(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
-#endif
-
-#ifdef DEBUG
-  fprintf(stderr,"MatrixDense4: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"%d\n", ord == 'r');
+  DEBUG_FPRINTF(stderr,"%d\n", ord == 'c');
+  DEBUG_FPRINTF(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+  DEBUG_FPRINTF(stderr,"MatrixDense4: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -285,7 +274,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
   cudaDeviceProp props;
   CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
-  fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
+  DEBUG_FPRINTF(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev);
 #endif
 
 
@@ -360,9 +349,7 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-#ifdef DEBUG
-  fprintf(stderr,"MatrixDense5: ord=%c m=%d n=%d mValid=%d\n",A._ord,A._m,A._n,A._mvalid);fflush(stderr);
-#endif
+  DEBUG_FPRINTF(stderr,"MatrixDense5: ord=%c m=%d n=%d mValid=%d\n",A._ord,A._m,A._n,A._mvalid);
 
   PUSH_RANGE("MDnew",MDnew,2);
   GpuData<T> *info_A   = reinterpret_cast<GpuData<T>*>(A._info); // cast from void to GpuData

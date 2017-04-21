@@ -1,5 +1,34 @@
 #include "elastic_net_mapd.h"
 #include <float.h>
+#include "../include/util.h"
+
+#ifdef HAVECUDA
+#define TEXTARCH "GPU"
+
+#define TEXTBLAS "CUDA"
+
+#else
+
+#define TEXTARCH "CPU"
+
+#if(USEMKL==1)
+#define TEXTBLAS "MKL"
+#else
+#define TEXTBLAS "CPU"
+#endif
+
+#endif
+
+#if(USEICC==1)
+#define TEXTCOMP "ICC"
+#else
+#define TEXTCOMP "GCC"
+#endif
+
+
+
+#define Printmescore(thefile)  fprintf(thefile, "%s.me: ARCH: %s BLAS: %s COMP: %s nGPUs: %d %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, TEXTARCH, TEXTBLAS, TEXTCOMP, nGPUs, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
+
 
 #define OLDPRED 0
 
@@ -82,8 +111,10 @@ namespace pogs {
 #define MIN(a,b) ((a)<(b)?(a):(b))
       omp_set_num_threads(MIN(omt,nGPUs));
       int nth=omp_get_max_threads();
-      nGPUs=nth; // openmp threads = cuda devices used
-      cout << "Number of original threads=" << omt << " Number of threads for cuda=" << nth << endl;
+      nGPUs=nth; // openmp threads = cuda/cpu devices used
+#ifdef DEBUG
+      cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
+#endif
 
 #else
 #error Need OpenMP
@@ -122,7 +153,7 @@ namespace pogs {
         int me = omp_get_thread_num();
 
         char filename[100];
-        sprintf(filename, "me%d.%s.txt", me, _GITHASH_);
+        sprintf(filename, "me%d.%s.%s.%d.txt", me, _GITHASH_,TEXTARCH,nGPUs);
         FILE *fil = fopen(filename, "wt");
         if (fil == NULL) {
           cerr << "Cannot open filename=" << filename << endl;
@@ -130,8 +161,7 @@ namespace pogs {
         }
 
         double t0 = timer<double>();
-        fprintf(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
-        fflush(fil);
+        DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier // not required barrier
         pogs::MatrixDense<T> A_(me, Asource_);
@@ -139,9 +169,8 @@ namespace pogs {
         pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
-        fprintf(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
-        fprintf(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
-        fflush(fil);
+        DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
+        DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
 
         pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
@@ -154,17 +183,13 @@ namespace pogs {
 
         int N = nAlphas; // number of alpha's
         if (N % nGPUs != 0) {
-          fprintf(stderr,
-                  "NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n");
-          fflush(stderr);
+          DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of GPUs, so not efficint use of GPUs.\n");
         }
-        fprintf(fil, "BEGIN SOLVE\n");
-        fflush(fil);
+        DEBUG_FPRINTF(fil, "BEGIN SOLVE\n");
         int a;
 
 
-        fprintf(stderr, "lambda_max0: %f\n", lambda_max0);
-        fflush(stderr);
+        DEBUG_FPRINTF(stderr, "lambda_max0: %f\n", lambda_max0);
         T *X0 = new T[n]();
         T *L0 = new T[mTrain]();
         int gotpreviousX0=0;
@@ -177,12 +202,10 @@ namespace pogs {
             lambda_max *= 2;
             lambda_min_ratio /= 2;
           }
-          fprintf(stderr, "lambda_max: %f\n", lambda_max);
-          fprintf(stderr, "lambda_min: %f\n", lambda_min);
-          fflush(stderr);
-          fprintf(fil, "lambda_max: %f\n", lambda_max);
-          fprintf(fil, "lambda_min: %f\n", lambda_min);
-          fflush(fil);
+          DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
+          DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
+          DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max);
+          DEBUG_FPRINTF(fil, "lambda_min: %f\n", lambda_min);
 
           // setup f,g as functions of alpha
           std::vector <FunctionObj<T>> f;
@@ -214,7 +237,7 @@ namespace pogs {
           int skiplambdaamount=0;
           for (int i = 0; i < nlambda; ++i) {
             T lambda = lambdas[i];
-            fprintf(fil, "lambda %d = %f\n", i, lambda);
+            DEBUG_FPRINTF(fil, "lambda %d = %f\n", i, lambda);
 
             // assign lambda (no penalty for intercept, the last coeff, if present)
             for (unsigned int j = 0; j < n - intercept; ++j) {
@@ -226,8 +249,7 @@ namespace pogs {
               g[n - 1].e = 0;
             }
 
-            fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
-            fflush(fil);
+            DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n", timer<double>());
 
 
             // Reset Solution if starting fresh for this alpha
@@ -255,15 +277,15 @@ namespace pogs {
                 pogs_data.SetAbsTol(0.5*tol);
                 pogs_data.SetMaxIter(100);
                 jumpuse=jump;
-                //                fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back()); fflush(stderr);
+                //                DEBUG_FPRINTF(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
               }
             }
 
 
             // see if have previous solution for new alpha for better warmstart
             if(gotpreviousX0 && i==0){
-              //              fprintf(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
-              //              for(unsigned int ll=0;ll<n;ll++) fprintf(stderr,"X0[%d]=%g\n",ll,X0[ll]);
+              //              DEBUG_FPRINTF(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
+              //              for(unsigned int ll=0;ll<n;ll++) DEBUG_FPRINTF(stderr,"X0[%d]=%g\n",ll,X0[ll]);
               pogs_data.SetInitX(X0);
               pogs_data.SetInitLambda(L0);
             }
@@ -299,9 +321,8 @@ namespace pogs {
             
 
             if (intercept) {
-              fprintf(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
-              fprintf(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
-              fflush(stdout);
+              DEBUG_FPRINTF(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
+              DEBUG_FPRINTF(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
             }
 
             size_t dof = 0;
@@ -369,11 +390,8 @@ namespace pogs {
               }
             }
 
-            fprintf(fil, "%s.me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
-            fflush(fil);
-            fprintf(stdout, "%s.me: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE);
-            fflush(stdout);
-
+            Printmescore(fil);
+            Printmescore(stdout);
 
             // STOP EARLY CHECK
             int k = 3; //TODO: ask the user for this parameter
@@ -385,8 +403,15 @@ namespace pogs {
               break;
             }
 
-            // if can skip over lambda, do by 1
-            if(doskiplambda) i+=skiplambdaamount;
+            // if can skip over lambda, do so, but still print out the score as if constant for new lambda
+            if(doskiplambda){
+              for (int ii = 0; ii < skiplambdaamount; ++ii) {
+                T lambdalocal = lambdas[i+ii];
+                Printmescore(fil);
+                Printmescore(stdout);
+                i++;
+              }
+            }
           }// over lambda
           
         }// over alpha
@@ -403,8 +428,7 @@ namespace pogs {
       if(validY) free(validY);
 
       double tf = timer<double>();
-      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,
-              (int) mValid, tf - t);
+      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n, (int) mValid, tf - t); fflush(stdout);
       return tf - t;
     }
 
