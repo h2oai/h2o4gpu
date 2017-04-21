@@ -1,11 +1,22 @@
 #include "elastic_net_mapd.h"
 #include <float.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h> //  our new library
+
 #define OLDPRED 0
 
 using namespace std;
 
 namespace pogs {
+
+
+    volatile sig_atomic_t flag = 0;
+    inline void my_function(int sig){ // can be called asynchronously
+      fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
+      flag = 1; // set flag
+    }
 
   bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter, bool verbose, double norm, double *jump) {
     if (val.size()-1 < 2*k) return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
@@ -69,6 +80,8 @@ namespace pogs {
                          double sdValidY, double meanValidY,
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
 
+      signal(SIGINT, my_function);
+      signal(SIGTERM, my_function);
       int nlambda = nLambdas;
       if (nlambda <= 1) {
         cerr << "Must use nlambda > 1\n";
@@ -213,6 +226,9 @@ namespace pogs {
           double norm=(mValid==0 ? sdTrainY : sdValidY);
           int skiplambdaamount=0;
           for (int i = 0; i < nlambda; ++i) {
+            if (flag) {
+              continue;
+            }
             T lambda = lambdas[i];
             fprintf(fil, "lambda %d = %f\n", i, lambda);
 
@@ -405,6 +421,9 @@ namespace pogs {
       double tf = timer<double>();
       fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,
               (int) mValid, tf - t);
+      if (flag) {
+        fprintf(stderr, "Signal caught. Terminated early.\n");
+      }
       return tf - t;
     }
 

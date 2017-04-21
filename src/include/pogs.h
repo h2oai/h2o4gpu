@@ -118,7 +118,6 @@ enum PogsStatus { POGS_SUCCESS,    // Converged successfully.
                   POGS_NAN_FOUND,  // Encountered nan.
                   POGS_ERROR };    // Generic error, check logs.
 
-
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
 class Pogs {
@@ -160,7 +159,7 @@ class Pogs {
   Pogs(int wDev, const M &A);
   Pogs(const M &A);
   ~Pogs();
-  
+
   // Solve for specific objective.
   PogsStatus Solve(const std::vector<FunctionObj<T> >& f,
                    const std::vector<FunctionObj<T> >& g);
@@ -273,7 +272,7 @@ inline std::string PogsStatusString(PogsStatus status) {
       return "Encountered NaN";
     case POGS_ERROR:
     default:
-      return "Error";  
+      return "Error";
   }
 }
 
