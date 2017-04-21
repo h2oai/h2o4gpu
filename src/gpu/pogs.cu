@@ -233,6 +233,7 @@ int Pogs<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
+  cudaDeviceSynchronize();
   double t0 = timer<double>();
   // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
   // Constants for adaptive-rho and over-relaxation.
@@ -406,6 +407,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   POP_RANGE("Guess",Guess,7);
 
   // Save initialization time.
+  cudaDeviceSynchronize();
   double time_init = timer<double>() - t0;
   printf("Time to initialize: %f\n", time_init);
 

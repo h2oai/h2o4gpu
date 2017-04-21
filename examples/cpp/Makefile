@@ -42,7 +42,7 @@ gpumapd: Makefile.gpu
 	$(MAKE) -f Makefile.gpu gpumapd
 
 run: gpumapd
-	./h2oai-glm-gpu-mapd 1 100 16 1 0 0.2
+	./h2oai-glm-gpu-mapd 1 100 1 1 0 0.2
 
 runcpu: cpumapd
 	./h2oai-glm-cpu-mapd 16 100 16 1 0 0.2

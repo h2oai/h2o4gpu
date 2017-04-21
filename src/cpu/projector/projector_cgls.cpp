@@ -77,7 +77,7 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
 
 #ifdef DEBUG
   // Verify that projection was successful.
-  CheckProjection(&_A, x0, y0, x, y, s, static_cast<T>(1e1 * kTol));
+  CheckProjection(&_A, x0, y0, x, y, s, static_cast<T>(1e1 * 1E-3));
 #endif
 
   return 0;

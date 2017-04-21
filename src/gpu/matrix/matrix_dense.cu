@@ -230,16 +230,19 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
     // Copy Matrix to GPU.
     PUSH_RANGE("MDsend",MDsend,1);
     //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
+    cudaDeviceSynchronize();
     double t0 = timer<double>();
     cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
     cudaMalloc(&_datay, this->_m * sizeof(T)); // allocate on GPU
     cudaMalloc(&_vdata, this->_mvalid * this->_n * sizeof(T)); // allocate on GPU
     cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
+    cudaDeviceSynchronize();
     double t1 = timer<double>();
     cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaDeviceSynchronize();
     double t2 = timer<double>();
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);

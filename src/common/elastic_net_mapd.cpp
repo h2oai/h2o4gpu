@@ -137,7 +137,7 @@ namespace pogs {
 //    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in pogs
 //    pogs_data.SetAdaptiveRho(true);
-        //pogs_data.SetEquil(false);
+//        pogs_data.SetEquil(false);
 //    pogs_data.SetRho(1);
 //    pogs_data.SetVerbose(5);
 //    pogs_data.SetMaxIter(20000);

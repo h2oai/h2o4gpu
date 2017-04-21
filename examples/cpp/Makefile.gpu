@@ -37,7 +37,7 @@ CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconv
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG # -lnccl -DUSE_NCCL=1 #  
 
 # Check System Args.
 UNAME = $(shell uname -s)
