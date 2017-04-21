@@ -27,7 +27,7 @@
 
 
 
-#define Printmescore(thefile)  fprintf(thefile, "%s.me: ARCH: %s BLAS: %s COMP: %s nGPUs: %d %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, TEXTARCH, TEXTBLAS, TEXTCOMP, nGPUs, me, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
+#define Printmescore(thefile)  fprintf(thefile, "%s.me: %d ARCH: %s BLAS: %s COMP: %s nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, TEXTARCH, TEXTBLAS, TEXTCOMP, nGPUs, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 
 #include <stdio.h>

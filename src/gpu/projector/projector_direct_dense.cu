@@ -113,7 +113,7 @@ int ProjectorDirect<T, M>::Init() {
   cudaMalloc(&(info->L), min_dim * min_dim * sizeof(T));
   cudaMemset(info->AA, 0, min_dim * min_dim * sizeof(T));
   cudaMemset(info->L, 0, min_dim * min_dim * sizeof(T));
-  fprintf(stderr,"TEST: r=%d c=%d : %d %d\n",(int)_A.Rows(), (int)_A.Cols(), (int)min_dim,(int)sizeof(T));
+  DEBUG_FPRINTF(stderr,"TEST: r=%d c=%d : %d %d\n",(int)_A.Rows(), (int)_A.Cols(), (int)min_dim,(int)sizeof(T));
   CUDA_CHECK_ERR();
   POP_RANGE("AAalloc",AAalloc,1);
 
