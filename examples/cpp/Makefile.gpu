@@ -1,4 +1,5 @@
-USEICC=1
+USEICC=0
+USEMKL=0
 
 # User Vars
 POGSROOT=../../src
@@ -11,22 +12,32 @@ EXSRC3=elastic_net_mapd.cpp
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
+MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+ICCSTUFF=-qopenmp
+GCCSTUFF=-fopenmp
+
 
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O0 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fopenmp #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 ICCSTUFF=
 else
 CXX=icpc
-ICCSTUFF=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
-CXXFLAGS=$(IFLAGS) -g -O0 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(ICCSTUFF) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+GCCSTUFF=
 endif
+
+ifeq ($(USEMKL),0)
+MKLSTUFF=
+endif
+
+LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include   -lcuda -lcurand $(ICCSTUFF) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 -DCUDCHECKERR -DDEBUG #
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -36,9 +47,6 @@ else
 CULDFLAGS=-L/usr/local/cuda/lib64 $(CULDFLAGS_)
 endif
 
-ifeq ($(USEICC),1)
-CULDFLAGS+=-lm -fPIC -qopenmp
-endif
 
 
 all: gpu gpualt gpumapd

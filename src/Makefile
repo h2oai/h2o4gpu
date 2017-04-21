@@ -1,6 +1,6 @@
 # For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
 USEICC=0
-USEMKL=1
+USEMKL=0
 
 # Bulid directory
 OBJDIR=build
@@ -11,31 +11,28 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-LINKFLAGS=-fopenmp
+MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+ICCSTUFF=-qopenmp
+GCCSTUFF=-fopenmp -ggdb3
 
-ifeq ($(USEICC),1)
-LINKFLAGS=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
-endif
-
-ifeq ($(USEMKL),1)$
-LINKFLAGS += -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
-ifeq ($(USEICC),1)$
-LINKFLAGS += -qopenmp
-endif
-endif
 
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-<<<<<<< Updated upstream
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
-=======
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -O0 $(HASH) -Wall -std=c++11 -fPIC -fopenmp $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
->>>>>>> Stashed changes
+ICCSTUFF=
 else
 CXX=icpc
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS) $(RINCLUDEHOME)  #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+GCCSTUFF=
 endif
+
+ifeq ($(USEMKL),0)
+MKLSTUFF=
+endif
+
+LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion
+
 
 # CUDA Flags
 NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
@@ -58,7 +55,7 @@ endif
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
-CUFLAGS=$(IFLAGS) -std=c++11 -g -O0 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
+CUFLAGS=$(IFLAGS) -std=c++11 -g -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG -DCUDCHECKERR #
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
 #-gencode arch=compute_20,code=sm_20
 

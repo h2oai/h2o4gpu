@@ -1,5 +1,5 @@
 USEICC=0
-USEMKL=1
+USEMKL=0
 
 
 # User Vars
@@ -13,46 +13,35 @@ EXSRC3=elastic_net_mapd.cpp
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-LINKFLAGS=-fopenmp
 
-ifeq ($(USEICC),1)
-LINKFLAGS=-qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
-endif
-
-ifeq ($(USEMKL),1)$
-LINKFLAGS += -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread$
-ifeq ($(USEICC),1)$
-LINKFLAGS += -qopenmp
-endif
-endif
+MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+ICCSTUFF=-qopenmp -lm
+GCCSTUFF=-fopenmp -lm
 
 
 # C++ Flags
 ifeq ($(USEICC),0)
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+ICCSTUFF=
 else
 CXX=icpc
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
+GCCSTUFF=
 endif
+
+ifeq ($(USEMKL),0)
+MKLSTUFF=-lblas
+endif
+
+LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) #-DUSE_NCCL=1 #-DDEBUG  #-DDEBUG
 
 # Check System Args.
 UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
 LDFLAGS=-lm -framework Accelerate
-else
-
-LDFLAGS=-lm -lblas
-
-ifeq ($(USEICC),1)
-LDFLAGS=-lm -fPIC -qopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm
 endif
 
-ifeq ($(USEMKL),1)$
-LDFLAGS=-lm -fPIC -fopenmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread -lm
-endif
-
-endif
 
 all: cpu cpualt cpumapd
 
@@ -60,13 +49,13 @@ default: cpualt cpumapd
 
 # CPU
 cpu: run_all_orig.cpp examples.h $(EXSRC) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
 
 cpualt: run_all.cpp examples.h $(EXSRC2) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
 
 cpumapd: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
 
 clean:
 	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
