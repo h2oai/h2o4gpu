@@ -421,10 +421,10 @@ namespace pogs {
             // if can skip over lambda, do so, but still print out the score as if constant for new lambda
             if(doskiplambda){
               for (int ii = 0; ii < skiplambdaamount; ++ii) {
+                i++;
                 T lambdalocal = lambdas[i+ii];
                 Printmescore(fil);
                 Printmescore(stdout);
-                i++;
               }
             }
           }// over lambda
