@@ -5,6 +5,9 @@
 # 2. Set POGSROOT= path/to/POGS/src/
 POGSROOT=../
 
+GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
+HASH=-D_GITHASH_=\"$(GITHASH)\"
+
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
 ifndef CUDAHOME
@@ -29,7 +32,7 @@ endif
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -fopenmp -O3 -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion 
+CXXFLAGS=$(IFLAGS) -g -ggdb3 -fopenmp -O3 $(HASH) -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  #-DUSE_NCCL   #-DUSE_NVTX=1 -DDEBUG # -Wconversion 
 
 # POGS static libraries
 POGSLIB=\

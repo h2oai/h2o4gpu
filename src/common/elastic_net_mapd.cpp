@@ -11,12 +11,11 @@ using namespace std;
 
 namespace pogs {
 
-
-    volatile sig_atomic_t flag = 0;
-    inline void my_function(int sig){ // can be called asynchronously
-      fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
-      flag = 1; // set flag
-    }
+  volatile sig_atomic_t flag = 0;
+  inline void my_function(int sig){ // can be called asynchronously
+    fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
+    flag = 1; // set flag
+  }
 
   bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter, bool verbose, double norm, double *jump) {
     if (val.size()-1 < 2*k) return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
