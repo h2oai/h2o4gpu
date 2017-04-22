@@ -1,5 +1,5 @@
 ICCFILE := $(shell command -v icpc 2> /dev/null)
-MKLROOT := $(shell echo $MKL_ROOT 2> /dev/null)
+
 
 ifdef ICCFILE
 USEICC=1
@@ -14,6 +14,7 @@ USEMKL=0
 endif
 
 $(warning USEICC is $(USEICC))
+$(warning ICCFILE is $(ICCFILE))
 $(warning USEMKL is $(USEMKL))
 
 

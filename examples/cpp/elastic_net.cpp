@@ -44,7 +44,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
   int nlambda = nLambdas;
   if (nlambda <= 1) {
     cerr << "Must use nlambda > 1\n";
@@ -332,6 +332,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
   return tf-t;
 }
   
-template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, int, int, int, int, int, double);
-template double ElasticNet<float>(const std::vector<float> &A, const std::vector<float> &b, int, int, int, int, int, double);
+template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, int, int, int, int, int, int, double);
+template double ElasticNet<float>(const std::vector<float> &A, const std::vector<float> &b, int, int, int, int, int, int, double);
  

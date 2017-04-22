@@ -24,6 +24,7 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
 
 
   sourceDev = 0
+  nThreads = 2
   nGPUs = 2
   intercept = 1
   standardize = 0
@@ -69,7 +70,7 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
   print(n)
 
   ## Constructor
-  enet = Solver(nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, double_precision)
+  enet = Solver(nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, double_precision)
 
   ## First, get backend pointers
   a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)

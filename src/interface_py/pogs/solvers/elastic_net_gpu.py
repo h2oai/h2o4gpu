@@ -8,8 +8,8 @@ if not pogsElasticNetGPU:
 	ElasticNetSolverGPU=None
 else:
 	class ElasticNetSolverGPU(object):
-		def __init__(self, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision):
-			self.solver = ElasticNetBaseSolver(pogsElasticNetGPU, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision)
+		def __init__(self, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision):
+			self.solver = ElasticNetBaseSolver(pogsElasticNetGPU, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision)
 
 		def upload_data(self, sourceDev, trainX, trainY, validX, validY):
 			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY)

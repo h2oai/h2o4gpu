@@ -1,6 +1,5 @@
 # For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
 ICCFILE := $(shell command -v icpc 2> /dev/null)
-MKLROOT := $(shell echo $MKL_ROOT 2> /dev/null)
 
 ifdef ICCFILE
 USEICC=1
@@ -16,6 +15,7 @@ endif
 
 
 $(warning USEICC is $(USEICC))
+$(warning ICCFILE is $(ICCFILE))
 $(warning USEMKL is $(USEMKL))
 
 POGSROOT=../
