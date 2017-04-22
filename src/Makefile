@@ -230,7 +230,7 @@ $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/elastic_net_mapd.o: common/elastic_net_mapd.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
-	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -$(CUDFLAGS) -c -o $@ 
+	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
 
 
 clean:

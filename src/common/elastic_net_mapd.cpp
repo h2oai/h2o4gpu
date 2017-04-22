@@ -175,6 +175,12 @@ namespace pogs {
           cerr << "Cannot open filename=" << filename << endl;
           exit(0);
         }
+        sprintf(filename, "me%d.latest.txt", me);
+        FILE *fillatest = fopen(filename, "wt");
+        if (fillatest == NULL) {
+          cerr << "Cannot open filename=" << filename << endl;
+          exit(0);
+        }
 
         double t0 = timer<double>();
         DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
@@ -406,6 +412,7 @@ namespace pogs {
             }
 
             Printmescore(fil);
+            Printmescore(fillatest);
             Printmescore(stdout);
 
             // STOP EARLY CHECK
@@ -422,8 +429,9 @@ namespace pogs {
             if(doskiplambda){
               for (int ii = 0; ii < skiplambdaamount; ++ii) {
                 i++;
-                T lambdalocal = lambdas[i+ii];
+                lambda = lambdas[i];
                 Printmescore(fil);
+                Printmescore(fillatest);
                 Printmescore(stdout);
               }
             }
