@@ -88,9 +88,9 @@ if __name__ == "__main__":
 #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
-  #import feather
+  import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/ipums.1k.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
