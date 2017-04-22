@@ -6,6 +6,7 @@
 #include <iostream>
 #include "reader.h"
 #include <random>
+#include <stdlib.h>
 
 #include "../common/elastic_net_mapd.h"
 #include "timer.h"
@@ -23,6 +24,8 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int nGPUs, int
     cerr << "intercept must be a boolean: 0 or 1\n";
     exit(-1);
   }
+
+  system("rm -f me*.latest.txt ; touch me0.latest.txt");
 
   // read data and do train-valid split
   std::vector<T> trainX, trainY, validX, validY;
