@@ -209,10 +209,13 @@ namespace pogs {
         int me = omp_get_thread_num();
 #if(USEMKL==1)
         //https://software.intel.com/en-us/node/522115
+        int physicalcores=omt/2; // asssume hyperthreading Intel processor
         // set number of mkl threads per openmp thread
-        int mklperthread=max(1,(omt % nThreads==0 ? omt/nThreads : omt/nThreads+1));
+        int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
         //        mkl_set_num_threads(mklperthread);
         mkl_set_num_threads_local(mklperthread);
+        mkl_set_dynamic(0);
+        omp_set_max_active_levels(2);
         //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
 #endif
 #else

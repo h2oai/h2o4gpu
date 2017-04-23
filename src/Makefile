@@ -29,7 +29,13 @@ RINCLUDEHOME := $(shell R CMD config --cppflags)
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+#https://software.intel.com/en-us/node/528685
+ifeq ($(USEICC),0) # assumes only gnu not pgi
+#MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+else
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+endif
 ICCSTUFF=-qopenmp
 GCCSTUFF=-fopenmp -ggdb3
 

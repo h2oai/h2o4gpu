@@ -23,9 +23,15 @@ POGSROOT=../
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+
+ifeq ($(USEICC),0) # assumes only gnu not pgi
+#MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+else
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+endif
 ICCSTUFF=-qopenmp
-GCCSTUFF=-fopenmp -ggdb3
+GCCSTUFF=-fopenmp -ggdb3  -lgomp
 
 
 # C++ Flags
@@ -38,7 +44,7 @@ GCCSTUFF=
 endif
 
 ifeq ($(USEMKL),0)
-MKLSTUFF=
+MKLSTUFF=-lm -lblas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
@@ -62,14 +68,13 @@ LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
-LDFLAGS=-lm -lblas -lgomp
+LDFLAGS=
 CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand -lgomp $(DFLAGS) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 
 SHARED=so
 endif
 
 # C++ Flags
-CXX=g++
-CXXFLAGS=$(IFLAGS) -g -ggdb3 -fopenmp -O0 $(HASH) -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 
 # POGS static libraries
 POGSLIB=\
@@ -78,7 +83,7 @@ POGSLIB=\
 	$(POGSROOT)/build/cpu/matrix/matrix_sparse.o \
 	$(POGSROOT)/build/cpu/projector/projector_direct_dense.o \
 	$(POGSROOT)/build/cpu/projector/projector_cgls.o \
-	$(POGSROOT)/build/cpu/elastic_net_mapd.o
+	$(POGSROOT)/build/cpu/elastic_net_ptr.o
 
 CUPOGSLIB=\
         $(POGSROOT)/build/gpu/pogs_link.o \
@@ -90,7 +95,7 @@ CUPOGSLIB=\
 	$(POGSROOT)/build/gpu/matrix/matrix_sparse.o \
 	$(POGSROOT)/build/gpu/projector/projector_direct_dense.o \
 	$(POGSROOT)/build/gpu/projector/projector_cgls.o \
-	$(POGSROOT)/build/gpu/elastic_net_mapd.o
+	$(POGSROOT)/build/gpu/elastic_net_ptr.o
 
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so	

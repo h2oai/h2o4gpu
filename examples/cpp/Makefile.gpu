@@ -29,9 +29,16 @@ EXSRC3=elastic_net_ptr_driver.cpp
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+
+ifeq ($(USEICC),0) # assumes only gnu not pgi
+#MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+else
+MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+endif
+
 ICCSTUFF=-qopenmp
-GCCSTUFF=-fopenmp
+GCCSTUFF=-fopenmp -ggdb3  -lgomp
 
 
 # C++ Flags
@@ -44,7 +51,7 @@ GCCSTUFF=
 endif
 
 ifeq ($(USEMKL),0)
-MKLSTUFF=
+MKLSTUFF=-lm # -lblas#using GPU instead for blas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
