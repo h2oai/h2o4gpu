@@ -25,7 +25,7 @@ POGSROOT=../../src
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
 EXSRC2=elastic_net.cpp
-EXSRC3=elastic_net_mapd.cpp
+EXSRC3=elastic_net_ptr_driver.cpp
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
@@ -62,9 +62,9 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: cpu cpualt cpumapd
+all: cpu cpualt cpuptr
 
-default: cpualt cpumapd
+default: cpualt cpuptr
 
 # CPU
 cpu: run_all_orig.cpp examples.h $(EXSRC) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
@@ -73,10 +73,10 @@ cpu: run_all_orig.cpp examples.h $(EXSRC) $(POGSROOT)/build/cpu/pogs.a Makefile.
 cpualt: run_all.cpp examples.h $(EXSRC2) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
 
-cpumapd: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
+cpuptr: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
 
 clean:
-	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
+	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-ptr
 	rm -rf *.dSYM
 

@@ -8,7 +8,7 @@
 #include <random>
 #include <stdlib.h>
 
-#include "../common/elastic_net_mapd.h"
+#include "../common/elastic_net_ptr.h"
 #include "timer.h"
 
 using namespace std;

@@ -10,7 +10,7 @@ default: gpuall
 # CPU
 cpuall: Makefile.cpu
 	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpu cpualt cpumapd
+	$(MAKE) -f Makefile.cpu cpu cpualt cpuptr
 
 cpu: Makefile.cpu
 	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
@@ -20,14 +20,14 @@ cpualt: Makefile.cpu
 	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu cpualt
 
-cpumapd: Makefile.cpu
+cpuptr: Makefile.cpu
 	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpumapd
+	$(MAKE) -f Makefile.cpu cpuptr
 
 # GPU
 gpuall: Makefile.gpu
 	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpu gpualt gpumapd
+	$(MAKE) -f Makefile.gpu gpu gpualt gpuptr
 
 gpu: Makefile.gpu
 	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
@@ -37,20 +37,20 @@ gpualt: Makefile.gpu
 	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu gpualt
 
-gpumapd: Makefile.gpu
+gpuptr: Makefile.gpu
 	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpumapd
+	$(MAKE) -f Makefile.gpu gpuptr
 
-run: gpumapd
-	./h2oai-glm-gpu-mapd 2 2 100 16 1 0 0.2
+run: gpuptr
+	./h2oai-glm-gpu-ptr 2 2 100 16 1 0 0.2
 
-runcpu: cpumapd
-	./h2oai-glm-cpu-mapd 2 2 100 16 1 0 0.2
+runcpu: cpuptr
+	./h2oai-glm-cpu-ptr 1 1 100 16 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~
-	rm -rf runcpu h2oai-glm-cpu h2oai-glm-cpu-mapd
-	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-mapd
+	rm -rf runcpu h2oai-glm-cpu h2oai-glm-cpu-ptr
+	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-ptr
 	rm -rf *.dSYM
 	rm -rf core
 

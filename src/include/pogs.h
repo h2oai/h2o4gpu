@@ -211,6 +211,7 @@ class Pogs {
     os << std::endl;
   }
   void printLegalNotice() {
+#pragma omp critical
     Printf(__HBAR__
         "           H2O AI GLM\n"
         "           Version: %s %s\n"
