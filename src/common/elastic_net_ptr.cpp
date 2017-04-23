@@ -165,6 +165,10 @@ namespace pogs {
       omp_set_num_threads(nThreads);  // not necessary, but most useful mode so far
       int nth=omp_get_max_threads();
       //      nGPUs=nth; // openmp threads = cuda/cpu devices used
+      omp_set_dynamic(0);
+      mkl_set_dynamic(0);
+      omp_set_nested(1);
+      omp_set_max_active_levels(2);
 #ifdef DEBUG
       cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
@@ -209,13 +213,11 @@ namespace pogs {
         int me = omp_get_thread_num();
 #if(USEMKL==1)
         //https://software.intel.com/en-us/node/522115
-        int physicalcores=omt/2; // asssume hyperthreading Intel processor
-        // set number of mkl threads per openmp thread
+        int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
+        // set number of mkl threads per openmp thread so that not oversubscribing cores
         int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
-        //        mkl_set_num_threads(mklperthread);
+        //mkl_set_num_threads_local(mklperthread);
         mkl_set_num_threads_local(mklperthread);
-        mkl_set_dynamic(0);
-        omp_set_max_active_levels(2);
         //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
 #endif
 #else
@@ -231,6 +233,7 @@ namespace pogs {
           cerr << "Cannot open filename=" << filename << endl;
           exit(0);
         }
+        else fflush(fil);
         sprintf(filename, "me%d.latest.txt", me); // for each thread
         FILE *fillatest = fopen(filename, "wt");
         if (fillatest == NULL) {
