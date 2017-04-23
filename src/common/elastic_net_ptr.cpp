@@ -25,9 +25,45 @@
 #define TEXTCOMP "GCC"
 #endif
 
+using namespace std;
+
+string cmd(const string& cmd) {
+  FILE *fp;
+  char c[1025];
+  string res;
+
+  /* Open the command for reading. */
+  fp = popen(cmd.c_str(), "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    return "NA";
+  }
+  fgets(c, sizeof(c)-1, fp); //only take the first line
+  res += c;
+  pclose(fp);
+  res.erase(std::remove(res.begin(), res.end(), '\n'),res.end());
+//  cout << "cmd: " << res << endl;
+  return res;
+}
+
+const std::string CPUTYPE = cmd("lscpu | grep 'Model name' | cut -d: -f2- | sed 's/ \\+//g' | sed 's/Intel(R)//' | sed 's/Core(TM)//' | sed 's/CPU//'");
+const std::string SOCKETS = cmd("lscpu | grep 'Socket(s)' | cut -d: -f2- | sed 's/ \\+//g'");
+
+const std::string GPUTYPE = cmd("nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | tail -n 1");
+const std::string NGPUS = cmd("nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | wc -l");
+
+#ifdef HAVECUDA
+const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
+#else
+const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
+#endif
 
 
-#define Printmescore(thefile)  fprintf(thefile, "%s.me: %d ARCH: %s BLAS: %s COMP: %s nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, TEXTARCH, TEXTBLAS, TEXTCOMP, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
+#define Printmescore(thefile)  fprintf(thefile, \
+"%s.me: %d ARCH: %s:%s BLAS: %s COMP: %s nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
+"lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
+_GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, TEXTCOMP, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
+lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 
 #include <stdio.h>
@@ -35,8 +71,6 @@
 #include <signal.h> //  our new library
 
 #define OLDPRED 0
-
-using namespace std;
 
 namespace pogs {
 
@@ -116,6 +150,7 @@ namespace pogs {
         exit(-1);
       }
 
+      cout << "Hardware: " << HARDWARE << endl;
 
       // number of openmp threads = number of cuda devices to use
 #ifdef _OPENMP
@@ -163,7 +198,7 @@ namespace pogs {
 
       // Setup each thread's pogs
       double t = timer<double>();
-#pragma omp parallel
+#pragma omp parallel proc_bind(master)
       {
 #ifdef _OPENMP
         int me = omp_get_thread_num();
