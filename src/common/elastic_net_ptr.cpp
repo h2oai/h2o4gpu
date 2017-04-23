@@ -1,4 +1,4 @@
-#include "elastic_net_mapd.h"
+#include "elastic_net_ptr.h"
 #include <float.h>
 #include "../include/util.h"
 

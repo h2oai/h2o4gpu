@@ -45,7 +45,7 @@ run: gpumapd
 	./h2oai-glm-gpu-mapd 2 2 100 16 1 0 0.2
 
 runcpu: cpumapd
-	./h2oai-glm-cpu-mapd 2 2 100 16 1 0 0.2
+	./h2oai-glm-cpu-mapd 1 1 100 16 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~

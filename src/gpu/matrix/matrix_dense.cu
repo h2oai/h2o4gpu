@@ -196,7 +196,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 
 
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
-  // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
+  // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
   : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
@@ -260,7 +260,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   : MatrixDense<T>(wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume source thread=wDev if not given
 
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
-  // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
+  // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
   // datatype=0: CPU pointer to data
   // datatype=1: GPU pointer to data
 template <typename T>
@@ -351,7 +351,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   : MatrixDense<T>(wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume thread=wDev if not given
 
   // MatrixDense where input actual A object that contains all CPU information, but need to go from 1 GPU to multiple GPU
-  // Used by elastic_net_mapd.cpp inside openmp loop for each core
+  // Used by elastic_net_ptr.cpp inside openmp loop for each core
 template <typename T>
 MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
   : Matrix<T>(A._m, A._n, A._mvalid), _me(me), _wDev(wDev), _data(0), _ord(A._ord) {
