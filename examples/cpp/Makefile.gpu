@@ -70,9 +70,9 @@ endif
 
 
 
-all: gpu gpualt gpumapd
+all: gpu gpualt gpuptr
 
-default: gpualt gpumapd
+default: gpualt gpuptr
 
 # GPU
 gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
@@ -81,14 +81,14 @@ gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(POGSROOT)/buil
 gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
-gpumapd: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-mapd $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+gpuptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
 
-run: gpumapd
-	./h2oai-glm-gpu-mapd 1 100 1 1 0
-	#./h2oai-glm-gpu-mapd 1 100 1 0 0
+run: gpuptr
+	./h2oai-glm-gpu-ptr 1 100 1 1 0
+	#./h2oai-glm-gpu-ptr 1 100 1 0 0
 
 clean:
-	rm -f *.o *~ *~ rungpu h2oai-glm-gpu h2oai-glm-gpu-mapd
+	rm -f *.o *~ *~ rungpu h2oai-glm-gpu h2oai-glm-gpu-ptr
 	rm -rf *.dSYM
 
