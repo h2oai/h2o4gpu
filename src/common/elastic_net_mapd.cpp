@@ -168,15 +168,17 @@ namespace pogs {
 #else
         int me=0;
 #endif
+        // choose GPU device ID for each thread
+        int wDev = me%nGPUs;
 
         char filename[100];
-        sprintf(filename, "me%d.%s.%s.%d.%d.txt", me, _GITHASH_, TEXTARCH, nThreads, nGPUs);
+        sprintf(filename, "me%d.%d.%s.%s.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, nThreads, nGPUs);
         FILE *fil = fopen(filename, "wt");
         if (fil == NULL) {
           cerr << "Cannot open filename=" << filename << endl;
           exit(0);
         }
-        sprintf(filename, "me%d.latest.txt", me);
+        sprintf(filename, "me%d.latest.txt", me); // for each thread
         FILE *fillatest = fopen(filename, "wt");
         if (fillatest == NULL) {
           cerr << "Cannot open filename=" << filename << endl;
@@ -187,9 +189,9 @@ namespace pogs {
         DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier // not required barrier
-        pogs::MatrixDense<T> A_(me, Asource_);
-#pragma omp barrier // required barrier for me=sourceDev so that Asource_._data (etc.) is not overwritten inside pogs_data(me=sourceDev) below before other cores copy data
-        pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
+        pogs::MatrixDense<T> A_(wDev, Asource_);
+#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside pogs_data(wDev=sourceDev) below before other cores copy data
+        pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
