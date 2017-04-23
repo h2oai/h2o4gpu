@@ -8,6 +8,7 @@ namespace pogs {
 template <typename T>
 class MatrixDense : public Matrix<T> {
  public:
+  int _me;
   int _wDev;
   int _datatype;
 
@@ -30,12 +31,15 @@ class MatrixDense : public Matrix<T> {
   MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data);
   MatrixDense(char ord, size_t m, size_t n, const T *data);
   
+  MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay);
   MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay);
 
   MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data);
   
+  MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
   MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
 
+  MatrixDense(int me, int wDev, const MatrixDense<T>& A);
   MatrixDense(int wDev, const MatrixDense<T>& A);
   MatrixDense(const MatrixDense<T>& A);
 
@@ -63,6 +67,7 @@ class MatrixDense : public Matrix<T> {
   const T* vDatay() const { return _vdatay; }
   Ord Order() const { return _ord; }
   int wDev() const { return _wDev; }
+  int Getme() const { return _me; }
   int Datatype() const { return _datatype; }
 };
 

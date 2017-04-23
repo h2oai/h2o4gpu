@@ -49,6 +49,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(0), _data(0) {
+  _me=_wDev; // assume thread=wDev if not given  
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
@@ -90,6 +91,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data)
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(datatype),_data(0) {
+  _me=_wDev; // assume thread=wDev if not given
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
@@ -122,8 +124,8 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 
 }
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -176,10 +178,17 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   }
 }
 
+
+
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : MatrixDense<T>(wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume source thread=wDev always if not given
+ 
+
   // no use of datatype
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -255,10 +264,17 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 #endif
 
 }
+
+
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : MatrixDense<T>(wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume thread=wDev if not given
+
+  
   
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
+MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
+  : Matrix<T>(A._m, A._n, A._mvalid), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
 
   CpuData<T> *info_A   = reinterpret_cast<CpuData<T>*>(A._info); // cast from void to CpuData
   CpuData<T> *infoy_A  = reinterpret_cast<CpuData<T>*>(A._infoy); // cast from void to CpuData
@@ -286,7 +302,7 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   if(!this->_done_alloc){
     this->_done_alloc = true;
     
-    if(A._wDev==wDev){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
+    if(A._wDev==wDev && A._me == _me){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -321,6 +337,12 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   
 }
 
+
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
+  : MatrixDense<T>(wDev, wDev, A){} // then assume thread=wDev if not given
+
+  
 template <typename T>
 MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
   : MatrixDense<T>(A._wDev, A){}

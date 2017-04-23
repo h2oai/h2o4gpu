@@ -61,6 +61,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(0),_data(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
+  _me=_wDev; // assume thread same as wDev if not given
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
@@ -112,7 +113,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
 }
 template <typename T>
 MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
-  : MatrixDense<T>(0, ord, m, n, data){}
+  : MatrixDense<T>(0, ord, m, n, data){} // assume thread=wDev=0 if not given
 
   // datatype=0: data CPU pointer to _data CPU pointer // NA
   // datatype=1: data GPU pointer to _data GPU pointer
@@ -123,6 +124,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(datatype),_data(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
+  _me=_wDev; // assume thread=wDev if not given
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
@@ -196,8 +198,8 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
   // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -252,13 +254,18 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
     POP_RANGE("MDsend",MDsend,1);
   }
 }
+
+  template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : MatrixDense<T>(wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume source thread=wDev if not given
+
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
   // Used by elastic_net_mapd.cpp to pass CPU data and put on GPU
   // datatype=0: CPU pointer to data
   // datatype=1: GPU pointer to data
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -339,12 +346,15 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   }
 }
 
+template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : MatrixDense<T>(wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume thread=wDev if not given
 
   // MatrixDense where input actual A object that contains all CPU information, but need to go from 1 GPU to multiple GPU
   // Used by elastic_net_mapd.cpp inside openmp loop for each core
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _wDev(wDev), _data(0), _ord(A._ord) {
+MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
+  : Matrix<T>(A._m, A._n, A._mvalid), _me(me), _wDev(wDev), _data(0), _ord(A._ord) {
 
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -380,7 +390,7 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(A._wDev == _wDev){ // if on same device, just copy pointer
+    if(A._wDev == _wDev && A._me == _me){ // if on same device and same thread, just copy
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -412,8 +422,13 @@ MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
 }
 
 template <typename T>
+MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
+  : MatrixDense<T>(wDev, wDev, A){} // then assume thread=wDev for the new matrix (i.e. not input A)
+
+
+template <typename T>
 MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
-  : MatrixDense<T>(A._wDev, A){}
+  : MatrixDense<T>(A._wDev, A){} // then assume same device as input A
 
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
