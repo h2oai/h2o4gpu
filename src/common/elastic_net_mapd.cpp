@@ -2,6 +2,11 @@
 #include <float.h>
 #include "../include/util.h"
 
+#if(USEMKL==1)
+#include <mkl.h>
+#endif
+
+
 #ifdef HAVECUDA
 #define TEXTARCH "GPU"
 
@@ -27,7 +32,7 @@
 
 
 
-#define Printmescore(thefile)  fprintf(thefile, "%s.me: %d ARCH: %s BLAS: %s COMP: %s nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, TEXTARCH, TEXTBLAS, TEXTCOMP, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
+#define Printmescore(thefile)  fprintf(thefile, "%s.me: %d ARCH: %s BLAS: %s%d COMP: %s nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", _GITHASH_, me, TEXTARCH, TEXTBLAS, mklperthread, TEXTCOMP, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 
 #include <stdio.h>
@@ -167,6 +172,14 @@ namespace pogs {
       {
 #ifdef _OPENMP
         int me = omp_get_thread_num();
+#if(USEMKL==1)
+        //https://software.intel.com/en-us/node/522115
+        // set number of mkl threads per openmp thread
+        int mklperthread=max(1,(omt % nThreads==0 ? omt/nThreads : omt/nThreads+1));
+        //        mkl_set_num_threads(mklperthread);
+        mkl_set_num_threads_local(mklperthread);
+        //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
+#endif
 #else
         int me=0;
 #endif
