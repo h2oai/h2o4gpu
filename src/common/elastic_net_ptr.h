@@ -51,7 +51,7 @@ namespace pogs {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
     template<typename T>
-      double ElasticNetptr(int sourceDev, int datatype, int nThreads, int nGPUs, const char ord,
+      double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
                          double sdTrainY, double meanTrainY,
@@ -87,13 +87,13 @@ namespace pogs {
                        float* trainX, float* trainY, float* validX, float* validY,
                        void**a, void**b, void**c, void**d);
 
-      double elastic_net_ptr_double(int sourceDev, int datatype, int nThreads, int nGPUs, int ord,
+      double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,
                                   double sdTrainY, double meanTrainY,
                                   double sdValidY, double meanValidY,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
-    double elastic_net_ptr_float(int sourceDev, int datatype, int nThreads, int nGPUs, int ord,
+      double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
                          double sdTrainY, double meanTrainY,

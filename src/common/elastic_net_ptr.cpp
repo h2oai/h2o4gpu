@@ -65,9 +65,9 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 
 #define Printmescore(thefile)  fprintf(thefile, \
-"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
+"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
 "lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
-                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, mklperthread, TEXTCOMP, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, mklperthread, TEXTCOMP, sharedA, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
 lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 
@@ -140,7 +140,7 @@ namespace pogs {
 // See <pogs>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
     template<typename T>
-    double ElasticNetptr(int sourceDev, int datatype, int nThreads, int nGPUs, const char ord,
+    double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
                          double sdTrainY, double meanTrainY,
@@ -227,7 +227,7 @@ namespace pogs {
         int wDev = me%nGPUs;
 
         char filename[100];
-        sprintf(filename, "me%d.%d.%s.%s.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, nThreads, nGPUs);
+        sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, sharedA, nThreads, nGPUs);
         FILE *fil = fopen(filename, "wt");
         if (fil == NULL) {
           cerr << "Cannot open filename=" << filename << endl;
@@ -517,14 +517,14 @@ namespace pogs {
       return tf - t;
     }
 
-    template double ElasticNetptr<double>(int sourceDev, int datatype, int nThreads, int nGPUs, const char ord,
+    template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                           double lambda_min_ratio, int nLambdas, int nAlphas,
                                           double sdTrainY, double meanTrainY,
                                           double sdValidY, double meanValidY,
                                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
-    template double ElasticNetptr<float>(int sourceDev, int datatype, int nThreads, int nGPUs, const char ord,
+    template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                          double lambda_min_ratio, int nLambdas, int nAlphas,
                                          double sdTrainY, double meanTrainY,
@@ -545,26 +545,26 @@ namespace pogs {
                        void**a, void**b, void**c, void**d) {
       return makePtr<float>(sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
     }
-    double elastic_net_ptr_double(int sourceDev, int datatype, int nThreads, int nGPUs, int ord,
+    double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,
                                   double sdTrainY, double meanTrainY,
                                   double sdValidY, double meanValidY,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
-      return ElasticNetptr<double>(sourceDev, datatype, nThreads, nGPUs, ord==1?'r':'c',
+      return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
                                    mTrain, n, mValid, intercept, standardize, lambda_max0,
                                    lambda_min_ratio, nLambdas, nAlphas,
                                    sdTrainY, meanTrainY,
                                    sdValidY, meanValidY,
                                    trainXptr, trainYptr, validXptr, validYptr);
     }
-    double elastic_net_ptr_float(int sourceDev, int datatype, int nThreads, int nGPUs, int ord,
+    double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                  double lambda_min_ratio, int nLambdas, int nAlphas,
                                  double sdTrainY, double meanTrainY,
                                  double sdValidY, double meanValidY,
                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
-      return ElasticNetptr<float>(sourceDev, datatype, nThreads, nGPUs, ord==1?'r':'c',
+      return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
                                   mTrain, n, mValid, intercept, standardize, lambda_max0,
                                   lambda_min_ratio, nLambdas, nAlphas,
                                   sdTrainY, meanTrainY,

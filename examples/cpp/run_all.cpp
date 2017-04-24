@@ -18,11 +18,12 @@ int main(int argc, char **argv) {
 
 
   if (argc!=8) {
-    printf("usage: %s %s", argv[0], " <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
+    printf("usage: %s %s", argv[0], " <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
     exit(-1);
   }
 
   int ai=0;
+  int sharedA=atoi(argv[++ai]);
   int nThreads=atoi(argv[++ai]);
   int nGPUs=atoi(argv[++ai]);
   int nLambdas=atoi(argv[++ai]);
@@ -41,9 +42,9 @@ int main(int argc, char **argv) {
 
 
 
-  printf("\nElastic Net: rows=%d cols=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
-  t = ElasticNet<real_t>(A, b, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
-  printf("\nElastic Net: rows=%d cols=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
+  printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
+  t = ElasticNet<real_t>(A, b, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
+  printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
 
   fflush(stdout);
   fflush(stderr);
