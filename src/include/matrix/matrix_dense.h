@@ -29,21 +29,21 @@ class MatrixDense : public Matrix<T> {
 
  public:
   // Constructor (only sets variables)
-  MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data);
-  MatrixDense(char ord, size_t m, size_t n, const T *data);
-  
-  MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay);
-  MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay);
+  MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data); // Asource_ outside parallel for examples/cpp/elastic_net.cpp
+  MatrixDense(char ord, size_t m, size_t n, const T *data); // orig pgs
 
-  MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data);
+  MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data); // can be used by src/common/elastic_net_ptr.cpp
   
-  MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
-  MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
+  MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay); // initial ptr copy for examples/cpp/elastic_net_ptr_driver.cpp
+  MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay); // not used now
 
-  MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A);
-  MatrixDense(int me, int wDev, const MatrixDense<T>& A);
-  MatrixDense(int wDev, const MatrixDense<T>& A);
-  MatrixDense(const MatrixDense<T>& A);
+  MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay); // Asource_ inside parallel for src/common/elastic_net_ptr.cpp
+  MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay); // not used now
+
+  MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A); // used by examples/cpp/elasticnet*.cpp inside parallel region
+  MatrixDense(int me, int wDev, const MatrixDense<T>& A); // not used
+  MatrixDense(int wDev, const MatrixDense<T>& A); // not used
+  MatrixDense(const MatrixDense<T>& A); // orig pogs
 
   ~MatrixDense();
 
@@ -51,7 +51,7 @@ class MatrixDense : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T *d, T *e, bool equillocal);
+  int Equil(T **de, bool equillocal);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;

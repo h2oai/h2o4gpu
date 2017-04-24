@@ -14,6 +14,10 @@
 #include <omp.h>
 #endif
 
+#if(USEMKL==1)
+#include <mkl.h>
+#endif
+
 using namespace pogs;
 using namespace std;
 
@@ -144,7 +148,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
   // for source, create class objects that creates cuda memory, cpu memory, etc.
   int sourceDev=0;
-  pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, trainX.data());
+  pogs::MatrixDense<T> Asource_(sharedA, sourceDev, 'r', mTrain, n, trainX.data());
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
   
 
@@ -189,13 +193,25 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
   
   double t = timer<double>();
-#pragma omp parallel 
+#pragma omp parallel proc_bind(master)
   {
 #ifdef _OPENMP
     int me = omp_get_thread_num();
+#if(USEMKL==1)
+    //https://software.intel.com/en-us/node/522115
+    int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
+    // set number of mkl threads per openmp thread so that not oversubscribing cores
+    int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+    //mkl_set_num_threads_local(mklperthread);
+    mkl_set_num_threads_local(mklperthread);
+    //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
+#endif
 #else
     int me=0;
 #endif
+    
+    // choose GPU device ID for each thread
+    int wDev = me%nGPUs;
 
     char filename[100];
     sprintf(filename,"me%d.txt",me);
@@ -210,9 +226,9 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
     fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier
-    pogs::MatrixDense<T> A_(me, Asource_);
+    pogs::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
 #pragma omp barrier // this is the required barrier
-    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(me, A_);
+    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_);
 #pragma omp barrier
     double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);

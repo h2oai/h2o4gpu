@@ -229,7 +229,7 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
+int MatrixSparse<T>::Equil(T **de, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -237,6 +237,23 @@ int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
   // Extract cublas handle from _info.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->d_hdl;
+
+
+  int m=this->_m;
+  int n=this->_n;
+
+  if(!this->_done_allocde){
+    this->_done_allocde=1;
+    if(this->_sharedA){
+      *de = this->_dptr;
+    }
+    else{
+      cudaMalloc(de, (m + n) * sizeof(T)); cudaMemset(de, 0, (m + n) * sizeof(T));
+    }
+  }
+  T *d = *de;
+  T *e = d+m;
+  
 
   // Number of elements in matrix.
   size_t num_el = static_cast<size_t>(2) * _nnz;

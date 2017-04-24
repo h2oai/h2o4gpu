@@ -50,7 +50,8 @@ MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_I
   : Matrix<T>(m, n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
-
+  _me=0;
+  _sharedA=0;
   // Set CPU specific data.
   CpuData<T> *info = new CpuData<T>(data, ptr, ind);
   this->_info = reinterpret_cast<void*>(info);
@@ -60,6 +61,8 @@ template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
   : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
+  _me=0;
+  _sharedA=0;
 
   CpuData<T> *info_A = reinterpret_cast<CpuData<T>*>(A._info);
   CpuData<T> *info = new CpuData<T>(info_A->orig_data, info_A->orig_ptr,
@@ -88,6 +91,10 @@ MatrixSparse<T>::~MatrixSparse() {
       delete [] _ind;
       _ind = 0;
     }
+  }
+  if(this->_dptr && !this->_sharedA){ // JONTODO: When sharedA=1, only free if on sourceme
+    delete [] this->_dptr;
+    this->_dptr=0;
   }
 }
 
@@ -181,11 +188,27 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T *d, T *e, bool equillocal) {
+int MatrixSparse<T>::Equil(T **de, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
+  int m=this->_m;
+  int n=this->_n;
+
+  if(!this->_done_allocde){
+    this->_done_allocde=1;
+    if(this->_sharedA){
+      *de = this->_dptr;
+    }
+    else{
+      *de = new T[m + n]; ASSERT(*de != 0);memset(*de, 0, (m + n) * sizeof(T));
+    }
+  }
+  T *d = *de;
+  T *e = d+m;
+
+  
   // Number of elements in matrix.
   size_t num_el = static_cast<size_t>(2) * _nnz;
 

@@ -183,7 +183,7 @@ namespace pogs {
       //  pogs::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
       // assume source thread is 0th thread (TODO: need to ensure?)
       int sourceme=sourceDev;
-      pogs::MatrixDense<T> Asource_(sourceme,sourceDev, datatype, ord, mTrain, n, mValid,
+      pogs::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                     reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                     reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
       // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls

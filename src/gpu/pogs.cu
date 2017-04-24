@@ -194,12 +194,8 @@ int Pogs<T, M, P>::_Init() {
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
 
-  cudaMalloc(&_de, (m + n) * sizeof(T));
-  cudaMalloc(&_z, (m + n) * sizeof(T));
-  cudaMalloc(&_zt, (m + n) * sizeof(T));
-  cudaMemset(_de, 0, (m + n) * sizeof(T));
-  cudaMemset(_z, 0, (m + n) * sizeof(T));
-  cudaMemset(_zt, 0, (m + n) * sizeof(T));
+  cudaMalloc(&_z, (m + n) * sizeof(T));cudaMemset(_z, 0, (m + n) * sizeof(T));
+  cudaMalloc(&_zt, (m + n) * sizeof(T));cudaMemset(_zt, 0, (m + n) * sizeof(T));
 
   // local (i.e. GPU) values for _x and training predictions (i.e. predicted y from Atrain*_x)
   cudaMalloc(&_xp, (n) * sizeof(T));
@@ -215,7 +211,7 @@ int Pogs<T, M, P>::_Init() {
   POP_RANGE("Malloc",Malloc,1);
 
   PUSH_RANGE("Eq",Eq,1);
-  _A.Equil(_de, _de + m, _equil);
+  _A.Equil(&_de, _equil);
   POP_RANGE("Eq",Eq,1);
   
 
@@ -788,13 +784,13 @@ template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(_de) cudaFree(_de);
+  //  if(_de) cudaFree(_de);
   if(_z) cudaFree(_z);
   if(_zt) cudaFree(_zt);
   if(_xp) cudaFree(_xp);
   if(_trainPredsp) cudaFree(_trainPredsp);
   if(_validPredsp) cudaFree(_validPredsp);
-  _de = _z = _zt = _xp = _trainPredsp = _validPredsp = 0;
+  _z = _zt = _xp = _trainPredsp = _validPredsp = 0;
   CUDA_CHECK_ERR();
 
 #ifdef USE_NCCL2

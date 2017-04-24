@@ -12,11 +12,13 @@ class Matrix {
 
   void *_info, *_infoy, *_vinfo, *_vinfoy;
 
-  bool _done_init, _done_alloc;
+  bool _done_init, _done_alloc, _done_allocde;
+
+  T * _dptr; // to store de pointer
 
  public:
- Matrix(size_t m, size_t n) : _m(m), _n(n), _mvalid(0), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false) { };
- Matrix(size_t m, size_t n, size_t mValid) : _m(m), _n(n), _mvalid(mValid), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false) { };
+ Matrix(size_t m, size_t n) : _m(m), _n(n), _mvalid(0), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false), _done_allocde(false), _dptr(0) { };
+ Matrix(size_t m, size_t n, size_t mValid) : _m(m), _n(n), _mvalid(mValid), _info(0), _infoy(0), _vinfo(0), _vinfoy(0), _done_init(false), _done_alloc(false), _done_allocde(false), _dptr(0) { };
 
   virtual ~Matrix() { };
 
@@ -24,7 +26,7 @@ class Matrix {
   virtual int Init() = 0;
 
   // Method to equilibrate and return equilibration vectors.
-  virtual int Equil(T *d, T *e, bool equillocal) = 0;
+  virtual int Equil(T **de, bool equillocal) = 0;
 
   // Method to multiply by A and A^T.
   virtual int Mul(char trans, T alpha, const T *x, T beta, T *y) const = 0;

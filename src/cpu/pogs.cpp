@@ -119,18 +119,11 @@ int Pogs<T, M, P>::_Init() {
   size_t m = _A.Rows();
   size_t n = _A.Cols();
 
-  _de = new T[m + n];
-  ASSERT(_de != 0);
-  _z = new T[m + n];
-  ASSERT(_z != 0);
-  _zt = new T[m + n];
-  ASSERT(_zt != 0);
-  memset(_de, 0, (m + n) * sizeof(T));
-  memset(_z, 0, (m + n) * sizeof(T));
-  memset(_zt, 0, (m + n) * sizeof(T));
+  _z = new T[m + n]; ASSERT(_z != 0);memset(_z, 0, (m + n) * sizeof(T));
+  _zt = new T[m + n]; ASSERT(_zt != 0);memset(_zt, 0, (m + n) * sizeof(T));
  
   _A.Init();
-  _A.Equil(_de, _de + m, _equil);
+  _A.Equil(&_de, _equil);
   _P.Init();
 
   return 0;
@@ -481,10 +474,10 @@ void Pogs<T, M, P>::ResetX(void) {
 
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
-  if(_de) delete [] _de;
+  //  if(_de) delete [] _de;
   if(_z) delete [] _z;
   if(_zt) delete [] _zt;
-  _de = _z = _zt = 0;
+  _z = _zt = 0;
 
   if(_x) delete [] _x;
   if(_y) delete [] _y;

@@ -10,6 +10,8 @@ typedef int POGS_INT;
 template <typename T>
 class MatrixSparse : public Matrix<T> {
  public:
+  int _sharedA;
+  int _me;
   int _wDev;
   int _datatype;
   
@@ -42,7 +44,7 @@ class MatrixSparse : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T *d, T *e, bool equillocal);
+  int Equil(T **de, bool equillocal);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
@@ -57,7 +59,9 @@ class MatrixSparse : public Matrix<T> {
   const POGS_INT* Ind() const { return _ind; }
   POGS_INT Nnz() const { return _nnz; }
   Ord Order() const { return _ord; }
+  int GetsharedA() const { return _sharedA; }
   int wDev() const { return _wDev; }
+  int Getme() const { return _me; }
   int Datatype() const { return _datatype; }
 };
 

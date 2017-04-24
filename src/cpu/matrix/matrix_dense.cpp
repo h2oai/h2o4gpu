@@ -47,8 +47,8 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *data)
-  : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(0), _data(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data)
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0) {
   _me=_wDev; // assume thread=wDev if not given  
   _datay=NULL;
   _vdata=NULL;
@@ -81,16 +81,17 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, const T *dat
   }
 
 }
+
 template <typename T>
 MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
-  : MatrixDense<T>(0,ord,m,n,data){}
+  : MatrixDense<T>(0,0,ord,m,n,data){} // assume sharedA=0 and wDev=0
 
 
 
   // no use of datatype when on CPU
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, T *data)
-  : Matrix<T>(m, n, 0), _wDev(wDev), _datatype(datatype),_data(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data)
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0) {
   _me=_wDev; // assume thread=wDev if not given
   _datay=NULL;
   _vdata=NULL;
@@ -124,8 +125,8 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 
 }
 template <typename T>
-MatrixDense<T>::MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -182,13 +183,13 @@ MatrixDense<T>::MatrixDense(int me, int wDev, char ord, size_t m, size_t n, size
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : MatrixDense<T>(wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume source thread=wDev always if not given
+  : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and source thread=wDev always if not given
  
 
   // no use of datatype
 template <typename T>
-MatrixDense<T>::MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -266,9 +267,10 @@ MatrixDense<T>::MatrixDense(int me, int wDev, int datatype, char ord, size_t m, 
 }
 
 
+
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : MatrixDense<T>(wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume thread=wDev if not given
+  : MatrixDense<T>(0,wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and thread=wDev if not given
 
   
   
@@ -444,10 +446,26 @@ if (_ord == ROW) {
 }
 
 template <typename T>
-int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
+int MatrixDense<T>::Equil(T **de, bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
+
+  int m=this->_m;
+  int n=this->_n;
+
+  if(!this->_done_allocde){
+    this->_done_allocde=1;
+    if(this->_sharedA){
+      *de = this->_dptr;
+    }
+    else{
+      *de = new T[m + n]; ASSERT(*de != 0);memset(*de, 0, (m + n) * sizeof(T));
+    }
+  }
+  T *d = *de;
+  T *e = d+m;
+   
 
   // Number of elements in matrix.
   size_t num_el = this->_m * this->_n;
@@ -461,6 +479,7 @@ int MatrixDense<T>::Equil(T *d, T *e, bool equillocal) {
   size_t num_chars = num_el / 8;
 
   if(equillocal){
+    
     // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
       SetSign(_data, sign, num_chars, SquareF<T>());
