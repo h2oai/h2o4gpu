@@ -245,7 +245,7 @@ namespace pogs {
         DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier // not required barrier
-        pogs::MatrixDense<T> A_(me, wDev, Asource_);
+        pogs::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside pogs_data(wDev=sourceDev) below before other cores copy data
         pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_);
 #pragma omp barrier // not required barrier

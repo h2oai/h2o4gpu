@@ -59,7 +59,7 @@ namespace pogs {
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
     template<typename T>
-    int makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+      int makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
                 T *trainX, T *trainY, T *validX, T *validY,  //CPU
                 void **a, void **b, void **c, void **d)  // GPU
     {

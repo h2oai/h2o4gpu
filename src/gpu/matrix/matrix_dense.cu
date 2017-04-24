@@ -352,9 +352,11 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 
   // MatrixDense where input actual A object that contains all CPU information, but need to go from 1 GPU to multiple GPU
   // Used by elastic_net_ptr.cpp inside openmp loop for each core
+
+
 template <typename T>
-MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _me(me), _wDev(wDev), _data(0), _ord(A._ord) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
+  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _ord(A._ord) {
 
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -420,6 +422,10 @@ MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
   }
 
 }
+
+template <typename T>
+MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
+  : MatrixDense<T>(0, me, wDev, A){} // then assume not sharing memory
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)

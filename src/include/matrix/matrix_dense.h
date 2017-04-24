@@ -8,6 +8,7 @@ namespace pogs {
 template <typename T>
 class MatrixDense : public Matrix<T> {
  public:
+  int _sharedA;
   int _me;
   int _wDev;
   int _datatype;
@@ -39,6 +40,7 @@ class MatrixDense : public Matrix<T> {
   MatrixDense(int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
   MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay);
 
+  MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A);
   MatrixDense(int me, int wDev, const MatrixDense<T>& A);
   MatrixDense(int wDev, const MatrixDense<T>& A);
   MatrixDense(const MatrixDense<T>& A);
@@ -66,6 +68,7 @@ class MatrixDense : public Matrix<T> {
   const T* vData() const { return _vdata; }
   const T* vDatay() const { return _vdatay; }
   Ord Order() const { return _ord; }
+  int GetsharedA() const { return _sharedA; }
   int wDev() const { return _wDev; }
   int Getme() const { return _me; }
   int Datatype() const { return _datatype; }

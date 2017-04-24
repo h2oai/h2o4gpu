@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
   size_t rows=0, cols=0;
 
 
-  if (argc!=8) {
+  if (argc!=9) {
     printf("usage: %s %s", argv[0], " <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
     exit(-1);
   }

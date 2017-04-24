@@ -273,8 +273,8 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   
   
 template <typename T>
-MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
+  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
 
   CpuData<T> *info_A   = reinterpret_cast<CpuData<T>*>(A._info); // cast from void to CpuData
   CpuData<T> *infoy_A  = reinterpret_cast<CpuData<T>*>(A._infoy); // cast from void to CpuData
@@ -339,13 +339,18 @@ MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
 
 
 template <typename T>
+MatrixDense<T>::MatrixDense(int me, int wDev, const MatrixDense<T>& A)
+  : MatrixDense<T>(0, wDev, wDev, A){} // then assume no shared memory by default
+
+  template <typename T>
 MatrixDense<T>::MatrixDense(int wDev, const MatrixDense<T>& A)
   : MatrixDense<T>(wDev, wDev, A){} // then assume thread=wDev if not given
 
-  
 template <typename T>
 MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
   : MatrixDense<T>(A._wDev, A){}
+
+
 
   template <typename T>
 MatrixDense<T>::~MatrixDense() {
