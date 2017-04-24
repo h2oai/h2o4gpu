@@ -67,7 +67,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define Printmescore(thefile)  fprintf(thefile, \
 "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
 "lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
-                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, mklperthread, TEXTCOMP, sharedA, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
 lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 
@@ -223,6 +223,14 @@ namespace pogs {
 #else
         int me=0;
 #endif
+
+        int blasnumber;
+#ifdef HAVECUDA
+        blasnumber=CUDA_MAJOR;
+#else
+        blasnumber=mklperthread; // roughly accurate for openblas as well
+#endif
+        
         // choose GPU device ID for each thread
         int wDev = me%nGPUs;
 

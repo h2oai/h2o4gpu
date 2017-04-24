@@ -53,14 +53,6 @@ ifeq ($(USEMKL),0)
 MKLSTUFF=
 endif
 
-LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
-
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
-CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
-
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
-
-
 # CUDA Flags
 NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
                 -gencode=arch=compute_50,code=sm_50 \
@@ -71,6 +63,16 @@ CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
 CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
 CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
+
+
+LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
+
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
+
+
 
 ifeq ($(USEICC),0)
 OPENMP=-fopenmp
