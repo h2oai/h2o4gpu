@@ -65,7 +65,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 
 #define Printmescore(thefile)  fprintf(thefile, \
-"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %g a: %d alpha: %g intercept: %d standardize: %d i: %d " \
+"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d alpha: %g intercept: %d standardize: %d i: %d " \
 "lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a, alpha,intercept,standardize, (int)i, \
 lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);

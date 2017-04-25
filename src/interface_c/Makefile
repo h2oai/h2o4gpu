@@ -31,7 +31,7 @@ else
 MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 endif
 ICCSTUFF=-qopenmp
-GCCSTUFF=-fopenmp -ggdb3  -lgomp
+GCCSTUFF=-fopenmp -ggdb3 -lgomp
 
 
 # C++ Flags
@@ -69,7 +69,7 @@ CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand -lgomp $(DFLAGS) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand $(LINKFLAGS) $(DFLAGS) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 
 SHARED=so
 endif
 

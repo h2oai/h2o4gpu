@@ -11,8 +11,8 @@ else:
 		def __init__(self, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision):
 			self.solver = ElasticNetBaseSolver(pogsElasticNetGPU, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas, double_precision)
 
-		def upload_data(self, sourceDev, trainX, trainY, validX, validY):
-			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY)
+		def upload_data(self, sharedA, sourceme, sourceDev, trainX, trainY, validX, validY):
+			return self.solver.upload_data(sharedA, sourceme, sourceDev, trainX, trainY, validX, validY)
 
-		def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d):
+		def fit(self, sharedA, sourceme, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d):
 			return self.solver.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)

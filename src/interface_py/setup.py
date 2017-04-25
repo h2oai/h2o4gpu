@@ -63,9 +63,9 @@ class PogsInstall(install):
 setup(
     name='pogs',
     version='0.0.1',
-    author='Chris Fougner, Baris Ungun, Stephen Boyd',
+    author='H2O.ai, Chris Fougner, Baris Ungun, Stephen Boyd',
     author_email='fougner@stanford.edu, ungun@stanford.edu, boyd@stanford.edu',
-    url='http://github.com/foges/pogs/',
+    url='http://github.com/h2oai',
     package_dir={'interface_py': 'pogs'},
     packages=['pogs',
               'pogs.libs',

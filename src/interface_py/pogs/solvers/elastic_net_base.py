@@ -20,7 +20,7 @@ class ElasticNetBaseSolver(object):
         self.n_alphas=n_alphas
         self.double_precision = double_precision
 
-    def upload_data(self, sourceDev, trainX, trainY, validX, validY):
+    def upload_data(self, sharedA, sourceme, sourceDev, trainX, trainY, validX, validY):
         mTrain = trainX.shape[0]
         mValid = validX.shape[0]
         n = trainX.shape[1]
