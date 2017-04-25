@@ -331,8 +331,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
       _de = A._de; // now share de as never gets modified after original A was processed
-      Init();
-      this->_done_equil=1;
+      //      Init();
+      //      this->_done_equil=1;
     }
     else{ // then allocate duplicate _data, etc. for this thread
       if(A._data){

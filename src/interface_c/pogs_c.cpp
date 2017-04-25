@@ -20,8 +20,9 @@ void * PogsInit(int wDev, size_t m, size_t n, const T *A, const char ord){
     bool directbit = true, densebit = true, rowmajorbit = ord == 'r';
     // bool directbit = true, densebit = true, rowmajorbit = O == ROW_MAJ;
 
+    int sharedA=0; // force for now
     // char ord = rowmajorbit ? 'r' : 'c';
-    pogs::MatrixDense<T> A_(wDev,ord,m,n,A);
+    pogs::MatrixDense<T> A_(sharedA,wDev,ord,m,n,A);
     pogs::PogsDirect<T,pogs::MatrixDense<T> > *pogs_data;    
     std::vector<FunctionObj<T> > *f, *g;
     PogsWork * work;
