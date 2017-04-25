@@ -95,6 +95,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
+    // unlike CPU case, input pointer is always CPU so have to always allocate on GPU when calling this function.  So no use of sharedA related to pointer copy like in CPU case.
 
     // Copy Matrix to GPU.
     PUSH_RANGE("MDsend",MDsend,1);
@@ -110,9 +111,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
 #endif
 
     cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
-    Init(); // does nothing right now
-    Equil(1); // JONTODO: Hack for now.  Need to pass equil
-    
+    if(sharedA>0){
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    }
     POP_RANGE("MDsend",MDsend,1);
   }
 }
@@ -184,6 +186,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
 
     if(!this->_done_alloc){
       this->_done_alloc = true;
+
+      // Unlike CPU case, can't pointer copy as going from CPU to GPU
+      
       // Copy CPU Matrix to GPU.
       PUSH_RANGE("MDsend",MDsend,1);
       //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
@@ -192,8 +197,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
-      Init(); // does nothing right now
-      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      if(sharedA>0){
+        Init(); // does nothing right now
+        Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      }
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -243,6 +250,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
+
+    // Unlike CPU case, can't pointer copy even if sharedA!=0
+    
     // Copy Matrix to GPU.
     PUSH_RANGE("MDsend",MDsend,1);
     //  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info); // cast void -> GpuData
@@ -257,8 +267,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
-    Init(); // does nothing right now
-    Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    if(sharedA>0){
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    }
     double t2 = timer<double>();
 #ifdef DEBUG
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -313,7 +325,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     POP_RANGE("MDnew",MDnew,1);
 
 
-    // Just copy pointer
+    // Just copy GPU pointer
     _data = data;
     _datay = datay;
     _vdata = vdata;
@@ -321,8 +333,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     if(!this->_done_alloc){
       this->_done_alloc = true;
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
-      Init(); // does nothing right now
-      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      if(sharedA>0){
+        Init(); // does nothing right now
+        Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      }
     }
   }
   else{
@@ -356,8 +370,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
-      Init(); // does nothing right now
-      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      if(sharedA>0){
+        Init(); // does nothing right now
+        Equil(1); // JONTODO: Hack for now.  Need to pass equil
+      }
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -414,19 +430,23 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(A._wDev == _wDev && A._me == _me && (!A._sharedA || !_sharedA)){ // if on same device and same thread, just copy pointer
+    if(A._wDev == _wDev && A._me == _me && (A._sharedA==0 || _sharedA==0)){ // if on same device and same thread, just copy pointer
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
       _de = A._de;
+      //      Init();
+      //      this->_done_equil=1;
     }
-    else if(A._wDev == _wDev && A._sharedA && _sharedA){ // if on same device and sharing memory, then just copy pointer
+    else if(A._wDev == _wDev && A._sharedA!=0 && _sharedA!=0){ // if on same device and sharing memory, then just copy pointer
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
       _de = A._de;
+      Init();
+      this->_done_equil=1;
     }
     else{
       // Copy Matrix to from source GPU to this GPU
@@ -443,8 +463,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._de) cudaMalloc(&_de, (A._m + A._n) * sizeof(T)); cudaMemcpyPeer(_de, _wDev, A._de, A._wDev, (A._m + A._n) * sizeof(T));
-      //    Init(); // No need as contains nothing to do right now
-      //      Equil(1); // No need to call equil since now getting _de data from peer
+      if(sharedA>0){
+        Init();
+        Equil(1);
+      }
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);

@@ -63,7 +63,10 @@ namespace pogs {
                 T *trainX, T *trainY, T *validX, T *validY,  //CPU
                 void **a, void **b, void **c, void **d)  // GPU
     {
+      // TODO: See if ok to save memory even between input data and data inside Asource_
       int sharedAlocal=-abs(sharedA); // passes pointer in and out (sharedA=0 would copy data to new memory), but doesn't do any Equilibration
+      //      int sharedAlocal=0;
+      //int sharedAlocal=1;
       pogs::MatrixDense<T> Asource_(sharedAlocal, sourceme, sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
       *a = reinterpret_cast<void *>(Asource_._data);
       *b = reinterpret_cast<void *>(Asource_._datay);

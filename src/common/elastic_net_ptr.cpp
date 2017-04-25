@@ -65,10 +65,12 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 
 #define Printmescore(thefile)  fprintf(thefile, \
-"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
+"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %g a: %d alpha: %g intercept: %d standardize: %d i: %d " \
 "lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
-                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, a, alpha,intercept,standardize, (int)i, \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a, alpha,intercept,standardize, (int)i, \
 lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
+
+#define Printmescoresimple(thefile)  fprintf(thefile,"%21.15g %21.15g %21.15g %15.7f\n", timer<double>(), alpha, lambda, validRMSE); fflush(thefile);
 
 
 #include <stdio.h>
@@ -479,7 +481,7 @@ namespace pogs {
             }
 
             Printmescore(fil);
-            Printmescore(fillatest);
+            Printmescoresimple(fillatest);
             Printmescore(stdout);
 
             // STOP EARLY CHECK
@@ -498,7 +500,7 @@ namespace pogs {
                 i++;
                 lambda = lambdas[i];
                 Printmescore(fil);
-                Printmescore(fillatest);
+                Printmescoresimple(fillatest);
                 Printmescore(stdout);
               }
             }

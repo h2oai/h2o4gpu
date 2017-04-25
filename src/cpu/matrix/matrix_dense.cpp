@@ -78,7 +78,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
       _data = new T[this->_m * this->_n]; ASSERT(_data != 0);  memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
-    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
+    if(sharedA>0){
+      Init();
+      Equil(1); // JONTODO: hack for now, should pass user bool
+    }
   }
 
 }
@@ -122,7 +125,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
-    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
+    if(sharedA>0){
+      Init();
+      Equil(1); // JONTODO: hack for now, should pass user bool
+    }
   }
 
 
@@ -180,7 +186,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
       }
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
-    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
+    if(sharedA>0){
+      Init();
+      Equil(1); // JONTODO: hack for now, should pass user bool
+    }
   }
 }
 
@@ -244,9 +253,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       }
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
-    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
-    for(unsigned int ii=0;ii<=this->_m + this->_n;ii++){
-      if(_de[ii]!=0) fprintf(stderr,"_de[%d]=%g\n",ii,_de[ii]);
+    if(sharedA>0){
+      Init();
+      Equil(1); // JONTODO: hack for now, should pass user bool
     }
   }
 
@@ -322,6 +331,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
       _de = A._de; // now share de as never gets modified after original A was processed
+      Init();
+      this->_done_equil=1;
     }
     else{ // then allocate duplicate _data, etc. for this thread
       if(A._data){
@@ -348,7 +359,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
       }
       _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
-      if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
+      if(sharedA>0){
+        Init();
+        Equil(1); // JONTODO: hack for now, should pass user bool
+      }
     }
   }
   
@@ -464,6 +478,7 @@ if (_ord == ROW) {
 
 template <typename T>
 int MatrixDense<T>::Equil(bool equillocal) {
+  //  fprintf(stderr,"In Equil: done_init=%d done_equil=%d\n",this->_done_init,this->_done_equil); fflush(stderr);
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
@@ -490,6 +505,8 @@ int MatrixDense<T>::Equil(bool equillocal) {
   size_t num_chars = num_el / 8;
 
   if(equillocal){
+
+    //    fprintf(stderr,"Doing Equil\n"); fflush(stderr);
     
     // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
