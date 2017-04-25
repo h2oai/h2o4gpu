@@ -14,5 +14,5 @@ else:
 		def upload_data(self, sourceDev, trainX, trainY, validX, validY):
 			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY)
 
-		def fit(self, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d):
-			return self.solver.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)
+		def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d):
+			return self.solver.fit(sourceDev, mTrain, n, mValid, intercept, standardize, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)
