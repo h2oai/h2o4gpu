@@ -196,7 +196,7 @@ template<typename T>
 void PogsShutdown(void * work);
 
 template <typename T>
-int makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+int makePtr(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
             T* trainX, T * trainY, T* validX, T* validY,  //CPU
             void**a, void**b, void**c, void**d); // GPU
 
