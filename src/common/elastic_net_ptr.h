@@ -72,10 +72,10 @@ namespace pogs {
       *b = reinterpret_cast<void *>(Asource_._datay);
       *c = reinterpret_cast<void *>(Asource_._vdata);
       *d = reinterpret_cast<void *>(Asource_._vdatay);
-      //      fprintf(stderr,"pointer %p\n",*a);
-      //      fprintf(stderr,"pointer %p\n",*b);
-      //      fprintf(stderr,"pointer %p\n",*c);
-      //      fprintf(stderr,"pointer %p\n",*d);
+      fprintf(stderr,"pointer %p\n",*a);
+      fprintf(stderr,"pointer %p\n",*b);
+      fprintf(stderr,"pointer %p\n",*c);
+      fprintf(stderr,"pointer %p\n",*d);
       return 0;
     }
 

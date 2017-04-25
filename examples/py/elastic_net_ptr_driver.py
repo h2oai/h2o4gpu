@@ -19,10 +19,11 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-#  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
-  Solver = pogs.ElasticNetSolverCPU
+  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
+#  Solver = pogs.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
+#  double_precision=True
 
   sharedA = 0
   sourceme = 0
@@ -99,7 +100,7 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
