@@ -166,7 +166,9 @@ namespace pogs {
       int nth=omp_get_max_threads();
       //      nGPUs=nth; // openmp threads = cuda/cpu devices used
       omp_set_dynamic(0);
+#if(USEMKL==1)
       mkl_set_dynamic(0);
+#endif
       omp_set_nested(1);
       omp_set_max_active_levels(2);
 #ifdef DEBUG
@@ -211,11 +213,11 @@ namespace pogs {
       {
 #ifdef _OPENMP
         int me = omp_get_thread_num();
-#if(USEMKL==1)
         //https://software.intel.com/en-us/node/522115
         int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
         // set number of mkl threads per openmp thread so that not oversubscribing cores
         int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+#if(USEMKL==1)
         //mkl_set_num_threads_local(mklperthread);
         mkl_set_num_threads_local(mklperthread);
         //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
