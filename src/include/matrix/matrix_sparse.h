@@ -20,6 +20,7 @@ class MatrixSparse : public Matrix<T> {
   T *_datay;
   T *_vdata;
   T *_vdatay;
+  T * _de;
   enum Ord {ROW, COL};
 
  private:
@@ -44,7 +45,7 @@ class MatrixSparse : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T **de, bool equillocal);
+  int Equil(bool equillocal);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;

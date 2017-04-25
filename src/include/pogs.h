@@ -125,7 +125,7 @@ class Pogs {
   // Data
   M _A;
   P _P;
-  T *_de, *_z, *_zt, _rho;
+  T *_z, *_zt, _rho;
   bool _done_init;
 
   // Output for user (always on CPU)

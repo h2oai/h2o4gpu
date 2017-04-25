@@ -65,7 +65,7 @@ template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
-  : Matrix<T>(m, n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  : Matrix<T>(m, n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -81,13 +81,13 @@ template <typename T>
 MatrixSparse<T>::MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
-  : Matrix<T>(m, n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  : Matrix<T>(m, n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
   MatrixSparse(_wDev, ord, m,n, nnz, data, ptr, ind);
 }
 
 template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
-  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 
   GpuData<T> *info_A = reinterpret_cast<GpuData<T>*>(A._info);
@@ -98,7 +98,7 @@ MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
 
 template <typename T>
 MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
-  : Matrix<T>(A._m, A._n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+  : Matrix<T>(A._m, A._n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
   MatrixSparse(_wDev, A);
 }
@@ -113,6 +113,12 @@ MatrixSparse<T>::~MatrixSparse() {
     if (_data) {
       cudaFree(_data);
       _data = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+
+    if (_de && !_sharedA) {
+      cudaFree(_de);
+      _de = 0;
       DEBUG_CUDA_CHECK_ERR();
     }
 
@@ -144,6 +150,8 @@ int MatrixSparse<T>::Init() {
 
   // Allocate sparse matrix on gpu.
   cudaMalloc(&_data, static_cast<size_t>(2) * _nnz * sizeof(T));
+  cudaMalloc(&_de, (this->_m + this->_n) * sizeof(T)); cudaMemset(_de, 0, (this->_m + this->_n) * sizeof(T));
+  // Equil(1); // JONTODO: If make sparse like dense for memory.
   cudaMalloc(&_ind, static_cast<size_t>(2) * _nnz * sizeof(POGS_INT));
   cudaMalloc(&_ptr, (this->_m + this->_n + 2) * sizeof(POGS_INT));
   DEBUG_CUDA_CHECK_ERR();
@@ -229,30 +237,21 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T **de, bool equillocal) {
+int MatrixSparse<T>::Equil(bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
+
+  if (this->_done_equil) return 0;
+  else this->_done_equil=1;
 
   // Extract cublas handle from _info.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->d_hdl;
 
 
-  int m=this->_m;
-  int n=this->_n;
-
-  if(!this->_done_allocde){
-    this->_done_allocde=1;
-    if(this->_sharedA){
-      *de = this->_dptr;
-    }
-    else{
-      cudaMalloc(de, (m + n) * sizeof(T)); cudaMemset(de, 0, (m + n) * sizeof(T));
-    }
-  }
-  T *d = *de;
-  T *e = d+m;
+  T *d = _de;
+  T *e = d + this->_m;
   
 
   // Number of elements in matrix.
@@ -265,62 +264,65 @@ int MatrixSparse<T>::Equil(T **de, bool equillocal) {
   cudaMalloc(&sign, num_sign_bytes);
   CUDA_CHECK_ERR();
 
-  // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
   size_t grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        SquareF<T>());
-  } else {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        AbsF<T>());
-  }
-  cudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
-
-  // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SquareF<T>());
+      __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                SquareF<T>());
     } else {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, AbsF<T>());
+      __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                AbsF<T>());
     }
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-  }
 
+    // If numel(A) is not a multiple of 8, then we need to set the last couple
+    // of sign bits too.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                  num_el - num_chars * 8, SquareF<T>());
+      } else {
+        __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                  num_el - num_chars * 8, AbsF<T>());
+      }
+      cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+    }
+  }
   // Perform Sinkhorn-Knopp equilibration.
   SinkhornKnopp(this, d, e, equillocal);
   cudaDeviceSynchronize();
 
-  // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
-  // or A = sign(A) .* A if the 1-norm was equilibrated.
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        SqrtF<T>());
-  } else {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        IdentityF<T>());
-  }
-  cudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
-
-  // Deal with last few entries if num_el is not a multiple of 8.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
+    // or A = sign(A) .* A if the 1-norm was equilibrated.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SqrtF<T>());
+      __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                  SqrtF<T>());
     } else {
-      __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, IdentityF<T>());
+      __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                  IdentityF<T>());
     }
     cudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-  }
 
+    // Deal with last few entries if num_el is not a multiple of 8.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                    num_el - num_chars * 8, SqrtF<T>());
+      } else {
+        __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                    num_el - num_chars * 8, IdentityF<T>());
+      }
+      cudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+    }
+  }
+  
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     thrust::transform(thrust::device_pointer_cast(d),

@@ -210,7 +210,7 @@ $(OBJDIR)/cpu/projector/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/projector
 $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
-$(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
+$(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
 	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -c -o $@ 
 
 
@@ -237,7 +237,7 @@ $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector
 $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
-$(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
+$(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
 	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
 
 

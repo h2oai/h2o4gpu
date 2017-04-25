@@ -19,6 +19,7 @@ class MatrixDense : public Matrix<T> {
   T *_datay; // trainY
   T *_vdata;  // validX
   T *_vdatay; // validY
+  T *_de;
   enum Ord {ROW, COL};
 
 
@@ -51,7 +52,7 @@ class MatrixDense : public Matrix<T> {
   int Init();
 
   // Method to equilibrate.
-  int Equil(T **de, bool equillocal);
+  int Equil(bool equillocal);
 
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;

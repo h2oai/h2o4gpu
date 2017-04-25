@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   double t1 = timer<double>();
   cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
 
-
+  
 
   printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
   t = ElasticNet<real_t>(A, b, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);

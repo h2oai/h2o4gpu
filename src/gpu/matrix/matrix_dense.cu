@@ -58,7 +58,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
   // Used by elastic_net.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0),_data(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _me=_wDev; // assume thread same as wDev if not given
@@ -108,6 +108,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
 #endif
+
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    Init(); // does nothing right now
+    Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    
     POP_RANGE("MDsend",MDsend,1);
   }
 }
@@ -117,7 +122,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0),_de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _me=_wDev; // assume thread=wDev if not given
@@ -157,6 +162,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
 
     // just copy GPU pointer
     _data = data;
+    if(!this->_done_alloc){
+      this->_done_alloc = true;
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    }
 
   }
   else{
@@ -180,6 +191,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -195,7 +209,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0),_de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -242,6 +256,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    Init(); // does nothing right now
+    Equil(1); // JONTODO: Hack for now.  Need to pass equil
     double t2 = timer<double>();
 #ifdef DEBUG
     printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -261,7 +278,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   // datatype=1: GPU pointer to data
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0),_de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -301,6 +318,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _datay = datay;
     _vdata = vdata;
     _vdatay = vdatay;
+    if(!this->_done_alloc){
+      this->_done_alloc = true;
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
+    }
   }
   else{
     // source pointer is on CPU
@@ -332,6 +355,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      Init(); // does nothing right now
+      Equil(1); // JONTODO: Hack for now.  Need to pass equil
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -352,7 +378,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _ord(A._ord) {
+  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0),_de(0), _ord(A._ord) {
 
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -388,11 +414,19 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(A._wDev == _wDev && A._me == _me){ // if on same device and same thread, just copy
+    if(A._wDev == _wDev && A._me == _me && (!A._sharedA || !_sharedA)){ // if on same device and same thread, just copy pointer
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
+      _de = A._de;
+    }
+    else if(A._wDev == _wDev && A._sharedA && _sharedA){ // if on same device and sharing memory, then just copy pointer
+      _data   = A._data;
+      _datay  = A._datay;
+      _vdata  = A._vdata;
+      _vdatay = A._vdatay;
+      _de = A._de;
     }
     else{
       // Copy Matrix to from source GPU to this GPU
@@ -408,6 +442,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       if(A._datay) cudaMemcpyPeer(_datay, _wDev, A._datay, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+      if(A._de) cudaMalloc(&_de, (A._m + A._n) * sizeof(T)); cudaMemcpyPeer(_de, _wDev, A._de, A._wDev, (A._m + A._n) * sizeof(T));
+      //    Init(); // No need as contains nothing to do right now
+      //      Equil(1); // No need to call equil since now getting _de data from peer
       double t2 = timer<double>();
 #ifdef DEBUG
       printf("Time to allocate the data matrix on the GPU: %f\n", t1-t0);
@@ -467,9 +504,9 @@ MatrixDense<T>::~MatrixDense() {
     DEBUG_CUDA_CHECK_ERR();
   }
 
-  if(this->_done_allocde && !this->_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device
-    cudaFree(this->_dptr);
-    this->_dptr=0;
+  if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
+    cudaFree(_de);
+    this->_de=0;
     DEBUG_CUDA_CHECK_ERR();
   }
   
@@ -622,32 +659,22 @@ int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) cons
   // Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
   // See https://arxiv.org/pdf/1610.03871.pdf for more information
 template <typename T>
-int MatrixDense<T>::Equil(T **de, bool equillocal) {
+int MatrixDense<T>::Equil(bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
+  if (this->_done_equil) return 0;
+  else this->_done_equil=1;
+  
   CUDACHECK(cudaSetDevice(_wDev));
 
   // Extract cublas handle from _info.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
 
-
-  int m=this->_m;
-  int n=this->_n;
-
-  if(!this->_done_allocde){
-    this->_done_allocde=1;
-    if(this->_sharedA){
-      *de = this->_dptr;
-    }
-    else{
-      cudaMalloc(de, (m + n) * sizeof(T)); cudaMemset(de, 0, (m + n) * sizeof(T));
-    }
-  }
-  T *d = *de;
-  T *e = d+m;
+  T *d = _de;
+  T *e = d + this->_m;
 
   
   // Number of elements in matrix.
@@ -660,62 +687,66 @@ int MatrixDense<T>::Equil(T **de, bool equillocal) {
   cudaMalloc(&sign, num_sign_bytes);
   CUDA_CHECK_ERR();
 
-  // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
   size_t grid_size = cml::calc_grid_dim(num_chars, cml::kBlockSize);
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        SquareF<T>());
-  } else {
-    __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        AbsF<T>());
-  }
-  wrapcudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
-
-  // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too. 
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SquareF<T>());
+      __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                SquareF<T>());
     } else {
-      __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, AbsF<T>());
+      __SetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                AbsF<T>());
     }
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-  }
 
+    // If numel(A) is not a multiple of 8, then we need to set the last couple
+    // of sign bits too. 
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                  num_el - num_chars * 8, SquareF<T>());
+      } else {
+        __SetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                  num_el - num_chars * 8, AbsF<T>());
+      }
+      wrapcudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+    }
+  }
+  
   // Perform Sinkhorn-Knopp equilibration to obtain a doubly stochastic matrix.
   SinkhornKnopp(this, d, e, equillocal);
   wrapcudaDeviceSynchronize();
 
-  // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
-  // or A = sign(A) .* A if the 1-norm was equilibrated.
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        SqrtF<T>());
-  } else {
-    __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
-        IdentityF<T>());
-  }
-  wrapcudaDeviceSynchronize();
-  CUDA_CHECK_ERR();
-
-  // Deal with last few entries if num_el is not a multiple of 8.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
+    // or A = sign(A) .* A if the 1-norm was equilibrated.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SqrtF<T>());
+      __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                  SqrtF<T>());
     } else {
-      __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, IdentityF<T>());
+      __UnSetSign<<<grid_size, cml::kBlockSize>>>(_data, sign, num_chars,
+                                                  IdentityF<T>());
     }
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
-  }
 
+    // Deal with last few entries if num_el is not a multiple of 8.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                    num_el - num_chars * 8, SqrtF<T>());
+      } else {
+        __UnSetSignSingle<<<1, 1>>>(_data + num_chars * 8, sign + num_chars, 
+                                    num_el - num_chars * 8, IdentityF<T>());
+      }
+      wrapcudaDeviceSynchronize();
+      CUDA_CHECK_ERR();
+    }
+  }
+  
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     thrust::transform(thrust::device_pointer_cast(d),

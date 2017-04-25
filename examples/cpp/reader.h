@@ -31,7 +31,7 @@ void splitData(const std::vector<T>& A, const std::vector<T>& b,
 // If intercept == 1, add one extra column at the end, all constant 1s
   n += intercept;
 
-  trainX.resize(mTrain * n);
+  trainX.resize(mTrain * n); // TODO FIXME: Should just point trainX to part of A to save memory
   trainY.resize(mTrain);
 
 #ifdef _OPENMP

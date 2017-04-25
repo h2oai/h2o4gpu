@@ -40,7 +40,7 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::Pogs(int wDev, const M &A)
     : _A(wDev, A), _P(wDev, _A),
-      _de(0), _z(0), _zt(0),
+      _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
@@ -76,7 +76,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::Pogs(const M &A)
   :_A(A._wDev,A), _P(_A._wDev,_A),
-      _de(0), _z(0), _zt(0),
+      _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
       _x(0), _y(0), _mu(0), _lambda(0), _optval(static_cast<T>(0.)), _time(static_cast<T>(0.)),
@@ -123,7 +123,7 @@ int Pogs<T, M, P>::_Init() {
   _zt = new T[m + n]; ASSERT(_zt != 0);memset(_zt, 0, (m + n) * sizeof(T));
  
   _A.Init();
-  _A.Equil(&_de, _equil);
+  _A.Equil(_equil);
   _P.Init();
 
   return 0;
@@ -161,7 +161,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   std::vector<FunctionObj<T> > g_cpu = g;
 
   // Allocate data for ADMM variables.
-  gsl::vector<T> de    = gsl::vector_view_array(_de, m + n);
+  gsl::vector<T> de    = gsl::vector_view_array(_A._de, m + n);
   gsl::vector<T> z     = gsl::vector_view_array(_z, m + n);
   gsl::vector<T> zt    = gsl::vector_view_array(_zt, m + n);
   gsl::vector<T> zprev = gsl::vector_calloc<T>(m + n);
@@ -474,7 +474,6 @@ void Pogs<T, M, P>::ResetX(void) {
 
 template <typename T, typename M, typename P>
 Pogs<T, M, P>::~Pogs() {
-  //  if(_de) delete [] _de;
   if(_z) delete [] _z;
   if(_zt) delete [] _zt;
   _z = _zt = 0;

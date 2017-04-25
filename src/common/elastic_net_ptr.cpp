@@ -75,7 +75,7 @@ lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 #include <stdlib.h>
 #include <signal.h> //  our new library
 
-#define OLDPRED 0
+#define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
 namespace pogs {
 
@@ -543,15 +543,15 @@ namespace pogs {
     extern "C" {
 #endif
 
-    int make_ptr_double(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+      int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
                         double* trainX, double* trainY, double* validX, double* validY,
                         void**a, void**b, void**c, void**d) {
-      return makePtr<double>(sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
+        return makePtr<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
     }
-    int make_ptr_float(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
                        float* trainX, float* trainY, float* validX, float* validY,
                        void**a, void**b, void**c, void**d) {
-      return makePtr<float>(sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
+      return makePtr<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
     }
     double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,

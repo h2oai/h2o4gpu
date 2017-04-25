@@ -130,13 +130,18 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   bwcheck();
 #endif
 #endif
+
+  
+  
   // Push data from CPU to GPU
   void* aa;
   void* bb;
   void* cc;
   void* dd;
+  int sourceme=0; // index of first thread to own data
   int sourceDev=0; //index of first GPU to own data
-  pogs::makePtr(sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
+  pogs::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
+
 
   int datatype = 1;
   return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY0, meanTrainY0, sdValidY0, meanValidY0, aa, bb, cc, dd);

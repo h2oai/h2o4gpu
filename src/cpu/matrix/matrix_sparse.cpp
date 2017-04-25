@@ -47,7 +47,7 @@ template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
                               const T *data, const POGS_INT *ptr,
                               const POGS_INT *ind)
-  : Matrix<T>(m, n), _wDev(0), _data(0), _ptr(0), _ind(0), _nnz(nnz) {
+  : Matrix<T>(m, n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
   _me=0;
@@ -59,7 +59,7 @@ MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_I
 
 template <typename T>
 MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
-  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _ptr(0), _ind(0), _nnz(A._nnz), 
+  : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
   _me=0;
   _sharedA=0;
@@ -92,9 +92,9 @@ MatrixSparse<T>::~MatrixSparse() {
       _ind = 0;
     }
   }
-  if(this->_dptr && !this->_sharedA){ // JONTODO: When sharedA=1, only free if on sourceme
-    delete [] this->_dptr;
-    this->_dptr=0;
+  if(_de && !this->_sharedA){ // JONTODO: When sharedA=1, only free if on sourceme
+    delete [] _de;
+    this->_de=0;
   }
 }
 
@@ -111,12 +111,11 @@ int MatrixSparse<T>::Init() {
   const POGS_INT *orig_ind = info->orig_ind;
 
   // Allocate sparse matrix on gpu.
-  _data = new T[static_cast<size_t>(2) * _nnz];
-  ASSERT(_data != 0);
-  _ind = new POGS_INT[static_cast<size_t>(2) * _nnz];
-  ASSERT(_ind != 0);
-  _ptr = new POGS_INT[this->_m + this->_n + 2];
-  ASSERT(_ptr != 0);
+  _data = new T[static_cast<size_t>(2) * _nnz]; ASSERT(_data != 0);
+  _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not sparse
+  //  Equil(1); // JONTODO: Hack -- for future if make like dense otherwise
+  _ind = new POGS_INT[static_cast<size_t>(2) * _nnz]; ASSERT(_ind != 0);
+  _ptr = new POGS_INT[this->_m + this->_n + 2]; ASSERT(_ptr != 0);
 
   if (_ord == ROW) {
     gsl::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
@@ -188,24 +187,18 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
 }
 
 template <typename T>
-int MatrixSparse<T>::Equil(T **de, bool equillocal) {
+int MatrixSparse<T>::Equil(bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
 
+  if (this->_done_equil) return 0;
+  else this->_done_equil=1;
+
   int m=this->_m;
   int n=this->_n;
 
-  if(!this->_done_allocde){
-    this->_done_allocde=1;
-    if(this->_sharedA){
-      *de = this->_dptr;
-    }
-    else{
-      *de = new T[m + n]; ASSERT(*de != 0);memset(*de, 0, (m + n) * sizeof(T));
-    }
-  }
-  T *d = *de;
+  T *d = _de;
   T *e = d+m;
 
   
@@ -218,48 +211,52 @@ int MatrixSparse<T>::Equil(T **de, bool equillocal) {
   size_t num_sign_bytes = (num_el + 7) / 8;
   sign = new unsigned char[num_sign_bytes];
 
-  // Fill sign bits, assigning each thread a multiple of 8 elements.
   size_t num_chars = num_el / 8;
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    SetSign(_data, sign, num_chars, SquareF<T>());
-  } else {
-    SetSign(_data, sign, num_chars, AbsF<T>());
-  }
-
-  // If numel(A) is not a multiple of 8, then we need to set the last couple
-  // of sign bits too.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Fill sign bits, assigning each thread a multiple of 8 elements.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      SetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SquareF<T>());
+      SetSign(_data, sign, num_chars, SquareF<T>());
     } else {
-      SetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, AbsF<T>());
+      SetSign(_data, sign, num_chars, AbsF<T>());
+    }
+
+    // If numel(A) is not a multiple of 8, then we need to set the last couple
+    // of sign bits too.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        SetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                      num_el - num_chars * 8, SquareF<T>());
+      } else {
+        SetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                      num_el - num_chars * 8, AbsF<T>());
+      }
     }
   }
 
   // Perform Sinkhorn-Knopp equilibration.
   SinkhornKnopp(this, d, e, equillocal);
 
-  // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
-  // or A = sign(A) .* A if the 1-norm was equilibrated.
-  if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-    UnSetSign(_data, sign, num_chars, SqrtF<T>());
-  } else {
-    UnSetSign(_data, sign, num_chars, IdentityF<T>());
-  }
-
-  // Deal with last few entries if num_el is not a multiple of 8.
-  if (num_el > num_chars * 8) {
+  if(equillocal){
+    // Transform A = sign(A) .* sqrt(A) if 2-norm equilibration was performed,
+    // or A = sign(A) .* A if the 1-norm was equilibrated.
     if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
-      UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, SqrtF<T>());
+      UnSetSign(_data, sign, num_chars, SqrtF<T>());
     } else {
-      UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
-          num_el - num_chars * 8, IdentityF<T>());
+      UnSetSign(_data, sign, num_chars, IdentityF<T>());
+    }
+
+    // Deal with last few entries if num_el is not a multiple of 8.
+    if (num_el > num_chars * 8) {
+      if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
+        UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                        num_el - num_chars * 8, SqrtF<T>());
+      } else {
+        UnSetSignSingle(_data + num_chars * 8, sign + num_chars, 
+                        num_el - num_chars * 8, IdentityF<T>());
+      }
     }
   }
-
+  
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     std::transform(d, d + this->_m, d, SqrtF<T>());

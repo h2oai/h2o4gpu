@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <unistd.h>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_matrix.h"
@@ -48,7 +49,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0), _de(0) {
   _me=_wDev; // assume thread=wDev if not given  
   _datay=NULL;
   _vdata=NULL;
@@ -70,14 +71,14 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   // Copy Matrix to CPU
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(1==0){ // can't because _data contents get modified
+    if(sharedA!=0){ // can't because _data contents get modified, unless sharing and equilibrating here
       _data = const_cast<T*>(data);
     }
     else{
-      _data = new T[this->_m * this->_n];
-      ASSERT(_data != 0);
-      memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+      _data = new T[this->_m * this->_n]; ASSERT(_data != 0);  memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
   }
 
 }
@@ -91,7 +92,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
   // no use of datatype when on CPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0), _de(0) {
   _me=_wDev; // assume thread=wDev if not given
   _datay=NULL;
   _vdata=NULL;
@@ -112,7 +113,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(1==0){ // can't in case original pointer came from one thread
+    if(sharedA!=0){ // can't in case original pointer came from one thread
       _data = data;
     }
     else{
@@ -120,13 +121,15 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       ASSERT(_data != 0);
       memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
   }
 
 
 }
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _de(0) {
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -144,7 +147,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(1==0){ // can't because _data contents get modified
+    if(sharedA!=0){ // can't because _data contents get modified, unless do sharedA case and Equil is processed locally before given to other threads
       _data = const_cast<T*>(data);
       _datay = const_cast<T*>(datay);
       _vdata = const_cast<T*>(vdata);
@@ -176,6 +179,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
         memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
       }
     }
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
+    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
   }
 }
 
@@ -186,10 +191,11 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and source thread=wDev always if not given
  
 
-  // no use of datatype
+  // no use of datatype for CPU version
+  // Assume call this function when oustide parallel region and first instance of call to allocating matrix A (_data), etc.
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _de(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -204,7 +210,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    if(1==0){ // can't do this in case input pointers were from one thread and this function called on multiple threads
+    if(sharedA!=0){ // can't do this in case input pointers were from one thread and this function called on multiple threads.  However, currently, this function is only called by outside parallel region when getting first copying. For sharedA case, minimize memory use overall, so allow pointer assignment here just for source (this assumes scoring using internal calculation, not using OLDPREDS because matrix is modified).  So this call isn't only because shared memory case, but rather want minimal memory even on source thread in shared memory case
       _data = const_cast<T*>(data);
       _datay = const_cast<T*>(datay);
       _vdata = const_cast<T*>(vdata);
@@ -236,6 +242,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
       }
+    }
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
+    if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
+    for(unsigned int ii=0;ii<=this->_m + this->_n;ii++){
+      if(_de[ii]!=0) fprintf(stderr,"_de[%d]=%g\n",ii,_de[ii]);
     }
   }
 
@@ -276,7 +287,7 @@ MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n
   
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _ord(A._ord) {
+  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _de(0), _ord(A._ord) {
 
   CpuData<T> *info_A   = reinterpret_cast<CpuData<T>*>(A._info); // cast from void to CpuData
   CpuData<T> *infoy_A  = reinterpret_cast<CpuData<T>*>(A._infoy); // cast from void to CpuData
@@ -303,14 +314,16 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
-    
-    if(A._wDev==wDev && A._me == _me){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data, etc.
+
+    // remove A._wDev==wDev && here compared to GPU version.  Could apply if wDev was used and meant something about MPI node id, but not implemented
+    if(A._me == _me || sharedA!=0){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data in order to handle moidfying matrix A with d and e.  But if sharedA=1, then expect source thread to have already modified matrix, so can just do pointer assignment.
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
+      _de = A._de; // now share de as never gets modified after original A was processed
     }
-    else{
+    else{ // then allocate duplicate _data, etc. for this thread
       if(A._data){
         _data = new T[A._m * A._n];
         ASSERT(_data != 0);
@@ -334,6 +347,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
       }
+      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+      if(sharedA>0) Equil(1); // JONTODO: hack for now, should pass user bool
     }
   }
   
@@ -368,6 +383,8 @@ MatrixDense<T>::~MatrixDense() {
   this->_infoy = 0;
   this->_vinfo = 0;
   this->_vinfoy = 0;
+
+  // JONTODO: why aren't _data etc. freed?
 }
 
 template <typename T>
@@ -446,24 +463,18 @@ if (_ord == ROW) {
 }
 
 template <typename T>
-int MatrixDense<T>::Equil(T **de, bool equillocal) {
+int MatrixDense<T>::Equil(bool equillocal) {
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     return 1;
+  
+  if (this->_done_equil) return 0;
+  else this->_done_equil=1;
 
   int m=this->_m;
   int n=this->_n;
-
-  if(!this->_done_allocde){
-    this->_done_allocde=1;
-    if(this->_sharedA){
-      *de = this->_dptr;
-    }
-    else{
-      *de = new T[m + n]; ASSERT(*de != 0);memset(*de, 0, (m + n) * sizeof(T));
-    }
-  }
-  T *d = *de;
+  
+  T *d = _de;
   T *e = d+m;
    
 

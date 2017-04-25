@@ -59,11 +59,12 @@ namespace pogs {
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
     template<typename T>
-      int makePtr(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+      int makePtr(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
                 T *trainX, T *trainY, T *validX, T *validY,  //CPU
                 void **a, void **b, void **c, void **d)  // GPU
     {
-      pogs::MatrixDense<T> Asource_(sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
+      int sharedAlocal=-abs(sharedA); // passes pointer in and out (sharedA=0 would copy data to new memory), but doesn't do any Equilibration
+      pogs::MatrixDense<T> Asource_(sharedAlocal, sourceme, sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
       *a = reinterpret_cast<void *>(Asource_._data);
       *b = reinterpret_cast<void *>(Asource_._datay);
       *c = reinterpret_cast<void *>(Asource_._vdata);
@@ -80,10 +81,10 @@ namespace pogs {
     extern "C" {
 #endif
 
-    int make_ptr_double(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+      int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
                         double* trainX, double* trainY, double* validX, double* validY,
                         void**a, void**b, void**c, void**d);
-    int make_ptr_float(int sourceDev, size_t mTrain, size_t n, size_t mValid,
+    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
                        float* trainX, float* trainY, float* validX, float* validY,
                        void**a, void**b, void**c, void**d);
 
