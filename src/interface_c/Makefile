@@ -26,9 +26,9 @@ HASH=-D_GITHASH_=\"$(GITHASH)\"
 
 ifeq ($(USEICC),0) # assumes only gnu not pgi
 #MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
-MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+MKLSTUFF=-lmkl_def -lmkl_avx -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
-MKLSTUFF=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+MKLSTUFF=-lmkl_def -lmkl_avx -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 endif
 ICCSTUFF=-qopenmp
 GCCSTUFF=-fopenmp -ggdb3 -lgomp

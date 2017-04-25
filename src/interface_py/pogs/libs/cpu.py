@@ -10,10 +10,10 @@ try:
 
 
 	#argument types
-	pogsCPU.pogs_init_dense_single.argtypes = [c_int, c_size_t, c_size_t, c_float_p]
-	pogsCPU.pogs_init_dense_double.argtypes = [c_int, c_size_t, c_size_t, c_double_p]
-	pogsCPU.pogs_init_sparse_single.argtypes = [c_int, c_size_t, c_size_t, c_size_t, c_float_p, c_int_p, c_int_p]
-	pogsCPU.pogs_init_sparse_double.argtypes = [c_int, c_size_t, c_size_t, c_size_t, c_double_p, c_int_p, c_int_p]
+	pogsCPU.pogs_init_dense_single.argtypes = [c_int, c_int, c_size_t, c_size_t, c_float_p]
+	pogsCPU.pogs_init_dense_double.argtypes = [c_int, c_int, c_size_t, c_size_t, c_double_p]
+	pogsCPU.pogs_init_sparse_single.argtypes = [c_int, c_int, c_size_t, c_size_t, c_size_t, c_float_p, c_int_p, c_int_p]
+	pogsCPU.pogs_init_sparse_double.argtypes = [c_int, c_int, c_size_t, c_size_t, c_size_t, c_double_p, c_int_p, c_int_p]
 	pogsCPU.pogs_solve_single.argtypes = [c_void_p, settings_s_p, solution_s_p, info_s_p,
 										c_float_p, c_float_p, c_float_p, c_float_p, c_float_p, c_int_p,
 										c_float_p, c_float_p, c_float_p, c_float_p, c_float_p, c_int_p]

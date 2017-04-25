@@ -19,7 +19,8 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
+#  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
+  Solver = pogs.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
 
@@ -75,10 +76,10 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
   enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, double_precision)
 
   ## First, get backend pointers
-  a,b,c,d = enet.upload_data(sharedA, sourceme, sourceDev, trainX, trainY, validX, validY)
+  a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
 
   ## Solve
-  enet.fit(sharedA, sourceme, sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)
+  enet.fit(sourceDev, mTrain, n, mValid, lambda_max0, sdTrainY, meanTrainY, sdValidY, meanValidY, a, b, c, d)
 
   return enet
 
