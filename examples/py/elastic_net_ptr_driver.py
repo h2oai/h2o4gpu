@@ -19,16 +19,21 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-#  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
-  Solver = pogs.ElasticNetSolverCPU
+  Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
+#  Solver = pogs.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
 
   sharedA = 0
   sourceme = 0
   sourceDev = 0
-  nThreads = 2
-  nGPUs = 2
+  nThreads = 1
+
+  if gpu:
+    nGPUs = 1
+  else:
+    nGPUs= 4
+
   intercept = 1
   standardize = 0
   lambda_min_ratio = 1e-5
