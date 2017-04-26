@@ -236,7 +236,7 @@ namespace pogs {
 #endif
         
         // choose GPU device ID for each thread
-        int wDev = me%nGPUs;
+        int wDev = (nGPUs>0 ? me%nGPUs : 0);
 
         char filename[100];
         sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, sharedA, nThreads, nGPUs);
