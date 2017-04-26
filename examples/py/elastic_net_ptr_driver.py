@@ -4,6 +4,10 @@ import pogs as pogs
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
 
+from ctypes import *
+from pogs.types import *
+
+
 '''
 Elastic Net
 
@@ -13,17 +17,15 @@ Elastic Net
    See <pogs>/matlab/examples/lasso_path.m for detailed description.
 '''
 
-def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, nalpha=16):
+def ElasticNet(trainX, trainY, gpu=True, nlambda=100, nalpha=1):
   # set solver cpu/gpu according to input args
   if gpu and pogs.ElasticNetSolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
   Solver = pogs.ElasticNetSolverGPU if gpu else pogs.ElasticNetSolverCPU
-#  Solver = pogs.ElasticNetSolverCPU
+  Solver = pogs.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
-
-#  double_precision=True
 
   sharedA = 0
   sourceme = 0
@@ -31,13 +33,13 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
   nThreads = 1
 
   if gpu:
-    nGPUs = 1
+    nGPUs = 4
   else:
-    nGPUs= 4
+    nGPUs= 1
 
-  intercept = 1
+  intercept = 0
   standardize = 0
-  lambda_min_ratio = 1e-5
+  lambda_min_ratio = 1e-9
   nLambdas = nlambda
   nAlphas = nalpha
 
@@ -45,8 +47,8 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
     print ("implement standardization transformer")
     exit()
 
-  validX = trainX# TODO FIXME
-  validY = trainY# TODO FIXME
+  validX = np.copy(trainX)# TODO FIXME
+  validY = np.copy(trainY)# TODO FIXME
 
   ## TODO: compute these in C++ (CPU or GPU)
   sdTrainY = np.sqrt(np.var(y))
@@ -62,7 +64,8 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
   fortran = trainX.flags.f_contiguous
 
 
-  weights = 1./mTrain
+  #weights = 1./mTrain
+  weights = 1. # like current cpp driver
   if intercept==1:
     lambda_max0 = weights * max(abs(trainX.T.dot(trainY-meanTrainY)))
   else:
@@ -77,9 +80,11 @@ def ElasticNet(trainX, trainY, gpu=True, double_precision=False, nlambda=100, na
   n = trainX.shape[1]
   print(mTrain)
   print(n)
+  print(mValid)
+  print(validX.shape[0])
 
   ## Constructor
-  enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, double_precision)
+  enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas)
 
   ## First, get backend pointers
   a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
@@ -100,8 +105,8 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  df = pd.read_csv("/data/jon/pogs/examples/cpp/ipumssmall.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, nalpha=16)
+  ElasticNet(X, y, gpu=True, nlambda=100, nalpha=16)

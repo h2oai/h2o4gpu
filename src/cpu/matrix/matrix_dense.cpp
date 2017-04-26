@@ -161,6 +161,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     }
     else{
       // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
+      fprintf(stderr,"this->_m=%d this->_n=%d sizeof(T)=%d\n",this->_m,this->_n,sizeof(T)); fflush(stderr);
       if(info->orig_data){
         _data = new T[this->_m * this->_n];
         ASSERT(_data != 0);
