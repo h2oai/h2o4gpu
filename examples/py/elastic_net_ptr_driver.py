@@ -45,25 +45,35 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1):
   morig = X.shape[0]
   norig = X.shape[1]
   print("Original m=%d n=%d" % (morig,norig))
+  fortran = X.flags.f_contiguous
+  print("fortran=%d" % (fortran))
+
+  
+  # Do train/valid split
   H=int(0.8*morig)
   print("Size of Train/valid rows H=%d" % (H))
   trainX = np.copy(X[0:H,:])
   trainY = np.copy(y[0:H])
   validX = np.copy(X[H:-1,:])
   validY = np.copy(y[H:-1])
-
-
+  mTrain = trainX.shape[0]
+  mvalid = validX.shape[0]
+  print("mTrain=%d mvalid=%d" % (mTrain,mvalid))
+  
   ## TODO: compute these in C++ (CPU or GPU)
   sdtrainY = np.sqrt(np.var(trainY))
   print("sdtrainY: " + str(sdtrainY))
   meantrainY = np.mean(trainY)
   print("meantrainY: " + str(meantrainY))
-  mTrain = trainX.shape[0]
-  fortran = trainX.flags.f_contiguous
-  print("mTrain=%d fortran=%d" % (mTrain,fortran))
 
+  ## TODO: compute these in C++ (CPU or GPU)
+  sdvalidY = np.sqrt(np.var(validY))
+  print("sdvalidY: " + str(sdvalidY))
+  meanvalidY = np.mean(validY)
+  print("meanvalidY: " + str(meanvalidY))
 
   ## TODO: compute this in C++ (CPU or GPU)
+  # compute without intercept column
   #weights = 1./mTrain
   weights = 1. # like current cpp driver
   if intercept==1:
@@ -76,18 +86,10 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1):
   if intercept==1:
     trainX = np.hstack([trainX, np.ones((trainX.shape[0],1),dtype=trainX.dtype)])
     validX = np.hstack([validX, np.ones((validX.shape[0],1),dtype=validX.dtype)])
+    n = trainX.shape[1]
+    print("New n=%d" % (n))
 
-  n = trainX.shape[1]
-  print("New (after possible intercept added) n=%d" % (n))
 
-
-  ## TODO: compute these in C++ (CPU or GPU)
-  sdvalidY = np.sqrt(np.var(validY))
-  print("sdvalidY: " + str(sdvalidY))
-  meanvalidY = np.mean(validY)
-  print("meanvalidY: " + str(meanvalidY))
-  mvalid = validX.shape[0]
-  print("mvalid=%d" % (mvalid))
 
   ## Constructor
   print("Setting up solver")
