@@ -68,7 +68,7 @@ LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
-LDFLAGS=
+LDFLAGS=$(LINKFLAGS)
 CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand $(LINKFLAGS) $(DFLAGS) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 
 SHARED=so
 endif
