@@ -57,7 +57,7 @@ endif
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL=1  #-DUSE_NVTX=1 -DDEBUG
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) #-DDEBUG -DUSE_NVTX=1 # -DUSE_NCCL=1
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
@@ -65,7 +65,7 @@ CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconv
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) #  -lnccl -lnvToolsExt 
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) # -lnvToolsExt  #  -lnccl
 
 # Check System Args.
 UNAME = $(shell uname -s)
