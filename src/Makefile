@@ -67,8 +67,8 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
-CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DDEBUG # -DUSE_NCCL
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) # -DUSE_NVTX=1
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
 
@@ -238,7 +238,7 @@ $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(POGS_HDR) $(GSL_HDR) | $(OBJDIR)/common
-	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
+	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
 
 
 clean:

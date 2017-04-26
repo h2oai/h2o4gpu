@@ -467,7 +467,7 @@
 #define DEBUG_FPRINTF(thefile, message, ...)     \
   do { \
     fprintf(thefile, message, __VA_ARGS__);      \
-    fprintf("\n"); \
+    fprintf(thefile,"\n");			 \
     fflush(thefile); \
   } while (0)
 

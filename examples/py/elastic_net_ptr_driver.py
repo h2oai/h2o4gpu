@@ -122,8 +122,8 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/ipumssmaller.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=1, nlambda=100, nalpha=1, validFraction=0)

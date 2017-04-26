@@ -177,7 +177,7 @@ namespace pogs {
       cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
       if (nAlphas % nThreads != 0) {
-        DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing.\n");
+        DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
       }
 #endif
 
@@ -271,10 +271,10 @@ namespace pogs {
 //    pogs_data.SetAdaptiveRho(true);
         //pogs_data.SetEquil(false);
 //    pogs_data.SetRho(1);
-//    pogs_data.SetVerbose(5);
+//	pogs_data.SetVerbose(5);
 //        pogs_data.SetMaxIter(100);
 
-        DEBUG_FPRINTF(fil, "BEGIN SOLVE\n");
+        DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
         int a;
 
 
