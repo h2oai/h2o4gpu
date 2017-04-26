@@ -32,19 +32,19 @@ class ElasticNetBaseSolver(object):
         if (trainX.dtype==np.float64):
             print("Detected np.float64");sys.stdout.flush()
             self.double_precision=1
-            A = cptr(trainX)
-            B = cptr(trainY)
-            C = cptr(validX)
-            D = cptr(validY)
+            A = cptr(trainX,dtype=c_double)
+            B = cptr(trainY,dtype=c_double)
+            C = cptr(validX,dtype=c_double)
+            D = cptr(validY,dtype=c_double)
             status = self.lib.make_ptr_double(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
                                               A, B, C, D, pointer(a), pointer(b), pointer(c), pointer(d))
         elif (trainX.dtype==np.float32):
             print("Detected np.float32");sys.stdout.flush()
             self.double_precision=0
-            A = cptr(trainX)
-            B = cptr(trainY)
-            C = cptr(validX)
-            D = cptr(validY)
+            A = cptr(trainX,dtype=c_float)
+            B = cptr(trainY,dtype=c_float)
+            C = cptr(validX,dtype=c_float)
+            D = cptr(validY,dtype=c_float)
             status = self.lib.make_ptr_float(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid),
                                               A, B, C, D, pointer(a), pointer(b), pointer(c), pointer(d))
         else:

@@ -1,4 +1,4 @@
-import os
+import os, sys, traceback, logging
 from ctypes import CDLL, c_int, c_size_t, c_void_p
 from pogs.types import c_int_p, c_float_p, c_double_p, settings_s_p, settings_d_p, solution_s_p, solution_d_p, info_s_p, info_d_p
 
@@ -36,7 +36,8 @@ try:
 	pogsCPU.pogs_finish_double.restype = None
 
 	print('\nLoaded POGS CPU library')
-except OSError:
+except:
+        logging.exception("in cpu.py")
 	print('\nWarning: POGS CPU shared object (dynamic library) not found at ' + lib_path)
 	pogsCPU=None
 
