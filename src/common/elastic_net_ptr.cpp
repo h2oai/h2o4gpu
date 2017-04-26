@@ -352,8 +352,9 @@ namespace pogs {
             // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
             double jumpuse=DBL_MAX;
             double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
-            pogs_data.SetRelTol(tol0); // set how many cuda devices to use internally in pogs
-            pogs_data.SetAbsTol(tol0); // set how many cuda devices to use internally in pogs
+            double tol=tol0;
+            pogs_data.SetRelTol(tol); // set how many cuda devices to use internally in pogs
+            pogs_data.SetAbsTol(0.5*tol); // set how many cuda devices to use internally in pogs
             pogs_data.SetMaxIter(100);
             // see if getting below stddev, if so decrease tolerance
             if(scoring_history.size()>=1){
@@ -362,15 +363,15 @@ namespace pogs {
               if(ratio>0.0){
                 double factor=0.05; // rate factor (USER parameter)
                 double tollow=1E-3; //lowest allowed tolerance (USER parameter)
-                double tol = tol0*pow(2.0,-ratio/factor);
+                tol = tol0*pow(2.0,-ratio/factor);
                 if(tol<tollow) tol=tollow;
            
                 pogs_data.SetRelTol(tol);
                 pogs_data.SetAbsTol(0.5*tol);
                 pogs_data.SetMaxIter(100);
                 jumpuse=jump;
-                //                DEBUG_FPRINTF(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
               }
+              //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
             }
 
 

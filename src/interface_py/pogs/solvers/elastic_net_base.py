@@ -78,6 +78,6 @@ class ElasticNetBaseSolver(object):
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize), c_double(lambda_max0),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
-                c_float(sdTrainY), c_float(meanTrainY),
-                c_float(sdValidY), c_float(meanValidY),
+                c_double(sdTrainY), c_double(meanTrainY),
+                c_double(sdValidY), c_double(meanValidY),
                 a, b, c, d)
