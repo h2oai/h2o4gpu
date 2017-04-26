@@ -17,7 +17,7 @@ Elastic Net
    See <pogs>/matlab/examples/lasso_path.m for detailed description.
 '''
 
-def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1):
+def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   # set solver cpu/gpu according to input args
   if((nGPUs>0) and (pogs.ElasticNetSolverGPU is None)):
     print("\nGPU solver unavailable, using CPU solver\n")
@@ -50,8 +50,9 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1):
 
   
   # Do train/valid split
-  H=int(0.8*morig)
-  print("Size of Train/valid rows H=%d" % (H))
+  HO=int(validFraction*morig)
+  H=morig-HO
+  print("Size of Train rows=%d valid rows=%d" % (H,HO))
   trainX = np.copy(X[0:H,:])
   trainY = np.copy(y[0:H])
   validX = np.copy(X[H:-1,:])
@@ -125,4 +126,4 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16)
+  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)
