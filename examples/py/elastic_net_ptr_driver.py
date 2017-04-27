@@ -106,7 +106,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
 
   ## Solve
   print("Solving")
-  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, lambda_max0, sdtrainY, meantrainY, sdvalidY, meanvalidY, a, b, c, d)
+  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, lambda_max0, a, b, c, d)
   print("Done Solving")
 
   return enet
@@ -126,4 +126,5 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nalpha=16, validFraction=0.2)
+#  ElasticNet(X, y, nGPUs=4, nlambda=100, nalpha=16, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)

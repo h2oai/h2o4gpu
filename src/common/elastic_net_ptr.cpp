@@ -145,8 +145,6 @@ namespace pogs {
     double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
-                         double sdTrainY, double meanTrainY,
-                         double sdValidY, double meanValidY,
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
 
       signal(SIGINT, my_function);
@@ -191,8 +189,20 @@ namespace pogs {
                                     reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                     reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
       // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
+      T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
+      Asource_.Stats(min,max,mean,var,sd,skew,kurt);
+      double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
+      double sdValidY=(double)sd[0], meanValidY=(double)mean[0];
 
-
+      //      fprintf(stderr,"min %21.15g %21.15g\n",min[0],min[1]);
+      //      fprintf(stderr,"max %21.15g %21.15g\n",max[0],max[1]);
+      //      fprintf(stderr,"mean %21.15g %21.15g\n",mean[0],mean[1]);
+      //      fprintf(stderr,"var %21.15g %21.15g\n",var[0],var[1]);
+      //      fprintf(stderr,"sd %21.15g %21.15g\n",sd[0],sd[1]);
+      //      fprintf(stderr,"skew %21.15g %21.15g\n",skew[0],skew[1]);
+      //      fprintf(stderr,"kurt %21.15g %21.15g\n",kurt[0],kurt[1]);
+      //      exit(0);
+      
       // temporarily get trainX, etc. from pogs (which may be on gpu)
       T *trainX=NULL;
       T *trainY=NULL;
@@ -208,7 +218,7 @@ namespace pogs {
       if(OLDPRED) Asource_.GetValidX(datatype, mValid * n, &validX);
       Asource_.GetValidY(datatype, mValid, &validY);
 
-
+#define MAX(a,b) ((a)>(b) ? (a) : (b))
       // Setup each thread's pogs
       double t = timer<double>();
 #pragma omp parallel proc_bind(master)
@@ -218,7 +228,7 @@ namespace pogs {
         //https://software.intel.com/en-us/node/522115
         int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
         // set number of mkl threads per openmp thread so that not oversubscribing cores
-        int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+        int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
 #if(USEMKL==1)
         //mkl_set_num_threads_local(mklperthread);
         mkl_set_num_threads_local(mklperthread);
@@ -436,7 +446,7 @@ namespace pogs {
 #else
             std::vector <T> trainPreds(&pogs_data.GettrainPreds()[0], &pogs_data.GettrainPreds()[0]+mTrain);
 #endif
-            double trainRMSE = getRMSE(mTrain, &trainPreds[0], trainY);
+            double trainRMSE = pogs::getRMSE(mTrain, &trainPreds[0], trainY);
             if(standardize){
               trainRMSE *= sdTrainY;
               for (size_t i = 0; i < mTrain; ++i) {
@@ -472,7 +482,7 @@ namespace pogs {
 #else
               std::vector <T> validPreds(&pogs_data.GetvalidPreds()[0], &pogs_data.GetvalidPreds()[0]+mValid);
 #endif
-              validRMSE = getRMSE(mValid, &validPreds[0], validY);
+              validRMSE = pogs::getRMSE(mValid, &validPreds[0], validY);
               if(standardize){
                 validRMSE *= sdTrainY;
                 for (size_t i = 0; i < mValid; ++i) { //row
@@ -533,15 +543,11 @@ namespace pogs {
     template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                           double lambda_min_ratio, int nLambdas, int nAlphas,
-                                          double sdTrainY, double meanTrainY,
-                                          double sdValidY, double meanValidY,
                                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
     template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                          double lambda_min_ratio, int nLambdas, int nAlphas,
-                                         double sdTrainY, double meanTrainY,
-                                         double sdValidY, double meanValidY,
                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
 
 #ifdef __cplusplus
@@ -561,27 +567,19 @@ namespace pogs {
     double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,
-                                  double sdTrainY, double meanTrainY,
-                                  double sdValidY, double meanValidY,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
       return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
                                    mTrain, n, mValid, intercept, standardize, lambda_max0,
                                    lambda_min_ratio, nLambdas, nAlphas,
-                                   sdTrainY, meanTrainY,
-                                   sdValidY, meanValidY,
                                    trainXptr, trainYptr, validXptr, validYptr);
     }
     double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize, double lambda_max0,
                                  double lambda_min_ratio, int nLambdas, int nAlphas,
-                                 double sdTrainY, double meanTrainY,
-                                 double sdValidY, double meanValidY,
                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
       return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
                                   mTrain, n, mValid, intercept, standardize, lambda_max0,
                                   lambda_min_ratio, nLambdas, nAlphas,
-                                  sdTrainY, meanTrainY,
-                                  sdValidY, meanValidY,
                                   trainXptr, trainYptr, validXptr, validYptr);
     }
 

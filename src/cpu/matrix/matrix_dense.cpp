@@ -1,6 +1,11 @@
+#include <iostream>
+#include <chrono>
+#include <vector>
 #include <algorithm>
 #include <cstring>
 #include <unistd.h>
+#include <numeric>
+//#include <execution>
 
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_matrix.h"
@@ -9,6 +14,9 @@
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
 #include "util.h"
+
+
+
 
 namespace pogs {
 
@@ -579,6 +587,49 @@ int MatrixDense<T>::Equil(bool equillocal) {
 
   return 0;
 }
+
+
+
+template<typename T>
+T getVar(size_t len, T *v, T mean) {
+  double var = 0;
+  for (size_t i = 0; i < len; ++i) {
+    var += (v[i] - mean) * (v[i] - mean);
+  }
+  return static_cast<T>(var / (len - 1));
+}
+  
+
+template <typename T>
+int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt)
+{
+  int len=0;
+
+  // Training mean and stddev
+  len=this->_m;
+  min[0]=*std::min_element(_datay, _datay+len);
+  max[0]=*std::max_element(_datay, _datay+len);
+  mean[0] = std::accumulate(_datay, _datay+len, T(0)) / len;
+  var[0] = getVar(len,_datay, mean[0]);
+  sd[0] = std::sqrt(var[0]);
+  skew[0]=0.0; // not implemented
+  kurt[0]=0.0; // not implemented
+
+    // Training mean and stddev
+  len=this->_mvalid;
+  min[1]=*std::min_element(_datay, _datay+len);
+  max[1]=*std::max_element(_datay, _datay+len);
+  mean[1] = std::accumulate(_vdatay, _vdatay+len, T(0)) / len;
+  var[1] = getVar(len,_vdatay, mean[1]);
+  sd[1] = std::sqrt(var[1]);
+  skew[1]=0.0; // not implemented
+  kurt[1]=0.0; // not implemented
+
+
+  return 0;
+}
+
+  
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// Equilibration Helpers //////////////////////////////////

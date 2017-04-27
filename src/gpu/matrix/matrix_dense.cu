@@ -9,6 +9,16 @@
 #include "util.h"
 #include "timer.h"
 
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/functional.h>
+#include <thrust/extrema.h>
+#include <cmath>
+#include <limits>
+
+
 extern int checkwDev(int wDev);
 
 namespace pogs {
@@ -41,6 +51,7 @@ cublasOperation_t OpToCublasOp(char trans) {
   return trans == 'n' || trans == 'N' ? CUBLAS_OP_N : CUBLAS_OP_T;
 }
 
+  
 template <typename T>
 T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixDense<T>& A);
 
@@ -810,6 +821,195 @@ int MatrixDense<T>::Equil(bool equillocal) {
   return 0;
 }
 
+
+
+// This example computes several statistical properties of a data
+// series in a single reduction.  The algorithm is described in detail here:
+// http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+//
+// Thanks to Joseph Rhoads for contributing this example
+// structure used to accumulate the moments and other
+// statistical properties encountered so far.
+template <typename T>
+struct summary_stats_data
+{
+  T n;
+  T min;
+  T max;
+  T mean;
+  T M2;
+  T M3;
+  T M4;
+
+  // initialize to the identity element
+  void initialize()
+  {
+    n = mean = M2 = M3 = M4 = 0;
+    min = std::numeric_limits<T>::max();
+    max = std::numeric_limits<T>::min();
+  }
+
+  T variance()   { return M2 / (n - 1); }
+  T variance_n() { return M2 / n; }
+  T skewness()   { return std::sqrt(n) * M3 / std::pow(M2, (T) 1.5); }
+  T kurtosis()   { return n * M4 / (M2 * M2); }
+};
+
+  // stats_unary_op is a functor that takes in a value x and
+  // returns a variace_data whose mean value is initialized to x.
+template <typename T>
+struct summary_stats_unary_op
+{
+  __host__ __device__
+  summary_stats_data<T> operator()(const T& x) const
+  {
+    summary_stats_data<T> result;
+    result.n    = 1;
+    result.min  = x;
+    result.max  = x;
+    result.mean = x;
+    result.M2   = 0;
+    result.M3   = 0;
+    result.M4   = 0;
+
+    return result;
+  }
+};
+
+  // summary_stats_binary_op is a functor that accepts two summary_stats_data
+  // structs and returns a new summary_stats_data which are an
+  // approximation to the summary_stats for
+  // all values that have been agregated so far
+template <typename T>
+struct summary_stats_binary_op
+  : public thrust::binary_function<const summary_stats_data<T>&,
+                                   const summary_stats_data<T>&,
+                                   summary_stats_data<T> >
+{
+  __host__ __device__
+  summary_stats_data<T> operator()(const summary_stats_data<T>& x, const summary_stats_data <T>& y) const
+  {
+    summary_stats_data<T> result;
+
+    // precompute some common subexpressions
+    T n  = x.n + y.n;
+    T n2 = n  * n;
+    T n3 = n2 * n;
+
+    T delta  = y.mean - x.mean;
+    T delta2 = delta  * delta;
+    T delta3 = delta2 * delta;
+    T delta4 = delta3 * delta;
+
+    //Basic number of samples (n), min, and max
+    result.n   = n;
+    result.min = thrust::min(x.min, y.min);
+    result.max = thrust::max(x.max, y.max);
+
+    result.mean = x.mean + delta * y.n / n;
+
+    result.M2  = x.M2 + y.M2;
+    result.M2 += delta2 * x.n * y.n / n;
+
+    result.M3  = x.M3 + y.M3;
+    result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
+    result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
+
+    result.M4  = x.M4 + y.M4;
+    result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
+    result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
+    result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
+
+    return result;
+  }
+};
+
+template <typename Iterator>
+void print_range(const std::string& name, Iterator first, Iterator last)
+{
+  typedef typename std::iterator_traits<Iterator>::value_type T;
+
+  std::cout << name << ": ";
+  thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
+  std::cout << "\n";
+}
+
+
+template <typename T>
+int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt)
+{
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  // setup arguments
+  summary_stats_unary_op<T>  unary_op;
+  summary_stats_binary_op<T> binary_op;
+  summary_stats_data<T>      init;
+  
+  init.initialize();
+  int len=0;
+  
+  // cast GPU pointer as thrust pointer
+  thrust::device_ptr<T> dataybegin=thrust::device_pointer_cast(_datay);
+  len=this->_m;
+  thrust::device_ptr<T> datayend=thrust::device_pointer_cast(_datay+len);
+  
+
+  // compute summary statistics
+  summary_stats_data<T> resulty = thrust::transform_reduce(dataybegin, datayend, unary_op, init, binary_op);
+
+  min[0]=resulty.min;
+  max[0]=resulty.max;
+  mean[0]=resulty.mean;
+  var[0]=resulty.variance();
+  sd[0]=std::sqrt(resulty.variance_n());
+  skew[0]=resulty.skewness();
+  kurt[0]=resulty.kurtosis();
+
+  //  std::cout <<"******Summary Statistics Example Train*****"<<std::endl;
+  //  print_range("The data", datay, datay+len*sizeof(T));
+  //  std::cout <<"Count              : "<< resulty.n << std::endl;
+  //  std::cout <<"Minimum            : "<< min[0]<<std::endl;
+  //  std::cout <<"Maximum            : "<< max[0]<<std::endl;
+  //  std::cout <<"Mean               : "<< mean[0]<< std::endl;
+  //  std::cout <<"Variance           : "<< var[0]<< std::endl;
+  //  std::cout <<"Standard Deviation : "<< sd[0]<< std::endl;
+  //  std::cout <<"Skewness           : "<< skew[0]<< std::endl;
+  //  std::cout <<"Kurtosis           : "<< kurt[0]<< std::endl;
+
+
+  // cast GPU pointer as thrust pointer
+  thrust::device_ptr<T> vdataybegin=thrust::device_pointer_cast(_vdatay);
+  len=this->_mvalid;
+  thrust::device_ptr<T> vdatayend=thrust::device_pointer_cast(_vdatay+len);
+
+  // compute summary statistics
+  summary_stats_data<T> vresulty = thrust::transform_reduce(vdataybegin, vdatayend, unary_op, init, binary_op);
+
+  
+  min[1]=vresulty.min;
+  max[1]=vresulty.max;
+  mean[1]=vresulty.mean;
+  var[1]=vresulty.variance();
+  sd[1]=std::sqrt(vresulty.variance_n());
+  skew[1]=vresulty.skewness();
+  kurt[1]=vresulty.kurtosis();
+
+  //  std::cout <<"******Summary Statistics Example Valid*****"<<std::endl;
+  //  print_range("The data", vdatay, vdatay+len*sizeof(T));
+  //  std::cout <<"Count              : "<< vresulty.n << std::endl;
+  //  std::cout <<"Minimum            : "<< min[1]<<std::endl;
+  //  std::cout <<"Maximum            : "<< max[1]<<std::endl;
+  //  std::cout <<"Mean               : "<< mean[1]<< std::endl;
+  //  std::cout <<"Variance           : "<< var[1]<< std::endl;
+  //  std::cout <<"Standard Deviation : "<< sd[1]<< std::endl;
+  //  std::cout <<"Skewness           : "<< skew[1]<< std::endl;
+  //  std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
+
+  return 0;
+}
+
+  
+
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// Equilibration Helpers //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -835,6 +1035,9 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixDense<T>& A) {
       return static_cast<T>(0.);
   }
 }
+
+
+  
 
 // Performs A := D * A * E for A in row major
 template <typename T>

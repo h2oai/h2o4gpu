@@ -13,6 +13,18 @@
 
 using namespace std;
 
+
+template<typename T>
+T getVarV(std::vector <T> &v, T mean) {
+  double var = 0;
+  for (size_t i = 0; i < v.size(); ++i) {
+    var += (v[i] - mean) * (v[i] - mean);
+  }
+  return static_cast<T>(var / (v.size() - 1));
+}
+
+
+
 // m and n are full data set size before splitting
 template <typename T>
 double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
@@ -49,7 +61,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
   // Training mean and stddev
   T meanTrainY0 = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-  T sdTrainY0 = std::sqrt(pogs::getVarV(trainY, meanTrainY0));
+  T sdTrainY0 = std::sqrt(getVarV(trainY, meanTrainY0));
   T meanTrainYn = meanTrainY0;
   T sdTrainYn = sdTrainY0;
   cout << "Mean trainY: " << meanTrainY0 << endl;
@@ -61,7 +73,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
       trainY[i] /= sdTrainY0;
     }
     meanTrainYn = std::accumulate(begin(trainY), end(trainY), T(0)) / trainY.size();
-    sdTrainYn = std::sqrt(pogs::getVarV(trainY, meanTrainYn));
+    sdTrainYn = std::sqrt(getVarV(trainY, meanTrainYn));
   }
 
   // Validation mean and stddev
@@ -71,7 +83,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   T sdValidYn = sdValidY0;
   if (!validY.empty()) {
     meanValidY0 = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    sdValidY0 = std::sqrt(pogs::getVarV(validY, meanValidY0));
+    sdValidY0 = std::sqrt(getVarV(validY, meanValidY0));
     cout << "Rows in validation data: " << validY.size() << endl;
     cout << "Mean validY: " << meanValidY0 << endl;
     cout << "StdDev validY: " << sdValidY0 << endl;
@@ -83,7 +95,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
       }
     }
     meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
-    sdValidYn = std::sqrt(pogs::getVarV(validY, meanValidYn));
+    sdValidYn = std::sqrt(getVarV(validY, meanValidYn));
   }
     
 
@@ -144,7 +156,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
 
   int datatype = 1;
-  return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, sdTrainY0, meanTrainY0, sdValidY0, meanValidY0, aa, bb, cc, dd);
+  return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
 }
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, int, int, int, int, int, int, int, double);

@@ -63,6 +63,8 @@ class MatrixDense : public Matrix<T> {
   void GetValidX(int datatype, size_t size, T**data) const;
   void GetValidY(int datatype, size_t size, T**data) const;
 
+  int Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt);
+
   // Getters
   const T* Data() const { return _data; }
   const T* Datay() const { return _datay; }
