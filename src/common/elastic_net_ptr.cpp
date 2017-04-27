@@ -192,7 +192,7 @@ namespace pogs {
       T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
       Asource_.Stats(min,max,mean,var,sd,skew,kurt);
       double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
-      double sdValidY=(double)sd[0], meanValidY=(double)mean[0];
+      double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
 
       //      fprintf(stderr,"min %21.15g %21.15g\n",min[0],min[1]);
       //      fprintf(stderr,"max %21.15g %21.15g\n",max[0],max[1]);
