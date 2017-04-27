@@ -292,15 +292,11 @@ namespace pogs {
         T *X0 = new T[n]();
         T *L0 = new T[mTrain]();
         int gotpreviousX0=0;
-#pragma omp for schedule(static,1)
+#pragma omp for schedule(dynamic,1)
         for (a = 0; a < nAlphas; ++a) { //alpha search
           const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
           const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like pogs.R
-          T lambda_max = lambda_max0 / std::max(static_cast<T>(1e-2), alpha); // same as H2O
-          if (alpha == 1 && mTrain > 10000) {
-            lambda_max *= 2;
-            lambda_min_ratio /= 2;
-          }
+          T lambda_max = lambda_max0; // std::max(static_cast<T>(1e-2), alpha); // same as H2O
           DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
           DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
           DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max);
