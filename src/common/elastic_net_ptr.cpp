@@ -536,6 +536,7 @@ namespace pogs {
       fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t);
       if (flag) {
         fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
+        flag = 0; // set flag
       }
       return tf - t;
     }
