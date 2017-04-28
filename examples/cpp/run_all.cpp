@@ -17,12 +17,13 @@ int main(int argc, char **argv) {
   size_t rows=0, cols=0;
 
 
-  if (argc!=9) {
-    printf("usage: %s %s", argv[0], " <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
+  if (argc!=10) {
+    printf("usage: %s %s", argv[0], " <file.txt> <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
     exit(-1);
   }
 
   int ai=0;
+  char *filename=argv[++ai];
   int sharedA=atoi(argv[++ai]);
   int nThreads=atoi(argv[++ai]);
   int nGPUs=atoi(argv[++ai]);
@@ -36,7 +37,7 @@ int main(int argc, char **argv) {
   std::vector<real_t> b;
   cout << "START FILL DATA\n" << endl;
   double t0 = timer<double>();
-  fillData(rows,cols,"train.txt", A, b);
+  fillData(rows,cols,filename, A, b);
   double t1 = timer<double>();
   cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
 
