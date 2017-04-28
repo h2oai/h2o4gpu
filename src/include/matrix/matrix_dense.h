@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-namespace pogs {
+namespace h2oaiglm {
 
 template <typename T>
 class MatrixDense : public Matrix<T> {
@@ -44,7 +44,7 @@ class MatrixDense : public Matrix<T> {
   MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A); // used by examples/cpp/elasticnet*.cpp inside parallel region
   MatrixDense(int me, int wDev, const MatrixDense<T>& A); // not used
   MatrixDense(int wDev, const MatrixDense<T>& A); // not used
-  MatrixDense(const MatrixDense<T>& A); // orig pogs
+  MatrixDense(const MatrixDense<T>& A); // orig h2oaiglm
 
   ~MatrixDense();
 
@@ -77,7 +77,7 @@ class MatrixDense : public Matrix<T> {
   int Datatype() const { return _datatype; }
 };
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // MATRIX_MATRIX_DENSE_H_
 

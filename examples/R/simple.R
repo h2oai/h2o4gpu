@@ -1,4 +1,4 @@
-library(pogs)
+library(h2oaiglm)
 
 age     <- c(4, 8, 7, 12, 6, 9, 10, 14, 7)
 gender  <- as.factor(c(1, 0, 1, 1, 1, 0, 1, 0, 0))
@@ -14,11 +14,11 @@ xfactors <- model.matrix(asthma ~ gender + m_edu + p_edu + f_color)[, -1]
 x        <- as.matrix(data.frame(age, bmi_p, xfactors))
 y <- asthma
 
-#model = pogsnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
-#model = pogsnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-6, intercept=TRUE, params=list(max_iter=2500,abs_tol=1e-5,rel_tol=1E-5))
+#model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
+#model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-6, intercept=TRUE, params=list(max_iter=2500,abs_tol=1e-5,rel_tol=1E-5))
 
-model = pogsnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-5, intercept=TRUE)
-print(paste0("RMSEPOGS:",sqrt(mean((predict(model, s=model$lambda[-1], newx=x)-y)^2))))
+model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-5, intercept=TRUE)
+print(paste0("RMSEH2OAIGLM:",sqrt(mean((predict(model, s=model$lambda[-1], newx=x)-y)^2))))
 
 library(glmnet)
 model = glmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL)

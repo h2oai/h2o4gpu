@@ -7,7 +7,7 @@
 #include <random>
 #include "reader.h"
 #include "matrix/matrix_dense.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 #ifdef _OPENMP
@@ -18,7 +18,7 @@
 #include <mkl.h>
 #endif
 
-using namespace pogs;
+using namespace h2oaiglm;
 using namespace std;
 
 template <typename T>
@@ -46,7 +46,7 @@ T getVar(std::vector<T>& v, T mean) {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <pogs>/matlab/examples/lasso_path.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
   int nlambda = nLambdas;
@@ -148,13 +148,13 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
   // for source, create class objects that creates cuda memory, cpu memory, etc.
   int sourceDev=0;
-  pogs::MatrixDense<T> Asource_(sharedA, sourceDev, 'r', mTrain, n, trainX.data());
+  h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceDev, 'r', mTrain, n, trainX.data());
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
   
 
 
 
-#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
+#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2oaiglm runs normally at high GPU usage.  So these leave the device in a bad state.
 #define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
 #define DOBWCHECK 0
 
@@ -226,23 +226,23 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
     fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier
-    pogs::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
+    h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
 #pragma omp barrier // this is the required barrier
-    pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_);
+    h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
 #pragma omp barrier
     double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);
     fprintf(fil,"Done moving data to the GPU. Took %g secs\n", t1-t0);
     fflush(fil);
 
-    pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in pogs
-    //pogs_data.SetAdaptiveRho(false); // trying
-    //pogs_data.SetEquil(false); // trying
-    //pogs_data.SetRho(1E-4);
-    //    pogs_data.SetVerbose(5);
-    //pogs_data.SetMaxIter(200);
+    h2oaiglm_data.SetnDev(1); // set how many cuda devices to use internally in h2oaiglm
+//    h2oaiglm_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2oaiglm
+//    h2oaiglm_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in h2oaiglm
+    //h2oaiglm_data.SetAdaptiveRho(false); // trying
+    //h2oaiglm_data.SetEquil(false); // trying
+    //h2oaiglm_data.SetRho(1E-4);
+    //    h2oaiglm_data.SetVerbose(5);
+    //h2oaiglm_data.SetMaxIter(200);
 
     fprintf(fil,"BEGIN SOLVE\n");
     fflush(fil);
@@ -255,7 +255,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
         lambda_max *= 2;
         lambda_min_ratio /= 2;
       }
-      const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like pogs.R
+      const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like h2oaiglm.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
       fflush(fil);
@@ -266,9 +266,9 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
       f.reserve(mTrain);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like pogs.R
-      T penalty_factor = static_cast<T>(1.0); // like pogs.R
-      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // pogs.R
+      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like h2oaiglm.R
+      T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
+      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // h2oaiglm.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
       fprintf(fil,"alpha%f\n", alpha);
@@ -289,11 +289,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
         // Solve
         fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
         fflush(fil);
-        pogs_data.Solve(f, g);
+        h2oaiglm_data.Solve(f, g);
 
         size_t dof = 0;
         for (size_t i=0; i<n; ++i) {
-          if (std::abs(pogs_data.GetX()[i]) > 1e-8) {
+          if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
             dof++;
           }
         }
@@ -301,7 +301,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
         std::vector<T> trainPreds(trainY.size());
         for (size_t i=0; i<trainY.size(); ++i) {
           for (size_t j=0; j<n; ++j) {
-            trainPreds[i]+=pogs_data.GetX()[j]*trainX[i*n+j]; //add predictions
+            trainPreds[i]+=h2oaiglm_data.GetX()[j]*trainX[i*n+j]; //add predictions
           }
         }
         // score
@@ -314,7 +314,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
             // reverse standardization
             trainPreds[i]*=sdTrainY0; //scale
             trainPreds[i]+=meanTrainY0; //intercept
-            //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+            //assert(trainPreds[i] == h2oaiglm_data.GetY()[i]); //FIXME: CHECK
           }
         }
           
@@ -323,7 +323,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
           std::vector<T> validPreds(validY.size());
           for (size_t i=0; i<validY.size(); ++i) {
             for (size_t j=0; j<n; ++j) {
-              validPreds[i]+=pogs_data.GetX()[j]*validX[i*n+j]; //add predictions
+              validPreds[i]+=h2oaiglm_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
           }
           if(standardize) validRMSE = sdTrainY0*getRMSE(&validPreds[0], &validY);

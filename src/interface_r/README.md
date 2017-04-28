@@ -1,6 +1,6 @@
 #### To install
 ```
-In your terminal, in this directory, execute: `R CMD INSTALL pogs_1*XXX*.tgz`
+In your terminal, in this directory, execute: `R CMD INSTALL h2oaiglm_*XXX*.tgz`
 ```
 where `XXX` is one of the following
 - (empty) -- This package should work on any system, but needs compiling.
@@ -12,13 +12,13 @@ where `XXX` is one of the following
 Hint: Use `getwd()` to get the current directory.
 
 #### To build and install from scratch
-1. Modify `<path-to-pogs-root>/src/interface_r/pogs/src/config.mk` by settingx
+1. Modify `<path-to-h2oaiglm-root>/src/interface_r/h2oaiglm/src/config.mk` by settingx
    `TARGET=[cpu/gpu]`, to target the respective platform.
    Also update `CUDA_HOME` if necessary.
-2. In your terminal, navigate to `cd <path-to-pogs-root>/src/interface_r`
-   and execute `R CMD INSTALL --build pogs` (or `R CMD build pogs` for
+2. In your terminal, navigate to `cd <path-to-h2oaiglm-root>/src/interface_r`
+   and execute `R CMD INSTALL --build h2oaiglm` (or `R CMD build h2oaiglm` for
    a non-compiled package) to install the R package.
-   For a parallel R build with all your cores, do: MAKE="make -j" R CMD INSTALL --build pogs
+   For a parallel R build with all your cores, do: MAKE="make -j" R CMD INSTALL --build h2oaiglm
 
 
 

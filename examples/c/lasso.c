@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pogs_c.h"
+#include "h2oaiglm_c.h"
 
 // Change these two definitions to switch between float and double.
-#define POGS PogsS
+#define H2OAIGLM PogsS
 typedef float real_t;
 
 // Uniform random value in [a, b)
@@ -101,7 +101,7 @@ int main() {
 
   // Solve
   printf("START\n");
-  POGS(ord, m, n, A,
+  H2OAIGLM(ord, m, n, A,
       f_a, f_b, f_c, f_d, f_e, f_h,
       g_a, g_b, g_c, g_d, g_e, g_h,
        rho, abs_tol, rel_tol, max_iter, verbose, adaptive_rho, equil, gap_stop,

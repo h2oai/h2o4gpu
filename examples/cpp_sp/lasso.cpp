@@ -3,13 +3,13 @@
 
 #include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 // Lasso
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
-// See <pogs>/matlab/examples/lasso.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso.m for detailed description.
 template <typename T>
 double Lasso(int m, int n, int nnz) {
   char ord = 'c';
@@ -50,9 +50,9 @@ double Lasso(int m, int n, int nnz) {
 
   T lambda_max = 1;
 
-  pogs::MatrixSparse<T> A_(ord, m, n, nnz, val.data(), row_ptr.data(),
+  h2oaiglm::MatrixSparse<T> A_(ord, m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
-  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T>> h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -65,7 +65,7 @@ double Lasso(int m, int n, int nnz) {
     g.emplace_back(kAbs, static_cast<T>(0.5) * lambda_max);
 
   double t = timer<double>();
-  pogs_data.Solve(f, g);
+  h2oaiglm_data.Solve(f, g);
 
   return timer<double>() - t;
 }

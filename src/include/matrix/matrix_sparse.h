@@ -3,9 +3,9 @@
 
 #include "matrix.h"
 
-namespace pogs {
+namespace h2oaiglm {
 
-typedef int POGS_INT;
+typedef int H2OAIGLM_INT;
 
 template <typename T>
 class MatrixSparse : public Matrix<T> {
@@ -25,7 +25,7 @@ class MatrixSparse : public Matrix<T> {
 
  private:
   
-  POGS_INT *_ptr, *_ind, _nnz;
+  H2OAIGLM_INT *_ptr, *_ind, _nnz;
 
   Ord _ord;
 
@@ -33,10 +33,10 @@ class MatrixSparse : public Matrix<T> {
   MatrixSparse<T>& operator=(const MatrixSparse<T>& A);
 
  public:
-  MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
-      const POGS_INT *ptr, const POGS_INT *ind);
-  MatrixSparse(char ord, POGS_INT m, POGS_INT n, POGS_INT nnz, const T *data,
-      const POGS_INT *ptr, const POGS_INT *ind);
+  MatrixSparse(int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz, const T *data,
+      const H2OAIGLM_INT *ptr, const H2OAIGLM_INT *ind);
+  MatrixSparse(char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz, const T *data,
+      const H2OAIGLM_INT *ptr, const H2OAIGLM_INT *ind);
   MatrixSparse(int wDev, const MatrixSparse<T>& A);
   MatrixSparse(const MatrixSparse<T>& A);
   ~MatrixSparse();
@@ -56,9 +56,9 @@ class MatrixSparse : public Matrix<T> {
   const T* Datay() const { return _datay; }
   const T* vData() const { return _vdata; }
   const T* vDatay() const { return _vdatay; }
-  const POGS_INT* Ptr() const { return _ptr; }
-  const POGS_INT* Ind() const { return _ind; }
-  POGS_INT Nnz() const { return _nnz; }
+  const H2OAIGLM_INT* Ptr() const { return _ptr; }
+  const H2OAIGLM_INT* Ind() const { return _ind; }
+  H2OAIGLM_INT Nnz() const { return _nnz; }
   Ord Order() const { return _ord; }
   int GetsharedA() const { return _sharedA; }
   int wDev() const { return _wDev; }
@@ -66,7 +66,7 @@ class MatrixSparse : public Matrix<T> {
   int Datatype() const { return _datatype; }
 };
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // MATRIX_MATRIX_SPARSE_H_
 

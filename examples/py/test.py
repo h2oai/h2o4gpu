@@ -1,21 +1,21 @@
 import sys
 import numpy as np
-import pogs as pogs
+import h2oaiglm as h2oaiglm
 
 
 def main(argv):
     gpu = len(argv)>0 and argv[0] in ["-g","-gpu","-G","-GPU"]
-    if gpu and not pogs.SolverGPU:
-        print("\nPOGS GPU library not compiled, please call again without `-g/gpu/G/GPU` option\n")
+    if gpu and not h2oaiglm.SolverGPU:
+        print("\nH2OAIGLM GPU library not compiled, please call again without `-g/gpu/G/GPU` option\n")
         return
-    Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
+    Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
 
     m=1000
     n=100
 
     A=np.random.rand(m,n)
-    f=pogs.FunctionVector(m,double_precision=True)
-    g=pogs.FunctionVector(n,double_precision=True)
+    f=h2oaiglm.FunctionVector(m,double_precision=True)
+    g=h2oaiglm.FunctionVector(n,double_precision=True)
 
 
     wt_1_over=25
@@ -37,17 +37,17 @@ def main(argv):
             # f.e[i]=0 (from initialization)
          
     # f(y) =  c|y-b|+dy --- skewed 1-norm, or equivalently piecewise linear 
-    f.h[:]=pogs.FUNCTION["ABS"]
+    f.h[:]=h2oaiglm.FUNCTION["ABS"]
 
     # g(x) = I(x>= 0) 
-    g.h[:]=pogs.FUNCTION["INDGE0"]
+    g.h[:]=h2oaiglm.FUNCTION["INDGE0"]
 
     # initialize solver
     s=Solver(A)
 
     # solve
     s.solve(f,g)
-    print((pogs.STATUS[s.info.status]))
+    print((h2oaiglm.STATUS[s.info.status]))
 
     # tear down solver
     s.finish()

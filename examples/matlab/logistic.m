@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = logistic(m, n, params, comp_cvx, density)
+function [h2oaiglm_time, cvx_time] = logistic(m, n, params, comp_cvx, density)
 %LOGISTIC
 
 if nargin <= 2
@@ -30,18 +30,18 @@ f.d = -y;
 g.h = kAbs;
 g.c = 0.05 * norm(A' * (ones(m, 1) / 2 - y), inf);
 
-% Solve with pogs
+% Solve with h2oaiglm
 if ~issparse(A)
   As = single(A);
 else
   As = A;
 end
 tic
-[~, ~, ~, ~, ~, status] = pogs(As, f, g, params);
-pogs_time = toc;
+[~, ~, ~, ~, ~, status] = h2oaiglm(As, f, g, params);
+h2oaiglm_time = toc;
 
 if status > 0
-  pogs_time = nan;
+  h2oaiglm_time = nan;
 end
 
 % Solve with CVX

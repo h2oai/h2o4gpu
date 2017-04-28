@@ -10,7 +10,7 @@
 #include "matrix/matrix.h"
 #include "util.h"
 
-namespace pogs {
+namespace h2oaiglm {
 namespace {
 
 // Different norm types.
@@ -161,7 +161,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 }
 
 }  // namespace
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // EQUIL_HELPER_H_
 

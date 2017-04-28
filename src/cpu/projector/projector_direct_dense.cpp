@@ -10,7 +10,7 @@
 #include "projector_helper.h"
 #include "util.h"
 
-namespace pogs {
+namespace h2oaiglm {
 
 namespace {
 
@@ -193,13 +193,13 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   return 0;
 }
 
-#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
+#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
 template class ProjectorDirect<double, MatrixDense<double> >;
 #endif
 
-#if !defined(POGS_SINGLE) || POGS_SINGLE==1
+#if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
 template class ProjectorDirect<float, MatrixDense<float> >;
 #endif
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 

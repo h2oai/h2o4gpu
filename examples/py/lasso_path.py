@@ -1,4 +1,4 @@
-import pogs as pogs
+import h2oaiglm as h2oaiglm
 import scipy as sp
 from numpy import abs, exp, float32, float64, log, max, sum, zeros
 from numpy.random import rand, randn
@@ -10,16 +10,16 @@ LassoPath
    minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 
    for 50 values of \lambda.
-   See <pogs>/matlab/examples/lasso_path.m for detailed description.
+   See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 def LassoPath(m, n, gpu=True, double_precision=False, nlambda=50):
   # set solver cpu/gpu according to input args
-  if gpu and pogs.SolverGPU is None:
+  if gpu and h2oaiglm.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
+  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
 
   # random matrix A
   A=randn(m,n)
@@ -39,14 +39,14 @@ def LassoPath(m, n, gpu=True, double_precision=False, nlambda=50):
 
 
   # f(Ax) = ||Ax - b||_2^2
-  f = pogs.FunctionVector(m,double_precision=double_precision)
+  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
-  f.h[:]=pogs.FUNCTION["SQUARE"]
+  f.h[:]=h2oaiglm.FUNCTION["SQUARE"]
 
   # g(x) = 0.2*lambda_max*||x||_1
-  g = pogs.FunctionVector(n,double_precision=double_precision)
+  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
   g.a[:] = 0.2*lambda_max 
-  g.h[:] = pogs.FUNCTION["ABS"]
+  g.h[:] = h2oaiglm.FUNCTION["ABS"]
 
 
   # store results for comparison 

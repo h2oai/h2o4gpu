@@ -79,7 +79,7 @@ lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
-namespace pogs {
+namespace h2oaiglm {
 
   volatile sig_atomic_t flag = 0;
   inline void my_function(int sig){ // can be called asynchronously
@@ -139,7 +139,7 @@ namespace pogs {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <pogs>/matlab/examples/lasso_path.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
     template<typename T>
     double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
@@ -182,10 +182,10 @@ namespace pogs {
 
       // for source, create class objects that creates cuda memory, cpu memory, etc.
       // This takes-in raw GPU pointer
-      //  pogs::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+      //  h2oaiglm::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
       // assume source thread is 0th thread (TODO: need to ensure?)
       int sourceme=sourceDev;
-      pogs::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
+      h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                     reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                     reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
       // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
@@ -203,7 +203,7 @@ namespace pogs {
       //      fprintf(stderr,"kurt %21.15g %21.15g\n",kurt[0],kurt[1]);
       //      exit(0);
       
-      // temporarily get trainX, etc. from pogs (which may be on gpu)
+      // temporarily get trainX, etc. from h2oaiglm (which may be on gpu)
       T *trainX=NULL;
       T *trainY=NULL;
       T *validX=NULL;
@@ -219,7 +219,7 @@ namespace pogs {
       Asource_.GetValidY(datatype, mValid, &validY);
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
-      // Setup each thread's pogs
+      // Setup each thread's h2oaiglm
       double t = timer<double>();
 #pragma omp parallel proc_bind(master)
       {
@@ -267,22 +267,22 @@ namespace pogs {
         DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
         // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier // not required barrier
-        pogs::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
-#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside pogs_data(wDev=sourceDev) below before other cores copy data
-        pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(wDev, A_);
+        h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
+        h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
 
-        pogs_data.SetnDev(1); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetRelTol(1e-4); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in pogs
-//    pogs_data.SetAdaptiveRho(true);
-        //pogs_data.SetEquil(false);
-//    pogs_data.SetRho(1);
-//	pogs_data.SetVerbose(5);
-//        pogs_data.SetMaxIter(100);
+        h2oaiglm_data.SetnDev(1); // set how many cuda devices to use internally in h2oaiglm
+//    h2oaiglm_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2oaiglm
+//    h2oaiglm_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2oaiglm
+//    h2oaiglm_data.SetAdaptiveRho(true);
+        //h2oaiglm_data.SetEquil(false);
+//    h2oaiglm_data.SetRho(1);
+//	h2oaiglm_data.SetVerbose(5);
+//        h2oaiglm_data.SetMaxIter(100);
 
         DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
         int a;
@@ -295,7 +295,7 @@ namespace pogs {
 #pragma omp for schedule(dynamic,1)
         for (a = 0; a < nAlphas; ++a) { //alpha search
           const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
-          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like pogs.R
+          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like h2oaiglm.R
           T lambda_max = lambda_max0; // std::max(static_cast<T>(1e-2), alpha); // same as H2O
           DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
           DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
@@ -308,10 +308,10 @@ namespace pogs {
           f.reserve(mTrain);
           g.reserve(n);
           // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-          T penalty_factor = static_cast<T>(1.0); // like pogs.R
+          T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
           //T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
 
-          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]); // pogs.R
+          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]); // h2oaiglm.R
           for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
           if (intercept) g.emplace_back(kZero);
 
@@ -351,7 +351,7 @@ namespace pogs {
 
 
             // Reset Solution if starting fresh for this alpha
-            if(i==0) pogs_data.ResetX(); // reset X if new alpha if expect much different solution
+            if(i==0) h2oaiglm_data.ResetX(); // reset X if new alpha if expect much different solution
 
             // Set tolerances more automatically (NOTE: that this competes with stopEarly() below in a good way so that it doesn't stop overly early just because errors are flat due to poor tolerance).
             // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
@@ -359,9 +359,9 @@ namespace pogs {
             double jumpuse=DBL_MAX;
             double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
             double tol=tol0;
-            pogs_data.SetRelTol(tol); // set how many cuda devices to use internally in pogs
-            pogs_data.SetAbsTol(0.5*tol); // set how many cuda devices to use internally in pogs
-            pogs_data.SetMaxIter(1000);
+            h2oaiglm_data.SetRelTol(tol); // set how many cuda devices to use internally in h2oaiglm
+            h2oaiglm_data.SetAbsTol(0.5*tol); // set how many cuda devices to use internally in h2oaiglm
+            h2oaiglm_data.SetMaxIter(1000);
             // see if getting below stddev, if so decrease tolerance
             if(scoring_history.size()>=1){
               double ratio = (norm-scoring_history.back())/norm;
@@ -372,9 +372,9 @@ namespace pogs {
                 tol = tol0*pow(2.0,-ratio/factor);
                 if(tol<tollow) tol=tollow;
            
-                pogs_data.SetRelTol(tol);
-                pogs_data.SetAbsTol(0.5*tol);
-                pogs_data.SetMaxIter(1000);
+                h2oaiglm_data.SetRelTol(tol);
+                h2oaiglm_data.SetAbsTol(0.5*tol);
+                h2oaiglm_data.SetMaxIter(1000);
                 jumpuse=jump;
               }
               //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
@@ -385,16 +385,16 @@ namespace pogs {
             if(gotpreviousX0 && i==0){
               //              DEBUG_FPRINTF(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
               //              for(unsigned int ll=0;ll<n;ll++) DEBUG_FPRINTF(stderr,"X0[%d]=%g\n",ll,X0[ll]);
-              pogs_data.SetInitX(X0);
-              pogs_data.SetInitLambda(L0);
+              h2oaiglm_data.SetInitX(X0);
+              h2oaiglm_data.SetInitLambda(L0);
             }
 
             // Solve
-            pogs_data.Solve(f, g);
+            h2oaiglm_data.Solve(f, g);
 
             // Check if getting solution was too easy and was 0 iterations.  If so, overhead is not worth it, so try skipping by 1.
             int doskiplambda=0;
-            if(pogs_data.GetFinalIter()==0){
+            if(h2oaiglm_data.GetFinalIter()==0){
               doskiplambda=1;
               skiplambdaamount++;
             }
@@ -406,27 +406,27 @@ namespace pogs {
 
             // Check goodness of solution
             int maxedout=0;
-            if(pogs_data.GetFinalIter()==pogs_data.GetMaxIter()) maxedout=1;
+            if(h2oaiglm_data.GetFinalIter()==h2oaiglm_data.GetMaxIter()) maxedout=1;
             else maxedout=0;
 
-            if(maxedout) pogs_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
+            if(maxedout) h2oaiglm_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
             // store good high-lambda solution to start next alpha with (better than starting with low-lambda solution)
             if(gotX0==0 && maxedout==0){
               gotX0=1;
               gotpreviousX0=1;
-              memcpy(X0,&pogs_data.GetX()[0],n*sizeof(T));
-              memcpy(L0,&pogs_data.GetLambda()[0],mTrain*sizeof(T));
+              memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
+              memcpy(L0,&h2oaiglm_data.GetLambda()[0],mTrain*sizeof(T));
             }
             
 
             if (intercept) {
-              DEBUG_FPRINTF(fil, "intercept: %g\n", pogs_data.GetX()[n - 1]);
-              DEBUG_FPRINTF(stdout, "intercept: %g\n", pogs_data.GetX()[n - 1]);
+              DEBUG_FPRINTF(fil, "intercept: %g\n", h2oaiglm_data.GetX()[n - 1]);
+              DEBUG_FPRINTF(stdout, "intercept: %g\n", h2oaiglm_data.GetX()[n - 1]);
             }
 
             size_t dof = 0;
             for (size_t i = 0; i < n - intercept; ++i) {
-              if (std::abs(pogs_data.GetX()[i]) > 1e-8) {
+              if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
                 dof++;
               }
             }
@@ -436,25 +436,25 @@ namespace pogs {
             for (size_t i = 0; i < mTrain; ++i) {
               trainPreds[i] = 0;
               for (size_t j = 0; j < n; ++j) {
-                trainPreds[i] += pogs_data.GetX()[j] * trainX[i * n + j]; //add predictions
+                trainPreds[i] += h2oaiglm_data.GetX()[j] * trainX[i * n + j]; //add predictions
               }
             }
 #else
-            std::vector <T> trainPreds(&pogs_data.GettrainPreds()[0], &pogs_data.GettrainPreds()[0]+mTrain);
+            std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
 #endif
-            double trainRMSE = pogs::getRMSE(mTrain, &trainPreds[0], trainY);
+            double trainRMSE = h2oaiglm::getRMSE(mTrain, &trainPreds[0], trainY);
             if(standardize){
               trainRMSE *= sdTrainY;
               for (size_t i = 0; i < mTrain; ++i) {
                 // reverse standardization
                 trainPreds[i]*=sdTrainY; //scale
                 trainPreds[i]+=meanTrainY; //intercept
-                //assert(trainPreds[i] == pogs_data.GetY()[i]); //FIXME: CHECK
+                //assert(trainPreds[i] == h2oaiglm_data.GetY()[i]); //FIXME: CHECK
               }
             }
 //        // DEBUG START
 //        for (size_t j=0; j<n; ++j) {
-//          cout << pogs_data.GetX()[j] << endl;
+//          cout << h2oaiglm_data.GetX()[j] << endl;
 //        }
 //        for (int i=0;i<mTrain;++i) {
 //          for (int j=0;j<n;++j) {
@@ -472,13 +472,13 @@ namespace pogs {
               for (size_t i = 0; i < mValid; ++i) { //row
                 validPreds[i] = 0;
                 for (size_t j = 0; j < n; ++j) { //col
-                  validPreds[i] += pogs_data.GetX()[j] * validX[i * n + j]; //add predictions
+                  validPreds[i] += h2oaiglm_data.GetX()[j] * validX[i * n + j]; //add predictions
                 }
               }
 #else
-              std::vector <T> validPreds(&pogs_data.GetvalidPreds()[0], &pogs_data.GetvalidPreds()[0]+mValid);
+              std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
 #endif
-              validRMSE = pogs::getRMSE(mValid, &validPreds[0], validY);
+              validRMSE = h2oaiglm::getRMSE(mValid, &validPreds[0], validY);
               if(standardize){
                 validRMSE *= sdTrainY;
                 for (size_t i = 0; i < mValid; ++i) { //row

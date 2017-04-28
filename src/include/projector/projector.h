@@ -1,7 +1,7 @@
 #ifndef PROJECTOR_PROJECTOR_H_ 
 #define PROJECTOR_PROJECTOR_H_ 
 
-namespace pogs {
+namespace h2oaiglm {
 
 // Minimizes ||Ax - y0||^2  + s ||x - x0||^2
 template <typename T, typename M>
@@ -22,7 +22,7 @@ class Projector {
   bool IsInit() { return _done_init; }
 };
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // PROJECTOR_PROJECTOR_H_ 
 

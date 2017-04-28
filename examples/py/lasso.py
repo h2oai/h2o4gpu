@@ -1,4 +1,4 @@
-import pogs as pogs
+import h2oaiglm as h2oaiglm
 from numpy import abs, float32, float64, max, sqrt
 from numpy.random import rand, randn
 
@@ -8,17 +8,17 @@ Lasso
 
   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 
-See <pogs>/matlab/examples/lasso.m for detailed description.
+See <h2oaiglm>/matlab/examples/lasso.m for detailed description.
 template <typename T>
 '''
 
 def Lasso(m,n, gpu=True, double_precision=False):
   # set solver cpu/gpu according to input args
-  if gpu and pogs.SolverGPU is None:
+  if gpu and h2oaiglm.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
+  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
 
   # random matrix A
   A=randn(m,n)
@@ -37,14 +37,14 @@ def Lasso(m,n, gpu=True, double_precision=False):
 
 
   # f(Ax) = ||Ax - b||_2^2
-  f = pogs.FunctionVector(m,double_precision=double_precision)
+  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
-  f.h[:]=pogs.FUNCTION["SQUARE"]
+  f.h[:]=h2oaiglm.FUNCTION["SQUARE"]
 
   # g(x) = 0.2*lambda_max*||x||_1
-  g = pogs.FunctionVector(n,double_precision=double_precision)
+  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
   g.a[:] = 0.2*lambda_max 
-  g.h[:] = pogs.FUNCTION["ABS"]
+  g.h[:] = h2oaiglm.FUNCTION["ABS"]
 
   # use problem data A to create solver 
   s = Solver(A) 

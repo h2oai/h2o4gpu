@@ -2,13 +2,13 @@
 #include "reader.h"
 #include <random>
 #include "matrix/matrix_dense.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 // Lasso
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
-// See <pogs>/matlab/examples/lasso.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso.m for detailed description.
 template <typename T>
 double Lasso(const std::vector<T>& A, const std::vector<T>& b) {
   size_t m=b.size();
@@ -30,12 +30,12 @@ double Lasso(const std::vector<T>& A, const std::vector<T>& b) {
   }
 
   ////////////////////
-  // setup pogs
+  // setup h2oaiglm
   ////////////////////
   fprintf(stderr,"MatrixDense\n"); fflush(stderr);
-  pogs::MatrixDense<T> A_('r', m, n, A.data());
+  h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
   fprintf(stderr,"PogsDirect\n"); fflush(stderr);
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<FunctionObj<T> > f;
   fprintf(stderr,"g\n"); fflush(stderr);
@@ -53,32 +53,32 @@ double Lasso(const std::vector<T>& A, const std::vector<T>& b) {
 
 
   ////////////////////
-  // Solve with pogs
+  // Solve with h2oaiglm
   ////////////////////
   fprintf(stdout,"BEGIN SOLVE\n");
   if(0==1){ // debug
-    //    pogs_data.SetAdaptiveRho(false); // trying
-    //    pogs_data.SetRho(1.0);
-    //  pogs_data.SetMaxIter(5u);
-    //    pogs_data.SetMaxIter(1u);
-    //    pogs_data.SetVerbose(4);
+    //    h2oaiglm_data.SetAdaptiveRho(false); // trying
+    //    h2oaiglm_data.SetRho(1.0);
+    //  h2oaiglm_data.SetMaxIter(5u);
+    //    h2oaiglm_data.SetMaxIter(1u);
+    //    h2oaiglm_data.SetVerbose(4);
   }
   else if(1==1){ // debug
-    //    pogs_data.SetAdaptiveRho(false); // trying
-    //    pogs_data.SetEquil(false); // trying
-    //    pogs_data.SetRho(1E-4);
+    //    h2oaiglm_data.SetAdaptiveRho(false); // trying
+    //    h2oaiglm_data.SetEquil(false); // trying
+    //    h2oaiglm_data.SetRho(1E-4);
     //    fprintf(stderr,"sets\n"); fflush(stderr);
-    //    pogs_data.SetVerbose(4);
-    //    pogs_data.SetMaxIter(5u);
+    //    h2oaiglm_data.SetVerbose(4);
+    //    h2oaiglm_data.SetMaxIter(5u);
   }
   else if(1==0){
-    //    pogs_data.SetVerbose(4);
+    //    h2oaiglm_data.SetVerbose(4);
   }
 #ifdef __CUDACC__
   //  cudaProfilerStart();
 #endif
   fprintf(stderr,"Solve\n"); fflush(stderr);
-  pogs_data.Solve(f, g);
+  h2oaiglm_data.Solve(f, g);
 #ifdef __CUDACC__
   //  cudaProfilerStop();
 #endif

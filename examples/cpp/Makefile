@@ -1,5 +1,5 @@
 # User Vars
-POGSROOT=../../src
+H2OAIGLMROOT=../../src
 
 .NOTPARALLEL:
 
@@ -9,36 +9,36 @@ default: gpuall
 
 # CPU
 cpuall: Makefile.cpu
-	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu cpu cpualt cpuptr
 
 cpu: Makefile.cpu
-	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu cpu
 
 cpualt: Makefile.cpu
-	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu cpualt
 
 cpuptr: Makefile.cpu
-	$(MAKE)  cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu cpuptr
 
 # GPU
 gpuall: Makefile.gpu
-	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu gpu gpualt gpuptr
 
 gpu: Makefile.gpu
-	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu gpu
 
 gpualt: Makefile.gpu
-	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu gpualt
 
 gpuptr: Makefile.gpu
-	$(MAKE)  gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
+	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu gpuptr
 
 run: gpuptr

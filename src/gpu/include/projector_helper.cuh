@@ -6,7 +6,7 @@
 #include "matrix/matrix.h" 
 #include "util.h" 
 
-namespace pogs {
+namespace h2oaiglm {
 namespace {
 
 // Check that (x, y) satisfies two conditions
@@ -57,7 +57,7 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
 }
 
 }  // namespace
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // PROJECTOR_HELPER_CUH_
 

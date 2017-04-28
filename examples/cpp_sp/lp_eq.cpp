@@ -3,7 +3,7 @@
 
 #include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 // Linear program in equality form.
@@ -11,7 +11,7 @@
 //   subject to  Ax = b
 //               x >= 0.
 //
-// See <pogs>/matlab/examples/lp_eq.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lp_eq.m for detailed description.
 template <typename T>
 double LpEq(int m, int n, int nnz) {
   std::vector<T> val(nnz);
@@ -36,9 +36,9 @@ double LpEq(int m, int n, int nnz) {
   nnz = MatGenApprox(m + 1, n, nnz, val.data(), row_ptr.data(), col_ind.data(),
     static_cast<T>(0), static_cast<T>(4.0 / n), entries);
   
-  pogs::MatrixSparse<T> A_('r', m + 1, n, nnz, val.data(), row_ptr.data(),
+  h2oaiglm::MatrixSparse<T> A_('r', m + 1, n, nnz, val.data(), row_ptr.data(),
        col_ind.data());
-  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T>> h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -63,7 +63,7 @@ double LpEq(int m, int n, int nnz) {
     g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  pogs_data.Solve(f, g);
+  h2oaiglm_data.Solve(f, g);
 
   return timer<double>() - t;
 }

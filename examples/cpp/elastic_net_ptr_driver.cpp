@@ -115,7 +115,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
-#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then pogs runs normally at high GPU usage.  So these leave the device in a bad state.
+#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2oaiglm runs normally at high GPU usage.  So these leave the device in a bad state.
 #define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
 #define DOBWCHECK 0
 
@@ -152,11 +152,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   void* dd;
   int sourceme=0; // index of first thread to own data
   int sourceDev=0; //index of first GPU to own data
-  pogs::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
+  h2oaiglm::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
 
 
   int datatype = 1;
-  return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
+  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
 }
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, int, int, int, int, int, int, int, double);

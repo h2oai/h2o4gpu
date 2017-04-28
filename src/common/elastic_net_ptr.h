@@ -10,11 +10,11 @@
 #include <random>
 
 #include "matrix/matrix_dense.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 #include <omp.h>
 
-namespace pogs {
+namespace h2oaiglm {
 
 
 template<typename T>
@@ -33,7 +33,7 @@ T getRMSE(size_t len, const T *v1, const T *v2) {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <pogs>/matlab/examples/lasso_path.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
     template<typename T>
       double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
@@ -50,7 +50,7 @@ T getRMSE(size_t len, const T *v1, const T *v2) {
       int sharedAlocal=-abs(sharedA); // passes pointer in and out (sharedA=0 would copy data to new memory), but doesn't do any Equilibration
       //      int sharedAlocal=0;
       //int sharedAlocal=1;
-      pogs::MatrixDense<T> Asource_(sharedAlocal, sourceme, sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
+      h2oaiglm::MatrixDense<T> Asource_(sharedAlocal, sourceme, sourceDev, 'r', mTrain, n, mValid, trainX, trainY, validX, validY);
       *a = reinterpret_cast<void *>(Asource_._data);
       *b = reinterpret_cast<void *>(Asource_._datay);
       *c = reinterpret_cast<void *>(Asource_._vdata);

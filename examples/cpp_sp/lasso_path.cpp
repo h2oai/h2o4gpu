@@ -4,7 +4,7 @@
 
 #include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 template <typename T>
@@ -29,7 +29,7 @@ T Asum(std::vector<T> *v) {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
 // for 50 values of \lambda.
-// See <pogs>/matlab/examples/lasso_path.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(int m, int n, int nnz) {
   unsigned int nlambda = 100;
@@ -63,9 +63,9 @@ double LassoPath(int m, int n, int nnz) {
   for (unsigned int i = 0; i < n; ++i)
     lambda_max = std::max(lambda_max, std::abs(u[i]));
 
-  pogs::MatrixSparse<T> A_('r', m, n, nnz, val.data(), row_ptr.data(),
+  h2oaiglm::MatrixSparse<T> A_('r', m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
-  pogs::PogsIndirect<T, pogs::MatrixSparse<T>> pogs_data(A_);
+  h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T>> h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -85,10 +85,10 @@ double LassoPath(int m, int n, int nnz) {
     for (unsigned int i = 0; i < n; ++i)
       g[i].c = lambda;
 
-    pogs_data.Solve(f, g);
+    h2oaiglm_data.Solve(f, g);
 
     for (int j = 0; j < n; ++j)
-      x[j] = pogs_data.GetX()[j];
+      x[j] = h2oaiglm_data.GetX()[j];
     
     if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
       break;

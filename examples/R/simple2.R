@@ -1,4 +1,4 @@
-library(pogs)
+library(h2oaiglm)
 alpha <- 0.5
 
 if (TRUE) {
@@ -24,14 +24,14 @@ if (TRUE) {
 print(x)
 print(y)
 
-#model = pogsnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
-#model = pogsnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-7, intercept=TRUE, params=list(max_iter=2500))
+#model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
+#model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-7, intercept=TRUE, params=list(max_iter=2500))
 
 intercept=TRUE
 
-model = pogsnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, intercept=intercept, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
+model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, intercept=intercept, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
 print(model)
-print(paste0("RMSEPOGS for s:",sqrt(mean((predict(model, s=model$lambda[-1], newx=x)-y)^2))))
+print(paste0("RMSEH2OAIGLM for s:",sqrt(mean((predict(model, s=model$lambda[-1], newx=x)-y)^2))))
 
 library(glmnet)
 model = glmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, standardize=FALSE, intercept=intercept)

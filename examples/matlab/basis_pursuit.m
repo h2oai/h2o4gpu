@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = basis_pursuit(m, n, params, comp_cvx, density)
+function [h2oaiglm_time, cvx_time] = basis_pursuit(m, n, params, comp_cvx, density)
 %BASIS_PURSUIT
 
 if nargin <= 2
@@ -27,18 +27,18 @@ f.h = kIndEq0;
 f.b = b;
 g.h = kAbs;
 
-% Solve with pogs
+% Solve with h2oaiglm
 if ~issparse(A)
   As = single(A);
 else
   As = A;
 end
 tic
-[~, ~, ~, ~, ~, status] = pogs(full(As), f, g, params);
-pogs_time = toc;
+[~, ~, ~, ~, ~, status] = h2oaiglm(full(As), f, g, params);
+h2oaiglm_time = toc;
 
 if status > 0
-  pogs_time = nan;
+  h2oaiglm_time = nan;
 end
 
 % Solve with CVX

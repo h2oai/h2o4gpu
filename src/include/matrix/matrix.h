@@ -3,7 +3,7 @@
 
 #include <memory>
 
-namespace pogs {
+namespace h2oaiglm {
 
 template <typename T>
 class Matrix {
@@ -36,7 +36,7 @@ class Matrix {
   bool IsInit() const { return _done_init; }
 };
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // MATRIX_MATRIX_H_
 

@@ -1,6 +1,6 @@
 function results = lasso(m, n, rho, quiet)
-%%LASSO Test POGS on Lasso.
-%   Compares POGS to CVX when solving the problem
+%%LASSO Test H2OAIGLM on Lasso.
+%   Compares H2OAIGLM to CVX when solving the problem
 %
 %     minimize    (1/2) * ||Ax - b||_2^2 + \lambda * ||x||_1
 %
@@ -37,14 +37,14 @@ function results = lasso(m, n, rho, quiet)
 %   results   - Structure containg test results. Fields are:
 %                 + rel_err_obj: Relative error of the objective, as
 %                   compared to the solution obtained from CVX, defined as
-%                   (pogs_optval - cvx_optval) / abs(cvx_optval).
+%                   (h2oaiglm_optval - cvx_optval) / abs(cvx_optval).
 %                 + rel_err_soln: Relative difference in solution between
-%                   CVX and POGS, defined as 
-%                   norm(x_pogs - x_cvx) / norm(x_cvx).
+%                   CVX and H2OAIGLM, defined as 
+%                   norm(x_h2oaiglm - x_cvx) / norm(x_cvx).
 %                 + max_violation: Maximum constraint violation (nan if 
 %                   problem has no constraints).
 %                 + avg_violation: Average constraint violation.
-%                 + time_pogs: Time required by POGS to solve problem.
+%                 + time_h2oaiglm: Time required by H2OAIGLM to solve problem.
 %                 + time_cvx: Time required by CVX to solve problem.
 %
 
@@ -72,7 +72,7 @@ prox_g = @(x, rho) max(x - lambda ./ rho, 0) - max(-x - lambda ./ rho, 0);
 prox_f = @(x, rho) (rho .* x + b) ./ (1 + rho);
 obj_fn = @(x, y) 1 / 2 * norm(y - b) ^ 2 + lambda * norm(x, 1);
 
-% Initialize POGS input.
+% Initialize H2OAIGLM input.
 params.rho = rho;
 params.quiet = quiet;
 params.MAXITR = 1000;
@@ -80,10 +80,10 @@ params.RELTOL = 1e-3;
 params.ABSTOL = 1e-4;
 params.indirect = true;
 
-% Solve using POGS.
+% Solve using H2OAIGLM.
 tic
-[x_pogs, y, ~, n_iter] = pogs(prox_f, prox_g, obj_fn, (A), params);
-time_pogs = toc;
+[x_h2oaiglm, y, ~, n_iter] = h2oaiglm(prox_f, prox_g, obj_fn, (A), params);
+time_h2oaiglm = toc;
 
 % Solve using CVX.
 tic
@@ -97,11 +97,11 @@ time_cvx = toc;
 
 % Compute error metrics.
 results.rel_err_obj = ...
-    (obj_fn(x_pogs, A * x_pogs) - cvx_optval) / abs(cvx_optval);
-results.rel_diff_soln = norm(x_pogs - x_cvx) / norm(x_cvx);
+    (obj_fn(x_h2oaiglm, A * x_h2oaiglm) - cvx_optval) / abs(cvx_optval);
+results.rel_diff_soln = norm(x_h2oaiglm - x_cvx) / norm(x_cvx);
 results.max_violation = nan;
 results.avg_violation = nan;
-results.time_pogs = time_pogs;
+results.time_h2oaiglm = time_h2oaiglm;
 results.time_cvx = time_cvx;
 results.n_iter = n_iter;
 
@@ -111,7 +111,7 @@ if ~quiet
   fprintf('Relative Difference in Solution: %e\n', results.rel_diff_soln)
   fprintf('Maximum Constraint Violation: %e\n', results.max_violation)
   fprintf('Average Constraint Violation: %e\n', results.avg_violation)
-  fprintf('Time POGS: %e\n', results.time_pogs)
+  fprintf('Time H2OAIGLM: %e\n', results.time_h2oaiglm)
   fprintf('Time CVX: %e\n', results.time_cvx)
 end
 

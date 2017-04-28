@@ -8,33 +8,33 @@ from subprocess import call
 from multiprocessing import cpu_count
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
-POGSPATH = os.path.join(BASEPATH, '../interface_c/')
+H2OAIGLMPATH = os.path.join(BASEPATH, '../interface_c/')
 
 class PogsBuild(build):
   def run(self):
     NVCC = os.popen("which nvcc").read()!=""
-    CPULIB='cpogs_cpu'
-    GPULIB='cpogs_gpu'
+    CPULIB='ch2oaiglm_cpu'
+    GPULIB='ch2oaiglm_gpu'
     EXT=".dylib" if os.uname()[0] == "Darwin" else ".so"
 
     # run original build code
     build.run(self)
 
-    # build POGS
+    # build H2OAIGLM
     cmd = [ 'make' ]
 
     targets= [ CPULIB, GPULIB ] if NVCC else [ CPULIB ]
     cmd.extend(targets)
 
-    CPU_LIBPATH = os.path.join(POGSPATH, CPULIB + EXT)
-    GPU_LIBPATH = os.path.join(POGSPATH, GPULIB + EXT)
+    CPU_LIBPATH = os.path.join(H2OAIGLMPATH, CPULIB + EXT)
+    GPU_LIBPATH = os.path.join(H2OAIGLMPATH, GPULIB + EXT)
 
     target_files = [ CPU_LIBPATH, GPU_LIBPATH ] if NVCC else [ CPU_LIBPATH ]
-    message = 'Compiling POGS---CPU and GPU' if NVCC else 'Compiling POGS---CPU only'
+    message = 'Compiling H2OAIGLM---CPU and GPU' if NVCC else 'Compiling H2OAIGLM---CPU only'
  
     def compile():
-      # compile CPU version of POGS
-      call(cmd, cwd=POGSPATH)
+      # compile CPU version of H2OAIGLM
+      call(cmd, cwd=H2OAIGLMPATH)
 
     self.execute(compile, [], message)
 
@@ -57,19 +57,19 @@ class PogsInstall(install):
         # run original install code
         install.run(self)
 
-        # install POGS executables
+        # install H2OAIGLM executables
         self.copy_tree(self.build_lib, self.install_lib)
 
 setup(
-    name='pogs',
+    name='h2oaiglm',
     version='0.0.1',
     author='H2O.ai, Chris Fougner, Baris Ungun, Stephen Boyd',
     author_email='fougner@stanford.edu, ungun@stanford.edu, boyd@stanford.edu',
     url='http://github.com/h2oai',
-    package_dir={'interface_py': 'pogs'},
-    packages=['pogs',
-              'pogs.libs',
-              'pogs.solvers'],
+    package_dir={'interface_py': 'h2oaiglm'},
+    packages=['h2oaiglm',
+              'h2oaiglm.libs',
+              'h2oaiglm.solvers'],
     license='GPLv3',
     zip_safe=False,
     description='Proximal Operator Graph Solver---Python Interface',

@@ -1,5 +1,5 @@
 function svmstruct = svmtrain_p(X, y, C, lambda, params)
-%SVMTRAIN_P Use POGS to solve penalized linear svm primal problem
+%SVMTRAIN_P Use H2OAIGLM to solve penalized linear svm primal problem
 %   Solves the probem
 %
 %     minimize    (1/2)||w||_2 + C \sum (1 - y_i [x_i^T 1] [w; b])_+ + lambda ||w||_1
@@ -20,7 +20,7 @@ function svmstruct = svmtrain_p(X, y, C, lambda, params)
 %   lambda    - Sparsity regularizer. Can be vector to solve for multiple
 %               values of lambda.
 % 
-%   params    - Parameters to POGS.
+%   params    - Parameters to H2OAIGLM.
 %
 %   Outputs:
 %   svmstruct - Use as input to SVMCLASSIFY_P.
@@ -65,7 +65,7 @@ A = [X ones(m, 1)];
 f = repmat(struct('a', -y, 'b', -1, 'c', C, 'h', kMaxPos0), length(lambda), 1);
 g = struct('c', num2cell(lambda), 'e', [ones(n, 1); 0], 'h', [kAbs(n); kZero]);
 
-x = pogs(A, f, g, params);
+x = h2oaiglm(A, f, g, params);
 svmstruct.w = x(1:n, :);
 svmstruct.b = x(n + 1, :);
 

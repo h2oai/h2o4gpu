@@ -18,7 +18,7 @@ $(warning USEICC is $(USEICC))
 $(warning ICCFILE is $(ICCFILE))
 $(warning USEMKL is $(USEMKL))
 
-POGSROOT=../
+H2OAIGLMROOT=../
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
@@ -74,28 +74,28 @@ SHARED=so
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 
-# POGS static libraries
-POGSLIB=\
-	$(POGSROOT)/build/cpu/pogs.o \
-	$(POGSROOT)/build/cpu/matrix/matrix_dense.o \
-	$(POGSROOT)/build/cpu/matrix/matrix_sparse.o \
-	$(POGSROOT)/build/cpu/projector/projector_direct_dense.o \
-	$(POGSROOT)/build/cpu/projector/projector_cgls.o \
-	$(POGSROOT)/build/cpu/elastic_net_ptr.o
+# H2OAIGLM static libraries
+H2OAIGLMLIB=\
+	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.o \
+	$(H2OAIGLMROOT)/build/cpu/matrix/matrix_dense.o \
+	$(H2OAIGLMROOT)/build/cpu/matrix/matrix_sparse.o \
+	$(H2OAIGLMROOT)/build/cpu/projector/projector_direct_dense.o \
+	$(H2OAIGLMROOT)/build/cpu/projector/projector_cgls.o \
+	$(H2OAIGLMROOT)/build/cpu/elastic_net_ptr.o
 
-CUPOGSLIB=\
-        $(POGSROOT)/build/gpu/pogs_link.o \
-	$(POGSROOT)/build/gpu/pogs.o \
-	$(POGSROOT)/build/gpu/warmstart.o \
-	$(POGSROOT)/build/gpu/p2pbwcheck.o \
-	$(POGSROOT)/build/gpu/bwcheck.o \
-	$(POGSROOT)/build/gpu/matrix/matrix_dense.o \
-	$(POGSROOT)/build/gpu/matrix/matrix_sparse.o \
-	$(POGSROOT)/build/gpu/projector/projector_direct_dense.o \
-	$(POGSROOT)/build/gpu/projector/projector_cgls.o \
-	$(POGSROOT)/build/gpu/elastic_net_ptr.o
+CUH2OAIGLMLIB=\
+        $(H2OAIGLMROOT)/build/gpu/h2oaiglm_link.o \
+	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.o \
+	$(H2OAIGLMROOT)/build/gpu/warmstart.o \
+	$(H2OAIGLMROOT)/build/gpu/p2pbwcheck.o \
+	$(H2OAIGLMROOT)/build/gpu/bwcheck.o \
+	$(H2OAIGLMROOT)/build/gpu/matrix/matrix_dense.o \
+	$(H2OAIGLMROOT)/build/gpu/matrix/matrix_sparse.o \
+	$(H2OAIGLMROOT)/build/gpu/projector/projector_direct_dense.o \
+	$(H2OAIGLMROOT)/build/gpu/projector/projector_cgls.o \
+	$(H2OAIGLMROOT)/build/gpu/elastic_net_ptr.o
 
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so	
@@ -103,17 +103,17 @@ PYCUDART=$(CUDAHOME)/libcudart.so
 
 .PHONY: default all
 default: all
-all: cpogs_cpu cpogs_gpu
+all: ch2oaiglm_cpu ch2oaiglm_gpu
 
-cpogs_cpu: pogs_c.o
-	$(MAKE) cpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(POGSLIB) $(LDFLAGS)
+ch2oaiglm_cpu: h2oaiglm_c.o
+	$(MAKE) cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2OAIGLMLIB) $(LDFLAGS)
 
-cpogs_gpu: pogs_c.o
-	$(MAKE) gpu -C $(POGSROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUPOGSLIB) $(PYCUDART) $(CULDFLAGS)
+ch2oaiglm_gpu: h2oaiglm_c.o
+	$(MAKE) gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2OAIGLMLIB) $(PYCUDART) $(CULDFLAGS)
 
-pogs_c.o: pogs_c.cpp pogs_c.h
+h2oaiglm_c.o: h2oaiglm_c.cpp h2oaiglm_c.h
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
 .PHONY: clean

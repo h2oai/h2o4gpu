@@ -3,10 +3,10 @@
 #include <limits>
 #include <random>
 #include "matrix/matrix_dense.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
-using namespace pogs;
+using namespace h2oaiglm;
 
 template <typename T>
 T MaxDiff(std::vector<T> *v1, std::vector<T> *v2) {
@@ -34,7 +34,7 @@ T Asum(std::vector<T> *v) {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda ||x||_1
 //
 // for 100 values of \lambda.
-// See <pogs>/matlab/examples/lasso_path.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double LassoPath(const std::vector<T> &A, const std::vector<T> &b) {
   unsigned int nlambda = 100;
@@ -51,9 +51,9 @@ double LassoPath(const std::vector<T> &A, const std::vector<T> &b) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  // Set up pogs datastructure.
-  pogs::MatrixDense<T> A_('r', m, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  // Set up h2oaiglm datastructure.
+  h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
+  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
   f.reserve(m);
@@ -80,11 +80,11 @@ double LassoPath(const std::vector<T> &A, const std::vector<T> &b) {
     for (unsigned int i = 0; i < n; ++i)
       g[i].c = lambda;
 
-    pogs_data.Solve(f, g);
+    h2oaiglm_data.Solve(f, g);
 
     //    std::vector<T> x(n);
     //    for (unsigned int i = 0; i < n; ++i)
-    //      x[i] = pogs_data.GetX()[i];
+    //      x[i] = h2oaiglm_data.GetX()[i];
 
     ///    if (MaxDiff(&x, &x_last) < 1e-3 * Asum(&x))
     //      break;

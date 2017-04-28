@@ -1,9 +1,9 @@
-## MATLAB interface to POGS
+## MATLAB interface to H2OAIGLM
 
 The MATLAB interface is a single MEX-function, with the signature 
 
 ```
-[x, y, l, optval] = pogs(A, f, g, params)
+[x, y, l, optval] = h2oaiglm(A, f, g, params)
 ```
 
 where `A` is a matrix, `f`, `g`, and  `params` are structs, `x` and `y` are vectors, and `optval` is a scalar.  The structs `f` and `g` have fields `h`, `a`, `b`, `c`, `d` and `e`, each of which must either be a vector of dimension `size(A, 1)` (resp. `size(A, 2)`) or a scalar. If a scalar is specified, then it is assumed that the scalar should be repeated `size(A,1)` (resp. `size(A,2)`) times. All fields except `h` are optional. The `params` struct has fields `rel_tol, abs_tol, rho, max_iter` and `quiet`. Specifying `params` is optional.
@@ -23,7 +23,7 @@ f.h = kSquare;
 f.b = b;
 g.h = kAbs;
 g.c = lambda;
-[x, y, optval] = pogs(A, f, g);
+[x, y, optval] = h2oaiglm(A, f, g);
 ```
 Both `kSquare` and `kAbs` correspond to one of 16 numeric values:
 
@@ -39,7 +39,7 @@ Compiling
 To compile wrapper type
 
 ```
-pogs_setup
+h2oaiglm_setup
 ```
 
 in the MATLAB console.  

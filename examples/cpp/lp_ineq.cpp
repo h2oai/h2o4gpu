@@ -2,14 +2,14 @@
 #include <vector>
 
 #include "matrix/matrix_dense.h"
-#include "pogs.h"
+#include "h2oaiglm.h"
 #include "timer.h"
 
 // Linear program in inequality form.
 //   minimize    c^T * x
 //   subject to  Ax <= b.
 //
-// See <pogs>/matlab/examples/lp_ineq.m for detailed description.
+// See <h2oaiglm>/matlab/examples/lp_ineq.m for detailed description.
 template <typename T>
 double LpIneq(size_t m, size_t n) {
   std::vector<T> A(m * n);
@@ -24,8 +24,8 @@ double LpIneq(size_t m, size_t n) {
   for (unsigned int i = static_cast<unsigned int>((m - n) * n); i < m * n; ++i)
     A[i] = (i - (m - n) * n) % (n + 1) == 0 ? -1 : 0;
 
-  pogs::MatrixDense<T> A_('r', m, n, A.data());
-  pogs::PogsDirect<T, pogs::MatrixDense<T> > pogs_data(A_);
+  h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
+  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -47,7 +47,7 @@ double LpIneq(size_t m, size_t n) {
     g.emplace_back(kIdentity, u_dist(generator) / n);
  
   double t = timer<double>();
-  pogs_data.Solve(f, g);
+  h2oaiglm_data.Solve(f, g);
 
   return timer<double>() - t;
 }

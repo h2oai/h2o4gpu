@@ -21,7 +21,7 @@
 
 extern int checkwDev(int wDev);
 
-namespace pogs {
+namespace h2oaiglm {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
@@ -1070,13 +1070,13 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 }  // namespace
 
 // Explicit template instantiation.
-#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
+#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
 template class MatrixDense<double>;
 #endif
 
-#if !defined(POGS_SINGLE) || POGS_SINGLE==1
+#if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
 template class MatrixDense<float>;
 #endif
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 

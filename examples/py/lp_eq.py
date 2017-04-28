@@ -1,4 +1,4 @@
-import pogs as pogs
+import h2oaiglm as h2oaiglm
 from numpy import float32, vstack 
 from numpy.random import rand, randn
 
@@ -8,16 +8,16 @@ Linear program in equality form.
   subject to  Ax = b
                x >= 0.
 
-See <pogs>/matlab/examples/lp_eq.m for detailed description.
+See <h2oaiglm>/matlab/examples/lp_eq.m for detailed description.
 '''
 
 def LpEq(m,n, gpu=False, double_precision=False):
   # set solver cpu/gpu according to input args
-  if gpu and pogs.SolverGPU is None:
+  if gpu and h2oaiglm.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
+  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
 
 
   # Generate A and c according to:
@@ -41,14 +41,14 @@ def LpEq(m,n, gpu=False, double_precision=False):
 
 
   # f(Ax) = Ind ( (Ax-b) == 0 ) + c^Tx
-  f = pogs.FunctionVector(m+1,double_precision=double_precision)
+  f = h2oaiglm.FunctionVector(m+1,double_precision=double_precision)
   f.b[:-1]=b[:]
-  f.h[:-1]=pogs.FUNCTION["INDEQ0"]
-  f.h[-1]=pogs.FUNCTION["IDENTITY"].value
+  f.h[:-1]=h2oaiglm.FUNCTION["INDEQ0"]
+  f.h[-1]=h2oaiglm.FUNCTION["IDENTITY"].value
 
   # g(x) = Ind( x >= 0 )
-  g = pogs.FunctionVector(n,double_precision=double_precision)
-  g.h[:] = pogs.FUNCTION["INDGE0"]
+  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
+  g.h[:] = h2oaiglm.FUNCTION["INDGE0"]
 
   # intialize solver 
   s = Solver(A) 

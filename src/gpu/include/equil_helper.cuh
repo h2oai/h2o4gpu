@@ -10,9 +10,9 @@
 #include "util.h"
 #include "timer.h"
 
-#include "pogs.h"
+#include "h2oaiglm.h"
 
-namespace pogs {
+namespace h2oaiglm {
 namespace {
 
 // Different norm types.
@@ -198,7 +198,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 }
 
 }  // namespace
-}  // namespace pogs
+}  // namespace h2oaiglm
 
 #endif  // EQUIL_HELPER_CUH_
 

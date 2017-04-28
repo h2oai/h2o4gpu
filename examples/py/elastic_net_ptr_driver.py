@@ -1,11 +1,11 @@
 import sys
-#sys.path.insert(0, "/home/arno/pogs/src/interface_py/")
-import pogs as pogs
+#sys.path.insert(0, "/home/arno/h2oaiglm/src/interface_py/")
+import h2oaiglm as h2oaiglm
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
 
 from ctypes import *
-from pogs.types import *
+from h2oaiglm.types import *
 
 
 '''
@@ -14,17 +14,17 @@ Elastic Net
    minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
 
    for 100 values of \lambda, and alpha in [0,1]
-   See <pogs>/matlab/examples/lasso_path.m for detailed description.
+   See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   # set solver cpu/gpu according to input args
-  if((nGPUs>0) and (pogs.ElasticNetSolverGPU is None)):
+  if((nGPUs>0) and (h2oaiglm.ElasticNetSolverGPU is None)):
     print("\nGPU solver unavailable, using CPU solver\n")
     nGPUs=0
 
-  Solver = pogs.ElasticNetSolverGPU if(nGPUs>0) else pogs.ElasticNetSolverCPU
-#  Solver = pogs.ElasticNetSolverCPU
+  Solver = h2oaiglm.ElasticNetSolverGPU if(nGPUs>0) else h2oaiglm.ElasticNetSolverCPU
+#  Solver = h2oaiglm.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
   sharedA = 0
@@ -126,5 +126,5 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=4, nlambda=100, nalpha=16, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=2, nlambda=100, nalpha=16, validFraction=0.2)
 #  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)

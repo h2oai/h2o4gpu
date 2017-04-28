@@ -6,7 +6,7 @@
 #include "matrix/matrix_sparse.h"
 #include "util.h"
 
-namespace pogs {
+namespace h2oaiglm {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
@@ -20,8 +20,8 @@ const NormTypes kNormNormalize   = kNormFro;
 template <typename T>
 struct CpuData {
   const T *orig_data;
-  const POGS_INT *orig_ptr, *orig_ind;
-  CpuData(const T *data, const POGS_INT *ptr, const POGS_INT *ind)
+  const H2OAIGLM_INT *orig_ptr, *orig_ind;
+  CpuData(const T *data, const H2OAIGLM_INT *ptr, const H2OAIGLM_INT *ind)
       : orig_data(data), orig_ptr(ptr), orig_ind(ind) { }
 };
 
@@ -31,9 +31,9 @@ CBLAS_TRANSPOSE_t OpToCblasOp(char trans) {
 }
 
 template <typename T>
-void MultDiag(const T *d, const T *e, POGS_INT m, POGS_INT n, POGS_INT nnz,
-              typename MatrixSparse<T>::Ord ord, T *data, const POGS_INT *ind,
-              const POGS_INT *ptr);
+void MultDiag(const T *d, const T *e, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+              typename MatrixSparse<T>::Ord ord, T *data, const H2OAIGLM_INT *ind,
+              const H2OAIGLM_INT *ptr);
 
 template <typename T>
 T NormEst(NormTypes norm_type, const MatrixSparse<T>& A);
@@ -44,9 +44,9 @@ T NormEst(NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int wDev, char ord, POGS_INT m, POGS_INT n, POGS_INT nnz,
-                              const T *data, const POGS_INT *ptr,
-                              const POGS_INT *ind)
+MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+                              const T *data, const H2OAIGLM_INT *ptr,
+                              const H2OAIGLM_INT *ind)
   : Matrix<T>(m, n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -107,22 +107,22 @@ int MatrixSparse<T>::Init() {
 
   CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
   const T *orig_data = info->orig_data;
-  const POGS_INT *orig_ptr = info->orig_ptr;
-  const POGS_INT *orig_ind = info->orig_ind;
+  const H2OAIGLM_INT *orig_ptr = info->orig_ptr;
+  const H2OAIGLM_INT *orig_ind = info->orig_ind;
 
   // Allocate sparse matrix on gpu.
   _data = new T[static_cast<size_t>(2) * _nnz]; ASSERT(_data != 0);
   _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not sparse
   //  Equil(1); // JONTODO: Hack -- for future if make like dense otherwise
-  _ind = new POGS_INT[static_cast<size_t>(2) * _nnz]; ASSERT(_ind != 0);
-  _ptr = new POGS_INT[this->_m + this->_n + 2]; ASSERT(_ptr != 0);
+  _ind = new H2OAIGLM_INT[static_cast<size_t>(2) * _nnz]; ASSERT(_ind != 0);
+  _ptr = new H2OAIGLM_INT[this->_m + this->_n + 2]; ASSERT(_ptr != 0);
 
   if (_ord == ROW) {
-    gsl::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
+    gsl::spmat<T, H2OAIGLM_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     gsl::spmat_memcpy(&A, orig_data, orig_ind, orig_ptr);
   } else {
-    gsl::spmat<T, POGS_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
+    gsl::spmat<T, H2OAIGLM_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     gsl::spmat_memcpy(&A, orig_data, orig_ind, orig_ptr);
   }
@@ -146,11 +146,11 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   }
 
   if (_ord == ROW) {
-    gsl::spmat<T, POGS_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
+    gsl::spmat<T, H2OAIGLM_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   } else {
-    gsl::spmat<T, POGS_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
+    gsl::spmat<T, H2OAIGLM_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   }
@@ -174,11 +174,11 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
   }
 
   if (_ord == ROW) {
-    gsl::spmat<T, POGS_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+    gsl::spmat<T, H2OAIGLM_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
         this->_n, _nnz);
     gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   } else {
-    gsl::spmat<T, POGS_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+    gsl::spmat<T, H2OAIGLM_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
         this->_n, _nnz);
     gsl::spblas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   }
@@ -312,32 +312,32 @@ T NormEst(NormTypes norm_type, const MatrixSparse<T>& A) {
 
 // Performs D * A * E for A in row major
 template <typename T>
-void MultRow(const T *d, const T *e, T *data, const POGS_INT *row_ptr,
-             const POGS_INT *col_ind, POGS_INT size) {
+void MultRow(const T *d, const T *e, T *data, const H2OAIGLM_INT *row_ptr,
+             const H2OAIGLM_INT *col_ind, H2OAIGLM_INT size) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-  for (POGS_INT t = 0; t < size; ++t)
-    for (POGS_INT i = row_ptr[t]; i < row_ptr[t + 1]; ++i)
+  for (H2OAIGLM_INT t = 0; t < size; ++t)
+    for (H2OAIGLM_INT i = row_ptr[t]; i < row_ptr[t + 1]; ++i)
       data[i] *= d[t] * e[col_ind[i]];
 }
 
 // Performs D * A * E for A in col major
 template <typename T>
-void MultCol(const T *d, const T *e, T *data, const POGS_INT *col_ptr,
-             const POGS_INT *row_ind, POGS_INT size) {
+void MultCol(const T *d, const T *e, T *data, const H2OAIGLM_INT *col_ptr,
+             const H2OAIGLM_INT *row_ind, H2OAIGLM_INT size) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-  for (POGS_INT t = 0; t < size; ++t)
-    for (POGS_INT i = col_ptr[t]; i < col_ptr[t + 1]; ++i)
+  for (H2OAIGLM_INT t = 0; t < size; ++t)
+    for (H2OAIGLM_INT i = col_ptr[t]; i < col_ptr[t + 1]; ++i)
       data[i] *= d[row_ind[i]] * e[t];
 }
 
 template <typename T>
-void MultDiag(const T *d, const T *e, POGS_INT m, POGS_INT n, POGS_INT nnz,
-              typename MatrixSparse<T>::Ord ord, T *data, const POGS_INT *ind,
-              const POGS_INT *ptr) {
+void MultDiag(const T *d, const T *e, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+              typename MatrixSparse<T>::Ord ord, T *data, const H2OAIGLM_INT *ind,
+              const H2OAIGLM_INT *ptr) {
   if (ord == MatrixSparse<T>::ROW) {
     MultRow(d, e, data, ptr, ind, m);
     MultCol(d, e, data + nnz, ptr + m + 1, ind + nnz, n);
@@ -349,13 +349,13 @@ void MultDiag(const T *d, const T *e, POGS_INT m, POGS_INT n, POGS_INT nnz,
 
 }  // namespace
 
-#if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
+#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
 template class MatrixSparse<double>;
 #endif
 
-#if !defined(POGS_SINGLE) || POGS_SINGLE==1
+#if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
 template class MatrixSparse<float>;
 #endif
 
-}  // namespace pogs
+}  // namespace h2oaiglm
 

@@ -1,4 +1,4 @@
-import pogs as pogs
+import h2oaiglm as h2oaiglm
 from numpy import abs, float32, float64, max, sqrt
 from numpy.random import rand, randn
 
@@ -11,11 +11,11 @@ Linear regression
 
 def Lasso(m,n, gpu=True, double_precision=False):
   # set solver cpu/gpu according to input args
-  if gpu and pogs.SolverGPU is None:
+  if gpu and h2oaiglm.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = pogs.SolverGPU if gpu else pogs.SolverCPU
+  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
 
   # random matrix A
   A=randn(m,n)
@@ -30,13 +30,13 @@ def Lasso(m,n, gpu=True, double_precision=False):
   b=A.dot(x_true)+0.5*randn(m)
 
   # f(Ax) = ||Ax - b||_2^2
-  f = pogs.FunctionVector(m,double_precision=double_precision)
+  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
-  f.h[:]=pogs.FUNCTION["SQUARE"]
+  f.h[:]=h2oaiglm.FUNCTION["SQUARE"]
 
   # g(x) = 0
-  g = pogs.FunctionVector(n,double_precision=double_precision)
-  g.h[:] = pogs.FUNCTION["ZERO"]
+  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
+  g.h[:] = h2oaiglm.FUNCTION["ZERO"]
 
   # use problem data A to create solver 
   s = Solver(A) 

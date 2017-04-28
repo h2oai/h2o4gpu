@@ -1,4 +1,4 @@
-function pogs_time = lasso_path(m, n, params)
+function h2oaiglm_time = lasso_path(m, n, params)
 %LASSO_PATH
 
 if nargin == 2
@@ -20,8 +20,8 @@ g = struct('c', num2cell(lambdas), 'h', kAbs);
 
 % Solve
 tic
-pogs(A, f, g, params);
-pogs_time = toc;
+h2oaiglm(A, f, g, params);
+h2oaiglm_time = toc;
 
 end
 

@@ -1,4 +1,4 @@
-# Python interface for POGS
+# Python interface for H2OAIGLM
 
 About
 -----
@@ -6,13 +6,13 @@ About
 
 Requirements
 ------------
-The POGS c++/CUDA library has the following dependencies:
+The H2OAIGLM c++/CUDA library has the following dependencies:
 
 	g++ >= 4.8 (C_++11 compatibility, Linux)
 	clang >= 3.3 (C_++11 compatibility, OSX)
 	CUDA >= 6.0 (for GPU solver)
 
-The Python package pogs has the following additional dependencies:
+The Python package h2oaiglm has the following additional dependencies:
 
 	python >= 2.7
 	numpy >= 1.8
@@ -22,7 +22,7 @@ The Python package pogs has the following additional dependencies:
 Installation
 ------------
 
-If would like to compile POGS for GPU, please make sure your `$PATH` environment variable contains the path to the CUDA binaries (namely `nvcc`)
+If would like to compile H2OAIGLM for GPU, please make sure your `$PATH` environment variable contains the path to the CUDA binaries (namely `nvcc`)
 
 
 ```bash
@@ -32,7 +32,7 @@ $ export PATH=$PATH:<path-to-cuda-bin>
 In the shell, navigate to the directory:
 
 ```bash
-$ cd("<path-to-pogs-root>/src/interface_py/")
+$ cd("<path-to-h2oaiglm-root>/src/interface_py/")
 ```
 
 If desired, create a virtual environment before the installation step (https://virtualenv.pypa.io/en/latest/).
@@ -41,43 +41,43 @@ If desired, create a virtual environment before the installation step (https://v
 $ [sudo] PATH=$PATH python setup.py install
 ```
 
-The python installer will build the POGS source if needed and register this package with your Python distribution as pogs.
+The python installer will build the H2OAIGLM source if needed and register this package with your Python distribution as h2oaiglm.
 
 
 Usage
 -----
 
-After installing, import the package `pogs` to use it in a script.
+After installing, import the package `h2oaiglm` to use it in a script.
 
 ```python
-> import pogs as pogs
+> import h2oaiglm as h2oaiglm
 ```
 
 The import should print a couple success messages:
 ```python
 
-> Loaded POGS CPU Library
+> Loaded H2OAIGLM CPU Library
 >
-> Loaded POGS GPU Library
+> Loaded H2OAIGLM GPU Library
 ```
 
 If either of the cpu/gpu shared object libraries (wrapped by this interface) cannot be located, a warning will be printed instead.
 
 
-###<u>POGS functions
+###<u>H2OAIGLM functions
 
-The Python wrapper for POGS works for fully separable obective functions, i.e., those that can be written as
+The Python wrapper for H2OAIGLM works for fully separable obective functions, i.e., those that can be written as
 
 
 	f(y) = sum_{i=1}^m f_i(y_i)
 
-In particular, POGS specifies the format of these elementwise functions as:
+In particular, H2OAIGLM specifies the format of these elementwise functions as:
 
 	f_i(y_i)=c_i * h_i(a_i * y_i - b_i) + d_i y)i + e_i y_i^2,
 
 where `a_i`, `b_i`, `c_i`, `d_i`, and `e_i` are parameters, and `h_i(.)` must be one of several enumerated functions. The dictionary
 ```python
-> pogs.FUNCTION
+> h2oaiglm.FUNCTION
 ```
 enumerates the C/C++ `enum` integer codes corresponding to these enumerated functions. They are given as follows:
 
@@ -93,9 +93,9 @@ Function key | Function code | Function key | Function Code
 `'INDLE0'`	| 7				 | `'ZERO'` 	| 15
 
 
-To build a POGS function vector, call:
+To build a H2OAIGLM function vector, call:
 ```python
-> f=pogs.FunctionVector(m,double_precision=False)
+> f=h2oaiglm.FunctionVector(m,double_precision=False)
 ```
 where `m` is an integer specifying the vector length and the keyword argument `double_precision` (defaulting to `False`) sets the data type for the FunctionVector object.
 
@@ -103,10 +103,10 @@ Each of the fields
 `f.a`, `f.b`, `f.c`, `f.d`, and `f.e`
 is a numpy `ndarray` of floating point values of length `m`, where the entries of these vectors specify the parameters of the elementwise function `f_i(.)` as described above.
 
-The field `f.h` is a numpy `ndarray` of length `m` and its entries must be integers corresponding to valid POGS function codes, (those specificied in the table above). For instance, we may set all the entries function vector `f` to be least-square losses by calling:
+The field `f.h` is a numpy `ndarray` of length `m` and its entries must be integers corresponding to valid H2OAIGLM function codes, (those specificied in the table above). For instance, we may set all the entries function vector `f` to be least-square losses by calling:
 
 ```python
-> f.h[:]=pogs.FUNCTION['SQUARE']
+> f.h[:]=h2oaiglm.FUNCTION['SQUARE']
 ```
 
 ###<u> Solver initialization
@@ -114,11 +114,11 @@ The field `f.h` is a numpy `ndarray` of length `m` and its entries must be integ
 To initialize the solver, call
 
 ```python
-> s=pogs.SolverCPU(A)
+> s=h2oaiglm.SolverCPU(A)
 ```
 or
 ```python
-> s=pogs.SolverGPU(A)
+> s=h2oaiglm.SolverGPU(A)
 ```
 
 The matrix `A` should be a numpy `ndarray` (dense) or scipy `csr_matrix` or `csc_matrix` (sparse) containing single or double precision floating point values.
@@ -132,7 +132,7 @@ To run the solver, call
 > s.solve(f,g,**kwargs)
 ```
 
-The inputs `f` and `g` must be of type `pogs.FunctionVector` with associated lengths `m` and `n`, respectively, for a solver initialized with an `m` x `n` matrix. The floating point precision of the `FunctionVector` objects must match that of the solver's associated matrix.
+The inputs `f` and `g` must be of type `h2oaiglm.FunctionVector` with associated lengths `m` and `n`, respectively, for a solver initialized with an `m` x `n` matrix. The floating point precision of the `FunctionVector` objects must match that of the solver's associated matrix.
 
 The keyword arguments are:
 
@@ -174,7 +174,7 @@ The solver object has a field `info` containing the following information:
 
 To get the text version of the status code, call:
 ```python
-> pogs.STATUS[s.info.status]
+> h2oaiglm.STATUS[s.info.status]
 ```
 
 The post-run state of the solver variables can be accessed at:
@@ -197,7 +197,7 @@ To release memory allocated in the C++/CUDA instance of the solver, call:
 
 Examples
 --------
-See the `<path-to-pogs-root>/examples/py/` directory for examples of how to use the solver. We have included six classes of problems:
+See the `<path-to-h2oaiglm-root>/examples/py/` directory for examples of how to use the solver. We have included six classes of problems:
 
 + Non-negative least squares
 + Inequality constrained linear program

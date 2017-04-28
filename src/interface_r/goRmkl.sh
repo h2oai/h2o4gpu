@@ -78,8 +78,8 @@ wget http://r.research.att.com/benchmarks/R-benchmark-25.R
 
 
 #################### POGS
-git clone git@github.com:h2oai/pogs.git
-cd pogs
+git clone git@github.com:h2oai/h2oaiglm.git
+cd h2oaiglm
 cd src
 emacs -nw Makefile
 # and switch to:
@@ -91,18 +91,18 @@ CXX=icpc
 CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
 make cpu
 
-cd interface_r/pogs
+cd interface_r/h2oaiglm
 ./cfg
 emacs -nw src/config.mk # and edit TARGET as cpu (for MKL blas), edit RHOME binary and lib path to point to new R (if in R directory at this point, R RHOME should be correctly new R)
 
 emacs -nw src/Makefile # and change CXXFLAGS as above
 
 cd ../
-R CMD INSTALL --build pogs
+R CMD INSTALL --build h2oaiglm
 
 R
-install.packages("pogs_1.0_R_x86_64-pc-linux-gnu.tar.gz", repos = NULL, type="source")
-# installs in ~/R/x86_64-pc-linux-gnu-library/3.3/pogs/ (assumes overwrites system's libraries)
+install.packages("h2oaiglm.0_R_x86_64-pc-linux-gnu.tar.gz", repos = NULL, type="source")
+# installs in ~/R/x86_64-pc-linux-gnu-library/3.3/h2oaiglm/ (assumes overwrites system's libraries)
 
 cd ../interface_c
 emacs Makefile # edit CXXFLAGS as above

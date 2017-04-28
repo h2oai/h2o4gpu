@@ -19,7 +19,7 @@ $(warning USEMKL is $(USEMKL))
 
 
 # User Vars
-POGSROOT=../../src
+H2OAIGLMROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
@@ -60,7 +60,7 @@ LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) #-DDEBUG -DUSE_NVTX=1 # -DUSE_NCCL=1
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
 
 
 # CUDA Flags
@@ -82,14 +82,14 @@ all: gpu gpualt gpuptr
 default: gpualt gpuptr
 
 # GPU
-gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(POGSROOT)/build/gpu/pogs.a  $(CULDFLAGS)
+gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a  $(CULDFLAGS)
 
-gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
-gpuptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(POGSROOT)/build/gpu/pogs.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(POGSROOT)/build/gpu/pogs.a $(CULDFLAGS)
+gpuptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
 run: gpuptr
 	./h2oai-glm-gpu-ptr 1 100 1 1 0

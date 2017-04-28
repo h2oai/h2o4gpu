@@ -1,4 +1,4 @@
-function [pogs_time, cvx_time] = huber_fit(m, n, params, comp_cvx, density)
+function [h2oaiglm_time, cvx_time] = huber_fit(m, n, params, comp_cvx, density)
 %HUBER_FIT
 
 if nargin <= 2
@@ -29,18 +29,18 @@ f.h = kHuber;
 f.b = b;
 g.h = kZero;
 
-% Solve with pogs
+% Solve with h2oaiglm
 if ~issparse(A)
   As = double(A);
 else
   As = A;
 end
 tic
-[~, ~, ~, ~, ~, status] = pogs(As, f, g, params);
-pogs_time = toc;
+[~, ~, ~, ~, ~, status] = h2oaiglm(As, f, g, params);
+h2oaiglm_time = toc;
 
 if status > 0
-  pogs_time = nan;
+  h2oaiglm_time = nan;
 end
 
 % Solve with CVX

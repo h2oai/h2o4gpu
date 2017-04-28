@@ -20,7 +20,7 @@ $(warning USEMKL is $(USEMKL))
 
 
 # User Vars
-POGSROOT=../../src
+H2OAIGLMROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
@@ -57,7 +57,7 @@ LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  # -DDEBUG
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(POGSROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 
 # Check System Args.
 UNAME = $(shell uname -s)
@@ -71,14 +71,14 @@ all: cpu cpualt cpuptr
 default: cpualt cpuptr
 
 # CPU
-cpu: run_all_orig.cpp examples.h $(EXSRC) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
+cpu: run_all_orig.cpp examples.h $(EXSRC) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
-cpualt: run_all.cpp examples.h $(EXSRC2) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
+cpualt: run_all.cpp examples.h $(EXSRC2) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
-cpuptr: run_all.cpp examples.h $(EXSRC3) $(POGSROOT)/build/cpu/pogs.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(POGSROOT)/build/cpu/pogs.a $(LINKFLAGS)
+cpuptr: run_all.cpp examples.h $(EXSRC3) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
 clean:
 	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-ptr
