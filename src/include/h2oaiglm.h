@@ -111,7 +111,7 @@ const int          kwDev        = 0;
 
 
 // Status messages
-enum PogsStatus { H2OAIGLM_SUCCESS,    // Converged successfully.
+enum H2OAIGLMStatus { H2OAIGLM_SUCCESS,    // Converged successfully.
                   H2OAIGLM_INFEASIBLE, // Problem likely infeasible.
                   H2OAIGLM_UNBOUNDED,  // Problem likely unbounded
                   H2OAIGLM_MAX_ITER,   // Reached max iter.
@@ -120,7 +120,7 @@ enum PogsStatus { H2OAIGLM_SUCCESS,    // Converged successfully.
 
 // Proximal Operator Graph Solver.
 template <typename T, typename M, typename P>
-class Pogs {
+class H2OAIGLM {
  private:
   // Data
   M _A;
@@ -156,12 +156,12 @@ class Pogs {
 
  public:
   // Constructor and Destructor.
-  Pogs(int wDev, const M &A);
-  Pogs(const M &A);
-  ~Pogs();
+  H2OAIGLM(int wDev, const M &A);
+  H2OAIGLM(const M &A);
+  ~H2OAIGLM();
 
   // Solve for specific objective.
-  PogsStatus Solve(const std::vector<FunctionObj<T> >& f,
+  H2OAIGLMStatus Solve(const std::vector<FunctionObj<T> >& f,
                    const std::vector<FunctionObj<T> >& g);
   void ResetX(void);
 
@@ -252,14 +252,14 @@ class Pogs {
 // Templated typedefs
 #ifndef __CUDACC__
 template <typename T, typename M>
-using PogsDirect = Pogs<T, M, ProjectorDirect<T, M> >;
+using H2OAIGLMDirect = H2OAIGLM<T, M, ProjectorDirect<T, M> >;
 
 template <typename T, typename M>
-using PogsIndirect = Pogs<T, M, ProjectorCgls<T, M> >;
+using H2OAIGLMIndirect = H2OAIGLM<T, M, ProjectorCgls<T, M> >;
 #endif
 
 // String version of status message.
-inline std::string PogsStatusString(PogsStatus status) {
+inline std::string H2OAIGLMStatusString(H2OAIGLMStatus status) {
   switch(status) {
     case H2OAIGLM_SUCCESS:
       return "Solved";

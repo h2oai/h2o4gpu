@@ -65,7 +65,7 @@ double LassoPath(int m, int n, int nnz) {
 
   h2oaiglm::MatrixSparse<T> A_('r', m, n, nnz, val.data(), row_ptr.data(),
       col_ind.data());
-  h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T>> h2oaiglm_data(A_);
+  h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T>> h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 

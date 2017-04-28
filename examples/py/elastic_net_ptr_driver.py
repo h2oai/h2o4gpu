@@ -73,16 +73,6 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   meanvalidY = np.mean(validY)
   print("meanvalidY: " + str(meanvalidY))
 
-  ## TODO: compute this in C++ (CPU or GPU)
-  # compute without intercept column
-  #weights = 1./mTrain
-  weights = 1. # like current cpp driver
-  if intercept==1:
-    lambda_max0 = weights * max(abs(trainX.T.dot(trainY-meantrainY)))
-  else:
-    lambda_max0 = weights * max(abs(trainX.T.dot(trainY)))
-
-  print("lambda_max0: " + str(lambda_max0))
 
   if intercept==1:
     trainX = np.hstack([trainX, np.ones((trainX.shape[0],1),dtype=trainX.dtype)])
@@ -106,7 +96,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
 
   ## Solve
   print("Solving")
-  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, lambda_max0, a, b, c, d)
+  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, a, b, c, d)
   print("Done Solving")
 
   return enet

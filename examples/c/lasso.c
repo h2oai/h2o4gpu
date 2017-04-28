@@ -5,7 +5,7 @@
 #include "h2oaiglm_c.h"
 
 // Change these two definitions to switch between float and double.
-#define H2OAIGLM PogsS
+#define H2OAIGLM H2OAIGLMS
 typedef float real_t;
 
 // Uniform random value in [a, b)

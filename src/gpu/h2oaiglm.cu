@@ -52,7 +52,7 @@ struct ApplyOp: thrust::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 }  // namespace
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(int wDev, const M &A)
+H2OAIGLM<T, M, P>::H2OAIGLM(int wDev, const M &A)
     : _A(wDev, A), _P(wDev, _A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -95,7 +95,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 
   
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+H2OAIGLM<T, M, P>::H2OAIGLM(const M &A)
   :_A(A._wDev,A), _P(_A._wDev,_A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -137,7 +137,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 
   
 template <typename T, typename M, typename P>
-int Pogs<T, M, P>::_Init() {
+int H2OAIGLM<T, M, P>::_Init() {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -228,7 +228,7 @@ int Pogs<T, M, P>::_Init() {
 }
 
 template <typename T, typename M, typename P>
-PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
+H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
   double t0 = timer<double>();
   // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
@@ -248,7 +248,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
   const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
-  //  PUSH_RANGE("PogsSolve",PogsSolve,1);
+  //  PUSH_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
 
   
   // Initialize Projector P and Matrix A.
@@ -271,7 +271,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Step size: \rho
   // Where for Lasso: f(x) = (1/2)||x-b||_2^2 and g(z) = \lambda||z||_1 with constraint x=Az
   //
-  // Pogs paper and code:
+  // H2OAIGLM paper and code:
   // http://foges.github.io/h2oaiglm/ and http://stanford.edu/~boyd/papers/h2oaiglm.html
   // Minimize: f(y) + g(x) for a variety (but limited set) of f and g shown in src/include/prox_lib.h
   // Subject to: y = Ax (always)
@@ -283,7 +283,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // Internally h2oaiglm code uses \mu and \nu scaled variables, performs pre-conditioning using e and d.
   // \lambda_{max} = ||A^T b|| makes sense if have (1/2) in front of f(y) for Lasso
   //
-  // Pogs overall steps:
+  // H2OAIGLM overall steps:
   // 1) Precondition A using d and e and renormalize variables and all equations using d and e
   // 2) Compute Gramian: A^T A only once
   // 3) Cholesky of gram: Only compute cholesky once -- s and info->s in Project just kOne=1 and just ensure GPU has cholesky already.  Could have put into Init with Gramian)
@@ -293,15 +293,15 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   
   
   // Extract values from h2oaiglm_data
-  PUSH_RANGE("PogsExtract",PogsExtract,3);
+  PUSH_RANGE("H2OAIGLMExtract",H2OAIGLMExtract,3);
   size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
   size_t n = _A.Cols();
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
-  POP_RANGE("PogsExtract",PogsExtract,3);
+  POP_RANGE("H2OAIGLMExtract",H2OAIGLMExtract,3);
 
-  PUSH_RANGE("PogsAlloc",PogsAlloc,4);
+  PUSH_RANGE("H2OAIGLMAlloc",H2OAIGLMAlloc,4);
   // Create cuBLAS handle.
   cublasHandle_t hdl;
   cublasCreate(&hdl);
@@ -328,10 +328,10 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   cml::vector<T> xtemp = cml::vector_subvector(&ztemp, 0, n);
   cml::vector<T> ytemp = cml::vector_subvector(&ztemp, n, m);
   CUDA_CHECK_ERR();
-  POP_RANGE("PogsAlloc",PogsAlloc,4);
+  POP_RANGE("H2OAIGLMAlloc",H2OAIGLMAlloc,4);
 
   
-  PUSH_RANGE("PogsScale",PogsScale,5);
+  PUSH_RANGE("H2OAIGLMScale",H2OAIGLMScale,5);
   // Scale f and g to account for diagonal scaling e and d.
   // f/d -> f
   thrust::transform(f_gpu.begin(), f_gpu.end(),
@@ -342,7 +342,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
       thrust::device_pointer_cast(e.data), g_gpu.begin(),
       ApplyOp<T, thrust::multiplies<T> >(thrust::multiplies<T>()));
   CUDA_CHECK_ERR();
-  POP_RANGE("PogsScale",PogsScale,5);
+  POP_RANGE("H2OAIGLMScale",H2OAIGLMScale,5);
 
 
   PUSH_RANGE("Lambda",Lambda,6);
@@ -564,7 +564,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     // Adaptive rho (optional)
     // http://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf S3.4.1
     //    http://www.cs.umd.edu/sites/default/files/scholarly_papers/ZhengXu.pdf or https://arxiv.org/abs/1605.07246
-    // choose: 1 = Pogs Boyd method
+    // choose: 1 = H2OAIGLM Boyd method
     // choose: 2 = Original Boyd method of balancing residuals
     // choose: 3 = Spectral method by Zheng et al. 2015
     int whichadap=1;
@@ -663,7 +663,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 
   // Check status
-  PogsStatus status;
+  H2OAIGLMStatus status;
   if (!converged && k == _max_iter - 1)
     status = H2OAIGLM_MAX_ITER;
   else if (!converged && k < _max_iter - 1)
@@ -680,7 +680,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         "Status: %s\n" 
         "Timing: Total = %3.2e s, Init = %3.2e s\n"
         "Iter  : %u\n",
-        PogsStatusString(status).c_str(), _time, time_init, k);
+        H2OAIGLMStatusString(status).c_str(), _time, time_init, k);
     Printf(__HBAR__
         "Error Metrics:\n"
         "Pri: "
@@ -757,13 +757,13 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   CUDA_CHECK_ERR();
   POP_RANGE("Copy",Copy,1);
 
-  //  POP_RANGE("PogsSolve",PogsSolve,1);
+  //  POP_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
 
   return status;
 }
 
 template <typename T, typename M, typename P>
-void Pogs<T, M, P>::ResetX(void) {
+void H2OAIGLM<T, M, P>::ResetX(void) {
   if (!_done_init)
     _Init();
   CUDACHECK(cudaSetDevice(_wDev));
@@ -781,7 +781,7 @@ void Pogs<T, M, P>::ResetX(void) {
 
   
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::~Pogs() {
+H2OAIGLM<T, M, P>::~H2OAIGLM() {
   CUDACHECK(cudaSetDevice(_wDev));
 
   if(_z) cudaFree(_z);
@@ -811,15 +811,15 @@ Pogs<T, M, P>::~Pogs() {
 
 // Explicit template instantiation.
 #if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
-template class Pogs<double, MatrixDense <double>, ProjectorDirect<double, MatrixDense <double> > >;
-template class Pogs<double, MatrixDense <double>, ProjectorCgls<double,   MatrixDense <double> > >;
-template class Pogs<double, MatrixSparse<double>, ProjectorCgls<double,   MatrixSparse<double> > >;
+template class H2OAIGLM<double, MatrixDense <double>, ProjectorDirect<double, MatrixDense <double> > >;
+template class H2OAIGLM<double, MatrixDense <double>, ProjectorCgls<double,   MatrixDense <double> > >;
+template class H2OAIGLM<double, MatrixSparse<double>, ProjectorCgls<double,   MatrixSparse<double> > >;
 #endif
 
 #if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
-template class Pogs<float, MatrixDense<float>,  ProjectorDirect<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixDense<float>,  ProjectorCgls<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
+template class H2OAIGLM<float, MatrixDense<float>,  ProjectorDirect<float, MatrixDense<float> > >;
+template class H2OAIGLM<float, MatrixDense<float>,  ProjectorCgls<float, MatrixDense<float> > >;
+template class H2OAIGLM<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
 #endif
 
 }  // namespace h2oaiglm

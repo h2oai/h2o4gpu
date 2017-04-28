@@ -85,21 +85,21 @@ enum STATUS { H2OAIGLM_SUCCESS,    // Converged succesfully.
 
 // created and managed by caller
 template <typename T>
-struct PogsSettings{
+struct H2OAIGLMSettings{
   T rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
   int nDev,wDev;
 };
 
-struct PogsSettingsS{
+struct H2OAIGLMSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
   int nDev,wDev;
 };
 
-struct PogsSettingsD{
+struct H2OAIGLMSettingsD{
   double rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
@@ -109,19 +109,19 @@ struct PogsSettingsD{
 
 // created and managed by caller
 template <typename T>
-struct PogsInfo{
+struct H2OAIGLMInfo{
     unsigned int iter;
     int status;
     T obj, rho, solvetime;
 };
 
-struct PogsInfoS{
+struct H2OAIGLMInfoS{
     unsigned int iter;
     int status;
     float obj, rho, solvetime;
 };
 
-struct PogsInfoD{
+struct H2OAIGLMInfoD{
     unsigned int iter;
     int status;
     double obj, rho, solvetime;
@@ -130,25 +130,25 @@ struct PogsInfoD{
 
 // created and managed by caller
 template <typename T>
-struct PogsSolution{
+struct H2OAIGLMSolution{
     T *x, *y, *mu, *nu; 
 };
 
-struct PogsSolutionS{
+struct H2OAIGLMSolutionS{
     float *x, *y, *mu, *nu; 
 };
 
-struct PogsSolutionD{
+struct H2OAIGLMSolutionD{
     double *x, *y, *mu, *nu; 
 };
 
 // created and managed locally
-struct PogsWork{
+struct H2OAIGLMWork{
     size_t m,n;
     bool directbit, densebit, rowmajorbit;
     void *h2oaiglm_data, *f, *g;
 
-    PogsWork(size_t m_, size_t n_, bool direct_, bool dense_, bool rowmajor_, void *h2oaiglm_data_, void *f_, void *g_){
+    H2OAIGLMWork(size_t m_, size_t n_, bool direct_, bool dense_, bool rowmajor_, void *h2oaiglm_data_, void *f_, void *g_){
       m=m_;n=n_;
       directbit=direct_; densebit=dense_; rowmajorbit=rowmajor_;
       h2oaiglm_data= h2oaiglm_data_; f=f_; g=g_;
@@ -156,44 +156,44 @@ struct PogsWork{
 };
 
 
-bool VerifyPogsWork(void * work);
+bool VerifyH2OAIGLMWork(void * work);
 
 // Dense
 template <typename T>
-void * PogsInit(int wDev, size_t m, size_t n, const T *A, const char ord);
+void * H2OAIGLMInit(int wDev, size_t m, size_t n, const T *A, const char ord);
 
 // Sparse 
 template <typename T>
-void * PogsInit(int wDev, size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord);
+void * H2OAIGLMInit(int wDev, size_t m, size_t n, size_t nnz, const T *nzvals, const int *nzindices, const int *pointers, const char ord);
 
 template <typename T>
-void PogsFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
+void H2OAIGLMFunctionUpdate(size_t m, std::vector<FunctionObj<T> > *f, const T *f_a, const T *f_b, const T *f_c, 
                           const T *f_d, const T *f_e, const FUNCTION *f_h);
 
 template <typename T>
-void PogsRun(h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-  const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+void H2OAIGLMRun(h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+  const H2OAIGLMSettings<T> *settings, H2OAIGLMInfo<T> *info, H2OAIGLMSolution<T> *solution);
 
 
 template <typename T>
-void PogsRun(h2oaiglm::PogsDirect<T, h2oaiglm::MatrixSparse<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+void H2OAIGLMRun(h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixSparse<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const H2OAIGLMSettings<T> *settings, H2OAIGLMInfo<T> *info, H2OAIGLMSolution<T> *solution);
 
 template<typename T>
-void PogsRun(h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixDense<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+void H2OAIGLMRun(h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixDense<T> > &h2oaiglm_data, std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const H2OAIGLMSettings<T> *settings, H2OAIGLMInfo<T> *info, H2OAIGLMSolution<T> *solution);
 
 template<typename T>
-void PogsRun(h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T> > &h2oaiglm_data, const std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
-              const PogsSettings<T> *settings, PogsInfo<T> *info, PogsSolution<T> *solution);
+void H2OAIGLMRun(h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> > &h2oaiglm_data, const std::vector<FunctionObj<T> > *f, std::vector<FunctionObj<T> > *g, 
+              const H2OAIGLMSettings<T> *settings, H2OAIGLMInfo<T> *info, H2OAIGLMSolution<T> *solution);
 
 template<typename T>
-int PogsRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
+int H2OAIGLMRun(void *work, const T *f_a, const T *f_b, const T *f_c, const T *f_d, const T *f_e, const FUNCTION *f_h,
             const T *g_a, const T *g_b, const T *g_c, const T *g_d, const T *g_e, const FUNCTION *g_h,
             void *settings, void *info, void *solution);
 
 template<typename T>
-void PogsShutdown(void * work);
+void H2OAIGLMShutdown(void * work);
 
 template <typename T>
 int makePtr(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
@@ -210,10 +210,10 @@ void * h2oaiglm_init_dense_single(int wDev, enum ORD ord, size_t m, size_t n, co
 void * h2oaiglm_init_dense_double(int wDev, enum ORD ord, size_t m, size_t n, const double *A);
 void * h2oaiglm_init_sparse_single(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
 void * h2oaiglm_init_sparse_double(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
-int h2oaiglm_solve_single(void *work, PogsSettingsS *settings, PogsSolutionS *solution, PogsInfoS *info,
+int h2oaiglm_solve_single(void *work, H2OAIGLMSettingsS *settings, H2OAIGLMSolutionS *solution, H2OAIGLMInfoS *info,
                       const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
                       const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h);
-int h2oaiglm_solve_double(void *work, PogsSettingsD *settings, PogsSolutionD *solution, PogsInfoD *info,
+int h2oaiglm_solve_double(void *work, H2OAIGLMSettingsD *settings, H2OAIGLMSolutionD *solution, H2OAIGLMInfoD *info,
                       const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
                       const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h);
 void h2oaiglm_finish_single(void * work);

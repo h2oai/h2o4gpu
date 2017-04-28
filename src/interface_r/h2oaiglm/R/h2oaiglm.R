@@ -134,7 +134,7 @@ h2oaiglm <- function(A, f, g, params=list()) {
   }
 
   # Call H2OAIGLM.
-  .Call("PogsWrapper", A, f, g, params)
+  .Call("H2OAIGLMWrapper", A, f, g, params)
 }
 
 ############################################################################################ 
@@ -431,7 +431,7 @@ lambda.interp <- function(lambda, s){
   list(left=left, right=right, frac=sfrac)
 }
 
-#' @title Pogsnet prediction
+#' @title H2OAIGLMnet prediction
 #' @description Predict response for new value input
 #' @param object Value returned by h2oaiglmnet(..).
 #' @param newx New value of x for which prediction should be done.

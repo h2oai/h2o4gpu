@@ -39,37 +39,37 @@ enum STATUS { H2OAIGLM_SUCCESS,    // Converged succesfully.
       H2OAIGLM_NAN_FOUND,  // Encountered nan.
       H2OAIGLM_ERROR };    // Generic error, check logs.
 
-struct PogsSettingsS{
+struct H2OAIGLMSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
   int nDev,wDev;
 };
 
-struct PogsSettingsD{
+struct H2OAIGLMSettingsD{
   double rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
   int nDev,wDev;
 };
 
-struct PogsInfoS{
+struct H2OAIGLMInfoS{
     unsigned int iter;
     int status;
     float obj, rho, solvetime;
 };
 
-struct PogsInfoD{
+struct H2OAIGLMInfoD{
     unsigned int iter;
     int status;
     double obj, rho, solvetime;
 };
 
-struct PogsSolutionS{
+struct H2OAIGLMSolutionS{
     float *x, *y, *mu, *nu; 
 };
 
-struct PogsSolutionD{
+struct H2OAIGLMSolutionD{
     double *x, *y, *mu, *nu; 
 };
 
@@ -80,10 +80,10 @@ void * h2oaiglm_init_dense_single(int wDev, enum ORD ord, size_t m, size_t n, co
 void * h2oaiglm_init_dense_double(int wDev, enum ORD ord, size_t m, size_t n, const double *A);
 void * h2oaiglm_init_sparse_single(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const float *nzvals, const int *indices, const int *pointers);
 void * h2oaiglm_init_sparse_double(int wDev, enum ORD ord, size_t m, size_t n, size_t nnz, const double *nzvals, const int *indices, const int *pointers);
-int h2oaiglm_solve_single(void *work, struct PogsSettingsS *settings, struct PogsSolutionS *solution, struct PogsInfoS *info,
+int h2oaiglm_solve_single(void *work, struct H2OAIGLMSettingsS *settings, struct H2OAIGLMSolutionS *solution, struct H2OAIGLMInfoS *info,
                       const float *f_a, const float *f_b, const float *f_c,const float *f_d, const float *f_e, const enum FUNCTION *f_h,
                       const float *g_a, const float *g_b, const float *g_c,const float *g_d, const float *g_e, const enum FUNCTION *g_h);
-int h2oaiglm_solve_double(void *work, struct PogsSettingsD *settings, struct PogsSolutionD *solution, struct PogsInfoD *info,
+int h2oaiglm_solve_double(void *work, struct H2OAIGLMSettingsD *settings, struct H2OAIGLMSolutionD *solution, struct H2OAIGLMInfoD *info,
                       const double *f_a, const double *f_b, const double *f_c,const double *f_d, const double *f_e, const enum FUNCTION *f_h,
                       const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h);
 void h2oaiglm_finish_single(void * work);

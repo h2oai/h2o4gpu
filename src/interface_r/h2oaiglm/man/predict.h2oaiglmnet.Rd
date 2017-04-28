@@ -2,7 +2,7 @@
 % Please edit documentation in R/h2oaiglm.R
 \name{predict.h2oaiglmnet}
 \alias{predict.h2oaiglmnet}
-\title{Pogsnet prediction}
+\title{H2OAIGLMnet prediction}
 \usage{
 \method{predict}{h2oaiglmnet}(object, newx, s = NULL, type = c("link",
   "response", "class"), ...)

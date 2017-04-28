@@ -228,7 +228,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 #pragma omp barrier
     h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
 #pragma omp barrier // this is the required barrier
-    h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
+    h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
 #pragma omp barrier
     double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);

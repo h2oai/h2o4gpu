@@ -38,7 +38,7 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
     
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(int wDev, const M &A)
+H2OAIGLM<T, M, P>::H2OAIGLM(int wDev, const M &A)
     : _A(wDev, A), _P(wDev, _A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -74,7 +74,7 @@ Pogs<T, M, P>::Pogs(int wDev, const M &A)
 }
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::Pogs(const M &A)
+H2OAIGLM<T, M, P>::H2OAIGLM(const M &A)
   :_A(A._wDev,A), _P(_A._wDev,_A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
@@ -110,7 +110,7 @@ Pogs<T, M, P>::Pogs(const M &A)
 
 
 template <typename T, typename M, typename P>
-int Pogs<T, M, P>::_Init() {
+int H2OAIGLM<T, M, P>::_Init() {
   DEBUG_EXPECT(!_done_init);
   if (_done_init)
     return 1;
@@ -130,7 +130,7 @@ int Pogs<T, M, P>::_Init() {
 }
 
 template <typename T, typename M, typename P>
-PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
+H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
   double t0 = timer<double>();
   // Constants for adaptive-rho and over-relaxation.
@@ -365,7 +365,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   _optval = FuncEval(f_cpu, y12.data) + FuncEval(g_cpu, x12.data);
 
   // Check status
-  PogsStatus status;
+  H2OAIGLMStatus status;
   if (!converged && k == _max_iter - 1)
     status = H2OAIGLM_MAX_ITER;
   else if (!converged && k < _max_iter - 1)
@@ -382,7 +382,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
         "Status: %s\n"
         "Timing: Total = %3.2e s, Init = %3.2e s\n"
         "Iter  : %u\n",
-        PogsStatusString(status).c_str(), _time, time_init, k);
+        H2OAIGLMStatusString(status).c_str(), _time, time_init, k);
     Printf(__HBAR__
         "Error Metrics:\n"
         "Pri: "
@@ -459,7 +459,7 @@ PogsStatus Pogs<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
 
 template <typename T, typename M, typename P>
-void Pogs<T, M, P>::ResetX(void) {
+void H2OAIGLM<T, M, P>::ResetX(void) {
   if (!_done_init)
     _Init();
 
@@ -473,7 +473,7 @@ void Pogs<T, M, P>::ResetX(void) {
   
 
 template <typename T, typename M, typename P>
-Pogs<T, M, P>::~Pogs() {
+H2OAIGLM<T, M, P>::~H2OAIGLM() {
   if(_z) delete [] _z;
   if(_zt) delete [] _zt;
   _z = _zt = 0;
@@ -489,15 +489,15 @@ Pogs<T, M, P>::~Pogs() {
 
 // Explicit template instantiation.
 #if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
-template class Pogs<double, MatrixDense<double>, ProjectorDirect<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixDense<double>, ProjectorCgls<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixSparse<double>, ProjectorCgls<double, MatrixSparse<double> > >;
+template class H2OAIGLM<double, MatrixDense<double>, ProjectorDirect<double, MatrixDense<double> > >;
+template class H2OAIGLM<double, MatrixDense<double>, ProjectorCgls<double, MatrixDense<double> > >;
+template class H2OAIGLM<double, MatrixSparse<double>, ProjectorCgls<double, MatrixSparse<double> > >;
 #endif
 
 #if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
-template class Pogs<float, MatrixDense<float>, ProjectorDirect<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixDense<float>, ProjectorCgls<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
+template class H2OAIGLM<float, MatrixDense<float>, ProjectorDirect<float, MatrixDense<float> > >;
+template class H2OAIGLM<float, MatrixDense<float>, ProjectorCgls<float, MatrixDense<float> > >;
+template class H2OAIGLM<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
 #endif
 
 }  // namespace h2oaiglm

@@ -34,8 +34,8 @@ double Lasso(const std::vector<T>& A, const std::vector<T>& b) {
   ////////////////////
   fprintf(stderr,"MatrixDense\n"); fflush(stderr);
   h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
-  fprintf(stderr,"PogsDirect\n"); fflush(stderr);
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  fprintf(stderr,"H2OAIGLMDirect\n"); fflush(stderr);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   fprintf(stderr,"f\n"); fflush(stderr);
   std::vector<FunctionObj<T> > f;
   fprintf(stderr,"g\n"); fflush(stderr);

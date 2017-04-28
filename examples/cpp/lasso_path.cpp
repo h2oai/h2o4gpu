@@ -53,7 +53,7 @@ double LassoPath(const std::vector<T> &A, const std::vector<T> &b) {
 
   // Set up h2oaiglm datastructure.
   h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
   f.reserve(m);

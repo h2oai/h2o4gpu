@@ -26,7 +26,7 @@ double LpEq(size_t m, size_t n) {
     A[i] = u_dist(generator) / static_cast<T>(n);
 
   h2oaiglm::MatrixDense<T> A_('r', m + 1, n, A.data());
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 

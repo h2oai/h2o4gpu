@@ -70,7 +70,7 @@ void PopulateFunctionObj(SEXP f, unsigned int n,
 }
 
 template <typename T, typename M, typename P>
-void PopulateParams(SEXP params, h2oaiglm::Pogs<T, M, P> *h2oaiglm_data) {
+void PopulateParams(SEXP params, h2oaiglm::H2OAIGLM<T, M, P> *h2oaiglm_data) {
   // Check if parameter exists in params, and set the corresponding
   // value in h2oaiglm_data.
 
@@ -134,8 +134,8 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
 //  std::copy(REAL(A), REAL(A) + m*n, std::ostream_iterator<T>(std::cout, "\n"));
   h2oaiglm::MatrixDense<T> A_dense(wDev, 'c', m, n, REAL(A));
 
-  // Initialize Pogs data structure
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_dense);
+  // Initialize H2OAIGLM data structure
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_dense);
   std::vector<FunctionObj<T> > f, g;
 
   f.reserve(m);
@@ -168,7 +168,7 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
 }
 
 extern "C" {
-SEXP PogsWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
+SEXP H2OAIGLMWrapper(SEXP A, SEXP f, SEXP g, SEXP params) {
   // Setup output.
   SEXP x, y, u, v, opt, status, ans, retnames;
   SEXP Adim = GET_DIM(A);

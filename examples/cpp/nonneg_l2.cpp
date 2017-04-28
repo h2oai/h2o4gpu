@@ -28,7 +28,7 @@ double NonNegL2(size_t m, size_t n) {
     A[i] = static_cast<T>(1) / static_cast<T>(n) * u_dist(generator);
 
   h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 

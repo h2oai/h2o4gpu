@@ -128,9 +128,9 @@ int PopulateFunctionObj(const char fn_name[], const mxArray *f_mex,
   return 0;
 }
 
-// Populate parameters (rel_tol, abs_tol, max_iter, rho and quiet) in PogsData.
+// Populate parameters (rel_tol, abs_tol, max_iter, rho and quiet) in H2OAIGLMData.
 template <typename T, typename M, typename P>
-int PopulateParams(const mxArray *params, h2oaiglm::Pogs<T, M, P> *h2oaiglm_data) {
+int PopulateParams(const mxArray *params, h2oaiglm::H2OAIGLM<T, M, P> *h2oaiglm_data) {
   // Check if parameter exists in params, then make sure that it has
   // dimension 1x1 and finally set the corresponding value in h2oaiglm_data.
   int rel_tol_idx = mxGetFieldNumber(params, "rel_tol");
@@ -257,9 +257,9 @@ void SolverWrapDn(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
   size_t m = mxGetM(prhs[0]);
   size_t n = mxGetN(prhs[0]);
 
-  // Initialize Pogs data structure
+  // Initialize H2OAIGLM data structure
   h2oaiglm::MatrixDense<T> A_(wDev,'c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev,A_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev,A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -287,7 +287,7 @@ void SolverWrapDn(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
       break;
     
     // Run solver.
-    h2oaiglm::PogsStatus status = h2oaiglm_data.Solve(f, g);
+    h2oaiglm::H2OAIGLMStatus status = h2oaiglm_data.Solve(f, g);
 
     // Get solution.
     memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, h2oaiglm_data.GetX(),
@@ -326,9 +326,9 @@ void SolverWrapSp(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
   IntToInt(nnz, mw_row_ind, row_ind);
   IntToInt(n + 1, mw_col_ptr, col_ptr);
 
-  // Initialize Pogs data structure
+  // Initialize H2OAIGLM data structure
   h2oaiglm::MatrixSparse<T> A(wDev, 'c', m, n, nnz, val, col_ptr, row_ind);
-  h2oaiglm::PogsIndirect<T, h2oaiglm::MatrixSparse<T> > h2oaiglm_data(wDev, A);
+  h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> > h2oaiglm_data(wDev, A);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -355,7 +355,7 @@ void SolverWrapSp(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
       break;
     
     // Run solver.
-    h2oaiglm::PogsStatus status = h2oaiglm_data.Solve(f, g);
+    h2oaiglm::H2OAIGLMStatus status = h2oaiglm_data.Solve(f, g);
 
     // Get solution.
     memcpy(reinterpret_cast<T*>(mxGetData(plhs[0])) + i * n, h2oaiglm_data.GetX(),

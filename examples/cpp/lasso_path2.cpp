@@ -66,7 +66,7 @@ double LassoPath(size_t m, size_t n) {
 
   // Set up h2oaiglm datastructure.
   h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
   f.reserve(m);
@@ -80,7 +80,7 @@ double LassoPath(size_t m, size_t n) {
 
   // Set up h2oaiglm datastructure.
   h2oaiglm::MatrixDense<T> A2_('r', m, n, A.data());
-  h2oaiglm::PogsDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data2(A2_);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data2(A2_);
   std::vector<FunctionObj<T> > f2;
   std::vector<FunctionObj<T> > g2;
   f2.reserve(m);

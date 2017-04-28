@@ -10,7 +10,7 @@ from multiprocessing import cpu_count
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2OAIGLMPATH = os.path.join(BASEPATH, '../interface_c/')
 
-class PogsBuild(build):
+class H2OAIGLMBuild(build):
   def run(self):
     NVCC = os.popen("which nvcc").read()!=""
     CPULIB='ch2oaiglm_cpu'
@@ -44,7 +44,7 @@ class PogsBuild(build):
           self.copy_file(target, self.build_lib)
 
 
-class PogsInstall(install):
+class H2OAIGLMInstall(install):
     def initialize_options(self):
         install.initialize_options(self)
         self.build_scripts = None
@@ -75,5 +75,5 @@ setup(
     description='Proximal Operator Graph Solver---Python Interface',
     install_requires=["numpy >= 1.8",
                       "scipy >= 0.13"],
-    cmdclass={'build' : PogsBuild, 'install' : PogsInstall}
+    cmdclass={'build' : H2OAIGLMBuild, 'install' : H2OAIGLMInstall}
 )
