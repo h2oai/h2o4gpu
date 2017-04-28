@@ -104,12 +104,12 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   T lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
-    T weights = static_cast<T>(1.0); ///mTrain); //TODO: Add per-obs weights
     for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
+      u += trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
     }
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
+  lambda_max0 /= mTrain; //TODO: Add per-obs weights
   cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
   T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));

@@ -361,7 +361,7 @@ namespace pogs {
             double tol=tol0;
             pogs_data.SetRelTol(tol); // set how many cuda devices to use internally in pogs
             pogs_data.SetAbsTol(0.5*tol); // set how many cuda devices to use internally in pogs
-            pogs_data.SetMaxIter(100);
+            pogs_data.SetMaxIter(1000);
             // see if getting below stddev, if so decrease tolerance
             if(scoring_history.size()>=1){
               double ratio = (norm-scoring_history.back())/norm;
@@ -374,7 +374,7 @@ namespace pogs {
            
                 pogs_data.SetRelTol(tol);
                 pogs_data.SetAbsTol(0.5*tol);
-                pogs_data.SetMaxIter(100);
+                pogs_data.SetMaxIter(1000);
                 jumpuse=jump;
               }
               //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());

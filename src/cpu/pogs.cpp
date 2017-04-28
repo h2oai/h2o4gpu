@@ -489,21 +489,15 @@ Pogs<T, M, P>::~Pogs() {
 
 // Explicit template instantiation.
 #if !defined(POGS_DOUBLE) || POGS_DOUBLE==1
-template class Pogs<double, MatrixDense<double>,
-    ProjectorDirect<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixDense<double>,
-    ProjectorCgls<double, MatrixDense<double> > >;
-template class Pogs<double, MatrixSparse<double>,
-    ProjectorCgls<double, MatrixSparse<double> > >;
+template class Pogs<double, MatrixDense<double>, ProjectorDirect<double, MatrixDense<double> > >;
+template class Pogs<double, MatrixDense<double>, ProjectorCgls<double, MatrixDense<double> > >;
+template class Pogs<double, MatrixSparse<double>, ProjectorCgls<double, MatrixSparse<double> > >;
 #endif
 
 #if !defined(POGS_SINGLE) || POGS_SINGLE==1
-template class Pogs<float, MatrixDense<float>,
-    ProjectorDirect<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixDense<float>,
-    ProjectorCgls<float, MatrixDense<float> > >;
-template class Pogs<float, MatrixSparse<float>,
-    ProjectorCgls<float, MatrixSparse<float> > >;
+template class Pogs<float, MatrixDense<float>, ProjectorDirect<float, MatrixDense<float> > >;
+template class Pogs<float, MatrixDense<float>, ProjectorCgls<float, MatrixDense<float> > >;
+template class Pogs<float, MatrixSparse<float>, ProjectorCgls<float, MatrixSparse<float> > >;
 #endif
 
 }  // namespace pogs
