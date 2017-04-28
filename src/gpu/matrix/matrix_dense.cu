@@ -984,16 +984,16 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   skew[0]=resulty.skewness();
   kurt[0]=resulty.kurtosis();
 
-  //  std::cout <<"******Summary Statistics Example Train*****"<<std::endl;
-  //  print_range("The data", datay, datay+len*sizeof(T));
-  //  std::cout <<"Count              : "<< resulty.n << std::endl;
-  //  std::cout <<"Minimum            : "<< min[0]<<std::endl;
-  //  std::cout <<"Maximum            : "<< max[0]<<std::endl;
-  //  std::cout <<"Mean               : "<< mean[0]<< std::endl;
-  //  std::cout <<"Variance           : "<< var[0]<< std::endl;
-  //  std::cout <<"Standard Deviation : "<< sd[0]<< std::endl;
-  //  std::cout <<"Skewness           : "<< skew[0]<< std::endl;
-  //  std::cout <<"Kurtosis           : "<< kurt[0]<< std::endl;
+  std::cout <<"******Summary Statistics of Response Train*****"<<std::endl;
+//  print_range("The data", dataybegin, datayend);
+  std::cout <<"Count              : "<< resulty.n << std::endl;
+  std::cout <<"Minimum            : "<< min[0]<<std::endl;
+  std::cout <<"Maximum            : "<< max[0]<<std::endl;
+  std::cout <<"Mean               : "<< mean[0]<< std::endl;
+  std::cout <<"Variance           : "<< var[0]<< std::endl;
+  std::cout <<"Standard Deviation : "<< sd[0]<< std::endl;
+  std::cout <<"Skewness           : "<< skew[0]<< std::endl;
+  std::cout <<"Kurtosis           : "<< kurt[0]<< std::endl;
 
 
   // cast GPU pointer as thrust pointer
@@ -1013,16 +1013,16 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   skew[1]=vresulty.skewness();
   kurt[1]=vresulty.kurtosis();
 
-  //  std::cout <<"******Summary Statistics Example Valid*****"<<std::endl;
-  //  print_range("The data", vdatay, vdatay+len*sizeof(T));
-  //  std::cout <<"Count              : "<< vresulty.n << std::endl;
-  //  std::cout <<"Minimum            : "<< min[1]<<std::endl;
-  //  std::cout <<"Maximum            : "<< max[1]<<std::endl;
-  //  std::cout <<"Mean               : "<< mean[1]<< std::endl;
-  //  std::cout <<"Variance           : "<< var[1]<< std::endl;
-  //  std::cout <<"Standard Deviation : "<< sd[1]<< std::endl;
-  //  std::cout <<"Skewness           : "<< skew[1]<< std::endl;
-  //  std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
+  std::cout <<"******Summary Statistics of Response Valid*****"<<std::endl;
+//  print_range("The data", vdataybegin, vdatayend);
+  std::cout <<"Count              : "<< vresulty.n << std::endl;
+  std::cout <<"Minimum            : "<< min[1]<<std::endl;
+  std::cout <<"Maximum            : "<< max[1]<<std::endl;
+  std::cout <<"Mean               : "<< mean[1]<< std::endl;
+  std::cout <<"Variance           : "<< var[1]<< std::endl;
+  std::cout <<"Standard Deviation : "<< sd[1]<< std::endl;
+  std::cout <<"Skewness           : "<< skew[1]<< std::endl;
+  std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
 
 
   // Get Cublas handle
