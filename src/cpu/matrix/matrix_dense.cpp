@@ -601,7 +601,7 @@ T getVar(size_t len, T *v, T mean) {
   
 
 template <typename T>
-int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt)
+int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
   int len=0;
 
@@ -625,6 +625,22 @@ int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *ku
   skew[1]=0.0; // not implemented
   kurt[1]=0.0; // not implemented
 
+  size_t n=this->_n;
+  size_t mTrain=this->_m;
+
+  // TODO: compute on the GPU - inside of ElasticNetPtr
+  // set lambda max 0 (i.e. base lambda_max)
+  lambda_max0 = static_cast<T>(0);
+  for (unsigned int j = 0; j < n-intercept; ++j) { //col
+    T u = 0;
+    T weights = static_cast<T>(1.0); ///mTrain); //TODO: Add per-obs weights
+    for (unsigned int i = 0; i < mTrain; ++i) { //row
+      u += weights * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+    }
+    lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
+  }
+  
+  
 
   return 0;
 }

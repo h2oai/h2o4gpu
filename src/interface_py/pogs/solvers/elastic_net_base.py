@@ -61,19 +61,19 @@ class ElasticNetBaseSolver(object):
         return a, b, c, d
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
-    def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, lambda_max0, a, b, c, d):
+    def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, a, b, c, d):
         # not calling with self.sourceDev because want option to never use default but instead input pointers from foreign code's pointers
         if (self.double_precision==1):
             print("double precision fit")
             self.lib.elastic_net_ptr_double(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
-                c_size_t(mTrain), c_size_t(n), c_size_t(mValid),c_int(self.intercept), c_int(self.standardize), c_double(lambda_max0),
+                c_size_t(mTrain), c_size_t(n), c_size_t(mValid),c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
                 a, b, c, d)
         else:
             print("single precision fit")
             self.lib.elastic_net_ptr_float(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
-                c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize), c_double(lambda_max0),
+                c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
                 a, b, c, d)

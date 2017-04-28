@@ -99,18 +99,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   }
     
 
-  // TODO: compute on the GPU - inside of ElasticNetPtr
-  // set lambda max 0 (i.e. base lambda_max)
-  T lambda_max0 = static_cast<T>(0);
-  for (unsigned int j = 0; j < n-intercept; ++j) { //col
-    T u = 0;
-    T weights = static_cast<T>(1.0); ///mTrain); //TODO: Add per-obs weights
-    for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += weights * trainX[i * n + j] * (trainY[i] - intercept*meanTrainYn);
-    }
-    lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
-  }
-  cout << "lambda_max0 " << lambda_max0 << endl;
   // set lambda_min_ratio
   T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
@@ -156,7 +144,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
 
   int datatype = 1;
-  return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_max0, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
+  return pogs::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
 }
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, int, int, int, int, int, int, int, double);

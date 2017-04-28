@@ -933,10 +933,29 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
-
+  template< typename T >
+    struct negative {
+    void operator()( T &x ) const {
+      x = -x;
+    }
+  };
+  template< typename T >
+    struct absolute {
+    void operator()( T &x ) const {
+      x = (x>0 ? x : -x);
+    }
+  };
 
 template <typename T>
-int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt)
+void find_min_max(thrust::device_vector<T> &dev_vec, T *min, T *max){
+  thrust::pair<thrust::device_vector<T>::iterator,thrust::device_vector<T>::iterator> tuple;
+  tuple = thrust::minmax_element(dev_vec.begin(),dev_vec.end());
+  *min = *(tuple.first);
+  *max = *tuple.second;
+}
+  
+template <typename T>
+int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -1004,6 +1023,40 @@ int MatrixDense<T>::Stats(T *min, T *max, T *mean, T *var, T *sd, T *skew, T *ku
   //  std::cout <<"Standard Deviation : "<< sd[1]<< std::endl;
   //  std::cout <<"Skewness           : "<< skew[1]<< std::endl;
   //  std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
+
+
+  // Get Cublas handle
+  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+  cublasHandle_t hdl = info->handle;
+
+  // Set up views for raw vectors.
+  cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m);
+  cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m);
+  cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n);
+  cml::vector_memcpy(&ytemp, &y_vec); // y_vec->ytemp
+  cml::vector_add_constant(&ytemp, -static_cast<T>(intercept)*mean[0]); // ytemp -> ytemp - intercept*mean[0]
+  
+  if (_ord == MatrixDense<T>::ROW) {
+    const cml::matrix<T, CblasRowMajor> A = cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n); // just view
+    cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+  }
+  else{
+    const cml::matrix<T, CblasColMajor> A = cml::matrix_view_array<T, CblasColMajor>(_data, this->_m, this->_n); // just view
+    cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+  }
+  thrust::device_vector<T> xtempt(&xtemp.data[0],&xtemp.data[this->_n]);
+  thrust::device_vector<T> xtemptnointercept(&xtemp.data[0],&xtemp.data[this->_n-intercept]);
+  fprintf(stderr,"pre abs1\n"); fflush(stderr);
+  thrust::for_each(xtempt.begin(), xtempt.end(), absolute<T>() );
+  fprintf(stderr,"pre abs2\n"); fflush(stderr);
+  T minlambda;
+  find_min_max(xtemptnointercept, &minlambda, &lambda_max){
+  //  lambda_max0 = thrust::reduce(thrust::device, xtemptnointercept.begin(),xtemptnointercept.end(),static_cast<T>(0.),thrust::maximum<T>()); // assumes intercept at end, as rest of code assumes
+  fprintf(stderr,"pre abs3\n"); fflush(stderr);
+
+  // ensure sync of variables to host
+  cudaDeviceSynchronize();
+  CUDA_CHECK_ERR();
 
   return 0;
 }
