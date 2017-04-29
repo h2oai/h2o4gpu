@@ -39,9 +39,10 @@ int main(int argc, char **argv) {
 
   std::vector<real_t> A;
   std::vector<real_t> b;
+  std::vector<real_t> w;
   cout << "START FILL DATA\n" << endl;
   double t0 = timer<double>();
-  fillData(rows,cols,"train.txt", A, b);
+  fillData(rows,cols,"train.txt", A, b, w);
   double t1 = timer<double>();
   rows=b.size();
   cols=A.size()/b.size();

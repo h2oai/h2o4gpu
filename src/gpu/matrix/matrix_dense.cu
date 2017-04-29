@@ -41,9 +41,12 @@ struct GpuData {
   cublasHandle_t handle; // handle for data on GPU
   GpuData(const T *orig_data) : orig_data(orig_data) {
     cublasCreate(&handle);
+    //    fprintf(stderr,"HEREstart: %ld\n",handle); fflush(stderr);
     DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
+    //    fprintf(stderr,"HEREend: %ld\n",handle); fflush(stderr);
+
     if(handle!=NULL) cublasDestroy(handle);
     DEBUG_CUDA_CHECK_ERR();
   }
@@ -79,6 +82,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
+  _weight=NULL;
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -105,6 +109,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   GpuData<T> *vinfoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  GpuData<T> *weightinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
   POP_RANGE("MDnew",MDnew,1);
 
   if(!this->_done_alloc){
@@ -145,6 +151,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
+  _weight=NULL;
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -173,6 +180,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
     this->_vinfo = reinterpret_cast<void*>(vinfo);
     GpuData<T> *vinfoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    GpuData<T> *weightinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    this->_weightinfo = reinterpret_cast<void*>(weightinfo);
     
     // source pointer is on this GPU
 
@@ -196,6 +205,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
     this->_vinfo = reinterpret_cast<void*>(vinfo);
     GpuData<T> *vinfoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    GpuData<T> *weightinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    this->_weightinfo = reinterpret_cast<void*>(weightinfo);
     POP_RANGE("MDnew",MDnew,1);
 
     if(!this->_done_alloc){
@@ -229,8 +240,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
   // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
 template <typename T>
-MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0),_de(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -255,10 +266,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
   GpuData<T> *infoy = new GpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
   GpuData<T> *vinfo = new GpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
   GpuData<T> *vinfoy = new GpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+  GpuData<T> *weightinfo = new GpuData<T>(weight); // new structure (holds pointer to data and GPU handle)
   this->_info = reinterpret_cast<void*>(info);
   this->_infoy = reinterpret_cast<void*>(infoy);
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
   POP_RANGE("MDnew",MDnew,1);
 
 
@@ -275,11 +288,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     cudaMalloc(&_datay, this->_m * sizeof(T)); // allocate on GPU
     cudaMalloc(&_vdata, this->_mvalid * this->_n * sizeof(T)); // allocate on GPU
     cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
+    cudaMalloc(&_weight, this->_m * sizeof(T)); // allocate on GPU
     double t1 = timer<double>();
     cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
     if(sharedA>0){
       Init(); // does nothing right now
@@ -295,16 +310,16 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 }
 
   template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and source thread=wDev if not given
+  MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
+    : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay,weight){} // assume sharedA=0 and source thread=wDev if not given
 
   // like original MatrixDense, but also feed in CPU data for trainY, validX, and validY
   // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
   // datatype=0: CPU pointer to data
   // datatype=1: GPU pointer to data
 template <typename T>
-MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0),_de(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -332,10 +347,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     GpuData<T> *infoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     GpuData<T> *vinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     GpuData<T> *vinfoy = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *weightinfo = new GpuData<T>(0); // new structure (holds pointer to data and GPU handle)
     this->_info = reinterpret_cast<void*>(info);
     this->_infoy = reinterpret_cast<void*>(infoy);
     this->_vinfo = reinterpret_cast<void*>(vinfo);
     this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    this->_weightinfo = reinterpret_cast<void*>(weightinfo);
     POP_RANGE("MDnew",MDnew,1);
 
 
@@ -344,6 +361,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _datay = datay;
     _vdata = vdata;
     _vdatay = vdatay;
+    _weight = weight;
+      
     if(!this->_done_alloc){
       this->_done_alloc = true;
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
@@ -361,10 +380,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     GpuData<T> *infoy = new GpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
     GpuData<T> *vinfo = new GpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
     GpuData<T> *vinfoy = new GpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+    GpuData<T> *weightinfo = new GpuData<T>(weight); // new structure (holds pointer to data and GPU handle)
     this->_info = reinterpret_cast<void*>(info);
     this->_infoy = reinterpret_cast<void*>(infoy);
     this->_vinfo = reinterpret_cast<void*>(vinfo);
     this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+    this->_weightinfo = reinterpret_cast<void*>(weightinfo);
     POP_RANGE("MDnew",MDnew,1);
 
 
@@ -378,11 +399,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMalloc(&_datay, this->_m * sizeof(T)); // allocate on GPU
       cudaMalloc(&_vdata, this->_mvalid * this->_n * sizeof(T)); // allocate on GPU
       cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
+      cudaMalloc(&_weight, this->_m * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
       if(sharedA>0){
         Init(); // does nothing right now
@@ -399,8 +422,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
 }
 
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : MatrixDense<T>(0,wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and thread=wDev if not given
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
+  : MatrixDense<T>(0,wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay,weight){} // assume sharedA=0 and thread=wDev if not given
 
   // MatrixDense where input actual A object that contains all CPU information, but need to go from 1 GPU to multiple GPU
   // Used by elastic_net_ptr.cpp inside openmp loop for each core
@@ -420,25 +443,30 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   GpuData<T> *infoy_A  = reinterpret_cast<GpuData<T>*>(A._infoy); // cast from void to GpuData
   GpuData<T> *vinfo_A  = reinterpret_cast<GpuData<T>*>(A._vinfo); // cast from void to GpuData
   GpuData<T> *vinfoy_A = reinterpret_cast<GpuData<T>*>(A._vinfoy); // cast from void to GpuData
+  GpuData<T> *weightinfo_A = reinterpret_cast<GpuData<T>*>(A._weightinfo); // cast from void to GpuData
 
   GpuData<T> *info;
   GpuData<T> *infoy;
   GpuData<T> *vinfo;
   GpuData<T> *vinfoy;
+  GpuData<T> *weightinfo;
   if(info_A->orig_data) info = new GpuData<T>(info_A->orig_data); // create new GpuData structure with point to CPU data
   else info = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(infoy_A->orig_data) infoy  = new GpuData<T>(infoy_A->orig_data); // create new GpuData structure with point to CPU data
   else infoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfo_A->orig_data) vinfo  = new GpuData<T>(vinfo_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfo = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfoy_A->orig_data) vinfoy = new GpuData<T>(vinfoy_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfoy_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  if(weightinfo_A->orig_data) weightinfo = new GpuData<T>(weightinfo_A->orig_data); // create new GpuData structure with point to CPU data
+  else weightinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
 
 
   this->_info = reinterpret_cast<void*>(info); // back to cast as void
   this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
   this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
   this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo); // back to cast as void
   POP_RANGE("MDnew",MDnew,2);
 
 
@@ -449,6 +477,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
+      _weight = A._weight;
       _de = A._de;
       //      Init();
       //      this->_done_equil=1;
@@ -458,6 +487,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
+      _weight = A._weight;
       _de = A._de;
       Init();
       this->_done_equil=1;
@@ -471,11 +501,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       if(A._datay) cudaMalloc(&_datay, A._m * sizeof(T)); // allocate on GPU
       if(A._vdata) cudaMalloc(&_vdata, A._mvalid * A._n * sizeof(T)); // allocate on GPU
       if(A._vdatay) cudaMalloc(&_vdatay, A._mvalid * sizeof(T)); // allocate on GPU
+      if(A._weight) cudaMalloc(&_weight, A._m * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       if(A._data) cudaMemcpyPeer(_data, _wDev, A._data, A._wDev, A._m * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._datay) cudaMemcpyPeer(_datay, _wDev, A._datay, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+      if(A._weight) cudaMemcpyPeer(_weight, _wDev, A._weight, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._de) cudaMalloc(&_de, (A._m + A._n) * sizeof(T)); cudaMemcpyPeer(_de, _wDev, A._de, A._wDev, (A._m + A._n) * sizeof(T));
       if(sharedA>0){
         Init();
@@ -507,43 +539,68 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
+
+  
+  // return;//TODO: Some deconstructor issue FIXME.  Segfaults after adding weights.  Can't find issue.
+  
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-  GpuData<T> *infoy = reinterpret_cast<GpuData<T>*>(this->_infoy);
-  GpuData<T> *vinfo = reinterpret_cast<GpuData<T>*>(this->_vinfo);
-  GpuData<T> *vinfoy = reinterpret_cast<GpuData<T>*>(this->_vinfoy);
 
-  if(info) delete info; this->_info = 0;
-  if(infoy) delete infoy; this->_infoy = 0;
-  if(vinfo) delete vinfo; this->_vinfo = 0;
-  if(vinfoy) delete vinfoy; this->_vinfoy = 0;
+  if(0){
+    GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+    GpuData<T> *infoy = reinterpret_cast<GpuData<T>*>(this->_infoy);
+    GpuData<T> *vinfo = reinterpret_cast<GpuData<T>*>(this->_vinfo);
+    GpuData<T> *vinfoy = reinterpret_cast<GpuData<T>*>(this->_vinfoy);
+    GpuData<T> *weightinfo = reinterpret_cast<GpuData<T>*>(this->_weightinfo);
 
-  if (this->_done_init && _data) {
-    cudaFree(_data);
-    this->_data = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
-  if (this->_done_init && _datay) {
-    cudaFree(_datay);
-    this->_datay = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
-  if (this->_done_init && _vdata) {
-    cudaFree(_vdata);
-    this->_vdata = 0;
-    DEBUG_CUDA_CHECK_ERR();
-  }
-  if (this->_done_init && _vdatay) {
-    cudaFree(_vdatay);
-    this->_vdatay = 0;
-    DEBUG_CUDA_CHECK_ERR();
+    if(info) delete info; this->_info = 0;
+    if(infoy) delete infoy; this->_infoy = 0;
+    if(vinfo) delete vinfo; this->_vinfo = 0;
+    if(vinfoy) delete vinfoy; this->_vinfoy = 0;
+    if(weightinfo) delete weightinfo; this->_weightinfo = 0;
   }
 
-  if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
-    cudaFree(_de);
-    this->_de=0;
-    DEBUG_CUDA_CHECK_ERR();
+  //  fprintf(stderr,"HERE1\n"); fflush(stderr);
+
+  if(1){
+    
+    if (this->_done_init && _data) {
+      cudaFree(_data);
+      this->_data = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+    //  fprintf(stderr,"HERE2\n"); fflush(stderr);
+    if (this->_done_init && _datay) {
+      cudaFree(_datay);
+      this->_datay = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+    //  fprintf(stderr,"HERE3\n"); fflush(stderr);
+    if (this->_done_init && _vdata) {
+      cudaFree(_vdata);
+      this->_vdata = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+    //  fprintf(stderr,"HERE4\n"); fflush(stderr);
+    if (this->_done_init && _vdatay) {
+      cudaFree(_vdatay);
+      this->_vdatay = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+    //  fprintf(stderr,"HERE5\n"); fflush(stderr);
+
+    if (this->_done_init && _weight) {
+      cudaFree(_weight);
+      this->_weight = 0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
+    //  fprintf(stderr,"HERE6\n"); fflush(stderr);
+
+    if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
+      cudaFree(_de);
+      this->_de=0;
+      DEBUG_CUDA_CHECK_ERR();
+    }
   }
   
 }
@@ -626,6 +683,22 @@ void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
 
   return;
 }
+template <typename T>
+void MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
+
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  if(datatype==1){
+    cudaMemcpy(*data, _weight, size* sizeof(T),cudaMemcpyDeviceToHost);
+    CUDA_CHECK_ERR();
+  }
+  else{
+    std::memcpy(*data, _weight, size * sizeof(T));
+  }
+
+  return;
+}
+
 
 template <typename T>
 int MatrixDense<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
@@ -1019,36 +1092,41 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
 #endif
 
+  if(1){ // normal usage
+    // Get Cublas handle
+    GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+    cublasHandle_t hdl = info->handle;
 
-  // Get Cublas handle
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
-  cublasHandle_t hdl = info->handle;
+    // Set up views for raw vectors.
+    cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
+    cml::vector<T> weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
+    cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n); // x
+    cml::vector_memcpy(&ytemp, &y_vec); // y_vec->ytemp
+    cml::vector_add_constant(&ytemp, -static_cast<T>(intercept)*mean[0]); // ytemp -> ytemp - intercept*mean[0]
+    cml::vector_mul(&ytemp,&weight_vec); // ytemp*weight -> ytemp
 
-  // Set up views for raw vectors.
-  cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
-  cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
-  cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n); // x
-  cml::vector_memcpy(&ytemp, &y_vec); // y_vec->ytemp
-  cml::vector_add_constant(&ytemp, -static_cast<T>(intercept)*mean[0]); // ytemp -> ytemp - intercept*mean[0]
+    // Compute A^T . b
+    if (_ord == MatrixDense<T>::ROW) {
+      const cml::matrix<T, CblasRowMajor> A = cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n); // just view
+      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+    }
+    else{
+      const cml::matrix<T, CblasColMajor> A = cml::matrix_view_array<T, CblasColMajor>(_data, this->_m, this->_n); // just view
+      cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+    }
 
-  // Compute A^T . b
-  if (_ord == MatrixDense<T>::ROW) {
-    const cml::matrix<T, CblasRowMajor> A = cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n); // just view
-    cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+    thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(&xtemp.data[0]);
+
+    lambda_max0 = thrust::transform_reduce(thrust::device,
+                                           dev_ptr, dev_ptr + this->_n-intercept,
+                                           absolute_value<T>(),
+                                           0,
+                                           thrust::maximum<T>());
   }
   else{
-    const cml::matrix<T, CblasColMajor> A = cml::matrix_view_array<T, CblasColMajor>(_data, this->_m, this->_n); // just view
-    cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
+    lambda_max0 = 7000; // test
   }
-
-  thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(&xtemp.data[0]);
-
-  lambda_max0 = thrust::transform_reduce(thrust::device,
-                                          dev_ptr, dev_ptr + this->_n-intercept,
-                                          absolute_value<T>(),
-                                          0,
-                                          thrust::maximum<T>());
-  
   CUDA_CHECK_ERR();
 
   return 0;

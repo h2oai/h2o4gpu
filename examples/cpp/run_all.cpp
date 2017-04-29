@@ -35,16 +35,17 @@ int main(int argc, char **argv) {
 
   std::vector<real_t> A;
   std::vector<real_t> b;
+  std::vector<real_t> w;
   cout << "START FILL DATA\n" << endl;
   double t0 = timer<double>();
-  fillData(rows,cols,filename, A, b);
+  fillData(rows,cols,filename, A, b, w);
   double t1 = timer<double>();
   cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
 
   
 
   printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
-  t = ElasticNet<real_t>(A, b, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
+  t = ElasticNet<real_t>(A, b, w, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
   printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
 
   fflush(stdout);

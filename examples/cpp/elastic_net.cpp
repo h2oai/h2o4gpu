@@ -48,7 +48,7 @@ T getVar(std::vector<T>& v, T mean) {
 // for many values of \lambda and multiple values of \alpha
 // See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
-double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
   int nlambda = nLambdas;
   if (nlambda <= 1) {
     cerr << "Must use nlambda > 1\n";
@@ -74,8 +74,8 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
 
 
   // read data and do train-valid split
-  std::vector<T> trainX, trainY, validX, validY;
-  splitData(A, b, trainX, trainY, validX, validY, validFraction, intercept);
+  std::vector<T> trainX, trainY, trainW, validX, validY, validW;
+  splitData(A, b, w, trainX, trainY, trainW, validX, validY, validW, validFraction, intercept);
   size_t m = trainY.size();
   size_t mTrain = trainY.size();
   size_t mValid = validY.size();
@@ -348,6 +348,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   return tf-t;
 }
   
-template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, int, int, int, int, int, int, int, double);
-template double ElasticNet<float>(const std::vector<float> &A, const std::vector<float> &b, int, int, int, int, int, int, int, double);
+template double ElasticNet<double>(const std::vector<double> &A, const std::vector<double> &b, const std::vector<double> &w, int, int, int, int, int, int, int, double);
+template double ElasticNet<float>(const std::vector<float> &A, const std::vector<float> &b, const std::vector<float> &w, int, int, int, int, int, int, int, double);
  

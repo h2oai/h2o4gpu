@@ -27,7 +27,7 @@ T getVarV(std::vector <T> &v, T mean) {
 
 // m and n are full data set size before splitting
 template <typename T>
-double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
   if (validFraction<0 or validFraction>=1) {
     cerr << "validFraction must be in [0, 1)\n";
     exit(-1);
@@ -40,14 +40,24 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   system("rm -f me*.latest.txt ; touch me0.latest.txt");
 
   // read data and do train-valid split
-  std::vector<T> trainX, trainY, validX, validY;
-  splitData(A, b, trainX, trainY, validX, validY, validFraction, intercept);
+  std::vector<T> trainX, trainY, trainW, validX, validY, validW;
+  splitData(A, b, w, trainX, trainY, trainW, validX, validY, validW, validFraction, intercept);
   size_t mTrain = trainY.size();
   size_t mValid = validY.size();
   size_t n=trainX.size()/mTrain;
   cout << "Rows in training data: " << mTrain << endl;
   cout << "Rows in validation data: " << mValid << endl;
   cout << "Cols in training data: " << n << endl;
+
+  // set weights
+  if(0){
+    for(unsigned int i=0; i<mTrain;i++) trainW[i]/=static_cast<T>(mTrain);
+    for(unsigned int i=0; i<mValid;i++) validW[i]/=static_cast<T>(mValid);
+  }
+  else{ // FIXME: should be able to scale by constant weights and be same result/outcome, but currently appears to solve very different problem.
+    for(unsigned int i=0; i<mTrain;i++) trainW[i]/=1.0;
+    for(unsigned int i=0; i<mValid;i++) validW[i]/=1.0;
+  }
 
 //  // DEBUG START
 //  for (int i=0;i<m;++i) {
@@ -138,15 +148,18 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, int sharedA, i
   void* bb;
   void* cc;
   void* dd;
+  void* ee;
   int sourceme=0; // index of first thread to own data
   int sourceDev=0; //index of first GPU to own data
-  h2oaiglm::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX.data(), trainY.data(), validX.data(), validY.data(), &aa, &bb, &cc, &dd);
+  const char ord='r'; // normal C-order
+  // only need train weight
+  h2oaiglm::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee);
 
 
   int datatype = 1;
-  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, 'r', mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd);
+  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd, ee);
 }
 
-template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, int, int, int, int, int, int, int, double);
-template double ElasticNet<float>(const std::vector<float>&A, const std::vector<float>&b, int, int, int, int, int, int, int, double);
+template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, const std::vector<double>&w, int, int, int, int, int, int, int, double);
+template double ElasticNet<float>(const std::vector<float>&A, const std::vector<float>&b, const std::vector<float>&w, int, int, int, int, int, int, int, double);
 

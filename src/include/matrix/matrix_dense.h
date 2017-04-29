@@ -19,6 +19,7 @@ class MatrixDense : public Matrix<T> {
   T *_datay; // trainY
   T *_vdata;  // validX
   T *_vdatay; // validY
+  T *_weight; // weight
   T *_de;
   enum Ord {ROW, COL};
 
@@ -35,11 +36,11 @@ class MatrixDense : public Matrix<T> {
 
   MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data); // can be used by src/common/elastic_net_ptr.cpp
   
-  MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay); // initial ptr copy for examples/cpp/elastic_net_ptr_driver.cpp
-  MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay); // not used now
+  MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight); // initial ptr copy for examples/cpp/elastic_net_ptr_driver.cpp
+  MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mvalid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight); // not used now
 
-  MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay); // Asource_ inside parallel for src/common/elastic_net_ptr.cpp
-  MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay); // not used now
+  MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay, T *weight); // Asource_ inside parallel for src/common/elastic_net_ptr.cpp
+  MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mvalid, T *data, T *datay, T *vdata, T *vdatay, T *weight); // not used now
 
   MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A); // used by examples/cpp/elasticnet*.cpp inside parallel region
   MatrixDense(int me, int wDev, const MatrixDense<T>& A); // not used
@@ -62,6 +63,7 @@ class MatrixDense : public Matrix<T> {
   void GetTrainY(int datatype, size_t size, T**data) const;
   void GetValidX(int datatype, size_t size, T**data) const;
   void GetValidY(int datatype, size_t size, T**data) const;
+  void GetWeight(int datatype, size_t size, T**data) const;
 
   int Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T&lambda_max0);
 
@@ -70,6 +72,8 @@ class MatrixDense : public Matrix<T> {
   const T* Datay() const { return _datay; }
   const T* vData() const { return _vdata; }
   const T* vDatay() const { return _vdatay; }
+  const T* Weight() const { return _weight; }
+
   Ord Order() const { return _ord; }
   int GetsharedA() const { return _sharedA; }
   int wDev() const { return _wDev; }

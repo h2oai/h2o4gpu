@@ -62,6 +62,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
+  _weight=NULL;
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -75,6 +76,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   CpuData<T> *vinfoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  CpuData<T> *weightinfo = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
   
   // Copy Matrix to CPU
   if(!this->_done_alloc){
@@ -108,6 +111,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   _datay=NULL;
   _vdata=NULL;
   _vdatay=NULL;
+  _weight=NULL;
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -121,6 +125,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   CpuData<T> *vinfoy = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  CpuData<T> *weightinfo = new CpuData<T>(0); // new structure (holds pointer to data and GPU handle)
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
@@ -142,8 +148,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
 
 }
 template <typename T>
-MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _de(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -153,10 +159,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *vinfo = new CpuData<T>(vdata); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *vinfoy = new CpuData<T>(vdatay); // new structure (holds pointer to data and GPU handle)
+  CpuData<T> *weightinfo = new CpuData<T>(weight); // new structure (holds pointer to data and GPU handle)
   this->_info = reinterpret_cast<void*>(info);
   this->_infoy = reinterpret_cast<void*>(infoy);
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
 
 
   if(!this->_done_alloc){
@@ -166,6 +174,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
       _datay = const_cast<T*>(datay);
       _vdata = const_cast<T*>(vdata);
       _vdatay = const_cast<T*>(vdatay);
+      _weight = const_cast<T*>(weight);
     }
     else{
       // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
@@ -193,6 +202,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
       }
+      if(weightinfo->orig_data){
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
+      }
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
     if(sharedA>0){
@@ -205,15 +219,15 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
 
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay)
-  : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and source thread=wDev always if not given
+MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
+  : MatrixDense<T>(0,wDev,wDev,ord,m,n,mValid,data,datay,vdata,vdatay,weight){} // assume sharedA=0 and source thread=wDev always if not given
  
 
   // no use of datatype for CPU version
   // Assume call this function when oustide parallel region and first instance of call to allocating matrix A (_data), etc.
 template <typename T>
-MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _de(0) {
+MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -221,10 +235,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
   CpuData<T> *infoy = new CpuData<T>(datay);
   CpuData<T> *vinfo = new CpuData<T>(vdata);
   CpuData<T> *vinfoy = new CpuData<T>(vdatay);
+  CpuData<T> *weightinfo = new CpuData<T>(weight);
   this->_info = reinterpret_cast<void*>(info);
   this->_infoy = reinterpret_cast<void*>(infoy);
   this->_vinfo = reinterpret_cast<void*>(vinfo);
   this->_vinfoy = reinterpret_cast<void*>(vinfoy);
+  this->_weightinfo = reinterpret_cast<void*>(weightinfo);
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
@@ -233,6 +249,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       _datay = const_cast<T*>(datay);
       _vdata = const_cast<T*>(vdata);
       _vdatay = const_cast<T*>(vdatay);
+      _weight = const_cast<T*>(weight);
     }
     else{
       // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
@@ -259,6 +276,12 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         _vdatay = new T[this->_mvalid];
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
+      }
+
+      if(weightinfo->orig_data){
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
@@ -298,37 +321,42 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
 
 
 template <typename T>
-MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay)
-  : MatrixDense<T>(0,wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay){} // assume sharedA=0 and thread=wDev if not given
+MatrixDense<T>::MatrixDense(int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
+  : MatrixDense<T>(0,wDev,wDev,datatype,ord,m,n,mValid,data,datay,vdata,vdatay,weight){} // assume sharedA=0 and thread=wDev if not given
 
   
   
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
-  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _de(0), _ord(A._ord) {
+  : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0), _ord(A._ord) {
 
   CpuData<T> *info_A   = reinterpret_cast<CpuData<T>*>(A._info); // cast from void to CpuData
   CpuData<T> *infoy_A  = reinterpret_cast<CpuData<T>*>(A._infoy); // cast from void to CpuData
   CpuData<T> *vinfo_A  = reinterpret_cast<CpuData<T>*>(A._vinfo); // cast from void to CpuData
   CpuData<T> *vinfoy_A = reinterpret_cast<CpuData<T>*>(A._vinfoy); // cast from void to CpuData
+  CpuData<T> *weightinfo_A = reinterpret_cast<CpuData<T>*>(A._weightinfo); // cast from void to CpuData
 
   CpuData<T> *info;
   CpuData<T> *infoy;
   CpuData<T> *vinfo;
   CpuData<T> *vinfoy;
+  CpuData<T> *weightinfo;
   if(A._data) info = new CpuData<T>(info_A->orig_data); // create new CpuData structure with point to CPU data
   else info = new CpuData<T>(0);
   if(A._datay) infoy  = new CpuData<T>(infoy_A->orig_data); // create new CpuData structure with point to CPU data
-  else info = new CpuData<T>(0);
+  else infoy = new CpuData<T>(0);
   if(A._vdata) vinfo  = new CpuData<T>(vinfo_A->orig_data); // create new CpuData structure with point to CPU data
-  else info = new CpuData<T>(0);
+  else vinfo = new CpuData<T>(0);
   if(A._vdatay) vinfoy = new CpuData<T>(vinfoy_A->orig_data); // create new CpuData structure with point to CPU data
-  else info = new CpuData<T>(0);
+  else vinfoy = new CpuData<T>(0);
+  if(A._weight) weightinfo = new CpuData<T>(weightinfo_A->orig_data); // create new CpuData structure with point to CPU data
+  else weightinfo = new CpuData<T>(0);
 
   if(A._data) this->_info = reinterpret_cast<void*>(info); // back to cast as void
   if(A._datay) this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
   if(A._vdata)  this->_vinfo = reinterpret_cast<void*>(vinfo); // back to cast as void
   if(A._vdatay) this->_vinfoy = reinterpret_cast<void*>(vinfoy); // back to cast as void          
+  if(A._weight) this->_weightinfo = reinterpret_cast<void*>(weightinfo); // back to cast as void          
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
@@ -339,6 +367,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _datay  = A._datay;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
+      _weight = A._weight;
       _de = A._de; // now share de as never gets modified after original A was processed
       //      Init();
       //      this->_done_equil=1;
@@ -366,6 +395,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         _vdatay = new T[A._mvalid];
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy_A->orig_data, A._mvalid * sizeof(T));
+      }
+      if(A._weight){
+        _weight = new T[A._m];
+        ASSERT(_weight != 0);
+        memcpy(_weight, weightinfo_A->orig_data, A._m * sizeof(T));
       }
       _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
       if(sharedA>0){
@@ -398,16 +432,18 @@ MatrixDense<T>::~MatrixDense() {
   CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
   CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
   CpuData<T> *vinfoy = reinterpret_cast<CpuData<T>*>(this->_vinfoy);
+  CpuData<T> *weightinfo = reinterpret_cast<CpuData<T>*>(this->_weightinfo);
   if(info) delete info;
   if(infoy) delete infoy;
   if(vinfo) delete vinfo;
   if(vinfoy) delete vinfoy;
+  if(weightinfo) delete weightinfo;
   this->_info = 0;
   this->_infoy = 0;
   this->_vinfo = 0;
-  this->_vinfoy = 0;
+  this->_weightinfo = 0;
 
-  // JONTODO: why aren't _data etc. freed?
+  // FIXME JONTODO: why aren't _data etc. freed?
 }
 
 template <typename T>
@@ -436,6 +472,10 @@ void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
 template <typename T>
 void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
   std::memcpy(*data, _vdatay, size * sizeof(T));
+}
+template <typename T>
+void MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
+  std::memcpy(*data, _weight, size * sizeof(T));
 }
 
 
@@ -633,9 +673,8 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
-    T weights = static_cast<T>(1.0); ///mTrain); //TODO: Add per-obs weights
     for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += weights * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+      u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
     }
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }

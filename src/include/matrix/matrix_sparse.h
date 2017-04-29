@@ -20,6 +20,7 @@ class MatrixSparse : public Matrix<T> {
   T *_datay;
   T *_vdata;
   T *_vdatay;
+  T *_weight;
   T * _de;
   enum Ord {ROW, COL};
 
@@ -56,6 +57,8 @@ class MatrixSparse : public Matrix<T> {
   const T* Datay() const { return _datay; }
   const T* vData() const { return _vdata; }
   const T* vDatay() const { return _vdatay; }
+  const T* Weight() const { return _weight; }
+  
   const H2OAIGLM_INT* Ptr() const { return _ptr; }
   const H2OAIGLM_INT* Ind() const { return _ind; }
   H2OAIGLM_INT Nnz() const { return _nnz; }

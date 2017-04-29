@@ -15,9 +15,9 @@
 #endif
 
 template<typename T>
-void splitData(const std::vector<T>& A, const std::vector<T>& b,
-               std::vector<T>& trainX, std::vector<T>& trainY,
-               std::vector<T>& validX, std::vector<T>& validY,
+void splitData(const std::vector<T>& A, const std::vector<T>& b, const std::vector<T>& w,
+               std::vector<T>& trainX, std::vector<T>& trainY, std::vector<T>& trainW,
+               std::vector<T>& validX, std::vector<T>& validY, std::vector<T>& validW,
                double validFraction, int intercept) {
   using namespace std;
 
@@ -33,12 +33,14 @@ void splitData(const std::vector<T>& A, const std::vector<T>& b,
 
   trainX.resize(mTrain * n); // TODO FIXME: Should just point trainX to part of A to save memory
   trainY.resize(mTrain);
+  trainW.resize(mTrain);
 
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
   for (int i = 0; i < mTrain; ++i) { //rows
     trainY[i] = b[i];
+    trainW[i] = w[i];
 //      cout << "y[" << i << "] = " << trainY[i] << endl;
     for (int j = 0; j < n - intercept; ++j) { //cols
       trainX[i * n + j] = A[i * (n-intercept) + j];
@@ -51,11 +53,13 @@ void splitData(const std::vector<T>& A, const std::vector<T>& b,
   if (mValid > 0) {
     validX.resize(mValid * n);
     validY.resize(mValid);
+    validW.resize(mValid);
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
     for (int i = 0; i < mValid; ++i) { //rows
       validY[i] = b[mTrain + i];
+      validW[i] = w[mTrain + i];
       for (int j = 0; j < n - intercept; ++j) { //cols
         validX[i * n + j] = A[(mTrain + i) * (n-intercept) + j];
       }
@@ -68,10 +72,12 @@ void splitData(const std::vector<T>& A, const std::vector<T>& b,
   fflush(stdout);
 }
 
+
+
 template<typename T>
 int fillData(size_t m, size_t n, // only used if name.empty()
              const std::string &file,
-             std::vector<T>& A, std::vector<T>& b) {
+             std::vector<T>& A, std::vector<T>& b, std::vector<T>& w) {
   std::default_random_engine generator;
   std::uniform_real_distribution <T> u_dist(static_cast<T>(0),
                                             static_cast<T>(1));
@@ -104,6 +110,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
     size_t n = cols;
     A.resize(n*m);
     b.resize(m);
+    w.resize(m);
 #ifdef _OPENMP
 #pragma omp parallel
 {
@@ -153,6 +160,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
               A[i * n + j] = val;
             } else {
               b[i] = val;
+              w[i] = 1.0; // just constant weight
             }
             j++;
           }
@@ -160,7 +168,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
       }
     }
 #ifdef _OPENMP
-    }
+  }
 #endif
 
 #ifdef _OPENMP
@@ -171,6 +179,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
     }
     for (unsigned int i = 0; i < m; ++i) {
       if (!std::isfinite(b[i])) fprintf(stderr, "b[%d]=%g\n", i, b[i]);
+      if (!std::isfinite(w[i])) fprintf(stderr, "w[%d]=%g\n", i, w[i]);
     }
   } else {
     // GENERATE DATA
@@ -187,7 +196,10 @@ int fillData(size_t m, size_t n, // only used if name.empty()
 #endif
     for (unsigned int i = 0; i < m; ++i) // rows
       for (unsigned int j = 0; j < n; ++j) // columns
+        b[i] += A[i * n + j] * x_true[j]; // C(0-indexed) row-major order
 
+    for (unsigned int i = 0; i < m; ++i)
+      w[i] = 1.0; // constant weight
     for (unsigned int i = 0; i < m; ++i)
       b[i] += static_cast<T>(0.5) * n_dist(generator);
 

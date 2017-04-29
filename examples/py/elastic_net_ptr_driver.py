@@ -57,6 +57,8 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   trainY = np.copy(y[0:H])
   validX = np.copy(X[H:-1,:])
   validY = np.copy(y[H:-1])
+  trainW = np.copy(trainY)*0.0 + 1.0 # constant unity weight
+
   mTrain = trainX.shape[0]
   mvalid = validX.shape[0]
   print("mTrain=%d mvalid=%d" % (mTrain,mvalid))
@@ -92,11 +94,12 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   print(trainY.dtype)
   print(validX.dtype)
   print(validY.dtype)
-  a,b,c,d = enet.upload_data(sourceDev, trainX, trainY, validX, validY)
+  print(trainW.dtype)
+  a,b,c,d,e = enet.upload_data(sourceDev, trainX, trainY, validX, validY, trainW)
 
   ## Solve
   print("Solving")
-  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, a, b, c, d)
+  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, a, b, c, d, e)
   print("Done Solving")
 
   return enet

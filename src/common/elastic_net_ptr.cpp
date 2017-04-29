@@ -145,7 +145,7 @@ namespace h2oaiglm {
     double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                          double lambda_min_ratio, int nLambdas, int nAlphas,
-                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
+                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
 
       signal(SIGINT, my_function);
       signal(SIGTERM, my_function);
@@ -186,8 +186,9 @@ namespace h2oaiglm {
       // assume source thread is 0th thread (TODO: need to ensure?)
       int sourceme=sourceDev;
       h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
-                                    reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
-                                    reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr));
+                                        reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
+                                        reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
+                                        reinterpret_cast<T *>(weightptr));
       // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
       T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
       T lambdamax0;
@@ -211,15 +212,18 @@ namespace h2oaiglm {
       T *trainY=NULL;
       T *validX=NULL;
       T *validY=NULL;
+      T *trainW=NULL;
       if(OLDPRED) trainX = (T *) malloc(sizeof(T) * mTrain * n);
       trainY = (T *) malloc(sizeof(T) * mTrain);
       if(OLDPRED) validX = (T *) malloc(sizeof(T) * mValid * n);
       validY = (T *) malloc(sizeof(T) * mValid);
+      trainW = (T *) malloc(sizeof(T) * mTrain);
 
       if(OLDPRED) Asource_.GetTrainX(datatype, mTrain * n, &trainX);
       Asource_.GetTrainY(datatype, mTrain, &trainY);
       if(OLDPRED) Asource_.GetValidX(datatype, mValid * n, &validX);
       Asource_.GetValidY(datatype, mValid, &validY);
+      Asource_.GetWeight(datatype, mTrain, &trainW);
 
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
       // Setup each thread's h2oaiglm
@@ -312,9 +316,9 @@ namespace h2oaiglm {
           g.reserve(n);
           // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
           T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
-          //T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
+          //          T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
 
-          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j]); // h2oaiglm.R
+          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2oaiglm.R
           for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
           if (intercept) g.emplace_back(kZero);
 
@@ -530,6 +534,7 @@ namespace h2oaiglm {
       if(trainY) free(trainY);
       if(validX && OLDPRED) free(validX);
       if(validY) free(validY);
+      if(trainW) free(trainW);
 
       double tf = timer<double>();
       fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t);
@@ -543,44 +548,44 @@ namespace h2oaiglm {
     template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                           double lambda_min_ratio, int nLambdas, int nAlphas,
-                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
     template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                          double lambda_min_ratio, int nLambdas, int nAlphas,
-                                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr);
+                                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
-      int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
-                        double* trainX, double* trainY, double* validX, double* validY,
-                        void**a, void**b, void**c, void**d) {
-        return makePtr<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
+      int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                          double* trainX, double* trainY, double* validX, double* validY, double *weight,
+                          void**a, void**b, void**c, void**d, void **e) {
+        return makePtr<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
-    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid,
-                       float* trainX, float* trainY, float* validX, float* validY,
-                       void**a, void**b, void**c, void**d) {
-      return makePtr<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, trainX, trainY, validX, validY, a, b, c, d);
+    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                       float* trainX, float* trainY, float* validX, float* validY, float *weight,
+                       void**a, void**b, void**c, void**d, void **e) {
+      return makePtr<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
-    double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
+    double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,
-                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
-      return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
+                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
+      return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                    mTrain, n, mValid, intercept, standardize,
                                    lambda_min_ratio, nLambdas, nAlphas,
-                                   trainXptr, trainYptr, validXptr, validYptr);
+                                   trainXptr, trainYptr, validXptr, validYptr, weightptr);
     }
-    double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, int ord,
+    double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                  double lambda_min_ratio, int nLambdas, int nAlphas,
-                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr) {
-      return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord==1?'r':'c',
+                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
+      return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                   mTrain, n, mValid, intercept, standardize,
                                   lambda_min_ratio, nLambdas, nAlphas,
-                                  trainXptr, trainYptr, validXptr, validYptr);
+                                  trainXptr, trainYptr, validXptr, validYptr, weightptr);
     }
 
 #ifdef __cplusplus
