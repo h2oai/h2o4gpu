@@ -455,11 +455,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   if(infoy_A->orig_data) infoy  = new GpuData<T>(infoy_A->orig_data); // create new GpuData structure with point to CPU data
   else infoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfo_A->orig_data) vinfo  = new GpuData<T>(vinfo_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfo = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfoy_A->orig_data) vinfoy = new GpuData<T>(vinfoy_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfoy_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(weightinfo_A->orig_data) weightinfo = new GpuData<T>(weightinfo_A->orig_data); // create new GpuData structure with point to CPU data
-  else weightinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else weightinfo = new GpuData<T>(0); // create new GpuData structure with point to CPU data
 
 
   this->_info = reinterpret_cast<void*>(info); // back to cast as void
@@ -546,7 +546,7 @@ MatrixDense<T>::~MatrixDense() {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(0){
+  if(1){
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     GpuData<T> *infoy = reinterpret_cast<GpuData<T>*>(this->_infoy);
     GpuData<T> *vinfo = reinterpret_cast<GpuData<T>*>(this->_vinfo);
