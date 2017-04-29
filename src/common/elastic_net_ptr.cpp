@@ -276,7 +276,7 @@ namespace h2oaiglm {
 #pragma omp barrier // not required barrier
         h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
-        h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
+        h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA,me, wDev, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);

@@ -41,11 +41,11 @@ struct GpuData {
   cublasHandle_t handle; // handle for data on GPU
   GpuData(const T *orig_data) : orig_data(orig_data) {
     cublasCreate(&handle);
-    //    fprintf(stderr,"HEREstart: %ld\n",handle); fflush(stderr);
+    fprintf(stderr,"HEREstart: %ld\n",handle); fflush(stderr);
     DEBUG_CUDA_CHECK_ERR();
   }
   ~GpuData() {
-    //    fprintf(stderr,"HEREend: %ld\n",handle); fflush(stderr);
+    fprintf(stderr,"HEREend: %ld\n",handle); fflush(stderr);
 
     if(handle!=NULL) cublasDestroy(handle);
     DEBUG_CUDA_CHECK_ERR();
@@ -258,6 +258,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
   fprintf(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev); fflush(stderr);
 #endif
 
+  fprintf(stderr,"%p %p %p %p %p\n",(void*)data,(void*)datay,(void*)vdata,(void*)vdatay,(void*)weight); fflush(stderr);
 
   // source pointer is on CPU
   // Set GPU specific _info.
@@ -307,6 +308,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 #endif
     POP_RANGE("MDsend",MDsend,1);
   }
+  //  exit(0);
 }
 
   template <typename T>
@@ -355,6 +357,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     this->_weightinfo = reinterpret_cast<void*>(weightinfo);
     POP_RANGE("MDnew",MDnew,1);
 
+    fprintf(stderr,"IN1: %p %p %p %p %p\n",(void*)data,(void*)datay,(void*)vdata,(void*)vdatay,(void*)weight); fflush(stderr);
+    fprintf(stderr,"IN1.5: %p %p %p %p %p\n",(void*)this->_info,(void*)this->_infoy,(void*)this->_vinfo,(void*)this->_vinfoy,(void*)this->_weightinfo); fflush(stderr);
 
     // Just copy GPU pointer
     _data = data;
@@ -419,6 +423,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       POP_RANGE("MDsend",MDsend,1);
     }
   }
+  fprintf(stderr,"IN1.7: %p %p %p %p %p\n",(void*)data,(void*)datay,(void*)vdata,(void*)vdatay,(void*)weight); fflush(stderr);
+  fprintf(stderr,"IN1.8: %p %p %p %p %p\n",(void*)this->_info,(void*)this->_infoy,(void*)this->_vinfo,(void*)this->_vinfoy,(void*)this->_weightinfo); fflush(stderr);
+
 }
 
 template <typename T>
@@ -433,8 +440,11 @@ template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A)
   : Matrix<T>(A._m, A._n, A._mvalid), _sharedA(sharedA), _me(me), _wDev(wDev), _data(0),_de(0), _ord(A._ord) {
 
+  fprintf(stderr,"IN3ahead: %p %p %p %p %p\n",(void*)A._info,(void*)A._infoy,(void*)A._vinfo,(void*)A._vinfoy,(void*)A._weightinfo); fflush(stderr);
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
+
+  fprintf(stderr,"IN2: %p %p %p %p %p\n",(void*)A._data,(void*)A._datay,(void*)A._vdata,(void*)A._vdatay,(void*)A._weight); fflush(stderr);
 
   DEBUG_FPRINTF(stderr,"MatrixDense5: ord=%c m=%d n=%d mValid=%d\n",A._ord,A._m,A._n,A._mvalid);
 
@@ -444,6 +454,8 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   GpuData<T> *vinfo_A  = reinterpret_cast<GpuData<T>*>(A._vinfo); // cast from void to GpuData
   GpuData<T> *vinfoy_A = reinterpret_cast<GpuData<T>*>(A._vinfoy); // cast from void to GpuData
   GpuData<T> *weightinfo_A = reinterpret_cast<GpuData<T>*>(A._weightinfo); // cast from void to GpuData
+
+  fprintf(stderr,"IN3: %p %p %p %p %p\n",(void*)A._info,(void*)A._infoy,(void*)A._vinfo,(void*)A._vinfoy,(void*)A._weightinfo); fflush(stderr);
 
   GpuData<T> *info;
   GpuData<T> *infoy;
@@ -455,12 +467,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   if(infoy_A->orig_data) infoy  = new GpuData<T>(infoy_A->orig_data); // create new GpuData structure with point to CPU data
   else infoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfo_A->orig_data) vinfo  = new GpuData<T>(vinfo_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfo = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(vinfoy_A->orig_data) vinfoy = new GpuData<T>(vinfoy_A->orig_data); // create new GpuData structure with point to CPU data
-  else vinfoy_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else vinfoy = new GpuData<T>(0); // create new GpuData structure with point to CPU data
   if(weightinfo_A->orig_data) weightinfo = new GpuData<T>(weightinfo_A->orig_data); // create new GpuData structure with point to CPU data
-  else weightinfo_A = new GpuData<T>(0); // create new GpuData structure with point to CPU data
+  else weightinfo = new GpuData<T>(0); // create new GpuData structure with point to CPU data
 
+  fprintf(stderr,"IN5thisA: %p %p %p %p %p\n",(void*)info,(void*)infoy,(void*)vinfo,(void*)vinfoy,(void*)weightinfo); fflush(stderr);
 
   this->_info = reinterpret_cast<void*>(info); // back to cast as void
   this->_infoy = reinterpret_cast<void*>(infoy); // back to cast as void
@@ -469,6 +482,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   this->_weightinfo = reinterpret_cast<void*>(weightinfo); // back to cast as void
   POP_RANGE("MDnew",MDnew,2);
 
+  fprintf(stderr,"IN5thisB: %p %p %p %p %p\n",(void*)this->_info,(void*)this->_infoy,(void*)this->_vinfo,(void*)this->_vinfoy,(void*)this->_weightinfo); fflush(stderr);
 
   if(!this->_done_alloc){
     this->_done_alloc = true;
@@ -521,6 +535,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       POP_RANGE("MDcopy",MDcopy,1);
     }
   }
+  fprintf(stderr,"IN4: %p %p %p %p %p\n",(void*)A._data,(void*)A._datay,(void*)A._vdata,(void*)A._vdatay,(void*)A._weight); fflush(stderr);
+  fprintf(stderr,"IN5: %p %p %p %p %p\n",(void*)A._info,(void*)A._infoy,(void*)A._vinfo,(void*)A._vinfoy,(void*)A._weightinfo); fflush(stderr);
+  fprintf(stderr,"IN4this: %p %p %p %p %p\n",(void*)this->_data,(void*)this->_datay,(void*)this->_vdata,(void*)this->_vdatay,(void*)this->_weight); fflush(stderr);
+  fprintf(stderr,"IN5this: %p %p %p %p %p\n",(void*)this->_info,(void*)this->_infoy,(void*)this->_vinfo,(void*)this->_vinfoy,(void*)this->_weightinfo); fflush(stderr);
 
 }
 
@@ -542,6 +560,7 @@ MatrixDense<T>::~MatrixDense() {
 
   
   // return;//TODO: Some deconstructor issue FIXME.  Segfaults after adding weights.  Can't find issue.
+  fprintf(stderr,"deSTART\n"); fflush(stderr);
   
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
@@ -560,9 +579,8 @@ MatrixDense<T>::~MatrixDense() {
     if(weightinfo) delete weightinfo; this->_weightinfo = 0;
   }
 
-  //  fprintf(stderr,"HERE1\n"); fflush(stderr);
 
-  if(1){
+  if(0){
     
     if (this->_done_init && _data) {
       cudaFree(_data);
@@ -602,6 +620,7 @@ MatrixDense<T>::~MatrixDense() {
       DEBUG_CUDA_CHECK_ERR();
     }
   }
+  fprintf(stderr,"deEND\n"); fflush(stderr);
   
 }
       
@@ -1092,7 +1111,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
 #endif
 
-  if(1){ // normal usage
+  if(0){ // normal usage
     // Get Cublas handle
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     cublasHandle_t hdl = info->handle;

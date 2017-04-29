@@ -38,6 +38,7 @@ class MatrixSparse : public Matrix<T> {
       const H2OAIGLM_INT *ptr, const H2OAIGLM_INT *ind);
   MatrixSparse(char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz, const T *data,
       const H2OAIGLM_INT *ptr, const H2OAIGLM_INT *ind);
+  MatrixSparse(int sharedA, int me, int wDev, const MatrixSparse<T>& A);
   MatrixSparse(int wDev, const MatrixSparse<T>& A);
   MatrixSparse(const MatrixSparse<T>& A);
   ~MatrixSparse();

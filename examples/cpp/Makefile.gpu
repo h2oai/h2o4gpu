@@ -2,13 +2,13 @@ ICCFILE := $(shell command -v icpc 2> /dev/null)
 
 
 ifdef ICCFILE
-USEICC=1
+USEICC=0
 else
 USEICC=0
 endif
 
 ifdef MKLROOT
-USEMKL=1
+USEMKL=0
 else
 USEMKL=0
 endif
@@ -57,15 +57,15 @@ endif
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) #-DDEBUG -DUSE_NVTX=1 # -DUSE_NCCL=1
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) -DDEBUG -D_DEBUG -DUSE_NVTX=1 # -DUSE_NCCL=1
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O0 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
 
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) # -lnvToolsExt  #  -lnccl
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) -lnvToolsExt  #  -lnccl
 
 # Check System Args.
 UNAME = $(shell uname -s)

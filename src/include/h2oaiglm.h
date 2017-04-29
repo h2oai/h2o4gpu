@@ -156,7 +156,7 @@ class H2OAIGLM {
 
  public:
   // Constructor and Destructor.
-  H2OAIGLM(int wDev, const M &A);
+  H2OAIGLM(int sharedA, int me, int wDev, const M &A);
   H2OAIGLM(const M &A);
   ~H2OAIGLM();
 
