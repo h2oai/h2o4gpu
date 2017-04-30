@@ -1,5 +1,3 @@
-include ../../../config2.mk
-
 # the R header dir, and the R shared library dir on your system
 R_PATH := $(shell R RHOME)
 R_INC := $(shell R CMD config --cppflags)
