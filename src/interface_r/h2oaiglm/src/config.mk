@@ -1,5 +1,4 @@
-# Change this target between cpu and gpu
-TARGET=gpu
+include ../../../config2.mk
 
 # the R header dir, and the R shared library dir on your system
 R_PATH := $(shell R RHOME)
@@ -44,7 +43,15 @@ CXXFLAGS+=$(DEVICEOPTS)  -DH2OAIGLM_SINGLE=0
 
 
 ifeq ($(TARGET), gpu)
-    LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lnvToolsExt # -lnccl
+    LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse
+
+ifeq ($(USENVTX), 1)
+LD_FLAGS+=-lnvToolsExt
+endif
+ifeq ($(USENCCL), 1)
+LD_FLAGS+=-lnccl
+endif
+
 else
     LD_FLAGS=blas2cblas.cpp $(shell R CMD config BLAS_LIBS)
 endif

@@ -1,28 +1,4 @@
-# For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
-ICCFILE := $(shell command -v icpc 2> /dev/null)
-
-ifdef ICCFILE
-USEICC=1
-else
-USEICC=0
-endif
-
-ifdef MKLROOT
-USEMKL=1
-else
-USEMKL=0
-endif
-
-#local settings
-DODEBUG=0
-DONVTX=0
-DONCCL=0
-
-$(warning USEICC is $(USEICC))
-$(warning ICCFILE is $(ICCFILE))
-$(warning USEMKL is $(USEMKL))
-
-
+include config2.mk
 
 # Bulid directory
 OBJDIR=build
@@ -72,14 +48,14 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
-ifeq ($(DODEBUG),1)
+ifeq ($(USEDEBUG),1)
 DFLAGS+=-DDEBUG -D_DEBUG
 endif
-ifeq ($(DONCCL),1)
+ifeq ($(USENCCL),1)
 DFLAGS+=-DUSE_NCCL
 endif
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
-ifeq ($(DONVTX),1)
+ifeq ($(USENVTX),1)
 CUDFLAGS+=-DUSE_NVTX=1
 endif
 

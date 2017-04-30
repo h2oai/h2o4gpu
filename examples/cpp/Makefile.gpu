@@ -1,27 +1,4 @@
-ICCFILE := $(shell command -v icpc 2> /dev/null)
-
-
-ifdef ICCFILE
-USEICC=1
-else
-USEICC=0
-endif
-
-ifdef MKLROOT
-USEMKL=1
-else
-USEMKL=0
-endif
-
-#local settings
-DODEBUG=0
-DONVTX=0
-DONCCL=0
-
-$(warning USEICC is $(USEICC))
-$(warning ICCFILE is $(ICCFILE))
-$(warning USEMKL is $(USEMKL))
-
+include ../../src/config2.mk
 
 
 
@@ -65,13 +42,13 @@ LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
-ifeq ($(DODEBUG),1)
+ifeq ($(USEDEBUG),1)
 DFLAGS+=-DDEBUG -D_DEBUG
 endif
-ifeq ($(DONCCL),1)
+ifeq ($(USENCCL),1)
 DFLAGS+=-DUSE_NCCL
 endif
-ifeq ($(DONVTX),1)
+ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
@@ -84,10 +61,10 @@ CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -W
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
 CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) -lnvToolsExt  #  -lnccl
-ifeq ($(DONVTX),1)
+ifeq ($(USENVTX),1)
 CULDFLAGS_+=-lnvToolsExt
 endif
-ifeq ($(DONCCL),1)
+ifeq ($(USENCCL),1)
 CULDFLAGS_+=-lnccl
 endif
 
