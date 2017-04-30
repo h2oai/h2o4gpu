@@ -90,7 +90,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
   
   DEBUG_FPRINTF(stderr,"MatrixDense1: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
   
-#ifdef _DEBUG
+#ifdef DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
   cudaDeviceProp props;
   CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
@@ -159,7 +159,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   
   DEBUG_FPRINTF(stderr,"MatrixDense2: ord=%c m=%d n=%d\n",ord,(int)m,(int)n);fflush(stderr);
   
-#ifdef _DEBUG
+#ifdef DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
   cudaDeviceProp props;
   CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
@@ -251,7 +251,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
   
   DEBUG_FPRINTF(stderr,"MatrixDense3: ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));fflush(stderr);
   
-#ifdef _DEBUG
+#ifdef DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
   cudaDeviceProp props;
   CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
@@ -331,7 +331,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
-#ifdef _DEBUG
+#ifdef DEBUG
   //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
   cudaDeviceProp props;
   CUDACHECK(cudaGetDeviceProperties(&props, _wDev));
@@ -1050,7 +1050,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   skew[0]=resulty.skewness();
   kurt[0]=resulty.kurtosis();
 
-#ifdef _DEBUG
+#ifdef DEBUG
   std::cout <<"******Summary Statistics of Response Train*****"<<std::endl;
 //  print_range("The data", dataybegin, datayend);
   std::cout <<"Count              : "<< resulty.n << std::endl;
@@ -1080,7 +1080,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   skew[1]=vresulty.skewness();
   kurt[1]=vresulty.kurtosis();
 
-#ifdef _DEBUG
+#ifdef DEBUG
   std::cout <<"******Summary Statistics of Response Valid*****"<<std::endl;
   //  print_range("The data", vdataybegin, vdatayend);
   std::cout <<"Count              : "<< vresulty.n << std::endl;
@@ -1215,7 +1215,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
     DEBUG_FPRINTF(stderr,"makePtr_dense: %d\n",0);
 
-#ifdef _DEBUG
+#ifdef DEBUG
     //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
     cudaDeviceProp props;
     CUDACHECK(cudaGetDeviceProperties(&props, wDev));

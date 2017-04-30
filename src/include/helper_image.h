@@ -894,7 +894,7 @@ sdkCompareL2fe(const float *reference, const float *data,
 
     if (fabs(ref) < 1e-7)
     {
-#ifdef _DEBUG
+#ifdef DEBUG
         std::cerr << "ERROR, reference l2-norm is 0\n";
 #endif
         return false;
@@ -903,7 +903,7 @@ sdkCompareL2fe(const float *reference, const float *data,
     float normError = sqrtf(error);
     error = normError / normRef;
     bool result = error < epsilon;
-#ifdef _DEBUG
+#ifdef DEBUG
 
     if (! result)
     {

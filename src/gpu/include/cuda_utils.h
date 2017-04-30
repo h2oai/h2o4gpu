@@ -17,7 +17,7 @@ int checkwDev(int wDev){
   {
   CUDACHECK(cudaGetDeviceCount(&nVis));
   }
-  #ifdef _DEBUG
+  #ifdef DEBUG
   for (int i = 0; i < nVis; i++){
     cudaDeviceProp props;
     CUDACHECK(cudaGetDeviceProperties(&props, i));

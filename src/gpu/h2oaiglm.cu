@@ -145,7 +145,7 @@ int H2OAIGLM<T, M, P>::_Init() {
   CUDACHECK(cudaSetDevice(_wDev));
 
 
-#ifdef _DEBUG
+#ifdef DEBUG
   // get device ID
   int devID;
   CUDACHECK(cudaGetDevice(&devID));
