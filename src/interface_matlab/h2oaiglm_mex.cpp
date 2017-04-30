@@ -258,8 +258,10 @@ void SolverWrapDn(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
   size_t n = mxGetN(prhs[0]);
 
   // Initialize H2OAIGLM data structure
-  h2oaiglm::MatrixDense<T> A_(wDev,'c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev,A_);
+  int sharedA=0;
+  int me=0;
+  h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev,'c', m, n, reinterpret_cast<T*>(mxGetData(prhs[0])));
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -328,7 +330,7 @@ void SolverWrapSp(int wDev, int nlhs, mxArray *plhs[], int nrhs, const mxArray *
 
   // Initialize H2OAIGLM data structure
   h2oaiglm::MatrixSparse<T> A(wDev, 'c', m, n, nnz, val, col_ptr, row_ind);
-  h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> > h2oaiglm_data(wDev, A);
+  h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> > h2oaiglm_data(A);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 

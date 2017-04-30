@@ -44,7 +44,7 @@ void * H2OAIGLMInit(int wDev, size_t m, size_t n, const T *A, const char ord){
 
 
     //create new h2oaiglm_data object
-    h2oaiglm_data = new h2oaiglm::H2OAIGLMDirect<T,h2oaiglm::MatrixDense<T> >(wDev, A_);
+    h2oaiglm_data = new h2oaiglm::H2OAIGLMDirect<T,h2oaiglm::MatrixDense<T> >(A_);
 
     // create new h2oaiglm work struct
     work = new H2OAIGLMWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(h2oaiglm_data), static_cast<void *>(f), static_cast<void *>(g));
@@ -62,7 +62,7 @@ void * H2OAIGLMInit(int wDev, size_t m, size_t n, size_t nnz, const T *nzvals, c
     bool directbit = false, densebit = false, rowmajorbit = ord == 'r';
 
     // char ord = rowmajorbit ? 'r' : 'c';
-    h2oaiglm::MatrixSparse<T> A_(wDev, ord, static_cast<int>(m), static_cast<int>(n), static_cast<int>(nnz), nzvals, pointers, nzindices);
+    h2oaiglm::MatrixSparse<T> A_(wDev, ord, static_cast<h2oaiglm::H2OAIGLM_INT>(m), static_cast<h2oaiglm::H2OAIGLM_INT>(n), static_cast<h2oaiglm::H2OAIGLM_INT>(nnz), nzvals, pointers, nzindices);
     h2oaiglm::H2OAIGLMIndirect<T,h2oaiglm::MatrixSparse<T> > *h2oaiglm_data;    
     std::vector<FunctionObj<T> > *f, *g;
     H2OAIGLMWork * work;
@@ -81,7 +81,7 @@ void * H2OAIGLMInit(int wDev, size_t m, size_t n, size_t nnz, const T *nzvals, c
       g->emplace_back(static_cast<Function>(kZero), static_cast<T>(1), static_cast<T>(0), static_cast<T>(1), static_cast<T>(0), static_cast<T>(0));   
 
     //create h2oaiglm_data object
-    h2oaiglm_data = new h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> >(wDev, A_);
+    h2oaiglm_data = new h2oaiglm::H2OAIGLMIndirect<T, h2oaiglm::MatrixSparse<T> >(A_);
 
     // create new h2oaiglm work struct
     work = new H2OAIGLMWork(m,n,directbit,densebit,rowmajorbit, static_cast<void *>(h2oaiglm_data), static_cast<void *>(f), static_cast<void *>(g));

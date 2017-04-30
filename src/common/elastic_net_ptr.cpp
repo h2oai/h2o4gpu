@@ -135,7 +135,14 @@ namespace h2oaiglm {
       return true;
     }
   }
-// Elastic Net
+
+
+
+
+
+
+
+  // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
@@ -276,7 +283,7 @@ namespace h2oaiglm {
 #pragma omp barrier // not required barrier
         h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
-        h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
+        h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
@@ -432,9 +439,11 @@ namespace h2oaiglm {
             }
 
             size_t dof = 0;
-            for (size_t i = 0; i < n - intercept; ++i) {
-              if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
-                dof++;
+            {
+              for (size_t i = 0; i < n - intercept; ++i) {
+                if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
+                  dof++;
+                }
               }
             }
 
@@ -545,6 +554,7 @@ namespace h2oaiglm {
       return tf - t;
     }
 
+
     template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                           double lambda_min_ratio, int nLambdas, int nAlphas,
@@ -555,20 +565,13 @@ namespace h2oaiglm {
                                          double lambda_min_ratio, int nLambdas, int nAlphas,
                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
+
+
+  
 #ifdef __cplusplus
     extern "C" {
 #endif
 
-      int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
-                          double* trainX, double* trainY, double* validX, double* validY, double *weight,
-                          void**a, void**b, void**c, void**d, void **e) {
-        return makePtr<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
-    }
-    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
-                       float* trainX, float* trainY, float* validX, float* validY, float *weight,
-                       void**a, void**b, void**c, void**d, void **e) {
-      return makePtr<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
-    }
     double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nAlphas,

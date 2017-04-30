@@ -7,9 +7,9 @@
 #include "reader.h"
 #include <random>
 #include <stdlib.h>
-
-#include "../common/elastic_net_ptr.h"
+#include "../../src/include/matrix/matrix_dense.h"
 #include "timer.h"
+#include "../../src/common/elastic_net_ptr.h"
 
 using namespace std;
 
@@ -153,7 +153,10 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   int sourceDev=0; //index of first GPU to own data
   const char ord='r'; // normal C-order
   // only need train weight
-  h2oaiglm::makePtr(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee);
+  //  extern int makePtr_dense<T>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
+  //                           const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,
+  //                           void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+  h2oaiglm::makePtr_dense(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee);
 
 
   int datatype = 1;
@@ -162,4 +165,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, const std::vector<double>&w, int, int, int, int, int, int, int, double);
 template double ElasticNet<float>(const std::vector<float>&A, const std::vector<float>&b, const std::vector<float>&w, int, int, int, int, int, int, int, double);
+
+
 

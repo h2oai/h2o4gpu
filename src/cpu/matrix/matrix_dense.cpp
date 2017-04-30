@@ -153,7 +153,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
-  DEBUG_FPRINTF(stderr,"ord=%c m=%d n=%d mValid=%d\n",ord,(int)m,(int)n,int(mValid));
+  DEBUG_FPRINTF(stderr,"ord=%c m=%zu n=%zu mValid=%zu\n",ord,(int)m,(int)n,int(mValid));
 
   CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
@@ -178,7 +178,6 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     }
     else{
       // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
-      fprintf(stderr,"this->_m=%d this->_n=%d sizeof(T)=%d\n",this->_m,this->_n,sizeof(T)); fflush(stderr);
       if(info->orig_data){
         _data = new T[this->_m * this->_n];
         ASSERT(_data != 0);
@@ -755,5 +754,88 @@ template class MatrixDense<double>;
 template class MatrixDense<float>;
 #endif
 
+
+template <typename T>
+int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight){
+
+  if(sharedA!=0){ // can't because _data contents get modified, unless do sharedA case and Equil is processed locally before given to other threads
+    *_data = const_cast<T*>(data);
+    *_datay = const_cast<T*>(datay);
+    *_vdata = const_cast<T*>(vdata);
+    *_vdatay = const_cast<T*>(vdatay);
+    *_weight = const_cast<T*>(weight);
+  }
+  else{ // if sharedA==0, then assume need to make copy of data in case gets modified by Equil
+    if(data){
+      *_data = new T[m * n];
+      ASSERT(*_data != 0);
+      memcpy(*_data, data, m * n * sizeof(T));
+    }
+    else *_data=NULL;
+
+    if(datay){
+      *_datay = new T[m];
+      ASSERT(*_datay != 0);
+      memcpy(*_datay, datay, m * sizeof(T));
+    }
+    else *_datay=NULL;
+
+    if(vdata){
+      *_vdata = new T[mValid * n];
+      ASSERT(*_vdata != 0);
+      memcpy(*_vdata, vdata, mValid * n * sizeof(T));
+    }
+    else *_vdata=NULL;
+
+    if(vdatay){
+      *_vdatay = new T[mValid];
+      ASSERT(*_vdatay != 0);
+      memcpy(*_vdatay, vdatay, mValid * sizeof(T));
+    }
+    else *_vdatay=NULL;
+    
+    if(weight){
+      *_weight = new T[m];
+      ASSERT(*_weight != 0);
+      memcpy(*_weight, weight, m * sizeof(T));
+    }
+    else *_weight=NULL;
+  }
+  return(0);
+}
+
+
+  template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
+                                     const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
+                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+  template int makePtr_dense<float>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
+                                    const float *data, const float *datay, const float *vdata, const float *vdatay, const float *weight,
+                                    void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+
+
+  
+
 }  // namespace h2oaiglm
+
+
+
+
+  #ifdef __cplusplus
+extern "C" {
+      #endif
+
+  int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                      const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
+                      void**a, void**b, void**c, void**d, void **e) {
+    return h2oaiglm::makePtr_dense<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+  }
+  int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                     const float* trainX, const float* trainY, const float* validX, const float* validY, const float *weight,
+                     void**a, void**b, void**c, void**d, void **e) {
+    return h2oaiglm::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+  }
+
+      #ifdef __cplusplus
+}
+  #endif
 

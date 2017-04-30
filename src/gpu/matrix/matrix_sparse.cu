@@ -62,7 +62,7 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+MatrixSparse<T>::MatrixSparse(int sharedA, int me, int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
                               const T *data, const H2OAIGLM_INT *ptr,
                               const H2OAIGLM_INT *ind)
   : Matrix<T>(m, n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
@@ -78,15 +78,21 @@ MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n
 }
 
 template <typename T>
-MatrixSparse<T>::MatrixSparse(char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+  MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
                               const T *data, const H2OAIGLM_INT *ptr,
                               const H2OAIGLM_INT *ind)
-  : Matrix<T>(m, n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
-  MatrixSparse(_wDev, ord, m,n, nnz, data, ptr, ind);
-}
+    : MatrixSparse<T>(0,0,wDev,ord,m,n,nnz,data,ptr,ind){}
 
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
+  MatrixSparse<T>::MatrixSparse(char ord, H2OAIGLM_INT m, H2OAIGLM_INT n, H2OAIGLM_INT nnz,
+                              const T *data, const H2OAIGLM_INT *ptr,
+                              const H2OAIGLM_INT *ind)
+    : MatrixSparse<T>(0,0,0,ord,m,n,nnz,data,ptr,ind){}
+
+
+
+template <typename T>
+MatrixSparse<T>::MatrixSparse(int sharedA, int me, int wDev, const MatrixSparse<T>& A)
   : Matrix<T>(A._m, A._n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(A._nnz), 
       _ord(A._ord) {
 
@@ -97,11 +103,12 @@ MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
 }
 
 template <typename T>
+  MatrixSparse<T>::MatrixSparse(int wDev, const MatrixSparse<T>& A)
+    : MatrixSparse<T>(A._sharedA,A._me,wDev,A){}
+
+template <typename T>
 MatrixSparse<T>::MatrixSparse(const MatrixSparse<T>& A)
-  : Matrix<T>(A._m, A._n), _wDev(0), _data(0), _de(0), _ptr(0), _ind(0), _nnz(A._nnz), 
-      _ord(A._ord) {
-  MatrixSparse(_wDev, A);
-}
+  : MatrixSparse<T>(A._wDev,A){}
 
 template <typename T>
 MatrixSparse<T>::~MatrixSparse() {

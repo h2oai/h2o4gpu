@@ -47,17 +47,17 @@ int main(int argc, char **argv) {
   rows=b.size();
   cols=A.size()/b.size();
   cout << "END FILL DATA. Took " << t1 - t0 << " secs" << endl;
-  printf("rows: %d\n", rows); fflush(stdout);
-  printf("cols (w/o response): %d\n", cols); fflush(stdout);
+  printf("rows: %zu\n", rows); fflush(stdout);
+  printf("cols (w/o response): %zu\n", cols); fflush(stdout);
 
-  printf("\nLasso: rows=%d n=%d.\n",rows,cols);
+  printf("\nLasso: rows=%zu n=%zu.\n",rows,cols);
   t = Lasso<real_t>(A,b);
-  printf("Lasso rows=%d n=%d Solver Time: %e sec\n", rows,cols,t);
+  printf("Lasso rows=%zu n=%zu Solver Time: %e sec\n", rows,cols,t);
 
   
-  printf("\nLassoPath: rows=%d n=%d.\n",rows,cols);
+  printf("\nLassoPath: rows=%zu n=%zu.\n",rows,cols);
   t = LassoPath<real_t>(A,b);
-  printf("LassoPath rows=%d n=%d Solver Time: %e sec\n", rows,cols,t);
+  printf("LassoPath rows=%zu n=%zu Solver Time: %e sec\n", rows,cols,t);
 
   fflush(stdout);
   fflush(stderr);

@@ -604,6 +604,7 @@ MatrixDense<T>::~MatrixDense() {
   }
   
 }
+
       
 template <typename T>
 int MatrixDense<T>::Init() {
@@ -1202,5 +1203,108 @@ template class MatrixDense<double>;
 template class MatrixDense<float>;
 #endif
 
+
+
+
+  // upload data function.  Uploads to a single GPU.
+  // mimics otherwise similar MatrixDense constructor, but has no destruction of uploaded data pointers
+template <typename T>
+int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight, void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight){
+    checkwDev(wDev);
+    CUDACHECK(cudaSetDevice(wDev));
+
+    DEBUG_FPRINTF(stderr,"makePtr_dense: %d\n",0);
+
+#ifdef _DEBUG
+    //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+    cudaDeviceProp props;
+    CUDACHECK(cudaGetDeviceProperties(&props, wDev));
+    DEBUG_FPRINTF(stderr,"Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,wDev);
+#endif
+
+    // Copy Matrix to GPU (unlike CPU case, cannot copy just pointer because always assume input is CPU and output is GPU)
+    double t0 = timer<double>();
+    PUSH_RANGE("MDsendsource",MDsendsource,1);
+
+    if(data){
+      CUDACHECK(cudaMalloc(_data, m * n * sizeof(T))); // allocate on GPU
+      CUDACHECK(cudaMemcpy(*_data, data, m * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+    else *_data=NULL;
+
+    if(datay){
+      CUDACHECK(cudaMalloc(_datay, m * sizeof(T))); // allocate on GPU
+      CUDACHECK(cudaMemcpy(*_datay, datay, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+    else *_datay=NULL;
+
+    if(vdata){
+      CUDACHECK(cudaMalloc(_vdata, mValid * n * sizeof(T))); // allocate on GPU
+      CUDACHECK(cudaMemcpy(*_vdata, vdata, mValid * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+    else *_vdata=NULL;
+
+    if(vdatay){
+      CUDACHECK(cudaMalloc(_vdatay, mValid * sizeof(T))); // allocate on GPU
+      CUDACHECK(cudaMemcpy(*_vdatay, vdatay, mValid * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+    else *_vdatay=NULL;
+
+    if(weight){
+      CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
+      CUDACHECK(cudaMemcpy(*_weight, weight, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+    else *_weight=NULL;
+    
+    POP_RANGE("MDsendsource",MDsendsource,1);
+    double t2 = timer<double>();
+    DEBUG_FPRINTF(stdout,"Time to allocate and cpoy the data matrix on the GPU: %f\n", t1-t0);
+
+    DEBUG_FPRINTF(stderr,"pointer data   %p\n",(void*)*_data);
+    DEBUG_FPRINTF(stderr,"pointer datay  %p\n",(void*)*_datay);
+    DEBUG_FPRINTF(stderr,"pointer vdata  %p\n",(void*)*_vdata);
+    DEBUG_FPRINTF(stderr,"pointer vdaty  %p\n",(void*)*_vdatay);
+    DEBUG_FPRINTF(stderr,"pointer weight %p\n",(void*)*_weight);
+
+
+    return(0);
+}
+
+  
+
+  template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
+                                     const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
+                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+  template int makePtr_dense<float>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
+                                    const float *data, const float *datay, const float *vdata, const float *vdatay, const float *weight,
+                                    void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+
+
+
+  
+  
+  
 }  // namespace h2oaiglm
 
+
+  #ifdef __cplusplus
+  extern "C" {
+    #endif
+
+    int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                        const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
+                        void**a, void**b, void**c, void**d, void **e) {
+      return h2oaiglm::makePtr_dense<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+    }
+    int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
+                       const float* trainX, const float* trainY, const float* validX, const float* validY, const float *weight,
+                       void**a, void**b, void**c, void**d, void **e) {
+      return h2oaiglm::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+    }
+
+    #ifdef __cplusplus
+  }
+  #endif
+
+
+  

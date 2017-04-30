@@ -38,8 +38,8 @@ struct ApplyOp: std::binary_function<FunctionObj<T>, FunctionObj<T>, T> {
 
     
 template <typename T, typename M, typename P>
-H2OAIGLM<T, M, P>::H2OAIGLM(int wDev, const M &A)
-    : _A(wDev, A), _P(wDev, _A),
+H2OAIGLM<T, M, P>::H2OAIGLM(int sharedA, int me, int wDev, const M &A)
+  : _A(sharedA, me, wDev, A), _P(wDev, _A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),
@@ -75,7 +75,7 @@ H2OAIGLM<T, M, P>::H2OAIGLM(int wDev, const M &A)
 
 template <typename T, typename M, typename P>
 H2OAIGLM<T, M, P>::H2OAIGLM(const M &A)
-  :_A(A._wDev,A), _P(_A._wDev,_A),
+  :_A(A._sharedA, A._me, A._wDev, A), _P(_A._wDev,_A),
       _z(0), _zt(0),
       _rho(static_cast<T>(kRhoInit)),
       _done_init(false),

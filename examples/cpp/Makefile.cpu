@@ -13,6 +13,12 @@ USEMKL=0
 endif
 
 
+#local settings
+DODEBUG=0
+DONVTX=0
+DONCCL=0
+
+
 $(warning USEICC is $(USEICC))
 $(warning ICCFILE is $(ICCFILE))
 $(warning USEMKL is $(USEMKL))
@@ -54,8 +60,25 @@ MKLSTUFF=-lm -lblas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+ifeq ($(DONVTX),1)
+LINKFLAGS+=-lnvToolsExt
+endif
+ifeq ($(DONCCL),1)
+LINKFLAGS+=-lnccl
+endif
 
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  # -DDEBUG
+
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
+ifeq ($(DODEBUG),1)
+DFLAGS+=-DDEBUG -D_DEBUG
+endif
+ifeq ($(DONCCL),1)
+DFLAGS+=-DUSE_NCCL
+endif
+ifeq ($(DONVTX),1)
+DFLAGS+=-DUSE_NVTX=1
+endif
+
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 

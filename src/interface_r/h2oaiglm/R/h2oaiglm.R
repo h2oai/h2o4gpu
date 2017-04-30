@@ -285,13 +285,14 @@ kZero <- function(m=1) {
 #' @param lambda A user supplied \eqn{lambda} sequence.
 #' @param penalty.factor Separate penalty factors can be applied to each coefficient.
 #' @param intercept Should intercept be fitted.
+#' @param noweight Observation weights removed
 #' @param params Pass list of parameters to solver
 #' @param cutoff Discard values of lambda for which beta remains unchanged.
 #' @export
 h2oaiglmnet <- function(x, y, family=c("gaussian", "binomial"),
                     weights, alpha=1, nlambda=100,
                     lambda.min.ratio=ifelse(nobs < nvars, 0.01, 0.0001), lambda=NULL,
-                    penalty.factor=rep(1, nvars), intercept=TRUE, params=list(),
+                    penalty.factor=rep(1, nvars), intercept=TRUE, noweight=FALSE, params=list(),
                     cutoff=TRUE) {
 
   # Check Family
@@ -329,6 +330,11 @@ h2oaiglmnet <- function(x, y, family=c("gaussian", "binomial"),
   } else {
     weights = weights / sum(weights)
   }
+
+  if(noweight) {
+    weights=rep(1,nobs)
+  }
+
   
   # Check Lambdas
   if(is.null(lambda) && lambda.min.ratio >= 1) {
@@ -358,7 +364,11 @@ h2oaiglmnet <- function(x, y, family=c("gaussian", "binomial"),
       lambda = rev(exp(seq(log(lambda.min), log(lambda.max), length=nlambda)))
     }
     for (i in 1:nlambda) {
+    if(noweight) {
+      f[[i]] = list(h = kSquare(), b = y)
+    }else {
       f[[i]] = list(h = kSquare(), c = weights, b = y)
+    }
       g[[i]] = list(h = kAbs(), c = alpha * lambda[i] * penalty.factor, e = (1 - alpha) * lambda[i] * penalty.factor)
     }
   } else if (family == "binomial") {
@@ -544,7 +554,7 @@ getmin <- function(lambda, cvm, cvsd) {
 #' @param params Other parameters to h2oaiglmnet
 #' @param ... Other parameters to h2oaiglmnet.
 #' @export
-cv.h2oaiglmnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, cutoff=TRUE, params=list(), ...) {
+cv.h2oaiglmnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, noweight=FALSE, cutoff=TRUE, params=list(), ...) {
   library(foreach)
   library(doMC)
   registerDoMC(2) ## FIXME: as many as there are GPUs
@@ -560,6 +570,10 @@ cv.h2oaiglmnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, c
   } else {
     weights = as.double(weights)
   }
+  if(noweight) {
+    weights=rep(1,nobs)
+  }
+
   if(is.null(foldid)) {
     foldid = sample(rep(seq(nfolds), length=N))
   } else {

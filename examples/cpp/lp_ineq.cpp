@@ -19,10 +19,10 @@ double LpIneq(size_t m, size_t n) {
                                            static_cast<T>(1));
   // Generate A according to:
   //   A = [-1 / n *rand(m - n, n); -eye(n)]
-  for (unsigned int i = 0; i < (m - n) * n; ++i)
+  for (size_t i = 0; i < (m - n) * n; ++i)
     A[i] = -static_cast<T>(1) / static_cast<T>(n) * u_dist(generator);
-  for (unsigned int i = static_cast<unsigned int>((m - n) * n); i < m * n; ++i)
-    A[i] = (i - (m - n) * n) % (n + 1) == 0 ? -1 : 0;
+  for (size_t i = (m - n) * n; i < m * n; ++i)
+    A[i] = (i - (m - n) * n) % (n + 1) == 0 ? static_cast<T>(-1) : static_cast<T>(0);
 
   h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
   h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);

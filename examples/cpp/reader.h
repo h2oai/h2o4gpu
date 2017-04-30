@@ -102,8 +102,8 @@ int fillData(size_t m, size_t n, // only used if name.empty()
     }
     cols--; //don't count target column
 
-    printf("rows: %d\n", rows); fflush(stdout);
-    printf("cols (w/o response): %d\n", cols); fflush(stdout);
+    printf("rows: %zu\n", rows); fflush(stdout);
+    printf("cols (w/o response): %zu\n", cols); fflush(stdout);
     ifs.close();
 
     size_t m = rows;
@@ -121,7 +121,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
       exit(1);
     } else {
       // Expect space-separated file with response in last column, no header
-      int maxlen = (n + 1) * 30;
+      size_t maxlen = (n + 1) * 30;
       char line[maxlen];
       const char sep[] = " ,";
 

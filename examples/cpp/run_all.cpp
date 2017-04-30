@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
 
   
 
-  printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
+  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
   t = ElasticNet<real_t>(A, b, w, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
-  printf("\nElastic Net: rows=%d cols=%d sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
+  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
 
   fflush(stdout);
   fflush(stderr);

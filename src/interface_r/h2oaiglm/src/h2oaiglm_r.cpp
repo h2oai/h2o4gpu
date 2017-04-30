@@ -123,6 +123,8 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
   size_t n = INTEGER(Adim)[1];
   unsigned int num_obj = length(fin);
 
+  int sharedA=0;
+  int me=0;
   int wDev = 0;
   SEXP pw = getListElement(params, "wDev");
   if (pw != R_NilValue)
@@ -132,10 +134,10 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
 //  std::cout << "A cols = " << INTEGER(GET_DIM(A))[0] << std::endl;
 //  std::cout << "A rows = " << INTEGER(GET_DIM(A))[1] << std::endl;
 //  std::copy(REAL(A), REAL(A) + m*n, std::ostream_iterator<T>(std::cout, "\n"));
-  h2oaiglm::MatrixDense<T> A_dense(wDev, 'c', m, n, REAL(A));
+  h2oaiglm::MatrixDense<T> A_dense(sharedA, me, wDev, 'c', m, n, REAL(A));
 
   // Initialize H2OAIGLM data structure
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_dense);
+  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_dense);
   std::vector<FunctionObj<T> > f, g;
 
   f.reserve(m);

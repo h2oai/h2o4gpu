@@ -91,7 +91,7 @@ double LassoPath(const std::vector<T> &A, const std::vector<T> &b) {
     //x_last = x;
   }
   double tf = timer<double>();
-  fprintf(stdout,"END SOLVE: type 1 m %d n %d ts %g\n",m,n,tf-t);
+  fprintf(stdout,"END SOLVE: type 1 m %zu n %zu ts %g\n",m,n,tf-t);
 
   return tf-t;
 }

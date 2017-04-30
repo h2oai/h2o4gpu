@@ -7,6 +7,7 @@ m_edu   <- as.factor(c(0, 1, 1, 2, 2, 3, 2, 0, 1))
 p_edu   <- as.factor(c(0, 2, 2, 2, 2, 3, 2, 0, 0))
 f_color <- as.factor(c("blue", "blue", "yellow", "red", "red", "yellow", "yellow", "red", "yellow"))
 asthma <- c(1, 1, 0, 1, 0, 0, 0, 1, 1)
+#weights <- (1.0/9.0)*c(1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 alpha <- 0.5
 
@@ -17,7 +18,7 @@ y <- asthma
 #model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
 #model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-6, intercept=TRUE, params=list(max_iter=2500,abs_tol=1e-5,rel_tol=1E-5))
 
-model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-5, intercept=TRUE)
+model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-6, intercept=TRUE, noweight=TRUE)
 print(paste0("RMSEH2OAIGLM:",sqrt(mean((predict(model, s=model$lambda[-1], newx=x)-y)^2))))
 
 library(glmnet)

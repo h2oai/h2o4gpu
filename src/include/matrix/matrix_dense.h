@@ -81,6 +81,9 @@ class MatrixDense : public Matrix<T> {
   int Datatype() const { return _datatype; }
 };
 
+
+ 
+
 }  // namespace h2oaiglm
 
 #endif  // MATRIX_MATRIX_DENSE_H_

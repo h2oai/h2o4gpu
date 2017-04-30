@@ -228,7 +228,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 #pragma omp barrier
     h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
 #pragma omp barrier // this is the required barrier
-    h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(wDev, A_);
+    h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
 #pragma omp barrier
     double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);
@@ -292,18 +292,23 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
         h2oaiglm_data.Solve(f, g);
 
         size_t dof = 0;
-        for (size_t i=0; i<n; ++i) {
-          if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
-            dof++;
+        {
+          for (size_t i=0; i<n; ++i) {
+            if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
+              dof++;
+            }
           }
         }
 
         std::vector<T> trainPreds(trainY.size());
-        for (size_t i=0; i<trainY.size(); ++i) {
-          for (size_t j=0; j<n; ++j) {
-            trainPreds[i]+=h2oaiglm_data.GetX()[j]*trainX[i*n+j]; //add predictions
+        {
+          for (size_t i=0; i<trainY.size(); ++i) {
+            for (size_t j=0; j<n; ++j) {
+              trainPreds[i]+=h2oaiglm_data.GetX()[j]*trainX[i*n+j]; //add predictions
+            }
           }
         }
+        
         // score
         double trainRMSE;
         if(standardize) trainRMSE=sdTrainY0*getRMSE(&trainPreds[0], &trainY);
@@ -336,8 +341,8 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
             }
           }
         }
-        fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
-        fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
+        fprintf(fil,   "me: %d a: %d alpha: %g i: %d lambda: %g dof: %zu trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(fil);
+        fprintf(stdout,"me: %d a: %d alpha: %g i: %d lambda: %g dof: %zu trainRMSE: %f validRMSE: %f\n",me,a,alpha,i,lambda,dof,trainRMSE,validRMSE);fflush(stdout);
       }// over lambda
     }// over alpha
     if(fil!=NULL) fclose(fil);
