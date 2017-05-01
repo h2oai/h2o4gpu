@@ -59,18 +59,18 @@ else
 endif
 LD_FLAGS+=$(R_FRAMEWORK)
 
-$(BUILDPATH)/h2oaiglm.so: $(BUILDPATH)/h2oaiglm_r.o
+$(BUILDPATH)/h2oaiglm.so: $(BUILDPATH)/h2oaiglm_r.o ../R/h2oaiglm.R $(BUILDPATH)/blas2cblas.o $(BUILDPATH)/h2oaiglm_r.o
 	mkdir -p $(BUILDPATH)
 	$(CXX) -o $@ -shared $(BUILDPATH)/h2oaiglm_r.o ../../../$(OBJDIR)/$(TARGETPATH)/h2oaiglm.a \
 	$(RPATH) $(LD_FLAGS) $(CXXFLAGS)
-	ln -s $(BUILDPATH)/h2oaiglm.so .
+	ln -sf $(BUILDPATH)/h2oaiglm.so .
 
 
-$(BUILDPATH)/blas2cblas.o: blas2cblas.cpp
+$(BUILDPATH)/blas2cblas.o: blas2cblas.cpp config.mk Makefile
 	mkdir -p $(BUILDPATH)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-$(BUILDPATH)/h2oaiglm_r.o: h2oaiglm_r.cpp
+$(BUILDPATH)/h2oaiglm_r.o: h2oaiglm_r.cpp config.mk Makefile
 	mkdir -p $(BUILDPATH)
 	$(CXX) $(HDR) $(CXXFLAGS) $< -c -o $@
 
