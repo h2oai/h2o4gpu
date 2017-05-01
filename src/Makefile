@@ -144,17 +144,19 @@ GPU_OBJ=$(OBJDIR)/gpu/h2oaiglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwc
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
-.PHONY: gpu cpu all default clean
+.PHONY: all default clean
 
-all: gpu cpu
+all: gpulib cpulib
 
-default: gpu
+default: gpulib
 
 # Build all
-cpu: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
+cpulib: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
+	touch cpulib
 	ar cr $(OBJDIR)/cpu/h2oaiglm.a $^
 
-gpu: $(OBJDIR)/gpu/h2oaiglm_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
+gpulib: $(OBJDIR)/gpu/h2oaiglm_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
+	touch gpulib
 	ar cr $(OBJDIR)/gpu/h2oaiglm.a $^
 
 

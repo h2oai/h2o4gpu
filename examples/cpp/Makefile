@@ -5,47 +5,50 @@ ifndef N
 N=2
 endif
 
-.NOTPARALLEL:
+#.NOTPARALLEL:
 
-.PHONY: all default cpuall gpuall run runcpu clean
-
+.PHONY: all default clean run runcpu
 
 all: cpuall gpuall
 
 default: gpuall
 
+SOURCESORIG=lasso.cpp  lasso_path2.cpp  lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp run_all_orig.cpp  svm.cpp
+SOURCESALT=elastic_net.cpp run_all.cpp
+SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp
+
+../../src/build/cpu/h2oaiglm.a:
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+
+../../src/build/gpu/h2oaiglm.a:
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+
 # CPU
-cpuall: Makefile.cpu
-	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+cpuall: Makefile Makefile.cpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/cpu/h2oaiglm.a
+	touch cpuall
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
 
-h2oai-glm-cpu-orig: Makefile.cpu
-	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-cpu-orig: Makefile Makefile.cpu $(SOURCESORIG) ../../src/build/cpu/h2oaiglm.a
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig
 
-h2oai-glm-cpu: Makefile.cpu
-	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-cpu: Makefile Makefile.cpu $(SOURCESALT) ../../src/build/cpu/h2oaiglm.a
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu
 
-h2oai-glm-cpu-ptr: Makefile.cpu
-	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2oaiglm.a
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-ptr
 
 # GPU
-gpuall: Makefile.gpu
-	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+gpuall: Makefile Makefile.gpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
+	touch gpuall
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
 
-h2oai-glm-gpu-orig: Makefile.gpu
-	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-gpu-orig: Makefile Makefile.gpu $(SOURCESORIG)  ../../src/build/gpu/h2oaiglm.a
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig
 
-h2oai-glm-gpu: Makefile.gpu
-	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-gpu: Makefile Makefile.gpu $(SOURCESALT) ../../src/build/gpu/h2oaiglm.a
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu
 
-h2oai-glm-gpu-ptr: Makefile.gpu
-	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+h2oai-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
 
 run: h2oai-glm-gpu-ptr
