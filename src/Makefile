@@ -144,6 +144,8 @@ GPU_OBJ=$(OBJDIR)/gpu/h2oaiglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwc
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
+.PHONY: gpu cpu all default clean
+
 all: gpu cpu
 
 default: gpu

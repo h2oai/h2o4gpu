@@ -64,21 +64,21 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: cpu cpualt cpuptr
+all: h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
 
-default: cpualt cpuptr
+default: h2oai-glm-cpu h2oai-glm-cpu-ptr
 
 # CPU
-cpu: run_all_orig.cpp examples.h $(EXSRC) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o runcpu $(EXSRC) $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+h2oai-glm-cpu-orig: run_all_orig.cpp examples.h $(EXSRC) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-orig $(EXSRC) $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
-cpualt: run_all.cpp examples.h $(EXSRC2) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+h2oai-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
-cpuptr: run_all.cpp examples.h $(EXSRC3) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+h2oai-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
 clean:
-	rm -f *.o *~ *~ runcpu h2oai-glm-cpu h2oai-glm-cpu-ptr
+	rm -f *.o *~ *~ h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
 	rm -rf *.dSYM
 

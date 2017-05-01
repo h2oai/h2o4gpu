@@ -7,6 +7,9 @@ endif
 
 .NOTPARALLEL:
 
+.PHONY: all default cpuall gpuall run runcpu clean
+
+
 all: cpuall gpuall
 
 default: gpuall
@@ -14,46 +17,46 @@ default: gpuall
 # CPU
 cpuall: Makefile.cpu
 	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpu cpualt cpuptr
+	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
 
-cpu: Makefile.cpu
+h2oai-glm-cpu-orig: Makefile.cpu
 	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpu
+	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig
 
-cpualt: Makefile.cpu
+h2oai-glm-cpu: Makefile.cpu
 	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpualt
+	$(MAKE) -f Makefile.cpu h2oai-glm-cpu
 
-cpuptr: Makefile.cpu
+h2oai-glm-cpu-ptr: Makefile.cpu
 	$(MAKE)  cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu cpuptr
+	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-ptr
 
 # GPU
 gpuall: Makefile.gpu
 	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpu gpualt gpuptr
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
 
-gpu: Makefile.gpu
+h2oai-glm-gpu-orig: Makefile.gpu
 	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpu
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig
 
-gpualt: Makefile.gpu
+h2oai-glm-gpu: Makefile.gpu
 	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpualt
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu
 
-gpuptr: Makefile.gpu
+h2oai-glm-gpu-ptr: Makefile.gpu
 	$(MAKE)  gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu gpuptr
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
 
-run: gpuptr
+run: h2oai-glm-gpu-ptr
 	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 16 1 0 0.2
 
-runcpu: cpuptr
+runcpu: h2oai-glm-cpu-ptr
 	./h2oai-glm-cpu-ptr train.txt 0 $(N) $(N) 100 16 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~
-	rm -rf runcpu h2oai-glm-cpu h2oai-glm-cpu-ptr
-	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-ptr
+	rm -rf h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
+	rm -rf h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
 	rm -rf *.dSYM
 	rm -rf core

@@ -84,13 +84,13 @@ all: gpu gpualt gpuptr
 default: gpualt gpuptr
 
 # GPU
-gpu: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o rungpu $(EXSRC) $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a  $(CULDFLAGS)
+h2oai-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-orig $(EXSRC) $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a  $(CULDFLAGS)
 
-gpualt: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+h2oai-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
-gpuptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+h2oai-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
 run: gpuptr
@@ -98,6 +98,6 @@ run: gpuptr
 	#./h2oai-glm-gpu-ptr 1 100 1 0 0
 
 clean:
-	rm -f *.o *~ *~ rungpu h2oai-glm-gpu h2oai-glm-gpu-ptr
+	rm -f *.o *~ *~ h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
 	rm -rf *.dSYM
 
