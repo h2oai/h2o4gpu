@@ -258,6 +258,7 @@ namespace h2oaiglm {
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
       // Setup each thread's h2oaiglm
       double t = timer<double>();
+      double t1me0;
 #pragma omp parallel proc_bind(master)
       {
 #ifdef _OPENMP
@@ -309,6 +310,9 @@ namespace h2oaiglm {
         h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
         double t1 = timer<double>();
+        if(me==0){ //only thread=0 times entire post-warmup procedure
+          t1me0=t1;
+        }
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
         DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
 
@@ -581,7 +585,7 @@ namespace h2oaiglm {
       if(trainW) free(trainW);
 
       double tf = timer<double>();
-      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t);
+      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
       if (flag) {
         fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
         flag = 0; // set flag
