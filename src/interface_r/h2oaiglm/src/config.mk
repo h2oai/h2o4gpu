@@ -39,9 +39,11 @@ HDR=-Iinclude $(R_INC) -I$(CUDA_HOME)/include
 #linker options
 CXXFLAGS+=$(DEVICEOPTS)  -DH2OAIGLM_SINGLE=0
 
+ifeq ($(TARGET), gpulib)
 
-ifeq ($(TARGET), gpu)
     LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse
+	TARGETPATH=gpu
+	BUILDPATH=build/gpu/
 
 ifeq ($(USENVTX), 1)
 LD_FLAGS+=-lnvToolsExt
@@ -52,17 +54,24 @@ endif
 
 else
     LD_FLAGS=blas2cblas.cpp $(shell R CMD config BLAS_LIBS)
+	TARGETPATH=cpu
+	BUILDPATH=build/cpu
 endif
 LD_FLAGS+=$(R_FRAMEWORK)
 
-h2oaiglm.so: $(TARGET) h2oaiglm_r.o
-	$(CXX) -o $@ -shared h2oaiglm_r.o $(OBJDIR)/$(TARGET)/h2oaiglm.a \
+$(BUILDPATH)/h2oaiglm.so: $(BUILDPATH)/h2oaiglm_r.o
+	mkdir -p $(BUILDPATH)
+	$(CXX) -o $@ -shared $(BUILDPATH)/h2oaiglm_r.o ../../../$(OBJDIR)/$(TARGETPATH)/h2oaiglm.a \
 	$(RPATH) $(LD_FLAGS) $(CXXFLAGS)
+	ln -s $(BUILDPATH)/h2oaiglm.so .
 
-blas2cblas.o: blas2cblas.cpp
+
+$(BUILDPATH)/blas2cblas.o: blas2cblas.cpp
+	mkdir -p $(BUILDPATH)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-h2oaiglm_r.o: h2oaiglm_r.cpp
+$(BUILDPATH)/h2oaiglm_r.o: h2oaiglm_r.cpp
+	mkdir -p $(BUILDPATH)
 	$(CXX) $(HDR) $(CXXFLAGS) $< -c -o $@
 
 ################################################################################

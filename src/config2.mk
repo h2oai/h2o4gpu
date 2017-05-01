@@ -29,5 +29,6 @@ $(warning USENCCL is $(USENCCL))
 
 
 # for R (rest can do both at same time)
-TARGET=gpu
+TARGET=gpulib
+$(warning R TARGET is $(TARGET))
 

@@ -68,7 +68,7 @@ H2OAIGLMLIB=\
 	$(H2OAIGLMROOT)/build/cpu/elastic_net_ptr.o
 
 CUH2OAIGLMLIB=\
-        $(H2OAIGLMROOT)/build/gpu/h2oaiglm_link.o \
+    $(H2OAIGLMROOT)/build/gpu/h2oaiglm_link.o \
 	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.o \
 	$(H2OAIGLMROOT)/build/gpu/warmstart.o \
 	$(H2OAIGLMROOT)/build/gpu/p2pbwcheck.o \
@@ -83,22 +83,29 @@ CUH2OAIGLMLIB=\
 PYCUDART=$(CUDAHOME)/libcudart.so	
 
 
-.PHONY: default all
+.PHONY: default all clean
+
 default: all
+
 all: ch2oaiglm_cpu ch2oaiglm_gpu
 
-ch2oaiglm_cpu: h2oaiglm_c.o
-	$(MAKE) cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+$(H2OAIGLMLIB):
+	$(MAKE) cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+
+$(CUH2OAIGLMLIB):
+	$(MAKE) gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+
+ch2oaiglm_cpu: h2oaiglm_c.o $(H2OAIGLMLIB)
+	touch ch2oaiglm_cpu
 	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2OAIGLMLIB) $(LDFLAGS)
 
-ch2oaiglm_gpu: h2oaiglm_c.o
-	$(MAKE) gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+ch2oaiglm_gpu: h2oaiglm_c.o $(CUH2OAIGLMLIB)
+	touch ch2oaiglm_gpu
 	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2OAIGLMLIB) $(PYCUDART) $(CULDFLAGS)
 
 h2oaiglm_c.o: h2oaiglm_c.cpp h2oaiglm_c.h
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-.PHONY: clean
 clean:
 	rm -fv *.o *.so *.dylib
 
