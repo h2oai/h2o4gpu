@@ -60,7 +60,7 @@ CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -W
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS) -lnvToolsExt  #  -lnccl
+CULDFLAGS_=-lcudart -lcublas -lcusparse -lrt -I$(CUDA_HOME)/include $(LINKFLAGS)  -lcuda -lcurand $(CUDFLAGS)
 ifeq ($(USENVTX),1)
 CULDFLAGS_+=-lnvToolsExt
 endif

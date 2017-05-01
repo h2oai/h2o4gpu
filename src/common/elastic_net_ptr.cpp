@@ -79,7 +79,7 @@ lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
-#define DOSTOPEARLY 0
+#define DOSTOPEARLY 1
 
 namespace h2oaiglm {
 
@@ -111,10 +111,11 @@ namespace h2oaiglm {
     double ref = moving_avg[0];
     bool improved = false;
     for (int i=1;i<moving_avg.size();++i) {
+      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d\n",ref,tolerance,moving_avg[i],i); fflush(stderr);
       if (moreIsBetter)
-        improved |= (moving_avg[i] > ref*(1+tolerance));
+        improved |= (moving_avg[i] > ref*(1.0+tolerance));
       else
-        improved |= (moving_avg[i] < ref*(1-tolerance));
+        improved |= (moving_avg[i] < ref*(1.0-tolerance));
     }
 
     // estimate normalized jump for controlling tolerance as approach stopping point
@@ -517,7 +518,7 @@ namespace h2oaiglm {
             if(DOSTOPEARLY){
               // STOP EARLY CHECK
               int k = 3; //TODO: ask the user for this parameter
-              double tolerance = 0.01*scoring_history.back(); // stop when not improved over 3 successive lambdas (averaged over window 3)
+              double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
               bool moreIsBetter = false;
               bool verbose = true;
               if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
