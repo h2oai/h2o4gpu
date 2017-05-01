@@ -107,11 +107,31 @@ namespace h2oaiglm {
       cout << endl;
     }
 
+    // get average of moving average
+    double moving_avgavg=0;
+    {
+      int i;
+      for (i=0;i<moving_avg.size();++i) {
+        moving_avgavg+=moving_avg[i];
+      }
+      moving_avgavg/=((double)i);
+    }
+
+    // var variance and rmse of moving average
+    double var=0,rmse=0;
+    {
+      int i;
+      for (i=0;i<moving_avg.size();++i) {
+        var += pow(moving_avg[i]-moving_avgavg,2.0);
+      }
+      rmse=sqrt(var)/((double)i);
+    }
+
     // check if any of the moving averages is better than the reference (by at least tolerance relative improvement)
     double ref = moving_avg[0];
     bool improved = false;
     for (int i=1;i<moving_avg.size();++i) {
-      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d\n",ref,tolerance,moving_avg[i],i); fflush(stderr);
+      //      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d moving_avgavg=%g rmse=%g\n",ref,tolerance,moving_avg[i],i,moving_avgavg,rmse); fflush(stderr);
       if (moreIsBetter)
         improved |= (moving_avg[i] > ref*(1.0+tolerance));
       else
@@ -516,13 +536,21 @@ namespace h2oaiglm {
             scoring_history.push_back(mValid > 0 ? validRMSE : trainRMSE);
             
             if(DOSTOPEARLY){
-              // STOP EARLY CHECK
-              int k = 3; //TODO: ask the user for this parameter
-              double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
-              bool moreIsBetter = false;
-              bool verbose = true;
-              if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
-                break;
+              if(scoring_history.size()>=1){
+                double ratio = (norm-scoring_history.back())/norm;
+
+                double fracdof=0.5; //USER parameter.
+                if(ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+                  //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
+                  // STOP EARLY CHECK
+                  int k = 3; //TODO: ask the user for this parameter
+                  double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
+                  bool moreIsBetter = false;
+                  bool verbose = true;
+                  if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
+                    break;
+                  }
+                }
               }
             }
 
