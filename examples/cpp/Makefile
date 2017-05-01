@@ -1,6 +1,10 @@
 # User Vars
 H2OAIGLMROOT=../../src
 
+ifndef N
+N=2
+endif
+
 .NOTPARALLEL:
 
 all: cpuall gpuall
@@ -42,10 +46,10 @@ gpuptr: Makefile.gpu
 	$(MAKE) -f Makefile.gpu gpuptr
 
 run: gpuptr
-	./h2oai-glm-gpu-ptr train.txt 0 2 2 100 16 1 0 0.2
+	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 16 1 0 0.2
 
 runcpu: cpuptr
-	./h2oai-glm-cpu-ptr train.txt 0 1 1 100 16 1 0 0.2
+	./h2oai-glm-cpu-ptr train.txt 0 $(N) $(N) 100 16 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~
@@ -53,5 +57,3 @@ clean:
 	rm -rf rungpu h2oai-glm-gpu h2oai-glm-gpu-ptr
 	rm -rf *.dSYM
 	rm -rf core
-
-
