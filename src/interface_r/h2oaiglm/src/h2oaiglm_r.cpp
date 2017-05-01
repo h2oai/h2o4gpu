@@ -166,6 +166,9 @@ void SolverWrap(SEXP A, SEXP fin, SEXP gin, SEXP params, SEXP x, SEXP y,
     memcpy(REAL(v) + i * m, h2oaiglm_data.GetLambda(), m * sizeof(T));
 
     REAL(opt)[i] = h2oaiglm_data.GetOptval();
+
+    // TODO FIXME: add early stopping.  Add RMSE and other errors and control tolerance and stopping.
+    
   }
 }
 

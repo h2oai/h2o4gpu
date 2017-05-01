@@ -412,7 +412,7 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   if (_verbose > 0) {
 #pragma omp critical
     {
-    printMe(std::cout, g[1].c, g[1].e); //debugging only: print the second since the first can be for intercept (which is then 0)
+      printMe(std::cout, f[1].a, f[1].b, f[1].c, f[1].d, f[1].e, g[1].a, g[1].b, g[1].c, g[1].d, g[1].e); //debugging only: print the second since the first can be for intercept (which is then 0)
 //printData(std::cout); //only works for data in host memory!
       Printf(__HBAR__
       "           H2O AI GLM\n"

@@ -187,11 +187,12 @@ class H2OAIGLM {
   int          GetnDev()        const { return _nDev; }
   int          GetwDev()        const { return _wDev; }
 
-  void printMe(std::ostream &os, T c, T e) const {
+  void printMe(std::ostream &os, T fa, T fb, T fc, T fd, T fe, T ga, T gb, T gc, T gd, T ge) const {
     os << "Model parameters: ";
     std::string sep = ", ";
     os << "version: " << _GITHASH_ << sep;
-    os << "c(l1): " << c << ", e(l2): " << e << sep;
+    os << "f.abcde: " << fa << sep<< fb << sep<< fc << sep<< fd << sep<< fe << sep;
+    os << "g.abcde: " << ga << sep<< gb << sep<< gc << sep<< gd << sep<< ge << sep;
     os << "rho: " << _rho << sep;
     os << "rel_tol: " << _rel_tol << sep;
     os << "abs_tol: " << _abs_tol << sep;

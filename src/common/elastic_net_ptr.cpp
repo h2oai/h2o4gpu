@@ -79,6 +79,8 @@ lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
+#define DOSTOPEARLY 0
+
 namespace h2oaiglm {
 
   volatile sig_atomic_t flag = 0;
@@ -509,14 +511,18 @@ namespace h2oaiglm {
             Printmescoresimple(fillatest);
             Printmescore(stdout);
 
-            // STOP EARLY CHECK
-            int k = 3; //TODO: ask the user for this parameter
+            // store RMSE
             scoring_history.push_back(mValid > 0 ? validRMSE : trainRMSE);
-            double tolerance = 0; // stop when not improved over 3 successive lambdas (averaged over window 3)
-            bool moreIsBetter = false;
-            bool verbose = true;
-            if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
-              break;
+            
+            if(DOSTOPEARLY){
+              // STOP EARLY CHECK
+              int k = 3; //TODO: ask the user for this parameter
+              double tolerance = 0.01*scoring_history.back(); // stop when not improved over 3 successive lambdas (averaged over window 3)
+              bool moreIsBetter = false;
+              bool verbose = true;
+              if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
+                break;
+              }
             }
 
             // if can skip over lambda, do so, but still print out the score as if constant for new lambda
