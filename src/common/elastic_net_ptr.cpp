@@ -72,6 +72,8 @@ lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
 #define Printmescoresimple(thefile)  fprintf(thefile,"%21.15g %21.15g %21.15g %15.7f\n", timer<double>(), alpha, lambda, validRMSE); fflush(thefile);
 
+#define PrintmescoresimpleCV(thefile,bestalpha,bestlambda,bestrmse)  fprintf(thefile,"BEST: %21.15g %21.15g %21.15g %15.7f\n", timer<double>(), bestalpha, bestlambda, bestrmse ); fflush(thefile);
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,7 +176,7 @@ namespace h2oaiglm {
     template<typename T>
     double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                         double lambda_min_ratio, int nLambdas, int nAlphas,
+                         double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
 
       signal(SIGINT, my_function);
@@ -255,10 +257,18 @@ namespace h2oaiglm {
       Asource_.GetValidY(datatype, mValid, &validY);
       Asource_.GetWeight(datatype, mTrain, &trainW);
 
+
+      T alphaarray[nFolds][nAlphas]; // shared memory space for storing lambda for various folds and alphas
+      T lambdaarray[nFolds][nAlphas]; // shared memory space for storing lambda for various folds and alphas
+      T rmsearray[nFolds][nAlphas]; // shared memory space for storing rmse for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
       // Setup each thread's h2oaiglm
       double t = timer<double>();
       double t1me0;
+
+
+      ////////////////////////////////
+      // PARALLEL REGION
 #pragma omp parallel proc_bind(master)
       {
 #ifdef _OPENMP
@@ -326,14 +336,19 @@ namespace h2oaiglm {
 //        h2oaiglm_data.SetMaxIter(100);
 
         DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
-        int a;
+        int fi,a;
 
 
         DEBUG_FPRINTF(stderr, "lambda_max0: %f\n", lambda_max0);
         T *X0 = new T[n]();
         T *L0 = new T[mTrain]();
         int gotpreviousX0=0;
-#pragma omp for schedule(dynamic,1)
+
+
+        //////////////////////////////
+        /// LOOP OVER FOLDS AND ALPHAS
+#pragma omp for schedule(dynamic,1) collapse(2)
+        for (fi = 0; fi < nFolds; ++fi) { //fold
         for (a = 0; a < nAlphas; ++a) { //alpha search
           const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
           const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like h2oaiglm.R
@@ -352,7 +367,38 @@ namespace h2oaiglm {
           T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
           //          T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
 
-          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2oaiglm.R
+          // setup fold
+          T fractrain=(nFolds>1 ? 0.8: 1.0);
+          T fracvalid=1.0 - fractrain;
+          T weights[mTrain];
+          if(nFolds>0){
+            for(unsigned int j=0;j<mTrain;++j){
+              T foldon=1;
+              int jfold=j-fi*fracvalid*mTrain;
+              if(jfold>=0 && jfold<fracvalid*mTrain) foldon=1E-13;
+                
+              weights[j] = foldon*trainW[j];
+              //              fprintf(stderr,"a=%d fold=%d j=%d foldon=%g trainW=%g weights=%g\n",a,fi,j,foldon,trainW[j],weights[j]); fflush(stderr);
+            }
+          }
+          else{// then assume meant one should just copy weights
+            for(unsigned int j=0;j<mTrain;++j) weights[j] = trainW[j];
+          }
+
+          // normalize weights before input
+          if(0){
+            T sumweight=0;
+            for(unsigned int j=0;j<mTrain;++j) sumweight+=weights[j];
+            if(sumweight!=0.0){
+              for(unsigned int j=0;j<mTrain;++j) weights[j]/=sumweight;
+            }
+            else continue; // skip this fi,a
+            //            fprintf(stderr,"a=%d fold=%d sumweights=%g\n",a,fi,sumweight); fflush(stderr);
+          }
+          
+          
+          for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2oaiglm.R
+          //for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2oaiglm.R
           for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
           if (intercept) g.emplace_back(kZero);
 
@@ -364,14 +410,18 @@ namespace h2oaiglm {
             lambdas[i] = lambdas[i - 1] * dec;
 
 
-
+          ////////////////////////////
+          // LOOP OVER LAMBDA
           // start lambda search
           vector<double> scoring_history;
           int gotX0=0;
           double jump=DBL_MAX;
           double norm=(mValid==0 ? sdTrainY : sdValidY);
           int skiplambdaamount=0;
-          for (int i = 0; i < nlambda; ++i) {
+          int i;
+          double trainRMSE=-1;
+          double validRMSE = -1;
+          for (i = 0; i < nlambda; ++i) {
             if (flag) {
               continue;
             }
@@ -412,7 +462,7 @@ namespace h2oaiglm {
                 double tollow=1E-3; //lowest allowed tolerance (USER parameter)
                 tol = tol0*pow(2.0,-ratio/factor);
                 if(tol<tollow) tol=tollow;
-           
+                
                 h2oaiglm_data.SetRelTol(tol);
                 h2oaiglm_data.SetAbsTol(0.5*tol);
                 h2oaiglm_data.SetMaxIter(1000);
@@ -445,6 +495,7 @@ namespace h2oaiglm {
             }
             
 
+            ////////////////////////////////////////////
             // Check goodness of solution
             int maxedout=0;
             if(h2oaiglm_data.GetFinalIter()==h2oaiglm_data.GetMaxIter()) maxedout=1;
@@ -454,6 +505,7 @@ namespace h2oaiglm {
             // store good high-lambda solution to start next alpha with (better than starting with low-lambda solution)
             if(gotX0==0 && maxedout==0){
               gotX0=1;
+              // TODO: FIXME: Need to get (and have solver set) best solution or return all, because last is not best.
               gotpreviousX0=1;
               memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
               memcpy(L0,&h2oaiglm_data.GetLambda()[0],mTrain*sizeof(T));
@@ -474,6 +526,9 @@ namespace h2oaiglm {
               }
             }
 
+
+            ////////////////////////////////////////
+            // Get predictions for training and validation
 #if(OLDPRED)
             std::vector <T> trainPreds(mTrain);
             for (size_t i = 0; i < mTrain; ++i) {
@@ -485,7 +540,9 @@ namespace h2oaiglm {
 #else
             std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
 #endif
-            double trainRMSE = h2oaiglm::getRMSE(mTrain, &trainPreds[0], trainY);
+            validY = (T *) malloc(sizeof(T) * mValid);
+            
+            trainRMSE = h2oaiglm::getRMSE(weights, mTrain, &trainPreds[0], trainY);
             if(standardize){
               trainRMSE *= sdTrainY;
               for (size_t i = 0; i < mTrain; ++i) {
@@ -507,8 +564,8 @@ namespace h2oaiglm {
 //          cout << "\n";
 //        }
 //        // DEBUG END
-
-            double validRMSE = -1;
+            
+            validRMSE = -1;
             if (mValid > 0) {
 #if(OLDPRED)
               std::vector <T> validPreds(mValid);
@@ -531,12 +588,11 @@ namespace h2oaiglm {
                 }
               }
             }
-
+            
             Printmescore(fil);
             Printmescoresimple(fillatest);
             Printmescore(stdout);
-
-            // store RMSE
+            
             scoring_history.push_back(mValid > 0 ? validRMSE : trainRMSE);
             
             if(DOSTOPEARLY){
@@ -569,13 +625,59 @@ namespace h2oaiglm {
               }
             }
           }// over lambda
-          
+
+          // store RMSE (thread-safe)
+          alphaarray[fi][a]=alpha;
+          lambdaarray[fi][a]=lambdas[i];
+          rmsearray[fi][a]=(mValid > 0 ? validRMSE : trainRMSE);
+
+
         }// over alpha
+        }// over folds
         if(X0) delete [] X0;
         if(L0) delete [] L0;
         if (fil != NULL) fclose(fil);
       } // end parallel region
 
+      //#ifdef DEBUG
+#if(1)
+      // report
+      for (size_t fi = 0; fi < nFolds; ++fi) { //fold
+        for (size_t a = 0; a < nAlphas; ++a) { //alpha
+          fprintf(stderr,"fold=%zu alpha=%21.15g lambda=%21.15g rmse=%21.15g\n",fi,alphaarray[fi][a],lambdaarray[fi][a],rmsearray[fi][a]);
+        }
+      }
+#endif
+
+      // get CV averaged RMSE and best solution (using shared memory arrays that are thread-safe)
+      double bestalpha=0;
+      double bestlambda=0;
+      double bestrmse=std::numeric_limits<double>::max();
+      double alphaarrayofa[nAlphas];
+      double lambdaarrayofa[nAlphas];
+      double rmsearrayofa[nAlphas];
+      for (size_t a = 0; a < nAlphas; ++a) { //alpha
+        alphaarrayofa[a]=0.0;
+        lambdaarrayofa[a]=0.0;
+        rmsearrayofa[a]=0.0;
+        for (size_t fi = 0; fi < nFolds; ++fi) { //fold
+          alphaarrayofa[a]+=alphaarray[fi][a];
+          lambdaarrayofa[a]+=lambdaarray[fi][a];
+          rmsearrayofa[a]+=rmsearray[fi][a];
+        }
+        // get average rmse over folds for this alpha
+        alphaarrayofa[a]/=((double)(nFolds));
+        lambdaarrayofa[a]/=((double)(nFolds));
+        rmsearrayofa[a]/=((double)(nFolds));
+        if(rmsearrayofa[a]<bestrmse){
+          bestalpha=alphaarrayofa[a]; // get alpha for this case
+          bestlambda=lambdaarrayofa[a]; // get lambda for this case
+          bestrmse=rmsearrayofa[a]; // get best rmse as average for this alpha
+        }
+      }
+
+      // print result
+      PrintmescoresimpleCV(stdout,bestalpha,bestlambda,bestrmse);
 
       // free any malloc's
       if(trainX && OLDPRED) free(trainX);
@@ -596,12 +698,12 @@ namespace h2oaiglm {
 
     template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                          double lambda_min_ratio, int nLambdas, int nAlphas,
+                                          double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
     template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                         double lambda_min_ratio, int nLambdas, int nAlphas,
+                                         double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
 
@@ -613,20 +715,20 @@ namespace h2oaiglm {
 
     double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                  double lambda_min_ratio, int nLambdas, int nAlphas,
+                                  double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
       return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                    mTrain, n, mValid, intercept, standardize,
-                                   lambda_min_ratio, nLambdas, nAlphas,
+                                   lambda_min_ratio, nLambdas, nFolds, nAlphas,
                                    trainXptr, trainYptr, validXptr, validYptr, weightptr);
     }
     double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                 double lambda_min_ratio, int nLambdas, int nAlphas,
+                                 double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
       return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                   mTrain, n, mValid, intercept, standardize,
-                                  lambda_min_ratio, nLambdas, nAlphas,
+                                  lambda_min_ratio, nLambdas, nFolds, nAlphas,
                                   trainXptr, trainYptr, validXptr, validYptr, weightptr);
     }
 

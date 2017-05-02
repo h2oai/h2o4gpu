@@ -6,7 +6,7 @@ from h2oaiglm.libs.elastic_net_cpu import h2oaiglmElasticNetCPU
 from h2oaiglm.libs.elastic_net_gpu import h2oaiglmElasticNetGPU
 
 class ElasticNetBaseSolver(object):
-    def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas):
+    def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas):
         assert lib and (lib==h2oaiglmElasticNetCPU or lib==h2oaiglmElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs
@@ -19,6 +19,7 @@ class ElasticNetBaseSolver(object):
         self.standardize=standardize
         self.lambda_min_ratio=lambda_min_ratio
         self.n_lambdas=n_lambdas
+        self.n_folds=n_folds
         self.n_alphas=n_alphas
 
     def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
@@ -72,12 +73,12 @@ class ElasticNetBaseSolver(object):
             self.lib.elastic_net_ptr_double(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid),c_int(self.intercept), c_int(self.standardize),
-                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
+                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e)
         else:
             print("single precision fit")
             self.lib.elastic_net_ptr_float(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
-                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_alphas),
+                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e)

@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
   size_t rows=0, cols=0;
 
 
-  if (argc!=10) {
-    printf("usage: %s %s", argv[0], " <file.txt> <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
+  if (argc!=11) {
+    printf("usage: %s %s", argv[0], " <file.txt> <DoSharedA> <nThreads> <nGPUs> <nLambdas> <nFolds> <nAlphas> <intercept?1:0> <standardize?1:0> <validFraction>\n");
     exit(-1);
   }
 
@@ -28,6 +28,7 @@ int main(int argc, char **argv) {
   int nThreads=atoi(argv[++ai]);
   int nGPUs=atoi(argv[++ai]);
   int nLambdas=atoi(argv[++ai]);
+  int nFolds=atoi(argv[++ai]);
   int nAlphas=atoi(argv[++ai]);
   int intercept=atoi(argv[++ai]);
   int standardize=atoi(argv[++ai]);
@@ -44,9 +45,9 @@ int main(int argc, char **argv) {
 
   
 
-  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction);
-  t = ElasticNet<real_t>(A, b, w, sharedA, nThreads, nGPUs, nLambdas, nAlphas, intercept, standardize, validationFraction);
-  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nAlphas,intercept,standardize,validationFraction,t);
+  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nfolds=%d nalphas=%d intercept=%d standardize=%d validFraction=%g\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nFolds,nAlphas,intercept,standardize,validationFraction);
+  t = ElasticNet<real_t>(A, b, w, sharedA, nThreads, nGPUs, nLambdas, nFolds, nAlphas, intercept, standardize, validationFraction);
+  printf("\nElastic Net: rows=%zu cols=%zu sharedA=%d nThreads=%d nGPUs=%d nlambdas=%d nfolds=%d nalphas=%d intercept=%d standardize=%d validFraction=%g time=%e secs\n",rows,cols,sharedA, nThreads, nGPUs,nLambdas,nFolds,nAlphas,intercept,standardize,validationFraction,t);
 
   fflush(stdout);
   fflush(stderr);

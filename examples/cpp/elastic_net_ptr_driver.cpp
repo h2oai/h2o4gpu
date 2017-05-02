@@ -27,7 +27,7 @@ T getVarV(std::vector <T> &v, T mean) {
 
 // m and n are full data set size before splitting
 template <typename T>
-double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nAlphas, int intercept, int standardize, double validFraction) {
+double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nFolds, int nAlphas, int intercept, int standardize, double validFraction) {
   if (validFraction<0 or validFraction>=1) {
     cerr << "validFraction must be in [0, 1)\n";
     exit(-1);
@@ -160,11 +160,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 
 
   int datatype = 1;
-  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nAlphas, aa, bb, cc, dd, ee);
+  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, aa, bb, cc, dd, ee);
 }
 
-template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, const std::vector<double>&w, int, int, int, int, int, int, int, double);
-template double ElasticNet<float>(const std::vector<float>&A, const std::vector<float>&b, const std::vector<float>&w, int, int, int, int, int, int, int, double);
+template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, const std::vector<double>&w, int, int, int, int, int, int, int, int, double);
+template double ElasticNet<float>(const std::vector<float>&A, const std::vector<float>&b, const std::vector<float>&w, int, int, int, int, int, int, int, int, double);
 
 
 

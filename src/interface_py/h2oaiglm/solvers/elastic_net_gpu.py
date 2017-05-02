@@ -8,8 +8,8 @@ if not h2oaiglmElasticNetGPU:
 	ElasticNetSolverGPU=None
 else:
 	class ElasticNetSolverGPU(object):
-		def __init__(self, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas):
-			self.solver = ElasticNetBaseSolver(h2oaiglmElasticNetGPU, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_alphas)
+		def __init__(self, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas):
+			self.solver = ElasticNetBaseSolver(h2oaiglmElasticNetGPU, sharedA, nThreads, nGPUs, ord, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas)
 
 		def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
 			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
