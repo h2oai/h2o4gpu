@@ -65,12 +65,12 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 
 #define Printmescore(thefile)  fprintf(thefile, \
-"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d alpha: %g intercept: %d standardize: %d i: %d " \
+"%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g fi: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
 "lambda: %g dof: %d trainRMSE: %f validRMSE: %f\n", \
-                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a, alpha,intercept,standardize, (int)i, \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), fi, a, alpha,intercept,standardize, (int)i, \
 lambda, (int)dof, trainRMSE, validRMSE); fflush(thefile);
 
-#define Printmescoresimple(thefile)  fprintf(thefile,"%21.15g %21.15g %21.15g %15.7f\n", timer<double>(), alpha, lambda, validRMSE); fflush(thefile);
+#define Printmescoresimple(thefile)  fprintf(thefile,"%21.15g %d %21.15g %21.15g %15.7f\n", timer<double>(), fi, alpha, lambda, validRMSE); fflush(thefile);
 
 #define PrintmescoresimpleCV(thefile,bestalpha,bestlambda,bestrmse)  fprintf(thefile,"BEST: %21.15g %21.15g %21.15g %15.7f\n", timer<double>(), bestalpha, bestlambda, bestrmse ); fflush(thefile);
 
