@@ -28,12 +28,36 @@ T getVarV(std::vector <T> &v, T mean) {
 // m and n are full data set size before splitting
 template <typename T>
 double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nFolds, int nAlphas, int intercept, int standardize, double validFraction) {
-  if (validFraction<0 or validFraction>=1) {
-    cerr << "validFraction must be in [0, 1)\n";
+  if (sharedA<0 or sharedA>2) {
+    cerr << "sharedA must be in [0,2]\n";
+    exit(-1);
+  }
+  if (nThreads<1) {
+    cerr << "nThreads must be in [1,\\infty]\n";
+    exit(-1);
+  }
+  if (nGPUs<0 or nGPUs>nThreads) {
+    cerr << "nGPUs must be in [0,nThreads]\n";
+    exit(-1);
+  }
+  if (nLambdas<2) {
+    cerr << "nLambdas must be in [2,\\infty]\n";
+    exit(-1);
+  }
+  if (nAlphas<1) {
+    cerr << "nAlphas must be in [1,\\infty]\n";
     exit(-1);
   }
   if (intercept!=0 and intercept!=1) {
     cerr << "intercept must be a boolean: 0 or 1\n";
+    exit(-1);
+  }
+  if (standardize!=0 and standardize!=1) {
+    cerr << "standardize must be a boolean: 0 or 1\n";
+    exit(-1);
+  }
+  if (validFraction<0 or validFraction>=1) {
+    cerr << "validFraction must be in [0, 1)\n";
     exit(-1);
   }
 
@@ -47,8 +71,13 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   size_t n=trainX.size()/mTrain;
   cout << "Rows in training data: " << mTrain << endl;
   cout << "Rows in validation data: " << mValid << endl;
+  
+  if (nFolds<0 or nFolds>mTrain) {
+    cerr << "nFolds must be in [0,mTrain]\n";
+    exit(-1);
+  }
   cout << "Cols in training data: " << n << endl;
-
+  
   // set weights
   if(0){
     for(unsigned int i=0; i<mTrain;i++) trainW[i]/=static_cast<T>(mTrain);

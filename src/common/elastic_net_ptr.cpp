@@ -177,7 +177,9 @@ namespace h2oaiglm {
   double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                        size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                        double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
+                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                       ) {
+    //                       ,T *Xvsalphalambda, T *Xvsalpha
 
     signal(SIGINT, my_function);
     signal(SIGTERM, my_function);
