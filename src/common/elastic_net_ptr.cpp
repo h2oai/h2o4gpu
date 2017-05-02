@@ -367,8 +367,18 @@ namespace h2oaiglm {
           T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
           //          T weights = static_cast<T>(1.0);// / (static_cast<T>(mTrain)));
 
+          // FOLDTYPE: 0 = any portion and can be overlapping
+          // FOLDTYPE: 1 = non-overlapping folds
+#define FOLDTYPE 1
+          
           // setup fold
-          T fractrain=(nFolds>1 ? 0.8: 1.0);
+          T fractrain;
+          if(FOLDTYPE==0){
+            fractrain=(nFolds>1 ? 0.8: 1.0);
+          }
+          else{
+            fractrain=(nFolds>1 ? 1.0-1.0/((double)nFolds) : 1.0);
+          }
           T fracvalid=1.0 - fractrain;
           T weights[mTrain];
           if(nFolds>0){
@@ -540,8 +550,6 @@ namespace h2oaiglm {
 #else
             std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
 #endif
-            validY = (T *) malloc(sizeof(T) * mValid);
-            
             trainRMSE = h2oaiglm::getRMSE(weights, mTrain, &trainPreds[0], trainY);
             if(standardize){
               trainRMSE *= sdTrainY;
@@ -565,8 +573,16 @@ namespace h2oaiglm {
 //        }
 //        // DEBUG END
             
-            validRMSE = -1;
+            
             if (mValid > 0) {
+
+              T weightsvalid[mValid];
+              for (size_t i = 0; i < mValid; ++i) {//row
+                weightsvalid[i] = 1.0;
+              }
+              
+              validRMSE = -1;
+
 #if(OLDPRED)
               std::vector <T> validPreds(mValid);
               for (size_t i = 0; i < mValid; ++i) { //row
@@ -578,7 +594,7 @@ namespace h2oaiglm {
 #else
               std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
 #endif
-              validRMSE = h2oaiglm::getRMSE(weights,mValid, &validPreds[0], validY);
+              validRMSE = h2oaiglm::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
               if(standardize){
                 validRMSE *= sdTrainY;
                 for (size_t i = 0; i < mValid; ++i) { //row
