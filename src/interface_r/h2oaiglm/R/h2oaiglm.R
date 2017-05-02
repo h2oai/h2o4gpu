@@ -325,6 +325,7 @@ h2oaiglmnet <- function(x, y, family=c("gaussian", "binomial"),
   # Check Weights
   if(missing(weights)) {
     weights = rep(1 / nobs, nobs)
+    #    weights = rep(1E8 / nobs, nobs)
   } else if(length(weights) != nobs) {
     stop(paste("Number of elements in weights (", length(weights), ") not equal to the number of rows of x (", nobs,")", sep=""))
   } else {
@@ -566,7 +567,8 @@ cv.h2oaiglmnet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, n
   N = nrow(x)
   y = drop(y)
   if(missing(weights)) {
-    weights = rep(1.0/as.double(N), N)
+     weights = rep(1.0/as.double(N), N)
+     #    weights = rep(1E8, N)
   } else {
     weights = as.double(weights)
   }
