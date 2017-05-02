@@ -867,7 +867,7 @@ namespace h2oaiglm {
     ///////////////////////
     for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
       for (size_t a = 0; a < nAlphas; ++a) { //alpha
-        fprintf(stderr,"fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",fi,alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
+        fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=nFolds ? 1 : 0),(fi>=nFolds ? fi-nFolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
       }
     }
 
