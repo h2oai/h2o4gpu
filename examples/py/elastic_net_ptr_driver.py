@@ -17,7 +17,7 @@ Elastic Net
    See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 '''
 
-def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
+def ElasticNet(X, y, nGPUs=0, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2):
   # set solver cpu/gpu according to input args
   if((nGPUs>0) and (h2oaiglm.ElasticNetSolverGPU is None)):
     print("\nGPU solver unavailable, using CPU solver\n")
@@ -34,6 +34,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
   intercept = 1
   standardize = 0
   lambda_min_ratio = 1e-9
+  nFolds=5
   nLambdas = nlambda
   nAlphas = nalpha
 
@@ -86,7 +87,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=1, validFraction=0):
 
   ## Constructor
   print("Setting up solver")
-  enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nAlphas)
+  enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas)
 
   ## First, get backend pointers
   print("Uploading")
@@ -119,5 +120,5 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=4, nlambda=100, nalpha=16, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=4, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2)
 #  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)

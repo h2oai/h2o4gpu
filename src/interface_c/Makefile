@@ -97,10 +97,12 @@ $(CUH2OAIGLMLIB):
 
 ch2oaiglm_cpu: h2oaiglm_c.o $(H2OAIGLMLIB)
 	touch ch2oaiglm_cpu
+	$(MAKE) cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2OAIGLMLIB) $(LDFLAGS)
 
 ch2oaiglm_gpu: h2oaiglm_c.o $(CUH2OAIGLMLIB)
 	touch ch2oaiglm_gpu
+	$(MAKE) gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2OAIGLMLIB) $(PYCUDART) $(CULDFLAGS)
 
 h2oaiglm_c.o: h2oaiglm_c.cpp h2oaiglm_c.h

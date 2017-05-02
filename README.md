@@ -6,7 +6,8 @@ H2OAIGLM is a solver for convex optimization problems in _graph form_ using [Alt
 
 Requirements
 ------
-R, CUDA8 for GPU version, OpenMP (unless remove -fopenmp from all Makefile's in all directories).
+CUDA8 for GPU version, OpenMP (for distributed GPU version)
+
 
 On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2oaiglm.
 ------
@@ -18,24 +19,19 @@ or
 sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
 
 
-To compile gpu version:
+To compile:
 ------
 
-cd src ; make -j ; cd ../examples/cpp ; make -j gpuall
+cd src ; make -j all ; cd ../examples/cpp ; make -j all
 
-To run gpu version if one has 16 gpus (e.g. on AWS), where first and 3rd argument should be same for any number of GPUs.  Dataset is currently small called simple.txt, but ask Arno or Jon for the larger census-based data set to highlight 100% multiple-GPU usage.
+To run gpu version:
 ------
 
-./h2oai-glm-gpu 16 100 16 1 0 0.2
+make run
 
-To compile cpu version:
-------
+To run 16-gpu version on ipums.txt data:
 
-cd src ; make -j cpu ; cd ../examples/cpp ; make -j cpuall
-
-For otherwise identical CPU run on all CPU's cores:
-
-./h2oai-glm-cpu 1 100 16 1 0 0.2
+./h2oai-glm-gpu-ptr ipums.txt 0 16 16 100 6 6 1 0 0.2 &> fold6x6.txt
 
 
 install R package (assume in h2oaiglm base directory to start with)
@@ -57,8 +53,7 @@ cd src/interface_py
 python setup.py clean --all
 rm -rf h2oaiglm.egg-info
 rm -rf h2oaiglm/__pycache__/
-python setup.py install
-
+python setup.py install --user
 
 
 
