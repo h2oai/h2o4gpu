@@ -578,7 +578,7 @@ namespace h2oaiglm {
 #else
               std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
 #endif
-              validRMSE = h2oaiglm::getRMSE(mValid, &validPreds[0], validY);
+              validRMSE = h2oaiglm::getRMSE(weights,mValid, &validPreds[0], validY);
               if(standardize){
                 validRMSE *= sdTrainY;
                 for (size_t i = 0; i < mValid; ++i) { //row
