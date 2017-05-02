@@ -44,6 +44,22 @@ template<typename T>
   rmse /= weightsum;
   return static_cast<T>(std::sqrt(rmse));
  }
+template<typename T>
+  T getRMSE(const T offset, const T*weights, size_t len, const T *v1, const T *v2) {
+  double weightsum=0;
+  for (size_t i = 0; i < len; ++i) {
+    weightsum += offset-weights[i];
+  }
+
+  double rmse = 0;
+  for (size_t i = 0; i < len; ++i) {
+    double d = v1[i] - v2[i];
+    rmse += d * d * (offset-weights[i]);
+  }
+
+  rmse /= weightsum;
+  return static_cast<T>(std::sqrt(rmse));
+ }
 
 
 // Elastic Net

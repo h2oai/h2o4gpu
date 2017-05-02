@@ -26,29 +26,37 @@ SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp
 # CPU
 cpuall: Makefile Makefile.cpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/cpu/h2oaiglm.a
 	touch cpuall
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
 
 h2oai-glm-cpu-orig: Makefile Makefile.cpu $(SOURCESORIG) ../../src/build/cpu/h2oaiglm.a
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig
 
 h2oai-glm-cpu: Makefile Makefile.cpu $(SOURCESALT) ../../src/build/cpu/h2oaiglm.a
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu
 
 h2oai-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2oaiglm.a
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-ptr
 
 # GPU
 gpuall: Makefile Makefile.gpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
 	touch gpuall
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
 
 h2oai-glm-gpu-orig: Makefile Makefile.gpu $(SOURCESORIG)  ../../src/build/gpu/h2oaiglm.a
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig
 
 h2oai-glm-gpu: Makefile Makefile.gpu $(SOURCESALT) ../../src/build/gpu/h2oaiglm.a
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu
 
 h2oai-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
 
 run: h2oai-glm-gpu-ptr
