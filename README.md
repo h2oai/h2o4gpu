@@ -22,7 +22,7 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 To compile:
 ------
 
-cd src ; make -j all ; cd ../examples/cpp ; make -j all
+cd src && make -j all && cd ../examples/cpp && make -j all
 
 To run gpu version:
 ------

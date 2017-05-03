@@ -1,5 +1,9 @@
 include config2.mk
 
+ifndef CUDA_HOME
+$(error CUDA_HOME is not set)
+endif
+
 # Bulid directory
 OBJDIR=build
 
