@@ -87,7 +87,7 @@ PYCUDART=$(CUDAHOME)/libcudart.so
 
 default: all
 
-all: ch2oaiglm_cpu ch2oaiglm_gpu cpulib gpulib h2oaiglm_c.o
+all: cpulib gpulib ch2oaiglm_cpu ch2oaiglm_gpu h2oaiglm_c.o
 
 cpulib:
 	$(MAKE) cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
