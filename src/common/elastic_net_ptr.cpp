@@ -238,8 +238,9 @@ namespace h2oaiglm {
     }
 #endif
 
+    size_t realfolds=(nFolds==0 ? 1 : nFolds);
     size_t totalfolds=nFolds*( nFolds>1 ? 2 : 1 );
-    fprintf(stderr,"Real folds=%d Total Folds=%zu\n",nFolds,totalfolds); fflush(stderr);
+    fprintf(stderr,"Set folds=%d realfolds=%zu Total Folds=%zu\n",nFolds,realfolds,totalfolds); fflush(stderr);
 
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
@@ -259,13 +260,13 @@ namespace h2oaiglm {
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
 
-    fprintf(stderr,"min %21.15g %21.15g\n",min[0],min[1]);
-    fprintf(stderr,"max %21.15g %21.15g\n",max[0],max[1]);
-    fprintf(stderr,"mean %21.15g %21.15g\n",mean[0],mean[1]);
-    fprintf(stderr,"var %21.15g %21.15g\n",var[0],var[1]);
-    fprintf(stderr,"sd %21.15g %21.15g\n",sd[0],sd[1]);
-    fprintf(stderr,"skew %21.15g %21.15g\n",skew[0],skew[1]);
-    fprintf(stderr,"kurt %21.15g %21.15g\n",kurt[0],kurt[1]);
+    fprintf(stderr,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",min[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",max[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",mean[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",var[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",sd[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",skew[ii]); fprintf(stderr,"\n");
+    fprintf(stderr,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",kurt[ii]); fprintf(stderr,"\n");
     cout << "lambda_max0 " << lambda_max0 << endl;
     //      exit(0);
       
@@ -288,32 +289,32 @@ namespace h2oaiglm {
     Asource_.GetWeight(datatype, mTrain, &trainW);
 
 
-    T alphaarray[nFolds*2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
-    T lambdaarray[nFolds*2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
-    T tolarray[nFolds*2][nAlphas]; // shared memory space for storing tolerance for various folds and alphas
+    T alphaarray[realfolds*2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
+    T lambdaarray[realfolds*2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
+    T tolarray[realfolds*2][nAlphas]; // shared memory space for storing tolerance for various folds and alphas
     // which rmse to use for final check of which model is best (keep validation fractional data for purely reporting)
     int owhichrmse;
     if(mValid>0){
-      if(nFolds<=1) owhichrmse=2;
+      if(realfolds<=1) owhichrmse=2;
       else owhichrmse=2;
     }
     else{
-      if(nFolds<=1) owhichrmse=0;
+      if(realfolds<=1) owhichrmse=0;
       else owhichrmse=1;
     }
     // which rmse to use within lambda-loop to decide if accurate model
     int iwhichrmse;
     if(mValid>0){
-      if(nFolds<=1) iwhichrmse=2;
+      if(realfolds<=1) iwhichrmse=2;
       else iwhichrmse=1;
     }
     else{
-      if(nFolds<=1) iwhichrmse=0;
+      if(realfolds<=1) iwhichrmse=0;
       else iwhichrmse=1;
     }
 #define NUMRMSE 3 // train, hold-out CV, valid
 #define RMSELOOP(ri) for(int ri=0;ri<NUMRMSE;ri++)
-    T rmsearray[NUMRMSE][nFolds*2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
+    T rmsearray[NUMRMSE][realfolds*2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
     // Setup each thread's h2oaiglm
     double t = timer<double>();
@@ -425,7 +426,7 @@ namespace h2oaiglm {
       double lambdaarrayofa[nAlphas];
       double tolarrayofa[nAlphas];
       double rmsearrayofa[NUMRMSE][nAlphas];
-      for(int lambdatype=0;lambdatype<=(nFolds>1);lambdatype++){
+      for(int lambdatype=0;lambdatype<=(realfolds>1);lambdatype++){
         size_t nlambdalocal;
 
 
@@ -458,7 +459,7 @@ namespace h2oaiglm {
         ///////////////////////////////
 #pragma omp for schedule(dynamic,1) collapse(2)
         for (a = 0; a < nAlphas; ++a) { //alpha search
-          for (fi = 0; fi < nFolds; ++fi) { //fold
+          for (fi = 0; fi < realfolds; ++fi) { //fold
 
             ////////////
             // SETUP ALPHA
@@ -477,14 +478,14 @@ namespace h2oaiglm {
 #define FOLDTYPE 1
             T fractrain;
             if(FOLDTYPE==0){
-              fractrain=(nFolds>1 ? 0.8: 1.0);
+              fractrain=(realfolds>1 ? 0.8: 1.0);
             }
             else{
-              fractrain=(nFolds>1 ? 1.0-1.0/((double)nFolds) : 1.0);
+              fractrain=(realfolds>1 ? 1.0-1.0/((double)realfolds) : 1.0);
             }
             T fracvalid=1.0 - fractrain;
             T weights[mTrain];
-            if(nFolds>1){
+            if(realfolds>1){
               for(unsigned int j=0;j<mTrain;++j){
                 T foldon=1;
                 int jfold=j-fi*fracvalid*mTrain;
@@ -747,7 +748,7 @@ namespace h2oaiglm {
 
             
               // RMSE: on fold's held-out training data
-              if(nFolds>1){
+              if(realfolds>1){
                 const T offset=1.0;
                 ivalidRMSE = h2oaiglm::getRMSE(offset, weights, mTrain, &trainPreds[0], trainY);
               }
@@ -862,7 +863,7 @@ namespace h2oaiglm {
             // store results
             int pickfi;
             if(lambdatype==LAMBDATYPEPATH) pickfi=fi; // variable lambda folds
-            else pickfi=nFolds+fi; // fixed-lambda folds
+            else pickfi=realfolds+fi; // fixed-lambda folds
             // store RMSE (thread-safe)
             alphaarray[pickfi][a]=tbestalpha;
             lambdaarray[pickfi][a]=tbestlambda;
@@ -876,7 +877,7 @@ namespace h2oaiglm {
 #pragma omp barrier // barrier so alphaarray, lambdaarray, rmsearray are filled and ready to be read by all threads
         int fistart;
         if(lambdatype==LAMBDATYPEPATH) fistart=0; // variable lambda folds
-        else fistart=nFolds; // fixed-lambda folds
+        else fistart=realfolds; // fixed-lambda folds
 
 
         // get CV averaged RMSE and best solution (using shared memory arrays that are thread-safe)
@@ -890,7 +891,7 @@ namespace h2oaiglm {
           lambdaarrayofa[a]=0.0;
           tolarrayofa[a]=std::numeric_limits<double>::max();
           RMSELOOP(ri) rmsearrayofa[ri][a]=0.0;
-          for (size_t fi = fistart; fi < fistart+nFolds; ++fi) { //fold
+          for (size_t fi = fistart; fi < fistart+realfolds; ++fi) { //fold
             alphaarrayofa[a]+=alphaarray[fi][a];
             lambdaarrayofa[a]+=lambdaarray[fi][a];
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -898,9 +899,9 @@ namespace h2oaiglm {
             RMSELOOP(ri) rmsearrayofa[ri][a]+=rmsearray[ri][fi][a];
           }
           // get average rmse over folds for this alpha
-          alphaarrayofa[a]/=((double)(nFolds));
-          lambdaarrayofa[a]/=((double)(nFolds));
-          RMSELOOP(ri) rmsearrayofa[ri][a]/=((double)(nFolds));
+          alphaarrayofa[a]/=((double)(realfolds));
+          lambdaarrayofa[a]/=((double)(realfolds));
+          RMSELOOP(ri) rmsearrayofa[ri][a]/=((double)(realfolds));
           if(rmsearrayofa[owhichrmse][a]<bestrmse[owhichrmse]){
             bestalpha=alphaarrayofa[a]; // get alpha for this case
             bestlambda=lambdaarrayofa[a]; // get lambda for this case
@@ -930,7 +931,7 @@ namespace h2oaiglm {
     ///////////////////////
     for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
       for (size_t a = 0; a < nAlphas; ++a) { //alpha
-        fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=nFolds ? 1 : 0),(fi>=nFolds ? fi-nFolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
+        fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=realfolds ? 1 : 0),(fi>=realfolds ? fi-realfolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
       }
     }
 
