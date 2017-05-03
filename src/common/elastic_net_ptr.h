@@ -13,6 +13,7 @@
 #include "h2oaiglm.h"
 #include "timer.h"
 #include <omp.h>
+#include <cmath>
 
 namespace h2oaiglm {
 
@@ -71,22 +72,28 @@ template<typename T>
    mysize_t tid=arrid[a];arrid[a]=arrid[b];arrid[b]=tid;
  }
 template<typename T>
-  void heapify(mysize_t a,T arr[],mysize_t arrid[], mysize_t n)
+  void heapify(int whichmax, mysize_t a,T arr[],mysize_t arrid[], mysize_t n)
  {
    mysize_t left=2*a+1;mysize_t right=2*a+2;mysize_t min=a;
-   if(left<n){if(arr[min]>arr[left]) min=left;}
-   if(right<n){if(arr[min]>arr[right]) min=right;}
+   if(whichmax==0){ // max
+     if(left<n){if(arr[min]>arr[left]) min=left;}
+     if(right<n){if(arr[min]>arr[right]) min=right;}
+   }
+   else{ // max abs
+     if(left<n){if(std::abs(arr[min])>std::abs(arr[left])) min=left;}
+     if(right<n){if(std::abs(arr[min])>std::abs(arr[right])) min=right;}
+   }
    if(min!=a) {swap(arr,arrid,a,min);
-     heapify(min,arr,arrid,n);}
+     heapify(whichmax,min,arr,arrid,n);}
  }
 template<typename T>
-  void heapSort(T arr[],mysize_t arrid[], mysize_t n)
+  void heapSort(int whichmax, T arr[],mysize_t arrid[], mysize_t n)
  {mysize_t a;//cout<<"okk";
-   for(a=(n-2)/2;a>=0;a--){heapify(a,arr,arrid,n);}
+   for(a=(n-2)/2;a>=0;a--){heapify(whichmax,a,arr,arrid,n);}
 
    for(a=n-1;a>=0;a--)
      {
-       swap(arr,arrid,0,a);heapify(0,arr,arrid,a);
+       swap(arr,arrid,0,a);heapify(whichmax,0,arr,arrid,a);
      }
  }
 template<typename T>
@@ -101,7 +108,7 @@ template<typename T>
  }
 
 template<typename T>
-  void topk(T arr[], mysize_t arrid[], mysize_t n,mysize_t k, mysize_t *whichbeta, T *valuebeta)
+  void topk(int whichmax, T arr[], mysize_t arrid[], mysize_t n,mysize_t k, mysize_t *whichbeta, T *valuebeta)
  {
    T arr1[k];
    mysize_t arrid1[k];
@@ -112,16 +119,16 @@ template<typename T>
        arrid1[a]=arrid[a];
      }
    for(a=(k-2)/2;a>=0;a--){
-     heapify(a,arr1,arrid1,k);
+     heapify(whichmax,a,arr1,arrid1,k);
    }
    for(a=k;a<n;a++)
      {
        if(arr1[0]<arr[a]) {
          arr1[0]=arr[a]; arrid1[0]=arrid[a];
-         heapify(0,arr1,arrid1,k);
+         heapify(whichmax,0,arr1,arrid1,k);
        }
      }
-   heapSort(arr1, arrid1,k);
+   heapSort(whichmax, arr1, arrid1,k);
 #ifdef DEBUG
    printArray(arr1,arrid1,k); // DEBUG
 #endif
@@ -136,13 +143,13 @@ template<typename T>
 
  // Driver program
 template<typename T>
-  int topkwrap(mysize_t n, mysize_t k, T arr[], mysize_t *whichbeta, T *valuebeta)
+  int topkwrap(int whichmax, mysize_t n, mysize_t k, T arr[], mysize_t *whichbeta, T *valuebeta)
  {
    mysize_t arrid[n];
    for(int i=0;i<n;i++) arrid[i]=i;
    //cout<<"okk";
-   topk(arr,arrid,n,k,whichbeta,valuebeta);
-   //   heapSort(arr, arrid,n);
+   topk(whichmax, arr,arrid,n,k,whichbeta,valuebeta);
+   //   heapSort(whichmax, arr, arrid,n);
 
    //   cout << "Sorted array is \n";
    //   printArray(arr, arrid,n);
@@ -152,8 +159,8 @@ template<typename T>
 
  
 
- template int topkwrap<double>(mysize_t n, mysize_t k, double arr[],mysize_t *whichbeta,double *valuebeta);
- template int topkwrap<float>(mysize_t n, mysize_t k, float arr[],mysize_t *whichbeta,float *valuebeta);
+ template int topkwrap<double>(int whichmax, mysize_t n, mysize_t k, double arr[],mysize_t *whichbeta,double *valuebeta);
+ template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],mysize_t *whichbeta,float *valuebeta);
 
  
 

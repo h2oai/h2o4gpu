@@ -66,9 +66,9 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 #define Printmescore(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g lambdatype: %d fi: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
-                                       "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f\n", \
+                                       "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), lambdatype, fi, a, alpha,intercept,standardize, (int)i, \
-                                       lambda, dof, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+                                       lambda, dof, trainRMSE, ivalidRMSE, validRMSE);for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
 #define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
@@ -186,7 +186,7 @@ namespace h2oaiglm {
 
     if(0){
       std::default_random_engine generator;
-      std::uniform_int_distribution<int> distribution(1,100);
+      std::uniform_int_distribution<int> distribution(-100,100);
       //T arr[] = {3,6,2,8,10,54,5,9};
       int myn=100;
       T arr[myn];
@@ -198,7 +198,8 @@ namespace h2oaiglm {
       int whichbeta[NUMBETA];
       T valuebeta[NUMBETA];
       int myk=5;
-      h2oaiglm::topkwrap(myn,myk,arr,&whichbeta[0],&valuebeta[0]);
+      int whichmax=1; // 0 : larger  1: largest absolute magnitude
+      h2oaiglm::topkwrap(1,myn,myk,arr,&whichbeta[0],&valuebeta[0]);
       for(int ii=0;ii<myk;ii++){
         fprintf(stderr,"%d %g ",whichbeta[ii],valuebeta[ii]); fflush(stderr);
       }
@@ -641,7 +642,7 @@ namespace h2oaiglm {
               h2oaiglm_data.Solve(f, g);
 
 
-              
+            
               int doskiplambda=0;
               if(lambdatype==LAMBDATYPEPATH){
                 /////////////////
@@ -702,11 +703,21 @@ namespace h2oaiglm {
                 }
               }
 
+              
+
               int whichbeta[NUMBETA];
               T valuebeta[NUMBETA];
-              h2oaiglm::topkwrap((int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2oaiglm_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
+              int whichmax=1; // 0 : larger  1: largest absolute magnitude
+              h2oaiglm::topkwrap(whichmax,(int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2oaiglm_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
               
               //              memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
+              if(0){
+                std::sort(const_cast<T*>(&h2oaiglm_data.GetX()[0]),const_cast<T*>(&h2oaiglm_data.GetX()[n-intercept]));
+                for (size_t i = 0; i < n - intercept; ++i) {
+                  fprintf(stderr,"BETA: i=%zu beta=%g\n",i,h2oaiglm_data.GetX()[i]); fflush(stderr);
+                }
+              }
+
 
 
 
@@ -786,10 +797,10 @@ namespace h2oaiglm {
               Printmescore(fil);
 #pragma omp critical
               {
+                Printmescore(stdout);
                 Printmescoresimple(filrmse);
                 Printmescoresimple2(filvarimp);
               }
-              Printmescore(stdout);
 
               T localrmse[NUMRMSE];
               localrmse[0]=trainRMSE;
@@ -828,6 +839,7 @@ namespace h2oaiglm {
                   }
                 }
 
+                //                fprintf(stderr,"doskiplambda=%d skiplambdaamount=%d\n",doskiplambda,skiplambdaamount);fflush(stderr);
                 // if can skip over lambda, do so, but still print out the score as if constant for new lambda
                 if(doskiplambda){
                   for (int ii = 0; ii < skiplambdaamount; ++ii) {
@@ -836,10 +848,10 @@ namespace h2oaiglm {
                     Printmescore(fil);
 #pragma omp critical
                     {
+                      Printmescore(stdout);
                       Printmescoresimple(filrmse);
                       Printmescoresimple2(filvarimp);
                     }
-                    Printmescore(stdout);
                   }
                 }
               }
