@@ -735,9 +735,16 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   if(x12copy.data) cml::vector_free(&x12copy);
   
   if(mvalid>0){
+    
+    double tpre = timer<double>();
     // compute valid from validPreds = Avalid.xsolution
     _A.Mulvalid('n', static_cast<T>(1.), _xp, static_cast<T>(0.), _validPredsp);
+    double tpost = timer<double>();
     cml::vector_memcpy(mvalid,1,_validPreds, _validPredsp);
+    double tpost2cpu = timer<double>();
+#ifdef DEBUG
+    fprintf(stderr,"PREDICT TIME: %g %g\n",tpost-tpre,tpost2cpu-tpre); fflush(stderr);
+#endif
   }
   // compute rmse (not yet)
     

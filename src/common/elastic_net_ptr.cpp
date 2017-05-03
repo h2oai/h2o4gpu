@@ -66,13 +66,15 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 #define Printmescore(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g lambdatype: %d fi: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
-                                       "lambda: %g dof: %d trainRMSE: %f ivalidRMSE: %f validRMSE: %f\n", \
+                                       "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f\n", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), lambdatype, fi, a, alpha,intercept,standardize, (int)i, \
-                                       lambda, (int)dof, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+                                       lambda, dof, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
 
-#define Printmescoresimple(thefile)  fprintf(thefile,"%21.15g %d %d %21.15g %21.15g %15.7f %15.7f %15.7f\n", timer<double>(), lambdatype, fi, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+#define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+#define NUMBETA 10 // number of beta to report
+#define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
-#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %15.7f %15.7f %15.7f\n", timer<double>(), lambdatype, bestalpha, bestlambda, bestrmse1,bestrmse2,bestrmse3 ); fflush(thefile);
+#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, bestrmse1,bestrmse2,bestrmse3 ); fflush(thefile);
 
 
 #include <stdio.h>
@@ -181,6 +183,29 @@ namespace h2oaiglm {
                        ) {
     //                       ,T *Xvsalphalambda, T *Xvsalpha
 
+
+    if(0){
+      std::default_random_engine generator;
+      std::uniform_int_distribution<int> distribution(1,100);
+      //T arr[] = {3,6,2,8,10,54,5,9};
+      int myn=100;
+      T arr[myn];
+      for(int ii=0;ii<myn;ii++){
+        arr[ii]=distribution(generator);
+        fprintf(stderr,"%g ",arr[ii]);fflush(stderr);
+      }
+      fprintf(stderr,"\n"); fflush(stderr);
+      int whichbeta[NUMBETA];
+      T valuebeta[NUMBETA];
+      int myk=5;
+      h2oaiglm::topkwrap(myn,myk,arr,&whichbeta[0],&valuebeta[0]);
+      for(int ii=0;ii<myk;ii++){
+        fprintf(stderr,"%d %g ",whichbeta[ii],valuebeta[ii]); fflush(stderr);
+      }
+      fprintf(stderr,"\n"); fflush(stderr);      
+      exit(0);
+    }
+    
     signal(SIGINT, my_function);
     signal(SIGTERM, my_function);
     int nlambda = nLambdas;
@@ -293,7 +318,21 @@ namespace h2oaiglm {
     double t = timer<double>();
     double t1me0;
 
-
+    // critical files for all threads
+    char filename0[100];
+    sprintf(filename0, "rmse.txt");
+    FILE *filrmse = fopen(filename0, "wt");
+    if (filrmse == NULL) {
+      cerr << "Cannot open filename0=" << filename0 << endl;
+      exit(0);
+    }
+    sprintf(filename0, "varimp.txt");
+    FILE *filvarimp = fopen(filename0, "wt");
+    if (filvarimp == NULL) {
+      cerr << "Cannot open filename0=" << filename0 << endl;
+      exit(0);
+    }
+    
     ////////////////////////////////
     // PARALLEL REGION
 #pragma omp parallel proc_bind(master)
@@ -332,12 +371,8 @@ namespace h2oaiglm {
         exit(0);
       }
       else fflush(fil);
-      sprintf(filename, "me%d.latest.txt", me); // for each thread
-      FILE *fillatest = fopen(filename, "wt");
-      if (fillatest == NULL) {
-        cerr << "Cannot open filename=" << filename << endl;
-        exit(0);
-      }
+
+      
 
       ////////////
       //
@@ -667,6 +702,12 @@ namespace h2oaiglm {
                 }
               }
 
+              int whichbeta[NUMBETA];
+              T valuebeta[NUMBETA];
+              h2oaiglm::topkwrap((int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2oaiglm_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
+              
+              //              memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
+
 
 
               // TRAIN PREDS
@@ -743,7 +784,11 @@ namespace h2oaiglm {
               //
               ////////////
               Printmescore(fil);
-              Printmescoresimple(fillatest);
+#pragma omp critical
+              {
+                Printmescoresimple(filrmse);
+                Printmescoresimple2(filvarimp);
+              }
               Printmescore(stdout);
 
               T localrmse[NUMRMSE];
@@ -789,7 +834,11 @@ namespace h2oaiglm {
                     i++;
                     lambda = lambdas[i];
                     Printmescore(fil);
-                    Printmescoresimple(fillatest);
+#pragma omp critical
+                    {
+                      Printmescoresimple(filrmse);
+                      Printmescoresimple2(filvarimp);
+                    }
                     Printmescore(stdout);
                   }
                 }
@@ -902,7 +951,6 @@ namespace h2oaiglm {
                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
 
 
-
   
 #ifdef __cplusplus
   extern "C" {
@@ -930,4 +978,9 @@ namespace h2oaiglm {
 #ifdef __cplusplus
   }
 #endif
+
+
+
+
+  
 }

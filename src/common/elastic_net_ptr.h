@@ -62,6 +62,101 @@ template<typename T>
  }
 
 
+// C++ program for implementation of Heap Sort
+ #define mysize_t int
+template<typename T>
+  void swap(T arr[], mysize_t arrid[], mysize_t a,mysize_t b)
+ {
+   T t=arr[a];arr[a]=arr[b];arr[b]=t;
+   mysize_t tid=arrid[a];arrid[a]=arrid[b];arrid[b]=tid;
+ }
+template<typename T>
+  void heapify(mysize_t a,T arr[],mysize_t arrid[], mysize_t n)
+ {
+   mysize_t left=2*a+1;mysize_t right=2*a+2;mysize_t min=a;
+   if(left<n){if(arr[min]>arr[left]) min=left;}
+   if(right<n){if(arr[min]>arr[right]) min=right;}
+   if(min!=a) {swap(arr,arrid,a,min);
+     heapify(min,arr,arrid,n);}
+ }
+template<typename T>
+  void heapSort(T arr[],mysize_t arrid[], mysize_t n)
+ {mysize_t a;//cout<<"okk";
+   for(a=(n-2)/2;a>=0;a--){heapify(a,arr,arrid,n);}
+
+   for(a=n-1;a>=0;a--)
+     {
+       swap(arr,arrid,0,a);heapify(0,arr,arrid,a);
+     }
+ }
+template<typename T>
+  void printArray(T arr[], mysize_t arrid[], mysize_t k)
+ {
+   std::cout << "LARGEST: ";
+   for (mysize_t i=0; i<k; i++){
+     fprintf(stdout,"%d %21.15g ",arrid[i],arr[i]); fflush(stdout);
+   }
+   std::cout << "\n";
+   
+ }
+
+template<typename T>
+  void topk(T arr[], mysize_t arrid[], mysize_t n,mysize_t k, mysize_t *whichbeta, T *valuebeta)
+ {
+   T arr1[k];
+   mysize_t arrid1[k];
+   mysize_t a;
+   for(a=0;a<k;a++)
+     {
+       arr1[a]=arr[a];
+       arrid1[a]=arrid[a];
+     }
+   for(a=(k-2)/2;a>=0;a--){
+     heapify(a,arr1,arrid1,k);
+   }
+   for(a=k;a<n;a++)
+     {
+       if(arr1[0]<arr[a]) {
+         arr1[0]=arr[a]; arrid1[0]=arrid[a];
+         heapify(0,arr1,arrid1,k);
+       }
+     }
+   heapSort(arr1, arrid1,k);
+#ifdef DEBUG
+   printArray(arr1,arrid1,k); // DEBUG
+#endif
+
+   for (mysize_t i=0; i<k; i++){
+     whichbeta[i] = arrid1[i];
+     valuebeta[i] = arr1[i];
+   }
+
+ }
+ /* A utility function to print array of size n */
+
+ // Driver program
+template<typename T>
+  int topkwrap(mysize_t n, mysize_t k, T arr[], mysize_t *whichbeta, T *valuebeta)
+ {
+   mysize_t arrid[n];
+   for(int i=0;i<n;i++) arrid[i]=i;
+   //cout<<"okk";
+   topk(arr,arrid,n,k,whichbeta,valuebeta);
+   //   heapSort(arr, arrid,n);
+
+   //   cout << "Sorted array is \n";
+   //   printArray(arr, arrid,n);
+
+   return(0);
+ }
+
+ 
+
+ template int topkwrap<double>(mysize_t n, mysize_t k, double arr[],mysize_t *whichbeta,double *valuebeta);
+ template int topkwrap<float>(mysize_t n, mysize_t k, float arr[],mysize_t *whichbeta,float *valuebeta);
+
+ 
+
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
