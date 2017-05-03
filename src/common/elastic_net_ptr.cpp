@@ -778,7 +778,7 @@ namespace h2oaiglm {
               scoring_history.push_back(localrmse[iwhichrmse]);
 
               if(lambdatype==LAMBDATYPEPATH){
-                if(fi==0){ // only store first fold for user
+                if(fi==0 && givefullpath){ // only store first fold for user
                   //#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
                   //#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
                   //#define NUMOTHER 3 // for lambda, alpha, tol
@@ -853,7 +853,7 @@ namespace h2oaiglm {
             tolarray[pickfi][a]=tbesttol;
             RMSELOOP(ri) rmsearray[ri][pickfi][a]=tbestrmse[ri];
 
-            // if not doing folds, store best solution
+            // if not doing folds, store best solution over all lambdas
             if(lambdatype==LAMBDATYPEPATH && nFolds<2){
               if(fi==0){ // only store first fold for user
                 memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n); // not quite best, last lambda TODO FIXME
