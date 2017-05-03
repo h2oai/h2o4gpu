@@ -7,7 +7,7 @@ endif
 
 #.NOTPARALLEL:
 
-.PHONY: all default clean run runcpu
+.PHONY: all default clean run runcpu ../../src/build/cpu/h2oaiglm.a ../../src/build/gpu/h2oaiglm.a
 
 all: cpuall gpuall
 

@@ -83,29 +83,29 @@ CUH2OAIGLMLIB=\
 PYCUDART=$(CUDAHOME)/libcudart.so	
 
 
-.PHONY: default all clean
+.PHONY: default all clean cpulib gpulib
 
 default: all
 
-all: ch2oaiglm_cpu ch2oaiglm_gpu
+all: ch2oaiglm_cpu ch2oaiglm_gpu cpulib gpulib h2oaiglm_c.o
 
-$(H2OAIGLMLIB):
+cpulib:
 	$(MAKE) cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 
-$(CUH2OAIGLMLIB):
+gpulib:
 	$(MAKE) gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 
-ch2oaiglm_cpu: h2oaiglm_c.o $(H2OAIGLMLIB)
+ch2oaiglm_cpu: h2oaiglm_c.o  Makefile
 	touch ch2oaiglm_cpu
 	$(MAKE) cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2OAIGLMLIB) $(LDFLAGS)
 
-ch2oaiglm_gpu: h2oaiglm_c.o $(CUH2OAIGLMLIB)
+ch2oaiglm_gpu: h2oaiglm_c.o Makefile
 	touch ch2oaiglm_gpu
 	$(MAKE) gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2OAIGLMLIB) $(PYCUDART) $(CULDFLAGS)
 
-h2oaiglm_c.o: h2oaiglm_c.cpp h2oaiglm_c.h
+h2oaiglm_c.o: h2oaiglm_c.cpp h2oaiglm_c.h Makefile
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
 clean:
