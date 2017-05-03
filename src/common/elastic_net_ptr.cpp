@@ -908,7 +908,7 @@ namespace h2oaiglm {
             besttol=tolarrayofa[a]; // get tol for this case
             RMSELOOP(ri) bestrmse[ri]=rmsearrayofa[ri][a]; // get best rmse as average for this alpha
           }
-          if(lambdatype==LAMBDATYPEPATH) fprintf(stderr,"To use for last CV models: alpha=%g lambda=%g tol=%g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
+          if(lambdatype==LAMBDATYPEPATH && realfolds>1) fprintf(stderr,"To use for last CV models: alpha=%g lambda=%g tol=%g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
         }
 
 
