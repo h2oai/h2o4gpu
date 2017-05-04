@@ -63,8 +63,8 @@ class H2OAIGLMInstall(install):
 setup(
     name='h2oaiglm',
     version='0.0.1',
-    author='H2O.ai, Chris Fougner, Baris Ungun, Stephen Boyd',
-    author_email='https://groups.google.com/forum/#!forum/h2ostream, fougner@stanford.edu, ungun@stanford.edu, boyd@stanford.edu',
+    author='H2O.ai',
+    author_email='https://github.com/h2oai',
     url='http://github.com/h2o/h2oaiglm',
     package_dir={'interface_py': 'h2oaiglm'},
     packages=['h2oaiglm',
