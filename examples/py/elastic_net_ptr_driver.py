@@ -120,5 +120,5 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=4, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=2, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2)
 #  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)
