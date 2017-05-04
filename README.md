@@ -1,5 +1,6 @@
 [H2OAIGLM](https://github.com/h2oai/h2oaiglm)
 
+```text
 ---
 
 H2OAIGLM is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers] (ADMM).
@@ -52,6 +53,7 @@ install python package (assume in h2oaiglm base directory to start with)
 -----
 cd src/interface_py && python setup.py clean --all && rm -rf h2oaiglm.egg-info && rm -rf h2oaiglm/__pycache__/ && python setup.py install --user
 
+```
 
 Languages / Frameworks
 ======================
