@@ -19,15 +19,17 @@ or
 sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
 
 
-To compile:
+To compile base library:
 ------
 
-cd src && make -j all && cd ../examples/cpp && make -j all
+BASE=`pwd`
 
-To run gpu version:
+cd $BASE/src && make -j all
+
+To run gpu C++ version:
 ------
 
-make run
+cd $BASE/examples/cpp && make -j all ; make run
 
 To run 16-gpu version on ipums.txt data:
 
@@ -36,25 +38,19 @@ To run 16-gpu version on ipums.txt data:
 
 install R package (assume in h2oaiglm base directory to start with)
 ------
-cd src/interface_r
-Edit interface_r/src/config.mk and choose TARGET as cpu or gpu (currently defaulted to gpu).
-MAKE="make -j" R CMD INSTALL --build h2oaiglm
+cd $BASE/src/interface_r && MAKE="make -j" R CMD INSTALL --build h2oaiglm
+
+# Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
+
 
 test R package
 ------
-cd ../../
-cd examples/R
-R CMD BATCH simple.R
+cd $BASE/examples/R && R CMD BATCH simple.R
 
 
 install python package (assume in h2oaiglm base directory to start with)
 -----
-cd src/interface_py
-python setup.py clean --all
-rm -rf h2oaiglm.egg-info
-rm -rf h2oaiglm/__pycache__/
-python setup.py install --user
-
+cd src/interface_py && python setup.py clean --all && rm -rf h2oaiglm.egg-info && rm -rf h2oaiglm/__pycache__/ && python setup.py install --user
 
 
 Languages / Frameworks
