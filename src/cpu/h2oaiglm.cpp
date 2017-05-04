@@ -232,11 +232,6 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     {
       printMe(std::cout, f[1].a, f[1].b, f[1].c, f[1].d, f[1].e, g[1].a, g[1].b, g[1].c, g[1].d, g[1].e);
       //    printData(std::cout); //debugging - print matrix A
-      Printf(__HBAR__
-             "           H2O AI GLM\n"
-             "           Version: %s\n"
-             "           (c) H2O.ai, Inc., 2017\n",
-             H2OAIGLM_VERSION.c_str());
     }
   }
   if (_verbose > 1) {

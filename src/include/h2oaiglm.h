@@ -90,14 +90,14 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 
 namespace h2oaiglm {
 
-static const std::string H2OAIGLM_VERSION = "0.3.1";
+static const std::string H2OAIGLM_VERSION = "0.3.2";
 
 // TODO: Choose default constants better
 // Defaults.
 const double       kAbsTol      = 1e-4;
 const double       kRelTol      = 1e-3;
 const double       kRhoInit     = 1.;
-const unsigned int kVerbose     = 2u;   // 0...4
+const unsigned int kVerbose     = 1u;   // 0...4
 const unsigned int kMaxIter     = 2500u;
 const unsigned int kInitIter    = 10u;
 const bool         kAdaptiveRho = true;
@@ -217,10 +217,9 @@ class H2OAIGLM {
         "           H2O AI GLM\n"
         "           Version: %s %s\n"
         "           Compiled: %s %s\n"
-        "           (c) H2O.ai, Inc., 2017\n"
-        "           based on\n"
-        "           H2OAIGLM 0.2.0 - Proximal Graph Solver\n"
-        "           (c) Christopher Fougner, Stanford University 2014-2015\n"
+        "           Proximal Graph Solver\n"
+        "           H2O.ai, Inc., 2017\n"
+        "           (c) C. Fougner, S. Boyd, Stanford University 2014-2015\n"
         __HBAR__,
         H2OAIGLM_VERSION.c_str(),
         _GITHASH_,
