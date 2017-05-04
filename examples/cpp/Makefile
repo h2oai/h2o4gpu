@@ -60,10 +60,10 @@ h2oai-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2oai
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
 
 run: h2oai-glm-gpu-ptr
-	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 5 1 0 0.2
+	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
 
 runcpu: h2oai-glm-cpu-ptr
-	./h2oai-glm-cpu-ptr train.txt 0 $(N) $(N) 100 5 5 1 0 0.2
+	./h2oai-glm-cpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~
