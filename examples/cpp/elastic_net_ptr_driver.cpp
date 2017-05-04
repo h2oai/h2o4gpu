@@ -61,7 +61,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
     exit(-1);
   }
 
-  system("rm -f me*.latest.txt ; touch me0.latest.txt");
+  system("rm -f rmse.txt ; touch rmse.txt ; rm -f varimp.txt ; touch varimp.txt");
 
   // read data and do train-valid split
   std::vector<T> trainX, trainY, trainW, validX, validY, validW;
