@@ -32,26 +32,31 @@ To run gpu C++ version:
 
 cd $BASE/examples/cpp && make -j all ; make run
 
-To run 16-gpu version on ipums.txt data:
+Or, to run 16-gpu version on ipums.txt data:
 
-./h2oai-glm-gpu-ptr ipums.txt 0 16 16 100 6 6 1 0 0.2 &> fold6x6.txt
+./h2oai-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 
 
 install R package (assume in h2oaiglm base directory to start with)
 ------
-cd $BASE/src/interface_r && MAKE="make -j" R CMD INSTALL --build h2oaiglm
+
+cd $BASE/src/interface_r && make
 
 # Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
 
 
 test R package
 ------
+
 cd $BASE/examples/R && R CMD BATCH simple.R
 
 
-install python package (assume in h2oaiglm base directory to start with)
+install python package and make wheel:
 -----
-cd src/interface_py && python setup.py clean --all && rm -rf h2oaiglm.egg-info && rm -rf h2oaiglm/__pycache__/ && python setup.py install --user
+
+make
+
+This installs python h2oaiglm as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl
 
 ```
 
