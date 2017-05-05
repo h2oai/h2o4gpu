@@ -68,12 +68,10 @@ class ElasticNetBaseSolver(object):
     # sourceDev here because generally want to take in any pointer, not just from our test code
     def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, precision, a, b, c, d, e):
         # not calling with self.sourceDev because want option to never use default but instead input pointers from foreign code's pointers
-        try:
-            self.double_precision
-        except NameError:
-            whichprecision=precision
-        else:
+        if hasattr(self, 'double_precision'):
             whichprecision=self.double_precision
+        else:
+            whichprecision=precision
         #
         if (whichprecision==1):
             print("double precision fit")
