@@ -20,7 +20,7 @@
 #include <thrust/advance.h>
 #include <cmath>
 #include <limits>
-
+#include <thrust/fill.h>
 
 extern int checkwDev(int wDev);
 
@@ -377,6 +377,15 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _vdata = vdata;
     _vdatay = vdatay;
     _weight = weight;
+
+    if(_weight==NULL){
+      fprintf(stderr,"datatype=1: making up unity weights: %d\n",m); fflush(stderr);
+      CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
+      thrust::device_ptr<T> dev_ptr(static_cast<T*>(_weight));
+      T fill_value=1.0;
+      thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+    }
+    
       
     if(!this->_done_alloc){
       this->_done_alloc = true;
@@ -420,7 +429,16 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      if(weightinfo->orig_data){
+        cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      }
+      else{
+        fprintf(stderr,"datatype=0: making up unity weights: %d\n",m); fflush(stderr);
+        CUDACHECK(cudaMalloc(&_weight, this->_m * sizeof(T))); // allocate on GPU
+        thrust::device_ptr<T> dev_ptr(static_cast<T*>(_weight));
+        T fill_value=1.0;
+        thrust::fill(dev_ptr, dev_ptr + this->_m, fill_value);
+      }
       cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
@@ -488,6 +506,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   if(!this->_done_alloc){
     this->_done_alloc = true;
     if(A._wDev == _wDev && A._me == _me && (A._sharedA==0 || _sharedA==0)){ // if on same device and same thread, just copy pointer
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",0);
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -498,6 +517,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       //      this->_done_equil=1;
     }
     else if(A._wDev == _wDev && A._sharedA!=0 && _sharedA!=0){ // if on same device and sharing memory, then just copy pointer
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",1);
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -508,6 +528,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       this->_done_equil=1;
     }
     else{
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",2);
       // Copy Matrix to from source GPU to this GPU
       PUSH_RANGE("MDcopy",MDcopy,1);
       //GpuData<T> *info = reinterpret_cast<GpuData<T>*>(_info); // cast void -> GpuData
@@ -1265,19 +1286,24 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     }
     else *_vdatay=NULL;
 
-    if(weight){
+    //    fprintf(stderr,"weight=%p\n",weight); fflush(stderr);
+    if(0&&weight){
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_weight, weight, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
     }
     else{
+      DEBUG_FPRINTF(stderr,"making up unity weights: %d\n",m);
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
-      CUDACHECK(cudaMemset(*_weight, 1.0, m)); // unity weights by default
+      thrust::device_ptr<T> dev_ptr(static_cast<T*>(*_weight));
+      T fill_value=1.0;
+      thrust::fill(dev_ptr, dev_ptr + m, fill_value);
     }
     
     POP_RANGE("MDsendsource",MDsendsource,1);
     double t2 = timer<double>();
-    DEBUG_FPRINTF(stdout,"Time to allocate and cpoy the data matrix on the GPU: %f\n", t1-t0);
-
+    DEBUG_FPRINTF(stdout,"Time to allocate and copy the data matrix on the GPU: %f\n", t2-t0);
+    cudaDeviceSynchronize();
+    
     DEBUG_FPRINTF(stderr,"pointer data   %p\n",(void*)*_data);
     DEBUG_FPRINTF(stderr,"pointer datay  %p\n",(void*)*_datay);
     DEBUG_FPRINTF(stderr,"pointer vdata  %p\n",(void*)*_vdata);

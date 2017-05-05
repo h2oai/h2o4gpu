@@ -153,7 +153,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
-  DEBUG_FPRINTF(stderr,"ord=%c m=%zu n=%zu mValid=%zu\n",ord,(int)m,(int)n,int(mValid));
+  DEBUG_FPRINTF(stderr,"ord=%c m=%zu n=%zu mValid=%zu\n",ord,m,n,mValid);
 
   CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
