@@ -100,7 +100,8 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2
 
   ## Solve
   print("Solving")
-  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, a, b, c, d, e)
+  # below 0 ignored if trainX gives precision
+  enet.fit(sourceDev, mTrain, n, mvalid, intercept, standardize, 0, a, b, c, d, e)
   print("Done Solving")
 
   return enet
