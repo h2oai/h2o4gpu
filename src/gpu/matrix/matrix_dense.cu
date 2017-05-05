@@ -379,7 +379,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _weight = weight;
 
     if(_weight==NULL){
-      fprintf(stderr,"datatype=1: making up unity weights: %d\n",m); fflush(stderr);
+      fprintf(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight); fflush(stderr);
       CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
       thrust::device_ptr<T> dev_ptr(static_cast<T*>(_weight));
       T fill_value=1.0;
