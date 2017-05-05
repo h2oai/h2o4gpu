@@ -206,6 +206,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
+      else{
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        memset(_weight, 1.0, this->_m * sizeof(T));
+      }
     }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
     if(sharedA>0){
@@ -672,8 +677,15 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
-    for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+    if(_weight!=NULL){
+      for (unsigned int i = 0; i < mTrain; ++i) { //row
+        u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+      }
+    }
+    else{
+      for (unsigned int i = 0; i < mTrain; ++i) { //row
+        u += _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+      }
     }
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
@@ -799,7 +811,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       ASSERT(*_weight != 0);
       memcpy(*_weight, weight, m * sizeof(T));
     }
-    else *_weight=NULL;
+    else{
+      *_weight = new T[m];
+      ASSERT(*_weight != 0);
+      memset(*_weight, 1.0, m * sizeof(T)); // unity weights by default
+    }
   }
   return(0);
 }

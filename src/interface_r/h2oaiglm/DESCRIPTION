@@ -4,7 +4,7 @@ Title: Proximal Operator Graph Solver
 Version: 1.0
 Date: 2017-05-04
 Author: H2O.ai
-Maintainer: h2oai/sparkling-water
+Maintainer: root <root@h2o.ai>
 Description: Solver for convex optimization problems in the form f(Ax) + g(x).
 License: BSD 3
 Depends:
