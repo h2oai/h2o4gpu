@@ -9,6 +9,18 @@ Requirements
 ------
 CUDA8 for GPU version, OpenMP (for distributed GPU version)
 
+Add to .bashrc or your own environment:
+------
+
+export CUDA_HOME=/usr/local/cuda
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH_MORE=/home/jon/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+export CUDADIR=/usr/local/cuda/include/
+export OMP_NUM_THREADS=32
+export MKL_NUM_THREADS=32
+export VECLIB_MAXIMUM_THREADS=32
+
 
 On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2oaiglm.
 ------
