@@ -185,7 +185,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   //  extern int makePtr_dense<T>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
   //                           const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,
   //                           void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
-  h2oaiglm::makePtr_dense(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee);
+  h2oaiglm::makePtr_dense(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee); //trainW.data() //static_cast<T*>(NULL)
 
 
   int datatype = 1;

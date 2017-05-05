@@ -88,7 +88,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     else{
       _data = new T[this->_m * this->_n]; ASSERT(_data != 0);  memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -138,7 +138,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       ASSERT(_data != 0);
       memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -209,10 +209,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
       else{
         _weight = new T[this->_m];
         ASSERT(_weight != 0);
-        memset(_weight, 1.0, this->_m * sizeof(T));
+        memset(_weight, 1.0, this->_m);
       }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // not needed in existing code when sharedA<0
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -288,7 +288,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -405,7 +405,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo_A->orig_data, A._m * sizeof(T));
       }
-      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
       if(sharedA>0){
         Init();
         Equil(1); // JONTODO: hack for now, should pass user bool
@@ -814,7 +814,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     else{
       *_weight = new T[m];
       ASSERT(*_weight != 0);
-      memset(*_weight, 1.0, m * sizeof(T)); // unity weights by default
+      memset(*_weight, 1.0, m); // unity weights by default
     }
   }
   return(0);

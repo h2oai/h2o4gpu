@@ -130,7 +130,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
 #endif
 
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -189,7 +189,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
     _data = data;
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
     }
@@ -221,7 +221,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -308,9 +308,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
       cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     }
     else{
-      cudaMemset(_weight, 1.0, this->_m * sizeof(T)); // if no weights, set as unity weights
+      cudaMemset(_weight, 1.0, this->_m); // if no weights, set as unity weights
     }
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -380,7 +380,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -421,7 +421,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -1271,7 +1271,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     }
     else{
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
-      CUDACHECK(cudaMemset(*_weight, 1.0, m * sizeof(T))); // unity weights by default
+      CUDACHECK(cudaMemset(*_weight, 1.0, m)); // unity weights by default
     }
     
     POP_RANGE("MDsendsource",MDsendsource,1);
