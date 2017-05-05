@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <stdio.h>
+#include "timer.h"
 
 // Check CUDA calls
 #define CUDACHECK(cmd) do {                         \
