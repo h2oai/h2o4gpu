@@ -30,8 +30,24 @@ MKLSTUFF=-lm -lblas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
+ifeq ($(USENVTX),1)
+LINKFLAGS+=-lnvToolsExt -L/usr/local/cuda/lib64/
+endif
+ifeq ($(USENCCL),1)
+LINKFLAGS+=-lnccl
+endif
 
-DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DUSE_NCCL  #-DUSE_NVTX=1 -DDEBUG
+DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
+ifeq ($(USEDEBUG),1)
+DFLAGS+=-DDEBUG
+endif
+ifeq ($(USENCCL),1)
+DFLAGS+=-DUSE_NCCL
+endif
+ifeq ($(USENVTX),1)
+DFLAGS+=-DUSE_NVTX=1
+endif
+
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
 
@@ -51,7 +67,7 @@ CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand $(LINKFLAGS) $(DFLAGS) #  -lnccl -DUSE_NCCL=1 #  -lnvToolsExt -DUSE_NVTX=1 
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcublas -lcusparse -lcuda -lcurand $(LINKFLAGS) $(DFLAGS)
 SHARED=so
 endif
 
