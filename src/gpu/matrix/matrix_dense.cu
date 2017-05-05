@@ -381,7 +381,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     if(_weight==NULL){
       fprintf(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight); fflush(stderr);
       CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
-      thrust::device_ptr<T> dev_ptr(static_cast<T*>(_weight));
+      thrust::device_ptr<T> dev_ptr(thrust::device_pointer_cast(_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
     }
@@ -435,7 +435,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       else{
         fprintf(stderr,"datatype=0: making up unity weights: %d\n",m); fflush(stderr);
         CUDACHECK(cudaMalloc(&_weight, this->_m * sizeof(T))); // allocate on GPU
-        thrust::device_ptr<T> dev_ptr(static_cast<T*>(_weight));
+        thrust::device_ptr<T> dev_ptr(thrust::device_pointer_cast(_weight));
         T fill_value=1.0;
         thrust::fill(dev_ptr, dev_ptr + this->_m, fill_value);
       }
@@ -1292,14 +1292,14 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     else *_vdatay=NULL;
 
     //    fprintf(stderr,"weight=%p\n",weight); fflush(stderr);
-    if(0&&weight){
+    if(weight){
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_weight, weight, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
     }
     else{
       DEBUG_FPRINTF(stderr,"making up unity weights: %d\n",m);
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
-      thrust::device_ptr<T> dev_ptr(static_cast<T*>(*_weight));
+      thrust::device_ptr<T> dev_ptr(thrust::device_pointer_cast(*_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
     }
