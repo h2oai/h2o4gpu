@@ -1136,7 +1136,12 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
 
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
-    cml::vector<T> weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    cml::vector<T> weight_vec;
+    if(_weight) weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    else{
+      weight_vec = cml::vector_calloc<T>(this->_m); // weight make up
+      cml::vector_add_constant(&weight_vec, static_cast<T>(1.0)); // make unity weights
+    }
     cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
     cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n); // x
     cml::vector_memcpy(&ytemp, &y_vec); // y_vec->ytemp

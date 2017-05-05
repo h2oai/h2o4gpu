@@ -17,7 +17,7 @@ Elastic Net
    See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
 '''
 
-def ElasticNet(X, y, nGPUs=0, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2):
+def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
   # set solver cpu/gpu according to input args
   if((nGPUs>0) and (h2oaiglm.ElasticNetSolverGPU is None)):
     print("\nGPU solver unavailable, using CPU solver\n")
@@ -34,7 +34,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2
   intercept = 1
   standardize = 0
   lambda_min_ratio = 1e-9
-  nFolds=5
+  nFolds = nfolds
   nLambdas = nlambda
   nAlphas = nalpha
 
@@ -121,5 +121,4 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nFolds=5, nalpha=5, validFraction=0.2)
-#  ElasticNet(X, y, nGPUs=0, nlambda=100, nalpha=16, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
