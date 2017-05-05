@@ -63,8 +63,14 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
+ifeq ($(USENVTX),1)
+CUDFLAGS+=-I/usr/local/cuda/include
+endif
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
+ifeq ($(USENVTX),1)
+CXXFLAGS+=-I/usr/local/cuda/include
+endif
 
 
 

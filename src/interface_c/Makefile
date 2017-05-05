@@ -73,6 +73,9 @@ endif
 
 # C++ Flags
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+ifeq ($(USENVTX),1)
+CXXFLAGS+=-I/usr/local/cuda/include/
+endif
 
 # H2OAIGLM static libraries
 H2OAIGLMLIB=\
