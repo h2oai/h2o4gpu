@@ -76,7 +76,7 @@ function [x, y, factors, n_iter] = h2oaiglm(prox_f, prox_g, obj_fn, A, params, f
 %     Proximal Algorithms -- N. Parikh and S. Boyd
 %
 %   Authors:
-%   Neal Parikh, Chris Fougner.
+%   H2O.ai
 %
 
 % Parse Input.

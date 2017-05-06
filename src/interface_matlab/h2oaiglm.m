@@ -72,5 +72,5 @@
 %     Proximal Algorithms -- N. Parikh and S. Boyd
 %
 %   Author:
-%   Christopher Fougner.
+%   H2O.ai
 %

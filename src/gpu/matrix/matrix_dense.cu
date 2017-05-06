@@ -20,7 +20,7 @@
 #include <thrust/advance.h>
 #include <cmath>
 #include <limits>
-
+#include <thrust/fill.h>
 
 extern int checkwDev(int wDev);
 
@@ -130,7 +130,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
 #endif
 
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -189,7 +189,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
     _data = data;
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
     }
@@ -221,7 +221,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -292,10 +292,25 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     double t1 = timer<double>();
     cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-    cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-    cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-    cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+    if(vinfo->orig_data){
+      cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    }
+    else{
+      if(this->_mvalid>0){ fprintf(stderr,"vinfo->orig_data NULL but this->_mvalid>0\n"); fflush(stderr); exit(1); }
+    }
+    if(vinfoy->orig_data){
+      cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    }
+    else{
+      if(this->_mvalid>0){ fprintf(stderr,"vinfoy->orig_data NULL but this->_mvalid>0\n"); fflush(stderr); exit(1); }
+    }
+    if(weightinfo->orig_data){
+      cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    }
+    else{
+      cudaMemset(_weight, 1.0, this->_m); // if no weights, set as unity weights
+    }
+    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -362,10 +377,19 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _vdata = vdata;
     _vdatay = vdatay;
     _weight = weight;
+
+    if(_weight==NULL){
+      DEBUG_FPRINTF(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight);
+      CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_weight[0]));
+      T fill_value=1.0;
+      thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+    }
+    
       
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -405,8 +429,17 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n) * sizeof(T));
+      if(weightinfo->orig_data){
+        cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      }
+      else{
+        DEBUG_FPRINTF(stderr,"datatype=0: making up unity weights: %d\n",m);
+        CUDACHECK(cudaMalloc(&_weight, this->_m * sizeof(T))); // allocate on GPU
+        thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(_weight));
+        T fill_value=1.0;
+        thrust::fill(dev_ptr, dev_ptr + this->_m, fill_value);
+      }
+      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -473,6 +506,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
   if(!this->_done_alloc){
     this->_done_alloc = true;
     if(A._wDev == _wDev && A._me == _me && (A._sharedA==0 || _sharedA==0)){ // if on same device and same thread, just copy pointer
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",0);
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -483,6 +517,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       //      this->_done_equil=1;
     }
     else if(A._wDev == _wDev && A._sharedA!=0 && _sharedA!=0){ // if on same device and sharing memory, then just copy pointer
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",1);
       _data   = A._data;
       _datay  = A._datay;
       _vdata  = A._vdata;
@@ -493,6 +528,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       this->_done_equil=1;
     }
     else{
+      DEBUG_FPRINTF(stderr,"ATYPE%d\n",2);
       // Copy Matrix to from source GPU to this GPU
       PUSH_RANGE("MDcopy",MDcopy,1);
       //GpuData<T> *info = reinterpret_cast<GpuData<T>*>(_info); // cast void -> GpuData
@@ -1100,7 +1136,12 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
 
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
-    cml::vector<T> weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    cml::vector<T> weight_vec;
+    if(_weight) weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    else{
+      weight_vec = cml::vector_calloc<T>(this->_m); // weight make up
+      cml::vector_add_constant(&weight_vec, static_cast<T>(1.0)); // make unity weights
+    }
     cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
     cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n); // x
     cml::vector_memcpy(&ytemp, &y_vec); // y_vec->ytemp
@@ -1250,16 +1291,24 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     }
     else *_vdatay=NULL;
 
+    //    fprintf(stderr,"weight=%p\n",weight); fflush(stderr);
     if(weight){
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_weight, weight, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
     }
-    else *_weight=NULL;
+    else{
+      DEBUG_FPRINTF(stderr,"making up unity weights: %d\n",m);
+      CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
+      thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(*_weight));
+      T fill_value=1.0;
+      thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+    }
     
     POP_RANGE("MDsendsource",MDsendsource,1);
     double t2 = timer<double>();
-    DEBUG_FPRINTF(stdout,"Time to allocate and cpoy the data matrix on the GPU: %f\n", t1-t0);
-
+    DEBUG_FPRINTF(stdout,"Time to allocate and copy the data matrix on the GPU: %f\n", t2-t0);
+    cudaDeviceSynchronize();
+    
     DEBUG_FPRINTF(stderr,"pointer data   %p\n",(void*)*_data);
     DEBUG_FPRINTF(stderr,"pointer datay  %p\n",(void*)*_datay);
     DEBUG_FPRINTF(stderr,"pointer vdata  %p\n",(void*)*_vdata);

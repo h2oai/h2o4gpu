@@ -14,5 +14,5 @@ else:
 		def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
 			return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
 
-		def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, a, b, c, d, e):
-			return self.solver.fit(sourceDev, mTrain, n, mValid, intercept, standardize, a, b, c, d, e)
+		def fit(self, sourceDev, mTrain, n, mValid, intercept, standardize, precision, a, b, c, d, e):
+			return self.solver.fit(sourceDev, mTrain, n, mValid, intercept, standardize, precision, a, b, c, d, e)

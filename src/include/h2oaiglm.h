@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <stdio.h>
+#include "timer.h"
 
 // Check CUDA calls
 #define CUDACHECK(cmd) do {                         \
@@ -217,9 +218,7 @@ class H2OAIGLM {
         "           H2O AI GLM\n"
         "           Version: %s %s\n"
         "           Compiled: %s %s\n"
-        "           Proximal Graph Solver\n"
         "           H2O.ai, Inc., 2017\n"
-        "           (c) C. Fougner, S. Boyd, Stanford University 2014-2015\n"
         __HBAR__,
         H2OAIGLM_VERSION.c_str(),
         _GITHASH_,

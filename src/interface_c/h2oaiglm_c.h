@@ -47,7 +47,7 @@
 // - real_t *optval    : Pointer to single real for f(y^*) + g(x^*).
 // - uint final_iter   : # of iterations at termination
 //
-// Author: Chris Fougner (fougner@stanford.edu)
+// Author: H2O.ai
 //
 
 // Possible column and row ordering.

@@ -88,7 +88,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     else{
       _data = new T[this->_m * this->_n]; ASSERT(_data != 0);  memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -138,7 +138,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       ASSERT(_data != 0);
       memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -153,7 +153,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
-  DEBUG_FPRINTF(stderr,"ord=%c m=%zu n=%zu mValid=%zu\n",ord,(int)m,(int)n,int(mValid));
+  DEBUG_FPRINTF(stderr,"ord=%c m=%zu n=%zu mValid=%zu\n",ord,m,n,mValid);
 
   CpuData<T> *info = new CpuData<T>(data); // new structure (holds pointer to data and GPU handle)
   CpuData<T> *infoy = new CpuData<T>(datay); // new structure (holds pointer to data and GPU handle)
@@ -206,8 +206,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
+      else{
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        memset(_weight, 1.0, this->_m);
+      }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // not needed in existing code when sharedA<0
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // not needed in existing code when sharedA<0
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -283,7 +288,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -400,7 +405,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo_A->orig_data, A._m * sizeof(T));
       }
-      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n) * sizeof(T));
+      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
       if(sharedA>0){
         Init();
         Equil(1); // JONTODO: hack for now, should pass user bool
@@ -672,8 +677,15 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   lambda_max0 = static_cast<T>(0);
   for (unsigned int j = 0; j < n-intercept; ++j) { //col
     T u = 0;
-    for (unsigned int i = 0; i < mTrain; ++i) { //row
-      u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+    if(_weight!=NULL){
+      for (unsigned int i = 0; i < mTrain; ++i) { //row
+        u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+      }
+    }
+    else{
+      for (unsigned int i = 0; i < mTrain; ++i) { //row
+        u += _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+      }
     }
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
@@ -799,7 +811,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       ASSERT(*_weight != 0);
       memcpy(*_weight, weight, m * sizeof(T));
     }
-    else *_weight=NULL;
+    else{
+      *_weight = new T[m];
+      ASSERT(*_weight != 0);
+      memset(*_weight, 1.0, m); // unity weights by default
+    }
   }
   return(0);
 }

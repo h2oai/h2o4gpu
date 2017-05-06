@@ -56,7 +56,9 @@ endif
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
-
+ifeq ($(USENVTX),1)
+CXXFLAGS+=-I/usr/local/cuda/include/
+endif
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
