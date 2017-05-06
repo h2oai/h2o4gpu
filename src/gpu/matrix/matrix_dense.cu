@@ -379,7 +379,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _weight = weight;
 
     if(_weight==NULL){
-      fprintf(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight); fflush(stderr);
+      DEBUG_FPRINTF(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight);
       CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
       thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_weight[0]));
       T fill_value=1.0;
@@ -433,7 +433,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       }
       else{
-        fprintf(stderr,"datatype=0: making up unity weights: %d\n",m); fflush(stderr);
+        DEBUG_FPRINTF(stderr,"datatype=0: making up unity weights: %d\n",m);
         CUDACHECK(cudaMalloc(&_weight, this->_m * sizeof(T))); // allocate on GPU
         thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(_weight));
         T fill_value=1.0;

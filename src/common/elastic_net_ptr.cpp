@@ -224,7 +224,9 @@ namespace h2oaiglm {
       exit(-1);
     }
 
-    cout << "Hardware: " << HARDWARE << endl;
+    if(VERBOSEENET){
+      cout << "Hardware: " << HARDWARE << endl;
+    }
 
     // number of openmp threads = number of cuda devices to use
 #ifdef _OPENMP

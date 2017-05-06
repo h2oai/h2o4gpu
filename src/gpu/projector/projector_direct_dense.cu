@@ -144,7 +144,7 @@ int ProjectorDirect<T, M>::Init() {
   }
 
   double t1 = timer<double>() - t0;
-  printf("Time to compute the Gram: %f\n", t1);
+  DEBUG_FPRINTF(stderr,"Time to compute the Gram: %f\n", t1);
   CUDA_CHECK_ERR();
   POP_RANGE("AAcompute(gram)",AAcompute,1);
 
