@@ -32,6 +32,12 @@ or
 sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
 
 
+To compile everything and install R and python interfaces as user:
+-----
+
+make allclean
+
+
 To compile base library:
 ------
 
