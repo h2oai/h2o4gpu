@@ -14,8 +14,8 @@ Add to .bashrc or your own environment (e.g.):
 
 export CUDA_HOME=/usr/local/cuda
 export PATH=/usr/local/cuda/bin:$PATH
-export LD_LIBRARY_PATH=:$LD_LIBRARY_PATH
-LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:LD_LIBRARY_PATH_MORE
 export CUDADIR=/usr/local/cuda/include/
 export OMP_NUM_THREADS=32
 export MKL_NUM_THREADS=32
@@ -68,7 +68,7 @@ install python package and make wheel:
 
 make
 
-This installs python h2oaiglm as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl
+This installs python h2oaiglm as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl --user
 
 ```
 
