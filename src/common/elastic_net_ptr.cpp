@@ -805,10 +805,10 @@ namespace h2oaiglm {
               // report scores
               //
               ////////////
-              Printmescore(fil);
+              if(VERBOSEENET) Printmescore(fil);
 #pragma omp critical
               {
-                Printmescore(stdout);
+                if(VERBOSEENET) Printmescore(stdout);
                 Printmescoresimple(filrmse);
                 Printmescoresimple2(filvarimp);
               }
@@ -856,10 +856,10 @@ namespace h2oaiglm {
                   for (int ii = 0; ii < skiplambdaamount; ++ii) {
                     i++;
                     lambda = lambdas[i];
-                    Printmescore(fil);
+                    if(VERBOSEENET) Printmescore(fil);
 #pragma omp critical
                     {
-                      Printmescore(stdout);
+                      if(VERBOSEENET) Printmescore(stdout);
                       Printmescoresimple(filrmse);
                       Printmescoresimple2(filvarimp);
                     }
@@ -926,7 +926,7 @@ namespace h2oaiglm {
 
         
         // print result (all threads have same result, so only need to print on one thread)
-        if(me==0) PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,bestrmse[0],bestrmse[1],bestrmse[2]);
+        if(me==0 && VERBOSEENET) PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,bestrmse[0],bestrmse[1],bestrmse[2]);
           
       }// over lambdatype
 
