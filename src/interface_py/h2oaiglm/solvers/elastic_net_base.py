@@ -87,3 +87,4 @@ class ElasticNetBaseSolver(object):
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e)
+        print("Done with fit")
