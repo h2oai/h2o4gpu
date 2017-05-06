@@ -2,13 +2,13 @@
 ICCFILE := $(shell command -v icpc 2> /dev/null)
 
 ifdef ICCFILE
-USEICC=0
+USEICC=1
 else
 USEICC=0
 endif
 
 ifdef MKLROOT
-USEMKL=0
+USEMKL=1
 else
 USEMKL=0
 endif

@@ -63,18 +63,27 @@ const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
 const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
+#define VERBOSEENET 0
 
+#if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g lambdatype: %d fi: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
                                        "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), lambdatype, fi, a, alpha,intercept,standardize, (int)i, \
                                        lambda, dof, trainRMSE, ivalidRMSE, validRMSE);for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
+#else
+#define Printmescore(thefile)
+#endif
 
 #define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
+#if(VERBOSEENET)
 #define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, bestrmse1,bestrmse2,bestrmse3 ); fflush(thefile);
+#else
+#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)
+#endif
 
 
 #include <stdio.h>
@@ -240,7 +249,7 @@ namespace h2oaiglm {
 
     size_t realfolds=(nFolds==0 ? 1 : nFolds);
     size_t totalfolds=nFolds*( nFolds>1 ? 2 : 1 );
-    fprintf(stderr,"Set folds=%d realfolds=%zu Total Folds=%zu\n",nFolds,realfolds,totalfolds); fflush(stderr);
+    DEBUG_FPRINTF(stderr,"Set folds=%d realfolds=%zu Total Folds=%zu\n",nFolds,realfolds,totalfolds);
 
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
@@ -260,15 +269,16 @@ namespace h2oaiglm {
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
 
-    fprintf(stderr,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",min[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",max[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",mean[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",var[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",sd[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",skew[ii]); fprintf(stderr,"\n");
-    fprintf(stderr,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",kurt[ii]); fprintf(stderr,"\n");
-    cout << "lambda_max0 " << lambda_max0 << endl;
-    //      exit(0);
+    if(VERBOSEENET){
+      fprintf(stderr,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",min[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",max[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",mean[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",var[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",sd[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",skew[ii]); fprintf(stderr,"\n");
+      fprintf(stderr,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",kurt[ii]); fprintf(stderr,"\n");
+      cout << "lambda_max0 " << lambda_max0 << endl;
+    }
       
     // temporarily get trainX, etc. from h2oaiglm (which may be on gpu)
     T *trainX=NULL;
@@ -908,7 +918,9 @@ namespace h2oaiglm {
             besttol=tolarrayofa[a]; // get tol for this case
             RMSELOOP(ri) bestrmse[ri]=rmsearrayofa[ri][a]; // get best rmse as average for this alpha
           }
-          if(lambdatype==LAMBDATYPEPATH && realfolds>1) fprintf(stderr,"To use for last CV models: alpha=%g lambda=%g tol=%g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
+          if(VERBOSEENET){
+            if(lambdatype==LAMBDATYPEPATH && realfolds>1) fprintf(stderr,"To use for last CV models: alpha=%g lambda=%g tol=%g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
+          }
         }
 
 
@@ -929,12 +941,13 @@ namespace h2oaiglm {
     // report over all folds, cross-validated model, and over alphas
     //
     ///////////////////////
-    for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
-      for (size_t a = 0; a < nAlphas; ++a) { //alpha
-        fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=realfolds ? 1 : 0),(fi>=realfolds ? fi-realfolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
+    if(VERBOSEENET){
+      for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
+        for (size_t a = 0; a < nAlphas; ++a) { //alpha
+          fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=realfolds ? 1 : 0),(fi>=realfolds ? fi-realfolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
+        }
       }
     }
-
 
     // free any malloc's
     if(trainX && OLDPRED) free(trainX);
@@ -944,7 +957,7 @@ namespace h2oaiglm {
     if(trainW) free(trainW);
 
     double tf = timer<double>();
-    fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+    if(VERBOSEENET) fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
     if (flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
       flag = 0; // set flag
