@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "elastic_net_ptr.h"
 #include <float.h>
 #include "../include/util.h"
@@ -184,6 +185,7 @@ namespace h2oaiglm {
     //                       ,T *Xvsalphalambda, T *Xvsalpha
 
 
+    fprintf(stderr,"INSIDE1\n"); fflush(stderr);
     if(0){
       std::default_random_engine generator;
       std::uniform_int_distribution<int> distribution(-100,100);
@@ -248,10 +250,12 @@ namespace h2oaiglm {
     //  h2oaiglm::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
     // assume source thread is 0th thread (TODO: need to ensure?)
     int sourceme=sourceDev;
+    fprintf(stderr,"INSIDE1\n"); fflush(stderr);
     h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                       reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                       reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
                                       reinterpret_cast<T *>(weightptr));
+    fprintf(stderr,"INSIDE2: 0x%" PRIx64 "0x%" PRIx64 "0x%" PRIx64 "0x%" PRIx64 "0x%" PRIx64 "\n",reinterpret_cast<T *>(trainXptr),reinterpret_cast<T *>(trainYptr),reinterpret_cast<T *>(validXptr),reinterpret_cast<T *>(validYptr),reinterpret_cast<T *>(weightptr)); fflush(stderr);
     // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
     T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
     T lambdamax0;
@@ -259,6 +263,7 @@ namespace h2oaiglm {
     double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
+    fprintf(stderr,"INSIDE3\n"); fflush(stderr);
 
     fprintf(stderr,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",min[ii]); fprintf(stderr,"\n");
     fprintf(stderr,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",max[ii]); fprintf(stderr,"\n");
@@ -288,6 +293,7 @@ namespace h2oaiglm {
     Asource_.GetValidY(datatype, mValid, &validY);
     Asource_.GetWeight(datatype, mTrain, &trainW);
 
+    fprintf(stderr,"INSIDE4\n"); fflush(stderr);
 
     T alphaarray[realfolds*2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
     T lambdaarray[realfolds*2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
@@ -374,6 +380,7 @@ namespace h2oaiglm {
       }
       else fflush(fil);
 
+      fprintf(stderr,"INSIDE5: %d\n",me); fflush(stderr);
       
 
       ////////////
@@ -385,8 +392,10 @@ namespace h2oaiglm {
       DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
 #pragma omp barrier // not required barrier
       h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+      fprintf(stderr,"INSIDE6: %d\n",me); fflush(stderr);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
       h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
+      fprintf(stderr,"INSIDE7: %d\n",me); fflush(stderr);
 #pragma omp barrier // not required barrier
       double t1 = timer<double>();
       if(me==0){ //only thread=0 times entire post-warmup procedure
@@ -400,7 +409,7 @@ namespace h2oaiglm {
       //    h2oaiglm_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2oaiglm
       //    h2oaiglm_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2oaiglm
       //    h2oaiglm_data.SetAdaptiveRho(true);
-      //h2oaiglm_data.SetEquil(false);
+      h2oaiglm_data.SetEquil(false);
       //    h2oaiglm_data.SetRho(1);
       //	h2oaiglm_data.SetVerbose(5);
       //        h2oaiglm_data.SetMaxIter(100);
@@ -628,6 +637,7 @@ namespace h2oaiglm {
               //
               ////////////////////
             
+	      fprintf(stderr,"INSIDE8: %d\n",me); fflush(stderr);
               DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n", timer<double>());
               T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
               // assign lambda (no penalty for intercept, the last coeff, if present)
@@ -641,6 +651,7 @@ namespace h2oaiglm {
               }
               // Solve
               h2oaiglm_data.Solve(f, g);
+	      fprintf(stderr,"INSIDE9: %d\n",me); fflush(stderr);
 
 
             

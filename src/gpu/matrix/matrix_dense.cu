@@ -1,5 +1,5 @@
 #include <cublas_v2.h>
-
+#include <inttypes.h>
 #include "cml/cml_blas.cuh"
 #include "cml/cml_matrix.cuh"
 #include "cml/cml_vector.cuh"
@@ -378,12 +378,18 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _vdatay = vdatay;
     _weight = weight;
 
+    fprintf(stderr,"CHECK: 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "\n",_data,_datay,_vdata,_vdatay,_weight); fflush(stderr);
+
     if(_weight==NULL){
       fprintf(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight); fflush(stderr);
       CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
+      fprintf(stderr,"DONE1: datatype=1: making up unity weights: %d %p\n",m,_weight); fflush(stderr);
       thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(&_weight[0]);
+      fprintf(stderr,"DONE2: datatype=1: making up unity weights: %d %p\n",m,&_weight[0]); fflush(stderr);
       T fill_value=1.0;
+      fprintf(stderr,"DONE3: datatype=1: making up unity weights: %d %p %p\n",m,_weight,thrust::raw_pointer_cast(&dev_ptr[0])); fflush(stderr);
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+      fprintf(stderr,"DONE4: datatype=1: making up unity weights: %d %p\n",m,_weight); fflush(stderr);
     }
     
       
@@ -435,7 +441,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       else{
         fprintf(stderr,"datatype=0: making up unity weights: %d\n",m); fflush(stderr);
         CUDACHECK(cudaMalloc(&_weight, this->_m * sizeof(T))); // allocate on GPU
-        thrust::device_ptr<T> dev_ptr(thrust::device_pointer_cast(_weight));
+        thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(&_weight[0]);
         T fill_value=1.0;
         thrust::fill(dev_ptr, dev_ptr + this->_m, fill_value);
       }
@@ -452,6 +458,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       POP_RANGE("MDsend",MDsend,1);
     }
   }
+  fprintf(stderr,"DONE5"); fflush(stderr);
 }
 
 template <typename T>
@@ -812,9 +819,11 @@ int MatrixDense<T>::Equil(bool equillocal) {
 
   if (this->_done_equil) return 0;
   else this->_done_equil=1;
+  fprintf(stderr,"THRUST-2\n"); fflush(stderr);
   
   CUDACHECK(cudaSetDevice(_wDev));
 
+  fprintf(stderr,"THRUST-1\n"); fflush(stderr);
   // Extract cublas handle from _info.
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   cublasHandle_t hdl = info->handle;
@@ -862,6 +871,7 @@ int MatrixDense<T>::Equil(bool equillocal) {
     }
   }
   
+  fprintf(stderr,"THRUST0\n"); fflush(stderr);
   // Perform Sinkhorn-Knopp equilibration to obtain a doubly stochastic matrix.
   SinkhornKnopp(this, d, e, equillocal);
   wrapcudaDeviceSynchronize();
@@ -894,6 +904,8 @@ int MatrixDense<T>::Equil(bool equillocal) {
   }
   
   // Compute D := sqrt(D), E := sqrt(E), if 2-norm was equilibrated.
+  fprintf(stderr,"THRUST1\n"); fflush(stderr);
+
   if (kNormEquilibrate == kNorm2 || kNormEquilibrate == kNormFro) {
     thrust::transform(thrust::device_pointer_cast(d),
         thrust::device_pointer_cast(d + this->_m),
@@ -904,11 +916,14 @@ int MatrixDense<T>::Equil(bool equillocal) {
     wrapcudaDeviceSynchronize();
     CUDA_CHECK_ERR();
   }
+  fprintf(stderr,"THRUST2\n"); fflush(stderr);
 
   // Compute A := D * A * E.
   MultDiag(d, e, this->_m, this->_n, _ord, _data);
   wrapcudaDeviceSynchronize();
   CUDA_CHECK_ERR();
+
+  fprintf(stderr,"THRUST3\n"); fflush(stderr);
 
   // Scale A to have norm of 1 (in the kNormNormalize norm).
   T normA = NormEst(hdl, kNormNormalize, *this);
@@ -918,6 +933,8 @@ int MatrixDense<T>::Equil(bool equillocal) {
   cml::vector_scale(&a_vec, 1 / normA);
   wrapcudaDeviceSynchronize();
 
+  fprintf(stderr,"THRUST4\n"); fflush(stderr);
+
   // Scale d and e to account for normalization of A.
   cml::vector<T> d_vec = cml::vector_view_array<T>(d, this->_m);
   cml::vector<T> e_vec = cml::vector_view_array<T>(e, this->_n);
@@ -925,8 +942,12 @@ int MatrixDense<T>::Equil(bool equillocal) {
   cml::vector_scale(&e_vec, 1 / sqrt(normA));
   wrapcudaDeviceSynchronize();
 
+  fprintf(stderr,"THRUST5\n"); fflush(stderr);
+
   DEBUG_PRINTF("norm A = %e, normd = %e, norme = %e\n", normA,
       cml::blas_nrm2(hdl, &d_vec), cml::blas_nrm2(hdl, &e_vec));
+
+  fprintf(stderr,"THRUST6\n"); fflush(stderr);
 
   cudaFree(sign);
   CUDA_CHECK_ERR();
@@ -1068,15 +1089,18 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   
   init.initialize();
   int len=0;
-  
+
+  fprintf(stderr,"STATS1\n"); fflush(stderr);
   // cast GPU pointer as thrust pointer
   thrust::device_ptr<T> dataybegin=thrust::device_pointer_cast(_datay);
   len=this->_m;
   thrust::device_ptr<T> datayend=thrust::device_pointer_cast(_datay+len);
+  fprintf(stderr,"STATS2: %d %p %p %p %p\n",len,_datay,_datay+len,thrust::raw_pointer_cast(&dataybegin[0]),thrust::raw_pointer_cast(&datayend[0])); fflush(stderr);
   
 
   // compute summary statistics
   summary_stats_data<T> resulty = thrust::transform_reduce(dataybegin, datayend, unary_op, init, binary_op);
+  fprintf(stderr,"STATS3\n"); fflush(stderr);
 
   min[0]=resulty.min;
   max[0]=resulty.max;
@@ -1099,13 +1123,16 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   std::cout <<"Kurtosis           : "<< kurt[0]<< std::endl;
 #endif
 
+  fprintf(stderr,"STATS4\n"); fflush(stderr);
   // cast GPU pointer as thrust pointer
   thrust::device_ptr<T> vdataybegin=thrust::device_pointer_cast(_vdatay);
   len=this->_mvalid;
   thrust::device_ptr<T> vdatayend=thrust::device_pointer_cast(_vdatay+len);
 
+  fprintf(stderr,"STATS5\n"); fflush(stderr);
   // compute summary statistics
   summary_stats_data<T> vresulty = thrust::transform_reduce(vdataybegin, vdatayend, unary_op, init, binary_op);
+  fprintf(stderr,"STATS6\n"); fflush(stderr);
 
   
   min[1]=vresulty.min;
@@ -1129,6 +1156,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   std::cout <<"Kurtosis           : "<< kurt[1]<< std::endl;
 #endif
 
+  fprintf(stderr,"STATS7\n"); fflush(stderr);
   if(1){ // normal usage
     // Get Cublas handle
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
@@ -1148,6 +1176,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     cml::vector_add_constant(&ytemp, -static_cast<T>(intercept)*mean[0]); // ytemp -> ytemp - intercept*mean[0]
     cml::vector_mul(&ytemp,&weight_vec); // ytemp*weight -> ytemp
 
+    fprintf(stderr,"STATS8\n"); fflush(stderr);
     // Compute A^T . b
     if (_ord == MatrixDense<T>::ROW) {
       const cml::matrix<T, CblasRowMajor> A = cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n); // just view
@@ -1165,10 +1194,12 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
                                            absolute_value<T>(),
                                            0,
                                            thrust::maximum<T>());
+    fprintf(stderr,"STATS9\n"); fflush(stderr);
   }
   else{
     lambda_max0 = 7000; // test
   }
+  fprintf(stderr,"STATS10\n"); fflush(stderr);
   CUDA_CHECK_ERR();
 
   return 0;
@@ -1299,7 +1330,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     else{
       DEBUG_FPRINTF(stderr,"making up unity weights: %d\n",m);
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
-      thrust::device_ptr<T> dev_ptr(thrust::device_pointer_cast(*_weight));
+      thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(*_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
     }

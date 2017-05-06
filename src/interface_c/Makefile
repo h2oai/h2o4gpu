@@ -49,6 +49,9 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
+ifeq ($(USENVTX),1)
+CUDFLAGS+=-I/usr/local/cuda/include/
+endif
 
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
@@ -73,6 +76,9 @@ endif
 
 # C++ Flags
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+ifeq ($(USENVTX),1)
+CXXFLAGS+=-I/usr/local/cuda/include/
+endif
 
 # H2OAIGLM static libraries
 H2OAIGLMLIB=\

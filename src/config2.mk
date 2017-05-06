@@ -15,8 +15,8 @@ endif
 
 
 #local settings
-USEDEBUG=0
-USENVTX=0
+USEDEBUG=1
+USENVTX=1
 USENCCL=0
 
 
