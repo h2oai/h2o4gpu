@@ -844,7 +844,7 @@ namespace h2oaiglm {
                       int k = 3; //TODO: ask the user for this parameter
                       double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
                       bool moreIsBetter = false;
-                      bool verbose = true;
+                      bool verbose = static_cast<bool>(VERBOSEENET);// true;
                       if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
                         break;
                       }
