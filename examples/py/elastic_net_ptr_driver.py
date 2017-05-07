@@ -64,26 +64,11 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   mvalid = validX.shape[0]
   print("mTrain=%d mvalid=%d" % (mTrain,mvalid))
   
-  ## TODO: compute these in C++ (CPU or GPU)
-  sdtrainY = np.sqrt(np.var(trainY))
-  print("sdtrainY: " + str(sdtrainY))
-  meantrainY = np.mean(trainY)
-  print("meantrainY: " + str(meantrainY))
-
-  ## TODO: compute these in C++ (CPU or GPU)
-  sdvalidY = np.sqrt(np.var(validY))
-  print("sdvalidY: " + str(sdvalidY))
-  meanvalidY = np.mean(validY)
-  print("meanvalidY: " + str(meanvalidY))
-
-
   if intercept==1:
     trainX = np.hstack([trainX, np.ones((trainX.shape[0],1),dtype=trainX.dtype)])
     validX = np.hstack([validX, np.ones((validX.shape[0],1),dtype=validX.dtype)])
     n = trainX.shape[1]
     print("New n=%d" % (n))
-
-
 
   ## Constructor
   print("Setting up solver")
