@@ -272,15 +272,26 @@ namespace h2oaiglm {
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
 
-    if(VERBOSEENET){
-      fprintf(stderr,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",min[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",max[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",mean[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",var[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(stderr," %21.15g",sd[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",skew[ii]); fprintf(stderr,"\n");
-      fprintf(stderr,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(stderr," %21.15g",kurt[ii]); fprintf(stderr,"\n");
-      cout << "lambda_max0 " << lambda_max0 << endl;
+    if(1||VERBOSEENET){
+      
+      FILE *myfile;
+      for(size_t filei=0;filei<=2;filei++){
+        if(filei==0) myfile=stderr;
+        else if(filei==1) myfile=stdout;
+        else{
+          myfile = fopen("stats.txt","wt");
+          if(myfile==NULL) continue; // skip if can't write, don't complain
+        }
+      }
+      fprintf(myfile,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",min[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",max[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",mean[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",var[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",sd[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",skew[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",kurt[ii]); fprintf(myfile,"\n");
+      fprintf(myfile,"lambda_max0=%g\n",lambda_max0);
+      fflush(myfile);
     }
       
     // temporarily get trainX, etc. from h2oaiglm (which may be on gpu)
