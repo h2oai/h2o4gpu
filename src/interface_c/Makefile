@@ -13,7 +13,8 @@ else
 MKLSTUFF=-lmkl_def -lmkl_avx -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 endif
 ICCSTUFF=-qopenmp
-GCCSTUFF=-fopenmp -ggdb3 -lgomp
+#GCCSTUFF=-fopenmp -ggdb3 -lgomp
+GCCSTUFF=-fopenmp -lgomp
 
 
 # C++ Flags
@@ -72,7 +73,7 @@ SHARED=so
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -O3 $(HASH) -I$(H2OAIGLMROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
