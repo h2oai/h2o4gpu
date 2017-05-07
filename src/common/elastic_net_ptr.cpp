@@ -93,6 +93,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
 #define DOSTOPEARLY 1
+#define RELAXEARLYSTOP 1
 
 namespace h2oaiglm {
 
@@ -838,7 +839,7 @@ namespace h2oaiglm {
                     double ratio = (norm-scoring_history.back())/norm;
 
                     double fracdof=0.5; //USER parameter.
-                    if(ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+                    if(RELAXEARLYSTOP||ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
                       //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
                       // STOP EARLY CHECK
                       int k = 3; //TODO: ask the user for this parameter
