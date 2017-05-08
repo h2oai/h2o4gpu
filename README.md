@@ -113,14 +113,6 @@ References
 
 [prox_algs]: http://www.stanford.edu/~boyd/papers/prox_algs.html "Proximal Algorithms -- N. Parikh and S. Boyd"
 
-
-Authors
-------
-New h2oaiglm: H2O.ai Team
-Original Pogs: Chris Fougner, with input from Stephen Boyd. The basic algorithm is from ["Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd"][block_splitting].
-
-
-
 Copyright
 ---------
 Copyright (c) 2017, H2O.ai, Inc., Mountain View, CA
