@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 from h2oaiglm.types import FUNCTION, STATUS, FunctionVector
 from h2oaiglm.solvers.cpu import SolverCPU
 from h2oaiglm.solvers.gpu import SolverGPU
