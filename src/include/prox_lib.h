@@ -334,12 +334,14 @@ __DEVICE__ inline T ProxZero(T v, T rho) {
   return v;
 }
 
+#define SMALL 1E-30 // ok for float or double for this purpose
+
 // Evaluates the proximal operator of f.
 template <typename T>
 __DEVICE__ inline T ProxEval(const FunctionObj<T> &f_obj, T v, T rho) {
   const T a = f_obj.a, b = f_obj.b, c = f_obj.c, d = f_obj.d, e = f_obj.e;
-  v = a * (v * rho - d) / (e + rho) - b;
-  rho = (e + rho) / (c * a * a);
+  v = a * (v * rho - d) / (SMALL + e + rho) - b;
+  rho = (e + rho) / (SMALL + c * a * a); // Assumes c>=0 , as original paper assumes.  This is so weight can be 0.
   switch (f_obj.h) {
     case kAbs: v = ProxAbs(v, rho); break;
     case kNegEntr: v = ProxNegEntr(v, rho); break;
@@ -358,7 +360,7 @@ __DEVICE__ inline T ProxEval(const FunctionObj<T> &f_obj, T v, T rho) {
     case kSquare: v = ProxSquare(v, rho); break;
     case kZero: default: v = ProxZero(v, rho); break;
   }
-  return (v + b) / a;
+  return (v + b) / (SMALL+a); // TODO: assumes a>=0, which is normal but not required by paper.
 }
 
 
