@@ -8,7 +8,8 @@
 #include "reader.h"
 #include "timer.h"
 
-typedef float real_t;
+//typedef float real_t;
+typedef double real_t;
 
 int main(int argc, char **argv) {
   using namespace std;
