@@ -871,6 +871,7 @@ namespace h2oaiglm {
                 if(doskiplambda){
                   for (int ii = 0; ii < skiplambdaamount; ++ii) {
                     i++;
+                    if(i>=nlambdalocal) break; // don't skip beyond existing lambda
                     lambda = lambdas[i];
                     if(VERBOSEENET) Printmescore(fil);
 #pragma omp critical
