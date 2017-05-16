@@ -1186,7 +1186,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     lambda_max0 = thrust::transform_reduce(thrust::device,
                                            dev_ptr, dev_ptr + this->_n-intercept,
                                            absolute_value<T>(),
-                                           0,
+                                           static_cast<T>(0.0),
                                            thrust::maximum<T>());
   }
   else{
