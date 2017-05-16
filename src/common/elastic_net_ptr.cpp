@@ -63,7 +63,7 @@ const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
 const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
-#define VERBOSEENET 0
+#define VERBOSEENET 1
 
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
@@ -92,7 +92,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
-#define DOSTOPEARLY 1
+#define DOSTOPEARLY 0
 #define RELAXEARLYSTOP 1
 
 namespace h2oaiglm {
@@ -268,6 +268,7 @@ namespace h2oaiglm {
     T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
     T lambdamax0;
     Asource_.Stats(intercept,min,max,mean,var,sd,skew,kurt,lambdamax0);
+    fprintf(stderr,"lambdamax0=%g\n",lambdamax0); fflush(stderr);
     double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
@@ -426,7 +427,7 @@ namespace h2oaiglm {
       //    h2oaiglm_data.SetAdaptiveRho(true);
       //h2oaiglm_data.SetEquil(false);
       //      h2oaiglm_data.SetRho(1E-6);
-      //      h2oaiglm_data.SetRho(1E-3);
+      h2oaiglm_data.SetRho(1E-1);
       //      h2oaiglm_data.SetRho(1.0);
       //	h2oaiglm_data.SetVerbose(5);
       //        h2oaiglm_data.SetMaxIter(100);

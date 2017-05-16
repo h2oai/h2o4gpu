@@ -317,11 +317,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     }
     if(weightinfo->orig_data){
       cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      fprintf(stderr,"cudaMemcopy weights\n"); fflush(stderr);
     }
     else{// if no weights, set as unity weights
       thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_weight[0]));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+      fprintf(stderr,"thrust weights\n"); fflush(stderr);
     }
     cudaMalloc(&_de, (m + n) * sizeof(T));
     thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
@@ -1079,10 +1081,23 @@ struct absolute_value : public thrust::unary_function<T,T>
   }
 };
 
+template<typename T>
+struct max_absolute_value
+{
+  __host__ __device__ T operator()(const T &x, const T &y) const
+  {
+    return abs(x) < abs(y) ? abs(y) : abs(x);
+  }
+};
+
 template <typename T>
 int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
   CUDACHECK(cudaSetDevice(_wDev));
+
+  {
+    T testval; cudaMemcpy(&testval,_weight,1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TEST2=%g\n",testval); fflush(stderr);
+  }
 
   // setup arguments
   summary_stats_unary_op<T>  unary_op;
@@ -1159,11 +1174,19 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
 
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
+    {
+      T testval; cudaMemcpy(&testval,_weight,1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TEST3=%g _weight=%p\n",testval,_weight); fflush(stderr);
+    }
+      
     cml::vector<T> weight_vec;
-    if(_weight) weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+    if(_weight){
+      weight_vec = cml::vector_view_array(_weight, this->_m); // weight
+      fprintf(stderr,"HERE1\n"); fflush(stderr);
+    }
     else{
       weight_vec = cml::vector_calloc<T>(this->_m); // weight make up
       cml::vector_add_constant(&weight_vec, static_cast<T>(1.0)); // make unity weights
+      fprintf(stderr,"HERE2\n"); fflush(stderr);
     }
     cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
     cml::vector<T> xtemp = cml::vector_calloc<T>(this->_n); // x
@@ -1171,6 +1194,10 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     cml::vector_add_constant(&ytemp, -static_cast<T>(intercept)*mean[0]); // ytemp -> ytemp - intercept*mean[0]
     cml::vector_mul(&ytemp,&weight_vec); // ytemp*weight -> ytemp
 
+    {
+      T testval; cudaMemcpy(&testval,_weight,1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TEST4=%g _weight=%p\n",testval,_weight); fflush(stderr);
+      T testval2; cudaMemcpy(&testval2,&(ytemp.data[0]),1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TESTA1=%g\n",testval2); fflush(stderr);
+    }
     // Compute A^T . b
     if (_ord == MatrixDense<T>::ROW) {
       const cml::matrix<T, CblasRowMajor> A = cml::matrix_view_array<T, CblasRowMajor>(_data, this->_m, this->_n); // just view
@@ -1181,17 +1208,37 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
       cml::blas_gemv(hdl, CUBLAS_OP_T, static_cast<T>(1.), &A, &ytemp, static_cast<T>(0.), &xtemp); // A.ytemp -> xtemp
     }
 
+    {
+      T testval3;
+      for(unsigned int ii=0;ii<this->_n-intercept;ii++){
+        cudaMemcpy(&testval3,&(xtemp.data[ii]),1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TESTA2[%d]=%g\n",ii,testval3); fflush(stderr);
+      }
+    }
+
     thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(&xtemp.data[0]);
 
     lambda_max0 = thrust::transform_reduce(thrust::device,
-                                           dev_ptr, dev_ptr + this->_n-intercept,
+                                           dev_ptr, dev_ptr + this->_n - intercept,
                                            absolute_value<T>(),
-                                           0,
+                                           static_cast<T>(0.0),
                                            thrust::maximum<T>());
+
+    //    lambda_max0 = thrust::transform(dev_ptr, dev_ptr2, dev_ptr, absolute_value<T>());
+
+    
+    //    lambda_max0 = thrust::reduce(dev_ptr, dev_ptr + this->_n - intercept, dev_ptr, 0, [=]__device__(T a, T b){
+    //        return abs(a)<abs(b) ? abs(b) : abs(a);
+    //      }
+    //      );
+    
+    //    lambda_max0 = thrust::reduce(dev_ptr, dev_ptr + this->_n - intercept, static_cast<T>(0.0), max_absolute_value<T>());
+
+    fprintf(stderr,"inside lambda_max0=%g len=%d\n",lambda_max0,this->_n-intercept); fflush(stderr);
   }
   else{
     lambda_max0 = 7000; // test
   }
+  cudaDeviceSynchronize();
   CUDA_CHECK_ERR();
 
   return 0;
@@ -1318,6 +1365,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     if(weight){
       CUDACHECK(cudaMalloc(_weight, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_weight, weight, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+      fprintf(stderr,"cudaMemcopy weights2\n"); fflush(stderr);
     }
     else{
       DEBUG_FPRINTF(stderr,"making up unity weights: %d\n",m);
@@ -1325,7 +1373,9 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(*_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+      fprintf(stderr,"thrust weights2\n"); fflush(stderr);
     }
+    T testval; cudaMemcpy(&testval,*_weight,1*sizeof(T),cudaMemcpyDeviceToHost); fprintf(stderr,"TEST1=%g\n",testval); fflush(stderr);
     
     POP_RANGE("MDsendsource",MDsendsource,1);
     double t2 = timer<double>();
