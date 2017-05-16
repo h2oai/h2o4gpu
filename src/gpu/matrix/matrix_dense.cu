@@ -130,7 +130,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     printf("Time to copy the data matrix to the GPU    : %f\n", t2-t1);
 #endif
 
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+    cudaMalloc(&_de, (m + n) * sizeof(T));
+    thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+    T fill_value=0.0;
+    thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -189,7 +192,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
     _data = data;
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+      cudaMalloc(&_de, (m + n) * sizeof(T));
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+      T fill_value=0.0;
+      thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
+
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
     }
@@ -221,7 +228,11 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       cudaMalloc(&_data, this->_m * this->_n * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+      cudaMalloc(&_de, (m + n) * sizeof(T));
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+      T fill_value=0.0;
+      thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
+
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -307,10 +318,16 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     if(weightinfo->orig_data){
       cudaMemcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     }
-    else{
-      cudaMemset(_weight, 1.0, this->_m); // if no weights, set as unity weights
+    else{// if no weights, set as unity weights
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_weight[0]));
+      T fill_value=1.0;
+      thrust::fill(dev_ptr, dev_ptr + m, fill_value);
     }
-    cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+    cudaMalloc(&_de, (m + n) * sizeof(T));
+    thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+    T fill_value=0.0;
+    thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
+
     if(sharedA>0){
       Init(); // does nothing right now
       Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -389,7 +406,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       
     if(!this->_done_alloc){
       this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+      cudaMalloc(&_de, (m + n) * sizeof(T));
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+      T fill_value=0.0;
+      thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
@@ -439,7 +459,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         T fill_value=1.0;
         thrust::fill(dev_ptr, dev_ptr + this->_m, fill_value);
       }
-      cudaMalloc(&_de, (m + n) * sizeof(T)); cudaMemset(_de, 0, (m + n));
+      cudaMalloc(&_de, (m + n) * sizeof(T));
+      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
+      T fill_value=0.0;
+      thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
