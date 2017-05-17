@@ -230,23 +230,6 @@ int H2OAIGLM<T, M, P>::_Init() {
 template <typename T, typename M, typename P>
 H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
                                 const std::vector<FunctionObj<T> > &g) {
-  double t0 = timer<double>();
-  // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
-  // Constants for adaptive-rho and over-relaxation.
-  const T kDeltaMin   = static_cast<T>(1.05); // for adaptive rho and rescaling
-  const T kGamma      = static_cast<T>(1.01); // for adaptive rho and rescaling
-  const T kTau        = static_cast<T>(0.8); // for adaptive rho and rescaling
-  const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
-  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
-  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
-  const T kKappa      = static_cast<T>(0.9); // for adaptive rho and rescaling
-  const T kOne        = static_cast<T>(1.0); // definition
-  const T kZero       = static_cast<T>(0.0); // definition
-  const T kProjTolMax = static_cast<T>(1e-6); // Projection tolerance
-  const T kProjTolMin = static_cast<T>(1e-2); // Projection tolerance
-  const T kProjTolPow = static_cast<T>(1.3); // Projection tolerance
-  const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
-  const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
   //  PUSH_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
 
@@ -258,6 +241,22 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     //    POP_RANGE("Init2",Init2,1);
   }
   CUDACHECK(cudaSetDevice(_wDev));
+
+  double t0 = timer<double>();
+  // TODO: Constants are set arbitrarily based upon limited experiments in academic papers
+  // Constants for adaptive-rho and over-relaxation.
+  const T kDeltaMin   = static_cast<T>(1.05); // for adaptive rho and rescaling
+  const T kGamma      = static_cast<T>(1.01); // for adaptive rho and rescaling
+  const T kTau        = static_cast<T>(0.8); // for adaptive rho and rescaling
+  const T kAlpha      = static_cast<T>(1.7); // set to 1.0 to disable over-relaxation technique, normally 1.5-1.8 and was set to 1.7
+  const T kKappa      = static_cast<T>(0.9); // for adaptive rho and rescaling
+  const T kOne        = static_cast<T>(1.0); // definition
+  const T kZero       = static_cast<T>(0.0); // definition
+  const T kProjTolMax = static_cast<T>(1e-6); // Projection tolerance
+  const T kProjTolMin = static_cast<T>(1e-2); // Projection tolerance
+  const T kProjTolPow = static_cast<T>(1.3); // Projection tolerance
+  const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
+  const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
 
   // Notes on variable names:
@@ -299,6 +298,13 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   size_t n = _A.Cols();
   thrust::device_vector<FunctionObj<T> > f_gpu = f;
   thrust::device_vector<FunctionObj<T> > g_gpu = g;
+
+  // TODO: Need to give scale to these
+//  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
+//  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
+  const T kRhoMin     = static_cast<T>(std::numeric_limits<double>::epsilon()); // lower range for adaptive rho
+  const T kRhoMax     = static_cast<T>(1.0/kRhoMin); // upper range for adaptive rho
+
   POP_RANGE("H2OAIGLMExtract",H2OAIGLMExtract,3);
 
   PUSH_RANGE("H2OAIGLMAlloc",H2OAIGLMAlloc,4);

@@ -615,8 +615,8 @@ namespace h2oaiglm {
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
                 tol=tol0;
-                h2oaiglm_data.SetRelTol(tol); // set how many cuda devices to use internally in h2oaiglm
-                h2oaiglm_data.SetAbsTol(0.5*tol); // set how many cuda devices to use internally in h2oaiglm
+                h2oaiglm_data.SetRelTol(tol);
+                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                 h2oaiglm_data.SetMaxIter(1000);
                 // see if getting below stddev, if so decrease tolerance
                 if(scoring_history.size()>=1){
@@ -629,7 +629,7 @@ namespace h2oaiglm {
                     if(tol<tollow) tol=tollow;
                 
                     h2oaiglm_data.SetRelTol(tol);
-                    h2oaiglm_data.SetAbsTol(0.5*tol);
+                    h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                     h2oaiglm_data.SetMaxIter(1000);
                     jumpuse=jump;
                   }
@@ -642,7 +642,7 @@ namespace h2oaiglm {
                 tol = tolarrayofa[a];
                 //                tol = tol0;
                 h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(0.5*tol);
+                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                 h2oaiglm_data.SetMaxIter(1000);
               }
 
