@@ -92,7 +92,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
-#define DOSTOPEARLY 1
+#define DOSTOPEARLY 0
 #define RELAXEARLYSTOP 1
 
 namespace h2oaiglm {
@@ -427,7 +427,8 @@ namespace h2oaiglm {
       //h2oaiglm_data.SetEquil(false);
       //      h2oaiglm_data.SetRho(1E-6);
       //      h2oaiglm_data.SetRho(1E-3);
-      //      h2oaiglm_data.SetRho(1.0);
+      //
+      h2oaiglm_data.SetRho(1.0);
       //	h2oaiglm_data.SetVerbose(5);
       //        h2oaiglm_data.SetMaxIter(100);
 
@@ -489,7 +490,7 @@ namespace h2oaiglm {
 
             ////////////
             // SETUP ALPHA
-            const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
+            const T alpha = nAlphas == 1 ? 0 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
 
             // Setup Lambda
             if(lambdatype==LAMBDATYPEONE) lambdas[0]=lambdaarrayofa[a];
@@ -569,7 +570,7 @@ namespace h2oaiglm {
             double trainRMSE=-1;
             double ivalidRMSE = -1;
             double validRMSE = -1;
-            double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
+            double tol0=1E-5; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
             double tol=tol0;
             T lambda=-1;
             double tbestalpha,tbestlambda,tbesttol=std::numeric_limits<double>::max(),tbestrmse[NUMRMSE];
@@ -614,23 +615,24 @@ namespace h2oaiglm {
                 // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
-                tol=tol0;
+                tol=tol0*lambda/lambdas[0];
+                h2oaiglm_data.SetRho(1.0);
                 h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                h2oaiglm_data.SetMaxIter(1000);
+                h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                h2oaiglm_data.SetMaxIter(10000);
                 // see if getting below stddev, if so decrease tolerance
                 if(scoring_history.size()>=1){
                   double ratio = (norm-scoring_history.back())/norm;
 
                   if(ratio>0.0){
                     double factor=0.05; // rate factor (USER parameter)
-                    double tollow=1E-3; //lowest allowed tolerance (USER parameter)
-                    tol = tol0*pow(2.0,-ratio/factor);
+                    double tollow=1E-1*tol0*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
+                    tol = tol0*lambda/lambdas[0]*pow(2.0,-ratio/factor);
                     if(tol<tollow) tol=tollow;
                 
                     h2oaiglm_data.SetRelTol(tol);
-                    h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                    h2oaiglm_data.SetMaxIter(1000);
+                    h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                    h2oaiglm_data.SetMaxIter(10000);
                     jumpuse=jump;
                   }
                   //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
@@ -642,8 +644,8 @@ namespace h2oaiglm {
                 tol = tolarrayofa[a];
                 //                tol = tol0;
                 h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                h2oaiglm_data.SetMaxIter(1000);
+                h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                h2oaiglm_data.SetMaxIter(10000);
               }
 
 

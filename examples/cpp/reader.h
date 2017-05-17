@@ -161,6 +161,7 @@ int fillData(size_t m, size_t n, // only used if name.empty()
             } else {
               b[i] = val;
               w[i] = 1.0; // just constant weight
+              //w[i] = 1E-12; // just constant weight
               //w[i] = 1E-6; // just constant weight
               //w[i] = 1E-3; // just constant weight
             }

@@ -188,7 +188,7 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // TODO: Need to give scale to these
   //  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
   //  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
-  const T kRhoMin     = static_cast<T>(std::numeric_limits<double>::epsilon()); // lower range for adaptive rho
+  const T kRhoMin     = static_cast<T>(std::numeric_limits<T>::epsilon()); // lower range for adaptive rho
   const T kRhoMax     = static_cast<T>(1.0/kRhoMin); // upper range for adaptive rho
 
   
@@ -311,8 +311,8 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
     // Evaluate stopping criteria.
-    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
-        (!_gap_stop || gap < eps_gap);
+    //    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+    //        (!_gap_stop || gap < eps_gap);
     if ((_verbose > 2 && k % 10  == 0) ||
         (_verbose > 1 && k % 100 == 0) ||
         (_verbose > 1 && converged)) {
@@ -322,7 +322,11 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     }
 
     // Break if converged or there are nans
-    if (converged || k == _max_iter - 1){
+    //    if (converged || k == _max_iter - 1){
+    //      _final_iter = k;
+    //      break;
+    //    }
+    if(k==_max_iter){
       _final_iter = k;
       break;
     }
@@ -367,7 +371,7 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // Check status
   H2OAIGLMStatus status;
-  if (!converged && k == _max_iter - 1)
+  if (1||!converged && k == _max_iter - 1)
     status = H2OAIGLM_MAX_ITER;
   else if (!converged && k < _max_iter - 1)
     status = H2OAIGLM_NAN_FOUND;
