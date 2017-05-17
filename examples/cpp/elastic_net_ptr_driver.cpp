@@ -139,7 +139,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
     
 
   // set lambda_min_ratio
-  T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
+  T lambda_min_ratio = 1E-13; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
 #define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2oaiglm runs normally at high GPU usage.  So these leave the device in a bad state.
