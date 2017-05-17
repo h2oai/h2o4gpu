@@ -427,7 +427,7 @@ namespace h2oaiglm {
       //h2oaiglm_data.SetEquil(false);
       //      h2oaiglm_data.SetRho(1E-6);
       //      h2oaiglm_data.SetRho(1E-3);
-      //      h2oaiglm_data.SetRho(1.0);
+      h2oaiglm_data.SetRho(max[0]);
       //	h2oaiglm_data.SetVerbose(5);
       //        h2oaiglm_data.SetMaxIter(100);
 
@@ -526,9 +526,12 @@ namespace h2oaiglm {
             }
 
             // normalize weights before input (method has issue with small typical weights, so avoid normalization and just normalize in error itself only)
+            T sumweight=0,maxweight=-std::numeric_limits<T>::max();
+            for(unsigned int j=0;j<mTrain;++j) sumweight+=weights[j];
+            for(unsigned int j=0;j<mTrain;++j){
+              if(maxweight<weights[j]) maxweight=weights[j];
+            }
             if(0){
-              T sumweight=0;
-              for(unsigned int j=0;j<mTrain;++j) sumweight+=weights[j];
               if(sumweight!=0.0){
                 for(unsigned int j=0;j<mTrain;++j) weights[j]/=sumweight;
               }
@@ -614,9 +617,10 @@ namespace h2oaiglm {
                 // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
-                tol=tol0;
+                h2oaiglm_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
+                tol=tol0*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
                 h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
                 h2oaiglm_data.SetMaxIter(1000);
                 // see if getting below stddev, if so decrease tolerance
                 if(scoring_history.size()>=1){
@@ -625,7 +629,7 @@ namespace h2oaiglm {
                   if(ratio>0.0){
                     double factor=0.05; // rate factor (USER parameter)
                     double tollow=1E-3; //lowest allowed tolerance (USER parameter)
-                    tol = tol0*pow(2.0,-ratio/factor);
+                    tol = tol0*lambda/lambdas[0]*pow(2.0,-ratio/factor);
                     if(tol<tollow) tol=tollow;
                 
                     h2oaiglm_data.SetRelTol(tol);
@@ -640,7 +644,7 @@ namespace h2oaiglm {
                 // assume warm-start value of X and other internal variables
                 //                fprintf(stderr,"tol to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
                 tol = tolarrayofa[a];
-                //                tol = tol0;
+                //                tol = tol0*lambda/lambdas[0];
                 h2oaiglm_data.SetRelTol(tol);
                 h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                 h2oaiglm_data.SetMaxIter(1000);
