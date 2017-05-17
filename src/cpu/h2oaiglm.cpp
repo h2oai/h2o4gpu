@@ -138,8 +138,6 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kGamma      = static_cast<T>(1.01);
   const T kTau        = static_cast<T>(0.8);
   const T kAlpha      = static_cast<T>(1.7);
-  const T kRhoMin     = static_cast<T>(1e-4);
-  const T kRhoMax     = static_cast<T>(1e4);
   const T kKappa      = static_cast<T>(0.4);
   const T kOne        = static_cast<T>(1.0);
   const T kZero       = static_cast<T>(0.0);
@@ -186,6 +184,14 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   std::transform(g_cpu.begin(), g_cpu.end(), e.data, g_cpu.begin(),
       ApplyOp<T, std::multiplies<T> >(std::multiplies<T>()));
 
+
+  // TODO: Need to give scale to these
+  //  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
+  //  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
+  const T kRhoMin     = static_cast<T>(std::numeric_limits<double>::epsilon()); // lower range for adaptive rho
+  const T kRhoMax     = static_cast<T>(1.0/kRhoMin); // upper range for adaptive rho
+
+  
   // Initialize (x, lambda) from (x0, lambda0).
   if (_init_x) {
     gsl::vector_memcpy(&xtemp, _x);
