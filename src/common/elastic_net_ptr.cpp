@@ -75,7 +75,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define Printmescore(thefile)
 #endif
 
-#define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+#define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
@@ -570,7 +570,7 @@ namespace h2oaiglm {
             double trainRMSE=-1;
             double ivalidRMSE = -1;
             double validRMSE = -1;
-            double tol0=1E-5; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
+            double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
             double tol=tol0;
             T lambda=-1;
             double tbestalpha,tbestlambda,tbesttol=std::numeric_limits<double>::max(),tbestrmse[NUMRMSE];
@@ -616,7 +616,7 @@ namespace h2oaiglm {
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
                 tol=tol0*lambda/lambdas[0];
-                h2oaiglm_data.SetRho(1.0);
+                //                h2oaiglm_data.SetRho(1.0);
                 h2oaiglm_data.SetRelTol(tol);
                 h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                 h2oaiglm_data.SetMaxIter(10000);
@@ -854,14 +854,15 @@ namespace h2oaiglm {
                     double ratio = (norm-scoring_history.back())/norm;
 
                     double fracdof=0.5; //USER parameter.
-                    if(RELAXEARLYSTOP||ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
-                      //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
+                    if((double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+                      fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
                       // STOP EARLY CHECK
                       int k = 3; //TODO: ask the user for this parameter
                       double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
                       bool moreIsBetter = false;
                       bool verbose = static_cast<bool>(VERBOSEENET);// true;
                       if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
+                        fprintf(stderr,"STOPPED EARLY\n"); fflush(stderr);
                         break;
                       }
                     }
