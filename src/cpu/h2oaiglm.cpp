@@ -188,7 +188,7 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   // TODO: Need to give scale to these
   //  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive rho
   //  const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive rho
-  const T kRhoMin     = static_cast<T>(std::numeric_limits<double>::epsilon()); // lower range for adaptive rho
+  const T kRhoMin     = static_cast<T>(std::numeric_limits<T>::epsilon()); // lower range for adaptive rho
   const T kRhoMax     = static_cast<T>(1.0/kRhoMin); // upper range for adaptive rho
 
   
