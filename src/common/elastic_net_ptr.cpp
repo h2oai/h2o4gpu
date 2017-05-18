@@ -93,7 +93,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define OLDPRED 0 // JONTODO: cleanup: if OLDPRED=1, then must set sharedAlocal=0 in examples/cpp/elastic_net_ptr_driver.cpp when doing make pointer part, so that don't overwrite original data (due to equilibration) so can be used for scoring.
 
 #define DOSTOPEARLY 1
-#define RELAXEARLYSTOP 1
+#define RELAXEARLYSTOP 0
 
 namespace h2oaiglm {
 
@@ -427,9 +427,10 @@ namespace h2oaiglm {
       //h2oaiglm_data.SetEquil(false);
       //      h2oaiglm_data.SetRho(1E-6);
       //      h2oaiglm_data.SetRho(1E-3);
-      h2oaiglm_data.SetRho(max[0]);
+      h2oaiglm_data.SetRho(1.0);
       //	h2oaiglm_data.SetVerbose(5);
       //        h2oaiglm_data.SetMaxIter(100);
+      h2oaiglm_data.SetMaxIter(5000);
 
       DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
       int fi,a;
@@ -531,6 +532,7 @@ namespace h2oaiglm {
             for(unsigned int j=0;j<mTrain;++j){
               if(maxweight<weights[j]) maxweight=weights[j];
             }
+            fprintf(stderr,"maxweight=%g\n",maxweight); fflush(stderr);
             if(0){
               if(sumweight!=0.0){
                 for(unsigned int j=0;j<mTrain;++j) weights[j]/=sumweight;
@@ -617,24 +619,22 @@ namespace h2oaiglm {
                 // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
-                h2oaiglm_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
+                //h2oaiglm_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
                 tol=tol0*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
                 h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
-                h2oaiglm_data.SetMaxIter(1000);
+                h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
                 // see if getting below stddev, if so decrease tolerance
                 if(scoring_history.size()>=1){
                   double ratio = (norm-scoring_history.back())/norm;
 
                   if(ratio>0.0){
                     double factor=0.05; // rate factor (USER parameter)
-                    double tollow=1E-3; //lowest allowed tolerance (USER parameter)
+                    double tollow=1E-1*tol0*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
                     tol = tol0*lambda/lambdas[0]*pow(2.0,-ratio/factor);
                     if(tol<tollow) tol=tollow;
                 
                     h2oaiglm_data.SetRelTol(tol);
-                    h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                    h2oaiglm_data.SetMaxIter(1000);
+                    h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                     jumpuse=jump;
                   }
                   //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
@@ -644,10 +644,8 @@ namespace h2oaiglm {
                 // assume warm-start value of X and other internal variables
                 //                fprintf(stderr,"tol to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
                 tol = tolarrayofa[a];
-                //                tol = tol0*lambda/lambdas[0];
                 h2oaiglm_data.SetRelTol(tol);
                 h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                h2oaiglm_data.SetMaxIter(1000);
               }
 
 
@@ -856,6 +854,7 @@ namespace h2oaiglm {
                     double ratio = (norm-scoring_history.back())/norm;
 
                     double fracdof=0.5; //USER parameter.
+                    //                    if((double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
                     if(RELAXEARLYSTOP||ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
                       //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
                       // STOP EARLY CHECK

@@ -18,7 +18,7 @@ y <- asthma
 #model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, nlambda=1000, cutoff=FALSE, params=list(max_iter=100000, abs_tol=1e-5, rel_tol=1e-5))
 #model = h2oaiglmnet(x = x, y = asthma, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-6, intercept=TRUE, params=list(max_iter=2500,abs_tol=1e-5,rel_tol=1E-5))
 
-model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-10, intercept=TRUE, noweight=FALSE, params=list(max_iter=3000,abs_tol=1e-15,rel_tol=1E-10,verbose=4,rho=0.1))
+model = h2oaiglmnet(x = x, y = y, family = "gaussian", alpha = alpha, lambda=NULL, lambda.min.ratio=1e-15, intercept=TRUE, noweight=FALSE, cutoff=FALSE, params=list(max_iter=3000,abs_tol=1e-15,rel_tol=1E-10,verbose=4,rho=0.1))
 bestrmse=1E30
 ii=0
 bestii=-1
@@ -31,8 +31,8 @@ for (si in model$lambda){
         bestii=ii
     }
     ii=ii+1
-    print(paste0("LAMBDAlook:",si))
-    print(paste0("RMSElook:",thisrmse))
+    print(paste0("LAMBDA1look:",si))
+    print(paste0("RMSE1look:",thisrmse))
 }
 print(paste0("RMSEH2OAIGLM:",bestrmse))
 print(paste0("LAMBDAH2OAIGLM:",bestlambda))
@@ -61,8 +61,8 @@ for (si in model$lambda){
         bestii=ii
     }
     ii=ii+1
-    print(paste0("LAMBDAlook:",si))
-    print(paste0("RMSElook:",thisrmse))
+    print(paste0("LAMBDA2look:",si))
+    print(paste0("RMSE2look:",thisrmse))
 }
 print(paste0("RMSEGLMNET:",bestrmse))
 print(paste0("LAMBDAGLMNET:",bestlambda))
