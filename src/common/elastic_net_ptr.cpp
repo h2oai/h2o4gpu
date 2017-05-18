@@ -620,7 +620,7 @@ namespace h2oaiglm {
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
                 //h2oaiglm_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
-                tol=tol0*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
+                tol=tol0;//*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
                 h2oaiglm_data.SetRelTol(tol);
                 h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
                 // see if getting below stddev, if so decrease tolerance
@@ -629,8 +629,8 @@ namespace h2oaiglm {
 
                   if(ratio>0.0){
                     double factor=0.05; // rate factor (USER parameter)
-                    double tollow=1E-1*tol0*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
-                    tol = tol0*lambda/lambdas[0]*pow(2.0,-ratio/factor);
+                    double tollow=1E-1*tol0;//*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
+                    tol = tol0*pow(2.0,-ratio/factor);//*lambda/lambdas[0]
                     if(tol<tollow) tol=tollow;
                 
                     h2oaiglm_data.SetRelTol(tol);
