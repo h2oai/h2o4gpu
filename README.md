@@ -76,6 +76,11 @@ make
 
 This installs python h2oaiglm as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2oaiglm-0.0.1-py2.py3-none-any.whl --user
 
+Issues
+=====================
+
+If you are using conda, you probably need to do:  conda install libgcc
+
 ```
 
 Languages / Frameworks
