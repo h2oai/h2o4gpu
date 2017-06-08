@@ -176,7 +176,10 @@ template<typename T>
      double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                           double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                          ,int givefullpath
+                          ,T **Xvsalphalambda, T **Xvsalpha
+                          );
 
    
 template <typename T>
@@ -188,11 +191,17 @@ template <typename T>
       double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                    void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                    void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                    ,int givefullpath
+                                    ,double **Xvsalphalambda, double **Xvsalpha
+                                    );
       double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                    size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                    double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                   ,int givefullpath
+                                   ,float **Xvsalphalambda, float **Xvsalpha
+                                   );
 
 #ifdef __cplusplus
     }

@@ -185,13 +185,16 @@ namespace h2oaiglm {
   // for many values of \lambda and multiple values of \alpha
   // See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
   // m and n are training data size
+#define NUMRMSE 3 // train, hold-out CV, valid
+#define NUMOTHER 3 // for lambda, alpha, tol
   template<typename T>
   double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                        size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                        double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                       ,int givefullpath
+                       ,T **Xvsalphalambda, T **Xvsalpha
                        ) {
-    //                       ,T *Xvsalphalambda, T *Xvsalpha
 
 
     if(0){
@@ -250,9 +253,24 @@ namespace h2oaiglm {
     }
 #endif
 
+    // report fold setup
     size_t realfolds=(nFolds==0 ? 1 : nFolds);
     size_t totalfolds=nFolds*( nFolds>1 ? 2 : 1 );
     DEBUG_FPRINTF(stderr,"Set folds=%d realfolds=%zu Total Folds=%zu\n",nFolds,realfolds,totalfolds);
+
+
+
+    // setup storage for returning results back to user
+    // iterate over predictors (n) or other information fastest so can memcpy X
+#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
+#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+    if(givefullpath){
+      *Xvsalphalambda = (T*) calloc(nLambdas*nAlphas*(n+NUMRMSE+NUMOTHER),sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
+    }
+    else{ // only give back solution for optimal lambda after CV is done
+      *Xvsalphalambda = NULL;
+    }
+    *Xvsalpha = (T*) calloc(nAlphas*(n+NUMRMSE+NUMOTHER),sizeof(T));
 
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
@@ -336,7 +354,6 @@ namespace h2oaiglm {
       if(realfolds<=1) iwhichrmse=0;
       else iwhichrmse=1;
     }
-#define NUMRMSE 3 // train, hold-out CV, valid
 #define RMSELOOP(ri) for(int ri=0;ri<NUMRMSE;ri++)
     T rmsearray[NUMRMSE][realfolds*2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
@@ -846,6 +863,37 @@ namespace h2oaiglm {
               scoring_history.push_back(localrmse[iwhichrmse]);
 
 
+              if(lambdatype==LAMBDATYPEPATH){
+                if(fi==0 && givefullpath){ // only store first fold for user
+                  //#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
+                  //#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+                  //#define NUMOTHER 3 // for lambda, alpha, tol
+                  // Save solution to return to user
+                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2oaiglm_data.GetX()[0],n);
+                  // Save rmse to return to user
+                  RMSELOOP(ri) (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = localrmse[ri];
+                  // Save lambda to return to user
+                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE)] = lambda;
+                  // Save alpha to return to user
+                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE+1)] = alpha;
+                  // Save tol to return to user
+                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE+2)] = tol;
+                }
+              }
+              else{ // only save here if doing nFolds>2
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n);
+                // Save rmse to return to user
+                RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = localrmse[ri];
+                // Save lambda to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE)] = lambda;
+                // Save alpha to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+1)] = alpha;
+                // Save tol to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+2)] = tol;
+              }
+              
+              
+
 
 
               if(lambdatype==LAMBDATYPEPATH){
@@ -899,6 +947,23 @@ namespace h2oaiglm {
             lambdaarray[pickfi][a]=tbestlambda;
             tolarray[pickfi][a]=tbesttol;
             RMSELOOP(ri) rmsearray[ri][pickfi][a]=tbestrmse[ri];
+
+
+            // if not doing folds, store best solution over all lambdas
+            if(lambdatype==LAMBDATYPEPATH && nFolds<2){
+              if(fi==0){ // only store first fold for user
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n); // not quite best, last lambda TODO FIXME
+                // Save rmse to return to user
+                RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = tbestrmse[ri];
+                // Save lambda to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE)] = tbestlambda;
+                // Save alpha to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+1)] = tbestalpha;
+                // Save tol to return to user
+                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+2)] = tbesttol;
+              }
+            }
+            
 
           }// over folds
         }// over alpha
@@ -989,12 +1054,18 @@ namespace h2oaiglm {
   template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                         size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                         double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                        ,int givefullpath
+                                        ,double **Xvsalphalambda, double **Xvsalpha
+                                        );
 
   template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                        size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                        double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                       ,int givefullpath
+                                       ,float **Xvsalphalambda, float **Xvsalpha
+                                       );
 
 
   
@@ -1005,20 +1076,32 @@ namespace h2oaiglm {
     double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
+                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                  ,int givefullpath
+                                  ,double **Xvsalphalambda, double **Xvsalpha
+                                  ) {
       return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                    mTrain, n, mValid, intercept, standardize,
                                    lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                                   trainXptr, trainYptr, validXptr, validYptr, weightptr);
+                                   trainXptr, trainYptr, validXptr, validYptr, weightptr
+                                   ,givefullpath
+                                   ,Xvsalphalambda, Xvsalpha
+                                   );
     }
     double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                  double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr) {
+                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                 ,int givefullpath
+                                 ,float **Xvsalphalambda, float **Xvsalpha
+                                 ) {
       return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                   mTrain, n, mValid, intercept, standardize,
                                   lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                                  trainXptr, trainYptr, validXptr, validYptr, weightptr);
+                                  trainXptr, trainYptr, validXptr, validYptr, weightptr
+                                  ,givefullpath
+                                  ,Xvsalphalambda, Xvsalpha
+                                  );
     }
 
 #ifdef __cplusplus
