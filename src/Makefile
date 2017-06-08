@@ -47,6 +47,7 @@ CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
 CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
 CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
+CUB_HOME=gpu/cub/
 
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
@@ -84,9 +85,9 @@ endif
 
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
-CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include
+CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME)
 CUFLAGS=$(IFLAGS) -std=c++11 -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
-CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR)
+CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
@@ -151,6 +152,9 @@ GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
 GPU_OBJ=$(OBJDIR)/gpu/h2oaiglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
+
+GPU_KMEANS_HDR=gpu/include/kmeans_labels.h gpu/include/centroids.h gpu/include/kmeans.h
+GPU_KMEANS_OBJ=$(OBJDIR)/gpu/kmeans_labels.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
@@ -219,10 +223,10 @@ $(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_p
 
 
 # H2OAIGLM GPU objects
-$(OBJDIR)/gpu/h2oaiglm_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR) Makefile config2.mk
+$(OBJDIR)/gpu/h2oaiglm_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(GPU_KMEANS_OBJ) | $(OBJDIR) Makefile config2.mk
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
 
-$(OBJDIR)/gpu/h2oaiglm.o: gpu/h2oaiglm.cu $(H2OAIGLM_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/h2oaiglm.o: gpu/h2oaiglm.cu $(H2OAIGLM_HDR) $(GPU_KMEANS_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(H2OAIGLM_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
@@ -240,6 +244,10 @@ $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector Makefile 
 
 $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
+
+$(OBJDIR)/gpu/kmeans_labels.o: gpu/kmeans_labels.cu $(GPU_KMEANS_HDR)
+	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
+
 
 $(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2OAIGLM_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
