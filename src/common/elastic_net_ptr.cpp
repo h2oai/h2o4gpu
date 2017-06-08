@@ -63,7 +63,7 @@ const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
 const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
-#define VERBOSEENET 0
+#define VERBOSEENET 1
 
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
@@ -175,10 +175,6 @@ namespace h2oaiglm {
 
 
 
-
-
-
-
   // Elastic Net
   //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
   //
@@ -195,7 +191,6 @@ namespace h2oaiglm {
                        ,int givefullpath
                        ,T **Xvsalphalambda, T **Xvsalpha
                        ) {
-
 
     if(0){
       std::default_random_engine generator;

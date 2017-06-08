@@ -22,9 +22,25 @@ class ElasticNetBaseSolver(object):
         self.n_folds=n_folds
         self.n_alphas=n_alphas
 
-    def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
-        mTrain = trainX.shape[0]
-        mValid = validX.shape[0]
+    def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
+        if trainX is not None:
+            try: 
+                if trainX.value is not None:
+                    mTrain = trainX.shape[0]
+                else:
+                    mTrain=0
+            except:
+                mTrain = trainX.shape[0]
+        #
+        if validX is not None:
+            try: 
+                if validX.value is not None:
+                    mValid = validX.shape[0]
+                else:
+                    mValid=0
+            except:
+                mValid = validX.shape[0]
+        #
         n = trainX.shape[1]
         a = c_void_p(0)
         b = c_void_p(0)
@@ -36,9 +52,37 @@ class ElasticNetBaseSolver(object):
             self.double_precision=1
             A = cptr(trainX,dtype=c_double)
             B = cptr(trainY,dtype=c_double)
-            C = cptr(validX,dtype=c_double)
-            D = cptr(validY,dtype=c_double)
-            E = cptr(weight,dtype=c_double)
+            null_ptr = POINTER(c_double)()
+            if validX is not None:
+                try:
+                    if validX.value is not None:
+                        C = cptr(validX,dtype=c_double)
+                    else:
+                        C = null_ptr
+                except:
+                    C = cptr(validX,dtype=c_double)
+            else:
+                C = null_ptr
+            if validY is not None:
+                try:
+                    if validY.value is not None:
+                        D = cptr(validY,dtype=c_double)
+                    else:
+                        D = null_ptr
+                except:
+                    D = cptr(validY,dtype=c_double)
+            else:
+                D = null_ptr
+            if weight is not None:
+                try:
+                    if weight.value is not None:
+                        E = cptr(weight,dtype=c_double)
+                    else:
+                        E = null_ptr
+                except:
+                    E = cptr(weight,dtype=c_double)
+            else:
+                E = null_ptr
             status = self.lib.make_ptr_double(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         elif (trainX.dtype==np.float32):
@@ -46,15 +90,44 @@ class ElasticNetBaseSolver(object):
             self.double_precision=0
             A = cptr(trainX,dtype=c_float)
             B = cptr(trainY,dtype=c_float)
-            C = cptr(validX,dtype=c_float)
-            D = cptr(validY,dtype=c_float)
-            E = cptr(weight,dtype=c_float)
+            null_ptr = POINTER(c_float)()
+            if validX is not None:
+                try:
+                    if validX.value is not None:
+                        C = cptr(validX,dtype=c_float)
+                    else:
+                        C = null_ptr
+                except:
+                    C = cptr(validX,dtype=c_float)
+            else:
+                C = null_ptr
+            if validY is not None:
+                try:
+                    if validY.value is not None:
+                        D = cptr(validY,dtype=c_float)
+                    else:
+                        D = null_ptr
+                except:
+                    D = cptr(validY,dtype=c_float)
+            else:
+                D = null_ptr
+            if weight is not None:
+                try:
+                    if weight.value is not None:
+                        E = cptr(weight,dtype=c_float)
+                    else:
+                        E = null_ptr
+                except:
+                    E = cptr(weight,dtype=c_float)
+            else:
+                E = null_ptr
             status = self.lib.make_ptr_float(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         else:
             print("Unknown numpy type detected")
             print(trainX.dtype)
             sys.stdout.flush()
+            return a, b, c, d, e
             exit(1)
             
         assert status==0, "Failure uploading the data"
@@ -77,6 +150,8 @@ class ElasticNetBaseSolver(object):
         else:
             whichprecision=precision
         #
+        Xvsalphalambda = c_void_p(0)
+        Xvsalpha = c_void_p(0)
         if (whichprecision==1):
             print("double precision fit")
             self.lib.elastic_net_ptr_double(
@@ -85,7 +160,7 @@ class ElasticNetBaseSolver(object):
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e
                 ,givefullpath
-                ,Xvsalphalambda, Xvsalpha
+                ,pointer(Xvsalphalambda), pointer(Xvsalpha)
             )
         else:
             print("single precision fit")
@@ -94,15 +169,15 @@ class ElasticNetBaseSolver(object):
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e
-                ,self.givefullpath
-                ,Xvsalphalambda, Xvsalpha
+                ,givefullpath
+                ,pointer(Xvsalphalambda), pointer(Xvsalpha)
             )
         self.Xvsalphalambda=Xvsalphalambda
         self.Xvsalpha=Xvsalpha
         return(Xvsalphalambda,Xvsalpha)
         print("Done with fit")
 
-    def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0):
+    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
         #
         # get shapes
         shapeX=np.shape(trainX)
@@ -130,15 +205,15 @@ class ElasticNetBaseSolver(object):
                 print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
 
         docalc=1
-        if( (validX and !validY) or  (!validX and validY) ):
+        if( (validX and validY==None) or  (validX==None and validY) ):
                 print("Must input both validX and validY or neither.")
                 docalc=0
             #
         if(docalc):
             sourceDev=0 # assume GPU=0 is fine as source
-            a,b,c,d = upload_data(sourceDev, trainX, trainY, validX, validY, weight)
+            a,b,c,d,e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
             precision=0 # won't be used
-            Xvsalphalambda,Xvsalpha = fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
+            Xvsalphalambda,Xvsalpha = self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
             return(Xvsalphalambda,Xvsalpha)
         else:
             # return NULL pointers

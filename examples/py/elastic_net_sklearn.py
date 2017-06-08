@@ -76,10 +76,10 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   ## Solve
   print("Solving")
-  # below 0 ignored if trainX gives precision
   Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY)
-  #  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
-  #  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, 0)
   # givefullpath=1
   #  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, givefullpath)
   print("Done Solving")
@@ -99,8 +99,10 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  #df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
