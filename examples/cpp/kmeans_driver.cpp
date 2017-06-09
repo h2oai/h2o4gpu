@@ -26,10 +26,6 @@ int main(int argc, char **argv) {
   int k = 100;  // clusters
   double thresh = 1e-3;  // relative improvement
 
-  int n_gpu;
-  cudaGetDeviceCount(&n_gpu);
-  std::cout << n_gpu << " gpus." << std::endl;
-
   real_t a=0; //TODO: send real data over
   size_t rows = 260753;  // rows
   size_t cols = 298;  // cols
