@@ -152,6 +152,10 @@ class ElasticNetBaseSolver(object):
         #
         Xvsalphalambda = c_void_p(0)
         Xvsalpha = c_void_p(0)
+        countfull=c_size_t(0)
+        countshort=c_size_t(0)
+        countmore=c_size_t(0)
+        c_size_t_p = POINTER(c_size_t)
         if (whichprecision==1):
             print("double precision fit")
             self.lib.elastic_net_ptr_double(
@@ -161,7 +165,13 @@ class ElasticNetBaseSolver(object):
                 a, b, c, d, e
                 ,givefullpath
                 ,pointer(Xvsalphalambda), pointer(Xvsalpha)
+                ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
+            countfull_value=countfull.value
+            countshort_value=countshort.value
+            countmore_value=countmore.value
+            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(c_double)),dtype=np.double,count=countfull_value)
+            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(c_double)),dtype=np.double,count=countshort_value)
         else:
             print("single precision fit")
             self.lib.elastic_net_ptr_float(
@@ -171,10 +181,16 @@ class ElasticNetBaseSolver(object):
                 a, b, c, d, e
                 ,givefullpath
                 ,pointer(Xvsalphalambda), pointer(Xvsalpha)
+                ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
-        self.Xvsalphalambda=Xvsalphalambda
-        self.Xvsalpha=Xvsalpha
-        return(Xvsalphalambda,Xvsalpha)
+            countfull_value=countfull.value
+            countshort_value=countshort.value
+            countmore_value=countmore.value
+            print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
+            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(c_float)),dtype=np.float,count=countfull_value)
+            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(c_float)),dtype=np.float,count=countshort_value)
+            # return numpy objects
+        return(self.Xvsalphalambda,self.Xvsalpha)
         print("Done with fit")
 
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):

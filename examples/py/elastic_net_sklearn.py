@@ -85,7 +85,9 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Done Solving")
 
   # show something about Xvsalphalambda or Xvsalpha
+  print(Xvsalpha)
 
+  print("Done Reporting")
   return enet
 
 if __name__ == "__main__":

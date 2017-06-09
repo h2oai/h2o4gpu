@@ -190,6 +190,7 @@ namespace h2oaiglm {
                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                        ,int givefullpath
                        ,T **Xvsalphalambda, T **Xvsalpha
+                       ,size_t *countfull, size_t *countshort, size_t *countmore
                        ) {
 
     if(0){
@@ -259,14 +260,18 @@ namespace h2oaiglm {
     // iterate over predictors (n) or other information fastest so can memcpy X
 #define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
 #define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+    *countmore=NUMRMSE+NUMOTHER;
     if(givefullpath){
-      *Xvsalphalambda = (T*) calloc(nLambdas*nAlphas*(n+NUMRMSE+NUMOTHER),sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
+      *countfull=nLambdas*nAlphas*(n + *countmore);
+      *Xvsalphalambda = (T*) calloc(*countfull,sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
     }
     else{ // only give back solution for optimal lambda after CV is done
+      *countfull=0;
       *Xvsalphalambda = NULL;
     }
-    *Xvsalpha = (T*) calloc(nAlphas*(n+NUMRMSE+NUMOTHER),sizeof(T));
-
+    *countshort=nAlphas*(n + *countmore);
+    *Xvsalpha = (T*) calloc(*countshort,sizeof(T));
+    printf("inside: countfull=%d countshort=%d countmore=%d\n",*countfull,*countshort,*countmore); fflush(stdout);
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
@@ -1052,6 +1057,7 @@ namespace h2oaiglm {
                                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                         ,int givefullpath
                                         ,double **Xvsalphalambda, double **Xvsalpha
+                                        ,size_t *countfull, size_t *countshort, size_t *countmore
                                         );
 
   template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
@@ -1060,6 +1066,7 @@ namespace h2oaiglm {
                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                        ,int givefullpath
                                        ,float **Xvsalphalambda, float **Xvsalpha
+                                       ,size_t *countfull, size_t *countshort, size_t *countmore
                                        );
 
 
@@ -1074,6 +1081,7 @@ namespace h2oaiglm {
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                   ,int givefullpath
                                   ,double **Xvsalphalambda, double **Xvsalpha
+                                  ,size_t *countfull, size_t *countshort, size_t *countmore
                                   ) {
       return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                    mTrain, n, mValid, intercept, standardize,
@@ -1081,6 +1089,7 @@ namespace h2oaiglm {
                                    trainXptr, trainYptr, validXptr, validYptr, weightptr
                                    ,givefullpath
                                    ,Xvsalphalambda, Xvsalpha
+                                   ,countfull, countshort, countmore
                                    );
     }
     double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
@@ -1089,6 +1098,7 @@ namespace h2oaiglm {
                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                  ,int givefullpath
                                  ,float **Xvsalphalambda, float **Xvsalpha
+                                 ,size_t *countfull, size_t *countshort, size_t *countmore
                                  ) {
       return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                   mTrain, n, mValid, intercept, standardize,
@@ -1096,6 +1106,7 @@ namespace h2oaiglm {
                                   trainXptr, trainYptr, validXptr, validYptr, weightptr
                                   ,givefullpath
                                   ,Xvsalphalambda, Xvsalpha
+                                  ,countfull, countshort, countmore
                                   );
     }
 
