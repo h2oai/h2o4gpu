@@ -6,7 +6,7 @@ if not h2oaiKMeansGPU:
 	print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
 	KMeansGPU=None
 else:
-	class KMeansGPU(object):
+	class KMeansGPUSolver(object):
     def __init__(self, lib, nGPUs, ordin, k):
         assert lib and (lib==h2oaiglmElasticNetGPU)
         self.lib=lib
@@ -23,13 +23,13 @@ else:
             print("Detected np.float64");sys.stdout.flush()
             self.double_precision=1
             A = cptr(trainX,dtype=c_double)
-            status = self.lib.make_ptr_double(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_int(self.ord), A, pointer(a))
+            status = self.lib.make_ptr_double_kmeans(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_int(self.ord), A, pointer(a))
 
         elif (trainX.dtype==np.float32):
             print("Detected np.float32");sys.stdout.flush()
             self.double_precision=0
             A = cptr(trainX,dtype=c_float)
-            status = self.lib.make_ptr_float(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_int(self.ord), A, pointer(a))
+            status = self.lib.make_ptr_float_kmeans(c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_int(self.ord), A, pointer(a))
         else:
             print("Unknown numpy type detected")
             print(trainX.dtype)
@@ -50,14 +50,14 @@ else:
         #
         if (whichprecision==1):
             print("double precision fit")
-            self.lib.kmeans(
+            self.lib.kmeans_ptr_double(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid),c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 a, b, c, d, e)
         else:
             print("single precision fit")
-            self.lib.elastic_net_ptr_float(
+            self.lib.kmeans_ptr_float(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
@@ -68,7 +68,7 @@ else:
 
 	class KMeansGPU(object):
 		def __init__(self, nGPUs, ord, k):
-			self.solver = KMeansGPU(h2oaiKMeansGPU, nGPUs, ord, k)
+			self.solver = KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
 
 		def upload_data(self, sourceDev, trainX):
 			return self.solver.upload_data(sourceDev, trainX)
