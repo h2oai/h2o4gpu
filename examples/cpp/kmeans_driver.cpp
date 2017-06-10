@@ -41,12 +41,14 @@ int main(int argc, char **argv) {
 #else
   //user-given data
   std::vector<real_t> data(rows*cols);
+  std::vector<real_t> labels(rows*cols);
   for (int i=0;i<rows;i++) {
     for (int j = 0; j < cols; j++) {
       data[i * cols + j] = drand48();
+      labels[i * cols + j] = rand() % k;
     }
   }
-  h2oaikmeans::makePtr_dense<float>(n_gpu, rows, cols, 'r', k, &data[0], &res);
+  h2oaikmeans::makePtr_dense<float>(n_gpu, rows, cols, 'r', k, &data[0], &labels[0], &res);
 #endif
 
   fflush(stdout);

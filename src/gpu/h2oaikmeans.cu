@@ -7,6 +7,16 @@
 #include "h2oaikmeans.h"
 #include "kmeans.h"
 
+#define CUDACHECK(cmd) do {                         \
+    cudaError_t e = cmd;                              \
+    if( e != cudaSuccess ) {                          \
+      printf("Cuda failure %s:%d '%s'\n",             \
+             __FILE__,__LINE__,cudaGetErrorString(e));   \
+      exit(EXIT_FAILURE);                             \
+    }                                                 \
+  } while(0)
+
+
 template<typename T>
 void fill_array(T& array, int m, int n) {
   for(int i = 0; i < m; i++) {
@@ -95,7 +105,7 @@ namespace h2oaikmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* src, void ** res) {
+    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* srcdata, const T* srclabels, void ** res) {
       int n=rows;
       int d=cols;
 
@@ -104,7 +114,7 @@ namespace h2oaikmeans {
       thrust::device_vector<T> *centroids[16];
       thrust::device_vector<T> *distances[16];
       for (int q = 0; q < n_gpu; q++) {
-        cudaSetDevice(q);
+        CUDACHECK(cudaSetDevice(q));
         data[q] = new thrust::device_vector<T>(n/n_gpu*d);
         labels[q] = new thrust::device_vector<int>(n/n_gpu*d);
         centroids[q] = new thrust::device_vector<T>(k * d);
@@ -121,15 +131,12 @@ namespace h2oaikmeans {
 
       bool init_from_labels=true;
       for (int q = 0; q < n_gpu; q++) {
-        cudaSetDevice(q);
+        CUDACHECK(cudaSetDevice(q));
         std::cout << "Copying data to device: " << q << std::endl;
-        cudaMemcpy(data[q]->data().get(), &src[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice);
-        std::cout << "Done copying data to device: " << q << std::endl;
-        // THIS LOOP CAUSES A HANG?
-        for(int i = 0; i < n/n_gpu*d; ++i) {
-          (*labels[q])[i] = rand() % k;
-        }
-        std::cout << "Done making random labels for data on device: " << q << std::endl;
+        CUDACHECK(cudaMemcpy(data[q]->data().get(), &srcdata[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
+        std::cout << "Done copying data to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
+        CUDACHECK(cudaMemcpy(labels[q]->data().get(), &srclabels[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
+        std::cout << "Done copying labels to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
       }
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
 
@@ -143,7 +150,7 @@ namespace h2oaikmeans {
 //        makePtr_dense<double>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const double *trainX, void **a);
 
     template int
-    makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const float *trainX, void **a);
+    makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const float *srcdata, const float *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -161,8 +168,8 @@ namespace h2oaikmeans {
 extern "C" {
 #endif
 
-int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, const float* trainX, void** res) {
-  return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, trainX, res);
+  int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, const float* srcdata, const float* srclabels, void** res) {
+    return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, srcdata, srclabels, res);
 }
 
 #ifdef __cplusplus
