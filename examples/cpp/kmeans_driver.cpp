@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
 
 #if 0
   // creates random data inside
+  float a = 0;
   h2oaikmeans::H2OAIKMeans<real_t>(&a, k, rows, cols).Solve();
 #else
   //user-given data

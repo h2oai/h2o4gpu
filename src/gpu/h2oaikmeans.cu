@@ -7,7 +7,6 @@
 #include "h2oaikmeans.h"
 #include "kmeans.h"
 
-typedef float real_t;
 template<typename T>
 void fill_array(T& array, int m, int n) {
   for(int i = 0; i < m; i++) {
@@ -39,14 +38,14 @@ void random_labels(thrust::device_vector<int>& labels, int n, int k) {
 
 namespace h2oaikmeans {
 
-    template <typename M>
-    H2OAIKMeans<M>::H2OAIKMeans(const M* A, int k, size_t n, size_t d)
+    template <typename T>
+    H2OAIKMeans<T>::H2OAIKMeans(const T* A, int k, size_t n, size_t d)
     {
       _A = A; _k = k; _n = n; _d = d;
     }
 
-    template <typename M>
-    int H2OAIKMeans<M>::Solve() {
+    template <typename T>
+    int H2OAIKMeans<T>::Solve() {
       int max_iterations = 10000;
       int n = 260753;  // rows
       int d = 298;  // cols
@@ -57,16 +56,16 @@ namespace h2oaikmeans {
       cudaGetDeviceCount(&n_gpu);
       std::cout << n_gpu << " gpus." << std::endl;
 
-      thrust::device_vector<real_t> *data[16];
+      thrust::device_vector<T> *data[16];
       thrust::device_vector<int> *labels[16];
-      thrust::device_vector<real_t> *centroids[16];
-      thrust::device_vector<real_t> *distances[16];
+      thrust::device_vector<T> *centroids[16];
+      thrust::device_vector<T> *distances[16];
       for (int q = 0; q < n_gpu; q++) {
         cudaSetDevice(q);
-        data[q] = new thrust::device_vector<real_t>(n/n_gpu*d);
+        data[q] = new thrust::device_vector<T>(n/n_gpu*d);
         labels[q] = new thrust::device_vector<int>(n/n_gpu*d);
-        centroids[q] = new thrust::device_vector<real_t>(k * d);
-        distances[q] = new thrust::device_vector<real_t>(n);
+        centroids[q] = new thrust::device_vector<T>(k * d);
+        distances[q] = new thrust::device_vector<T>(n);
       }
 
       std::cout << "Generating random data" << std::endl;
@@ -77,12 +76,12 @@ namespace h2oaikmeans {
       std::cout << "Stopping threshold: " << thresh << std::endl;
 
       for (int q = 0; q < n_gpu; q++) {
-        random_data<real_t>(*data[q], n/n_gpu, d);
+        random_data<T>(*data[q], n/n_gpu, d);
         random_labels(*labels[q], n/n_gpu, k);
       }
 
       double t0 = timer<double>();
-      kmeans::kmeans<real_t>(n, d, k, data, labels, centroids, distances, n_gpu, max_iterations, true, thresh);
+      kmeans::kmeans<T>(n, d, k, data, labels, centroids, distances, n_gpu, max_iterations, true, thresh);
       double time = static_cast<double>(timer<double>() - t0);
       std::cout << "  Time: " << time << " s" << std::endl;
 
