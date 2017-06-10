@@ -122,14 +122,22 @@ namespace h2oaikmeans {
       bool init_from_labels=true;
       for (int q = 0; q < n_gpu; q++) {
         cudaSetDevice(q);
+        std::cout << "Copying data to device: " << q << std::endl;
         cudaMemcpy(data[q]->data().get(), &src[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice);
-        for(int i = 0; i < n/n_gpu*d; i++) {
+        std::cout << "Done copying data to device: " << q << std::endl;
+        // THIS LOOP CAUSES A HANG?
+        for(int i = 0; i < n/n_gpu*d; ++i) {
           (*labels[q])[i] = rand() % k;
         }
+        std::cout << "Done making random labels for data on device: " << q << std::endl;
       }
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
 
-      return(0);
+      cudaSetDevice(0);
+      thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
+//      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
+      *res = ctr->data();
+      return 0;
     }
 //        template int
 //        makePtr_dense<double>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const double *trainX, void **a);
