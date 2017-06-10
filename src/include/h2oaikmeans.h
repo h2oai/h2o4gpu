@@ -25,4 +25,7 @@ namespace h2oaikmeans {
       int Solve();
   };
 
+  template <typename T>
+  int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* src, void ** res);
+
 }  // namespace h2oaikmeans
