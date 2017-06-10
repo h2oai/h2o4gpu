@@ -95,10 +95,54 @@ int H2OAIKMeans<M>::Solve() {
     return 0;
   }
 
+        template <typename T>
+        int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* src, void ** res) {
+          int n=rows;
+          int d=cols;
+
+          thrust::device_vector<T> *data[16];
+          thrust::device_vector<int> *labels[16];
+          thrust::device_vector<T> *centroids[16];
+          thrust::device_vector<T> *distances[16];
+          for (int q = 0; q < n_gpu; q++) {
+            cudaSetDevice(q);
+            data[q] = new thrust::device_vector<T>(n/n_gpu*d);
+            labels[q] = new thrust::device_vector<int>(n/n_gpu*d);
+            centroids[q] = new thrust::device_vector<T>(k * d);
+            distances[q] = new thrust::device_vector<T>(n);
+          }
+
+          std::cout << "Number of points: " << n << std::endl;
+          std::cout << "Number of dimensions: " << d << std::endl;
+          std::cout << "Number of clusters: " << k << std::endl;
+          int max_iterations=1000;
+          double threshold=1e-3;
+          std::cout << "Max. number of iterations: " << max_iterations << std::endl;
+          std::cout << "Stopping threshold: " << threshold << std::endl;
+
+          for (int q = 0; q < n_gpu; q++) {
+            *data[q]   = std::vector<T>(src[q*n/n_gpu], src[q*(n+1)/n_gpu]);
+            //*labels[q] = 0;
+          }
+
+
+
+          bool init_from_labels=true;
+          kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
+
+          return(0);
+        }
+//        template int
+//        makePtr_dense<double>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const double *trainX, void **a);
+
+        template int
+        makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const float *trainX, void **a);
+
+
 // Explicit template instantiation.
-#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
-template class H2OAIKMeans<double>;
-#endif
+//#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
+//template class H2OAIKMeans<double>;
+//#endif
 
 #if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
 template class H2OAIKMeans<float>;
@@ -106,3 +150,14 @@ template class H2OAIKMeans<float>;
 
 }  // namespace h2oaikmeans
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, const float* trainX, void** res) {
+  return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, trainX, res);
+}
+
+#ifdef __cplusplus
+}
+#endif

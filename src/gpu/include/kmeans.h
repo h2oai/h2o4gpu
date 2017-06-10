@@ -49,25 +49,6 @@ namespace kmeans {
     \param max_iterations Maximum number of iterations to run
     \return The number of iterations actually performed.
    */
-  template<typename T>
-  int kmeans_ptr(
-      int n, int d, int k,
-      thrust::device_vector<T>** data_ptr,
-      thrust::device_vector<int>** labels_ptr,
-      thrust::device_vector<T>** centroids_ptr,
-      thrust::device_vector<T>** distances_ptr,
-      int n_gpu,
-      int max_iterations,
-      bool init_from_labels=true,
-      double threshold=1e-3) {
-    //FIXME
-    thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(&xtemp.data[0]);
-    thrust::device_vector<T>** data = data_ptr;
-    thrust::device_vector<int>** labels = labels_ptr; //make?
-    thrust::device_vector<T>** centroids = centroids_ptr; //make?
-    thrust::device_vector<T>** distances = distances_ptr;
-    kmeans(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
-  }
 
   template<typename T>
     int kmeans(
