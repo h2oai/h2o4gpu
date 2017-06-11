@@ -41,12 +41,14 @@ int main(int argc, char **argv) {
 #else
   //user-given data
   std::vector<real_t> data(rows*cols);
-  std::vector<int> labels(rows*cols);
   for (unsigned int i=0;i<rows;i++) {
     for (unsigned int j = 0; j < cols; j++) {
       data[i * cols + j] = static_cast<real_t>(drand48());
-      labels[i * cols + j] = static_cast<int>(rand() % k);
     }
+  }
+  std::vector<int> labels(rows);
+  for (unsigned int i=0;i<rows;i++) {
+    labels[i] = static_cast<int>(rand() % k);
   }
   h2oaikmeans::makePtr_dense<real_t>(n_gpu, rows, cols, 'r', k, max_iterations, threshold, &data[0], &labels[0], &res);
 

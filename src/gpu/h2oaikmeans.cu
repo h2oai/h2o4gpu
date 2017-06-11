@@ -42,6 +42,13 @@ void random_labels(thrust::device_vector<int>& labels, int n, int k) {
   }
   labels = host_labels;
 }
+void nonrandom_labels(thrust::device_vector<int>& labels, const int *srclabels, int q, int n, int k) {
+  thrust::host_vector<int> host_labels(n);
+  for(int i = 0; i < n; i++) {
+    host_labels[i] = srclabels[q*n+i];  //rand() % k;
+  }
+  labels = host_labels;
+}
 
 #define __HBAR__ \
 "----------------------------------------------------------------------------\n"
@@ -128,28 +135,13 @@ namespace h2oaikmeans {
       std::cout << "Stopping threshold: " << threshold << std::endl;
 
       bool init_from_labels=true;
-#if(1)
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(q));
         std::cout << "Copying data to device: " << q << std::endl;
-#if(0)
-        CUDACHECK(cudaMemcpy(data[q]->data().get(), &srcdata[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
-        std::cout << "Done copying data to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
-        CUDACHECK(cudaMemcpy(labels[q]->data().get(), &srclabels[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
-        std::cout << "Done copying labels to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
-#else
         thrust::copy(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d],data[q]->begin());
-        //        thrust::copy(&srclabels[q*n/n_gpu],&srclabels[(q+1)*n/n_gpu],labels[q]->begin()); // why 
-        random_labels(*labels[q], n/n_gpu, k); // why only portion of lables set?
-#endif
+        //random_labels(*labels[q], n/n_gpu, k);
+        nonrandom_labels(*labels[q], srclabels, q, n/n_gpu, k);
       }
-#else
-      for (int q = 0; q < n_gpu; q++) {
-        random_data<T>(*data[q], n/n_gpu, d);
-        //        random_labels(*labels[q], n/n_gpu*d, k);
-        random_labels(*labels[q], n/n_gpu, k); // why only portion of lables set?
-      }
-#endif
 
       double t0 = timer<double>();
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
