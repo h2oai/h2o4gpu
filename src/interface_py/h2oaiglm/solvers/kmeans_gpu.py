@@ -69,10 +69,13 @@ else:
 
 
     class KMeansGPU(object):
-        def __init__(self, nGPUs, ord, k):
+        def __init__(self, nGPUs, ordin, k, max_iterations, threshold):
             self.nGPUs = nGPUs
-            self.ord = ord
+            self.ord = ord(ordin)
             self.k = k
+            self.max_iterations=max_iterations
+            self.threshold=threshold
+            
                 #KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
 
         # def upload_data_ptr(self, sourceDev, trainX):
@@ -81,7 +84,7 @@ else:
         # def fit_ptr(self, sourceDev, mTrain, n, a):
         # 	return self.solver.fit(sourceDev, mTrain, n, a)
 
-        def fit(self, mTrain, n, data):
+        def fit(self, mTrain, n, data, labelsin):
             res = c_void_p(0)
-            h2oaiKMeansGPU.make_ptr_float_kmeans(self.nGPUs, mTrain, n, self.ord, self.k, 1000, 1e-3, cptr(data,dtype=c_float), 0, pointer(res))
+            h2oaiKMeansGPU.make_ptr_float_kmeans(self.nGPUs, mTrain, n, c_int(self.ord), self.k, self.max_iterations, self.threshold, cptr(data,dtype=c_float), cptr(labelsin,dtype=c_int), pointer(res))
             self.centroids = np.iter(cast(res, c_float_p), n, dtype=np.float32)
