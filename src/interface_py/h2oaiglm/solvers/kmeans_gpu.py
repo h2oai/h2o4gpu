@@ -1,14 +1,14 @@
 from h2oaiglm.libs.kmeans_gpu import h2oaiKMeansGPU
 
 if not h2oaiKMeansGPU:
-	print('\nWarning: Cannot create a H2OAIKMeans GPU Solver instance without linking Python module to a compiled H2OAIGLM GPU library')
-	print('> Setting h2oaiglm.KMeansGPU=None')
-	print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
-	KMeansGPU=None
+    print('\nWarning: Cannot create a H2OAIKMeans GPU Solver instance without linking Python module to a compiled H2OAIGLM GPU library')
+    print('> Setting h2oaiglm.KMeansGPU=None')
+    print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
+    KMeansGPU=None
 else:
-	class KMeansGPUSolver(object):
-    def __init__(self, lib, nGPUs, ordin, k):
-        assert lib and (lib==h2oaiglmElasticNetGPU)
+    class KMeansGPUSolver(object):
+        def __init__(self, lib, nGPUs, ordin, k):
+            assert lib and (lib==h2oaiglmElasticNetGPU)
         self.lib=lib
         self.nGPUs=nGPUs
         self.sourceDev=0 # assume Dev=0 is source of data for upload_data
@@ -66,15 +66,15 @@ else:
 
 
 
-	class KMeansGPU(object):
-		def __init__(self, nGPUs, ord, k):
-			self.solver = KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
+    class KMeansGPU(object):
+        def __init__(self, nGPUs, ord, k):
+            self.solver = KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
 
-		# def upload_data_ptr(self, sourceDev, trainX):
-		# 	return self.solver.upload_data(sourceDev, trainX)
+        # def upload_data_ptr(self, sourceDev, trainX):
+        # 	return self.solver.upload_data(sourceDev, trainX)
         #
-		# def fit_ptr(self, sourceDev, mTrain, n, a):
-		# 	return self.solver.fit(sourceDev, mTrain, n, a)
+        # def fit_ptr(self, sourceDev, mTrain, n, a):
+        # 	return self.solver.fit(sourceDev, mTrain, n, a)
 
         def fit(self, mTrain, n, data, k):
             res = c_void_p(0)
