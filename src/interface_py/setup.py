@@ -62,7 +62,7 @@ class H2OAIGLMInstall(install):
 
 setup(
     name='h2oaiglm',
-    version='0.0.2',
+    version='0.0.3',
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',

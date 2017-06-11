@@ -1,4 +1,6 @@
 from h2oaiglm.libs.kmeans_gpu import h2oaiKMeansGPU
+from ctypes import *
+from h2oaiglm.types import ORD, cptr
 
 if not h2oaiKMeansGPU:
     print('\nWarning: Cannot create a H2OAIKMeans GPU Solver instance without linking Python module to a compiled H2OAIGLM GPU library')
@@ -6,14 +8,14 @@ if not h2oaiKMeansGPU:
     print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
     KMeansGPU=None
 else:
-    class KMeansGPUSolver(object):
-        def __init__(self, lib, nGPUs, ordin, k):
-            assert lib and (lib==h2oaiglmElasticNetGPU)
-        self.lib=lib
-        self.nGPUs=nGPUs
-        self.sourceDev=0 # assume Dev=0 is source of data for upload_data
-        self.ord=ord(ordin)
-        self.k=k
+    # class KMeansGPUSolver(object):
+    #     def __init__(self, lib, nGPUs, ordin, k):
+    #         assert lib and (lib==h2oaiKMeansGPU)
+    #     self.lib=lib
+    #     self.nGPUs=nGPUs
+    #     self.sourceDev=0 # assume Dev=0 is source of data for upload_data
+    #     self.ord=ord(ordin)
+    #     self.k=k
 
     # def upload_data(self, sourceDev, trainX):
     #     mTrain = trainX.shape[0]
@@ -68,7 +70,10 @@ else:
 
     class KMeansGPU(object):
         def __init__(self, nGPUs, ord, k):
-            self.solver = KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
+            self.nGPUs = nGPUs
+            self.ord = ord
+            self.k = k
+                #KMeansGPUSolver(h2oaiKMeansGPU, nGPUs, ord, k)
 
         # def upload_data_ptr(self, sourceDev, trainX):
         # 	return self.solver.upload_data(sourceDev, trainX)
@@ -76,7 +81,7 @@ else:
         # def fit_ptr(self, sourceDev, mTrain, n, a):
         # 	return self.solver.fit(sourceDev, mTrain, n, a)
 
-        def fit(self, mTrain, n, data, k):
+        def fit(self, mTrain, n, data):
             res = c_void_p(0)
-            self.lib.make_ptr_float_kmeans(self.solver.nGPUs, mTrain, n, self.solver.ord, data, k, pointer(res))
-            self.centroids = np.iter(cast(res, float_p), n, dtype=np.float32)
+            h2oaiKMeansGPU.make_ptr_float_kmeans(self.nGPUs, mTrain, n, self.ord, self.k, 1000, 1e-3, cptr(data,dtype=c_float), 0, pointer(res))
+            self.centroids = np.iter(cast(res, c_float_p), n, dtype=np.float32)
