@@ -109,10 +109,10 @@ namespace h2oaikmeans {
       int n=rows;
       int d=cols;
 
-      thrust::device_vector<T> *data[16];
-      thrust::device_vector<int> *labels[16];
-      thrust::device_vector<T> *centroids[16];
-      thrust::device_vector<T> *distances[16];
+      thrust::device_vector<T> *data[n_gpu];
+      thrust::device_vector<int> *labels[n_gpu];
+      thrust::device_vector<T> *centroids[n_gpu];
+      thrust::device_vector<T> *distances[n_gpu];
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(q));
         data[q] = new thrust::device_vector<T>(n/n_gpu*d);
@@ -128,20 +128,46 @@ namespace h2oaikmeans {
       std::cout << "Stopping threshold: " << threshold << std::endl;
 
       bool init_from_labels=true;
+#if(1)
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(q));
         std::cout << "Copying data to device: " << q << std::endl;
+#if(0)
         CUDACHECK(cudaMemcpy(data[q]->data().get(), &srcdata[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
         std::cout << "Done copying data to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
         CUDACHECK(cudaMemcpy(labels[q]->data().get(), &srclabels[q*n/n_gpu*d], sizeof(T)*n/n_gpu*d, cudaMemcpyHostToDevice));
         std::cout << "Done copying labels to device: " << q << " of bytes size " << sizeof(T)*n/n_gpu*d << std::endl;
+#else
+        thrust::copy(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d],data[q]->begin());
+        //        thrust::copy(&srclabels[q*n/n_gpu],&srclabels[(q+1)*n/n_gpu],labels[q]->begin()); // why 
+        random_labels(*labels[q], n/n_gpu, k); // why only portion of lables set?
+#endif
       }
+#else
+      for (int q = 0; q < n_gpu; q++) {
+        random_data<T>(*data[q], n/n_gpu, d);
+        //        random_labels(*labels[q], n/n_gpu*d, k);
+        random_labels(*labels[q], n/n_gpu, k); // why only portion of lables set?
+      }
+#endif
+
+      double t0 = timer<double>();
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
+      double time = static_cast<double>(timer<double>() - t0);
+      std::cout << "  Time: " << time << " s" << std::endl;
 
       // copy result of centroids (sitting entirely on each device) back to host
       thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
       //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
       *res = ctr->data();
+      
+      for (int q = 0; q < n_gpu; q++) {
+        delete(data[q]);
+        delete(labels[q]);
+        //        delete(centroids[q]);
+        //        delete(distances[q]);
+      }
+
       return 0;
     }
     template int
