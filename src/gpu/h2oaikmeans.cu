@@ -105,7 +105,7 @@ namespace h2oaikmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* srcdata, const T* srclabels, void ** res) {
+    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, T threshold, const T* srcdata, const int* srclabels, void ** res) {
       int n=rows;
       int d=cols;
 
@@ -124,8 +124,6 @@ namespace h2oaikmeans {
       std::cout << "Number of points: " << n << std::endl;
       std::cout << "Number of dimensions: " << d << std::endl;
       std::cout << "Number of clusters: " << k << std::endl;
-      int max_iterations=1000;
-      double threshold=1e-3;
       std::cout << "Max. number of iterations: " << max_iterations << std::endl;
       std::cout << "Stopping threshold: " << threshold << std::endl;
 
@@ -140,17 +138,14 @@ namespace h2oaikmeans {
       }
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
 
-      cudaSetDevice(0);
+      // copy result of centroids (sitting entirely on each device) back to host
       thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
-//      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
+      //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
       *res = ctr->data();
       return 0;
     }
-//        template int
-//        makePtr_dense<double>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const double *trainX, void **a);
-
     template int
-    makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, const float *srcdata, const float *srclabels, void **a);
+    makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, float threshold, const float *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -168,8 +163,8 @@ namespace h2oaikmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, const float* srcdata, const float* srclabels, void** res) {
-    return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, max_iterations, threshold, srcdata, srclabels, res);
 }
 
 #ifdef __cplusplus

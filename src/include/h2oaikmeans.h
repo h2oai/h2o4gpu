@@ -26,6 +26,6 @@ namespace h2oaikmeans {
   };
 
   template <typename T>
-    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, const T* srcdata, const T*srclabels, void ** res);
+    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, T threshold, const T* srcdata, const int*srclabels, void ** res);
 
 }  // namespace h2oaikmeans
