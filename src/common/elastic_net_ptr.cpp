@@ -532,7 +532,6 @@ namespace h2oaiglm {
             for(unsigned int j=0;j<mTrain;++j){
               if(maxweight<weights[j]) maxweight=weights[j];
             }
-            fprintf(stderr,"maxweight=%g\n",maxweight); fflush(stderr);
             if(0){
               if(sumweight!=0.0){
                 for(unsigned int j=0;j<mTrain;++j) weights[j]/=sumweight;

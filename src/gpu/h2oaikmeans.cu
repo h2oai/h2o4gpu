@@ -35,6 +35,15 @@ void random_data(thrust::device_vector<T>& array, int m, int n) {
   array = host_array;
 }
 
+template<typename T>
+void nonrandom_data(thrust::device_vector<T>& array, const T *srcdata, int q, int m, int n) {
+  thrust::host_vector<T> host_array(m*n);
+  for(int i = 0; i < m * n; i++) {
+    host_array[i] = srcdata[q*n+i];
+  }
+  array = host_array;
+}
+
 void random_labels(thrust::device_vector<int>& labels, int n, int k) {
   thrust::host_vector<int> host_labels(n);
   for(int i = 0; i < n; i++) {
@@ -138,8 +147,12 @@ namespace h2oaikmeans {
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(q));
         std::cout << "Copying data to device: " << q << std::endl;
-        thrust::copy(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d],data[q]->begin());
+        //        fprintf(stderr,"q=%d %p %p %p\n",q,&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d],&(data[q]->data[0])); fflush(stderr);
+
+        //        std::vector<T> vdata(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d]);
+        //        thrust::copy(vdata.begin(),vdata.end(),data[q]->begin());
         //random_labels(*labels[q], n/n_gpu, k);
+        nonrandom_data(*data[q], srcdata, q, n/n_gpu, d);
         nonrandom_labels(*labels[q], srclabels, q, n/n_gpu, k);
       }
 
