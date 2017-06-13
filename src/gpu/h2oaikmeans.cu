@@ -125,6 +125,7 @@ namespace h2oaikmeans {
       int n=rows;
       int d=cols;
 
+      double t0t = timer<double>();
       thrust::device_vector<T> *data[n_gpu];
       thrust::device_vector<int> *labels[n_gpu];
       thrust::device_vector<T> *centroids[n_gpu];
@@ -155,11 +156,13 @@ namespace h2oaikmeans {
         nonrandom_data(*data[q], srcdata, q, n/n_gpu, d);
         nonrandom_labels(*labels[q], srclabels, q, n/n_gpu, k);
       }
+      double timetransfer = static_cast<double>(timer<double>() - t0t);
 
       double t0 = timer<double>();
       kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
-      double time = static_cast<double>(timer<double>() - t0);
-      std::cout << "  Time: " << time << " s" << std::endl;
+      double timefit = static_cast<double>(timer<double>() - t0);
+      std::cout << "  Time fit: " << time << " s" << std::endl;
+      fprintf(stderr,"Timetransfer: %g Timefit: %g\n",timetransfer,timefit); fflush(stderr);
 
       // copy result of centroids (sitting entirely on each device) back to host
       thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
