@@ -2,7 +2,7 @@
 H2OAIGLMROOT=../../src
 
 ifndef N
-N=2
+N=1
 endif
 
 #.NOTPARALLEL:
@@ -45,7 +45,7 @@ h2oai-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2oa
 gpuall: Makefile Makefile.gpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
 	touch gpuall
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
 
 h2oai-glm-gpu-orig: Makefile Makefile.gpu $(SOURCESORIG)  ../../src/build/gpu/h2oaiglm.a
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
@@ -58,6 +58,10 @@ h2oai-glm-gpu: Makefile Makefile.gpu $(SOURCESALT) ../../src/build/gpu/h2oaiglm.
 h2oai-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
+
+h2oai-kmeans: Makefile Makefile.gpu kmeans_driver.cpp ../../src/build/gpu/h2oaiglm.a
+	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu h2oai-kmeans
 
 run: h2oai-glm-gpu-ptr
 	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2

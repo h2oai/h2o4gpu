@@ -90,6 +90,8 @@ H2OAIGLMLIB=\
 CUH2OAIGLMLIB=\
     $(H2OAIGLMROOT)/build/gpu/h2oaiglm_link.o \
 	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.o \
+	$(H2OAIGLMROOT)/build/gpu/h2oaikmeans.o \
+	$(H2OAIGLMROOT)/build/gpu/kmeans_labels.o \
 	$(H2OAIGLMROOT)/build/gpu/warmstart.o \
 	$(H2OAIGLMROOT)/build/gpu/p2pbwcheck.o \
 	$(H2OAIGLMROOT)/build/gpu/bwcheck.o \

@@ -1351,13 +1351,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
                                     const float *data, const float *datay, const float *vdata, const float *vdatay, const float *weight,
                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
 
-
-
-  
-  
-  
 }  // namespace h2oaiglm
-
 
   #ifdef __cplusplus
   extern "C" {
@@ -1379,4 +1373,4 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
   #endif
 
 
-  
+

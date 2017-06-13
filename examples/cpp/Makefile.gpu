@@ -81,9 +81,9 @@ endif
 
 
 
-all: gpu gpualt gpuptr
+all: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
 
-default: gpualt gpuptr
+default: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
 
 # GPU
 h2oai-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
@@ -95,7 +95,10 @@ h2oai-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLM
 h2oai-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
-run: gpuptr
+h2oai-kmeans: kmeans_driver.cpp Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o h2oai-kmeans $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
+
+run: h2oai-glm-gpu-ptr
 	./h2oai-glm-gpu-ptr 1 100 1 1 0
 	#./h2oai-glm-gpu-ptr 1 100 1 0 0
 
