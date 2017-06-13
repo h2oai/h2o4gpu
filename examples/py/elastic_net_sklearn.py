@@ -76,7 +76,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   ## Solve
   print("Solving")
-  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY)
+  Xvsalpha = enet.fit(trainX, trainY)
   #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
   #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
   #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, 0)
@@ -86,6 +86,17 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   # show something about Xvsalphalambda or Xvsalpha
   print(Xvsalpha)
+  print("np.shape(Xvsalpha)")
+  print(np.shape(Xvsalpha))
+
+  rmse=enet.getrmse()
+  print(rmse)
+  lambdas=enet.getlambdas()
+  print(lambdas)
+  alphas=enet.getalphas()
+  print(alphas)
+  tols=enet.gettols()
+  print(tols)
 
   print("Done Reporting")
   return enet
