@@ -36,10 +36,30 @@ void random_data(thrust::device_vector<T>& array, int m, int n) {
 }
 
 template<typename T>
-void nonrandom_data(thrust::device_vector<T>& array, const T *srcdata, int q, int m, int n) {
-  thrust::host_vector<T> host_array(m*n);
-  for(int i = 0; i < m * n; i++) {
-    host_array[i] = srcdata[q*n+i];
+void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int d) {
+  thrust::host_vector<T> host_array(n*d);
+  if(ord=='c'){
+    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    int indexi,indexj;
+    for(int i = 0; i < n * d; i++) {
+#if(1)
+      indexi = i%d;
+      indexj = i/d;
+      //      host_array[i] = srcdata[indexi*n + indexj];
+            host_array[i] = srcdata[indexi*n + indexj];
+#else
+      indexj = i%d;
+      indexi = i/d;
+      //      host_array[i] = srcdata[indexi*n + indexj];
+            host_array[i] = srcdata[indexi*d + indexj];
+#endif
+    }
+  }
+  else{
+    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    for(int i = 0; i < n * d; i++) {
+      host_array[i] = srcdata[i];
+    }
   }
   array = host_array;
 }
@@ -51,10 +71,10 @@ void random_labels(thrust::device_vector<int>& labels, int n, int k) {
   }
   labels = host_labels;
 }
-void nonrandom_labels(thrust::device_vector<int>& labels, const int *srclabels, int q, int n, int k) {
+void nonrandom_labels(thrust::device_vector<int>& labels, const int *srclabels, int q, int n) {
   thrust::host_vector<int> host_labels(n);
   for(int i = 0; i < n; i++) {
-    host_labels[i] = srclabels[q*n+i];  //rand() % k;
+    host_labels[i] = srclabels[i];  //rand() % k;
   }
   labels = host_labels;
 }
@@ -125,6 +145,19 @@ namespace h2oaikmeans {
       int n=rows;
       int d=cols;
 
+
+      int printsrcdata=0;
+      if(printsrcdata){
+        for(unsigned int ii=0;ii<n;ii++){
+          for(unsigned int jj=0;jj<d;jj++){
+            fprintf(stderr,"%2g ",srcdata[ii*d+jj]);
+          }
+          fprintf(stderr," |  ");
+        }
+        fflush(stderr);
+      }
+        
+      
       double t0t = timer<double>();
       thrust::device_vector<T> *data[n_gpu];
       thrust::device_vector<int> *labels[n_gpu];
@@ -153,8 +186,8 @@ namespace h2oaikmeans {
         //        std::vector<T> vdata(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d]);
         //        thrust::copy(vdata.begin(),vdata.end(),data[q]->begin());
         //random_labels(*labels[q], n/n_gpu, k);
-        nonrandom_data(*data[q], srcdata, q, n/n_gpu, d);
-        nonrandom_labels(*labels[q], srclabels, q, n/n_gpu, k);
+        nonrandom_data(ord,*data[q], &srcdata[q*n/n_gpu*d], q, n/n_gpu, d);
+        nonrandom_labels(*labels[q], &srclabels[q*n/n_gpu], q, n/n_gpu);
       }
       double timetransfer = static_cast<double>(timer<double>() - t0t);
 
@@ -166,14 +199,29 @@ namespace h2oaikmeans {
 
       // copy result of centroids (sitting entirely on each device) back to host
       thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
+      // TODO FIXME: When do delete this ctr memory?
       //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
       *res = ctr->data();
-      
+
+      // debug
+      int printcenters=0
+      if(printcenters){
+        for(unsigned int ii=0;ii<k;ii++){
+          fprintf(stderr,"ii=%d of k=%d ",ii,k);
+          for(unsigned int jj=0;jj<d;jj++){
+            fprintf(stderr,"%g ",(*ctr)[d*ii+jj]);
+          }
+          fprintf(stderr,"\n");
+          fflush(stderr);
+        }
+      }
+
+      // done with GPU data
       for (int q = 0; q < n_gpu; q++) {
         delete(data[q]);
         delete(labels[q]);
-        //        delete(centroids[q]);
-        //        delete(distances[q]);
+        delete(centroids[q]);
+        delete(distances[q]);
       }
 
       return 0;

@@ -125,7 +125,12 @@ else:
             self.cols=np.shape(X)[1]
             self.params['average_distance'] = True
             t0 = time.time()
-            centroids, timefit0 = KMeansGPUinternal(self.n_gpus, 'r', self.k, self.max_iterations, self.threshold).fit(self.rows,self.cols,X,L)
+            if np.isfortran(X):
+                self.ord='c'
+            else:
+                self.ord='r'
+            #
+            centroids, timefit0 = KMeansGPUinternal(self.n_gpus, self.ord, self.k, self.max_iterations, self.threshold).fit(self.rows,self.cols,X,L)
             t1 = time.time()
             if (np.isnan(centroids).any()):
                 centroids = centroids[~np.isnan(centroids).any(axis=1)]
