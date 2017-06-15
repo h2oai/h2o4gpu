@@ -74,24 +74,38 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Setting up solver")
   enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas)
 
-  ## First, get backend pointers
-  print("Uploading")
-  print(trainX.dtype)
-  print(trainY.dtype)
-  print(validX.dtype)
-  print(validY.dtype)
-  print(trainW.dtype)
-  a,b,c,d,e = enet.upload_data(sourceDev, trainX, trainY, validX, validY, trainW)
-
   ## Solve
   print("Solving")
-  # below 0 ignored if trainX gives precision
-  givefullpath=0
-  Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
+  Xvsalpha = enet.fit(trainX, trainY)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
+  #Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, 0)
+  # givefullpath=1
+  #  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, givefullpath)
   print("Done Solving")
 
-  # show something about Xvsalphalambda and Xvsalpha
+  # show something about Xvsalphalambda or Xvsalpha
+  print(Xvsalpha)
+  print("np.shape(Xvsalpha)")
+  print(np.shape(Xvsalpha))
 
+  rmse=enet.getrmse()
+  print("rmse")
+  print(rmse)
+
+  print("lambdas")
+  lambdas=enet.getlambdas()
+  print(lambdas)
+
+  print("alphas")
+  alphas=enet.getalphas()
+  print(alphas)
+
+  print("tols")
+  tols=enet.gettols()
+  print(tols)
+
+  print("Done Reporting")
   return enet
 
 if __name__ == "__main__":
@@ -105,8 +119,10 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
+  #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)

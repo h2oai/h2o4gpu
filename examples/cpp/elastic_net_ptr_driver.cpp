@@ -189,7 +189,21 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 
 
   int datatype = 1;
-  return h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, aa, bb, cc, dd, ee);
+  int givefullpath=0;
+  T **Xvsalphalambda=NULL;
+  T **Xvsalpha=NULL;
+  size_t countfull=0;
+  size_t countshort=0;
+  size_t countmore=0;
+  double time = h2oaiglm::ElasticNetptr<T>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, aa, bb, cc, dd, ee, givefullpath, Xvsalphalambda, Xvsalpha, &countfull, &countshort, &countmore);
+
+  // print out some things about Xvsalphalambda and Xvsalpha
+  printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);
+
+  return(time);
+
+  
+  
 }
 
 template double ElasticNet<double>(const std::vector<double>&A, const std::vector<double>&b, const std::vector<double>&w, int, int, int, int, int, int, int, int, double);

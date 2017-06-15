@@ -176,7 +176,11 @@ template<typename T>
      double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                           double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                          ,int givefullpath
+                          ,T **Xvsalphalambda, T **Xvsalpha
+                          ,size_t *countfull, size_t *countshort, size_t *countmore
+                          );
 
    
 template <typename T>
@@ -188,11 +192,19 @@ template <typename T>
       double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                    void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                    void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                    ,int givefullpath
+                                    ,double **Xvsalphalambda, double **Xvsalpha
+                                    ,size_t *countfull, size_t *countshort, size_t *countmore
+                                    );
       double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                    size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                    double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr);
+                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                   ,int givefullpath
+                                   ,float **Xvsalphalambda, float **Xvsalpha
+                                   ,size_t *countfull, size_t *countshort, size_t *countmore
+                                   );
 
 #ifdef __cplusplus
     }
