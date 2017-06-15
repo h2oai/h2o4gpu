@@ -204,7 +204,7 @@ namespace h2oaikmeans {
       *res = ctr->data();
 
       // debug
-      int printcenters=0
+      int printcenters=0;
       if(printcenters){
         for(unsigned int ii=0;ii<k;ii++){
           fprintf(stderr,"ii=%d of k=%d ",ii,k);
