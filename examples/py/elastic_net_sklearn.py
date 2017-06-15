@@ -90,11 +90,18 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print(np.shape(Xvsalpha))
 
   rmse=enet.getrmse()
+  print("rmse")
   print(rmse)
+
+  print("lambdas")
   lambdas=enet.getlambdas()
   print(lambdas)
+
+  print("alphas")
   alphas=enet.getalphas()
   print(alphas)
+
+  print("tols")
   tols=enet.gettols()
   print(tols)
 
@@ -112,8 +119,8 @@ if __name__ == "__main__":
   import pandas as pd
   import feather
   #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  #df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
-  df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
+  df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
+  #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
