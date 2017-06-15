@@ -157,6 +157,8 @@ class ElasticNetBaseSolver(object):
         countmore=c_size_t(0)
         c_size_t_p = POINTER(c_size_t)
         if (whichprecision==1):
+            self.mydtype=np.double
+            self.myctype=c_double
             print("double precision fit")
             self.lib.elastic_net_ptr_double(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
@@ -167,12 +169,9 @@ class ElasticNetBaseSolver(object):
                 ,pointer(Xvsalphalambda), pointer(Xvsalpha)
                 ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
-            countfull_value=countfull.value
-            countshort_value=countshort.value
-            countmore_value=countmore.value
-            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(c_double)),dtype=np.double,count=countfull_value)
-            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(c_double)),dtype=np.double,count=countshort_value)
         else:
+            self.mydtype=np.float
+            self.myctype=c_float
             print("single precision fit")
             self.lib.elastic_net_ptr_float(
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),c_int(self.ord),
@@ -183,35 +182,36 @@ class ElasticNetBaseSolver(object):
                 ,pointer(Xvsalphalambda), pointer(Xvsalpha)
                 ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
-            countfull_value=countfull.value
-            countshort_value=countshort.value
-            countmore_value=countmore.value
-            #print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
-            if givefullpath==1:
-                numall=int(countfull_value/(self.n_alphas*self.n_lambdas))
-            else:
-                numall=int(countshort_value/(self.n_alphas))
-            #
-            NUMALLOTHER=numall-n
-            NUMRMSE=3 # should be consistent with src/common/elastic_net_ptr.cpp
-            NUMOTHER=NUMALLOTHER-NUMRMSE
-            if NUMOTHER!=3:
-                print("NUMOTHER=%d but expected 3" % (NUMOTHER))
-                print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
-                exit(0)
-            #
-            if givefullpath==1:
-                # Xvsalphalambda contains solution (and other data) for all lambda and alpha
-                self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(c_float)),dtype=np.float,count=countfull_value)
-                self.Xvsalphalambda=np.reshape(self.Xvsalphalambda,(self.n_lambdas,self.n_alphas,numall))
-                self.Xvsalphalambdapure = self.Xvsalphalambda[:,:,0:n]
-                self.rmsevsalphalambda = self.Xvsalphalambda[:,:,n:n+NUMRMSE]
-                self.lambdas = self.Xvsalphalambda[:,:,n+NUMRMSE:n+NUMRMSE+1]
-                self.alphas = self.Xvsalphalambda[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
-                self.tols = self.Xvsalphalambda[:,:,n+NUMRMSE+2:n+NUMRMSE+3]
+        #
+        countfull_value=countfull.value
+        countshort_value=countshort.value
+        countmore_value=countmore.value
+        #print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
+        if givefullpath==1:
+            numall=int(countfull_value/(self.n_alphas*self.n_lambdas))
+        else:
+            numall=int(countshort_value/(self.n_alphas))
+        #
+        NUMALLOTHER=numall-n
+        NUMRMSE=3 # should be consistent with src/common/elastic_net_ptr.cpp
+        NUMOTHER=NUMALLOTHER-NUMRMSE
+        if NUMOTHER!=3:
+            print("NUMOTHER=%d but expected 3" % (NUMOTHER))
+            print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
+            exit(0)
+        #
+        if givefullpath==1:
+            # Xvsalphalambda contains solution (and other data) for all lambda and alpha
+            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(myctype)),dtype=self.mydtype,count=countfull_value)
+            self.Xvsalphalambda=np.reshape(self.Xvsalphalambda,(self.n_lambdas,self.n_alphas,numall))
+            self.Xvsalphalambdapure = self.Xvsalphalambda[:,:,0:n]
+            self.rmsevsalphalambda = self.Xvsalphalambda[:,:,n:n+NUMRMSE]
+            self.lambdas = self.Xvsalphalambda[:,:,n+NUMRMSE:n+NUMRMSE+1]
+            self.alphas = self.Xvsalphalambda[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
+            self.tols = self.Xvsalphalambda[:,:,n+NUMRMSE+2:n+NUMRMSE+3]
             #
             # Xvsalpha contains only best of all lambda for each alpha
-            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(c_float)),dtype=np.float,count=countshort_value)
+            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(myctype)),dtype=self.mydtype,count=countshort_value)
             self.Xvsalpha=np.reshape(self.Xvsalpha,(self.n_alphas,numall))
             self.Xvsalphapure = self.Xvsalpha[:,0:n]
             self.rmsevsalpha = self.Xvsalpha[:,n:n+NUMRMSE]
@@ -220,6 +220,10 @@ class ElasticNetBaseSolver(object):
             self.tols2 = self.Xvsalpha[:,n+NUMRMSE+2:n+NUMRMSE+3]
             #
             # return numpy objects
+        if givefullpath==1:
+            return(self.Xvsalphalambdapure,self.Xvsalphapure)
+        else:
+            return(self.Xvsalphapure)
         #return(self.Xvsalphalambda,self.Xvsalpha)
         print("Done with fit")
 
@@ -262,7 +266,7 @@ class ElasticNetBaseSolver(object):
             precision=0 # won't be used
             self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
             if givefullpath==1:
-                return(self.Xvsalphalambdapure)
+                return(self.Xvsalphalambdapure,self.Xvsalphapure)
             else:
                 return(self.Xvsalphapure)
         else:
