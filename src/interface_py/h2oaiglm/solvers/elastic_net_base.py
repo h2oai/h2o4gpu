@@ -202,7 +202,7 @@ class ElasticNetBaseSolver(object):
         #
         if givefullpath==1:
             # Xvsalphalambda contains solution (and other data) for all lambda and alpha
-            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(myctype)),dtype=self.mydtype,count=countfull_value)
+            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value)
             self.Xvsalphalambda=np.reshape(self.Xvsalphalambda,(self.n_lambdas,self.n_alphas,numall))
             self.Xvsalphalambdapure = self.Xvsalphalambda[:,:,0:n]
             self.rmsevsalphalambda = self.Xvsalphalambda[:,:,n:n+NUMRMSE]
@@ -210,16 +210,16 @@ class ElasticNetBaseSolver(object):
             self.alphas = self.Xvsalphalambda[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
             self.tols = self.Xvsalphalambda[:,:,n+NUMRMSE+2:n+NUMRMSE+3]
             #
-            # Xvsalpha contains only best of all lambda for each alpha
-            self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(myctype)),dtype=self.mydtype,count=countshort_value)
-            self.Xvsalpha=np.reshape(self.Xvsalpha,(self.n_alphas,numall))
-            self.Xvsalphapure = self.Xvsalpha[:,0:n]
-            self.rmsevsalpha = self.Xvsalpha[:,n:n+NUMRMSE]
-            self.lambdas2 = self.Xvsalpha[:,n+NUMRMSE:n+NUMRMSE+1]
-            self.alphas2 = self.Xvsalpha[:,n+NUMRMSE+1:n+NUMRMSE+2]
-            self.tols2 = self.Xvsalpha[:,n+NUMRMSE+2:n+NUMRMSE+3]
-            #
-            # return numpy objects
+        # Xvsalpha contains only best of all lambda for each alpha
+        self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countshort_value)
+        self.Xvsalpha=np.reshape(self.Xvsalpha,(self.n_alphas,numall))
+        self.Xvsalphapure = self.Xvsalpha[:,0:n]
+        self.rmsevsalpha = self.Xvsalpha[:,n:n+NUMRMSE]
+        self.lambdas2 = self.Xvsalpha[:,n+NUMRMSE:n+NUMRMSE+1]
+        self.alphas2 = self.Xvsalpha[:,n+NUMRMSE+1:n+NUMRMSE+2]
+        self.tols2 = self.Xvsalpha[:,n+NUMRMSE+2:n+NUMRMSE+3]
+        #
+        # return numpy objects
         if givefullpath==1:
             return(self.Xvsalphalambdapure,self.Xvsalphapure)
         else:
