@@ -15,7 +15,7 @@ Add to .bashrc or your own environment (e.g.):
 export CUDA_HOME=/usr/local/cuda
 export PATH=/usr/local/cuda/bin:$PATH
 export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:LD_LIBRARY_PATH_MORE
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 export CUDADIR=/usr/local/cuda/include/
 export OMP_NUM_THREADS=32
 export MKL_NUM_THREADS=32
@@ -35,7 +35,10 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 To compile everything and install R and python interfaces as user:
 -----
 
-make allclean
+git clone git@github.com:h2oai/h2oaiglm.git
+cd h2oaiglm
+bash gitshallow_submodules.sh
+make -j allclean
 
 
 To compile base library:
