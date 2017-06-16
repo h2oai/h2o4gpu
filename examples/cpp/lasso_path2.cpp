@@ -43,13 +43,14 @@ double LassoPath(size_t m, size_t n) {
   unsigned int nlambda = 100;
   std::vector<T> A(m * n);
   std::vector<T> b(m);
+  std::vector<T> w(m);
   std::vector<T> x_last(n, std::numeric_limits<T>::max());
 
 
   fprintf(stdout,"BEGIN FILL DATA\n");
   double t0 = timer<double>();
   int generate=0;
-  fillData(generate, "train.txt", m, n, &A[0], &b[0]);
+  fillData(m, n, "train.txt", &A[0], &b[0], &w[0]);
   double t1 = timer<double>();
   fprintf(stdout,"END FILL DATA\n");
 

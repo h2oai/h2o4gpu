@@ -1,4 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <cuda_runtime.h>
 #include <cublas_v2.h>
+#include <cusolverDn.h>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_matrix.cuh"
@@ -21,6 +27,8 @@
 #include <cmath>
 #include <limits>
 #include <thrust/fill.h>
+
+
 
 extern int checkwDev(int wDev);
 
@@ -824,9 +832,351 @@ int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) cons
   return 0;
 }
 
+template <typename T>
+void printMatrix(int m, int n, const T*A, int lda, const char* name)
+{
+  for(int row = 0 ; row < m ; row++){
+    for(int col = 0 ; col < n ; col++){
+      T Areg = A[row + col*lda];
+      printf("%s(%d,%d) = %f\n", name, row+1, col+1, Areg);
+    }
+  }
+}
 
-  // Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
-  // See https://arxiv.org/pdf/1610.03871.pdf for more information
+/*
+ * How to compile (assume cuda is installed at /usr/local/cuda/)
+ *   nvcc -c -I/usr/local/cuda/include svd_example.cpp 
+ *   g++ -fopenmp -o a.out svd_example.o -L/usr/local/cuda/lib64 -lcudart -lcublas -lcusolver
+ *
+ */
+
+  inline cusolverStatus_t cusolverDngesvd (    cusolverDnHandle_t handle,    signed char jobu,    signed char jobvt,    int m,    int n,    float *A,    int lda,    float *S,    float *U,    int ldu,    float *VT,    int ldvt,    float *work,    int lwork,    float *rwork,    int *devInfo){
+  return(cusolverDnSgesvd(handle,    jobu,    jobvt,    m,    n,    A,    lda,    S,    U,    ldu,    VT,    ldvt,    work,    lwork,    rwork,    devInfo));
+}
+  
+inline cusolverStatus_t cusolverDngesvd (    cusolverDnHandle_t handle,    signed char jobu,    signed char jobvt,    int m,    int n,    double *A,    int lda,    double *S,    double *U,    int ldu,    double *VT,    int ldvt,    double *work,    int lwork,    double *rwork,    int *devInfo){
+  return(cusolverDnDgesvd(handle,    jobu,    jobvt,    m,    n,    A,    lda,    S,    U,    ldu,    VT,    ldvt,    work,    lwork,    rwork,    devInfo));
+}
+
+inline cublasStatus_t cublasgemm(cublasHandle_t handle,                           cublasOperation_t transa, cublasOperation_t transb,                           int m, int n, int k,                           const float           *alpha,                           const float           *A, int lda,                           const float           *B, int ldb,                           const float           *beta,                           float           *C, int ldc){
+  return(cublasSgemm_v2(handle,                           transa, transb,                           m, n, k,                   alpha,                                A, lda,                           B, ldb,                      beta,                       C, ldc));
+  
+
+}
+
+  
+inline cublasStatus_t cublasgemm(cublasHandle_t handle,                           cublasOperation_t transa, cublasOperation_t transb,                           int m, int n, int k,                           const double          *alpha,                           const double          *A, int lda,                           const double          *B, int ldb,                           const double          *beta,                           double          *C, int ldc){
+  return(cublasDgemm_v2(handle,                           transa, transb,                           m, n, k,                   alpha,                                A, lda,                           B, ldb,                      beta,                       C, ldc));
+
+}
+
+inline cublasStatus_t cublasdgmm(cublasHandle_t handle,
+                                 cublasSideMode_t mode, 
+                                 int m, 
+                                 int n,
+                                 const float *A, 
+                                 int lda,
+                                 const float *x, 
+                                 int incx,
+                                 float *C, 
+                                 int ldc){
+  
+  return(cublasSdgmm(handle,
+                     mode, 
+                     m, 
+                     n,
+                     A, 
+                     lda,
+                     x, 
+                     incx,
+                     C, 
+                     ldc));
+
+}
+inline cublasStatus_t cublasdgmm(cublasHandle_t handle,
+                                 cublasSideMode_t mode, 
+                                 int m, 
+                                 int n,
+                                 const double *A, 
+                                 int lda,
+                                 const double *x, 
+                                 int incx,
+                                 double *C, 
+                                 int ldc){
+  
+  return(cublasDdgmm(handle,
+                     mode, 
+                     m, 
+                     n,
+                     A, 
+                     lda,
+                     x, 
+                     incx,
+                     C, 
+                     ldc));
+
+}
+
+inline cublasStatus_t cublasnrm2(cublasHandle_t handle, 
+                                 int n, 
+                                 const double *x, 
+                                 int incx, 
+                                 double *result){
+    return(cublasDnrm2_v2(handle, 
+                      n, 
+                      x, 
+                      incx, 
+                      result));
+    
+  }
+    
+inline cublasStatus_t cublasnrm2(cublasHandle_t handle, 
+                                 int n, 
+                                 const float *x, 
+                                 int incx, 
+                                 float *result){
+    return(cublasSnrm2_v2(handle, 
+                      n, 
+                      x, 
+                      incx, 
+                      result));
+    
+  }
+    
+
+
+  template <typename T>
+int MatrixDense<T>::svd1(void) {
+  fprintf(stderr,"begin svd inside0\n"); fflush(stderr); fflush(stdout);
+  DEBUG_ASSERT(this->_done_init);
+  if (!this->_done_init)
+    Init();
+  fprintf(stderr,"begin svd inside\n"); fflush(stderr); fflush(stdout);
+    cusolverDnHandle_t cusolverH = NULL;
+    cublasHandle_t cublasH = NULL;
+    cublasStatus_t cublas_status = CUBLAS_STATUS_SUCCESS;
+    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
+    cudaError_t cudaStat1 = cudaSuccess;
+    cudaError_t cudaStat2 = cudaSuccess;
+    cudaError_t cudaStat3 = cudaSuccess;
+    cudaError_t cudaStat4 = cudaSuccess;
+    cudaError_t cudaStat5 = cudaSuccess;
+    cudaError_t cudaStat6 = cudaSuccess;
+    const int m = 3;
+    const int n = 2;
+    //    const int m = this->_m;
+    //    const int n = this->_n;
+    const int lda = m;
+/*       | 1 2  |
+ *   A = | 4 5  |
+ *       | 2 1  |
+ */
+    T A[lda*n] = { 1.0, 4.0, 2.0, 2.0, 5.0, 1.0};
+    T U[lda*m]; // m-by-m unitary matrix 
+    T VT[lda*n];  // n-by-n unitary matrix
+    T S[n]; // singular value
+    T S_exact[n] = {7.065283497082729, 1.040081297712078};
+
+    T *d_A = NULL;
+    T *d_S = NULL;
+    T *d_U = NULL;
+    T *d_VT = NULL;
+    int *devInfo = NULL;
+    T *d_work = NULL;
+    T *d_rwork = NULL;
+    T *d_W = NULL;  // W = S*VT
+
+    int lwork = 0;
+    int info_gpu = 0;
+    const T h_one = 1;
+    const T h_minus_one = -1;
+
+
+    printf("A = (matlab base-1)\n");
+    printMatrix(m, n, A, lda, "A");
+    printf("=====\n");
+
+    double t0 = timer<double>();
+// step 1: create cusolverDn/cublas handle
+    cusolver_status = cusolverDnCreate(&cusolverH);
+    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+
+    cublas_status = cublasCreate(&cublasH);
+    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+
+// step 2: copy A and B to device
+    cudaStat1 = cudaMalloc ((void**)&d_A  , sizeof(T)*lda*n);
+    cudaStat2 = cudaMalloc ((void**)&d_S  , sizeof(T)*n);
+    cudaStat3 = cudaMalloc ((void**)&d_U  , sizeof(T)*lda*m);
+    cudaStat4 = cudaMalloc ((void**)&d_VT , sizeof(T)*lda*n);
+    cudaStat5 = cudaMalloc ((void**)&devInfo, sizeof(int));
+    cudaStat6 = cudaMalloc ((void**)&d_W  , sizeof(T)*lda*n);
+    assert(cudaSuccess == cudaStat1);
+    assert(cudaSuccess == cudaStat2);
+    assert(cudaSuccess == cudaStat3);
+    assert(cudaSuccess == cudaStat4);
+    assert(cudaSuccess == cudaStat5);
+    assert(cudaSuccess == cudaStat6);
+
+    cudaStat1 = cudaMemcpy(d_A, A, sizeof(T)*lda*n, cudaMemcpyHostToDevice);
+    assert(cudaSuccess == cudaStat1);
+
+// step 3: query working space of SVD
+    cusolver_status = cusolverDnDgesvd_bufferSize(
+        cusolverH,
+        m,
+        n,
+        &lwork );
+    assert (cusolver_status == CUSOLVER_STATUS_SUCCESS);
+
+    cudaStat1 = cudaMalloc((void**)&d_work , sizeof(T)*lwork);
+    assert(cudaSuccess == cudaStat1);
+    double t1 = timer<double>();
+    fprintf(stderr,"SVD init: %g\n",t1-t0); fflush(stderr); fflush(stdout);
+
+// step 4: compute SVD
+    double t0c = timer<double>();
+    signed char jobu = 'A'; // all m columns of U
+    signed char jobvt = 'A'; // all n columns of VT
+    cusolver_status = cusolverDngesvd(
+        cusolverH,
+        jobu,
+        jobvt,
+        m,
+        n,
+        d_A,
+        lda,
+        d_S,
+        d_U,
+        lda,  // ldu
+        d_VT,
+        lda, // ldvt,
+        d_work,
+        lwork,
+        d_rwork,
+        devInfo);
+    cudaStat1 = cudaDeviceSynchronize();
+    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+    assert(cudaSuccess == cudaStat1);
+    double t1c = timer<double>();
+    fprintf(stderr,"SVD compute: %g\n",t1-t0); fflush(stderr); fflush(stdout);
+
+
+
+    double t0h = timer<double>();
+    cudaStat1 = cudaMemcpy(U , d_U , sizeof(T)*lda*m, cudaMemcpyDeviceToHost);
+    cudaStat2 = cudaMemcpy(VT, d_VT, sizeof(T)*lda*n, cudaMemcpyDeviceToHost);
+    cudaStat3 = cudaMemcpy(S , d_S , sizeof(T)*n    , cudaMemcpyDeviceToHost);
+    cudaStat4 = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost);
+    assert(cudaSuccess == cudaStat1);
+    assert(cudaSuccess == cudaStat2);
+    assert(cudaSuccess == cudaStat3);
+    assert(cudaSuccess == cudaStat4);
+
+    printf("after gesvd: info_gpu = %d\n", info_gpu);
+    assert(0 == info_gpu);
+    printf("=====\n");
+
+    printf("S = (matlab base-1)\n");
+    printMatrix(n, 1, S, lda, "S");
+    printf("=====\n");
+
+    printf("U = (matlab base-1)\n");
+    printMatrix(m, m, U, lda, "U");
+    printf("=====\n");
+
+    printf("VT = (matlab base-1)\n");
+    printMatrix(n, n, VT, lda, "VT");
+    printf("=====\n");
+
+// step 5: measure error of singular value
+    T ds_sup = 0;
+    for(int j = 0; j < n; j++){
+        T err = fabs( S[j] - S_exact[j] );
+        ds_sup = (ds_sup > err)? ds_sup : err;
+    }
+    printf("|S - S_exact| = %E \n", ds_sup);
+    double t1h = timer<double>();
+    fprintf(stderr,"SVD back to host: %g\n",t1h-t0h); fflush(stderr); fflush(stdout);
+
+    // now check
+    double t0c1 = timer<double>();
+// step 6: |A - U*S*VT|
+    // W = S*VT
+    cublas_status = cublasdgmm(
+        cublasH,
+        CUBLAS_SIDE_LEFT,
+        n,
+        n,
+        d_VT,
+        lda,
+        d_S,
+         1,
+        d_W,
+        lda);
+    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+    double t1c1 = timer<double>();
+    fprintf(stderr,"SVD check1: %g\n",t1c1-t0c1); fflush(stderr); fflush(stdout);
+
+
+ 
+    // A := -U*W + A
+    double t0c2 = timer<double>();
+    cudaStat1 = cudaMemcpy(d_A, A, sizeof(T)*lda*n, cudaMemcpyHostToDevice);
+    assert(cudaSuccess == cudaStat1);
+    cublas_status = cublasgemm(
+        cublasH,
+        CUBLAS_OP_N, // U
+        CUBLAS_OP_N, // W
+        m, // number of rows of A
+        n, // number of columns of A
+        n, // number of columns of U 
+        &h_minus_one, /* host pointer */
+        d_U, // U
+        lda,
+        d_W, // W
+        lda,
+        &h_one, /* hostpointer */
+        d_A,
+        lda);
+    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+    double t1c2 = timer<double>();
+    fprintf(stderr,"SVD check2: %g\n",t1c2-t0c2); fflush(stderr); fflush(stdout);
+
+    double t0c3 = timer<double>();
+    T dR_fro = 0.0;
+    cublas_status = cublasnrm2(
+        cublasH, lda*n, d_A, 1, &dR_fro);
+    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+
+    printf("|A - U*S*VT| = %E \n", dR_fro);
+    double t1c3 = timer<double>();
+    fprintf(stderr,"SVD check3: %g\n",t1c3-t0c3); fflush(stderr); fflush(stdout);
+
+// free resources
+    double t0f = timer<double>();
+    if (d_A    ) cudaFree(d_A);
+    if (d_S    ) cudaFree(d_S);
+    if (d_U    ) cudaFree(d_U);
+    if (d_VT   ) cudaFree(d_VT);
+    if (devInfo) cudaFree(devInfo);
+    if (d_work ) cudaFree(d_work);
+    if (d_rwork) cudaFree(d_rwork);
+    if (d_W    ) cudaFree(d_W);
+
+    if (cublasH ) cublasDestroy(cublasH);
+    if (cusolverH) cusolverDnDestroy(cusolverH);
+    //    cudaDeviceReset();
+    double t1f = timer<double>();
+    fprintf(stderr,"SVD free: %g\n",t1f-t0f); fflush(stderr); fflush(stdout);
+
+    fprintf(stderr,"end svd inside\n"); fflush(stderr); fflush(stdout);
+
+    return 0;
+}
+
+// Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
+// See https://arxiv.org/pdf/1610.03871.pdf for more information
 template <typename T>
 int MatrixDense<T>::Equil(bool equillocal) {
   DEBUG_ASSERT(this->_done_init);

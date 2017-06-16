@@ -529,6 +529,12 @@ if (_ord == ROW) {
   return 0;
 }
 
+
+template <typename T>
+  int MatrixDense<T>::svd1(void) {
+    return(0); // TODO FIXME nothing yet.
+  }
+
 template <typename T>
 int MatrixDense<T>::Equil(bool equillocal) {
   //  fprintf(stderr,"In Equil: done_init=%d done_equil=%d\n",this->_done_init,this->_done_equil); fflush(stderr);

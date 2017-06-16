@@ -55,6 +55,9 @@ class MatrixDense : public Matrix<T> {
   // Method to equilibrate.
   int Equil(bool equillocal);
 
+  // Method for SVD #1
+  int svd1(void);
+  
   // Method to multiply by A and A^T.
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
   int Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const;

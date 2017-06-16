@@ -215,6 +215,10 @@ namespace h2oaiglm {
       fprintf(stderr,"\n"); fflush(stderr);      
       exit(0);
     }
+
+
+
+    
     
     signal(SIGINT, my_function);
     signal(SIGTERM, my_function);
@@ -435,6 +439,19 @@ namespace h2oaiglm {
       }
       DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
       DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
+
+
+      ///////////////////////////////////////////////////
+      // BEGIN SVD
+      if(1){
+        A_.svd1();
+      }
+     
+
+
+      ////////////////////////////////////////////////
+      // BEGIN GLM
+      
 
       // Setup constant parameters for all models
       h2oaiglm_data.SetnDev(1); // set how many cuda devices to use internally in h2oaiglm
