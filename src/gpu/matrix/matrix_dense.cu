@@ -832,12 +832,27 @@ int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) cons
   return 0;
 }
 
+  // col-major order (fortran) A, but still print as row major
 template <typename T>
 void printMatrix(int m, int n, const T*A, int lda, const char* name)
 {
+  printf("rows=%d cols=%d lda=%d\n",m,n,lda);
   for(int row = 0 ; row < m ; row++){
     for(int col = 0 ; col < n ; col++){
       T Areg = A[row + col*lda];
+      printf("%s(%d,%d) = %f\n", name, row+1, col+1, Areg);
+    }
+  }
+}
+
+  // row-major order (c) A printed as row major
+template <typename T>
+void printMatrix2(int m, int n, const T*A, int lda, const char* name)
+{
+  printf("rows=%d cols=%d lda=%d\n",m,n,lda);
+  for(int row = 0 ; row < m ; row++){
+    for(int col = 0 ; col < n ; col++){
+      T Areg = A[col + row*n];
       printf("%s(%d,%d) = %f\n", name, row+1, col+1, Areg);
     }
   }
@@ -941,238 +956,431 @@ inline cublasStatus_t cublasnrm2(cublasHandle_t handle,
                       incx, 
                       result));
     
-  }
+}
     
+// // Each block transposes/copies a tile of TILE_DIM x TILE_DIM elements
+// // using TILE_DIM x BLOCK_ROWS threads, so that each thread transposes
+// // TILE_DIM/BLOCK_ROWS elements.  TILE_DIM must be an integral multiple of BLOCK_ROWS
 
+#define TILE_DIM    16
+#define BLOCK_ROWS  16
 
-  template <typename T>
+//   __global__ void transposeNaive(float *odata, float* idata,
+//                                  int width, int height)
+//   {
+//     int xIndex = blockIdx.x*TILE_DIM + threadIdx.x;
+//     int yIndex = blockIdx.y*TILE_DIM + threadIdx.y;
+//     int index_in = xIndex + width * yIndex;
+//     int index_out = yIndex + height * xIndex;
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       odata[index_out+i] = idata[index_in+i*width];
+//     }
+//   }
+//   __global__ void transposeNaive(double *odata, double* idata,
+//                                  int width, int height)
+//   {
+//     int xIndex = blockIdx.x*TILE_DIM + threadIdx.x;
+//     int yIndex = blockIdx.y*TILE_DIM + threadIdx.y;
+//     int index_in = xIndex + width * yIndex;
+//     int index_out = yIndex + height * xIndex;
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       odata[index_out+i] = idata[index_in+i*width];
+//     }
+//   } 
+//   __global__ void transposeCoalesced(float *odata,
+//                                      float *idata, int width, int height)
+//   {
+//     __shared__ float tile[TILE_DIM][TILE_DIM];
+//     int xIndex = blockIdx.x*TILE_DIM + threadIdx.x;
+//     int yIndex = blockIdx.y*TILE_DIM + threadIdx.y;
+//     int index_in = xIndex + (yIndex)*width;
+//     xIndex = blockIdx.y * TILE_DIM + threadIdx.x;
+//     yIndex = blockIdx.x * TILE_DIM + threadIdx.y;
+//     int index_out = xIndex + (yIndex)*height;
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       tile[threadIdx.y+i][threadIdx.x] =
+//         idata[index_in+i*width];
+//     }
+
+//     __syncthreads();
+
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       odata[index_out+i*height] =
+//         tile[threadIdx.x][threadIdx.y+i];
+//     }
+//   } 
+//   __global__ void transposeCoalesced(double *odata,
+//                                      double *idata, int width, int height)
+//   {
+//     __shared__ double tile[TILE_DIM][TILE_DIM];
+//     int xIndex = blockIdx.x*TILE_DIM + threadIdx.x;
+//     int yIndex = blockIdx.y*TILE_DIM + threadIdx.y;
+//     int index_in = xIndex + (yIndex)*width;
+//     xIndex = blockIdx.y * TILE_DIM + threadIdx.x;
+//     yIndex = blockIdx.x * TILE_DIM + threadIdx.y;
+//     int index_out = xIndex + (yIndex)*height;
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       tile[threadIdx.y+i][threadIdx.x] =
+//         idata[index_in+i*width];
+//     }
+
+//     __syncthreads();
+
+//     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+//       odata[index_out+i*height] =
+//         tile[threadIdx.x][threadIdx.y+i];
+//     }
+//   }
+
+// in-place transpose for row-major matrix on device of A[m][n]
+void cudaintranspose(float *odata, float *idata, int m, int n){
+
+  cudaError_t cudaStat1 = cudaSuccess;
+  cudaStat1 = cudaMemcpy(odata, idata, sizeof(float)*m*n, cudaMemcpyDeviceToDevice);
+  assert(cudaSuccess == cudaStat1);
+  
+  float const alpha(1.0);
+  float const beta(0.0);
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cublasSgeam( handle, CUBLAS_OP_T, CUBLAS_OP_N, m, n, &alpha, idata, n, &beta, idata, m, odata, m );
+  cublasDestroy(handle);
+}
+void cudaintranspose(double *odata, double *idata, int m, int n){
+
+  cudaError_t cudaStat1 = cudaSuccess;
+  cudaStat1 = cudaMemcpy(odata, idata, sizeof(double)*m*n, cudaMemcpyDeviceToDevice);
+  assert(cudaSuccess == cudaStat1);
+  
+  double const alpha(1.0);
+  double const beta(0.0);
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+  cublasDgeam( handle, CUBLAS_OP_T, CUBLAS_OP_N, m, n, &alpha, idata, n, &beta, idata, m, odata, m );
+  cublasDestroy(handle);
+}
+#define MIN(a,b) ((a)<(b) ? (a) : (b))
+
+template <typename T>
 int MatrixDense<T>::svd1(void) {
   fprintf(stderr,"begin svd inside0\n"); fflush(stderr); fflush(stdout);
   DEBUG_ASSERT(this->_done_init);
   if (!this->_done_init)
     Init();
+
   fprintf(stderr,"begin svd inside\n"); fflush(stderr); fflush(stdout);
-    cusolverDnHandle_t cusolverH = NULL;
-    cublasHandle_t cublasH = NULL;
-    cublasStatus_t cublas_status = CUBLAS_STATUS_SUCCESS;
-    cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
-    cudaError_t cudaStat1 = cudaSuccess;
-    cudaError_t cudaStat2 = cudaSuccess;
-    cudaError_t cudaStat3 = cudaSuccess;
-    cudaError_t cudaStat4 = cudaSuccess;
-    cudaError_t cudaStat5 = cudaSuccess;
-    cudaError_t cudaStat6 = cudaSuccess;
-    const int m = 3;
-    const int n = 2;
-    //    const int m = this->_m;
-    //    const int n = this->_n;
-    const int lda = m;
-/*       | 1 2  |
- *   A = | 4 5  |
- *       | 2 1  |
- */
-    T A[lda*n] = { 1.0, 4.0, 2.0, 2.0, 5.0, 1.0};
-    T U[lda*m]; // m-by-m unitary matrix 
-    T VT[lda*n];  // n-by-n unitary matrix
-    T S[n]; // singular value
-    T S_exact[n] = {7.065283497082729, 1.040081297712078};
-
-    T *d_A = NULL;
-    T *d_S = NULL;
-    T *d_U = NULL;
-    T *d_VT = NULL;
-    int *devInfo = NULL;
-    T *d_work = NULL;
-    T *d_rwork = NULL;
-    T *d_W = NULL;  // W = S*VT
-
-    int lwork = 0;
-    int info_gpu = 0;
-    const T h_one = 1;
-    const T h_minus_one = -1;
+  cusolverDnHandle_t cusolverH = NULL;
+  cublasHandle_t cublasH = NULL;
+  cublasStatus_t cublas_status = CUBLAS_STATUS_SUCCESS;
+  cusolverStatus_t cusolver_status = CUSOLVER_STATUS_SUCCESS;
+  cudaError_t cudaStat1 = cudaSuccess;
+  cudaError_t cudaStat2 = cudaSuccess;
+  cudaError_t cudaStat3 = cudaSuccess;
+  cudaError_t cudaStat4 = cudaSuccess;
+  cudaError_t cudaStat5 = cudaSuccess;
+  cudaError_t cudaStat6 = cudaSuccess;
+  int m = this->_m;
+  int n = this->_n;
+  //    const int m = this->_m;
+  //    const int n = this->_n;
+  int lda = m;
+  /*       | 1 2  |
+   *   A = | 4 5  |
+   *       | 2 1  |
+   */
 
 
+    
+  unsigned char ord='r'; // TODO; should be inputted
+      
+  // original device vector
+  T *d_A0;
+  d_A0 = this->_data;
+
+  // device vectors
+  T *d_A = NULL;
+  T *d_S = NULL;
+  T *d_U = NULL;
+  T *d_VT = NULL;
+  int *devInfo = NULL;
+  T *d_work = NULL;
+  T *d_rwork = NULL;
+  T *d_W = NULL;  // W = S*VT
+
+  int lwork = 0;
+  int info_gpu = 0;
+  const T h_one = 1;
+  const T h_minus_one = -1;
+
+  double t0 = timer<double>();
+  // step 1: create cusolverDn/cublas handle
+  cusolver_status = cusolverDnCreate(&cusolverH);
+  assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+
+  cublas_status = cublasCreate(&cublasH);
+  assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+
+
+  fprintf(stderr,"HERE1\n"); fflush(stderr); fflush(stdout);
+
+  // step 2: copy A to device
+  //    cudaStat1 = cudaMalloc ((void**)&d_A  , sizeof(T)*lda*n);
+
+  // svd destroys d_A, so make copy for testing error // OPTMARK
+  cudaStat1 = cudaMalloc ((void**)&d_A  , sizeof(T)*lda*n);
+  assert(cudaSuccess == cudaStat1);
+  cudaStat1 = cudaMemcpy(d_A, d_A0, sizeof(T)*lda*n, cudaMemcpyDeviceToDevice);
+  assert(cudaSuccess == cudaStat1);
+  cudaStat1 = cudaDeviceSynchronize();
+  assert(cudaSuccess == cudaStat1);
+
+
+  int ldu=m; //lda;
+  int ldureal=n; // actual storage
+  int ldvt=n;
+  if(ord=='r'){
+    // transpose
+    // execution configuration parameters
+    //dim3 grid(n/TILE_DIM, lda/TILE_DIM), threads(TILE_DIM,BLOCK_ROWS);
+    //      transposeCoalesced<<<grid, threads>>>(d_A, d_A0, n, lda);
+    //    transposeNaive<<<grid, threads>>>(d_A, d_A0, n, lda);
+    cudaintranspose(d_A,d_A0,m,n); // OPTMARK
+    cudaStat1 = cudaDeviceSynchronize();
+    assert(cudaSuccess == cudaStat1);
+
+    // below debug only for printMatrix2 to view, shouldn't actually swap for use.
+    if(0){
+      int temp=m;
+      m=n;
+      n=temp;
+      
+      lda=m;
+      ldu=m; //lda;
+      ldureal=n; // actual storage
+      ldvt=n;
+    }
+  }
+  else{
+    d_A = d_A0;
+  }
+
+
+
+  
+  fprintf(stderr,"HERE PRE\n"); fflush(stderr); fflush(stdout);
+  // old host side vectors
+  //    T A[lda*n] = { 1.0, 4.0, 2.0, 2.0, 5.0, 1.0};
+  //    GpuData<T> *info_A   = reinterpret_cast<GpuData<T>*>(this->_info); // cast from void to GpuData
+  //    T *A = const_cast<T*>(info_A->orig_data);
+#if(0)
+  T A[lda*n]; // for debug
+  T U[ldureal*m]; // m-by-m unitary matrix 
+  T VT[ldvt*n];  // n-by-n unitary matrix
+  T S[MIN(n,m)]; // singular value
+#endif
+  //    T S_exact[n] = {7.065283497082729, 1.040081297712078};
+  fprintf(stderr,"HERE POST\n"); fflush(stderr); fflush(stdout);
+  
+  // now d_A has column-major order matrix
+  fprintf(stderr,"HERE2\n"); fflush(stderr); fflush(stdout);
+    
+#if(0) // debug
+    cudaStat1 = cudaMemcpy(A, d_A, sizeof(T)*lda*n, cudaMemcpyDeviceToHost);
+    assert(cudaSuccess == cudaStat1);
+    cudaStat1 = cudaDeviceSynchronize();
+    assert(cudaSuccess == cudaStat1);
     printf("A = (matlab base-1)\n");
     printMatrix(m, n, A, lda, "A");
     printf("=====\n");
-
-    double t0 = timer<double>();
-// step 1: create cusolverDn/cublas handle
-    cusolver_status = cusolverDnCreate(&cusolverH);
-    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
-
-    cublas_status = cublasCreate(&cublasH);
-    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
-
-// step 2: copy A and B to device
-    cudaStat1 = cudaMalloc ((void**)&d_A  , sizeof(T)*lda*n);
-    cudaStat2 = cudaMalloc ((void**)&d_S  , sizeof(T)*n);
-    cudaStat3 = cudaMalloc ((void**)&d_U  , sizeof(T)*lda*m);
-    cudaStat4 = cudaMalloc ((void**)&d_VT , sizeof(T)*lda*n);
-    cudaStat5 = cudaMalloc ((void**)&devInfo, sizeof(int));
-    cudaStat6 = cudaMalloc ((void**)&d_W  , sizeof(T)*lda*n);
-    assert(cudaSuccess == cudaStat1);
-    assert(cudaSuccess == cudaStat2);
-    assert(cudaSuccess == cudaStat3);
-    assert(cudaSuccess == cudaStat4);
-    assert(cudaSuccess == cudaStat5);
-    assert(cudaSuccess == cudaStat6);
-
-    cudaStat1 = cudaMemcpy(d_A, A, sizeof(T)*lda*n, cudaMemcpyHostToDevice);
-    assert(cudaSuccess == cudaStat1);
-
-// step 3: query working space of SVD
-    cusolver_status = cusolverDnDgesvd_bufferSize(
-        cusolverH,
-        m,
-        n,
-        &lwork );
-    assert (cusolver_status == CUSOLVER_STATUS_SUCCESS);
-
-    cudaStat1 = cudaMalloc((void**)&d_work , sizeof(T)*lwork);
-    assert(cudaSuccess == cudaStat1);
-    double t1 = timer<double>();
-    fprintf(stderr,"SVD init: %g\n",t1-t0); fflush(stderr); fflush(stdout);
-
-// step 4: compute SVD
-    double t0c = timer<double>();
-    signed char jobu = 'A'; // all m columns of U
-    signed char jobvt = 'A'; // all n columns of VT
-    cusolver_status = cusolverDngesvd(
-        cusolverH,
-        jobu,
-        jobvt,
-        m,
-        n,
-        d_A,
-        lda,
-        d_S,
-        d_U,
-        lda,  // ldu
-        d_VT,
-        lda, // ldvt,
-        d_work,
-        lwork,
-        d_rwork,
-        devInfo);
-    cudaStat1 = cudaDeviceSynchronize();
-    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
-    assert(cudaSuccess == cudaStat1);
-    double t1c = timer<double>();
-    fprintf(stderr,"SVD compute: %g\n",t1-t0); fflush(stderr); fflush(stdout);
-
-
-
-    double t0h = timer<double>();
-    cudaStat1 = cudaMemcpy(U , d_U , sizeof(T)*lda*m, cudaMemcpyDeviceToHost);
-    cudaStat2 = cudaMemcpy(VT, d_VT, sizeof(T)*lda*n, cudaMemcpyDeviceToHost);
-    cudaStat3 = cudaMemcpy(S , d_S , sizeof(T)*n    , cudaMemcpyDeviceToHost);
-    cudaStat4 = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost);
-    assert(cudaSuccess == cudaStat1);
-    assert(cudaSuccess == cudaStat2);
-    assert(cudaSuccess == cudaStat3);
-    assert(cudaSuccess == cudaStat4);
-
-    printf("after gesvd: info_gpu = %d\n", info_gpu);
-    assert(0 == info_gpu);
+    printf("A = (matlab base-1)\n");
+    printMatrix2(m, n, A, lda, "A");
     printf("=====\n");
+#endif
 
+  fprintf(stderr,"HERE3\n"); fflush(stderr); fflush(stdout);
+
+  cudaStat2 = cudaMalloc ((void**)&d_S  , sizeof(T)*MIN(n,m));
+  cudaStat3 = cudaMalloc ((void**)&d_U  , sizeof(T)*ldureal*m);
+  cudaStat4 = cudaMalloc ((void**)&d_VT , sizeof(T)*ldvt*n);
+  cudaStat5 = cudaMalloc ((void**)&devInfo, sizeof(int));
+  cudaStat6 = cudaMalloc ((void**)&d_W  , sizeof(T)*lda*n);
+  //    assert(cudaSuccess == cudaStat1);
+  assert(cudaSuccess == cudaStat2);
+  assert(cudaSuccess == cudaStat3);
+  assert(cudaSuccess == cudaStat4);
+  assert(cudaSuccess == cudaStat5);
+  assert(cudaSuccess == cudaStat6);
+
+  // host->device
+  //    cudaStat1 = cudaMemcpy(d_A, A, sizeof(T)*lda*n, cudaMemcpyHostToDevice);
+  //    assert(cudaSuccess == cudaStat1);
+
+  // step 3: query working space of SVD
+  //The dense matrices are assumed to be stored in column-major order in memory.
+  cusolver_status = cusolverDnDgesvd_bufferSize(
+                                                cusolverH,
+                                                m,
+                                                n,
+                                                &lwork );
+  assert (cusolver_status == CUSOLVER_STATUS_SUCCESS);
+
+  cudaStat1 = cudaMalloc((void**)&d_work , sizeof(T)*lwork);
+  assert(cudaSuccess == cudaStat1);
+  double t1 = timer<double>();
+  fprintf(stderr,"SVD init: %g\n",t1-t0); fflush(stderr); fflush(stdout);
+
+  // step 4: compute SVD
+  double t0c = timer<double>();
+  signed char jobu = 'A'; // all m columns of U
+  signed char jobvt = 'A'; // all n columns of VT
+  cusolver_status = cusolverDngesvd(
+                                    cusolverH,
+                                    jobu,
+                                    jobvt,
+                                    m,
+                                    n,
+                                    d_A,
+                                    lda,
+                                    d_S,
+                                    d_U,
+                                    ldu,
+                                    d_VT,
+                                    ldvt,
+                                    d_work,
+                                    lwork,
+                                    d_rwork,
+                                    devInfo);
+
+
+  cudaStat4 = cudaMemcpy(&info_gpu, devInfo, sizeof(int), cudaMemcpyDeviceToHost);
+  printf("after gesvd: info_gpu = %d\n", info_gpu); fflush(stdout);
+  assert(0 == info_gpu);
+  printf("=====\n"); fflush(stdout);
+
+  cudaStat1 = cudaDeviceSynchronize();
+  assert(cudaSuccess == cudaStat1);
+  fprintf(stderr,"BAD: %d\n",cusolver_status); fflush(stderr);
+  assert(CUSOLVER_STATUS_SUCCESS == cusolver_status);
+  double t1c = timer<double>();
+  fprintf(stderr,"SVD compute: %g\n",t1-t0); fflush(stderr); fflush(stdout);
+
+
+
+#if(0)
+    /////////////////////////
+    // Copy solution device->host
+    double t0h = timer<double>();
+    cudaStat1 = cudaMemcpy(U , d_U , sizeof(T)*ldureal*m, cudaMemcpyDeviceToHost);
+    cudaStat2 = cudaMemcpy(VT, d_VT, sizeof(T)*ldvt*n, cudaMemcpyDeviceToHost);
+    cudaStat3 = cudaMemcpy(S , d_S , sizeof(T)*MIN(n,m), cudaMemcpyDeviceToHost);
+    assert(cudaSuccess == cudaStat1);
+    assert(cudaSuccess == cudaStat2);
+    assert(cudaSuccess == cudaStat3);
+    assert(cudaSuccess == cudaStat4);
+  
+
+  if(0){ // debug
     printf("S = (matlab base-1)\n");
     printMatrix(n, 1, S, lda, "S");
     printf("=====\n");
-
+      
     printf("U = (matlab base-1)\n");
-    printMatrix(m, m, U, lda, "U");
+    printMatrix(m, m, U, ldureal, "U");
     printf("=====\n");
-
+      
     printf("VT = (matlab base-1)\n");
-    printMatrix(n, n, VT, lda, "VT");
+    printMatrix(n, n, VT, ldvt, "VT");
     printf("=====\n");
 
-// step 5: measure error of singular value
-    T ds_sup = 0;
-    for(int j = 0; j < n; j++){
-        T err = fabs( S[j] - S_exact[j] );
-        ds_sup = (ds_sup > err)? ds_sup : err;
-    }
-    printf("|S - S_exact| = %E \n", ds_sup);
-    double t1h = timer<double>();
-    fprintf(stderr,"SVD back to host: %g\n",t1h-t0h); fflush(stderr); fflush(stdout);
+    /////////////////////////
+    // measure error of singular value
+    //      T ds_sup = 0;
+    //      for(int j = 0; j < n; j++){
+    //        T err = fabs( S[j] - S_exact[j] );
+    //        ds_sup = (ds_sup > err)? ds_sup : err;
+    //      }
+    //      printf("|S - S_exact| = %E \n", ds_sup);
+  }
+  double t1h = timer<double>();
+  fprintf(stderr,"SVD back to host: %g\n",t1h-t0h); fflush(stderr); fflush(stdout);
+#endif
 
-    // now check
-    double t0c1 = timer<double>();
-// step 6: |A - U*S*VT|
-    // W = S*VT
-    cublas_status = cublasdgmm(
-        cublasH,
-        CUBLAS_SIDE_LEFT,
-        n,
-        n,
-        d_VT,
-        lda,
-        d_S,
-         1,
-        d_W,
-        lda);
-    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
-    double t1c1 = timer<double>();
-    fprintf(stderr,"SVD check1: %g\n",t1c1-t0c1); fflush(stderr); fflush(stdout);
+  /////////////////////////
+  // now check
+  double t0c1 = timer<double>();
+  // step 5: |A - U*S*VT|
+  // W = S*VT
+  cublas_status = cublasdgmm(
+                             cublasH,
+                             CUBLAS_SIDE_LEFT,
+                             n,
+                             n,
+                             d_VT,
+                             ldvt,
+                             d_S,
+                             1,
+                             d_W,
+                             lda);
+  assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+  double t1c1 = timer<double>();
+  fprintf(stderr,"SVD check1: %g\n",t1c1-t0c1); fflush(stderr); fflush(stdout);
 
 
  
-    // A := -U*W + A
-    double t0c2 = timer<double>();
-    cudaStat1 = cudaMemcpy(d_A, A, sizeof(T)*lda*n, cudaMemcpyHostToDevice);
-    assert(cudaSuccess == cudaStat1);
-    cublas_status = cublasgemm(
-        cublasH,
-        CUBLAS_OP_N, // U
-        CUBLAS_OP_N, // W
-        m, // number of rows of A
-        n, // number of columns of A
-        n, // number of columns of U 
-        &h_minus_one, /* host pointer */
-        d_U, // U
-        lda,
-        d_W, // W
-        lda,
-        &h_one, /* hostpointer */
-        d_A,
-        lda);
-    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
-    double t1c2 = timer<double>();
-    fprintf(stderr,"SVD check2: %g\n",t1c2-t0c2); fflush(stderr); fflush(stdout);
+  // A := -U*W + A
+  double t0c2 = timer<double>();
+  cudaStat1 = cudaMemcpy(d_A, d_A0, sizeof(T)*lda*n, cudaMemcpyDeviceToDevice); // copy because original d_A was destroyed
+  assert(cudaSuccess == cudaStat1);
+  cublas_status = cublasgemm(
+                             cublasH,
+                             CUBLAS_OP_N, // U
+                             CUBLAS_OP_N, // W
+                             m, // number of rows of A
+                             n, // number of columns of A
+                             n, // number of columns of U 
+                             &h_minus_one, /* host pointer */
+                             d_U, // U
+                             ldu,
+                             d_W, // W
+                             lda,
+                             &h_one, /* hostpointer */
+                             d_A,
+                             lda);
+  assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+  double t1c2 = timer<double>();
+  fprintf(stderr,"SVD check2: %g\n",t1c2-t0c2); fflush(stderr); fflush(stdout);
 
-    double t0c3 = timer<double>();
-    T dR_fro = 0.0;
-    cublas_status = cublasnrm2(
-        cublasH, lda*n, d_A, 1, &dR_fro);
-    assert(CUBLAS_STATUS_SUCCESS == cublas_status);
+  double t0c3 = timer<double>();
+  T dR_fro = 0.0;
+  cublas_status = cublasnrm2(
+                             cublasH, lda*n, d_A, 1, &dR_fro);
+  assert(CUBLAS_STATUS_SUCCESS == cublas_status);
 
-    printf("|A - U*S*VT| = %E \n", dR_fro);
-    double t1c3 = timer<double>();
-    fprintf(stderr,"SVD check3: %g\n",t1c3-t0c3); fflush(stderr); fflush(stdout);
+  printf("|A - U*S*VT| = %E \n", dR_fro); fflush(stdout);
+  double t1c3 = timer<double>();
+  fprintf(stderr,"SVD check3: %g\n",t1c3-t0c3); fflush(stderr); fflush(stdout);
 
-// free resources
-    double t0f = timer<double>();
-    if (d_A    ) cudaFree(d_A);
-    if (d_S    ) cudaFree(d_S);
-    if (d_U    ) cudaFree(d_U);
-    if (d_VT   ) cudaFree(d_VT);
-    if (devInfo) cudaFree(devInfo);
-    if (d_work ) cudaFree(d_work);
-    if (d_rwork) cudaFree(d_rwork);
-    if (d_W    ) cudaFree(d_W);
+    
+  // free resources
+  double t0f = timer<double>();
+  //if (d_A    ) cudaFree(d_A);
+  if (d_S    ) cudaFree(d_S);
+  if (d_U    ) cudaFree(d_U);
+  if (d_VT   ) cudaFree(d_VT);
+  if (devInfo) cudaFree(devInfo);
+  if (d_work ) cudaFree(d_work);
+  if (d_rwork) cudaFree(d_rwork);
+  if (d_W    ) cudaFree(d_W);
 
-    if (cublasH ) cublasDestroy(cublasH);
-    if (cusolverH) cusolverDnDestroy(cusolverH);
-    //    cudaDeviceReset();
-    double t1f = timer<double>();
-    fprintf(stderr,"SVD free: %g\n",t1f-t0f); fflush(stderr); fflush(stdout);
+  if (cublasH ) cublasDestroy(cublasH);
+  if (cusolverH) cusolverDnDestroy(cusolverH);
+  //    cudaDeviceReset();
+  double t1f = timer<double>();
+  fprintf(stderr,"SVD free: %g\n",t1f-t0f); fflush(stderr); fflush(stdout);
 
-    fprintf(stderr,"end svd inside\n"); fflush(stderr); fflush(stdout);
+  fprintf(stderr,"end svd inside\n"); fflush(stderr); fflush(stdout);
 
-    return 0;
+  return 0;
 }
 
 // Equilibration (precondition) matrix using Sinkhorn Knopp method wrapped to allow any norm
