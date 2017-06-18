@@ -1,3 +1,4 @@
+// original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #ifndef CENTROIDS_H
 #define CENTROIDS_H
 #include <thrust/device_vector.h>

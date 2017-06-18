@@ -83,6 +83,11 @@ void nonrandom_labels(thrust::device_vector<int>& labels, const int *srclabels, 
 "----------------------------------------------------------------------------\n"
 
 namespace h2oaikmeans {
+    volatile std::atomic_int flag(0);
+    inline void my_function(int sig){ // can be called asynchronously
+      fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
+      flag = 1;
+    }
 
     template <typename T>
     H2OAIKMeans<T>::H2OAIKMeans(const T* A, int k, size_t n, size_t d)
@@ -127,7 +132,7 @@ namespace h2oaikmeans {
       }
 
       double t0 = timer<double>();
-      kmeans::kmeans<T>(n, d, k, data, labels, centroids, distances, n_gpu, max_iterations, true, thresh);
+      kmeans::kmeans<T>(&flag, n, d, k, data, labels, centroids, distances, n_gpu, max_iterations, true, thresh);
       double time = static_cast<double>(timer<double>() - t0);
       std::cout << "  Time: " << time << " s" << std::endl;
 
@@ -144,7 +149,8 @@ namespace h2oaikmeans {
     int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, T threshold, const T* srcdata, const int* srclabels, void ** res) {
       int n=rows;
       int d=cols;
-
+      signal(SIGINT, my_function);
+      signal(SIGTERM, my_function);
 
       int printsrcdata=0;
       if(printsrcdata){
@@ -192,7 +198,7 @@ namespace h2oaikmeans {
       double timetransfer = static_cast<double>(timer<double>() - t0t);
 
       double t0 = timer<double>();
-      kmeans::kmeans<T>(n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
+      kmeans::kmeans<T>(&flag, n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
       double timefit = static_cast<double>(timer<double>() - t0);
       std::cout << "  Time fit: " << time << " s" << std::endl;
       fprintf(stderr,"Timetransfer: %g Timefit: %g\n",timetransfer,timefit); fflush(stderr);

@@ -1,3 +1,4 @@
+// original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #include "kmeans_labels.h"
 #include <cublas_v2.h>
 #include <cfloat>

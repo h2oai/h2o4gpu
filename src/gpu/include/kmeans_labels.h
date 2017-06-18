@@ -1,3 +1,4 @@
+// original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <thrust/device_vector.h>
 #include <cub/cub.cuh>

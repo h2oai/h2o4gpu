@@ -1,4 +1,7 @@
+// original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
+#include <atomic>
+#include <signal.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 #include "centroids.h"
@@ -52,6 +55,7 @@ namespace kmeans {
 
   template<typename T>
     int kmeans(
+        volatile std::atomic_int * flag,
         int n, int d, int k,
         thrust::device_vector<T>** data,
         thrust::device_vector<int>** labels,
@@ -101,6 +105,7 @@ namespace kmeans {
 
       int i=0;
       for(; i < max_iterations; i++) {
+        if (*flag) continue;
         //Average the centroids from each device
         if (n_gpu > 1) {
           for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
@@ -151,6 +156,10 @@ namespace kmeans {
             return i + 1;
           }
         }
+      }
+      if (*flag) {
+        fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
+        *flag = 0; // set flag
       }
       for (int q = 0; q < n_gpu; q++) {
         cudaSetDevice(q);
