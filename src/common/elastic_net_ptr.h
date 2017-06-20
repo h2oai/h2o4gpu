@@ -173,43 +173,81 @@ template<typename T>
 
 
    template<typename T>
-     double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+     double ElasticNetptr(int dopredict,
+                          int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                           double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                           ,int givefullpath
                           ,T **Xvsalphalambda, T **Xvsalpha
+                          ,T **validPredsvsalphalambda, T **validPredsvsalpha
+                          ,size_t *countfull, size_t *countshort, size_t *countmore
+                          );
+   template<typename T>
+     double ElasticNetptr_fit(
+                          int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                          double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                          ,int givefullpath
+                          ,T **Xvsalphalambda, T **Xvsalpha
+                          ,T **validPredsvsalphalambda, T **validPredsvsalpha
+                          ,size_t *countfull, size_t *countshort, size_t *countmore
+                          );
+   template<typename T>
+     double ElasticNetptr_predict(
+                          int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                          size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                          double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                          void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                          ,int givefullpath
+                          ,T **Xvsalphalambda, T **Xvsalpha
+                          ,T **validPredsvsalphalambda, T **validPredsvsalpha
                           ,size_t *countfull, size_t *countshort, size_t *countmore
                           );
 
-   
+
 template <typename T>
   int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight, void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+
+
+ template <typename T>
+   int modelFree2(T *aptr);
+   
+
   
 #ifdef __cplusplus
     extern "C" {
 #endif
-      double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                  double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+      double elastic_net_ptr_double(int dopredict,
+                                    int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                                    size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                                    double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                     ,int givefullpath
                                     ,double **Xvsalphalambda, double **Xvsalpha
+                                    ,double **validPredsvsalphalambda, double **validPredsvsalpha
                                     ,size_t *countfull, size_t *countshort, size_t *countmore
                                     );
-      double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+      double elastic_net_ptr_float(int dopredict,
+                                   int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                    size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                    double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                    void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                    ,int givefullpath
                                    ,float **Xvsalphalambda, float **Xvsalpha
+                                   ,float **validPredsvsalphalambda, float **validPredsvsalpha
                                    ,size_t *countfull, size_t *countshort, size_t *countmore
                                    );
 
+
+      int modelfree_double(double *aptr);
+      int modelfree_float(float *aptr);
+      
 #ifdef __cplusplus
     }
 #endif
 
 }
-
+ 
 #endif

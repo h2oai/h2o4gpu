@@ -83,7 +83,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
   // Used by elastic_net.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0), _de(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _dopredict(0), _data(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _me=_wDev; // assume thread same as wDev if not given
@@ -155,7 +155,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
 
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0),_de(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype), _dopredict(0), _data(0),_de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
   _me=_wDev; // assume thread=wDev if not given
@@ -260,7 +260,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
   // Used by elastic_net_ptr.cpp to pass CPU data and put on GPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0), _dopredict(0), _data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -309,8 +309,15 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
     cudaMalloc(&_weight, this->_m * sizeof(T)); // allocate on GPU
     double t1 = timer<double>();
+
     cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-    cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+    if(infoy->orig_data){
+      cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      _dopredict=0;
+    }
+    else{
+      _dopredict=1;
+    }
     if(vinfo->orig_data){
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
     }
@@ -359,7 +366,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
   // datatype=1: GPU pointer to data
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype), _dopredict(0), _data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -403,6 +410,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     _vdatay = vdatay;
     _weight = weight;
 
+    if(_datay) _dopredict=0;
+    else _dopredict=1;
+
+    
     if(_weight==NULL){
       DEBUG_FPRINTF(stderr,"datatype=1: making up unity weights: %d %p\n",m,&_weight);
       CUDACHECK(cudaMalloc(&_weight, m * sizeof(T))); // allocate on GPU
@@ -453,8 +464,15 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
       cudaMalloc(&_vdatay, this->_mvalid * sizeof(T)); // allocate on GPU
       cudaMalloc(&_weight, this->_m * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
+
       cudaMemcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
-      cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+      if(infoy->orig_data){
+        cudaMemcpy(_datay, infoy->orig_data, this->_m * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
+        _dopredict=0;
+      }
+      else{
+        _dopredict=1;
+      }
       cudaMemcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       cudaMemcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T),cudaMemcpyHostToDevice); // copy from orig CPU data to GPU
       if(weightinfo->orig_data){
@@ -544,6 +562,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _vdatay = A._vdatay;
       _weight = A._weight;
       _de = A._de;
+      _dopredict = A._dopredict;
       //      Init();
       //      this->_done_equil=1;
     }
@@ -555,6 +574,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       _vdatay = A._vdatay;
       _weight = A._weight;
       _de = A._de;
+      _dopredict = A._dopredict;
       Init();
       this->_done_equil=1;
     }
@@ -571,7 +591,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
       if(A._weight) cudaMalloc(&_weight, A._m * sizeof(T)); // allocate on GPU
       double t1 = timer<double>();
       if(A._data) cudaMemcpyPeer(_data, _wDev, A._data, A._wDev, A._m * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
-      if(A._datay) cudaMemcpyPeer(_datay, _wDev, A._datay, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+      if(A._datay){
+        cudaMemcpyPeer(_datay, _wDev, A._datay, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
+        _dopredict=0;
+      }
+      else{
+        _dopredict=1;
+      }
       if(A._vdata) cudaMemcpyPeer(_vdata, _wDev, A._vdata, A._wDev, A._mvalid * A._n * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._vdatay) cudaMemcpyPeer(_vdatay, _wDev, A._vdatay, A._wDev, A._mvalid * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
       if(A._weight) cudaMemcpyPeer(_weight, _wDev, A._weight, A._wDev, A._m * sizeof(T)); // dest: _data destid: _wDev  source: A._data sourceid: A._wDev
@@ -694,12 +720,14 @@ void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(datatype==1){
-    cudaMemcpy(*data, _data, size* sizeof(T),cudaMemcpyDeviceToHost);
-    CUDA_CHECK_ERR();
-  }
-  else{
-    std::memcpy(*data, _data, size * sizeof(T));
+  if(_data){
+    if(datatype==1){
+      cudaMemcpy(*data, _data, size* sizeof(T),cudaMemcpyDeviceToHost);
+      CUDA_CHECK_ERR();
+    }
+    else{
+      std::memcpy(*data, _data, size * sizeof(T));
+    }
   }
 
   return;
@@ -709,12 +737,14 @@ void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(datatype==1){
-    cudaMemcpy(*data, _datay, size* sizeof(T),cudaMemcpyDeviceToHost);
-    CUDA_CHECK_ERR();
-  }
-  else{
-    std::memcpy(*data, _datay, size * sizeof(T));
+  if(_datay){
+    if(datatype==1){
+      cudaMemcpy(*data, _datay, size* sizeof(T),cudaMemcpyDeviceToHost);
+      CUDA_CHECK_ERR();
+    }
+    else{
+      std::memcpy(*data, _datay, size * sizeof(T));
+    }
   }
 
   return;
@@ -725,12 +755,14 @@ void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(datatype==1){
-    cudaMemcpy(*data, _vdata, size* sizeof(T),cudaMemcpyDeviceToHost);
-    CUDA_CHECK_ERR();
-  }
-  else{
-    std::memcpy(*data, _vdata, size * sizeof(T));
+  if(_vdata){
+    if(datatype==1){
+      cudaMemcpy(*data, _vdata, size* sizeof(T),cudaMemcpyDeviceToHost);
+      CUDA_CHECK_ERR();
+    }
+    else{
+      std::memcpy(*data, _vdata, size * sizeof(T));
+    }
   }
 
   return;
@@ -740,12 +772,14 @@ void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(datatype==1){
-    cudaMemcpy(*data, _vdatay, size* sizeof(T),cudaMemcpyDeviceToHost);
-    CUDA_CHECK_ERR();
-  }
-  else{
-    std::memcpy(*data, _vdatay, size * sizeof(T));
+  if(_vdatay){
+    if(datatype==1){
+      cudaMemcpy(*data, _vdatay, size* sizeof(T),cudaMemcpyDeviceToHost);
+      CUDA_CHECK_ERR();
+    }
+    else{
+      std::memcpy(*data, _vdatay, size * sizeof(T));
+    }
   }
 
 
@@ -1642,6 +1676,8 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
 {
   CUDACHECK(cudaSetDevice(_wDev));
 
+  if(_datay==NULL) return(0);
+
   // setup arguments
   summary_stats_unary_op<T>  unary_op;
   summary_stats_binary_op<T> binary_op;
@@ -1909,11 +1945,27 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
                                     const float *data, const float *datay, const float *vdata, const float *vdatay, const float *weight,
                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
 
+
+
+  template <typename T>
+int modelFree1(T *aptr){
+
+  cudaFree(aptr);
+  CUDA_CHECK_ERR();
+  return(0);
+}
+
+
+  template int modelFree1<float>(float *aptr);
+  template int modelFree1<double>(double *aptr);
+  
+
+
 }  // namespace h2oaiglm
 
-  #ifdef __cplusplus
-  extern "C" {
-    #endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 
     int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                         const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
@@ -1926,9 +1978,16 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       return h2oaiglm::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
 
-    #ifdef __cplusplus
+   int modelfree1_double(double *aptr){
+    return h2oaiglm::modelFree1<double>(aptr);
   }
-  #endif
+  int modelfree1_float(float *aptr){
+    return h2oaiglm::modelFree1<float>(aptr);
+  }
+
+#ifdef __cplusplus
+}
+#endif
 
 
 

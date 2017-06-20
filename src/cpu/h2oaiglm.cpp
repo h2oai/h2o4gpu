@@ -458,6 +458,23 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 }
 
 
+template <typename T, typename M, typename P>
+int H2OAIGLM<T, M, P>::Predict(void) {
+  double t0 = timer<double>();
+
+  // compute valid from validPreds = Avalid.xsolution
+  _A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.), _validPreds);
+
+  // compute rmse (not yet)
+
+  // compute mean (not yet)
+
+  // compute stddev (not yet)
+
+  return 0;
+}
+
+
 
 template <typename T, typename M, typename P>
 void H2OAIGLM<T, M, P>::ResetX(void) {

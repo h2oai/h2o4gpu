@@ -164,6 +164,7 @@ class H2OAIGLM {
   // Solve for specific objective.
   H2OAIGLMStatus Solve(const std::vector<FunctionObj<T> >& f,
                    const std::vector<FunctionObj<T> >& g);
+  int Predict(void);
   void ResetX(void);
 
   // Getters for solution variables and parameters.

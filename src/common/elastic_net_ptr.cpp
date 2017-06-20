@@ -71,11 +71,23 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
                                        "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), lambdatype, fi, a, alpha,intercept,standardize, (int)i, \
                                        lambda, dof, trainRMSE, ivalidRMSE, validRMSE);for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
+#define Printmescore_predict(thefile)  fprintf(thefile,                         \
+                                       "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d intercept: %d standardize: %d i: %d " \
+                                       "validRMSE: %f ", \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a,intercept,standardize, (int)i, \
+                                       validRMSE); fflush(thefile);
+#define Printmescore_predictnovalid(thefile)  fprintf(thefile,                         \
+                                       "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d intercept: %d standardize: %d i: %d ", \
+                                       _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a,intercept,standardize, (int)i); fflush(thefile);
 #else
 #define Printmescore(thefile)
+#define Printmescore_predict(thefile)
+#define Printmescore_predictnovalid(thefile)
 #endif
 
 #define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
+#define Printmescoresimple_predict(thefile)   fprintf(thefile,"%21.15g %d %d %21.15g\n", timer<double>(), a, i, validRMSE); fflush(thefile);
+#define Printmescoresimple_predictnovalid(thefile)   fprintf(thefile,"%21.15g %d %d\n", timer<double>(), a, i); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
@@ -181,18 +193,65 @@ namespace h2oaiglm {
   // for many values of \lambda and multiple values of \alpha
   // See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
   // m and n are training data size
+#define TRAINRMSE 0
+#define CVRMSE 1
+#define VALIDRMSE 2
+  
 #define NUMRMSE 3 // train, hold-out CV, valid
 #define NUMOTHER 3 // for lambda, alpha, tol
-  template<typename T>
-  double ElasticNetptr(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                       size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                       double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                       ,int givefullpath
-                       ,T **Xvsalphalambda, T **Xvsalpha
-                       ,size_t *countfull, size_t *countshort, size_t *countmore
-                       ) {
 
+template<typename T>
+double ElasticNetptr(int dopredict,
+                     int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                     size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                     double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                     ,int givefullpath
+                     ,T **Xvsalphalambda, T **Xvsalpha
+                     ,T **validPredsvsalphalambda, T **validPredsvsalpha
+                     ,size_t *countfull, size_t *countshort, size_t *countmore
+                     ) {
+
+
+  if(dopredict){
+    return ElasticNetptr_fit(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
+                             mTrain,  n,  mValid, intercept, standardize,
+                             lambda_min_ratio, nLambdas, nFolds, nAlphas,
+                             trainXptr, trainYptr, validXptr, validYptr, weightptr
+                             ,givefullpath
+                             ,Xvsalphalambda, Xvsalpha
+                             ,validPredsvsalphalambda, validPredsvsalpha
+                             ,countfull, countshort,  countmore);
+  }
+  else{
+    return ElasticNetptr_predict(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
+                                 mTrain,  n,  mValid, intercept, standardize,
+                                 lambda_min_ratio, nLambdas, nFolds, nAlphas,
+                                 trainXptr, trainYptr, validXptr, validYptr, weightptr
+                                 ,givefullpath
+                                 ,Xvsalphalambda, Xvsalpha
+                                 ,validPredsvsalphalambda, validPredsvsalpha
+                                 ,countfull, countshort,  countmore);
+  }
+
+}
+
+
+#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
+#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+
+
+template<typename T>
+double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                     size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                     double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                     ,int givefullpath
+                     ,T **Xvsalphalambda, T **Xvsalpha
+                     ,T **validPredsvsalphalambda, T **validPredsvsalpha
+                     ,size_t *countfull, size_t *countshort, size_t *countmore
+                     ) {
+    
     if(0){
       std::default_random_engine generator;
       std::uniform_int_distribution<int> distribution(-100,100);
@@ -215,8 +274,7 @@ namespace h2oaiglm {
       fprintf(stderr,"\n"); fflush(stderr);      
       exit(0);
     }
-
-
+    
 
     
     
@@ -253,6 +311,8 @@ namespace h2oaiglm {
     }
 #endif
 
+
+
     // report fold setup
     size_t realfolds=(nFolds==0 ? 1 : nFolds);
     size_t totalfolds=nFolds*( nFolds>1 ? 2 : 1 );
@@ -262,8 +322,6 @@ namespace h2oaiglm {
 
     // setup storage for returning results back to user
     // iterate over predictors (n) or other information fastest so can memcpy X
-#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
-#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
     *countmore=NUMRMSE+NUMOTHER;
     if(givefullpath){
       *countfull=nLambdas*nAlphas*(n + *countmore);
@@ -275,7 +333,9 @@ namespace h2oaiglm {
     }
     *countshort=nAlphas*(n + *countmore);
     *Xvsalpha = (T*) calloc(*countshort,sizeof(T));
-    printf("inside: countfull=%d countshort=%d countmore=%d\n",*countfull,*countshort,*countmore); fflush(stdout);
+    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
+
+
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
@@ -610,7 +670,7 @@ namespace h2oaiglm {
             double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
             double tol=tol0;
             T lambda=-1;
-            double tbestalpha,tbestlambda,tbesttol=std::numeric_limits<double>::max(),tbestrmse[NUMRMSE];
+            double tbestalpha=-1,tbestlambda=-1,tbesttol=std::numeric_limits<double>::max(),tbestrmse[NUMRMSE];
             RMSELOOP(ri) tbestrmse[ri]=std::numeric_limits<double>::max();
 
             // LOOP over lambda
@@ -919,7 +979,7 @@ namespace h2oaiglm {
 
                     double fracdof=0.5; //USER parameter.
                     //                    if((double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
-                    if(RELAXEARLYSTOP||ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+                    if(RELAXEARLYSTOP || ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
                       //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
                       // STOP EARLY CHECK
                       int k = 3; //TODO: ask the user for this parameter
@@ -1067,63 +1127,407 @@ namespace h2oaiglm {
   }
 
 
-  template double ElasticNetptr<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+
+
+template<typename T>
+double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                             size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                             double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                             void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                             ,int givefullpath
+                             ,T **Xvsalphalambda, T **Xvsalpha
+                             ,T **validPredsvsalphalambda, T **validPredsvsalpha
+                             ,size_t *countfull, size_t *countshort, size_t *countmore
+                     ) {
+    
+    
+    
+    signal(SIGINT, my_function);
+    signal(SIGTERM, my_function);
+    int nlambda = nLambdas;
+    if (nlambda <= 1) {
+      cerr << "Must use nlambda > 1\n";
+      exit(-1);
+    }
+
+
+    // critical files for all threads
+    char filename0[100];
+    sprintf(filename0, "predrmse.txt");
+    FILE *filrmse = fopen(filename0, "wt");
+    if (filrmse == NULL) {
+      cerr << "Cannot open filename0=" << filename0 << endl;
+      exit(0);
+    }
+    
+    if(VERBOSEENET){
+      cout << "Hardware: " << HARDWARE << endl;
+    }
+
+    // number of openmp threads = number of cuda devices to use
+#ifdef _OPENMP
+    int omt=omp_get_max_threads();
+    //      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
+    omp_set_num_threads(nThreads);  // not necessary, but most useful mode so far
+    int nth=omp_get_max_threads();
+    //      nGPUs=nth; // openmp threads = cuda/cpu devices used
+    omp_set_dynamic(0);
+#if(USEMKL==1)
+    mkl_set_dynamic(0);
+#endif
+    omp_set_nested(1);
+    omp_set_max_active_levels(2);
+#ifdef DEBUG
+    cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
+#endif
+    if (nAlphas % nThreads != 0) {
+      DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
+    }
+#endif
+
+
+    // setup storage for returning results back to user
+    if(givefullpath){
+      *validPredsvsalphalambda = (T*) calloc(*countfull/(n+NUMOTHER)*mValid,sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
+    }
+    else{ // only give back solution for optimal lambda after CV is done
+      *validPredsvsalphalambda = NULL;
+    }
+    *validPredsvsalpha = (T*) calloc(*countshort/(n+NUMOTHER)*mValid,sizeof(T));
+    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
+
+    // for source, create class objects that creates cuda memory, cpu memory, etc.
+    // This takes-in raw GPU pointer
+    //  h2oaiglm::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+    // assume source thread is 0th thread (TODO: need to ensure?)
+    int sourceme=sourceDev;
+    h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
+                                      reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
+                                      reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
+                                      reinterpret_cast<T *>(weightptr));
+    // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
+
+    // Setup each thread's h2oaiglm
+    double t = timer<double>();
+    double t1me0;
+
+    ////////////////////////////////
+    // PARALLEL REGION
+#pragma omp parallel proc_bind(master)
+    {
+#ifdef _OPENMP
+      int me = omp_get_thread_num();
+      //https://software.intel.com/en-us/node/522115
+      int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
+      // set number of mkl threads per openmp thread so that not oversubscribing cores
+      int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+#if(USEMKL==1)
+      //mkl_set_num_threads_local(mklperthread);
+      mkl_set_num_threads_local(mklperthread);
+      //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
+#endif
+#else
+      int me=0;
+#endif
+
+      int blasnumber;
+#ifdef HAVECUDA
+      blasnumber=CUDA_MAJOR;
+#else
+      blasnumber=mklperthread; // roughly accurate for openblas as well
+#endif
+        
+      // choose GPU device ID for each thread
+      int wDev = (nGPUs>0 ? me%nGPUs : 0);
+
+      // Setup file output
+      char filename[100];
+      sprintf(filename, "predme%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, sharedA, nThreads, nGPUs);
+      FILE *fil = fopen(filename, "wt");
+      if (fil == NULL) {
+        cerr << "Cannot open filename=" << filename << endl;
+        exit(0);
+      }
+      else fflush(fil);
+
+      
+
+      ////////////
+      //
+      // create class objects that creates cuda memory, cpu memory, etc.
+      //
+      ////////////
+      double t0 = timer<double>();
+      DEBUG_FPRINTF(fil, "Pred: Moving data to the GPU. Starting at %21.15g\n", t0);
+#pragma omp barrier // not required barrier
+      h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
+      h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
+#pragma omp barrier // not required barrier
+      double t1 = timer<double>();
+      if(me==0){ //only thread=0 times entire post-warmup procedure
+        t1me0=t1;
+      }
+      DEBUG_FPRINTF(fil, "Pred: Done moving data to the GPU. Stopping at %21.15g\n", t1);
+      DEBUG_FPRINTF(fil, "Pred: Done moving data to the GPU. Took %g secs\n", t1 - t0);
+
+
+      ////////////////////////////////////////////////
+      // BEGIN GLM
+      DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
+
+      int a,i;
+      //////////////////////////////
+      // LOOP OVER ALPHAS
+      ///////////////////////////////
+#pragma omp for schedule(dynamic,1) collapse(1)
+      for (a = 0; a < nAlphas; ++a) { //alpha search
+
+        int nlambdalocal;
+        if(givefullpath){ // then need to loop over same nlambda
+          nlambdalocal=nlambda;
+        }
+        else{
+          nlambdalocal=1; // only 1 lambda
+        }
+
+        // LOOP over lambda
+        for (i = 0; i < nlambdalocal; ++i) {
+
+          // copy existing solution to X0
+          T *X0 = new T[n]();
+          if(givefullpath){
+            memcpy(X0, &((*Xvsalphalambda)[MAPXALL(i,a,0)]),n);
+          }
+          else{
+            memcpy(X0, &((*Xvsalpha)[MAPXBEST(a,0)]),n);
+          }
+
+          // set X from X0
+          h2oaiglm_data.SetInitX(X0);
+
+          // compute predictions
+          h2oaiglm_data.Predict();
+
+          // Get valid prediction
+          std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
+
+          T sdTrainY=1.0 ; // TODO FIXME not impliemented yet
+          T meanTrainY=1.0 ; // TODO FIXME not impliemented yet
+          // correct validPreds
+          if(standardize){
+            for (size_t i = 0; i < mValid; ++i) { //row
+              // reverse (fitted) standardization
+              validPreds[i]*=sdTrainY; //scale
+              validPreds[i]+=meanTrainY; //intercept
+            }
+          }
+          
+          // save preds
+          if(givefullpath){ // save all preds
+            memcpy(&((*validPredsvsalphalambda)[MAPXALL(i,a,0)]),&validPreds[0],mValid);
+          }
+          else{ // save only best pred per lambda
+            memcpy(&((*validPredsvsalpha)[MAPXBEST(a,0)]),&validPreds[0],mValid);
+          }
+
+          
+          // get validY so can compute RMSE
+          T *validY=NULL;
+          validY = (T *) malloc(sizeof(T) * mValid);
+          Asource_.GetValidY(datatype, mValid, &validY);
+
+
+          // Compute RMSE for predictions
+          if(validY!=NULL){
+            T weightsvalid[mValid];
+            for (size_t i = 0; i < mValid; ++i) {//row
+              weightsvalid[i] = 1.0;
+            }
+            
+            T validRMSE = h2oaiglm::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
+            if(standardize) validRMSE *= sdTrainY;
+
+            if(givefullpath){
+              // Save rmse to return to user
+              int ri=VALIDRMSE; (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = validRMSE; // overwrite any old value done during fit
+            }
+            else{
+              int ri=VALIDRMSE; (*Xvsalpha)[MAPXBEST(a,n+ri)] = validRMSE;
+            }
+
+            // report scores
+            if(VERBOSEENET) Printmescore_predict(fil);
+#pragma omp critical
+            {
+              if(VERBOSEENET) Printmescore_predict(stdout);
+              Printmescoresimple_predict(filrmse);
+            }
+
+          }
+          else{
+            // report scores
+            if(VERBOSEENET) Printmescore_predictnovalid(fil);
+#pragma omp critical
+            {
+              if(VERBOSEENET) Printmescore_predictnovalid(stdout);
+              Printmescoresimple_predictnovalid(filrmse);
+            }
+
+          }
+
+
+        
+          if(X0) delete [] X0;
+        }// over lambda(s)
+
+
+      }// over alpha
+
+      if (fil != NULL) fclose(fil);
+    } // end parallel region
+
+
+    double tf = timer<double>();
+    if(VERBOSEENET) fprintf(stdout, "END PREDICT: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+    if (flag) {
+      fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
+      flag = 0; // set flag
+    }
+    return tf - t;
+  }
+  
+
+
+
+  template double ElasticNetptr<double>(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                         size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                         double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                         void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                         ,int givefullpath
                                         ,double **Xvsalphalambda, double **Xvsalpha
+                                        ,double **validPredsvsalphalambda, double **validPredsvsalpha
                                         ,size_t *countfull, size_t *countshort, size_t *countmore
                                         );
 
-  template double ElasticNetptr<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+  template double ElasticNetptr<float>(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                        size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                        double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                        ,int givefullpath
                                        ,float **Xvsalphalambda, float **Xvsalpha
+                                       ,float **validPredsvsalphalambda, float **validPredsvsalpha
                                        ,size_t *countfull, size_t *countshort, size_t *countmore
                                        );
 
 
+
+  template double ElasticNetptr_fit<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                                            size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                                            double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                                            void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                            ,int givefullpath
+                                            ,double **Xvsalphalambda, double **Xvsalpha
+                                            ,double **validPredsvsalphalambda, double **validPredsvsalpha
+                                            ,size_t *countfull, size_t *countshort, size_t *countmore
+                                        );
+
+  template double ElasticNetptr_fit<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                                           double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                           ,int givefullpath
+                                           ,float **Xvsalphalambda, float **Xvsalpha
+                                           ,float **validPredsvsalphalambda, float **validPredsvsalpha
+                                           ,size_t *countfull, size_t *countshort, size_t *countmore
+                                           );
+
+
+
+  template double ElasticNetptr_predict<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                                                size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                                                double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                                                void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                                ,int givefullpath
+                                                ,double **Xvsalphalambda, double **Xvsalpha
+                                                ,double **validPredsvsalphalambda, double **validPredsvsalpha
+                                                ,size_t *countfull, size_t *countshort, size_t *countmore
+                                                );
+
+  template double ElasticNetptr_predict<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+                                               size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+                                               double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+                                               void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
+                                               ,int givefullpath
+                                               ,float **Xvsalphalambda, float **Xvsalpha
+                                               ,float **validPredsvsalphalambda, float **validPredsvsalpha
+                                               ,size_t *countfull, size_t *countshort, size_t *countmore
+                                       );
+
+
+
+
+  template <typename T>
+  int modelFree2(T *aptr){
+    free(aptr);
+    return(0);
+  }
+
+  template int modelFree2<float>(float *aptr);
+  template int modelFree2<double>(double *aptr);
   
+
+
 #ifdef __cplusplus
   extern "C" {
 #endif
 
-    double elastic_net_ptr_double(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+    double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                   size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                   double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                   void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                   ,int givefullpath
                                   ,double **Xvsalphalambda, double **Xvsalpha
+                                  ,double **validPredsvsalphalambda, double **validPredsvsalpha
                                   ,size_t *countfull, size_t *countshort, size_t *countmore
                                   ) {
-      return ElasticNetptr<double>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
+      return ElasticNetptr<double>(dopredict,
+                                   sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                    mTrain, n, mValid, intercept, standardize,
                                    lambda_min_ratio, nLambdas, nFolds, nAlphas,
                                    trainXptr, trainYptr, validXptr, validYptr, weightptr
                                    ,givefullpath
                                    ,Xvsalphalambda, Xvsalpha
+                                   ,validPredsvsalphalambda, validPredsvsalpha
                                    ,countfull, countshort, countmore
                                    );
     }
-    double elastic_net_ptr_float(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+    double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
                                  double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
                                  ,int givefullpath
                                  ,float **Xvsalphalambda, float **Xvsalpha
+                                 ,float **validPredsvsalphalambda, float **validPredsvsalpha
                                  ,size_t *countfull, size_t *countshort, size_t *countmore
                                  ) {
-      return ElasticNetptr<float>(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
+      return ElasticNetptr<float>(dopredict,
+                                  sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                                   mTrain, n, mValid, intercept, standardize,
                                   lambda_min_ratio, nLambdas, nFolds, nAlphas,
                                   trainXptr, trainYptr, validXptr, validYptr, weightptr
                                   ,givefullpath
                                   ,Xvsalphalambda, Xvsalpha
+                                  ,validPredsvsalphalambda, validPredsvsalpha
                                   ,countfull, countshort, countmore
                                   );
+    }
+
+    int modelfree2_float(float *aptr){
+      return modelFree2<float>(aptr);
+    }
+    int modelfree2_double(double *aptr){
+      return modelFree2<double>(aptr);
     }
 
 #ifdef __cplusplus

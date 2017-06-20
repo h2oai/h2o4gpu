@@ -28,3 +28,14 @@ else:
             return self.solver.getalphas()
         def gettols(self):
             return self.solver.gettols()
+        def predict(self):
+            return self.solver.predict()
+        def fit_predict(self):
+            return self.solver.fit_predict()
+        def finish1(self):
+            return self.solver.finish1()
+        def finish2(self):
+            return self.solver.finish2()
+        def finish(self):
+            return self.solver.finish()
+        

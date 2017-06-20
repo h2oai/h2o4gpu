@@ -767,6 +767,40 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   return status;
 }
 
+  template <typename T, typename M, typename P>
+int H2OAIGLM<T, M, P>::Predict() {
+
+  //  PUSH_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
+  
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  double t0 = timer<double>();
+
+  size_t mvalid = _A.ValidRows();
+
+  // copy over X (assume called SetInitX) directly from CPU to GPU during fit
+  cml::vector<T> xtemp = cml::vector_calloc<T>(mvalid);
+  cml::vector_memcpy(&xtemp, _x); // _x->xtemp
+  
+  // compute valid from validPreds = Avalid.xsolution
+  _A.Mulvalid('n', static_cast<T>(1.), xtemp.data, static_cast<T>(0.), _validPredsp);
+  // copy back to CPU
+  cml::vector_memcpy(mvalid,1,_validPreds, _validPredsp);
+
+  // compute rmse (not yet)
+    
+  // compute mean (not yet)
+
+  // compute stddev (not yet)
+
+  // Free memory.
+  cml::vector_free(&xtemp);
+
+  CUDA_CHECK_ERR();
+
+  return 0;
+}
+
 template <typename T, typename M, typename P>
 void H2OAIGLM<T, M, P>::ResetX(void) {
   if (!_done_init)

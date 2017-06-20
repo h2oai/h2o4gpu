@@ -12,6 +12,7 @@ class MatrixDense : public Matrix<T> {
   int _me;
   int _wDev;
   int _datatype;
+  int _dopredict;
 
  public:
   // TODO: This should be shared cpu/gpu pointer?
@@ -82,6 +83,7 @@ class MatrixDense : public Matrix<T> {
   int wDev() const { return _wDev; }
   int Getme() const { return _me; }
   int Datatype() const { return _datatype; }
+  int DoPredict() const { return _dopredict; }
 };
 
 

@@ -57,7 +57,7 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n, const T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _data(0), _de(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(0), _dopredict(0), _data(0), _de(0) {
   _me=_wDev; // assume thread=wDev if not given  
   _datay=NULL;
   _vdata=NULL;
@@ -106,7 +106,7 @@ MatrixDense<T>::MatrixDense(char ord, size_t m, size_t n, const T *data)
   // no use of datatype when on CPU
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_t m, size_t n, T *data)
-  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype),_data(0), _de(0) {
+  : Matrix<T>(m, n, 0), _sharedA(sharedA), _wDev(wDev), _datatype(datatype), _dopredict(0), _data(0), _de(0) {
   _me=_wDev; // assume thread=wDev if not given
   _datay=NULL;
   _vdata=NULL;
@@ -149,7 +149,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
 }
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, size_t n, size_t mValid, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(0), _dopredict(0), _data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
 
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
@@ -172,6 +172,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
     if(sharedA!=0){ // can't because _data contents get modified, unless do sharedA case and Equil is processed locally before given to other threads
       _data = const_cast<T*>(data);
       _datay = const_cast<T*>(datay);
+      if(_datay)_dopredict=0; else _dopredict=1;
       _vdata = const_cast<T*>(vdata);
       _vdatay = const_cast<T*>(vdatay);
       _weight = const_cast<T*>(weight);
@@ -188,7 +189,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
         _datay = new T[this->_m];
         ASSERT(_datay != 0);
         memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+        _dopredict=0;
       }
+      else _dopredict=1;
 
       if(vinfo->orig_data){
         _vdata = new T[this->_mvalid * this->_n];
@@ -231,7 +234,7 @@ MatrixDense<T>::MatrixDense(int wDev, char ord, size_t m, size_t n, size_t mVali
   // Assume call this function when oustide parallel region and first instance of call to allocating matrix A (_data), etc.
 template <typename T>
 MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char ord, size_t m, size_t n, size_t mValid, T *data, T *datay, T *vdata, T *vdatay, T *weight)
-  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype),_data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
+  : Matrix<T>(m, n, mValid), _sharedA(sharedA), _me(me), _wDev(wDev), _datatype(datatype), _dopredict(0), _data(0), _datay(0), _vdata(0), _vdatay(0), _weight(0), _de(0) {
 
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
@@ -251,6 +254,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     if(sharedA!=0){ // can't do this in case input pointers were from one thread and this function called on multiple threads.  However, currently, this function is only called by outside parallel region when getting first copying. For sharedA case, minimize memory use overall, so allow pointer assignment here just for source (this assumes scoring using internal calculation, not using OLDPREDS because matrix is modified).  So this call isn't only because shared memory case, but rather want minimal memory even on source thread in shared memory case
       _data = const_cast<T*>(data);
       _datay = const_cast<T*>(datay);
+      if(_datay)_dopredict=0; else _dopredict=1;
       _vdata = const_cast<T*>(vdata);
       _vdatay = const_cast<T*>(vdatay);
       _weight = const_cast<T*>(weight);
@@ -268,7 +272,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         _datay = new T[this->_m];
         ASSERT(_datay != 0);
         memcpy(_datay, infoy->orig_data, this->_m * sizeof(T));
+        _dopredict=0;
       }
+      else _dopredict=1;
 
       if(vinfo->orig_data){
         _vdata = new T[this->_mvalid * this->_n];
@@ -369,6 +375,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
     if(A._me == _me || sharedA!=0){ // otherwise, can't do this because original CPU call to MatrixDense(wDev,...data) allocates _data outside openmp scope, and then this function will be called per thread and each thread needs its own _data in order to handle moidfying matrix A with d and e.  But if sharedA=1, then expect source thread to have already modified matrix, so can just do pointer assignment.
       _data   = A._data;
       _datay  = A._datay;
+      _dopredict = A._dopredict;
       _vdata  = A._vdata;
       _vdatay = A._vdatay;
       _weight = A._weight;
@@ -387,7 +394,9 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         _datay = new T[A._m];
         ASSERT(_datay != 0);
         memcpy(_datay, infoy_A->orig_data, A._m * sizeof(T));
+        _dopredict=0;
       }
+      else _dopredict=1;
 
       if(A._vdata){
         _vdata = new T[A._mvalid * A._n];
@@ -466,7 +475,9 @@ void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
 }
 template <typename T>
 void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
-  std::memcpy(*data, _datay, size * sizeof(T));
+  if(_datay){
+    std::memcpy(*data, _datay, size * sizeof(T));
+  }
 }
 
 template <typename T>
@@ -653,6 +664,8 @@ T getVar(size_t len, T *v, T mean) {
 template <typename T>
 int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
+  if(_datay==NULL) return(0);
+  
   int len=0;
 
   // Training mean and stddev
@@ -835,6 +848,15 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
 
 
+
+  template <typename T>
+  int modelFree1(T *aptr){
+    delete aptr;
+    return(0);
+  }
+
+  template int modelFree1<double>(double *aptr);
+  template int modelFree1<float>(float *aptr);
   
 
 }  // namespace h2oaiglm
@@ -842,9 +864,9 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 
 
-  #ifdef __cplusplus
+#ifdef __cplusplus
 extern "C" {
-      #endif
+#endif
 
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                       const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
@@ -857,7 +879,14 @@ extern "C" {
     return h2oaiglm::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
   }
 
-      #ifdef __cplusplus
+  int modelfree1_float(double *aptr){
+    return h2oaiglm::modelFree1<double>(aptr);
+  }
+  int modelfree1_double(float *aptr){
+    return h2oaiglm::modelFree1<float>(aptr);
+  }
+  
+#ifdef __cplusplus
 }
-  #endif
+#endif
 

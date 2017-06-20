@@ -105,6 +105,11 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   tols=enet.gettols()
   print(tols)
 
+  print("Predicting, assuming unity weights")
+  newvalidY = enet.predict(validX)
+  print(newvalidY)
+
+
   print("Done Reporting")
   return enet
 
