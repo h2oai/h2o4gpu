@@ -5,6 +5,12 @@ from h2oaiglm.types import ORD, cptr, c_double_p, c_void_pp
 from h2oaiglm.libs.elastic_net_cpu import h2oaiglmElasticNetCPU
 from h2oaiglm.libs.elastic_net_gpu import h2oaiglmElasticNetGPU
 
+class info:
+    pass
+
+class solution:
+    pass
+
 class ElasticNetBaseSolver(object):
     def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas):
         assert lib and (lib==h2oaiglmElasticNetCPU or lib==h2oaiglmElasticNetGPU)
@@ -21,8 +27,12 @@ class ElasticNetBaseSolver(object):
         self.n_lambdas=n_lambdas
         self.n_folds=n_folds
         self.n_alphas=n_alphas
+        self.uploadeddata=0
+        self.didfitptr=0
 
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
+        finish1()
+        self.uploadeddata=1
         if trainX is not None:
             try: 
                 if trainX.value is not None:
@@ -50,6 +60,7 @@ class ElasticNetBaseSolver(object):
         if (trainX.dtype==np.float64):
             print("Detected np.float64");sys.stdout.flush()
             self.double_precision=1
+            #
             A = cptr(trainX,dtype=c_double)
             B = cptr(trainY,dtype=c_double)
             null_ptr = POINTER(c_double)()
@@ -136,14 +147,18 @@ class ElasticNetBaseSolver(object):
         #print(c)
         #print(d)
         #print(e)
+        self.solution.double_precision=self.double_precision
         self.a=a
         self.b=b
         self.c=c
         self.d=d
+        self.e=e
         return a, b, c, d, e
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
     def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath):
+        finish2()
+        self.didfitptr=1
         # not calling with self.sourceDev because want option to never use default but instead input pointers from foreign code's pointers
         if hasattr(self, 'double_precision'):
             whichprecision=self.double_precision
@@ -183,6 +198,10 @@ class ElasticNetBaseSolver(object):
                 ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
         #
+        # save pointer
+        self.Xvsalphalambda=Xvsalphalambda
+        self.Xvsalpha=Xvsalpha
+        #
         countfull_value=countfull.value
         countshort_value=countshort.value
         countmore_value=countmore.value
@@ -202,13 +221,19 @@ class ElasticNetBaseSolver(object):
         #
         if givefullpath==1:
             # Xvsalphalambda contains solution (and other data) for all lambda and alpha
-            self.Xvsalphalambda=np.fromiter(cast(Xvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value)
-            self.Xvsalphalambda=np.reshape(self.Xvsalphalambda,(self.n_lambdas,self.n_alphas,numall))
-            self.Xvsalphalambdapure = self.Xvsalphalambda[:,:,0:n]
-            self.rmsevsalphalambda = self.Xvsalphalambda[:,:,n:n+NUMRMSE]
-            self.lambdas = self.Xvsalphalambda[:,:,n+NUMRMSE:n+NUMRMSE+1]
-            self.alphas = self.Xvsalphalambda[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
-            self.tols = self.Xvsalphalambda[:,:,n+NUMRMSE+2:n+NUMRMSE+3]
+            self.Xvsalphalambdanew=np.fromiter(cast(Xvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value)
+            self.Xvsalphalambdanew=np.reshape(self.Xvsalphalambdanew,(self.n_lambdas,self.n_alphas,numall))
+            self.Xvsalphalambdapure = self.Xvsalphalambdanew[:,:,0:n]
+            self.rmsevsalphalambda = self.Xvsalphalambdanew[:,:,n:n+NUMRMSE]
+            self.lambdas = self.Xvsalphalambdanew[:,:,n+NUMRMSE:n+NUMRMSE+1]
+            self.alphas = self.Xvsalphalambdanew[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
+            self.tols = self.Xvsalphalambdanew[:,:,n+NUMRMSE+2:n+NUMRMSE+3]
+            #
+            self.solution.Xvsalphalambdapure  = self.Xvsalphalambdapure 
+            self.info.rmsevsalphalambda  = self.rmsevsalphalambda 
+            self.info.lambdas  = self.lambdas 
+            self.info.alphas  = self.alphas 
+            self.info.tols  = self.tols 
             #
         # Xvsalpha contains only best of all lambda for each alpha
         self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countshort_value)
@@ -219,12 +244,18 @@ class ElasticNetBaseSolver(object):
         self.alphas2 = self.Xvsalpha[:,n+NUMRMSE+1:n+NUMRMSE+2]
         self.tols2 = self.Xvsalpha[:,n+NUMRMSE+2:n+NUMRMSE+3]
         #
+        self.solution.Xvsalphapure  = self.Xvsalphapure 
+        self.info.rmsevsalpha  = self.rmsevsalpha 
+        self.info.lambdas2  = self.lambdas2 
+        self.info.alphas2  = self.alphas2 
+        self.info.tols2  = self.tols2 
+        #
         # return numpy objects
         if givefullpath==1:
             return(self.Xvsalphalambdapure,self.Xvsalphapure)
         else:
             return(self.Xvsalphapure)
-        #return(self.Xvsalphalambda,self.Xvsalpha)
+        #return(self.Xvsalphalambdanew,self.Xvsalpha)
         print("Done with fit")
 
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
@@ -271,7 +302,15 @@ class ElasticNetBaseSolver(object):
                 return(self.Xvsalphapure)
         else:
             # return NULL pointers
-            return(c_void_p(0),c_void_p(0))
+            if givefullpath==1:
+                return(c_void_p(0),c_void_p(0))
+            else:
+                return(c_void_p(0))
+        self.trainX=trainX
+        self.trainY=trainY
+        self.validX=validX
+        self.validY=validY
+        self.weight=weight
     def getrmse(self):
         if self.givefullpath:
             return(self.rmsevsalphalambda)
@@ -292,3 +331,30 @@ class ElasticNetBaseSolver(object):
             return(self.tols)
         else:
             return(self.tols2)
+    def predict(self,testX, testweight=None, givefullpath=0):
+        # if pass None trainY, then do predict using testX and weight (if given)
+        self.prediction=fit(testX, None, None, None, testweight, givefullpath)
+        return(self.prediction) # something like testY
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
+        fit(trainX, trainY, validX, validY, weight, givefullpath)
+        if validX==None:
+            self.prediction=predict(trainX)
+        else:
+            self.prediction=predict(validX)
+        return(self.predictions)
+    def finish1(self):
+        if self.uploadeddata==1:
+            modelfree(self.a)
+            modelfree(self.b)
+            modelfree(self.c)
+            modelfree(self.d)
+            modelfree(self.e)
+    def finish2(self):
+        if self.didfitptr==1:
+            modelfree(self.Xvsalphalambda)
+            modelfree(self.Xvsalpha)
+    def finish(self):
+        finish1()
+        finish2()
+        
+
