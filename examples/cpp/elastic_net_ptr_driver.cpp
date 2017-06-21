@@ -192,14 +192,18 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   int givefullpath=0;
   T *Xvsalphalambda=NULL;
   T *Xvsalpha=NULL;
+  T *validPredsvsalphalambda=NULL;
+  T *validPredsvsalpha=NULL;
   size_t countfull=0;
   size_t countshort=0;
   size_t countmore=0;
   int dopredict=0;
-  double time = h2oaiglm::ElasticNetptr<T>(dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &countfull, &countshort, &countmore);
+  double time = h2oaiglm::ElasticNetptr<T>(dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
 
   // print out some things about Xvsalphalambda and Xvsalpha
   printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);
+
+  // print out some things about validPredsvsalphalambda and validPredsvsalpha
 
   // do some prediction, say on validX already have
 

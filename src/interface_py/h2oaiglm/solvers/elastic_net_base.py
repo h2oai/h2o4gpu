@@ -5,16 +5,22 @@ from h2oaiglm.types import ORD, cptr, c_double_p, c_void_pp
 from h2oaiglm.libs.elastic_net_cpu import h2oaiglmElasticNetCPU
 from h2oaiglm.libs.elastic_net_gpu import h2oaiglmElasticNetGPU
 
-class info:
-    pass
-
-class solution:
-    pass
 
 class ElasticNetBaseSolver(object):
+    class info:
+        pass
+
+    class solution:
+        pass
+    
     def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas):
         assert lib and (lib==h2oaiglmElasticNetCPU or lib==h2oaiglmElasticNetGPU)
         self.lib=lib
+
+        self.n=0
+        self.mTrain=0
+        self.mValid=0
+        
         self.nGPUs=nGPUs
         self.sourceDev=0 # assume Dev=0 is source of data for upload_data
         self.sourceme=0 # assume thread=0 is source of data for upload_data
@@ -29,29 +35,37 @@ class ElasticNetBaseSolver(object):
         self.n_alphas=n_alphas
         self.uploadeddata=0
         self.didfitptr=0
+        self.didpredict=0
 
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
-        finish1()
+        self.finish1()
         self.uploadeddata=1
         if trainX is not None:
             try: 
                 if trainX.value is not None:
                     mTrain = trainX.shape[0]
+                    n = trainX.shape[1]
                 else:
                     mTrain=0
             except:
                 mTrain = trainX.shape[0]
+                n = trainX.shape[1]
+            self.mTrain=mTrain
+            self.n=n
         #
         if validX is not None:
             try: 
                 if validX.value is not None:
                     mValid = validX.shape[0]
+                    n = validX.shape[1]
                 else:
                     mValid=0
             except:
                 mValid = validX.shape[0]
+                n = validX.shape[1]
+            self.mValid=mValid
+            self.n=n # should be same as trainX when wasn't doing prediction
         #
-        n = trainX.shape[1]
         a = c_void_p(0)
         b = c_void_p(0)
         c = c_void_p(0)
@@ -195,7 +209,7 @@ class ElasticNetBaseSolver(object):
     # sourceDev here because generally want to take in any pointer, not just from our test code
     def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict):
         if dopredict==0:
-            finish2()
+            self.finish2()
             # otherwise don't clear solution, just use it
         #
         self.didfitptr=1
@@ -293,7 +307,7 @@ class ElasticNetBaseSolver(object):
         self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countshort_value)
         self.Xvsalpha=np.reshape(self.Xvsalpha,(self.n_alphas,numall))
         self.Xvsalphapure = self.Xvsalpha[:,0:n]
-        if dopredict==1:
+        if givefullpath==0 and dopredict==1: # exclusive set of validPreds unlike X
             self.validPredsvsalphanew=np.fromiter(cast(validPredsvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value/(n+NUMALLOTHER)*mValid)
             self.validPredsvsalphanew=np.reshape(self.validPredsvsalphanew,(self.n_s,self.n_alphas,mValid))
             self.validPredsvsalphapure = self.validPredsvsalpha[:,:,0:mValid]
@@ -310,52 +324,113 @@ class ElasticNetBaseSolver(object):
         self.info.tols2  = self.tols2 
         #
         # return numpy objects
-        if givefullpath==1:
-            return(self.Xvsalphalambdapure,self.Xvsalphapure)
+        if dopredict==0:
+            self.didpredict=0
+            if givefullpath==1:
+                return(self.Xvsalphalambdapure,self.Xvsalphapure)
+            else:
+                return(self.Xvsalphapure)
+            print("Done with fit")
         else:
-            return(self.Xvsalphapure)
-        #return(self.Xvsalphalambdanew,self.Xvsalpha)
-        print("Done with fit")
+            self.didpredict=1
+            if givefullpath==1:
+                return(self.validPredsvsalphalambdapure,self.validPredsvsalphapure)
+            else:
+                return(self.validPredsvsalphapure)
+            print("Done with predict")
+
 
         
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
         #
         self.givefullpath=givefullpath
-        if(trainX):
-            # get shapes
-            shapeX=np.shape(trainX)
-            mTrain=shapeX[0]
-            n=shapeX[1]
+        #
+        if trainX is not None:
+            try:
+                if trainX.value is not None:
+                    # get shapes
+                    shapeX=np.shape(trainX)
+                    mTrain=shapeX[0]
+                    n=shapeX[1]
+                else:
+                    print("no trainX")
+            except:
+                # get shapes
+                shapeX=np.shape(trainX)
+                mTrain=shapeX[0]
+                n=shapeX[1]
         else:
-            print("Always have to provide trainX to fit")
-            exit(0)
+            print("no trainX")
         #
         dopredict=0
-        if(trainY):
-            print("Doing fit")
-            shapeY=np.shape(trainY)
-            mY=shapeY[0]
-            if(mTrain!=mY):
-                print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain,mY))
+        if trainY is not None:
+            try:
+                if trainY.value is not None:
+                    # get shapes
+                    print("Doing fit")
+                    shapeY=np.shape(trainY)
+                    mY=shapeY[0]
+                    if(mTrain!=mY):
+                        print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain,mY))
+                else:
+                    print("Doing predict")
+                    dopredict=1
+            except:
+                # get shapes
+                print("Doing fit")
+                shapeY=np.shape(trainY)
+                mY=shapeY[0]
+                if(mTrain!=mY):
+                    print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain,mY))
         else:
             print("Doing predict")
             dopredict=1
+
         #
-        if(validX):
-            shapevalidX=np.shape(validX)
-            mValid=shapevalidX[0]
-            nvalidX=shapevalidX[1]
-            if(n!=nvalidX):
-                print("trainX and validX must have same number of columns, but n=%d nvalidX=%d\n" % (n,nvalidX))
+        if validX is not None:
+            try:
+                if validX.value is not None:
+                    shapevalidX=np.shape(validX)
+                    mValid=shapevalidX[0]
+                    nvalidX=shapevalidX[1]
+                    if dopredict==0:
+                        if(n!=nvalidX):
+                            print("trainX and validX must have same number of columns, but n=%d nvalidX=%d\n" % (n,nvalidX))
+                else:
+                    print("no validX")
+                    mValid=0
+            except:
+                shapevalidX=np.shape(validX)
+                mValid=shapevalidX[0]
+                nvalidX=shapevalidX[1]
+                if dopredict==0:
+                    if(n!=nvalidX):
+                        print("trainX and validX must have same number of columns, but n=%d nvalidX=%d\n" % (n,nvalidX))
         else:
+            print("no validX")
             mValid=0
         #
-        if(validY):
-            shapevalidY=np.shape(validY)
-            mvalidY=shapevalidY[0]
-            if(mValid!=mvalidY):
-                print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
-
+        #
+        if validY is not None:
+            try:
+                if validY.value is not None:
+                    shapevalidY=np.shape(validY)
+                    mvalidY=shapevalidY[0]
+                    if dopredict==0:
+                        if(mValid!=mvalidY):
+                            print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
+                else:
+                    print("no validY")
+            except:
+                shapevalidY=np.shape(validY)
+                mvalidY=shapevalidY[0]
+                if dopredict==0:
+                    if(mValid!=mvalidY):
+                        print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
+        else:
+            print("no validY")
+        #
+        #
         docalc=1
         if( (validX and validY==None) or  (validX==None and validY) ):
                 print("Must input both validX and validY or neither.")
@@ -403,6 +478,7 @@ class ElasticNetBaseSolver(object):
             return(self.tols2)
     def predict(self, validX, testweight=None, givefullpath=0):
         # if pass None trainx and trainY, then do predict using validX and weight (if given)
+        # unlike upload_data and fitptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
         dopredict=1
         self.prediction=self.fit(None, None, validX, None, testweight, givefullpath,dopredict)
         return(self.prediction) # something like validY
@@ -437,8 +513,18 @@ class ElasticNetBaseSolver(object):
             else:
                 self.lib.modelfree2_float(self.Xvsalphalambda)
                 self.lib.modelfree2_float(self.Xvsalpha)                
+    def finish3(self):
+        if self.didpredict==1:
+            self.didpredict=0
+            if self.double_precision==1:
+                self.lib.modelfree2_double(self.validPredsvsalphalambda)
+                self.lib.modelfree2_double(self.validPredsvsalpha)
+            else:
+                self.lib.modelfree2_float(self.validPredsvsalphalambda)
+                self.lib.modelfree2_float(self.validPredsvsalpha)                
     def finish(self):
         self.finish1()
         self.finish2()
+        self.finish3()
         
 

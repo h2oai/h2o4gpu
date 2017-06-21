@@ -213,7 +213,7 @@ double ElasticNetptr(int dopredict,
                      ) {
 
 
-  if(dopredict){
+  if(dopredict==0){
     return ElasticNetptr_fit(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
                              mTrain,  n,  mValid, intercept, standardize,
                              lambda_min_ratio, nLambdas, nFolds, nAlphas,
@@ -1323,7 +1323,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
             }
           }
           
-          // save preds
+          // save preds (exclusive set, unlike X)
           if(givefullpath){ // save all preds
             memcpy(&((*validPredsvsalphalambda)[MAPXALL(i,a,0)]),&validPreds[0],mValid);
           }
