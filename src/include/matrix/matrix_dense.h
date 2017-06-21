@@ -22,7 +22,7 @@ class MatrixDense : public Matrix<T> {
   T *_vdatay; // validY
   T *_weight; // weight
   T *_de;
-  enum Ord {ROW, COL};
+  enum Ord {COL, ROW};
 
 
  private:
@@ -63,11 +63,11 @@ class MatrixDense : public Matrix<T> {
   int Mul(char trans, T alpha, const T *x, T beta, T *y) const;
   int Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const;
 
-  void GetTrainX(int datatype, size_t size, T**data) const;
-  void GetTrainY(int datatype, size_t size, T**data) const;
-  void GetValidX(int datatype, size_t size, T**data) const;
-  void GetValidY(int datatype, size_t size, T**data) const;
-  void GetWeight(int datatype, size_t size, T**data) const;
+  int GetTrainX(int datatype, size_t size, T**data) const;
+  int GetTrainY(int datatype, size_t size, T**data) const;
+  int GetValidX(int datatype, size_t size, T**data) const;
+  int GetValidY(int datatype, size_t size, T**data) const;
+  int GetWeight(int datatype, size_t size, T**data) const;
 
   int Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T&lambda_max0);
 

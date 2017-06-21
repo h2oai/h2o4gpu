@@ -38,42 +38,89 @@ class ElasticNetBaseSolver(object):
         self.didpredict=0
 
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
-        self.finish1()
+        if self.uploadeddata==1:
+            self.finish1()
         self.uploadeddata=1
+        #
+        #################
         if trainX is not None:
+            try:
+                if (trainX.dtype==np.float64):
+                    print("Detected np.float64 trainX");sys.stdout.flush()
+                    self.double_precision1=1
+                if (trainX.dtype==np.float32):
+                    print("Detected np.float32 trainX");sys.stdout.flush()
+                    self.double_precision1=0
+            except:
+                self.double_precision1=-1
             try: 
                 if trainX.value is not None:
                     mTrain = trainX.shape[0]
-                    n = trainX.shape[1]
+                    n1 = trainX.shape[1]
                 else:
                     mTrain=0
+                    n1=-1
             except:
                 mTrain = trainX.shape[0]
-                n = trainX.shape[1]
-            self.mTrain=mTrain
-            self.n=n
-        #
+                n1 = trainX.shape[1]
+        else:
+            mTrain=0
+            n1=-1
+        self.mTrain=mTrain
+        ################
         if validX is not None:
+            try:
+                if (validX.dtype==np.float64):
+                    self.double_precision2=1
+                if (validX.dtype==np.float32):
+                    self.double_precision2=0
+            except:
+                self.double_precision2=-1
+            #
             try: 
                 if validX.value is not None:
                     mValid = validX.shape[0]
-                    n = validX.shape[1]
+                    n2 = validX.shape[1]
                 else:
                     mValid=0
+                    n2=-1
             except:
                 mValid = validX.shape[0]
-                n = validX.shape[1]
-            self.mValid=mValid
-            self.n=n # should be same as trainX when wasn't doing prediction
-        #
+                n2 = validX.shape[1]
+        else:
+            mValid=0
+            n2=-1
+        self.mValid=mValid
+        ###############
+        if self.double_precision1>=0 and self.double_precision2>=0:
+            if (self.double_precision1!=self.double_precision2):
+                print("trainX and validX must be same precision")
+                exit(0)
+            else:
+                self.double_precision=self.double_precision1 # either one
+        elif self.double_precision1>=0:
+            self.double_precision=self.double_precision1
+        elif self.double_precision2>=0:
+            self.double_precision=self.double_precision2
+        ###############
+        if n1>=0 and n2>=0:
+            if (n1!=n2):
+                print("trainX and validX must have same number of columns")
+                exit(0)
+            else:
+                n=n1 # either one
+        elif n1>=0:
+            n=n1
+        elif n2>=0:
+            n=n2
+        self.n=n
+        ################
         a = c_void_p(0)
         b = c_void_p(0)
         c = c_void_p(0)
         d = c_void_p(0)
         e = c_void_p(0)
-        if (trainX.dtype==np.float64):
-            print("Detected np.float64");sys.stdout.flush()
-            self.double_precision=1
+        if (self.double_precision==1):
             null_ptr = POINTER(c_double)()
             #
             if trainX is not None:
@@ -128,7 +175,7 @@ class ElasticNetBaseSolver(object):
                 E = null_ptr
             status = self.lib.make_ptr_double(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev), c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
-        elif (trainX.dtype==np.float32):
+        elif (self.double_precision==0):
             print("Detected np.float32");sys.stdout.flush()
             self.double_precision=0
             null_ptr = POINTER(c_float)()
@@ -193,11 +240,11 @@ class ElasticNetBaseSolver(object):
             exit(1)
             
         assert status==0, "Failure uploading the data"
-        #print(a)
-        #print(b)
-        #print(c)
-        #print(d)
-        #print(e)
+        #print("a=",hex(a.value))
+        #print("b=",hex(b.value))
+        #print("c=",hex(c.value))
+        #print("d=",hex(d.value))
+        #print("e=",hex(e.value))
         self.solution.double_precision=self.double_precision
         self.a=a
         self.b=b
@@ -208,25 +255,41 @@ class ElasticNetBaseSolver(object):
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
     def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict):
-        if dopredict==0:
+        ############
+        if dopredict==0 and self.didfitptr==1:
             self.finish2()
+        else:
             # otherwise don't clear solution, just use it
-        #
+            pass
+        ################
         self.didfitptr=1
+        ###############
         # not calling with self.sourceDev because want option to never use default but instead input pointers from foreign code's pointers
         if hasattr(self, 'double_precision'):
             whichprecision=self.double_precision
         else:
             whichprecision=precision
             self.double_precision=precision
-        #
-        Xvsalphalambda = c_void_p(0)
-        Xvsalpha = c_void_p(0)
-        validPredsvsalphalambda = c_void_p(0)
-        validPredsvsalpha = c_void_p(0)
-        countfull=c_size_t(0)
-        countshort=c_size_t(0)
-        countmore=c_size_t(0)
+        ##############
+        if dopredict==0:
+            # initialize if doing fit
+            Xvsalphalambda = c_void_p(0)
+            Xvsalpha = c_void_p(0)
+            validPredsvsalphalambda = c_void_p(0)
+            validPredsvsalpha = c_void_p(0)
+            countfull=c_size_t(0)
+            countshort=c_size_t(0)
+            countmore=c_size_t(0)
+        else:
+            # restore if predict
+            Xvsalphalambda=self.Xvsalphalambda
+            Xvsalpha=self.Xvsalpha
+            validPredsvsalphalambda=self.validPredsvsalphalambda
+            validPredsvsalpha=self.validPredsvsalpha
+            countfull=self.countfull
+            countshort=self.countshort
+            countmore=self.countmore
+        ################
         c_size_t_p = POINTER(c_size_t)
         if (whichprecision==1):
             self.mydtype=np.double
@@ -259,16 +322,20 @@ class ElasticNetBaseSolver(object):
                 ,cast(addressof(countfull),c_size_t_p), cast(addressof(countshort),c_size_t_p), cast(addressof(countmore),c_size_t_p)
             )
         #
-        # save pointer
+        # save pointers
         self.Xvsalphalambda=Xvsalphalambda
         self.Xvsalpha=Xvsalpha
         self.validPredsvsalphalambda=validPredsvsalphalambda
         self.validPredsvsalpha=validPredsvsalpha
+        self.countfull=countfull
+        self.countshort=countshort
+        self.countmore=countmore
         #
         countfull_value=countfull.value
         countshort_value=countshort.value
         countmore_value=countmore.value
         #print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
+        ######
         if givefullpath==1:
             numall=int(countfull_value/(self.n_alphas*self.n_lambdas))
         else:
@@ -282,16 +349,11 @@ class ElasticNetBaseSolver(object):
             print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
             exit(0)
         #
-        if givefullpath==1:
+        if givefullpath==1 and dopredict==0:
             # Xvsalphalambda contains solution (and other data) for all lambda and alpha
             self.Xvsalphalambdanew=np.fromiter(cast(Xvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value)
             self.Xvsalphalambdanew=np.reshape(self.Xvsalphalambdanew,(self.n_lambdas,self.n_alphas,numall))
             self.Xvsalphalambdapure = self.Xvsalphalambdanew[:,:,0:n]
-            if dopredict==1:
-                self.validPredsvsalphalambdanew=np.fromiter(cast(validPredsvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value/(n+NUMALLOTHER)*mValid)
-                self.validPredsvsalphalambdanew=np.reshape(self.validPredsvsalphalambdanew,(self.n_lambdas,self.n_alphas,mValid))
-                self.validPredsvsalphalambdapure = self.validPredsvsalphalambda[:,:,0:mValid]
-            #
             self.rmsevsalphalambda = self.Xvsalphalambdanew[:,:,n:n+NUMRMSE]
             self.lambdas = self.Xvsalphalambdanew[:,:,n+NUMRMSE:n+NUMRMSE+1]
             self.alphas = self.Xvsalphalambdanew[:,:,n+NUMRMSE+1:n+NUMRMSE+2]
@@ -302,27 +364,37 @@ class ElasticNetBaseSolver(object):
             self.info.lambdas  = self.lambdas
             self.info.alphas  = self.alphas
             self.info.tols  = self.tols
+        #
+        if givefullpath==1 and dopredict==1:
+            thecount=int(countfull_value/(n+NUMALLOTHER)*mValid)
+            self.validPredsvsalphalambdanew=np.fromiter(cast(validPredsvsalphalambda,POINTER(self.myctype)),dtype=self.mydtype,count=thecount)
+            self.validPredsvsalphalambdanew=np.reshape(self.validPredsvsalphalambdanew,(self.n_lambdas,self.n_alphas,mValid))
+            self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:,:,0:mValid]
             #
-        # Xvsalpha contains only best of all lambda for each alpha
-        self.Xvsalpha=np.fromiter(cast(Xvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countshort_value)
-        self.Xvsalpha=np.reshape(self.Xvsalpha,(self.n_alphas,numall))
-        self.Xvsalphapure = self.Xvsalpha[:,0:n]
+        if givefullpath==0 and dopredict==0:
+            # Xvsalpha contains only best of all lambda for each alpha
+            self.Xvsalphanew=np.fromiter(cast(Xvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countshort_value)
+            self.Xvsalphanew=np.reshape(self.Xvsalphanew,(self.n_alphas,numall))
+            self.Xvsalphapure = self.Xvsalphanew[:,0:n]
+            self.rmsevsalpha = self.Xvsalphanew[:,n:n+NUMRMSE]
+            self.lambdas2 = self.Xvsalphanew[:,n+NUMRMSE:n+NUMRMSE+1]
+            self.alphas2 = self.Xvsalphanew[:,n+NUMRMSE+1:n+NUMRMSE+2]
+            self.tols2 = self.Xvsalphanew[:,n+NUMRMSE+2:n+NUMRMSE+3]
+            #
+            self.solution.Xvsalphapure  = self.Xvsalphapure 
+            self.info.rmsevsalpha  = self.rmsevsalpha 
+            self.info.lambdas2  = self.lambdas2 
+            self.info.alphas2  = self.alphas2 
+            self.info.tols2  = self.tols2
+        #
         if givefullpath==0 and dopredict==1: # exclusive set of validPreds unlike X
-            self.validPredsvsalphanew=np.fromiter(cast(validPredsvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=countfull_value/(n+NUMALLOTHER)*mValid)
-            self.validPredsvsalphanew=np.reshape(self.validPredsvsalphanew,(self.n_s,self.n_alphas,mValid))
-            self.validPredsvsalphapure = self.validPredsvsalpha[:,:,0:mValid]
+            thecount=int(countshort_value/(n+NUMALLOTHER)*mValid)
+            print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (thecount,countfull_value,countshort_value,n,NUMALLOTHER,mValid)) ; sys.stdout.flush()
+            self.validPredsvsalphanew=np.fromiter(cast(validPredsvsalpha,POINTER(self.myctype)),dtype=self.mydtype,count=thecount)
+            self.validPredsvsalphanew=np.reshape(self.validPredsvsalphanew,(self.n_alphas,mValid))
+            self.validPredsvsalphapure = self.validPredsvsalphanew[:,0:mValid]
         #
-        self.rmsevsalpha = self.Xvsalpha[:,n:n+NUMRMSE]
-        self.lambdas2 = self.Xvsalpha[:,n+NUMRMSE:n+NUMRMSE+1]
-        self.alphas2 = self.Xvsalpha[:,n+NUMRMSE+1:n+NUMRMSE+2]
-        self.tols2 = self.Xvsalpha[:,n+NUMRMSE+2:n+NUMRMSE+3]
-        #
-        self.solution.Xvsalphapure  = self.Xvsalphapure 
-        self.info.rmsevsalpha  = self.rmsevsalpha 
-        self.info.lambdas2  = self.lambdas2 
-        self.info.alphas2  = self.alphas2 
-        self.info.tols2  = self.tols2 
-        #
+        #######################
         # return numpy objects
         if dopredict==0:
             self.didpredict=0
@@ -344,25 +416,33 @@ class ElasticNetBaseSolver(object):
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
         #
         self.givefullpath=givefullpath
-        #
+        ################
+        self.trainX=trainX
+        self.trainY=trainY
+        self.validX=validX
+        self.validY=validY
+        self.weight=weight
+        ##############
         if trainX is not None:
             try:
                 if trainX.value is not None:
                     # get shapes
                     shapeX=np.shape(trainX)
                     mTrain=shapeX[0]
-                    n=shapeX[1]
+                    n1=shapeX[1]
                 else:
                     print("no trainX")
+                    n1=-1
             except:
                 # get shapes
                 shapeX=np.shape(trainX)
                 mTrain=shapeX[0]
-                n=shapeX[1]
+                n1=shapeX[1]
         else:
             print("no trainX")
-        #
-        dopredict=0
+            mTrain=0
+            n1=-1
+        #############
         if trainY is not None:
             try:
                 if trainY.value is not None:
@@ -373,8 +453,7 @@ class ElasticNetBaseSolver(object):
                     if(mTrain!=mY):
                         print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain,mY))
                 else:
-                    print("Doing predict")
-                    dopredict=1
+                    mY=-1
             except:
                 # get shapes
                 print("Doing fit")
@@ -384,78 +463,90 @@ class ElasticNetBaseSolver(object):
                     print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain,mY))
         else:
             print("Doing predict")
-            dopredict=1
-
-        #
+            mY=-1
+        ###############
         if validX is not None:
             try:
                 if validX.value is not None:
                     shapevalidX=np.shape(validX)
                     mValid=shapevalidX[0]
-                    nvalidX=shapevalidX[1]
-                    if dopredict==0:
-                        if(n!=nvalidX):
-                            print("trainX and validX must have same number of columns, but n=%d nvalidX=%d\n" % (n,nvalidX))
+                    n2=shapevalidX[1]
                 else:
                     print("no validX")
                     mValid=0
+                    n2=-1
             except:
                 shapevalidX=np.shape(validX)
                 mValid=shapevalidX[0]
-                nvalidX=shapevalidX[1]
-                if dopredict==0:
-                    if(n!=nvalidX):
-                        print("trainX and validX must have same number of columns, but n=%d nvalidX=%d\n" % (n,nvalidX))
+                n2=shapevalidX[1]
         else:
             print("no validX")
             mValid=0
-        #
-        #
+            n2=-1
+        print("mValid=%d" % (mValid)) ; sys.stdout.flush()
+        ###############
         if validY is not None:
             try:
                 if validY.value is not None:
                     shapevalidY=np.shape(validY)
                     mvalidY=shapevalidY[0]
-                    if dopredict==0:
-                        if(mValid!=mvalidY):
-                            print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
                 else:
                     print("no validY")
+                    mvalidY=-1
             except:
                 shapevalidY=np.shape(validY)
                 mvalidY=shapevalidY[0]
-                if dopredict==0:
-                    if(mValid!=mvalidY):
-                        print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
         else:
             print("no validY")
-        #
-        #
-        docalc=1
-        if( (validX and validY==None) or  (validX==None and validY) ):
-                print("Must input both validX and validY or neither.")
-                docalc=0
+            mvalidY=-1
+        ################
+        # check dopredict input
+        if dopredict==0:
+            if n1>=0 and mY>=0:
+                print("Correct train inputs")
+            else:
+                print("Incorrect train inputs")
+        if dopredict==1:
+            if n1==-1 and n2>=0 and mvalidY==-1 and mY==-1:
+                print("Correct prediction inputs")
+            else:
+                print("Incorrect prediction inputs")
+        #################
+        if dopredict==0:
+            if(n1>=0 and n2>=0 and n1!=n2):
+                print("trainX and validX must have same number of columns, but n=%d n2=%d\n" % (n1,n2))
+            else:
+                n=n1 # either
+        else:
+            n=n2 # pick validX
+        ##################
+        if dopredict==0:
+            if(mValid>=0 and mvalidY>=0 and mValid!=mvalidY):
+                print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid,mvalidY))
+        else:
+            # otherwise mValid is used, and mvalidY can be there or not (sets whether do RMSE or not)
+            pass
+        #################
+        if dopredict==0:
+            if( (validX and validY==None) or  (validX==None and validY) ):
+                print("Must input both validX and validY or neither.") # TODO FIXME: Don't need validY if just want preds and no error, but don't return error in fit, so leave for now
+                exit(0)
             #
-        if(docalc):
-            sourceDev=0 # assume GPU=0 is fine as source
-            a,b,c,d,e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
-            precision=0 # won't be used
-            self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict)
+        ##############
+        sourceDev=0 # assume GPU=0 is fine as source
+        a,b,c,d,e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
+        precision=0 # won't be used
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict)
+        if dopredict==0:
             if givefullpath==1:
                 return(self.Xvsalphalambdapure,self.Xvsalphapure)
             else:
                 return(self.Xvsalphapure)
         else:
-            # return NULL pointers
             if givefullpath==1:
-                return(c_void_p(0),c_void_p(0))
+                return(self.validPredsvsalphalambdapure,self.validPredsvsalphapure)
             else:
-                return(c_void_p(0))
-        self.trainX=trainX
-        self.trainY=trainY
-        self.validX=validX
-        self.validY=validY
-        self.weight=weight
+                return(self.validPredsvsalphapure)
     def getrmse(self):
         if self.givefullpath:
             return(self.rmsevsalphalambda)
@@ -490,6 +581,7 @@ class ElasticNetBaseSolver(object):
             self.prediction=self.predict(validX, testweight=weight, givefullpath=givefullpath)
         return(self.predictions)
     def finish1(self):
+        # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
         if self.uploadeddata==1:
             self.uploadeddata=0
             if self.double_precision==1:

@@ -259,6 +259,9 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
   const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
+  fprintf(stderr,"solve _data=%p\n",_A._data); fflush(stderr);
+  fprintf(stderr,"solve _datay=%p\n",_A._datay); fflush(stderr);
+  
 
   // Notes on variable names:
   //
@@ -767,25 +770,116 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   return status;
 }
 
-  template <typename T, typename M, typename P>
-int H2OAIGLM<T, M, P>::Predict() {
-
-  //  PUSH_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
-  
+template <typename T, typename M, typename P>
+int H2OAIGLM<T, M, P>::_Init_Predict() {
+  DEBUG_EXPECT(!_done_init);
+  if (_done_init)
+    return 1;
+  _done_init = true;
   CUDACHECK(cudaSetDevice(_wDev));
 
+
+#ifdef DEBUG
+  // get device ID
+  int devID;
+  CUDACHECK(cudaGetDevice(&devID));
+  cudaDeviceProp props;
+  // get device properties
+  CUDACHECK(cudaGetDeviceProperties(&props, devID));
+#endif
+
+#ifdef USE_NCCL2
+  for (int i = 0; i < _nDev; i++){
+    if(i==0 && i==_nDev-1) i=_wDev; // force to chosen device
+    cudaDeviceProp props;
+    CUDACHECK(cudaGetDeviceProperties(&props, i));
+    CUDACHECK(cudaSetDevice(i));
+    //    CUDACHECK(cudaSetDeviceFlags(cudaDeviceMapHost)); // TODO: MapHostMemory
+    printf("Using: Compute %d.%d CUDA device: [%s] with id=%2d\n", props.major, props.minor, props.name,i); fflush(stdout);
+  }
+
+
+  // initialize nccl
+
+  std::vector<int> dList(_nDev);
+  for (int i = 0; i < _nDev; ++i)
+    dList[i] = i % nVis;
+
+  ncclComm_t* _comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*_nDev);
+  NCCLCHECK(ncclCommInitAll(_comms, _nDev, dList.data())); // initialize communicator (One communicator per process)
+  printf("# NCCL: Using devices\n");
+  for (int g = 0; g < _nDev; ++g) {
+    int cudaDev;
+    int rank;
+    cudaDeviceProp prop;
+    NCCLCHECK(ncclCommCuDevice(_comms[g], &cudaDev));
+    NCCLCHECK(ncclCommUserRank(_comms[g], &rank));
+    CUDACHECK(cudaGetDeviceProperties(&prop, cudaDev));
+    printf("#   Rank %2d uses device %2d [0x%02x] %s\n", rank, cudaDev,
+           prop.pciBusID, prop.name); fflush(stdout);
+  }
+#endif
+
+  
+  PUSH_RANGE("Malloc",Malloc,1);
   double t0 = timer<double>();
 
+  size_t m = _A.Rows();
   size_t mvalid = _A.ValidRows();
+  size_t n = _A.Cols();
+
+  // local (i.e. GPU) values for _x and training predictions (i.e. predicted y from Atrain*_x)
+  cudaMalloc(&_xp, (n) * sizeof(T));
+  cudaMalloc(&_trainPredsp, (m) * sizeof(T));
+  cudaMalloc(&_validPredsp, (mvalid) * sizeof(T));
+  cudaMemset(_xp, 0, (n) * sizeof(T));
+  cudaMemset(_trainPredsp, 0, (m) * sizeof(T));
+  cudaMemset(_validPredsp, 0, (mvalid) * sizeof(T));
+
+  CUDA_CHECK_ERR();
+ 
+  _A.Init();
+  POP_RANGE("Malloc",Malloc,1);
+
+#ifdef DEBUG
+  printf("Pred: Time to allocate data structures: %f\n", timer<double>() - t0);
+#endif
+
+  return 0;
+}
+
+  
+  template <typename T, typename M, typename P>
+int H2OAIGLM<T, M, P>::Predict() {
+  double t0 = timer<double>();
+  // Initialize Projector P and Matrix A.
+  if (!_done_init){
+//    PUSH_RANGE("Init2",Init2,1);
+    _Init_Predict();
+    //    POP_RANGE("Init2",Init2,1);
+  }
+  CUDACHECK(cudaSetDevice(_wDev));
+
+  //  PUSH_RANGE("H2OAIGLMSolve",H2OAIGLMSolve,1);
+
+  size_t m = _A.Rows();
+  size_t mvalid = _A.ValidRows();
+  size_t n = _A.Cols();
 
   // copy over X (assume called SetInitX) directly from CPU to GPU during fit
-  cml::vector<T> xtemp = cml::vector_calloc<T>(mvalid);
+  cml::vector<T> xtemp = cml::vector_calloc<T>(n);
+  CUDA_CHECK_ERR();
+
   cml::vector_memcpy(&xtemp, _x); // _x->xtemp
+  CUDA_CHECK_ERR();
   
   // compute valid from validPreds = Avalid.xsolution
   _A.Mulvalid('n', static_cast<T>(1.), xtemp.data, static_cast<T>(0.), _validPredsp);
+  CUDA_CHECK_ERR();
+
   // copy back to CPU
   cml::vector_memcpy(mvalid,1,_validPreds, _validPredsp);
+  CUDA_CHECK_ERR();
 
   // compute rmse (not yet)
     

@@ -655,27 +655,31 @@ MatrixDense<T>::~MatrixDense() {
 
   //  fprintf(stderr,"HERE1\n"); fflush(stderr);
 
-  if(1){
+  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
     
     if (this->_done_init && _data) {
+      //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);
       cudaFree(_data);
       this->_data = 0;
       DEBUG_CUDA_CHECK_ERR();
     }
     //  fprintf(stderr,"HERE2\n"); fflush(stderr);
     if (this->_done_init && _datay) {
+      //      fprintf(stderr,"Freeing _datay: %p\n",(void*)_datay); fflush(stderr);
       cudaFree(_datay);
       this->_datay = 0;
       DEBUG_CUDA_CHECK_ERR();
     }
     //  fprintf(stderr,"HERE3\n"); fflush(stderr);
     if (this->_done_init && _vdata) {
+      //      fprintf(stderr,"Freeing _vdata: %p\n",(void*)_vdata); fflush(stderr);
       cudaFree(_vdata);
       this->_vdata = 0;
       DEBUG_CUDA_CHECK_ERR();
     }
     //  fprintf(stderr,"HERE4\n"); fflush(stderr);
     if (this->_done_init && _vdatay) {
+      //      fprintf(stderr,"Freeing _vdatay: %p\n",(void*)_vdatay); fflush(stderr);
       cudaFree(_vdatay);
       this->_vdatay = 0;
       DEBUG_CUDA_CHECK_ERR();
@@ -683,6 +687,7 @@ MatrixDense<T>::~MatrixDense() {
     //  fprintf(stderr,"HERE5\n"); fflush(stderr);
 
     if (this->_done_init && _weight) {
+      //      fprintf(stderr,"Freeing _weight: %p\n",(void*)_weight); fflush(stderr);
       cudaFree(_weight);
       this->_weight = 0;
       DEBUG_CUDA_CHECK_ERR();
@@ -690,6 +695,7 @@ MatrixDense<T>::~MatrixDense() {
     //  fprintf(stderr,"HERE6\n"); fflush(stderr);
 
     if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
+      //      fprintf(stderr,"Freeing _de: %p\n",(void*)_weight); fflush(stderr);
       cudaFree(_de);
       this->_de=0;
       DEBUG_CUDA_CHECK_ERR();
@@ -716,7 +722,7 @@ int MatrixDense<T>::Init() {
 }
 
 template <typename T>
-void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -728,12 +734,12 @@ void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
     else{
       std::memcpy(*data, _data, size * sizeof(T));
     }
+    return(0);
   }
-
-  return;
+  else return(1);
 }
 template <typename T>
-void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -745,13 +751,13 @@ void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
     else{
       std::memcpy(*data, _datay, size * sizeof(T));
     }
+    return(0);
   }
-
-  return;
+  else return(1);
 }
 
 template <typename T>
-void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -763,12 +769,12 @@ void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
     else{
       std::memcpy(*data, _vdata, size * sizeof(T));
     }
+    return(0);
   }
-
-  return;
+  else return(1);
 }
 template <typename T>
-void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
@@ -780,25 +786,26 @@ void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
     else{
       std::memcpy(*data, _vdatay, size * sizeof(T));
     }
+    return(0);
   }
-
-
-  return;
+  else return(1);
 }
 template <typename T>
-void MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
 
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(datatype==1){
-    cudaMemcpy(*data, _weight, size* sizeof(T),cudaMemcpyDeviceToHost);
-    CUDA_CHECK_ERR();
+  if(_weight){
+    if(datatype==1){
+      cudaMemcpy(*data, _weight, size* sizeof(T),cudaMemcpyDeviceToHost);
+      CUDA_CHECK_ERR();
+    }
+    else{
+      std::memcpy(*data, _weight, size * sizeof(T));
+    }
+    return(0);
   }
-  else{
-    std::memcpy(*data, _weight, size * sizeof(T));
-  }
-
-  return;
+  else return(1);
 }
 
 
@@ -1887,24 +1894,28 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     if(data){
       CUDACHECK(cudaMalloc(_data, m * n * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_data, data, m * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+      fprintf(stderr,"_data: %p\n",(void*)*_data); fflush(stderr);
     }
     else *_data=NULL;
 
     if(datay){
       CUDACHECK(cudaMalloc(_datay, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_datay, datay, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+      fprintf(stderr,"_datay: %p\n",(void*)*_datay); fflush(stderr);
     }
     else *_datay=NULL;
 
     if(vdata){
       CUDACHECK(cudaMalloc(_vdata, mValid * n * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_vdata, vdata, mValid * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+      fprintf(stderr,"_vdata: %p\n",(void*)*_vdata); fflush(stderr);
     }
     else *_vdata=NULL;
 
     if(vdatay){
       CUDACHECK(cudaMalloc(_vdatay, mValid * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_vdatay, vdatay, mValid * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+      fprintf(stderr,"_vdatay: %p\n",(void*)*_vdatay); fflush(stderr);
     }
     else *_vdatay=NULL;
 
@@ -1919,6 +1930,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(*_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
+      fprintf(stderr,"_weight: %p\n",(void*)*_weight); fflush(stderr);
     }
     
     POP_RANGE("MDsendsource",MDsendsource,1);
@@ -1947,11 +1959,14 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 
 
-  template <typename T>
+template <typename T>
 int modelFree1(T *aptr){
 
-  cudaFree(aptr);
-  CUDA_CHECK_ERR();
+  if(aptr!=NULL){
+    // for now, freed during ~
+    //cudaFree(aptr);
+    //CUDA_CHECK_ERR();
+  }
   return(0);
 }
 

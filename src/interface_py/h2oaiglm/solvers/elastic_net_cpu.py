@@ -28,13 +28,15 @@ else:
                 return self.solver.getalphas()
         def gettols(self):
                 return self.solver.gettols()
-        def predict(self):
-            return self.solver.predict()
-        def fit_predict(self):
-            return self.solver.fit_predict()
+        def predict(self, validX, testweight=None, givefullpath=0):
+            return self.solver.predict(validX, testweight, givefullpath)
+        def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
+            return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
         def finish1(self):
             return self.solver.finish1()
         def finish2(self):
             return self.solver.finish2()
+        def finish3(self):
+            return self.solver.finish3()
         def finish(self):
             return self.solver.finish()

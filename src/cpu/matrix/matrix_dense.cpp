@@ -88,7 +88,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, char ord, size_t m, size_t n,
     else{
       _data = new T[this->_m * this->_n]; ASSERT(_data != 0);  memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n,0.0);
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -138,7 +138,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int wDev, int datatype, char ord, size_
       ASSERT(_data != 0);
       memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n, 0.0);
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -212,10 +212,10 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, char ord, size_t m, s
       else{
         _weight = new T[this->_m];
         ASSERT(_weight != 0);
-        memset(_weight, 1.0, this->_m);
+        std::fill(_weight, _weight + this->_m, 1.0);
       }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // not needed in existing code when sharedA<0
+  _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n,0.0); // not needed in existing code when sharedA<0
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -293,8 +293,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
       }
+      else{
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        std::fill(_weight, _weight + this->_m,1.0);
+      }
     }
-    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n)); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
+    _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n, 0.0); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
@@ -414,7 +419,13 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>&
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo_A->orig_data, A._m * sizeof(T));
       }
-      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);memset(_de, 0, (this->_m + this->_n));
+      else{
+        _weight = new T[this->_m];
+        ASSERT(_weight != 0);
+        std::fill(_weight, _weight + A._m, 1.0);
+      }
+
+      _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n,0.0);
       if(sharedA>0){
         Init();
         Equil(1); // JONTODO: hack for now, should pass user bool
@@ -439,24 +450,66 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 
 
 
-  template <typename T>
+template <typename T>
 MatrixDense<T>::~MatrixDense() {
-  CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
-  CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
-  CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
-  CpuData<T> *vinfoy = reinterpret_cast<CpuData<T>*>(this->_vinfoy);
-  CpuData<T> *weightinfo = reinterpret_cast<CpuData<T>*>(this->_weightinfo);
-  if(info) delete info;
-  if(infoy) delete infoy;
-  if(vinfo) delete vinfo;
-  if(vinfoy) delete vinfoy;
-  if(weightinfo) delete weightinfo;
-  this->_info = 0;
-  this->_infoy = 0;
-  this->_vinfo = 0;
-  this->_weightinfo = 0;
 
-  // FIXME JONTODO: why aren't _data etc. freed?
+  if(1){
+    CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
+    CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
+    CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
+    CpuData<T> *vinfoy = reinterpret_cast<CpuData<T>*>(this->_vinfoy);
+    CpuData<T> *weightinfo = reinterpret_cast<CpuData<T>*>(this->_weightinfo);
+    if(info) delete info;
+    if(infoy) delete infoy;
+    if(vinfo) delete vinfo;
+    if(vinfoy) delete vinfoy;
+    if(weightinfo) delete weightinfo;
+    this->_info = 0;
+    this->_infoy = 0;
+    this->_vinfo = 0;
+    this->_weightinfo = 0;
+  }
+  
+  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
+
+    if (this->_done_init && _data) {
+      //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);
+      delete _data;
+      this->_data = 0;
+    }
+    //  fprintf(stderr,"HERE2\n"); fflush(stderr);
+    if (this->_done_init && _datay) {
+      //      fprintf(stderr,"Freeing _datay: %p\n",(void*)_datay); fflush(stderr);
+      delete _datay;
+      this->_datay = 0;
+    }
+    //  fprintf(stderr,"HERE3\n"); fflush(stderr);
+    if (this->_done_init && _vdata) {
+      //      fprintf(stderr,"Freeing _vdata: %p\n",(void*)_vdata); fflush(stderr);
+      delete _vdata;
+      this->_vdata = 0;
+    }
+    //  fprintf(stderr,"HERE4\n"); fflush(stderr);
+    if (this->_done_init && _vdatay) {
+      //      fprintf(stderr,"Freeing _vdatay: %p\n",(void*)_vdatay); fflush(stderr);
+      delete _vdatay;
+      this->_vdatay = 0;
+    }
+    //  fprintf(stderr,"HERE5\n"); fflush(stderr);
+
+    if (this->_done_init && _weight) {
+      //      fprintf(stderr,"Freeing _weight: %p\n",(void*)_weight); fflush(stderr);
+      delete _weight;
+      this->_weight = 0;
+    }
+    //  fprintf(stderr,"HERE6\n"); fflush(stderr);
+
+    if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
+      //      fprintf(stderr,"Freeing _de: %p\n",(void*)_weight); fflush(stderr);
+      delete _de;
+      this->_de=0;
+    }
+  }
 }
 
 template <typename T>
@@ -470,27 +523,50 @@ int MatrixDense<T>::Init() {
 }
 
 template <typename T>
-void MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
-  std::memcpy(*data, _data, size * sizeof(T));
+int MatrixDense<T>::GetTrainX(int datatype, size_t size, T**data) const {
+  if(_data){
+    std::memcpy(*data, _data, size * sizeof(T));
+    return(0);
+  }
+  else return(1);
+  //  else *data=NULL;
 }
 template <typename T>
-void MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
+int MatrixDense<T>::GetTrainY(int datatype, size_t size, T**data) const {
   if(_datay){
     std::memcpy(*data, _datay, size * sizeof(T));
+    return(0);
   }
+  else return(1);
+  //  else *data=NULL;
 }
 
 template <typename T>
-void MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
-  std::memcpy(*data, _vdata, size * sizeof(T));
+int MatrixDense<T>::GetValidX(int datatype, size_t size, T**data) const {
+  if(_vdata){
+    std::memcpy(*data, _vdata, size * sizeof(T));
+    return(0);
+  }
+  else return(1);
+  //  else *data=NULL;
 }
 template <typename T>
-void MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
-  std::memcpy(*data, _vdatay, size * sizeof(T));
+int MatrixDense<T>::GetValidY(int datatype, size_t size, T**data) const {
+  if(_vdatay){
+    std::memcpy(*data, _vdatay, size * sizeof(T));
+    return(0);
+  }
+  else return(1);
+  //  else *data=NULL;
 }
 template <typename T>
-void MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
-  std::memcpy(*data, _weight, size * sizeof(T));
+int MatrixDense<T>::GetWeight(int datatype, size_t size, T**data) const {
+  if(_weight){
+    std::memcpy(*data, _weight, size * sizeof(T));
+    return(0);
+  }
+  else return(1);
+  //  else *data=NULL;
 }
 
 
@@ -517,26 +593,35 @@ if (_ord == ROW) {
   return 0;
 }
 
-  template <typename T>
+template <typename T>
 int MatrixDense<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) const {
-DEBUG_EXPECT(this->_done_init);
-if (!this->_done_init)
-  return 1;
+  DEBUG_EXPECT(this->_done_init);
+  if (!this->_done_init)
+    return 1;
+  
+  const gsl::vector<T> x_vec = gsl::vector_view_array<T>(x, this->_n);
+  gsl::vector<T> y_vec = gsl::vector_view_array<T>(y, this->_mvalid);
 
-const gsl::vector<T> x_vec = gsl::vector_view_array<T>(x, this->_n);
-gsl::vector<T> y_vec = gsl::vector_view_array<T>(y, this->_mvalid);
+  fprintf(stderr,"_ord=%d mvalid=%d n=%d\n",_ord,this->_mvalid,this->_n); fflush(stderr);
 
-if (_ord == ROW) {
-  gsl::matrix<T, CblasRowMajor> A =
-      gsl::matrix_view_array<T, CblasRowMajor>(_vdata, this->_mvalid, this->_n);
-  gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta,
-      &y_vec);
+  //  for(int i=0; i<this->_mvalid;i++){
+  //    for(int j=0;j<this->_n;j++){
+  //      fprintf(stderr,"i=%d j=%d A=%g x=%g\n",i,j,_vdata[i*this->_n + j],x[j]);
+  //    }
+  //  }
+  //  fflush(stderr);
+     
+  
+  
+  if (_ord == ROW) {
+    gsl::matrix<T, CblasRowMajor> A = gsl::matrix_view_array<T, CblasRowMajor>(_vdata, this->_mvalid, this->_n);
+    gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta,
+                   &y_vec);
   } else {
-    gsl::matrix<T, CblasColMajor> A =
-        gsl::matrix_view_array<T, CblasColMajor>(_vdata, this->_mvalid, this->_n);
+    gsl::matrix<T, CblasColMajor> A = gsl::matrix_view_array<T, CblasColMajor>(_vdata, this->_mvalid, this->_n);
     gsl::blas_gemv(OpToCblasOp(trans), alpha, &A, &x_vec, beta, &y_vec);
   }
-
+  
   return 0;
 }
 
@@ -699,6 +784,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     if(_weight!=NULL){
       for (unsigned int i = 0; i < mTrain; ++i) { //row
         u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
+        //        fprintf(stderr,"i=%d weight=%g data=%g datay=%g intercept=%d mean=%g\n",i,_weight[i], _data[i * n + j],_datay[i],intercept,mean[0]); fflush(stderr);
       }
     }
     else{
@@ -708,6 +794,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     }
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
+  //  fprintf(stderr,"lambda_max0=%g\n",lambda_max0); fflush(stderr);
   
   
 
@@ -833,7 +920,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     else{
       *_weight = new T[m];
       ASSERT(*_weight != 0);
-      memset(*_weight, 1.0, m); // unity weights by default
+      std::fill(static_cast<T*>(*_weight), static_cast<T*>(*_weight) + m,1.0); // unity weights by default
     }
   }
   return(0);
@@ -851,7 +938,9 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
   template <typename T>
   int modelFree1(T *aptr){
-    delete aptr;
+    if(aptr!=NULL){
+      //      delete aptr; // for now, freed during ~
+    }
     return(0);
   }
 

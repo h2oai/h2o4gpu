@@ -74,6 +74,11 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Setting up solver")
   enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas)
 
+  print("trainX")
+  print(trainX)
+  print("trainY")
+  print(trainY)
+  
   ## Solve
   print("Solving")
   Xvsalpha = enet.fit(trainX, trainY)
@@ -85,9 +90,11 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Done Solving")
 
   # show something about Xvsalphalambda or Xvsalpha
+  print("Xvsalpha")
   print(Xvsalpha)
   print("np.shape(Xvsalpha)")
   print(np.shape(Xvsalpha))
+
 
   rmse=enet.getrmse()
   print("rmse")
@@ -105,8 +112,19 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   tols=enet.gettols()
   print(tols)
 
+  testvalidY = np.dot(trainX,Xvsalpha.T)
+  print("testvalidY (newvalidY should be this)")
+  print(testvalidY)
+
+  
   print("Predicting, assuming unity weights")
-  newvalidY = enet.predict(validX)
+  if validX==None or mvalid==0:
+      print("Using trainX for validX")
+      newvalidY = enet.predict(trainX) # for testing
+  else:
+      print("Using validX for validX")
+      newvalidY = enet.predict(validX)
+  print("newvalidY")
   print(newvalidY)
 
 
@@ -131,3 +149,4 @@ if __name__ == "__main__":
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
   #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
   ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
+  #ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)

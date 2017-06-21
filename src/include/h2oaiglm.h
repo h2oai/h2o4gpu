@@ -153,6 +153,7 @@ class H2OAIGLM {
 
     // Setup matrix _A and solver _LS
   int _Init();
+  int _Init_Predict();
 
 
  public:

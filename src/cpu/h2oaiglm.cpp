@@ -438,6 +438,9 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     _A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.), _validPreds);
   }
   // compute rmse (not yet)
+  for(unsigned int i=0;i<n;i++){
+    fprintf(stderr,"x[%d]=%g\n",i,_x[i]); fflush(stderr);
+  }
 
   // compute mean (not yet)
 
@@ -458,9 +461,30 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 }
 
 
+  template <typename T, typename M, typename P>
+int H2OAIGLM<T, M, P>::_Init_Predict() {
+  DEBUG_EXPECT(!_done_init);
+  if (_done_init)
+    return 1;
+  _done_init = true;
+
+  size_t m = _A.Rows();
+  size_t n = _A.Cols();
+
+  _A.Init();
+
+  return 0;
+}
+
 template <typename T, typename M, typename P>
 int H2OAIGLM<T, M, P>::Predict(void) {
+
   double t0 = timer<double>();
+
+  // Initialize
+  if (!_done_init)
+    _Init_Predict();
+
 
   // compute valid from validPreds = Avalid.xsolution
   _A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.), _validPreds);

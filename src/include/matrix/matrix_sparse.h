@@ -23,7 +23,7 @@ class MatrixSparse : public Matrix<T> {
   T *_vdatay;
   T *_weight;
   T * _de;
-  enum Ord {ROW, COL};
+  enum Ord {COL, ROW};
 
  private:
   

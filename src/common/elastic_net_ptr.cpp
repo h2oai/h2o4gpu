@@ -333,7 +333,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
     }
     *countshort=nAlphas*(n + *countmore);
     *Xvsalpha = (T*) calloc(*countshort,sizeof(T));
-    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
+    //    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
 
 
 
@@ -854,6 +854,9 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               }
 #else
               std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
+              for(unsigned int iii=0;iii<mTrain;iii++){
+                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
+              }
 #endif
               // RMSE: TRAIN
               trainRMSE = h2oaiglm::getRMSE(weights, mTrain, &trainPreds[0], trainY);
@@ -945,7 +948,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                   //#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
                   //#define NUMOTHER 3 // for lambda, alpha, tol
                   // Save solution to return to user
-                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2oaiglm_data.GetX()[0],n);
+                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T));
                   // Save rmse to return to user
                   RMSELOOP(ri) (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = localrmse[ri];
                   // Save lambda to return to user
@@ -956,8 +959,8 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                   (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE+2)] = tol;
                 }
               }
-              else{ // only save here if doing nFolds>2
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n);
+              else{// only done if realfolds>1
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T));
                 // Save rmse to return to user
                 RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = localrmse[ri];
                 // Save lambda to return to user
@@ -1028,7 +1031,8 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
             // if not doing folds, store best solution over all lambdas
             if(lambdatype==LAMBDATYPEPATH && nFolds<2){
               if(fi==0){ // only store first fold for user
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n); // not quite best, last lambda TODO FIXME
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T)); // not quite best, last lambda TODO FIXME
+                //                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
                 // Save rmse to return to user
                 RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = tbestrmse[ri];
                 // Save lambda to return to user
@@ -1118,7 +1122,10 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
     if(trainW) free(trainW);
 
     double tf = timer<double>();
-    if(VERBOSEENET) fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+    if(VERBOSEENET){
+      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+      fflush(stdout);
+    }
     if (flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
       flag = 0; // set flag
@@ -1194,7 +1201,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
       *validPredsvsalphalambda = NULL;
     }
     *validPredsvsalpha = (T*) calloc(*countshort/(n+NUMOTHER)*mValid,sizeof(T));
-    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
+    //    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
@@ -1297,10 +1304,10 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
           // copy existing solution to X0
           T *X0 = new T[n]();
           if(givefullpath){
-            memcpy(X0, &((*Xvsalphalambda)[MAPXALL(i,a,0)]),n);
+            memcpy(X0, &((*Xvsalphalambda)[MAPXALL(i,a,0)]),n*sizeof(T));
           }
           else{
-            memcpy(X0, &((*Xvsalpha)[MAPXBEST(a,0)]),n);
+            memcpy(X0, &((*Xvsalpha)[MAPXBEST(a,0)]),n*sizeof(T));
           }
 
           // set X from X0
@@ -1325,21 +1332,22 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
           
           // save preds (exclusive set, unlike X)
           if(givefullpath){ // save all preds
-            memcpy(&((*validPredsvsalphalambda)[MAPXALL(i,a,0)]),&validPreds[0],mValid);
+            memcpy(&((*validPredsvsalphalambda)[MAPXALL(i,a,0)]),&validPreds[0],mValid*sizeof(T));
           }
           else{ // save only best pred per lambda
-            memcpy(&((*validPredsvsalpha)[MAPXBEST(a,0)]),&validPreds[0],mValid);
+            memcpy(&((*validPredsvsalpha)[MAPXBEST(a,0)]),&validPreds[0],mValid*sizeof(T));
           }
 
           
+
           // get validY so can compute RMSE
           T *validY=NULL;
           validY = (T *) malloc(sizeof(T) * mValid);
-          Asource_.GetValidY(datatype, mValid, &validY);
-
+          int validYerror=Asource_.GetValidY(datatype, mValid, &validY);
 
           // Compute RMSE for predictions
-          if(validY!=NULL){
+          if(validYerror==0){
+            
             T weightsvalid[mValid];
             for (size_t i = 0; i < mValid; ++i) {//row
               weightsvalid[i] = 1.0;
@@ -1356,6 +1364,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
               int ri=VALIDRMSE; (*Xvsalpha)[MAPXBEST(a,n+ri)] = validRMSE;
             }
 
+            
             // report scores
             if(VERBOSEENET) Printmescore_predict(fil);
 #pragma omp critical
@@ -1389,7 +1398,10 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
 
 
     double tf = timer<double>();
-    if(VERBOSEENET) fprintf(stdout, "END PREDICT: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+    if(VERBOSEENET){
+      fprintf(stdout, "END PREDICT: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
+      fflush(stdout);
+    }
     if (flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
       flag = 0; // set flag
