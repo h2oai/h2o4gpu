@@ -854,9 +854,9 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               }
 #else
               std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
-              for(unsigned int iii=0;iii<mTrain;iii++){
-                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
-              }
+              //              for(unsigned int iii=0;iii<mTrain;iii++){
+              //                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
+              //              }
 #endif
               // RMSE: TRAIN
               trainRMSE = h2oaiglm::getRMSE(weights, mTrain, &trainPreds[0], trainY);

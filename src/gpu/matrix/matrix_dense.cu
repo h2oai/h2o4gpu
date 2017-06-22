@@ -1894,28 +1894,28 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     if(data){
       CUDACHECK(cudaMalloc(_data, m * n * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_data, data, m * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
-      fprintf(stderr,"_data: %p\n",(void*)*_data); fflush(stderr);
+      //      fprintf(stderr,"_data: %p\n",(void*)*_data); fflush(stderr);
     }
     else *_data=NULL;
 
     if(datay){
       CUDACHECK(cudaMalloc(_datay, m * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_datay, datay, m * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
-      fprintf(stderr,"_datay: %p\n",(void*)*_datay); fflush(stderr);
+      //      fprintf(stderr,"_datay: %p\n",(void*)*_datay); fflush(stderr);
     }
     else *_datay=NULL;
 
     if(vdata){
       CUDACHECK(cudaMalloc(_vdata, mValid * n * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_vdata, vdata, mValid * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
-      fprintf(stderr,"_vdata: %p\n",(void*)*_vdata); fflush(stderr);
+      //      fprintf(stderr,"_vdata: %p\n",(void*)*_vdata); fflush(stderr);
     }
     else *_vdata=NULL;
 
     if(vdatay){
       CUDACHECK(cudaMalloc(_vdatay, mValid * sizeof(T))); // allocate on GPU
       CUDACHECK(cudaMemcpy(*_vdatay, vdatay, mValid * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
-      fprintf(stderr,"_vdatay: %p\n",(void*)*_vdatay); fflush(stderr);
+      //      fprintf(stderr,"_vdatay: %p\n",(void*)*_vdatay); fflush(stderr);
     }
     else *_vdatay=NULL;
 
@@ -1930,7 +1930,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
       thrust::device_ptr<T> dev_ptr=thrust::device_pointer_cast(static_cast<T*>(*_weight));
       T fill_value=1.0;
       thrust::fill(dev_ptr, dev_ptr + m, fill_value);
-      fprintf(stderr,"_weight: %p\n",(void*)*_weight); fflush(stderr);
+      //      fprintf(stderr,"_weight: %p\n",(void*)*_weight); fflush(stderr);
     }
     
     POP_RANGE("MDsendsource",MDsendsource,1);

@@ -259,8 +259,8 @@ H2OAIGLMStatus H2OAIGLM<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   const T kProjTolIni = static_cast<T>(1e-5); // Projection tolerance
   const bool use_exact_stop = true; // false does worse in trainRMSE and maximum number of iterations with simple.R
 
-  fprintf(stderr,"solve _data=%p\n",_A._data); fflush(stderr);
-  fprintf(stderr,"solve _datay=%p\n",_A._datay); fflush(stderr);
+  //  fprintf(stderr,"solve _data=%p\n",_A._data); fflush(stderr);
+  //  fprintf(stderr,"solve _datay=%p\n",_A._datay); fflush(stderr);
   
 
   // Notes on variable names:

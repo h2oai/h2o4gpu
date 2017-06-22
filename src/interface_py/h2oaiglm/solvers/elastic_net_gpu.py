@@ -15,11 +15,11 @@ else:
         def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
             return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
         
-        def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath):
-            return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
+        def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c=c_void_p(0), d=c_void_p(0), e=c_void_p(0), givefullpath=0,dopredict=0):
+            return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath,dopredict)
         
-        def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0):
-            return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath)
+        def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0, dopredict=0):
+            return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
         def getrmse(self):
             return self.solver.getrmse()
         def getlambdas(self):

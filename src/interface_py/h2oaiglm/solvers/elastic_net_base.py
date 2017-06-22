@@ -573,8 +573,8 @@ class ElasticNetBaseSolver(object):
         dopredict=1
         self.prediction=self.fit(None, None, validX, None, testweight, givefullpath,dopredict)
         return(self.prediction) # something like validY
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
-        self.fit(trainX, trainY, validX, validY, weight, givefullpath)
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
+        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
         if validX==None:
             self.prediction=self.predict(trainX, testweight=weight, givefullpath=givefullpath)
         else:
