@@ -3,6 +3,52 @@
 #define CENTROIDS_H
 #include <thrust/device_vector.h>
 #include "kmeans_labels.h"
+#include "kmeans_general.h"
+
+#if(0)
+// below only needed if <sm_60
+template<typename T>
+__device__ T myatomicAdd(T* address, T val)
+{
+  myatomicAdd(address,val);
+}
+
+
+  __device__ double myatomicAdd(double* address, double val)
+{
+      unsigned long long int* address_as_ull =
+        (unsigned long long int*)address;
+      unsigned long long int old = *address_as_ull, assumed;
+      do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                                             __longlong_as_double(assumed)));
+      } while (assumed != old);
+      return __longlong_as_double(old);
+}
+
+  __device__ float myatomicAdd(float* address, float val)
+{
+  return(atomicAdd(address,val));
+}
+#else
+//template<typename T>
+//__device__ T myatomicAdd(T* address, T val)
+//{
+//  myatomicAdd(address,val);
+//}
+
+//  __device__ float myatomicAdd(float* address, float val)
+//{
+//  return(atomicAdd<float>(address,val));
+//}
+//  __device__ double myatomicAdd(double* address, double val)
+   //{
+   //  return(atomicAdd<double>(address,val));
+   //}
+#define myatomicAdd(A,B) atomicAdd(A,B)
+#endif
 
 namespace kmeans {
   namespace detail {
@@ -14,7 +60,7 @@ namespace kmeans {
           int count, int* counts) {
         int index = label * d + dimension;
         T* target = centroids + index;
-        atomicAdd(target, accumulator);
+        myatomicAdd(target, accumulator);
         if (dimension == 0) {
           atomicAdd(counts + label, count);
         }             
@@ -109,8 +155,8 @@ namespace kmeans {
         memzero(counts);
 
         //Calculate centroids 
-        int n_threads_x = 64;
-        int n_threads_y = 16;
+        int n_threads_x = 64; // TODO FIXME
+        int n_threads_y = 16; // TODO FIXME
         //XXX Number of blocks here is hard coded at 30
         //This should be taken care of more thoughtfully.
         calculate_centroids<<<dim3(1, 30), dim3(n_threads_x, n_threads_y),

@@ -5,8 +5,19 @@
 #include <iostream>
 #include <cublas_v2.h>
 #include <cfloat>
+#include "kmeans_general.h"
 
-extern cudaStream_t cuda_stream[16];
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+  if (code != cudaSuccess)
+    {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+    }
+}
+
+extern cudaStream_t cuda_stream[MAX_NGPUS];
 
 template<unsigned int i>
 extern __global__ void debugMark(){};
@@ -87,18 +98,17 @@ namespace kmeans {
             thrust::raw_pointer_cast(dots.data()));
       }
 
+#define MAX_BLOCK_THREADS 32    
     template<typename T>
       __global__ void all_dots(int n, int k, T* data_dots, T* centroid_dots, T* dots) {
-        __shared__ T local_data_dots[32];
-        __shared__ T local_centroid_dots[32];
+        __shared__ T local_data_dots[MAX_BLOCK_THREADS];
+        __shared__ T local_centroid_dots[MAX_BLOCK_THREADS];
+        //        if(threadIdx.x==0 && threadIdx.y==0 && blockIdx.x==0) printf("inside %d %d %d\n",threadIdx.x,blockIdx.x,blockDim.x);
 
         int data_index = threadIdx.x + blockIdx.x * blockDim.x;
         if ((data_index < n) && (threadIdx.y == 0)) {
           local_data_dots[threadIdx.x] = data_dots[data_index];
         }
-
-
-
 
         int centroid_index = threadIdx.x + blockIdx.y * blockDim.y;
         if ((centroid_index < k) && (threadIdx.y == 1)) {
@@ -108,25 +118,35 @@ namespace kmeans {
         __syncthreads();
 
         centroid_index = threadIdx.y + blockIdx.y * blockDim.y;
+        //        printf("data_index=%d centroid_index=%d\n",data_index,centroid_index);
         if ((data_index < n) && (centroid_index < k)) {
           dots[data_index + centroid_index * n] = local_data_dots[threadIdx.x] +
             local_centroid_dots[threadIdx.y];
         }
       }
 
+    
     template<typename T>
       void make_all_dots(int n, int k, thrust::device_vector<T>& data_dots,
           thrust::device_vector<T>& centroid_dots,
           thrust::device_vector<T>& dots) {
         int dev_num;
         cudaGetDevice(&dev_num);
+        const int BLOCK_THREADSX = MAX_BLOCK_THREADS; // BLOCK_THREADSX*BLOCK_THREADSY<=1024 on modern arch's (sm_61)
+        const int BLOCK_THREADSY = MAX_BLOCK_THREADS;
+        const int GRID_SIZEX=(n-1)/BLOCK_THREADSX+1; // on old arch's this has to be less than 2^16=65536
+        const int GRID_SIZEY=(k-1)/BLOCK_THREADSY+1; // this has to be less than 2^16=65536
+        //        printf("pre all_dots: %d %d %d %d\n",GRID_SIZEX,GRID_SIZEY,BLOCK_THREADSX,BLOCK_THREADSY); fflush(stdout);
         all_dots<<<
-          dim3((n-1)/32+1,
-              (k-1)/32+1),
-          dim3(32, 32), 0,
+          dim3(GRID_SIZEX,GRID_SIZEY),
+          dim3(BLOCK_THREADSX, BLOCK_THREADSY), 0,
           cuda_stream[dev_num]>>>(n, k, thrust::raw_pointer_cast(data_dots.data()),
               thrust::raw_pointer_cast(centroid_dots.data()),
               thrust::raw_pointer_cast(dots.data()));
+#if(DEBUG)
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+#endif
       };
 
     template<typename T>
@@ -141,7 +161,7 @@ namespace kmeans {
       __global__ void make_new_labels(int n, int k, T* pairwise_distances,
           int* labels, int* changes,
           T* distances) {
-        T min_distance = FLT_MAX;
+      T min_distance = FLT_MAX; //std::numeric_limits<T>::max(); // might be ok TODO FIXME
         T min_idx = -1;
         int global_id = threadIdx.x + blockIdx.x * blockDim.x;
         if (global_id < n) {
@@ -183,14 +203,14 @@ namespace kmeans {
 }
 namespace mycub {
 
-  extern void *d_key_alt_buf[16];
-  extern unsigned int key_alt_buf_bytes[16];
-  extern void *d_value_alt_buf[16];
-  extern unsigned int value_alt_buf_bytes[16];
-  extern void *d_temp_storage[16];
-  extern size_t temp_storage_bytes[16];
-  extern void *d_temp_storage2[16];
-  extern size_t temp_storage_bytes2[16];
+  extern void *d_key_alt_buf[MAX_NGPUS];
+  extern unsigned int key_alt_buf_bytes[MAX_NGPUS];
+  extern void *d_value_alt_buf[MAX_NGPUS];
+  extern unsigned int value_alt_buf_bytes[MAX_NGPUS];
+  extern void *d_temp_storage[MAX_NGPUS];
+  extern size_t temp_storage_bytes[MAX_NGPUS];
+  extern void *d_temp_storage2[MAX_NGPUS];
+  extern size_t temp_storage_bytes2[MAX_NGPUS];
   extern bool cub_initted;
 
   void sort_by_key_int(thrust::device_vector<int>& keys, thrust::device_vector<int>& values);

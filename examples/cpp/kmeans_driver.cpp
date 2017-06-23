@@ -51,7 +51,8 @@ int main(int argc, char **argv) {
     labels[i] = static_cast<int>(rand() % k);
   }
   const char ord='r';
-  h2oaikmeans::makePtr_dense<real_t>(n_gpu, rows, cols, ord, k, max_iterations, threshold, &data[0], &labels[0], &res);
+  int init_from_labels=1;//true as set above, otherwise internally will set initial centroids "smartly"
+  h2oaikmeans::makePtr_dense<real_t>(n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, threshold, &data[0], &labels[0], &res);
 
   // report something about centroids that site in res as k*cols data block
 #endif

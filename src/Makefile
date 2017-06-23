@@ -38,10 +38,11 @@ MKLSTUFF=
 endif
 
 # CUDA Flags
-NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
-                -gencode=arch=compute_50,code=sm_50 \
-                -gencode=arch=compute_52,code=sm_52 \
-                -gencode=arch=compute_52,code=compute_52
+#NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
+#                -gencode=arch=compute_50,code=sm_50 \
+#                -gencode=arch=compute_52,code=sm_52 \
+#                -gencode=arch=compute_52,code=compute_52
+NVCC_GENCODE ?= -gencode=arch=compute_61,code=sm_61 # required for kmeans for larger data of size rows/32>2^16
 
 CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
@@ -87,7 +88,7 @@ endif
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
 CUFLAGS=$(IFLAGS) -std=c++11 -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
-CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas
+CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas $(NVCC_GENCODE)
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config

@@ -6,6 +6,7 @@
 #include <thrust/reduce.h>
 #include "centroids.h"
 #include "kmeans_labels.h"
+#include "kmeans_general.h"
 
 template<typename T>
 void print_array(T& array, int m, int n) {
@@ -63,20 +64,37 @@ namespace kmeans {
         thrust::device_vector<T>** distances,
         int n_gpu,
         int max_iterations,
-        bool init_from_labels=true,
+        int init_from_labels=0,
         double threshold=1e-3) {
-      thrust::device_vector<T> *data_dots[16];
-      thrust::device_vector<T> *centroid_dots[16];
-      thrust::device_vector<T> *pairwise_distances[16];
-      thrust::device_vector<int> *labels_copy[16];
-      thrust::device_vector<int> *range[16];
-      thrust::device_vector<int> *indices[16];
-      thrust::device_vector<int> *counts[16];
+    
+      thrust::device_vector<T> *data_dots[MAX_NGPUS];
+      thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
+      thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
+      thrust::device_vector<int> *labels_copy[MAX_NGPUS];
+      thrust::device_vector<int> *range[MAX_NGPUS];
+      thrust::device_vector<int> *indices[MAX_NGPUS];
+      thrust::device_vector<int> *counts[MAX_NGPUS];
 
+
+#if(DEBUG)
+      // debug
+      thrust::host_vector<T> *h_data_dots[MAX_NGPUS];
+      thrust::host_vector<T> *h_centroid_dots[MAX_NGPUS];
+      thrust::host_vector<T> *h_pairwise_distances[MAX_NGPUS];
+      thrust::host_vector<int> *h_labels_copy[MAX_NGPUS];
+      thrust::host_vector<int> *h_range[MAX_NGPUS];
+      thrust::host_vector<int> *h_indices[MAX_NGPUS];
+      thrust::host_vector<int> *h_counts[MAX_NGPUS];
+#endif
+
+      
       thrust::host_vector<T> h_centroids( k * d );
       thrust::host_vector<T> h_centroids_tmp( k * d );
-      int h_changes[16], *d_changes[16];
-      T h_distance_sum[16], *d_distance_sum[16];
+      int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
+      T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
+
+
+      
 
 
       for (int q = 0; q < n_gpu; q++) {
@@ -85,6 +103,7 @@ namespace kmeans {
         cudaMalloc(&d_changes[q], sizeof(int));
         cudaMalloc(&d_distance_sum[q], sizeof(T));
         detail::labels_init();
+        
         data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
         centroid_dots[q] = new thrust::device_vector<T>(n/n_gpu);
         pairwise_distances[q] = new thrust::device_vector<T>(n/n_gpu * k);
@@ -92,6 +111,18 @@ namespace kmeans {
         range[q] = new thrust::device_vector<int>(n/n_gpu);
         counts[q] = new thrust::device_vector<int>(k);
         indices[q] = new thrust::device_vector<int>(n/n_gpu);
+
+#if(DEBUG)
+        // debug
+        h_data_dots[q] = new thrust::host_vector <T>(n/n_gpu);
+        h_centroid_dots[q] = new thrust::host_vector<T>(n/n_gpu);
+        h_pairwise_distances[q] = new thrust::host_vector<T>(n/n_gpu * k);
+        h_labels_copy[q] = new thrust::host_vector<int>(n/n_gpu * d);
+        h_range[q] = new thrust::host_vector<int>(n/n_gpu);
+        h_counts[q] = new thrust::host_vector<int>(k);
+        h_indices[q] = new thrust::host_vector<int>(n/n_gpu);
+#endif
+        
         //Create and save "range" for initializing labels
         thrust::copy(thrust::counting_iterator<int>(0),
             thrust::counting_iterator<int>(n/n_gpu), 
@@ -129,6 +160,18 @@ namespace kmeans {
               *data[q], *centroids[q], *data_dots[q],
               *centroid_dots[q], *pairwise_distances[q]);
 
+#if(DEBUG)
+          *h_pairwise_distances[0] = *pairwise_distances[0];
+          size_t countpos=0;
+          size_t countneg=0;
+          for(int ll=0;ll<(*h_pairwise_distances[0]).size();ll++){
+            T result=(*h_pairwise_distances[0])[ll];
+            if(result>0) countpos++;
+            if(result<0) countneg++;
+          }
+          fprintf(stderr,"countpos=%zu countneg=%zu\n",countpos,countneg); fflush(stderr);
+#endif
+
           detail::relabel(n/n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
           //TODO remove one memcpy
           detail::memcpy(*labels_copy[q], *labels[q]);
@@ -137,29 +180,39 @@ namespace kmeans {
           //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
           mycub::sum_reduce(*distances[q], d_distance_sum[q]);
         }
-        double distance_sum = 0.0;
-        int moved_points = 0.0;
-        for (int q = 0; q < n_gpu; q++) {
-          cudaMemcpyAsync(h_changes+q, d_changes[q], sizeof(int), cudaMemcpyDeviceToHost, cuda_stream[q]);
-          cudaMemcpyAsync(h_distance_sum+q, d_distance_sum[q], sizeof(T), cudaMemcpyDeviceToHost, cuda_stream[q]);
-          detail::streamsync(q);
-          //std::cout << "Device " << q << ":  Iteration " << i << " produced " << h_changes[q]
-          //  << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
-          distance_sum += h_distance_sum[q];
-          moved_points += h_changes[q];
-        }
-        if (i > 0) {
-          double fraction = (double)moved_points / n;
-          std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
-          if (fraction < threshold) {
-            std::cout << "Threshold triggered. Terminating early." << std::endl;
-            return i + 1;
+
+        // whether to perform per iteration check
+        int docheck=1;
+        if(docheck){
+          double distance_sum = 0.0;
+          int moved_points = 0.0;
+          for (int q = 0; q < n_gpu; q++) {
+            cudaMemcpyAsync(h_changes+q, d_changes[q], sizeof(int), cudaMemcpyDeviceToHost, cuda_stream[q]);
+            cudaMemcpyAsync(h_distance_sum+q, d_distance_sum[q], sizeof(T), cudaMemcpyDeviceToHost, cuda_stream[q]);
+            detail::streamsync(q);
+#if(VERBOSE)
+            std::cout << "Device " << q << ":  Iteration " << i << " produced " << h_changes[q]
+                      << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
+#endif
+            distance_sum += h_distance_sum[q];
+            moved_points += h_changes[q];
+          }
+          if (i > 0) {
+            double fraction = (double)moved_points / n;
+#define NUMSTEP 10
+            if(VERBOSE || VERBOSE==0 && i%NUMSTEP==0){
+              std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
+            }
+            if (fraction < threshold) {
+              std::cout << "Threshold triggered. Terminating early." << std::endl;
+              return i + 1;
+            }
           }
         }
-      }
-      if (*flag) {
-        fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
-        *flag = 0; // set flag
+        if (*flag) {
+          fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
+          *flag = 0; // set flag
+        }
       }
       for (int q = 0; q < n_gpu; q++) {
         cudaSetDevice(q);
