@@ -62,7 +62,7 @@ endif
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
-CULDFLAGS_=-lcudart -lcublas -lcusparse -lcusolver -lrt -I$(CUDA_HOME)/include $(LINKFLAGS) -lcurand $(CUDFLAGS)
+CULDFLAGS_=-lcudart -lcudadevrt -lcublas -lcusparse -lcusolver -lrt -I$(CUDA_HOME)/include $(LINKFLAGS) -lcurand $(CUDFLAGS)
 ifeq ($(USENVTX),1)
 CULDFLAGS_+=-lnvToolsExt
 endif
