@@ -5,15 +5,7 @@
 #include "kmeans_labels.h"
 #include "kmeans_general.h"
 
-#if(0)
-// below only needed if <sm_60
-template<typename T>
-__device__ T myatomicAdd(T* address, T val)
-{
-  myatomicAdd(address,val);
-}
-
-
+#if(1)
   __device__ double myatomicAdd(double* address, double val)
 {
       unsigned long long int* address_as_ull =

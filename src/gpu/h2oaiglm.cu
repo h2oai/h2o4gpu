@@ -21,7 +21,7 @@
 #include "cuda_utils.h"
 
 #include "timer.h"
-#include "kmeans.h"
+//#include "kmeans.h"
 
 typedef struct {
   double* sendBuff;

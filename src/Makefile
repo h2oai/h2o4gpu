@@ -42,7 +42,7 @@ endif
 #                -gencode=arch=compute_50,code=sm_50 \
 #                -gencode=arch=compute_52,code=sm_52 \
 #                -gencode=arch=compute_52,code=compute_52
-NVCC_GENCODE ?= -gencode=arch=compute_61,code=sm_61 # required for kmeans for larger data of size rows/32>2^16
+NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 # required for kmeans for larger data of size rows/32>2^16
 
 CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
