@@ -35,9 +35,11 @@ MKLSTUFF=
 endif
 
 # CUDA Flags
-NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
-                -gencode=arch=compute_50,code=sm_50 \
-                -gencode=arch=compute_52,code=sm_52 \
+#NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
+#                -gencode=arch=compute_50,code=sm_50 \
+#                -gencode=arch=compute_52,code=sm_52 \
+#                -gencode=arch=compute_52,code=compute_52
+NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 \
                 -gencode=arch=compute_52,code=compute_52
 
 CUDA_LIB=$(CUDA_HOME)/lib64
@@ -49,7 +51,7 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL) # -DDEBUG # -DUSE_NCCL
-CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) # -DUSE_NVTX=1
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) $(NVCC_GENCODE)  # -DUSE_NVTX=1
 
 CXXFLAGS=$(IFLAGS) -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
 

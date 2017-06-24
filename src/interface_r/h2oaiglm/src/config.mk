@@ -41,7 +41,7 @@ CXXFLAGS+=$(DEVICEOPTS)  -DH2OAIGLM_SINGLE=0
 
 ifeq ($(TARGET), gpulib)
 
-    LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcublas -lcusparse -lcusolver
+    LD_FLAGS=$(R_LIB) -L"$(CUDA_LIB)" -lcudart -lcudadevrt -lcublas -lcusparse -lcusolver
 	TARGETPATH=gpu
 	BUILDPATH=build/gpu/
 
