@@ -42,7 +42,7 @@ namespace kmeans {
     }
 
     template<>
-      void calculate_distances<double>(int n, int d, int k,
+    void calculate_distances<double>(int q, int n, int d, int k,
           thrust::device_vector<double>& data,
           thrust::device_vector<double>& centroids,
           thrust::device_vector<double>& data_dots,
@@ -80,7 +80,7 @@ namespace kmeans {
       }
 
     template<>
-      void calculate_distances<float>(int n, int d, int k,
+    void calculate_distances<float>(int q, int n, int d, int k,
           thrust::device_vector<float>& data,
           thrust::device_vector<float>& centroids,
           thrust::device_vector<float>& data_dots,
@@ -95,16 +95,16 @@ namespace kmeans {
         thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
 
         for(int i=0;i<n;i++){
-          if(i%100000==0){
-            fprintf(stderr,"0data_dots[%d]=%g\n",i,h_data_dots[i]); fflush(stderr);
+          if(i%1==0){
+            fprintf(stderr,"0 q=%d data_dots[%d]=%g\n",q,i,h_data_dots[i]); fflush(stderr);
           }
         }
         for(int i=0;i<k;i++){
-          fprintf(stderr,"0centroid_dots[%d]=%g\n",i,h_centroid_dots[i]); fflush(stderr);
+          fprintf(stderr,"0 q=%d centroid_dots[%d]=%g\n",q,i,h_centroid_dots[i]); fflush(stderr);
         }
         for(int i=0;i<n*k;i++){
-          if(i%1000000==0){
-            fprintf(stderr,"0pairwise_distances[%d]=%g\n",i,h_pairwise_distances[i]); fflush(stderr);
+          if(i%1==0){
+            fprintf(stderr,"0 q=%d pairwise_distances[%d]=%g\n",q,i,h_pairwise_distances[i]); fflush(stderr);
           }
         }
 #endif
@@ -198,16 +198,16 @@ namespace kmeans {
           thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
 
           for(int i=0;i<M*K;i++){
-            if(i%100000==0){
-              fprintf(stderr,"data[%d]=%g\n",i,h_data[i]); fflush(stderr);
+            if(i%1==0){
+              fprintf(stderr,"q=%d data[%d]=%g\n",q,i,h_data[i]); fflush(stderr);
             }
           }
           for(int i=0;i<K*N;i++){
-            fprintf(stderr,"centroids[%d]=%g\n",i,h_centroids[i]);
+            fprintf(stderr,"q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
           }
           for(int i=0;i<M*N;i++){
-            if(i%100000==0){
-              fprintf(stderr,"pairwise_distances[%d]=%g\n",i,h_pairwise_distances[i]); fflush(stderr);
+            if(i%1==0){
+              fprintf(stderr,"q=%d pairwise_distances[%d]=%g\n",q,i,h_pairwise_distances[i]); fflush(stderr);
             }
           }
 #endif          

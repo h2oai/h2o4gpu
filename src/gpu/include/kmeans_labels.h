@@ -7,7 +7,6 @@
 #include <cfloat>
 #include "kmeans_general.h"
 
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
   if (code != cudaSuccess)
@@ -16,6 +15,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
     }
 }
+
+
 
 extern cudaStream_t cuda_stream[MAX_NGPUS];
 
@@ -93,9 +94,16 @@ namespace kmeans {
     template<typename T>
       void make_self_dots(int n, int d, thrust::device_vector<T>& data, thrust::device_vector<T>& dots) {
         int dev_num;
+#define MAX_BLOCK_THREADS0 256
+        const int GRID_SIZE=(n-1)/MAX_BLOCK_THREADS0+1;
         cudaGetDevice(&dev_num);
-        self_dots<<<(n-1)/256+1, 256, 0, cuda_stream[dev_num]>>>(n, d, thrust::raw_pointer_cast(data.data()),
+        self_dots<<<GRID_SIZE, MAX_BLOCK_THREADS0, 0, cuda_stream[dev_num]>>>(n, d, thrust::raw_pointer_cast(data.data()),
             thrust::raw_pointer_cast(dots.data()));
+#if(DEBUG)
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+#endif
+        
       }
 
 #define MAX_BLOCK_THREADS 32    
@@ -150,7 +158,7 @@ namespace kmeans {
       };
 
     template<typename T>
-      void calculate_distances(int n, int d, int k,
+      void calculate_distances(int q, int n, int d, int k,
           thrust::device_vector<T>& data,
           thrust::device_vector<T>& centroids,
           thrust::device_vector<T>& data_dots,
@@ -191,12 +199,18 @@ namespace kmeans {
         int dev_num;
         cudaGetDevice(&dev_num);
         cudaMemsetAsync(d_changes, 0, sizeof(int), cuda_stream[dev_num]);
-        make_new_labels<<<(n-1)/256+1,256,0,cuda_stream[dev_num]>>>(
+#define MAX_BLOCK_THREADS2 256
+        const int GRID_SIZE=(n-1)/MAX_BLOCK_THREADS2+1;
+        make_new_labels<<<GRID_SIZE, MAX_BLOCK_THREADS2,0,cuda_stream[dev_num]>>>(
             n, k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             thrust::raw_pointer_cast(labels.data()),
             d_changes,
             thrust::raw_pointer_cast(distances.data()));
+#if(DEBUG)
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+#endif
       }
 
   }

@@ -129,7 +129,7 @@ namespace kmeans {
       }
 
     template<typename T>
-      void find_centroids(int n, int d, int k,
+      void find_centroids(int q, int n, int d, int k,
           thrust::device_vector<T>& data,
           thrust::device_vector<int>& labels,
           thrust::device_vector<T>& centroids,
@@ -159,7 +159,7 @@ namespace kmeans {
         int n_threads_y = 16; // TODO FIXME
         //XXX Number of blocks here is hard coded at 30
         //This should be taken care of more thoughtfully.
-        calculate_centroids<<<dim3(1, 30), dim3(n_threads_x, n_threads_y),
+        calculate_centroids<<<dim3(1, 30), dim3(n_threads_x, n_threads_y), // TODO FIXME
           0, cuda_stream[dev_num]>>>
             (n, d, k,
              thrust::raw_pointer_cast(data.data()),
@@ -167,13 +167,28 @@ namespace kmeans {
              thrust::raw_pointer_cast(indices.data()),
              thrust::raw_pointer_cast(centroids.data()),
              thrust::raw_pointer_cast(counts.data()));
-
+#if(DEBUG)
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+        thrust::host_vector<T> h_centroids = centroids;
+        for(int i=0;i<k*d;i++){
+          fprintf(stderr,"after q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
+        }
+#endif
         //Scale centroids
-        scale_centroids<<<dim3((d-1)/32+1, (k-1)/32+1), dim3(32, 32),
+        scale_centroids<<<dim3((d-1)/32+1, (k-1)/32+1), dim3(32, 32), // TODO FIXME
           0, cuda_stream[dev_num]>>>
             (d, k,
              thrust::raw_pointer_cast(counts.data()),
              thrust::raw_pointer_cast(centroids.data()));
+#if(DEBUG)
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+        //thrust::host_vector<T> h_centroids = centroids;
+        for(int i=0;i<k*d;i++){
+          fprintf(stderr,"afters q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
+        }
+#endif
       }
 
   }

@@ -9,6 +9,9 @@
 #include <random>
 #include "include/kmeans_general.h"
 
+
+
+
 #define CUDACHECK(cmd) do {                         \
     cudaError_t e = cmd;                              \
     if( e != cudaSuccess ) {                          \
@@ -56,6 +59,13 @@ void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *sr
       host_array[i] = srcdata[indexi*d + indexj];
 #endif
     }
+#if(DEBUG)
+    for(int i = 0; i < npergpu; i++) {
+      for(int j = 0; j < d; j++) {
+        fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
+      }
+    }
+#endif
   }
   else{
     fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);

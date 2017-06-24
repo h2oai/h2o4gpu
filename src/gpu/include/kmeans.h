@@ -105,7 +105,7 @@ namespace kmeans {
         detail::labels_init();
         
         data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
-        centroid_dots[q] = new thrust::device_vector<T>(n/n_gpu);
+        centroid_dots[q] = new thrust::device_vector<T>(k*d);
         pairwise_distances[q] = new thrust::device_vector<T>(n/n_gpu * k);
         labels_copy[q] = new thrust::device_vector<int>(n/n_gpu * d);
         range[q] = new thrust::device_vector<int>(n/n_gpu);
@@ -115,7 +115,7 @@ namespace kmeans {
 #if(DEBUG)
         // debug
         h_data_dots[q] = new thrust::host_vector <T>(n/n_gpu);
-        h_centroid_dots[q] = new thrust::host_vector<T>(n/n_gpu);
+        h_centroid_dots[q] = new thrust::host_vector<T>(k*d);
         h_pairwise_distances[q] = new thrust::host_vector<T>(n/n_gpu * k);
         h_labels_copy[q] = new thrust::host_vector<int>(n/n_gpu * d);
         h_range[q] = new thrust::host_vector<int>(n/n_gpu);
@@ -130,14 +130,14 @@ namespace kmeans {
 
         detail::make_self_dots(n/n_gpu, d, *data[q], *data_dots[q]);
         if (init_from_labels) {
-          detail::find_centroids(n/n_gpu, d, k, *data[q], *labels[q], *centroids[q], *range[q], *indices[q], *counts[q]);
+          detail::find_centroids(q, n/n_gpu, d, k, *data[q], *labels[q], *centroids[q], *range[q], *indices[q], *counts[q]);
         }
       }
 
       int i=0;
       for(; i < max_iterations; i++) {
         if (*flag) continue;
-        //Average the centroids from each device
+        //Average the centroids from each device (same as averaging centroid updates)
         if (n_gpu > 1) {
           for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
           for (int q = 0; q < n_gpu; q++) {
@@ -155,8 +155,10 @@ namespace kmeans {
         }
         for (int q = 0; q < n_gpu; q++) {
           cudaSetDevice(q);
-
-          detail::calculate_distances(n/n_gpu, d, k,
+#if(DEBUG)
+          fprintf(stderr,"q=%d\n",q); fflush(stderr);
+#endif
+          detail::calculate_distances(q, n/n_gpu, d, k,
               *data[q], *centroids[q], *data_dots[q],
               *centroid_dots[q], *pairwise_distances[q]);
 
@@ -175,7 +177,7 @@ namespace kmeans {
           detail::relabel(n/n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
           //TODO remove one memcpy
           detail::memcpy(*labels_copy[q], *labels[q]);
-          detail::find_centroids(n/n_gpu, d, k, *data[q], *labels[q], *centroids[q], *range[q], *indices[q], *counts[q]);
+          detail::find_centroids(q, n/n_gpu, d, k, *data[q], *labels[q], *centroids[q], *range[q], *indices[q], *counts[q]);
           detail::memcpy(*labels[q], *labels_copy[q]);
           //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
           mycub::sum_reduce(*distances[q], d_distance_sum[q]);
