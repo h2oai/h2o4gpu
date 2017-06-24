@@ -94,7 +94,7 @@ namespace kmeans {
         thrust::host_vector<float> h_centroid_dots = centroid_dots;
         thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
 
-        for(int i=0;i<n;i++){
+        for(int i=0;i<n*d;i++){
           if(i%1==0){
             fprintf(stderr,"0 q=%d data_dots[%d]=%g\n",q,i,h_data_dots[i]); fflush(stderr);
           }

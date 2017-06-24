@@ -274,7 +274,7 @@ namespace h2oaikmeans {
         int q=master_device;
         CUDACHECK(cudaSetDevice(q));
         random_centroids(ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
-        size_t bytecount = d*k; // all centroids
+        size_t bytecount = d*k*sizeof(T); // all centroids
 
         // copy centroids to rest of gpus asynchronously
         std::vector<cudaStream_t *> streams;
@@ -294,7 +294,15 @@ namespace h2oaikmeans {
         for (int q = 1; q < n_gpu; q++) {
           cudaSetDevice(q);
           cudaStreamDestroy(*(streams[q]));
+          thrust::host_vector<T> h_centroidq=*centroids[q];
+          fprintf(stderr,"HERE1\n"); fflush(stderr);
+          for(int ii=0;ii<k*d;ii++){
+            fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
+          }
+          fprintf(stderr,"HERE2\n"); fflush(stderr);
         }
+        fprintf(stderr,"HERE3\n"); fflush(stderr);
+
       }
       
       
