@@ -8,6 +8,16 @@ cudaStream_t cuda_stream[MAX_NGPUS];
 namespace kmeans {
   namespace detail {
 
+    template< typename T >
+    struct absolute_value {
+      __host__ __device__
+      void operator()( T &x ) const {
+        x = (x>0 ? x : -x);
+      }
+    };
+
+    
+
     cublasHandle_t cublas_handle[MAX_NGPUS];
 
     void labels_init() {
@@ -73,10 +83,13 @@ namespace kmeans {
               thrust::raw_pointer_cast(pairwise_distances.data()),
               n); //Has to be n or k
 
+        thrust::for_each(pairwise_distances.begin(), pairwise_distances.end(), absolute_value<double>() ); // in-place transformation to ensure all distances are positive indefinite
+
         if (stat != CUBLAS_STATUS_SUCCESS) {
           std::cout << "Invalid Dgemm" << std::endl;
           exit(1);
         }
+        
       }
 
     template<>
@@ -94,7 +107,7 @@ namespace kmeans {
         thrust::host_vector<float> h_centroid_dots = centroid_dots;
         thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
 
-        for(int i=0;i<n*d;i++){
+        for(int i=0;i<n;i++){
           if(i%1==0){
             fprintf(stderr,"0 q=%d data_dots[%d]=%g\n",q,i,h_data_dots[i]); fflush(stderr);
           }
@@ -192,6 +205,7 @@ namespace kmeans {
               ldc); //Has to be n or k
 
 
+          thrust::for_each(pairwise_distances.begin(), pairwise_distances.end(), absolute_value<float>() ); // in-place transformation to ensure all distances are positive indefinite
 #if(DEBUG)
           thrust::host_vector<float> h_data = data;
           thrust::host_vector<float> h_centroids = centroids;

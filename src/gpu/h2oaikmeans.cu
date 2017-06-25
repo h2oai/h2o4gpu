@@ -7,6 +7,8 @@
 #include "h2oaikmeans.h"
 #include "kmeans.h"
 #include <random>
+#include <algorithm>
+#include <vector>
 #include "include/kmeans_general.h"
 
 
@@ -71,6 +73,35 @@ void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *sr
     fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
     for(int i = 0; i < npergpu * d; i++) {
       host_array[i] = srcdata[q*npergpu*d + i]; // shift by which gpu
+    }
+  }
+  array = host_array;
+}
+template<typename T>
+void nonrandom_data_new(std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d) {
+  thrust::host_vector<T> host_array(npergpu*d);
+ 
+  if(ord=='c'){
+    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+     for(int i = 0; i < npergpu; i++) {
+      for(int j=0;j<d;j++){
+        host_array[i*d + j] = srcdata[v[q*npergpu + i] + j*n]; // shift by which gpu
+      }
+    }
+#if(DEBUG)
+    for(int i = 0; i < npergpu; i++) {
+      for(int j = 0; j < d; j++) {
+        fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
+      }
+    }
+#endif
+  }
+  else{
+    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+     for(int i = 0; i < npergpu; i++) {
+      for(int j=0;j<d;j++){
+        host_array[i*d + j] = srcdata[v[q*npergpu + i]*d + j]; // shift by which gpu
+      }
     }
   }
   array = host_array;
@@ -141,6 +172,35 @@ void random_centroids(const char ord, thrust::device_vector<T>& array, const T *
       int reali = dis(gen); // + q*npergpu ; // row sampled
       for(int j = 0; j < d; j++) { // cols
         host_array[i*d+j] = srcdata[reali*d + j];
+      }
+    }
+  }
+  array = host_array;
+}
+template<typename T>
+void random_centroids_new(std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
+  thrust::host_vector<T> host_array(k*d);
+
+  if(ord=='c'){
+    if(VERBOSE){
+      fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    }
+    for(int i = 0; i < k; i++) { // rows
+      for(int j = 0; j < d; j++) { // cols
+        host_array[i*d+j] = srcdata[v[i] + j*n];
+#if(DEBUG)
+        fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,v[i],host_array[i*d+j]); fflush(stderr);
+#endif
+      }
+    }
+  }
+  else{
+    if(VERBOSE){
+      fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    }
+    for(int i = 0; i < k; i++) { // rows
+      for(int j = 0; j < d; j++) { // cols
+        host_array[i*d+j] = srcdata[v[i]*d + j];
       }
     }
   }
@@ -257,6 +317,14 @@ namespace h2oaikmeans {
       std::cout << "Max. number of iterations: " << max_iterations << std::endl;
       std::cout << "Stopping threshold: " << threshold << std::endl;
 
+      // setup random sequence for sampling data
+      //      std::random_device rd;
+      //      std::mt19937 g(rd());
+      std::vector<int> v(n);
+      std::iota (std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., 99.
+      std::random_shuffle(v.begin(), v.end());
+
+      
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(q));
         std::cout << "Copying data to device: " << q << std::endl;
@@ -265,7 +333,7 @@ namespace h2oaikmeans {
         //        std::vector<T> vdata(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d]);
         //        thrust::copy(vdata.begin(),vdata.end(),data[q]->begin());
         //random_labels(*labels[q], n/n_gpu, k);
-        nonrandom_data(ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
+        nonrandom_data_new(v, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
         nonrandom_labels(ord, *labels[q], &srclabels[0], q, n, n/n_gpu);
       }
       // get non-random centroids on 1 gpu, then share with rest.
@@ -274,6 +342,7 @@ namespace h2oaikmeans {
         int q=master_device;
         CUDACHECK(cudaSetDevice(q));
         random_centroids(ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
+        random_centroids_new(v, ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
         size_t bytecount = d*k*sizeof(T); // all centroids
 
         // copy centroids to rest of gpus asynchronously
@@ -294,15 +363,13 @@ namespace h2oaikmeans {
         for (int q = 1; q < n_gpu; q++) {
           cudaSetDevice(q);
           cudaStreamDestroy(*(streams[q]));
+#if(DEBUG)
           thrust::host_vector<T> h_centroidq=*centroids[q];
-          fprintf(stderr,"HERE1\n"); fflush(stderr);
           for(int ii=0;ii<k*d;ii++){
             fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
           }
-          fprintf(stderr,"HERE2\n"); fflush(stderr);
+#endif
         }
-        fprintf(stderr,"HERE3\n"); fflush(stderr);
-
       }
       
       
