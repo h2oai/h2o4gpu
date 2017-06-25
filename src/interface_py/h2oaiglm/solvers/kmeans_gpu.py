@@ -51,7 +51,7 @@ else:
 
         
     class KMeansGPU(object):
-        def __init__(self, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=1, **params):
+        def __init__(self, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=0, **params):
             self.k = k
             self.n_gpus = n_gpus
             self.params = params
