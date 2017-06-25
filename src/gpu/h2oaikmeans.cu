@@ -341,7 +341,7 @@ namespace h2oaikmeans {
         int master_device=0;
         int q=master_device;
         CUDACHECK(cudaSetDevice(q));
-        random_centroids(ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
+        //random_centroids(ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
         random_centroids_new(v, ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
         size_t bytecount = d*k*sizeof(T); // all centroids
 
