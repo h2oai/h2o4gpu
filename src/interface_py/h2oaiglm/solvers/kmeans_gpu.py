@@ -2,16 +2,18 @@ from h2oaiglm.libs.kmeans_gpu import h2oaiglmKMeansGPU
 from h2oaiglm.solvers.kmeans_base import KMeansBaseSolver
 from ctypes import *
 
-if not h2oaiKMeansGPU:
+if not h2oaiglmKMeansGPU:
     print('\nWarning: Cannot create a H2OAIKMeans GPU Solver instance without linking Python module to a compiled H2OAIGLM GPU library')
     print('> Setting h2oaiglm.KMeansGPU=None')
     print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
     KMeansSolverGPU=None
 else:
     class KMeansSolverGPU(object):
-        def __init__(self, gpu_id, n_gpus, k, max_iterations, threshold, init_from_labels, init_labels, init_data, **params):
-            self.solver = KMeansBaseSolver(gpu_id, n_gpus, k, max_iterations, threshold, init_from_labels, init_labels, init_data, params)
+        def __init__(self, gpu_id, n_gpus, k, max_iterations, threshold, init_from_labels, init_labels, init_data):
+            self.solver = KMeansBaseSolver(h2oaiglmKMeansGPU, gpu_id, n_gpus, k, max_iterations, threshold, init_from_labels, init_labels, init_data)
 
+        def KMeansInternal(self, gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold, mTrain, n, data, labels):
+            return self.solver.KMeansInternal(gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold, mTrain, n, data, labels)
         def fit(self, X, L):
             return self.solver.fit(X,L)
         def sklearnfit(self):
@@ -24,8 +26,6 @@ else:
             return self.solver.fit_transform(X,origL)
         def fit_predict(self, X, origL):
             return self.solver.fit_predict(X,origL)
-        def KMeansInternal(self, gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold, mTrain, n, data, labels):
-            return self.solver.KMeansInternal(gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold, mTrain, n, data, labels)
         
     class KMeansGPU2():
         def __init__(self, k = 10, **params):

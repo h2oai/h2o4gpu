@@ -204,7 +204,7 @@ namespace kmeans {
           if (i > 0) {
             double fraction = (double)moved_points / n;
 #define NUMSTEP 10
-            if(VERBOSE || VERBOSE==0 && i%NUMSTEP==0){
+            if(VERBOSE || VERBOSE==0 && (i<=1 || i%NUMSTEP==0)){
               std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
             }
             if (fraction < threshold) {
