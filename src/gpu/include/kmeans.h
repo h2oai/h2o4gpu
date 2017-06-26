@@ -62,6 +62,7 @@ namespace kmeans {
         thrust::device_vector<int>** labels,
         thrust::device_vector<T>** centroids,
         thrust::device_vector<T>** distances,
+        std::vector<int> dList,
         int n_gpu,
         int max_iterations,
         int init_from_labels=0,
@@ -99,7 +100,7 @@ namespace kmeans {
 
       for (int q = 0; q < n_gpu; q++) {
 
-        cudaSetDevice(q);
+        cudaSetDevice(dList[q]);
         cudaMalloc(&d_changes[q], sizeof(int));
         cudaMalloc(&d_distance_sum[q], sizeof(T));
         detail::labels_init();
@@ -141,20 +142,20 @@ namespace kmeans {
         if (n_gpu > 1) {
           for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
           for (int q = 0; q < n_gpu; q++) {
-            cudaSetDevice(q);
+            cudaSetDevice(dList[q]);
             detail::memcpy(h_centroids_tmp, *centroids[q]);
-            detail::streamsync(q);
+            detail::streamsync(dList[q]);
             for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
           }
           for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
           //Copy the averaged centroids to each device 
           for (int q = 0; q < n_gpu; q++) {
-            cudaSetDevice(q);
+            cudaSetDevice(dList[q]);
             detail::memcpy(*centroids[q],h_centroids);
           }
         }
         for (int q = 0; q < n_gpu; q++) {
-          cudaSetDevice(q);
+          cudaSetDevice(dList[q]);
 #if(DEBUG)
           fprintf(stderr,"q=%d\n",q); fflush(stderr);
 #endif
@@ -189,11 +190,12 @@ namespace kmeans {
           double distance_sum = 0.0;
           int moved_points = 0.0;
           for (int q = 0; q < n_gpu; q++) {
+            cudaSetDevice(dList[q]); //  unnecessary
             cudaMemcpyAsync(h_changes+q, d_changes[q], sizeof(int), cudaMemcpyDeviceToHost, cuda_stream[q]);
             cudaMemcpyAsync(h_distance_sum+q, d_distance_sum[q], sizeof(T), cudaMemcpyDeviceToHost, cuda_stream[q]);
-            detail::streamsync(q);
+            detail::streamsync(dList[q]);
 #if(VERBOSE)
-            std::cout << "Device " << q << ":  Iteration " << i << " produced " << h_changes[q]
+            std::cout << "Device " << dList[q] << ":  Iteration " << i << " produced " << h_changes[q]
                       << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
 #endif
             distance_sum += h_distance_sum[q];
@@ -217,7 +219,7 @@ namespace kmeans {
         }
       }
       for (int q = 0; q < n_gpu; q++) {
-        cudaSetDevice(q);
+        cudaSetDevice(dList[q]);
         cudaFree(d_changes[q]);
         detail::labels_close();
         delete(pairwise_distances[q]);

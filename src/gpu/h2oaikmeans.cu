@@ -149,7 +149,8 @@ void random_centroids(const char ord, thrust::device_vector<T>& array, const T *
   std::random_device rd;  //Will be used to obtain a seed for the random number engine
   std::mt19937 gen(rd());
   //  std::uniform_int_distribution<>dis(0, npergpu-1); // random i in range from 0..npergpu-1
-    std::uniform_int_distribution<>dis(0, n-1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
+  std::uniform_int_distribution<>dis(0, n-1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
+  
   if(ord=='c'){
     if(VERBOSE){
       fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
@@ -218,63 +219,20 @@ namespace h2oaikmeans {
     }
 
     template <typename T>
-    H2OAIKMeans<T>::H2OAIKMeans(const T* A, int k, size_t n, size_t d)
+    H2OAIKMeans<T>::H2OAIKMeans(const T* A, int k, int n, int d)
     {
       _A = A; _k = k; _n = n; _d = d;
     }
 
     template <typename T>
-    int H2OAIKMeans<T>::Solve() {
-      int max_iterations = 10000;
-      int n = 260753;  // rows
-      int d = 298;  // cols
-      int k = 100;  // clusters
-      double thresh = 1e-3;  // relative improvement
+    int makePtr_dense(int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
 
-      int n_gpu;
-      cudaGetDeviceCount(&n_gpu);
-      std::cout << n_gpu << " gpus." << std::endl;
-
-      thrust::device_vector<T> *data[MAX_NGPUS];
-      thrust::device_vector<int> *labels[MAX_NGPUS];
-      thrust::device_vector<T> *centroids[MAX_NGPUS];
-      thrust::device_vector<T> *distances[MAX_NGPUS];
-      for (int q = 0; q < n_gpu; q++) {
-        cudaSetDevice(q);
-        data[q] = new thrust::device_vector<T>(n/n_gpu*d);
-        labels[q] = new thrust::device_vector<int>(n/n_gpu);
-        centroids[q] = new thrust::device_vector<T>(k * d);
-        distances[q] = new thrust::device_vector<T>(n);
+      if(rows>std::numeric_limits<int>::max()){
+        fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
+        fflush(stderr);
+        exit(0);
       }
-
-      std::cout << "Generating random data" << std::endl;
-      std::cout << "Number of points: " << n << std::endl;
-      std::cout << "Number of dimensions: " << d << std::endl;
-      std::cout << "Number of clusters: " << k << std::endl;
-      std::cout << "Max. number of iterations: " << max_iterations << std::endl;
-      std::cout << "Stopping threshold: " << thresh << std::endl;
-
-      for (int q = 0; q < n_gpu; q++) {
-        random_data<T>(*data[q], n/n_gpu, d);
-        random_labels(*labels[q], n/n_gpu, k);
-      }
-
-      double t0 = timer<double>();
-      kmeans::kmeans<T>(&flag, n, d, k, data, labels, centroids, distances, n_gpu, max_iterations, true, thresh);
-      double time = static_cast<double>(timer<double>() - t0);
-      std::cout << "  Time: " << time << " s" << std::endl;
-
-      for (int q = 0; q < n_gpu; q++) {
-        delete(data[q]);
-        delete(labels[q]);
-        delete(centroids[q]);
-        delete(distances[q]);
-      }
-      return 0;
-    }
-
-    template <typename T>
-    int makePtr_dense(int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+      
       int n=rows;
       int d=cols;
       signal(SIGINT, my_function);
@@ -292,19 +250,35 @@ namespace h2oaikmeans {
       }
 
 
+      // no more gpus than visible gpus
+      int n_gpuvis;
+      cudaGetDeviceCount(&n_gpuvis);
       int n_gpu;
-      cudaGetDeviceCount(&n_gpu);
-      if(n_gputry<n_gpu) n_gpu=n_gputry; // no more than visible
+      n_gpu = std::min(n_gpuvis,n_gputry);
+
+      // also no more than rows
+      n_gpu = std::min(n_gpu,n);
+
       std::cout << n_gpu << " gpus." << std::endl;
 
-      
+      int gpu_id;
+      gpu_id = gpu_idtry % n_gpuvis;
+
+      // setup GPU list to use
+      std::vector<int> dList(n_gpu);
+      for(int idx=0;idx<n_gpu;idx++){
+        int device_idx = gpu_id + idx;
+        dList[idx] = device_idx;
+      }
+
+        
       double t0t = timer<double>();
       thrust::device_vector<T> *data[n_gpu];
       thrust::device_vector<int> *labels[n_gpu];
       thrust::device_vector<T> *centroids[n_gpu];
       thrust::device_vector<T> *distances[n_gpu];
       for (int q = 0; q < n_gpu; q++) {
-        CUDACHECK(cudaSetDevice(q));
+        CUDACHECK(cudaSetDevice(dList[q]));
         data[q] = new thrust::device_vector<T>(n/n_gpu*d);
         labels[q] = new thrust::device_vector<int>(n/n_gpu*d);
         centroids[q] = new thrust::device_vector<T>(k * d);
@@ -326,42 +300,54 @@ namespace h2oaikmeans {
 
       
       for (int q = 0; q < n_gpu; q++) {
-        CUDACHECK(cudaSetDevice(q));
-        std::cout << "Copying data to device: " << q << std::endl;
-        //        fprintf(stderr,"q=%d %p %p %p\n",q,&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d],&(data[q]->data[0])); fflush(stderr);
+        CUDACHECK(cudaSetDevice(dList[q]));
+        std::cout << "Copying data to device: " << dList[q] << std::endl;
 
-        //        std::vector<T> vdata(&srcdata[q*n/n_gpu*d],&srcdata[(q+1)*n/n_gpu*d]);
-        //        thrust::copy(vdata.begin(),vdata.end(),data[q]->begin());
-        //random_labels(*labels[q], n/n_gpu, k);
-        nonrandom_data_new(v, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
-        nonrandom_labels(ord, *labels[q], &srclabels[0], q, n, n/n_gpu);
+        if(init_labels==0){ // random
+          random_labels(*labels[q], n/n_gpu, k);
+        }
+        else{
+          nonrandom_labels(ord, *labels[q], &srclabels[0], q, n, n/n_gpu);
+        }
+        if(init_data==0){ // random (for testing)
+          random_data<T>(*data[q], n/n_gpu, d);
+        }
+        else if(init_data==1){ // shard by row
+          nonrandom_data(ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
+        }
+        else{ // shard by randomly (without replacement) selected by row
+          nonrandom_data_new(v, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
+        }
       }
       // get non-random centroids on 1 gpu, then share with rest.
       if(init_from_labels==0){
-        int master_device=0;
-        int q=master_device;
-        CUDACHECK(cudaSetDevice(q));
-        //random_centroids(ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
-        random_centroids_new(v, ord, *centroids[q], &srcdata[0], q, n, n/n_gpu, d, k);
-        size_t bytecount = d*k*sizeof(T); // all centroids
+        int masterq=0;
+        CUDACHECK(cudaSetDevice(dList[masterq]));
+        //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
+        random_centroids_new(v, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
+        int bytecount = d*k*sizeof(T); // all centroids
 
         // copy centroids to rest of gpus asynchronously
         std::vector<cudaStream_t *> streams;
         streams.resize(n_gpu);
-        for (int q = 1; q < n_gpu; q++) {
-          CUDACHECK(cudaSetDevice(q));
-          std::cout << "Copying centroid data to device: " << q << std::endl;
+        for (int q = 0; q < n_gpu; q++) {
+          if(q==masterq) continue;
+          
+          CUDACHECK(cudaSetDevice(dList[q]));
+          std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
 
           streams[q] = reinterpret_cast<cudaStream_t*>(malloc(sizeof(cudaStream_t)));
           cudaStreamCreate(streams[q]);
-          cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*centroids[q])[0]),q,thrust::raw_pointer_cast(&(*centroids[master_device])[0]),master_device,bytecount,*(streams[q]));
+          cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*centroids[q])[0]),dList[q],thrust::raw_pointer_cast(&(*centroids[masterq])[0]),dList[masterq],bytecount,*(streams[q]));
         }
-        for (int q = 1; q < n_gpu; q++) {
-          cudaSetDevice(q);
+        for (int q = 0; q < n_gpu; q++) {
+          if(q==masterq) continue;
+          cudaSetDevice(dList[q]);
           cudaStreamSynchronize(*(streams[q]));
         }
-        for (int q = 1; q < n_gpu; q++) {
-          cudaSetDevice(q);
+        for (int q = 0; q < n_gpu; q++) {
+          if(q==masterq) continue;
+          cudaSetDevice(dList[q]);
           cudaStreamDestroy(*(streams[q]));
 #if(DEBUG)
           thrust::host_vector<T> h_centroidq=*centroids[q];
@@ -371,13 +357,14 @@ namespace h2oaikmeans {
 #endif
         }
       }
-      
-      
       double timetransfer = static_cast<double>(timer<double>() - t0t);
 
+      
       double t0 = timer<double>();
-      kmeans::kmeans<T>(&flag, n,d,k,data,labels,centroids,distances,n_gpu,max_iterations,init_from_labels,threshold);
+      kmeans::kmeans<T>(&flag, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
       double timefit = static_cast<double>(timer<double>() - t0);
+
+      
       std::cout << "  Time fit: " << timefit << " s" << std::endl;
       fprintf(stderr,"Timetransfer: %g Timefit: %g\n",timetransfer,timefit); fflush(stderr);
 
@@ -410,8 +397,8 @@ namespace h2oaikmeans {
 
       return 0;
     }
-  template int makePtr_dense<float>(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, float threshold, const float *srcdata, const int *srclabels, void **a);
-  template int makePtr_dense<double>(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, double threshold, const double *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<float>(int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<double>(int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -429,11 +416,11 @@ namespace h2oaikmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, float threshold, const float* srcdata, const int* srclabels, void** res) {
-    return h2oaikmeans::makePtr_dense<float>(n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, threshold, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2oaikmeans::makePtr_dense<float>(gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
-  int make_ptr_double_kmeans(int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, double threshold, const double* srcdata, const int* srclabels, void** res) {
-    return h2oaikmeans::makePtr_dense<double>(n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, threshold, srcdata, srclabels, res);
+  int make_ptr_double_kmeans(int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
+    return h2oaikmeans::makePtr_dense<double>(gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
 
 #ifdef __cplusplus

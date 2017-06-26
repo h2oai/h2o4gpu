@@ -18,14 +18,14 @@ namespace h2oaikmeans {
       // Data
       const M* _A;
       int _k;
-      size_t _n;
-      size_t _d;
+      int _n;
+      int _d;
     public:
-      H2OAIKMeans(const M *A, int k, size_t n, size_t d);
+      H2OAIKMeans(const M *A, int k, int n, int d);
       int Solve();
   };
 
   template <typename T>
-    int makePtr_dense(int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, T threshold, const T* srcdata, const int*srclabels, void ** res);
+    int makePtr_dense(int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int*srclabels, void ** res);
 
 }  // namespace h2oaikmeans

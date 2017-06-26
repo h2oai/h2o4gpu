@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
   size_t rows = n_gpu*100000;  // rows
   size_t cols = 100;  // cols
 
+  int gpu_id = 0;
+
   void* res = 0;
 
 #if 0
@@ -52,7 +54,9 @@ int main(int argc, char **argv) {
   }
   const char ord='r';
   int init_from_labels=1;//true as set above, otherwise internally will set initial centroids "smartly"
-  h2oaikmeans::makePtr_dense<real_t>(n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, threshold, &data[0], &labels[0], &res);
+  int init_labels=1; // randomly select from input
+  int init_data=2; // randomly (without replacement) select from input
+  h2oaikmeans::makePtr_dense<real_t>(gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &res);
 
   // report something about centroids that site in res as k*cols data block
 #endif

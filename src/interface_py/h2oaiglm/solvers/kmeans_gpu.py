@@ -13,12 +13,15 @@ if not h2oaiKMeansGPU:
     KMeansGPU=None
 else:
     class KMeansGPUinternal(object):
-        def __init__(self, nGPUs, ordin, k, max_iterations, init_from_labels, threshold):
-            self.nGPUs = nGPUs
+        def __init__(self, gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold):
+            self.gpu_id = gpu_id
+            self.n_gpu = n_gpu
             self.ord = ord(ordin)
             self.k = k
             self.max_iterations=max_iterations
             self.init_from_labels=init_from_labels
+            self.init_labels=init_labels
+            self.init_data=init_data
             self.threshold=threshold
 
         def fit(self, mTrain, n, data, labels):
@@ -31,18 +34,34 @@ else:
                 print("Detected np.float32 data");sys.stdout.flush()
                 self.double_precision=0
                 myctype=c_float
-                                                                                                        
-            
+
+            if self.init_from_labels==False:
+                c_init_from_labels=0
+            elif self.init_from_labels==True:
+                c_init_from_labels=1
+                
+            if self.init_labels=="random":
+                c_init_labels=0
+            elif self.init_labels=="randomselect":
+                c_init_labels=1
+
+            if self.init_data=="random":
+                c_init_data=0
+            elif self.init_data=="selectstrat":
+                c_init_data=1
+            elif self.init_data=="randomselect":
+                c_init_data=2
+
             res = c_void_p(0)
             c_data = cptr(data,dtype=myctype)
             c_labels = cptr(labels,dtype=c_int)
             t0 = time.time()
             if self.double_precision==0:
-                h2oaiKMeansGPU.make_ptr_float_kmeans(self.nGPUs, mTrain, n, c_int(self.ord), self.k, self.max_iterations, self.init_from_labels, self.threshold, c_data, c_labels, pointer(res))
+                h2oaiKMeansGPU.make_ptr_float_kmeans(self.gpu_id, self.n_gpu, mTrain, n, c_int(self.ord), self.k, self.max_iterations, c_init_from_labels, c_init_labels, c_init_data, self.threshold, c_data, c_labels, pointer(res))
                 self.centroids=np.fromiter(cast(res, POINTER(myctype)), dtype=np.float32, count=self.k*n)
                 self.centroids=np.reshape(self.centroids,(self.k,n))
             else:
-                h2oaiKMeansGPU.make_ptr_double_kmeans(self.nGPUs, mTrain, n, c_int(self.ord), self.k, self.max_iterations, self.init_from_labels, self.threshold, c_data, c_labels, pointer(res))
+                h2oaiKMeansGPU.make_ptr_double_kmeans(self.gpu_id, self.n_gpu, mTrain, n, c_int(self.ord), self.k, self.max_iterations, c_init_from_labels, c_init_labels, c_init_data, self.threshold, c_data, c_labels, pointer(res))
                 self.centroids=np.fromiter(cast(res, POINTER(myctype)), dtype=np.float64, count=self.k*n)
                 self.centroids=np.reshape(self.centroids,(self.k,n))
 
@@ -51,12 +70,15 @@ else:
 
         
     class KMeansGPU(object):
-        def __init__(self, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=0, **params):
+        def __init__(self, gpu_id=0, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=False, init_labels="randomselect", init_data="randomselect", **params):
             self.k = k
+            self.gpu_id = gpu_id
             self.n_gpus = n_gpus
             self.params = params
             self.max_iterations=max_iterations
             self.init_from_labels=init_from_labels
+            self.init_labels=init_labels
+            self.init_data=init_data
             self.threshold=threshold
             self.didfit=0
             self.didsklearnfit=0
@@ -82,7 +104,7 @@ else:
             else:
                 self.ord='r'
             #
-            centroids, timefit0 = KMeansGPUinternal(self.n_gpus, self.ord, self.k, self.max_iterations, self.init_from_labels, self.threshold).fit(self.rows,self.cols,X,L)
+            centroids, timefit0 = KMeansGPUinternal(self.gpu_id, self.n_gpus, self.ord, self.k, self.max_iterations, self.init_from_labels, self.init_labels, self.init_data, self.threshold).fit(self.rows,self.cols,X,L)
             t1 = time.time()
             if (np.isnan(centroids).any()):
                 centroids = centroids[~np.isnan(centroids).any(axis=1)]
