@@ -32,3 +32,9 @@ $(warning USENCCL is $(USENCCL))
 TARGET=gpulib
 $(warning R TARGET is $(TARGET))
 
+# >=52 required for kmeans for larger data of size rows/32>2^16
+NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 \
+                -gencode=arch=compute_52,code=compute_52 \
+                -gencode=arch=compute_61,code=sm_61 \
+                -gencode=arch=compute_61,code=compute_61
+
