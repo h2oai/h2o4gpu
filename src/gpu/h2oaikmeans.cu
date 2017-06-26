@@ -267,7 +267,7 @@ namespace h2oaikmeans {
       // setup GPU list to use
       std::vector<int> dList(n_gpu);
       for(int idx=0;idx<n_gpu;idx++){
-        int device_idx = gpu_id + idx;
+        int device_idx = (gpu_id + idx) % n_gpuvis;
         dList[idx] = device_idx;
       }
 
