@@ -34,6 +34,7 @@ else:
             self.didfit=0
             self.didsklearnfit=0
         def fit(self, X):
+            import numpy as np
             self.didfit=1
             assert np.isfinite(X).all(), "X contains Inf"
             assert not np.isnan(X).any(), "X contains NA"
