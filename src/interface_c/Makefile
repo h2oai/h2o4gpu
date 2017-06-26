@@ -81,6 +81,7 @@ endif
 # H2OAIGLM static libraries
 H2OAIGLMLIB=\
 	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.o \
+	$(H2OAIGLMROOT)/build/cpu/h2oaikmeans.o \
 	$(H2OAIGLMROOT)/build/cpu/matrix/matrix_dense.o \
 	$(H2OAIGLMROOT)/build/cpu/matrix/matrix_sparse.o \
 	$(H2OAIGLMROOT)/build/cpu/projector/projector_direct_dense.o \

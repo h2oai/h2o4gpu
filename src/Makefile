@@ -127,7 +127,10 @@ CPU_MTX_OBJ=\
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
-CPU_OBJ=$(OBJDIR)/cpu/h2oaiglm.o $(OBJDIR)/cpu/elastic_net_ptr.o 
+CPU_OBJ=$(OBJDIR)/cpu/h2oaiglm.o $(OBJDIR)/cpu/elastic_net_ptr.o $(OBJDIR)/cpu/h2oaikmeans.o
+
+H2OAIKMEANS_HDR=
+
 
 # GPU Specific headers and object files.
 CML_HDR=\
@@ -153,10 +156,10 @@ GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
 
-GPU_KMEANS_HDR=gpu/include/kmeans_labels.h gpu/include/centroids.h gpu/include/kmeans.h
-GPU_KMEANS_OBJ=$(OBJDIR)/gpu/kmeans_labels.o
 
-GPU_OBJ=$(OBJDIR)/gpu/h2oaikmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2oaiglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
+GPU_KMEANS_HDR=gpu/include/kmeans_labels.h gpu/include/centroids.h gpu/include/kmeans.h
+
+GPU_OBJ=$(OBJDIR)/gpu/h2oaikmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2oaiglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
@@ -172,7 +175,7 @@ cpulib: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
 	touch cpulib
 	ar cr $(OBJDIR)/cpu/h2oaiglm.a $^
 
-gpulib: $(OBJDIR)/gpu/h2oaiglm_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(GPU_KMEANS_OBJ)
+gpulib: $(OBJDIR)/gpu/h2oaiglm_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
 	touch gpulib
 	ar cr $(OBJDIR)/gpu/h2oaiglm.a $^
 
@@ -211,6 +214,9 @@ $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 $(OBJDIR)/cpu/h2oaiglm.o: cpu/h2oaiglm.cpp $(H2OAIGLM_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) -c -o $@ 
 
+$(OBJDIR)/cpu/h2oaikmeans.o: cpu/h2oaikmeans.cpp $(H2OAIKMEANS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
+	$(CXX) -Iinclude -I/usr/local/cuda/include -Icpu/include $< $(CXXFLAGS) -c -o $@ 
+
 $(OBJDIR)/cpu/matrix/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/matrix Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
@@ -225,7 +231,7 @@ $(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_p
 
 
 # H2OAIGLM GPU objects
-$(OBJDIR)/gpu/h2oaiglm_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(GPU_KMEANS_OBJ) | $(OBJDIR) Makefile config2.mk
+$(OBJDIR)/gpu/h2oaiglm_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR) Makefile config2.mk
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
 
 $(OBJDIR)/gpu/h2oaiglm.o: gpu/h2oaiglm.cu $(H2OAIGLM_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk

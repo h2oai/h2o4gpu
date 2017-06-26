@@ -106,7 +106,7 @@ namespace kmeans {
         detail::labels_init();
         
         data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
-        centroid_dots[q] = new thrust::device_vector<T>(k*d);
+        centroid_dots[q] = new thrust::device_vector<T>(k);
         pairwise_distances[q] = new thrust::device_vector<T>(n/n_gpu * k);
         labels_copy[q] = new thrust::device_vector<int>(n/n_gpu * d);
         range[q] = new thrust::device_vector<int>(n/n_gpu);

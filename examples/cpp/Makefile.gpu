@@ -9,6 +9,7 @@ H2OAIGLMROOT=../../src
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_ptr_driver.cpp
+EXSRC4=kmeans_driver.cpp
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
@@ -81,9 +82,9 @@ endif
 
 
 
-all: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
+all: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans-gpu
 
-default: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
+default: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans-gpu
 
 # GPU
 h2oai-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
@@ -95,8 +96,8 @@ h2oai-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLM
 h2oai-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
-h2oai-kmeans: kmeans_driver.cpp Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o h2oai-kmeans $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
+h2oai-kmeans-gpu: $(EXSRC4) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
+	$(CXX) $(CXXFLAGS) -o h2oai-kmeans-gpu $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
 
 run: h2oai-glm-gpu-ptr
 	./h2oai-glm-gpu-ptr 1 100 1 1 0

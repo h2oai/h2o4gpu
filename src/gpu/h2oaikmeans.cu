@@ -10,9 +10,7 @@
 #include <algorithm>
 #include <vector>
 #include "include/kmeans_general.h"
-
-
-
+#include <csignal>
 
 #define CUDACHECK(cmd) do {                         \
     cudaError_t e = cmd;                              \
@@ -212,10 +210,10 @@ void random_centroids_new(std::vector<int> v, const char ord, thrust::device_vec
 "----------------------------------------------------------------------------\n"
 
 namespace h2oaikmeans {
-    volatile std::atomic_int flag(0);
-    inline void my_function(int sig){ // can be called asynchronously
+    volatile std::atomic_int flaggpu(0);
+    inline void my_function_gpu(int sig){ // can be called asynchronously
       fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
-      flag = 1;
+      flaggpu = 1;
     }
 
     template <typename T>
@@ -235,8 +233,8 @@ namespace h2oaikmeans {
       
       int n=rows;
       int d=cols;
-      signal(SIGINT, my_function);
-      signal(SIGTERM, my_function);
+      std::signal(SIGINT, my_function_gpu);
+      std::signal(SIGTERM, my_function_gpu);
 
       int printsrcdata=0;
       if(printsrcdata){
@@ -361,7 +359,7 @@ namespace h2oaikmeans {
 
       
       double t0 = timer<double>();
-      kmeans::kmeans<T>(&flag, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
+      kmeans::kmeans<T>(&flaggpu, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
       double timefit = static_cast<double>(timer<double>() - t0);
 
       

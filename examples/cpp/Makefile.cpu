@@ -7,6 +7,7 @@ H2OAIGLMROOT=../../src
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_ptr_driver.cpp
+EXSRC4=kmeans_driver.cpp
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
@@ -66,9 +67,9 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
+all: h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr h2oai-kmeans-cpu
 
-default: h2oai-glm-cpu h2oai-glm-cpu-ptr
+default: h2oai-glm-cpu h2oai-glm-cpu-ptr h2oai-kmeans-cpu
 
 # CPU
 h2oai-glm-cpu-orig: run_all_orig.cpp examples.h $(EXSRC) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
@@ -79,6 +80,9 @@ h2oai-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OAIGLMROOT)/build/cpu/h2oaig
 
 h2oai-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+
+h2oai-kmeans-cpu: $(EXSRC4) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2oai-kmeans-cpu $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
 
 clean:
 	rm -f *.o *~ *~ h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr

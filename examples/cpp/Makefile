@@ -27,7 +27,7 @@ SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp
 cpuall: Makefile Makefile.cpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/cpu/h2oaiglm.a
 	touch cpuall
 	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
+	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr h2oai-kmeans-cpu
 
 h2oai-glm-cpu-orig: Makefile Makefile.cpu $(SOURCESORIG) ../../src/build/cpu/h2oaiglm.a
 	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
@@ -41,11 +41,15 @@ h2oai-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2oa
 	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.cpu h2oai-glm-cpu-ptr
 
+h2oai-kmeans-cpu: Makefile Makefile.cpu kmeans_driver.cpp ../../src/build/cpu/h2oaiglm.a
+	$(MAKE)  cpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu h2oai-kmeans-cpu
+
 # GPU
 gpuall: Makefile Makefile.gpu $(SOURCESORIG) $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2oaiglm.a
 	touch gpuall
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans
+	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans-gpu
 
 h2oai-glm-gpu-orig: Makefile Makefile.gpu $(SOURCESORIG)  ../../src/build/gpu/h2oaiglm.a
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
@@ -59,9 +63,9 @@ h2oai-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2oai
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
 	$(MAKE) -f Makefile.gpu h2oai-glm-gpu-ptr
 
-h2oai-kmeans: Makefile Makefile.gpu kmeans_driver.cpp ../../src/build/gpu/h2oaiglm.a
+h2oai-kmeans-gpu: Makefile Makefile.gpu kmeans_driver.cpp ../../src/build/gpu/h2oaiglm.a
 	$(MAKE)  gpulib -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2oai-kmeans
+	$(MAKE) -f Makefile.gpu h2oai-kmeans-gpu
 
 run: h2oai-glm-gpu-ptr
 	./h2oai-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
