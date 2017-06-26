@@ -2,64 +2,6 @@
 
 namespace kmeans {
 
-
-  template<typename T>
-  int kmeans(
-             volatile std::atomic_int * flag,
-             int n, int d, int k,
-             std::vector<T> &data,
-             std::vector<int> &labels,
-             std::vector<T> &centroids,
-             int max_iterations,
-             int init_from_labels=0,
-             double threshold=1e-3) {
-      
-
-    // TRANSLATE to CPU CODE
-    std::vector<T> data_dots(n);
-    std::vector<T> centroid_dots(k);
-    std::vector<T> pairwise_distances(k * n);
-    std::vector<int> labels_copy(n);
-    
-    // rest is original CPU code
-    self_dot(data, n, d, data_dots);
-
-    //Let the first k points be the centroids of the clusters
-    //    memcpy(&centroids[0], &data[0], sizeof(T)*k*d);
-
-    int i;
-    for(i=0; i<max_iterations; i++) {
-      compute_distances(data, data_dots, n, d, centroids, centroid_dots,
-                        k, pairwise_distances);
-
-      int moved_points = relabel(data, n, pairwise_distances, k, labels);
-      std::cout <<std::endl << "*** Iteration " << i << " ***" << std::endl;
-      std::cout << moved_points << " points moved between clusters." << std::endl;
-
-      if (i > 0) {
-        double fraction = (double)moved_points / n;
-#define NUMSTEP 10
-        if(VERBOSE || VERBOSE==0 && i%NUMSTEP==0){
-          std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
-        }
-        if (fraction < threshold || 0 == moved_points) {
-          std::cout << "Threshold triggered. Terminating early." << std::endl;
-          return i + 1;
-        }
-      }
-      if (*flag) {
-        fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
-        *flag = 0; // set flag
-      }
-    
-      
-      find_centroids(data, n, d, labels, centroids, k);
-    }
-
-    return i;
-
-  }
-
 template<typename T>
   void self_dot(std::vector<T> array_in, int n, int dim,
                 std::vector<T>& dots) {
@@ -165,5 +107,63 @@ template<typename T>
     }
     return changes;
   }
+
+  template<typename T>
+  int kmeans(
+             volatile std::atomic_int * flag,
+             int n, int d, int k,
+             std::vector<T> &data,
+             std::vector<int> &labels,
+             std::vector<T> &centroids,
+             int max_iterations,
+             int init_from_labels=0,
+             double threshold=1e-3) {
+      
+
+    // TRANSLATE to CPU CODE
+    std::vector<T> data_dots(n);
+    std::vector<T> centroid_dots(k);
+    std::vector<T> pairwise_distances(k * n);
+    std::vector<int> labels_copy(n);
+    
+    // rest is original CPU code
+    self_dot(data, n, d, data_dots);
+
+    //Let the first k points be the centroids of the clusters
+    //    memcpy(&centroids[0], &data[0], sizeof(T)*k*d);
+
+    int i;
+    for(i=0; i<max_iterations; i++) {
+      compute_distances(data, data_dots, n, d, centroids, centroid_dots,
+                        k, pairwise_distances);
+
+      int moved_points = relabel(data, n, pairwise_distances, k, labels);
+      std::cout <<std::endl << "*** Iteration " << i << " ***" << std::endl;
+      std::cout << moved_points << " points moved between clusters." << std::endl;
+
+      if (i > 0) {
+        double fraction = (double)moved_points / n;
+#define NUMSTEP 10
+        if(VERBOSE || VERBOSE==0 && i%NUMSTEP==0){
+          std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
+        }
+        if (fraction < threshold || 0 == moved_points) {
+          std::cout << "Threshold triggered. Terminating early." << std::endl;
+          return i + 1;
+        }
+      }
+      if (*flag) {
+        fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
+        *flag = 0; // set flag
+      }
+    
+      
+      find_centroids(data, n, d, labels, centroids, k);
+    }
+
+    return i;
+
+  }
+
 
 }
