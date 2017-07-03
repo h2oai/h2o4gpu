@@ -562,10 +562,15 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
           DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max);
           DEBUG_FPRINTF(fil, "lambda_min: %f\n", lambda_min);
           // Regularization path: geometric series from lambda_max to lambda_min
-          double dec = std::pow(lambda_min_ratio, 1.0 / (nlambdalocal - 1.));
-          lambdas[0] = lambda_max;
-          for (int i = 1; i < nlambdalocal; ++i)
-            lambdas[i] = lambdas[i - 1] * dec;
+          if(nlambdalocal>1){
+            double dec = std::pow(lambda_min_ratio, 1.0 / (nlambdalocal - 1.));
+            lambdas[0] = lambda_max;
+            for (int i = 1; i < nlambdalocal; ++i)
+              lambdas[i] = lambdas[i - 1] * dec;
+          }
+          else{ // use minimum, so user can control the value of lambda used
+            lambdas[0] = lambda_min_ratio*lambda_max;
+          }
         }
         else{
           nlambdalocal=1;
