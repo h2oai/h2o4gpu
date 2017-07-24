@@ -1,7 +1,7 @@
 include ../../src/config2.mk
 
 # User Vars
-H2OAIGLMROOT=../../src
+H2OGPUMLROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
@@ -56,7 +56,7 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OGPUMLROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
@@ -67,24 +67,24 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr h2oai-kmeans-cpu
+all: h2ogpuml-glm-cpu-orig h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
 
-default: h2oai-glm-cpu h2oai-glm-cpu-ptr h2oai-kmeans-cpu
+default: h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
 
 # CPU
-h2oai-glm-cpu-orig: run_all_orig.cpp examples.h $(EXSRC) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-orig $(EXSRC) $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+h2ogpuml-glm-cpu-orig: run_all_orig.cpp examples.h $(EXSRC) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu-orig $(EXSRC) $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
-h2oai-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+h2ogpuml-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu $(EXSRC2)  $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
-h2oai-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-cpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+h2ogpuml-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu-ptr $(EXSRC3)  $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
-h2oai-kmeans-cpu: $(EXSRC4) $(H2OAIGLMROOT)/build/cpu/h2oaiglm.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2oai-kmeans-cpu $<	$(H2OAIGLMROOT)/build/cpu/h2oaiglm.a $(LINKFLAGS)
+h2ogpuml-kmeans-cpu: $(EXSRC4) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-kmeans-cpu $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
 clean:
-	rm -f *.o *~ *~ h2oai-glm-cpu-orig h2oai-glm-cpu h2oai-glm-cpu-ptr
+	rm -f *.o *~ *~ h2ogpuml-glm-cpu-orig h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr
 	rm -rf *.dSYM
 

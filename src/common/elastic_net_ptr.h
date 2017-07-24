@@ -10,12 +10,12 @@
 #include <random>
 
 #include "matrix/matrix_dense.h"
-#include "h2oaiglm.h"
+#include "h2ogpumlglm.h"
 #include "timer.h"
 #include <omp.h>
 #include <cmath>
 
-namespace h2oaiglm {
+namespace h2ogpuml {
 
 
 template<typename T>
@@ -168,7 +168,7 @@ template<typename T>
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
+// See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
 
 

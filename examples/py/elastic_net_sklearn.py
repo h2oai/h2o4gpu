@@ -1,11 +1,11 @@
 import sys
-#sys.path.insert(0, "/home/arno/h2oaiglm/src/interface_py/")
-import h2oaiglm as h2oaiglm
+#sys.path.insert(0, "/home/arno/h2ogpuml/src/interface_py/")
+import h2ogpuml as h2ogpuml
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
 
 from ctypes import *
-from h2oaiglm.types import *
+from h2ogpuml.types import *
 
 
 '''
@@ -14,17 +14,17 @@ Elastic Net
    minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
 
    for 100 values of \lambda, and alpha in [0,1]
-   See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
+   See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
   # set solver cpu/gpu according to input args
-  if((nGPUs>0) and (h2oaiglm.ElasticNetSolverGPU is None)):
+  if((nGPUs>0) and (h2ogpuml.ElasticNetSolverGPU is None)):
     print("\nGPU solver unavailable, using CPU solver\n")
     nGPUs=0
 
-  Solver = h2oaiglm.ElasticNetSolverGPU if(nGPUs>0) else h2oaiglm.ElasticNetSolverCPU
-#  Solver = h2oaiglm.ElasticNetSolverCPU
+  Solver = h2ogpuml.ElasticNetSolverGPU if(nGPUs>0) else h2ogpuml.ElasticNetSolverCPU
+#  Solver = h2ogpuml.ElasticNetSolverCPU
   assert Solver != None, "Couldn't instantiate ElasticNetSolver"
 
   sharedA = 0
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
   import feather
-  #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+  #df = feather.read_dataframe("../../../h2ogpuml-prototypes/glm-bench/ipums.feather")
   #df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
   df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
   print(df.shape)

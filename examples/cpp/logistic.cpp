@@ -2,17 +2,17 @@
 #include <vector>
 
 #include "matrix/matrix_dense.h"
-#include "h2oaiglm.h"
+#include "h2ogpuml.h"
 #include "timer.h"
 
-using namespace h2oaiglm;
+using namespace h2ogpuml;
 
 // Logistic
 //   minimize    \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
 //   subject to  y = Ax
 //
 // for 50 values of \lambda.
-// See <h2oaiglm>/matlab/examples/logistic_regression.m for detailed description.
+// See <h2ogpuml>/matlab/examples/logistic_regression.m for detailed description.
 template <typename T>
 double Logistic(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
@@ -59,8 +59,8 @@ double Logistic(size_t m, size_t n) {
     lambda_max = std::max(lambda_max, std::abs(u));
   }
 
-  h2oaiglm::MatrixDense<T> A_('r', m, n + 1, A.data());
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2ogpuml::MatrixDense<T> A_('r', m, n + 1, A.data());
+  h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -74,7 +74,7 @@ double Logistic(size_t m, size_t n) {
   g.emplace_back(kZero);
 
   double t = timer<double>();
-  h2oaiglm_data.Solve(f, g);
+  h2ogpuml_data.Solve(f, g);
 
   return timer<double>() - t;
 }

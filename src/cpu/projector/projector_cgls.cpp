@@ -10,7 +10,7 @@
 #include "projector_helper.h"
 #include "util.h"
 
-namespace h2oaiglm {
+namespace h2ogpuml {
 
 namespace {
 
@@ -84,15 +84,15 @@ int ProjectorCgls<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   return 0;
 }
 
-#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
+#if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE==1
 template class ProjectorCgls<double, MatrixDense<double> >;
 template class ProjectorCgls<double, MatrixSparse<double> >;
 #endif
 
-#if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
+#if !defined(H2OGPUML_SINGLE) || H2OGPUML_SINGLE==1
 template class ProjectorCgls<float, MatrixDense<float> >;
 template class ProjectorCgls<float, MatrixSparse<float> >;
 #endif
 
-}  // namespace h2oaiglm
+}  // namespace h2ogpuml
 

@@ -1,9 +1,9 @@
 # User Vars
-H2OAIGLMROOT=../../src
+H2OGPUMLROOT=../../src
 
 # C Flags
 CC=gcc
-CFLAGS=$(IFLAGS) -O3 -I$(H2OAIGLMROOT)/interface_c -Wall -std=c99
+CFLAGS=$(IFLAGS) -O3 -I$(H2OGPUMLROOT)/interface_c -Wall -std=c99
 LDFLAGS_=-lstdc++ -lm
 
 # CUDA Flags
@@ -21,17 +21,17 @@ endif
 
 # CPU
 cpu: lasso.c
-	$(MAKE) cpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -C $(H2OAIGLMROOT)/interface_c h2oaiglm_c.o
-	$(CC) $(CFLAGS) -o run $< $(H2OAIGLMROOT)/interface_c/h2oaiglm_c.o \
-		$(H2OAIGLMROOT)/build/h2oaiglm.a $(LDFLAGS)
+	$(MAKE) cpu -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -C $(H2OGPUMLROOT)/interface_c h2ogpuml_c.o
+	$(CC) $(CFLAGS) -o run $< $(H2OGPUMLROOT)/interface_c/h2ogpuml_c.o \
+		$(H2OGPUMLROOT)/build/h2ogpuml.a $(LDFLAGS)
 
 # GPU
 gpu: lasso.c
-	$(MAKE) gpu -C $(H2OAIGLMROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -C $(H2OAIGLMROOT)/interface_c h2oaiglm_c.o
-	$(CC) $(CFLAGS) -o run $< $(H2OAIGLMROOT)/interface_c/h2oaiglm_c.o \
-		$(H2OAIGLMROOT)/build/h2oaiglm.a $(CULDFLAGS)
+	$(MAKE) gpu -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -C $(H2OGPUMLROOT)/interface_c h2ogpuml_c.o
+	$(CC) $(CFLAGS) -o run $< $(H2OGPUMLROOT)/interface_c/h2ogpuml_c.o \
+		$(H2OGPUMLROOT)/build/h2ogpuml.a $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run 

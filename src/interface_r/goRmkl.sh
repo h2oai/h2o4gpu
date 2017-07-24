@@ -78,8 +78,8 @@ wget http://r.research.att.com/benchmarks/R-benchmark-25.R
 
 
 #################### POGS
-git clone git@github.com:h2oai/h2oaiglm.git
-cd h2oaiglm
+git clone git@github.com:h2ogpuml/h2ogpuml.git
+cd h2ogpuml
 cd src
 emacs -nw Makefile
 # and switch to:
@@ -91,18 +91,18 @@ CXX=icpc
 CXXFLAGS=$(IFLAGS) -g -O3 -Wall -std=c++11 -fPIC -openmp -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
 make cpu
 
-cd interface_r/h2oaiglm
+cd interface_r/h2ogpuml
 ./cfg
 emacs -nw src/config.mk # and edit TARGET as cpu (for MKL blas), edit RHOME binary and lib path to point to new R (if in R directory at this point, R RHOME should be correctly new R)
 
 emacs -nw src/Makefile # and change CXXFLAGS as above
 
 cd ../
-R CMD INSTALL --build h2oaiglm
+R CMD INSTALL --build h2ogpuml
 
 R
-install.packages("h2oaiglm.0_R_x86_64-pc-linux-gnu.tar.gz", repos = NULL, type="source")
-# installs in ~/R/x86_64-pc-linux-gnu-library/3.3/h2oaiglm/ (assumes overwrites system's libraries)
+install.packages("h2ogpuml.0_R_x86_64-pc-linux-gnu.tar.gz", repos = NULL, type="source")
+# installs in ~/R/x86_64-pc-linux-gnu-library/3.3/h2ogpuml/ (assumes overwrites system's libraries)
 
 cd ../interface_c
 emacs Makefile # edit CXXFLAGS as above

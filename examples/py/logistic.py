@@ -1,4 +1,4 @@
-import h2oaiglm as h2oaiglm
+import h2ogpuml as h2ogpuml
 from numpy import abs, exp, float32, float64, max
 from numpy.random import rand, randn
 
@@ -8,16 +8,16 @@ Logistic regression
   minimize    \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
   subject to  y = Ax
 
-See <h2oaiglm>/matlab/examples/logistic_regression.m for detailed description.
+See <h2ogpuml>/matlab/examples/logistic_regression.m for detailed description.
 '''
 
 def Logistic(m,n, gpu=False, double_precision=False):
   # set solver cpu/gpu according to input args
-  if gpu and h2oaiglm.SolverGPU is None:
+  if gpu and h2ogpuml.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
+  Solver = h2ogpuml.SolverGPU if gpu else h2ogpuml.SolverCPU
 
   # random matrix A
   A=randn(m,n)
@@ -35,15 +35,15 @@ def Logistic(m,n, gpu=False, double_precision=False):
   lambda_max = max(abs(A.T.dot(0.5-d)))
 
   # f(y) = \sum_i -d_i y_i + log(1 + e ^ y_i)
-  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
+  f = h2ogpuml.FunctionVector(m,double_precision=double_precision)
   f.d[:]=-d[:]
-  f.h[:]=h2oaiglm.FUNCTION["LOGISTIC"]
+  f.h[:]=h2ogpuml.FUNCTION["LOGISTIC"]
 
 
   # g(x) = \lambda ||x||_1
-  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
+  g = h2ogpuml.FunctionVector(n,double_precision=double_precision)
   g.a[:] = 0.5*lambda_max 
-  g.h[:] = h2oaiglm.FUNCTION["ABS"]
+  g.h[:] = h2ogpuml.FUNCTION["ABS"]
 
 
   # intialize solver 

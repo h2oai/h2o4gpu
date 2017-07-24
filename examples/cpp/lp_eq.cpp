@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "matrix/matrix_dense.h"
-#include "h2oaiglm.h"
+#include "h2ogpuml.h"
 #include "timer.h"
 
 // Linear program in equality form.
@@ -10,7 +10,7 @@
 //   subject to  Ax = b
 //               x >= 0.
 //
-// See <h2oaiglm>/matlab/examples/lp_eq.m for detailed description.
+// See <h2ogpuml>/matlab/examples/lp_eq.m for detailed description.
 template <typename T>
 double LpEq(size_t m, size_t n) {
   std::vector<T> A((m + 1) * n);
@@ -25,8 +25,8 @@ double LpEq(size_t m, size_t n) {
   for (unsigned int i = 0; i < (m + 1) * n; ++i)
     A[i] = u_dist(generator) / static_cast<T>(n);
 
-  h2oaiglm::MatrixDense<T> A_('r', m + 1, n, A.data());
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2ogpuml::MatrixDense<T> A_('r', m + 1, n, A.data());
+  h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -51,7 +51,7 @@ double LpEq(size_t m, size_t n) {
     g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  h2oaiglm_data.Solve(f, g);
+  h2ogpuml_data.Solve(f, g);
 
   return timer<double>() - t;
 }

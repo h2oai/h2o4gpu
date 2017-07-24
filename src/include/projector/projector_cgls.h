@@ -3,7 +3,7 @@
 
 #include "projector/projector.h"
 
-namespace h2oaiglm {
+namespace h2ogpuml {
 
 // Minimizes ||Ax - y0||_2^2  + s ||x - x0||_2^2
 template <typename T, typename M>
@@ -24,7 +24,7 @@ class ProjectorCgls : Projector<T, M> {
   int Project(const T *x0, const T *y0, T s, T *x, T *y, T tol);
 };
 
-}  // namespace h2oaiglm
+}  // namespace h2ogpuml
 
 #endif  // PROJECTOR_PROJECTOR_CGLS_H_
 

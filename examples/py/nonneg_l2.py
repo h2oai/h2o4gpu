@@ -1,4 +1,4 @@
-import h2oaiglm as h2oaiglm
+import h2ogpuml as h2ogpuml
 import numpy as np
 from numpy import float32, floor, ones
 from numpy.random import rand, randn
@@ -8,16 +8,16 @@ Non-negative least squares.
   minimize    (1/2) ||Ax - b||_2^2
   subject to  x >= 0.
 
-See <h2oaiglm>/matlab/examples/nonneg_l2.m for detailed description.
+See <h2ogpuml>/matlab/examples/nonneg_l2.m for detailed description.
 '''
 
 def NonNegL2(m,n, gpu=False, double_precision=False):
   # set solver cpu/gpu according to input args
-  if gpu and h2oaiglm.SolverGPU is None:
+  if gpu and h2ogpuml.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
+  Solver = h2ogpuml.SolverGPU if gpu else h2ogpuml.SolverCPU
 
   # Generate A according to:
   #   A = 1 / n * rand(m, n)
@@ -36,14 +36,14 @@ def NonNegL2(m,n, gpu=False, double_precision=False):
 
 
   # f(Ax) = 1/2 || A*x - b ||_2^2 
-  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
+  f = h2ogpuml.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
   f.c[:]=0.5
-  f.h[:]=h2oaiglm.FUNCTION["SQUARE"]
+  f.h[:]=h2ogpuml.FUNCTION["SQUARE"]
 
   # f(x) = Ind( x >= 0 )
-  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
-  g.h[:] = h2oaiglm.FUNCTION["INDGE0"]
+  g = h2ogpuml.FunctionVector(n,double_precision=double_precision)
+  g.h[:] = h2ogpuml.FUNCTION["INDGE0"]
 
 
   # intialize solver 

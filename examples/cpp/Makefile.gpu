@@ -3,7 +3,7 @@ include ../../src/config2.mk
 
 
 # User Vars
-H2OAIGLMROOT=../../src
+H2OGPUMLROOT=../../src
 
 # Example Files
 EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
@@ -56,7 +56,7 @@ endif
 
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OAIGLMROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OGPUMLROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
@@ -82,28 +82,28 @@ endif
 
 
 
-all: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans-gpu
+all: h2ogpuml-glm-gpu-orig h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
 
-default: h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr h2oai-kmeans-gpu
+default: h2ogpuml-glm-gpu-orig h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
 
 # GPU
-h2oai-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-orig $(EXSRC) $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a  $(CULDFLAGS)
+h2ogpuml-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu-orig $(EXSRC) $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a  $(CULDFLAGS)
 
-h2oai-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu $(EXSRC2)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
+h2ogpuml-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu $(EXSRC2)  $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
 
-h2oai-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o h2oai-glm-gpu-ptr $(EXSRC3)  $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
+h2ogpuml-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu-ptr $(EXSRC3)  $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
 
-h2oai-kmeans-gpu: $(EXSRC4) Makefile.gpu Makefile $(H2OAIGLMROOT)/build/gpu/h2oaiglm.a
-	$(CXX) $(CXXFLAGS) -o h2oai-kmeans-gpu $<	$(H2OAIGLMROOT)/build/gpu/h2oaiglm.a $(CULDFLAGS)
+h2ogpuml-kmeans-gpu: $(EXSRC4) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
+	$(CXX) $(CXXFLAGS) -o h2ogpuml-kmeans-gpu $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
 
-run: h2oai-glm-gpu-ptr
-	./h2oai-glm-gpu-ptr 1 100 1 1 0
-	#./h2oai-glm-gpu-ptr 1 100 1 0 0
+run: h2ogpuml-glm-gpu-ptr
+	./h2ogpuml-glm-gpu-ptr 1 100 1 1 0
+	#./h2ogpuml-glm-gpu-ptr 1 100 1 0 0
 
 clean:
-	rm -f *.o *~ *~ h2oai-glm-gpu-orig h2oai-glm-gpu h2oai-glm-gpu-ptr
+	rm -f *.o *~ *~ h2ogpuml-glm-gpu-orig h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr
 	rm -rf *.dSYM
 

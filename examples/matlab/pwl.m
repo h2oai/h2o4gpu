@@ -1,4 +1,4 @@
-function [h2oaiglm_time, cvx_time] = pwl(m, n, params, comp_cvx, density)
+function [h2ogpuml_time, cvx_time] = pwl(m, n, params, comp_cvx, density)
 %PWL
 
 if nargin <= 2
@@ -29,18 +29,18 @@ f.h = kIndLe0;
 f.b = b;
 g.h = [kZero(n); kIdentity];
 
-% Solve with h2oaiglm
+% Solve with h2ogpuml
 if ~issparse(A)
   As = single(A);
 else
   As = A;
 end
 tic
-[~, ~, ~, ~, ~, status] = h2oaiglm(As, f, g, params);
-h2oaiglm_time = toc;
+[~, ~, ~, ~, ~, status] = h2ogpuml(As, f, g, params);
+h2ogpuml_time = toc;
 
 if status > 0
-  h2oaiglm_time = nan;
+  h2ogpuml_time = nan;
 end
 
 % Solve with CVX

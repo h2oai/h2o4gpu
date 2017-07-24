@@ -1,6 +1,6 @@
 #### To install
 ```
-In your terminal, in this directory, execute: `R CMD INSTALL h2oaiglm_*XXX*.tgz`
+In your terminal, in this directory, execute: `R CMD INSTALL h2ogpuml_*XXX*.tgz`
 ```
 where `XXX` is one of the following
 - (empty) -- This package should work on any system, but needs compiling.
@@ -12,13 +12,13 @@ where `XXX` is one of the following
 Hint: Use `getwd()` to get the current directory.
 
 #### To build and install from scratch
-1. Modify `<path-to-h2oaiglm-root>/src/interface_r/h2oaiglm/src/config.mk` by settingx
+1. Modify `<path-to-h2ogpuml-root>/src/interface_r/h2ogpuml/src/config.mk` by settingx
    `TARGET=[cpu/gpu]`, to target the respective platform.
    Also update `CUDA_HOME` if necessary.
-2. In your terminal, navigate to `cd <path-to-h2oaiglm-root>/src/interface_r`
-   and execute `R CMD INSTALL --build h2oaiglm` (or `R CMD build h2oaiglm` for
+2. In your terminal, navigate to `cd <path-to-h2ogpuml-root>/src/interface_r`
+   and execute `R CMD INSTALL --build h2ogpuml` (or `R CMD build h2ogpuml` for
    a non-compiled package) to install the R package.
-   For a parallel R build with all your cores, do: MAKE="make -j" R CMD INSTALL --build h2oaiglm
+   For a parallel R build with all your cores, do: MAKE="make -j" R CMD INSTALL --build h2ogpuml
 
 
 

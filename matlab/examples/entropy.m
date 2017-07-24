@@ -1,6 +1,6 @@
 function results = entropy(m, n, rho, quiet)
-%%ENROPY Test H2OAIGLM on an entropy maximization problem.
-%   Compares H2OAIGLM to CVX when solving the problem
+%%ENROPY Test H2OGPUML on an entropy maximization problem.
+%   Compares H2OGPUML to CVX when solving the problem
 %
 %     minimize    sum_{i=1}^n x_i * log(x_i)
 %     subject to  sum(x) = 1
@@ -38,14 +38,14 @@ function results = entropy(m, n, rho, quiet)
 %   results   - Structure containg test results. Fields are:
 %                 + rel_err_obj: Relative error of the objective, as
 %                   compared to the solution obtained from CVX, defined as
-%                   (h2oaiglm_optval - cvx_optval) / abs(cvx_optval).
+%                   (h2ogpuml_optval - cvx_optval) / abs(cvx_optval).
 %                 + rel_err_soln: Relative difference in solution between
-%                   CVX and H2OAIGLM, defined as 
-%                   norm(x_h2oaiglm - x_cvx) / norm(x_cvx).
+%                   CVX and H2OGPUML, defined as 
+%                   norm(x_h2ogpuml - x_cvx) / norm(x_cvx).
 %                 + max_violation: Maximum constraint violation (nan if 
 %                   problem has no constraints).
 %                 + avg_violation: Average constraint violation.
-%                 + time_h2oaiglm: Time required by H2OAIGLM to solve problem.
+%                 + time_h2ogpuml: Time required by H2OGPUML to solve problem.
 %                 + time_cvx: Time required by CVX to solve problem.
 %
 
@@ -73,17 +73,17 @@ prox_g = @(x, rho) 1 ./ rho .* lambertw(exp(x .* rho - 1) .* rho);
 prox_f = @(y, rho) [min(y(1:end-1), b); 1];
 obj_fn = @(x, y) x' * log(x);
 
-% Initialize H2OAIGLM input.
+% Initialize H2OGPUML input.
 params.rho = rho;
 params.quiet = quiet;
 params.MAXITR = 1000;
 params.RELTOL = 1e-3;
 params.ABSTOL = 1e-4;
 
-% Solve using H2OAIGLM.
+% Solve using H2OGPUML.
 tic
-[x_h2oaiglm, ~, ~, n_iter] = h2oaiglm(prox_f, prox_g, obj_fn, A, params);
-time_h2oaiglm = toc;
+[x_h2ogpuml, ~, ~, n_iter] = h2ogpuml(prox_f, prox_g, obj_fn, A, params);
+time_h2ogpuml = toc;
 
 % Solve using CVX.
 tic
@@ -97,12 +97,12 @@ time_cvx = toc;
 
 % Compute error metrics.
 results.rel_err_obj = ...
-    (obj_fn(x_h2oaiglm, A * x_h2oaiglm) - cvx_optval) / abs(cvx_optval);
-results.rel_diff_soln = norm(x_h2oaiglm - x_cvx) / norm(x_cvx);
-results.max_violation = max(abs(sum(x_h2oaiglm) - 1), ...
-                            max(max(F * x_h2oaiglm - b, 0)));
-results.avg_violation = mean(max(F * x_h2oaiglm - b, 0));
-results.time_h2oaiglm = time_h2oaiglm;
+    (obj_fn(x_h2ogpuml, A * x_h2ogpuml) - cvx_optval) / abs(cvx_optval);
+results.rel_diff_soln = norm(x_h2ogpuml - x_cvx) / norm(x_cvx);
+results.max_violation = max(abs(sum(x_h2ogpuml) - 1), ...
+                            max(max(F * x_h2ogpuml - b, 0)));
+results.avg_violation = mean(max(F * x_h2ogpuml - b, 0));
+results.time_h2ogpuml = time_h2ogpuml;
 results.time_cvx = time_cvx;
 results.n_iter = n_iter;
 
@@ -112,7 +112,7 @@ if ~quiet
   fprintf('Relative Difference in Solution: %e\n', results.rel_diff_soln)
   fprintf('Maximum Constraint Violation: %e\n', results.max_violation)
   fprintf('Average Constraint Violation: %e\n', results.avg_violation)
-  fprintf('Time H2OAIGLM: %e\n', results.time_h2oaiglm)
+  fprintf('Time H2OGPUML: %e\n', results.time_h2ogpuml)
   fprintf('Time CVX: %e\n', results.time_cvx)
 end
 

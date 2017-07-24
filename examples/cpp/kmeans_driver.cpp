@@ -14,7 +14,7 @@
 //#include "cuda.h"
 #include <cstdlib>
 #include <random>
-#include "h2oaikmeans.h"
+#include "h2ogpumlkmeans.h"
 
 typedef float real_t;
 //typedef double real_t;
@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 #if 0
   // creates random data inside
   real_t a = 0;
-  h2oaikmeans::H2OAIKMeans<real_t>(&a, k, rows, cols).Solve();
+  h2ogpumlkmeans::H2OGPUMLKMeans<real_t>(&a, k, rows, cols).Solve();
 #else
   //user-given data
   std::vector<real_t> data(rows*cols);
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
   int init_from_labels=1;//true as set above, otherwise internally will set initial centroids "smartly"
   int init_labels=1; // randomly select from input
   int init_data=2; // randomly (without replacement) select from input
-  h2oaikmeans::makePtr_dense<real_t>(gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &res);
+  h2ogpumlkmeans::makePtr_dense<real_t>(gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &res);
 
   // report something about centroids that site in res as k*cols data block
 #endif

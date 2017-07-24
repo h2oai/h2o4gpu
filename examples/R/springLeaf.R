@@ -1,5 +1,5 @@
 library(h2o)
-library(h2oaiglm)
+library(h2ogpuml)
 library(glmnet)
 library(data.table)
 
@@ -13,7 +13,7 @@ f <- "~/kaggle/springleaf/input/train.csv"
 response <- 'target'
 family <- "gaussian"
 #family <- "binomial"
-h2oaiglm  <-TRUE
+h2ogpuml  <-TRUE
 glmnet<-TRUE
 h2o   <-TRUE
 alpha <- 1 ## Lasso
@@ -60,22 +60,22 @@ valid_x  <- as.matrix(as.data.frame(valid[,cols,with=FALSE]))
 valid_y  <- as.numeric(as.vector(valid[[response]]))
 
 
-## H2OAIGLM GPU
-if (h2oaiglm) {
+## H2OGPUML GPU
+if (h2ogpuml) {
   s1 <- proc.time()
-  h2oaiglm = cv.h2oaiglmnet(nfolds=nfolds, x = train_x, y = train_y, family = family, alpha = alpha, cutoff=FALSE)
-  print(paste0("lambda_1se=",h2oaiglm$lambda.1se))
-  h2oaiglm_pred_y = predict(h2oaiglm$h2oaiglmnet.fit, s=h2oaiglm$lambda.1se, valid_x, type="response")
+  h2ogpuml = cv.h2ogpumlnet(nfolds=nfolds, x = train_x, y = train_y, family = family, alpha = alpha, cutoff=FALSE)
+  print(paste0("lambda_1se=",h2ogpuml$lambda.1se))
+  h2ogpuml_pred_y = predict(h2ogpuml$h2ogpumlnet.fit, s=h2ogpuml$lambda.1se, valid_x, type="response")
   e1 <- proc.time()
 
-  print("H2OAIGLM GPU: ")
+  print("H2OGPUML GPU: ")
   print(e1-s1)
-  h2oaiglmpreds <- as.h2o(h2oaiglm_pred_y)
-  summary(h2oaiglmpreds)
+  h2ogpumlpreds <- as.h2o(h2ogpuml_pred_y)
+  summary(h2ogpumlpreds)
   if (family == "gaussian") {
-    print(h2o.rmse(h2o.make_metrics(h2oaiglmpreds[,1], valid.hex[[response]])))
+    print(h2o.rmse(h2o.make_metrics(h2ogpumlpreds[,1], valid.hex[[response]])))
   } else {
-    print(h2o.auc(h2o.make_metrics(h2oaiglmpreds[,1], valid.hex[[response]])))
+    print(h2o.auc(h2o.make_metrics(h2ogpumlpreds[,1], valid.hex[[response]])))
   }
 }
 
@@ -139,7 +139,7 @@ if (h2o) {
 ### 569674a1dfa i7-5820k / Titan-X Pascal
 ### Elastic Net full regularization path with 10-fold CV
 
-#H2OAIGLM GPU
+#H2OGPUML GPU
 #   user  system elapsed 
 #390.832  61.132 452.642 
 #rmse 0.4220073
@@ -160,7 +160,7 @@ if (h2o) {
 ### e3b7d0f6f1c0 Dual Xeon / GTX1080
 ### Elastic Net full regularization path with 10-fold CV
 
-#H2OAIGLM GPU
+#H2OGPUML GPU
 #lambda_1se=2105060.83223774
 #   user  system elapsed
 #532.176 114.980 647.744
@@ -183,13 +183,13 @@ if (h2o) {
 
 ### Latest timing for f8d241e on mr-dl1
 
-#H2OAIGLM GPU
+#H2OGPUML GPU
 #lambda_1se=27340705.2636287
 #   user  system elapsed 
 #216.668  49.136 265.898 
 #rmse 0.422007
 
-#H2OAIGLM CPU
+#H2OGPUML CPU
 #lambda_1se=7432811.98777276
 #     user    system   elapsed 
 #25356.744  8514.276   993.101 
@@ -212,12 +212,12 @@ if (h2o) {
 ## Latest timing for 5cb02b84a on ovaclokka
 ## Titan-X Pascal / i7 5820k
 
-#H2OAIGLM GPU
+#H2OGPUML GPU
 #   user  system elapsed 
 #167.172  26.736 193.956 
 #rmse 0.422007
 
-#H2OAIGLM CPU
+#H2OGPUML CPU
 #    user   system  elapsed 
 #8813.880  622.592  875.563 
 #rmse 0.4166237

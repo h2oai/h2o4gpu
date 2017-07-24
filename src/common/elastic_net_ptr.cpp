@@ -107,7 +107,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define DOSTOPEARLY 1
 #define RELAXEARLYSTOP 0
 
-namespace h2oaiglm {
+namespace h2ogpuml {
 
   volatile sig_atomic_t flag = 0;
   inline void my_function(int sig){ // can be called asynchronously
@@ -191,7 +191,7 @@ namespace h2oaiglm {
   //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
   //
   // for many values of \lambda and multiple values of \alpha
-  // See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
+  // See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
   // m and n are training data size
 #define TRAINRMSE 0
 #define CVRMSE 1
@@ -267,7 +267,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
       T valuebeta[NUMBETA];
       int myk=5;
       int whichmax=1; // 0 : larger  1: largest absolute magnitude
-      h2oaiglm::topkwrap(1,myn,myk,arr,&whichbeta[0],&valuebeta[0]);
+      h2ogpuml::topkwrap(1,myn,myk,arr,&whichbeta[0],&valuebeta[0]);
       for(int ii=0;ii<myk;ii++){
         fprintf(stderr,"%d %g ",whichbeta[ii],valuebeta[ii]); fflush(stderr);
       }
@@ -339,10 +339,10 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
-    //  h2oaiglm::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+    //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
     // assume source thread is 0th thread (TODO: need to ensure?)
     int sourceme=sourceDev;
-    h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
+    h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                       reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                       reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
                                       reinterpret_cast<T *>(weightptr));
@@ -376,7 +376,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
       fflush(myfile);
     }
       
-    // temporarily get trainX, etc. from h2oaiglm (which may be on gpu)
+    // temporarily get trainX, etc. from h2ogpuml (which may be on gpu)
     T *trainX=NULL;
     T *trainY=NULL;
     T *validX=NULL;
@@ -421,7 +421,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 #define RMSELOOP(ri) for(int ri=0;ri<NUMRMSE;ri++)
     T rmsearray[NUMRMSE][realfolds*2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
-    // Setup each thread's h2oaiglm
+    // Setup each thread's h2ogpuml
     double t = timer<double>();
     double t1me0;
 
@@ -489,9 +489,9 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
       double t0 = timer<double>();
       DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
 #pragma omp barrier // not required barrier
-      h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
-#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
-      h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
+      h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2ogpuml_data(wDev=sourceDev) below before other cores copy data
+      h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
       double t1 = timer<double>();
       if(me==0){ //only thread=0 times entire post-warmup procedure
@@ -514,17 +514,17 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
       
 
       // Setup constant parameters for all models
-      h2oaiglm_data.SetnDev(1); // set how many cuda devices to use internally in h2oaiglm
-      //    h2oaiglm_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2oaiglm
-      //    h2oaiglm_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2oaiglm
-      //    h2oaiglm_data.SetAdaptiveRho(true);
-      //h2oaiglm_data.SetEquil(false);
-      //      h2oaiglm_data.SetRho(1E-6);
-      //      h2oaiglm_data.SetRho(1E-3);
-      h2oaiglm_data.SetRho(1.0);
-      //	h2oaiglm_data.SetVerbose(5);
-      //        h2oaiglm_data.SetMaxIter(100);
-      h2oaiglm_data.SetMaxIter(5000);
+      h2ogpuml_data.SetnDev(1); // set how many cuda devices to use internally in h2ogpuml
+      //    h2ogpuml_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2ogpuml
+      //    h2ogpuml_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2ogpuml
+      //    h2ogpuml_data.SetAdaptiveRho(true);
+      //h2ogpuml_data.SetEquil(false);
+      //      h2ogpuml_data.SetRho(1E-6);
+      //      h2ogpuml_data.SetRho(1E-3);
+      h2ogpuml_data.SetRho(1.0);
+      //	h2ogpuml_data.SetVerbose(5);
+      //        h2ogpuml_data.SetMaxIter(100);
+      h2ogpuml_data.SetMaxIter(5000);
 
       DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
       int fi,a;
@@ -555,7 +555,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
         std::vector <T> lambdas(nlambda);
         if(lambdatype==LAMBDATYPEPATH){
           nlambdalocal=nlambda;
-          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like h2oaiglm.R
+          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like h2ogpuml.R
           T lambda_max = lambda_max0; // std::max(static_cast<T>(1e-2), alpha); // same as H2O
           DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
           DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
@@ -651,8 +651,8 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
             f.reserve(mTrain);
             g.reserve(n);
             // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-            for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2oaiglm.R
-            //for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2oaiglm.R
+            for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
+            //for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
             for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
             if (intercept) g.emplace_back(kZero);
 
@@ -702,11 +702,11 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                   if(gotpreviousX0){
                     //              DEBUG_FPRINTF(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
                     //              for(unsigned int ll=0;ll<n;ll++) DEBUG_FPRINTF(stderr,"X0[%d]=%g\n",ll,X0[ll]);
-                    h2oaiglm_data.SetInitX(X0);
-                    h2oaiglm_data.SetInitLambda(L0);
+                    h2ogpuml_data.SetInitX(X0);
+                    h2ogpuml_data.SetInitLambda(L0);
                   }
                   else{
-                    h2oaiglm_data.ResetX(); // reset X if new alpha if expect much different solution
+                    h2ogpuml_data.ResetX(); // reset X if new alpha if expect much different solution
                   }
                 }
 
@@ -717,10 +717,10 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
                 // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
                 double jumpuse=DBL_MAX;
-                //h2oaiglm_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
+                //h2ogpuml_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
                 tol=tol0;//*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
-                h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
+                h2ogpuml_data.SetRelTol(tol);
+                h2ogpuml_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
                 // see if getting below stddev, if so decrease tolerance
                 if(scoring_history.size()>=1){
                   double ratio = (norm-scoring_history.back())/norm;
@@ -731,8 +731,8 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                     tol = tol0*pow(2.0,-ratio/factor);//*lambda/lambdas[0]
                     if(tol<tollow) tol=tollow;
                 
-                    h2oaiglm_data.SetRelTol(tol);
-                    h2oaiglm_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                    h2ogpuml_data.SetRelTol(tol);
+                    h2ogpuml_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
                     jumpuse=jump;
                   }
                   //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
@@ -742,8 +742,8 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 // assume warm-start value of X and other internal variables
                 //                fprintf(stderr,"tol to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
                 tol = tolarrayofa[a];
-                h2oaiglm_data.SetRelTol(tol);
-                h2oaiglm_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+                h2ogpuml_data.SetRelTol(tol);
+                h2ogpuml_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
               }
 
 
@@ -755,7 +755,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               ////////////////////
             
               DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n", timer<double>());
-              T penalty_factor = static_cast<T>(1.0); // like h2oaiglm.R
+              T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
               // assign lambda (no penalty for intercept, the last coeff, if present)
               for (unsigned int j = 0; j < n - intercept; ++j) {
                 g[j].c = static_cast<T>(alpha * lambda * penalty_factor); //for L1
@@ -766,7 +766,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 g[n - 1].e = 0;
               }
               // Solve
-              h2oaiglm_data.Solve(f, g);
+              h2ogpuml_data.Solve(f, g);
 
 
             
@@ -777,7 +777,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 // Check if getting solution was too easy and was 0 iterations.  If so, overhead is not worth it, so try skipping by 1.
                 //
                 /////////////////
-                if(h2oaiglm_data.GetFinalIter()==0){
+                if(h2ogpuml_data.GetFinalIter()==0){
                   doskiplambda=1;
                   skiplambdaamount++;
                 }
@@ -793,24 +793,24 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 //
                 ////////////////////////////////////////////
                 int maxedout=0;
-                if(h2oaiglm_data.GetFinalIter()==h2oaiglm_data.GetMaxIter()) maxedout=1;
+                if(h2ogpuml_data.GetFinalIter()==h2ogpuml_data.GetMaxIter()) maxedout=1;
                 else maxedout=0;
 
-                if(maxedout) h2oaiglm_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
+                if(maxedout) h2ogpuml_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
                 // store good high-lambda solution to start next alpha with (better than starting with low-lambda solution)
                 if(gotX0==0 && maxedout==0){
                   gotX0=1;
                   // TODO: FIXME: Need to get (and have solver set) best solution or return all, because last is not best.
                   gotpreviousX0=1;
-                  memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
-                  memcpy(L0,&h2oaiglm_data.GetLambda()[0],mTrain*sizeof(T));
+                  memcpy(X0,&h2ogpuml_data.GetX()[0],n*sizeof(T));
+                  memcpy(L0,&h2ogpuml_data.GetLambda()[0],mTrain*sizeof(T));
                 }
             
               }
 
               if (intercept) {
-                DEBUG_FPRINTF(fil, "intercept: %g\n", h2oaiglm_data.GetX()[n - 1]);
-                DEBUG_FPRINTF(stdout, "intercept: %g\n", h2oaiglm_data.GetX()[n - 1]);
+                DEBUG_FPRINTF(fil, "intercept: %g\n", h2ogpuml_data.GetX()[n - 1]);
+                DEBUG_FPRINTF(stdout, "intercept: %g\n", h2ogpuml_data.GetX()[n - 1]);
               }
 
 
@@ -824,7 +824,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               size_t dof = 0;
               {
                 for (size_t i = 0; i < n - intercept; ++i) {
-                  if (std::abs(h2oaiglm_data.GetX()[i]) > 1e-8) {
+                  if (std::abs(h2ogpuml_data.GetX()[i]) > 1e-8) {
                     dof++;
                   }
                 }
@@ -835,13 +835,13 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               int whichbeta[NUMBETA];
               T valuebeta[NUMBETA];
               int whichmax=1; // 0 : larger  1: largest absolute magnitude
-              h2oaiglm::topkwrap(whichmax,(int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2oaiglm_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
+              h2ogpuml::topkwrap(whichmax,(int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2ogpuml_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
               
-              //              memcpy(X0,&h2oaiglm_data.GetX()[0],n*sizeof(T));
+              //              memcpy(X0,&h2ogpuml_data.GetX()[0],n*sizeof(T));
               if(0){
-                std::sort(const_cast<T*>(&h2oaiglm_data.GetX()[0]),const_cast<T*>(&h2oaiglm_data.GetX()[n-intercept]));
+                std::sort(const_cast<T*>(&h2ogpuml_data.GetX()[0]),const_cast<T*>(&h2ogpuml_data.GetX()[n-intercept]));
                 for (size_t i = 0; i < n - intercept; ++i) {
-                  fprintf(stderr,"BETA: i=%zu beta=%g\n",i,h2oaiglm_data.GetX()[i]); fflush(stderr);
+                  fprintf(stderr,"BETA: i=%zu beta=%g\n",i,h2ogpuml_data.GetX()[i]); fflush(stderr);
                 }
               }
 
@@ -854,24 +854,24 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               for (size_t i = 0; i < mTrain; ++i) {
                 trainPreds[i] = 0;
                 for (size_t j = 0; j < n; ++j) {
-                  trainPreds[i] += h2oaiglm_data.GetX()[j] * trainX[i * n + j]; //add predictions
+                  trainPreds[i] += h2ogpuml_data.GetX()[j] * trainX[i * n + j]; //add predictions
                 }
               }
 #else
-              std::vector <T> trainPreds(&h2oaiglm_data.GettrainPreds()[0], &h2oaiglm_data.GettrainPreds()[0]+mTrain);
+              std::vector <T> trainPreds(&h2ogpuml_data.GettrainPreds()[0], &h2ogpuml_data.GettrainPreds()[0]+mTrain);
               //              for(unsigned int iii=0;iii<mTrain;iii++){
               //                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
               //              }
 #endif
               // RMSE: TRAIN
-              trainRMSE = h2oaiglm::getRMSE(weights, mTrain, &trainPreds[0], trainY);
+              trainRMSE = h2ogpuml::getRMSE(weights, mTrain, &trainPreds[0], trainY);
               if(standardize){
                 trainRMSE *= sdTrainY;
                 for (size_t i = 0; i < mTrain; ++i) {
                   // reverse standardization
                   trainPreds[i]*=sdTrainY; //scale
                   trainPreds[i]+=meanTrainY; //intercept
-                  //assert(trainPreds[i] == h2oaiglm_data.GetY()[i]); //FIXME: CHECK
+                  //assert(trainPreds[i] == h2ogpuml_data.GetY()[i]); //FIXME: CHECK
                 }
               }
 
@@ -879,7 +879,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
               // RMSE: on fold's held-out training data
               if(realfolds>1){
                 const T offset=1.0;
-                ivalidRMSE = h2oaiglm::getRMSE(offset, weights, mTrain, &trainPreds[0], trainY);
+                ivalidRMSE = h2ogpuml::getRMSE(offset, weights, mTrain, &trainPreds[0], trainY);
               }
               else{
                 ivalidRMSE = -1.0;
@@ -901,14 +901,14 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 for (size_t i = 0; i < mValid; ++i) { //row
                   validPreds[i] = 0;
                   for (size_t j = 0; j < n; ++j) { //col
-                    validPreds[i] += h2oaiglm_data.GetX()[j] * validX[i * n + j]; //add predictions
+                    validPreds[i] += h2ogpuml_data.GetX()[j] * validX[i * n + j]; //add predictions
                   }
                 }
 #else
-                std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
+                std::vector <T> validPreds(&h2ogpuml_data.GetvalidPreds()[0], &h2ogpuml_data.GetvalidPreds()[0]+mValid);
 #endif
                 // RMSE: VALIDs
-                validRMSE = h2oaiglm::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
+                validRMSE = h2ogpuml::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
                 if(standardize){
                   validRMSE *= sdTrainY;
                   for (size_t i = 0; i < mValid; ++i) { //row
@@ -953,7 +953,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                   //#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
                   //#define NUMOTHER 3 // for lambda, alpha, tol
                   // Save solution to return to user
-                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T));
+                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T));
                   // Save rmse to return to user
                   RMSELOOP(ri) (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = localrmse[ri];
                   // Save lambda to return to user
@@ -965,7 +965,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
                 }
               }
               else{// only done if realfolds>1
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T));
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T));
                 // Save rmse to return to user
                 RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = localrmse[ri];
                 // Save lambda to return to user
@@ -1036,7 +1036,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
             // if not doing folds, store best solution over all lambdas
             if(lambdatype==LAMBDATYPEPATH && nFolds<2){
               if(fi==0){ // only store first fold for user
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2oaiglm_data.GetX()[0],n*sizeof(T)); // not quite best, last lambda TODO FIXME
+                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T)); // not quite best, last lambda TODO FIXME
                 //                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
                 // Save rmse to return to user
                 RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = tbestrmse[ri];
@@ -1210,16 +1210,16 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
-    //  h2oaiglm::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+    //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
     // assume source thread is 0th thread (TODO: need to ensure?)
     int sourceme=sourceDev;
-    h2oaiglm::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
+    h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                       reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                       reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
                                       reinterpret_cast<T *>(weightptr));
     // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
 
-    // Setup each thread's h2oaiglm
+    // Setup each thread's h2ogpuml
     double t = timer<double>();
     double t1me0;
 
@@ -1272,9 +1272,9 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
       double t0 = timer<double>();
       DEBUG_FPRINTF(fil, "Pred: Moving data to the GPU. Starting at %21.15g\n", t0);
 #pragma omp barrier // not required barrier
-      h2oaiglm::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
-#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2oaiglm_data(wDev=sourceDev) below before other cores copy data
-      h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(sharedA, me, wDev, A_);
+      h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+#pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2ogpuml_data(wDev=sourceDev) below before other cores copy data
+      h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
       double t1 = timer<double>();
       if(me==0){ //only thread=0 times entire post-warmup procedure
@@ -1316,13 +1316,13 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
           }
 
           // set X from X0
-          h2oaiglm_data.SetInitX(X0);
+          h2ogpuml_data.SetInitX(X0);
 
           // compute predictions
-          h2oaiglm_data.Predict();
+          h2ogpuml_data.Predict();
 
           // Get valid prediction
-          std::vector <T> validPreds(&h2oaiglm_data.GetvalidPreds()[0], &h2oaiglm_data.GetvalidPreds()[0]+mValid);
+          std::vector <T> validPreds(&h2ogpuml_data.GetvalidPreds()[0], &h2ogpuml_data.GetvalidPreds()[0]+mValid);
 
           T sdTrainY=1.0 ; // TODO FIXME not impliemented yet
           T meanTrainY=1.0 ; // TODO FIXME not impliemented yet
@@ -1358,7 +1358,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
               weightsvalid[i] = 1.0;
             }
             
-            T validRMSE = h2oaiglm::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
+            T validRMSE = h2ogpuml::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
             if(standardize) validRMSE *= sdTrainY;
 
             if(givefullpath){

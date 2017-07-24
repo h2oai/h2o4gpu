@@ -1,10 +1,10 @@
 library(h2o)
-library(h2oaiglm)
+library(h2ogpuml)
 library(glmnet)
 library(data.table)
 h2o.init(nthreads=-1)
 
-h2oaiglm  <-TRUE
+h2ogpuml  <-TRUE
 glmnet<-TRUE
 h2o   <-TRUE
 alpha <- 0.8
@@ -105,20 +105,20 @@ score <- function(model, preds, actual) {
   plot(model, xvar="lambda")
 }
 
-## H2OAIGLM GPU
-if (h2oaiglm) {
+## H2OGPUML GPU
+if (h2ogpuml) {
   s1 <- proc.time()
-  h2oaiglm = h2oaiglmnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
+  h2ogpuml = h2ogpumlnet(x = train_x, y = train_y, family = family, alpha = alpha, lambda=NULL, cutoff=FALSE,
                  params=list(rel_tol=1e-3, abs_tol=1e-3, rho=1,
                    #max_iter=200, 
                  adaptive_rho=TRUE, equil=TRUE))
   e1 <- proc.time()
-  h2oaiglm_pred_y = predict(h2oaiglm, valid_x, type="response")
+  h2ogpuml_pred_y = predict(h2ogpuml, valid_x, type="response")
 
-  print("H2OAIGLM GPU: ")
+  print("H2OGPUML GPU: ")
   print(e1-s1)
   
-  score(h2oaiglm, h2oaiglm_pred_y, valid_y)
+  score(h2ogpuml, h2ogpuml_pred_y, valid_y)
 }
 
 ## GLMNET

@@ -1,4 +1,4 @@
-import h2oaiglm as h2oaiglm
+import h2ogpuml as h2ogpuml
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, sum, zeros
 
@@ -9,16 +9,16 @@ Elastic Net
    minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
 
    for 100 values of \lambda, and alpha in [0,1]
-   See <h2oaiglm>/matlab/examples/lasso_path.m for detailed description.
+   See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
   # set solver cpu/gpu according to input args
-  if gpu and h2oaiglm.SolverGPU is None:
+  if gpu and h2ogpuml.SolverGPU is None:
     print("\nGPU solver unavailable, using CPU solver\n")
     gpu=False
 
-  Solver = h2oaiglm.SolverGPU if gpu else h2oaiglm.SolverCPU
+  Solver = h2ogpuml.SolverGPU if gpu else h2ogpuml.SolverCPU
 
   # cast A as float/double according to input args
   A=np.array(X, dtype='float64') if double_precision else np.array(X, dtype='float32')
@@ -32,14 +32,14 @@ def ElasticNet(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
 
 
   # f(Ax) = ||Ax - b||_2^2
-  f = h2oaiglm.FunctionVector(m,double_precision=double_precision)
+  f = h2ogpuml.FunctionVector(m,double_precision=double_precision)
   f.b[:]=b[:]
-  f.h[:]=h2oaiglm.FUNCTION["SQUARE"]
+  f.h[:]=h2ogpuml.FUNCTION["SQUARE"]
 
   # g(x) = 0.2*lambda_max*||x||_1
-  g = h2oaiglm.FunctionVector(n,double_precision=double_precision)
+  g = h2ogpuml.FunctionVector(n,double_precision=double_precision)
   g.a[:] = 1
-  g.h[:] = h2oaiglm.FUNCTION["ABS"]
+  g.h[:] = h2ogpuml.FUNCTION["ABS"]
 
 
   # store results for comparison 

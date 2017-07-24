@@ -1,8 +1,8 @@
-## C++ Implementation of H2OAIGLM
+## C++ Implementation of H2OGPUML
 
 Tutorial
 --------
-Please refer to the examples to see how to use H2OAIGLM. Documentation will be updated in the near future.
+Please refer to the examples to see how to use H2OGPUML. Documentation will be updated in the near future.
 
 
 Proximal Operator Library
@@ -40,7 +40,7 @@ The function `I(.)` is the indicator function, taking on the value 0 if the cond
 
 Examples
 --------
-See the `<h2oaiglm>/examples/cpp/` directory for examples of how to use the solver. We have included six classes of problems:
+See the `<h2ogpuml>/examples/cpp/` directory for examples of how to use the solver. We have included six classes of problems:
 
   + Non-negative least squares
   + Inequality constrained linear program

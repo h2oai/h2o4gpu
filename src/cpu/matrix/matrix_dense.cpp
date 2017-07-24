@@ -18,7 +18,7 @@
 
 
 
-namespace h2oaiglm {
+namespace h2ogpuml {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
@@ -864,11 +864,11 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 }  // namespace
 
 // Explicit template instantiation.
-#if !defined(H2OAIGLM_DOUBLE) || H2OAIGLM_DOUBLE==1
+#if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE==1
 template class MatrixDense<double>;
 #endif
 
-#if !defined(H2OAIGLM_SINGLE) || H2OAIGLM_SINGLE==1
+#if !defined(H2OGPUML_SINGLE) || H2OGPUML_SINGLE==1
 template class MatrixDense<float>;
 #endif
 
@@ -948,7 +948,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
   template int modelFree1<float>(float *aptr);
   
 
-}  // namespace h2oaiglm
+}  // namespace h2ogpuml
 
 
 
@@ -960,19 +960,19 @@ extern "C" {
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                       const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
                       void**a, void**b, void**c, void**d, void **e) {
-    return h2oaiglm::makePtr_dense<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+    return h2ogpuml::makePtr_dense<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
   }
   int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                      const float* trainX, const float* trainY, const float* validX, const float* validY, const float *weight,
                      void**a, void**b, void**c, void**d, void **e) {
-    return h2oaiglm::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
+    return h2ogpuml::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
   }
 
   int modelfree1_float(double *aptr){
-    return h2oaiglm::modelFree1<double>(aptr);
+    return h2ogpuml::modelFree1<double>(aptr);
   }
   int modelfree1_double(float *aptr){
-    return h2oaiglm::modelFree1<float>(aptr);
+    return h2ogpuml::modelFree1<float>(aptr);
   }
   
 #ifdef __cplusplus

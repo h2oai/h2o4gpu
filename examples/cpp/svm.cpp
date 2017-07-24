@@ -2,15 +2,15 @@
 #include <vector>
 
 #include "matrix/matrix_dense.h"
-#include "h2oaiglm.h"
+#include "h2ogpuml.h"
 #include "timer.h"
 
-using namespace h2oaiglm;
+using namespace h2ogpuml;
 
 // Support Vector Machine.
 //   minimize    (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
 //
-// See <h2oaiglm>/matlab/examples/svm.m for detailed description.
+// See <h2ogpuml>/matlab/examples/svm.m for detailed description.
 template <typename T>
 double Svm(size_t m, size_t n) {
   std::vector<T> A(m * (n + 1));
@@ -34,8 +34,8 @@ double Svm(size_t m, size_t n) {
     A[i * (n + 1) + n] = -sign_yi;
   }
 
-  h2oaiglm::MatrixDense<T> A_('r', m, n + 1, A.data());
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2ogpuml::MatrixDense<T> A_('r', m, n + 1, A.data());
+  h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -52,7 +52,7 @@ double Svm(size_t m, size_t n) {
   g.emplace_back(kZero);
 
   double t = timer<double>();
-  h2oaiglm_data.Solve(f, g);
+  h2ogpuml_data.Solve(f, g);
 
   return timer<double>() - t;
 }

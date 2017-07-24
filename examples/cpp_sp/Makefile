@@ -1,12 +1,12 @@
 # User Vars
-H2OAIGLMROOT=../../src
+H2OGPUMLROOT=../../src
 
 # Example Files
 EXSRC= lasso.cpp lp_eq.cpp lasso_path.cpp # logistic.cpp lp_ineq.cpp nonneg_l2.cpp svm.cpp
 
 # C++ Flags
 CXX=g++
-CXXFLAGS=-g -I$(H2OAIGLMROOT) -fopenmp -std=c++11 -Wall -Wconversion #-O3
+CXXFLAGS=-g -I$(H2OGPUMLROOT) -fopenmp -std=c++11 -Wall -Wconversion #-O3
 
 # CUDA Flags
 CULDFLAGS_=-lcudart -lcublas -lcusparse
@@ -23,15 +23,15 @@ endif
 
 # CPU
 cpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) cpu -C $(H2OAIGLMROOT)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS) -I$(H2OAIGLMROOT)/include -o run $(EXSRC) \
-  $< $(H2OAIGLMROOT)/build/h2oaiglm.a $(LDFLAGS)
+	$(MAKE) cpu -C $(H2OGPUMLROOT)
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS) -I$(H2OGPUMLROOT)/include -o run $(EXSRC) \
+  $< $(H2OGPUMLROOT)/build/h2ogpuml.a $(LDFLAGS)
 
 # GPU
 gpu: run_all.cpp examples.h $(EXSRC)
-	$(MAKE) gpu -C $(H2OAIGLMROOT)
-	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -I$(H2OAIGLMROOT)/include -o run $(EXSRC) \
-  $< $(H2OAIGLMROOT)/build/h2oaiglm.a $(CULDFLAGS)
+	$(MAKE) gpu -C $(H2OGPUMLROOT)
+	$(CXX) $(CXXFLAGS) $(CUXXFLAGS) -I$(H2OGPUMLROOT)/include -o run $(EXSRC) \
+  $< $(H2OGPUMLROOT)/build/h2ogpuml.a $(CULDFLAGS)
 
 clean:
 	rm -f *.o *~ *~ run

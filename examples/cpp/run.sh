@@ -10,10 +10,10 @@ make gpualt
 make cpualt
 for i in 2 1; do
    mkdir -p $DIR/gpu.$i
-   ./h2oai-glm-gpu $i $L $A $V 2>&1 | tee $DIR/gpu.$i/pogs.$DIR.gpu.$i.log
+   ./h2ogpuml-glm-gpu $i $L $A $V 2>&1 | tee $DIR/gpu.$i/pogs.$DIR.gpu.$i.log
    mv me*txt $DIR/gpu.$i/
 done
 mkdir -p $DIR/cpu
-./h2oai-glm-cpu 1 $L $A $V 2>&1 | tee $DIR/cpu/pogs.$DIR.cpu.log
+./h2ogpuml-glm-cpu 1 $L $A $V 2>&1 | tee $DIR/cpu/pogs.$DIR.cpu.log
 mv me*txt $DIR/cpu/
 

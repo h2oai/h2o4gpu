@@ -3,10 +3,10 @@
 % Build interface
 cd([pwd '/../../src/interface_matlab'])
 % % Use one of the following to set up
-h2oaiglm_setup 
-% h2oaiglm_setup -omp
-% h2oaiglm_setup -gpu
-% h2oaiglm_setup -gpu -cuda_lib /usr/local/cuda/lib -cuda_bin /usr/local/cuda/bin
+h2ogpuml_setup 
+% h2ogpuml_setup -omp
+% h2ogpuml_setup -gpu
+% h2ogpuml_setup -gpu -cuda_lib /usr/local/cuda/lib -cuda_bin /usr/local/cuda/bin
 cd([pwd '/../../examples/matlab/'])
 addpath([pwd '/../../src/interface_matlab'])
 

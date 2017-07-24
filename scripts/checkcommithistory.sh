@@ -10,7 +10,7 @@ hashfullpath=~/hashes
 
 cd ~/
 rm -rf pogs
-git clone git@github.com:h2oai/pogs.git
+git clone git@github.com:h2ogpuml/pogs.git
 pushd $pogsdir
 cp examples/R/simple.R $resultdir
 git checkout master
@@ -95,43 +95,43 @@ for i in `cat $hashfullpath`; do
 
   # get usage method
   #./runcpu
-  usage=`./h2oai-glm-cpu &> use.txt ; cat use.txt | tail -1 | wc -w`
+  usage=`./h2ogpuml-glm-cpu &> use.txt ; cat use.txt | tail -1 | wc -w`
   echo "usage=$usage"
   if [ $usage -eq 8 ]
   then
       # then can do standardize on/off
-      ./h2oai-glm-cpu 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu.txt
-      ./h2oai-glm-cpu 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu2.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus2.txt
+      ./h2ogpuml-glm-cpu 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu.txt
+      ./h2ogpuml-glm-cpu 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus.txt
+      ./h2ogpuml-glm-cpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.cpu2.txt
+      ./h2ogpuml-glm-cpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.cpus2.txt
 
-      ./h2oai-glm-gpu 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu.txt
-      ./h2oai-glm-gpu 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu2.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus2.txt
+      ./h2ogpuml-glm-gpu 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu.txt
+      ./h2ogpuml-glm-gpu 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus.txt
+      ./h2ogpuml-glm-gpu-mapd 1 100 1 1 0 0 &>  $resultdir/file.$i.gpu2.txt
+      ./h2ogpuml-glm-gpu-mapd 1 100 1 1 1 0 &>  $resultdir/file.$i.gpus2.txt
   fi
   if [ $usage -eq 7 ]
   then
       # then no standardization
-      ./h2oai-glm-cpu 1 100 1 1 0 &>  $resultdir/file.$i.cpu.txt
+      ./h2ogpuml-glm-cpu 1 100 1 1 0 &>  $resultdir/file.$i.cpu.txt
       echo "NA" >  $resultdir/file.$i.cpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.cpu2.txt
+      ./h2ogpuml-glm-cpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.cpu2.txt
       echo "NA" >  $resultdir/file.$i.cpus2.txt
-      ./h2oai-glm-gpu 1 100 1 1 0 &>  $resultdir/file.$i.gpu.txt
+      ./h2ogpuml-glm-gpu 1 100 1 1 0 &>  $resultdir/file.$i.gpu.txt
       echo "NA" >  $resultdir/file.$i.gpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.gpu2.txt
+      ./h2ogpuml-glm-gpu-mapd 1 100 1 1 0 &>  $resultdir/file.$i.gpu2.txt
       echo "NA" >  $resultdir/file.$i.gpus2.txt
   fi
   if [ $usage -eq 6 ]
   then
       # then no intercept or standardization
-      ./h2oai-glm-cpu 1 100 1 0 &>  $resultdir/file.$i.cpu.txt
+      ./h2ogpuml-glm-cpu 1 100 1 0 &>  $resultdir/file.$i.cpu.txt
       echo "NA" >  $resultdir/file.$i.cpus.txt
-      ./h2oai-glm-cpu-mapd 1 100 1 0 &>  $resultdir/file.$i.cpu2.txt
+      ./h2ogpuml-glm-cpu-mapd 1 100 1 0 &>  $resultdir/file.$i.cpu2.txt
       echo "NA" >  $resultdir/file.$i.cpus2.txt
-      ./h2oai-glm-gpu 1 100 1 0 &>  $resultdir/file.$i.gpu.txt
+      ./h2ogpuml-glm-gpu 1 100 1 0 &>  $resultdir/file.$i.gpu.txt
       echo "NA" >  $resultdir/file.$i.gpus.txt
-      ./h2oai-glm-gpu-mapd 1 100 1 0 &>  $resultdir/file.$i.gpu2.txt
+      ./h2ogpuml-glm-gpu-mapd 1 100 1 0 &>  $resultdir/file.$i.gpu2.txt
       echo "NA" >  $resultdir/file.$i.gpus2.txt
   fi
 

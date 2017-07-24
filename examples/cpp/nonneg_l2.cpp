@@ -2,16 +2,16 @@
 #include <vector>
 
 #include "matrix/matrix_dense.h"
-#include "h2oaiglm.h"
+#include "h2ogpuml.h"
 #include "timer.h"
 
-using namespace h2oaiglm;
+using namespace h2ogpuml;
 
 // Non-Negative Least Squares.
 //   minimize    (1/2) ||Ax - b||_2^2
 //   subject to  x >= 0.
 //
-// See <h2oaiglm>/matlab/examples/nonneg_l2.m for detailed description.
+// See <h2ogpuml>/matlab/examples/nonneg_l2.m for detailed description.
 template <typename T>
 double NonNegL2(size_t m, size_t n) {
   std::vector<T> A(m * n);
@@ -27,8 +27,8 @@ double NonNegL2(size_t m, size_t n) {
   for (unsigned int i = 0; i < m * n; ++i)
     A[i] = static_cast<T>(1) / static_cast<T>(n) * u_dist(generator);
 
-  h2oaiglm::MatrixDense<T> A_('r', m, n, A.data());
-  h2oaiglm::H2OAIGLMDirect<T, h2oaiglm::MatrixDense<T> > h2oaiglm_data(A_);
+  h2ogpuml::MatrixDense<T> A_('r', m, n, A.data());
+  h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(A_);
   std::vector<FunctionObj<T> > f;
   std::vector<FunctionObj<T> > g;
 
@@ -49,7 +49,7 @@ double NonNegL2(size_t m, size_t n) {
     g.emplace_back(kIndGe0);
 
   double t = timer<double>();
-  h2oaiglm_data.Solve(f, g);
+  h2ogpuml_data.Solve(f, g);
 
   return timer<double>() - t;
 }
