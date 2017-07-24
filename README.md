@@ -11,6 +11,19 @@ CUDA8 for GPU version, OpenMP (for distributed GPU version) and run:
 
 pip install -r requirements.txt
 
+- Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
+````
+pyenv install 3.6.1
+pyenv global 3.6.1
+````
+- Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
+````
+R
+install.packages(c("data.table", "feather"))
+quit()
+````
+
+
 Add to .bashrc or your own environment (e.g.):
 ------
 
