@@ -3,7 +3,7 @@
 ```text
 ---
 
-H2OGPUML is a collection of GPU (and CPU) solvers.
+H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
@@ -86,25 +86,17 @@ If you are using conda, you probably need to do:  conda install libgcc
 
 ```
 
-Languages / Frameworks
-======================
-Three different implementations of the solver are either planned or already supported:
-
-  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<h2ogpuml>/src/cpu/`. H2OGPUML must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
-  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<h2ogpuml>/src/gpu/`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
-  3. MATLAB: A MATLAB implementation along with examples can be found in the `<h2ogpuml>/matlab` directory. The code is heavily documented and primarily intended for pedagogical purposes.
-
-
 Problem Classes
 ===============
 
-Among others, the solver can be used for the following classes of (linearly constrained) problems
+Among others, the solver can be used for the following classes of problems
 
-  + Lasso, Ridge Regression, Logistic Regression, Huber Fitting and Elastic Net Regulariation,
-  + Total Variation Denoising, Optimal Control,
-  + Linear Programs and Quadratic Programs.
+  + GLM: Lasso, Ridge Regression, Logistic Regression, Elastic Net Regulariation,
   + KMeans
-  
+
+Planned:
+  + GLM: Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
+  + SVD, PCA
 
 
 References
