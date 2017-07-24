@@ -13,7 +13,6 @@ class KMeans(object):
 
         verbose=1
 
-        deviceCount=-1
         try:
             nvmlInit()
             deviceCount = nvmlDeviceGetCount()
@@ -30,8 +29,12 @@ class KMeans(object):
                 except:
                     pass
 
-        except:
+        except Exception as e:
+            print("No GPU, setting deviceCount=0")
+            #print(e)
+            sys.stdout.flush()
             deviceCount=0
+            pass
 
         if n_gpus<0:
             if deviceCount>=0:

@@ -35,7 +35,7 @@ try:
       h2ogpumlCPU.h2ogpuml_finish_single.restype = None
       h2ogpumlCPU.h2ogpuml_finish_double.restype = None
 
-      print('\nLoaded H2OGPUML CPU library')
+      #print('\nLoaded H2OGPUML CPU library')
 except:
       logging.exception("in cpu.py")
       print('\nWarning: H2OGPUML CPU shared object (dynamic library) not found at ' + lib_path)

@@ -1,12 +1,109 @@
-import sys
-import numpy as np
 from ctypes import *
+from h2ogpuml.types import ORD, cptr
+import numpy as np
+import time
+import sys
 from h2ogpuml.types import ORD, cptr, c_double_p, c_void_pp
-from h2ogpuml.libs.elastic_net_cpu import h2ogpumlElasticNetCPU
-from h2ogpuml.libs.elastic_net_gpu import h2ogpumlElasticNetGPU
+from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
+from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
+from py3nvml.py3nvml import *
+
+class GLM(object):
+    def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7, n_lambdas=100, n_folds=1,
+                 n_alphas=1):
+
+        verbose = 1
+
+        try:
+            nvmlInit()
+            deviceCount = nvmlDeviceGetCount()
+            if verbose == 1:
+                for i in range(deviceCount):
+                    handle = nvmlDeviceGetHandleByIndex(i)
+                    print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
+                print("Driver Version:", nvmlSystemGetDriverVersion())
+                try:
+                    import subprocess
+                    maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
+                    print("\nNumber of GPUS:", maxNGPUS)
+                    subprocess.check_output("lscpu", shell=True)
+                except:
+                    pass
+
+        except Exception as e:
+            print("No GPU, setting deviceCount=0")
+            #print(e)
+            sys.stdout.flush()
+            deviceCount = 0
+            pass
+
+        if n_gpus < 0:
+            if deviceCount >= 0:
+                n_gpus = deviceCount
+            else:
+                print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
+                n_gpus = 1
+
+        if nThreads==None:
+            # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
+            nThreads = 1 if (n_gpus == 0) else n_gpus
+
+        if not h2ogpumlGLMGPU:
+            print(
+                '\nWarning: Cannot create a H2OGPUML Elastic Net GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library')
+            print('> Setting h2ogpuml.GLMSolverGPU=None')
+            print('> Use h2ogpuml.GLMSolverCPU(args...) or add CUDA libraries to $PATH and re-run setup.py\n\n')
+
+        if not h2ogpumlGLMCPU:
+            print(
+                '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
+            print('> Setting h2ogpuml.GLMSolverCPU=None')
+            print('> Use h2ogpuml.GLMSolverGPU(args...) and re-run setup.py\n\n')
 
 
-class ElasticNetBaseSolver(object):
+        if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
+            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, deviceCount))
+            self.solver = GLMBaseSolver(h2ogpumlGLMCPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
+                                           lambda_min_ratio, n_lambdas, n_folds, n_alphas)
+        else:
+            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
+                print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
+                self.solver = GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
+                                           lambda_min_ratio, n_lambdas, n_folds, n_alphas)
+
+        assert self.solver != None, "Couldn't instantiate GLM"
+
+
+    def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
+        return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
+    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c=c_void_p(0), d=c_void_p(0), e=c_void_p(0),
+               givefullpath=0, dopredict=0):
+        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
+    def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0,
+            dopredict=0):
+        return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
+    def getrmse(self):
+        return self.solver.getrmse()
+    def getlambdas(self):
+        return self.solver.getlambdas()
+    def getalphas(self):
+        return self.solver.getalphas()
+    def gettols(self):
+        return self.solver.gettols()
+    def predict(self, validX, testweight=None, givefullpath=0):
+        return self.solver.predict(validX, testweight, givefullpath)
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
+        return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
+    def finish1(self):
+        return self.solver.finish1()
+    def finish2(self):
+        return self.solver.finish2()
+    def finish3(self):
+        return self.solver.finish3()
+    def finish(self):
+        return self.solver.finish()
+
+class GLMBaseSolver(object):
     class info:
         pass
 
@@ -14,7 +111,7 @@ class ElasticNetBaseSolver(object):
         pass
     
     def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas, n_folds, n_alphas):
-        assert lib and (lib==h2ogpumlElasticNetCPU or lib==h2ogpumlElasticNetGPU)
+        assert lib and (lib==h2ogpumlGLMCPU or lib==h2ogpumlGLMGPU)
         self.lib=lib
 
         self.n=0

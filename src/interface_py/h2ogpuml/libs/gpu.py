@@ -36,7 +36,7 @@ try:
       h2ogpumlGPU.h2ogpuml_finish_single.restype = None
       h2ogpumlGPU.h2ogpuml_finish_double.restype = None
 
-      print('\nLoaded H2OGPUML GPU library.')
+      #print('\nLoaded H2OGPUML GPU library.')
 except:
       logging.exception("in gpu.py")
       print('\nWarning: H2OGPUML GPU shared object (dynamic library) not found at ' + lib_path)
