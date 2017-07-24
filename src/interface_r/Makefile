@@ -6,4 +6,4 @@ all:
 	echo "Default using gpulib.  Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib."
 
 clean:
-	echo "Nothing to clean"
+	rm -rf *.tar.gz
