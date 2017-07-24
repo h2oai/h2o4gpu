@@ -3,7 +3,7 @@
 ```text
 ---
 
-H2OGPUML is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers] (ADMM).
+H2OGPUML is a collection of GPU (and CPU) solvers.
 
 Requirements
 ------
@@ -103,6 +103,8 @@ Among others, the solver can be used for the following classes of (linearly cons
   + Lasso, Ridge Regression, Logistic Regression, Huber Fitting and Elastic Net Regulariation,
   + Total Variation Denoising, Optimal Control,
   + Linear Programs and Quadratic Programs.
+  + KMeans
+  
 
 
 References
