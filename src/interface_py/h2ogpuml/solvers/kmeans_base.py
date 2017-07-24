@@ -3,16 +3,82 @@ from h2ogpuml.types import ORD, cptr
 import numpy as np
 import time
 import sys
-from sklearn.cluster import KMeans
 from h2ogpuml.libs.kmeans_gpu import h2ogpumlKMeansGPU
 from h2ogpuml.libs.kmeans_cpu import h2ogpumlKMeansCPU
+from py3nvml.py3nvml import *
+
+
+class KMeans(object):
+    def __init__(self, gpu_id=0, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=False, init_labels="randomselect", init_data="randomselect"):
+
+        verbose=1
+
+        deviceCount=-1
+        try:
+            nvmlInit()
+            deviceCount = nvmlDeviceGetCount()
+            if verbose==1:
+                for i in range(deviceCount):
+                    handle = nvmlDeviceGetHandleByIndex(i)
+                    print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
+                print("Driver Version:", nvmlSystemGetDriverVersion())
+                try:
+                    import subprocess
+                    maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
+                    print("\nNumber of GPUS:", maxNGPUS)
+                    subprocess.check_output("lscpu", shell=True)
+                except:
+                    pass
+
+        except:
+            deviceCount=0
+
+        if n_gpus<0:
+            if deviceCount>=0:
+                n_gpus = deviceCount
+            else:
+                print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
+                n_gpus=1
+
+
+        if not h2ogpumlKMeansCPU:
+            print(
+                '\nWarning: Cannot create a H2OGPUMLKMeans CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
+            print('> Setting h2ogpuml.KMeansCPU=None')
+            print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
+
+        if not h2ogpumlKMeansGPU:
+            print(
+                '\nWarning: Cannot create a H2OGPUMLKMeans GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library')
+            print('> Setting h2ogpuml.KMeansGPU=None')
+            print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
+
+        if ((n_gpus == 0) or (h2ogpumlKMeansGPU is None) or (deviceCount == 0)):
+            print("\nUsing CPU solver\n")
+            self.solver = KMeansBaseSolver(h2ogpumlKMeansCPU, gpu_id, n_gpus, k, max_iterations, threshold,
+                                        init_from_labels, init_labels, init_data)
+        else:
+            if ((n_gpus > 0) or (h2ogpumlKMeansGPU is None) or (deviceCount == 0)):
+                print("\nUsing GPU solver with %d GPUs\n" % n_gpus)
+                self.solver = KMeansBaseSolver(h2ogpumlKMeansGPU, gpu_id, n_gpus, k, max_iterations, threshold,
+                                           init_from_labels, init_labels, init_data)
+
+        assert self.solver != None, "Couldn't instantiate KMeans"
+
+    def fit(self, X, L):
+        return self.solver.fit(X,L)
+    def predict(self, X):
+        return self.solver.predict(X)
+    def transform(self, X):
+        return self.solver.transform(X)
+    def fit_transform(self, X, origL):
+        return self.solver.fit_transform(X,origL)
+    def fit_predict(self, X, origL):
+        return self.solver.fit_predict(X,origL)
 
 
 class KMeansBaseSolver(object):
     def __init__(self, lib, gpu_id=0, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=False, init_labels="randomselect", init_data="randomselect"):
-        assert lib and (lib==h2ogpumlKMeansCPU or lib==h2ogpumlKMeansGPU)
-        self.lib=lib
-        
         self.k = k
         self.gpu_id = gpu_id
         self.n_gpus = n_gpus
@@ -23,7 +89,10 @@ class KMeansBaseSolver(object):
         self.threshold=threshold
         self.didfit=0
         self.didsklearnfit=0
-        
+
+        assert lib and (lib == h2ogpumlKMeansCPU or lib == h2ogpumlKMeansGPU)
+        self.lib = lib
+
     def KMeansInternal(self, gpu_id, n_gpu, ordin, k, max_iterations, init_from_labels, init_labels, init_data, threshold, mTrain, n, data, labels):
         self.gpu_id = gpu_id
         self.n_gpu = n_gpu
@@ -109,7 +178,8 @@ class KMeansBaseSolver(object):
     def sklearnfit(self):
         if(self.didsklearnfit==0):
             self.didsklearnfit=1
-            self.model = KMeans(self.k, max_iter=1, init=self.centroids, n_init=1)
+            import sklearn.cluster as SKCluster
+            self.model = SKCluster.KMeans(self.k, max_iter=1, init=self.centroids, n_init=1)
             self.model.fit(self.X,self.L)
     def predict(self, X):
         self.sklearnfit()

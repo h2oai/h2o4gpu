@@ -37,6 +37,7 @@ class ElasticNetBaseSolver(object):
         self.didfitptr=0
         self.didpredict=0
 
+
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
         if self.uploadeddata==1:
             self.finish1()
