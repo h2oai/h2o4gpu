@@ -3,7 +3,7 @@
 #include <limits>
 #include <random>
 #include "matrix/matrix_dense.h"
-#include "h2ogpuml.h"
+#include "h2ogpumlglm.h"
 #include "timer.h"
 
 using namespace h2ogpuml;

@@ -3,7 +3,7 @@
 
 #include "matrix/matrix_sparse.h"
 #include "mat_gen.h"
-#include "h2ogpuml.h"
+#include "h2ogpumlglm.h"
 #include "timer.h"
 
 // Linear program in equality form.

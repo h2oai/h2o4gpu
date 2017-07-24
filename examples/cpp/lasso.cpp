@@ -2,7 +2,7 @@
 #include "reader.h"
 #include <random>
 #include "matrix/matrix_dense.h"
-#include "h2ogpuml.h"
+#include "h2ogpumlglm.h"
 #include "timer.h"
 
 // Lasso

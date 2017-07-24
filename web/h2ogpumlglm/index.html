@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width">
+
+        <title>POGS : POGS</title>
+        <meta name="description" content="ADMM-based graph form solver">
+
+        <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="css/syntax.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> </script>
+    </head>
+    <body>
+
+        <div class="container">
+            <div class=row-fluid>
+                <div id=header class=span12>
+                    <h4><a class=brand href="index.html">POGS</a>
+    <small>ADMM-based graph form solver</small>
+</h4>
+
+
+                </div>
+            </div>
+
+            <div class=row-fluid>
+                
+                
+                    <div id=navigation class=span2>
+                        <ul class="nav nav-list">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="https://github.com/foges/pogs/">GitHub</a></li>
+    
+        
+        
+
+        
+            
+                <li class=nav-header>Reference</li>
+            
+            <li data-order=""><a href="ref/admm.html">ADMM</a></li>
+        
+            
+            <li data-order=""><a href="ref/usage.html">Usage</a></li>
+        
+    
+        
+        
+
+        
+            
+                <li class=nav-header>Setup</li>
+            
+            <li data-order=""><a href="stp/r.html">R</a></li>
+        
+            
+            <li data-order=""><a href="stp/matlab.html">MATLAB</a></li>
+        
+            
+            <li data-order=""><a href="stp/c.html">C++</a></li>
+        
+    
+        
+        
+
+        
+            
+                <li class=nav-header>Examples</li>
+            
+            <li data-order=""><a href="egs/huber-fitting.html">Huber Fitting</a></li>
+        
+            
+            <li data-order=""><a href="egs/linear-program.html">Linear Program</a></li>
+        
+            
+            <li data-order=""><a href="egs/lasso.html">Lasso</a></li>
+        
+    
+<!-- List additional links. It is recommended to add a divider
+    e.g. <li class=divider></li> first to break up the content. -->
+</ul>
+
+                    </div>
+
+                    <div id=content class=span10>
+                        <h1 id="pogs">POGS</h1>
+
+<p>POGS (Proximal Operator Graph Solver) is a solver for convex optimization of the form</p>
+
+<p>\[
+	\begin{aligned}
+    &amp;\text{minimize}
+    &amp; &amp; f(y) + g(x)  \\<br />
+    &amp; \text{subject to} 
+    &amp; &amp; y = A x,
+	\end{aligned}
+\]</p>
+
+<p>where \(f\) and \(g\) are convex and can take on the values \(\mathbf{R} \cup \{\infty\}\). This formulation is known as <em>graph form</em>, and was proposed by Neal Parikh in <a href="http://www.stanford.edu/~boyd/papers/block_splitting.html">“Block Splitting for Distributed Optimization – N. Parikh and S. Boyd”</a>. The solver is based on <a href="ref/admm">ADMM</a> meaning that it can solve <em>very large problems extremely quickly</em>, albeit to modest accuracy. By leveraging the power of GPUs, POGS solves a large range of problems much faster than specialized state of the art solvers. Examples include </p>
+
+<p>\[
+  \begin{aligned}
+     &amp; \text{Problem} &amp; \text{Dimensions of } A &amp;&amp; \text{Time} \\ \hline
+     &amp; \text{Lasso} &amp; 10,000 \times 100,000 &amp;&amp; \text{21 sec} \\<br />
+     &amp; \text{Linear Program} &amp; 10,000 \times 100,000 &amp;&amp; \text{18 sec} \\<br />
+     &amp; \text{Logistic Regression} &amp; 1,000,000 \times 2,000 &amp;&amp; \text{21 sec} \\<br />
+     &amp; \text{Linear SVM} &amp; 1,000,000 \times 2,000 &amp;&amp; \text{16 sec} \\<br />
+  \end{aligned}
+\]</p>
+
+<p>In each instance the matrix \( A \) was dense and a single Nvidia K40 GPU was used.</p>
+
+<p>The underlying algorithm is taken from Neal’s paper, and by adding pre-conditioning, an adaptive scheme for parameter selection and better stopping critera, we were able to make POGS significantly more robust. The improvements will be discussed in an upcoming paper.</p>
+
+<p>POGS is written in C++ and is fully open source (GPL). It supports both single and double precision arithmetic and comes with wrappers for MATLAB and R. Higher performance can be achieved by using the GPU version (this requires a dedicated CUDA-capable GPU).</p>
+
+<h3 id="problem-classes">Problem Classes</h3>
+
+<p>POGS can be used in a wide range of settings from Machine Learning, to Signal Processing or Finance. Here are examples of problems where POGS may be useful</p>
+
+<ul>
+  <li>Lasso, Ridge Regression, Logistic Regression, Huber Fitting and Elastic Net Regulariation,</li>
+  <li>Total Variation Denoising, Optimal Control,</li>
+  <li>Linear Programs and Quadratic Programs.</li>
+</ul>
+
+<p>In particular, POGS can very efficiently solve problems that involve different objective functions, but the same data matrix (eg. tracing out a regularization path).</p>
+
+<h3 id="problem-structure">Problem Structure</h3>
+
+<p>POGS can solve any convex problem where the objective \(f + g\) is separable, meaning that it can be written as</p>
+
+<p>\[
+  f(y) + g(x) = \sum_{i=1}^m f_i(y_i) + \sum_{j=1}^n g_j(x_j),
+\]</p>
+
+<p>where \(f_i : \mathbf{R} \to \mathbf{R}\)  and \(g_j : \mathbf{R} \to \mathbf{R}\). Each term \(f_i\) (resp. \(g_j\)), is assumed to be of the form
+\[
+  c \, h(a \, x - b) + d \, x + e \, x ^ 2,
+\]</p>
+
+<p>where \(a, b, d \in \mathbf{R}\), \(c, e \in \mathbf{R}_+\) and \(h : \mathbf{R} \to \mathbf{R} \cup \{ \infty \}\). Currently \(h\) can be one of 12 functions or 4 constraints</p>
+
+<p>\[
+  \begin{aligned}
+    &amp;h(x) = |x|,       &amp;h(x) &amp;= x \log(x),     &amp;h(x) &amp;= e^x,          &amp;h(x) &amp;= \text{huber}(x),&amp;\\<br />
+    &amp;h(x) = x,         &amp;h(x) &amp;= \log(1 + e^x), &amp;h(x) &amp;= \max(0, -x), &amp;h(x) &amp;= \max(0, x), &amp;\\<br />
+    &amp;h(x) = -\log(x), &amp;h(x) &amp;= 1/x,            &amp;h(x) &amp;=(1/2)x^2,      &amp;h(x) &amp;= 0, &amp;\\<br />
+    &amp;h(x) = I(x = 0),  &amp;h(x) &amp;= I(0 \leq x),   &amp;h(x) &amp;= I(x \geq 0), &amp;h(x) &amp;= I(0 \leq x \leq 1), &amp;
+  \end{aligned}
+\]</p>
+
+<p>where \( I(x \in \mathcal{C}) \) is the indicator function of the convex set \(\mathcal{C}\) (taking on the value 0 if \(x \in \mathcal{C}\) and \(\infty\) otherwise). Additional functions can be added by modifying the proximal operator header file <code>&lt;pogs&gt;/src/prox_lib.h</code>.</p>
+
+<h3 id="languages-frameworks-and-wrappers">Languages, Frameworks and Wrappers</h3>
+<p>Three different implementations are available</p>
+
+<ol>
+  <li>C++/BLAS/OpenMP: A CPU version can be found in the file <code>&lt;pogs&gt;/src/pogs.cpp</code>. POGS must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).</li>
+  <li>C++/cuBLAS/CUDA: A GPU version is located in the file <code>&lt;pogs&gt;/src/pogs.cu</code>. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.</li>
+  <li>MATLAB: A MATLAB implementation along with examples can be found in the <code>&lt;pogs&gt;/matlab</code> directory. The code is heavily documented and primarily intended for pedagogical purposes.</li>
+</ol>
+
+<p>Wrappers for MATLAB and R can be found in the directories <code>&lt;pogs&gt;/src/interface_matlab</code> and <code>&lt;pogs&gt;/src/interface_r</code> respectively. See <a href="stp/matlab">MATLAB Setup</a> or <a href="stp/r">R Setup</a> for instructions.</p>
+
+<h3 id="author">Author</h3>
+<p>Chris Fougner (fougner@stanford.edu)</p>
+
+<p>Acknowledgement: POGS is partially based on work by Neal Parikh. In particular the term <em>graph form</em> and many of the derivations are taken from <a href="http://www.stanford.edu/~boyd/papers/block_splitting.html">“Block Splitting for Distributed Optimization – N. Parikh and S. Boyd”</a>.</p>
+
+
+                    </div>
+                
+            </div>
+
+            <div class=row-fluid>
+                <div id=footer class=span12>
+                    Documentation for <a href="https://github.com/foges/pogs">POGS</a>
+
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function orderNav() {
+                var list,
+                    section,
+                    header,
+                    sections = [],
+                    lists = {},
+                    headers = {};
+
+                var navUl = document.querySelectorAll('#navigation ul')[0],
+                    navLis = document.querySelectorAll('#navigation ul li');
+
+                if (!navUl) return;
+
+                for (var i = 0; i < navLis.length; i++) {
+                    var order, li = navLis[i];
+
+                    if (li.classList.contains('nav-header')) {
+                        section = li.textContent || li.innerText;
+                        sections.push(section);
+                        headers[section] = li;
+                        continue;
+                    }
+
+                    if (!lists[section]) {
+                        lists[section] = [];
+                    }
+
+                    order = parseFloat(li.getAttribute('data-order'))
+                    lists[section].push([order, li]);
+                }
+
+                for (var i = 0; i < sections.length; i++) {
+                    section = sections[i];
+                    list = lists[section].sort(function(a, b) {
+                        return a[0] - b[0];
+                    });
+
+                    if (header = headers[section]) {
+                        navUl.appendChild(header);
+                    }
+                    for (var j = 0; j < list.length; j++) {
+                        navUl.appendChild(list[j][1]);
+                    }
+                }
+            }
+
+            if (document.querySelectorAll) orderNav();
+        </script>
+    </body>
+</html>
