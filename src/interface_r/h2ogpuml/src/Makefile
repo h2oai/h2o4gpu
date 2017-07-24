@@ -71,7 +71,7 @@ include config.mk
 # H2OGPUML header files.
 H2OGPUML_HDR=\
 	include/interface_defs.h \
-	include/h2ogpuml.h \
+	include/h2ogpumlglm.h \
 	include/prox_lib.h \
 	include/util.h \
 	include/matrix/matrix.h \
@@ -101,7 +101,7 @@ CPU_MTX_OBJ=\
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
-CPU_OBJ=$(OBJDIR)/cpu/h2ogpuml.o $(OBJDIR)/cpu/elastic_net_ptr.o 
+CPU_OBJ=$(OBJDIR)/cpu/h2ogpumlglm.o $(OBJDIR)/cpu/elastic_net_ptr.o 
 
 # GPU Specific headers and object files.
 CML_HDR=\
@@ -126,7 +126,7 @@ GPU_MTX_OBJ=\
 GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_cgls.o \
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
-GPU_OBJ=$(OBJDIR)/gpu/h2ogpuml.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
+GPU_OBJ=$(OBJDIR)/gpu/h2ogpumlglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector

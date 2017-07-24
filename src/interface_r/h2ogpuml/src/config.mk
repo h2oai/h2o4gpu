@@ -59,9 +59,9 @@ else
 endif
 LD_FLAGS+=$(R_FRAMEWORK)
 
-$(BUILDPATH)/h2ogpuml.so: $(BUILDPATH)/h2ogpuml_r.o ../R/h2ogpuml.R $(BUILDPATH)/blas2cblas.o $(BUILDPATH)/h2ogpuml_r.o
+$(BUILDPATH)/h2ogpuml.so: $(BUILDPATH)/h2ogpumlglm_r.o ../R/h2ogpumlglm.R $(BUILDPATH)/blas2cblas.o $(BUILDPATH)/h2ogpumlglm_r.o
 	mkdir -p $(BUILDPATH)
-	$(CXX) -o $@ -shared $(BUILDPATH)/h2ogpuml_r.o ../../../$(OBJDIR)/$(TARGETPATH)/h2ogpuml.a \
+	$(CXX) -o $@ -shared $(BUILDPATH)/h2ogpumlglm_r.o ../../../$(OBJDIR)/$(TARGETPATH)/h2ogpuml.a \
 	$(RPATH) $(LD_FLAGS) $(CXXFLAGS)
 	ln -sf $(BUILDPATH)/h2ogpuml.so .
 
@@ -70,7 +70,7 @@ $(BUILDPATH)/blas2cblas.o: blas2cblas.cpp config.mk Makefile
 	mkdir -p $(BUILDPATH)
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
-$(BUILDPATH)/h2ogpuml_r.o: h2ogpuml_r.cpp config.mk Makefile
+$(BUILDPATH)/h2ogpumlglm_r.o: h2ogpumlglm_r.cpp config.mk Makefile
 	mkdir -p $(BUILDPATH)
 	$(CXX) $(HDR) $(CXXFLAGS) $< -c -o $@
 

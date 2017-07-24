@@ -80,7 +80,7 @@ endif
 
 # H2OGPUML static libraries
 H2OGPUMLLIB=\
-	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.o \
+	$(H2OGPUMLROOT)/build/cpu/h2ogpumlglm.o \
 	$(H2OGPUMLROOT)/build/cpu/h2ogpumlkmeans.o \
 	$(H2OGPUMLROOT)/build/cpu/matrix/matrix_dense.o \
 	$(H2OGPUMLROOT)/build/cpu/matrix/matrix_sparse.o \
@@ -90,7 +90,7 @@ H2OGPUMLLIB=\
 
 CUH2OGPUMLLIB=\
     $(H2OGPUMLROOT)/build/gpu/h2ogpuml_link.o \
-	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.o \
+	$(H2OGPUMLROOT)/build/gpu/h2ogpumlglm.o \
 	$(H2OGPUMLROOT)/build/gpu/h2ogpumlkmeans.o \
 	$(H2OGPUMLROOT)/build/gpu/kmeans_labels.o \
 	$(H2OGPUMLROOT)/build/gpu/warmstart.o \

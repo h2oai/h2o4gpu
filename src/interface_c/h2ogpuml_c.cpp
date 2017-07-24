@@ -1,6 +1,6 @@
 #include "matrix/matrix_dense.h"
 #include "matrix/matrix_sparse.h"
-#include "h2ogpuml.h"
+#include "h2ogpumlglm.h"
 #include "h2ogpuml_c.h"
 #include <iostream>   //std::cout
 

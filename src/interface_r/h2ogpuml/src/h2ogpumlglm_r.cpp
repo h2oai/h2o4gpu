@@ -10,7 +10,7 @@
 #include <iostream>
 
 #include "matrix/matrix_dense.h"
-#include "h2ogpuml.h"
+#include "h2ogpumlglm.h"
 #include "../../../include/prox_lib.h"
 
 SEXP getListElement(SEXP list, const char *str) {
