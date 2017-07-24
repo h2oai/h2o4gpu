@@ -79,6 +79,13 @@ make
 
 This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
 
+test python package
+------
+
+cd $BASE/examples/py && python elastic_net_sklearn.py
+
+
+
 Issues
 =====================
 
