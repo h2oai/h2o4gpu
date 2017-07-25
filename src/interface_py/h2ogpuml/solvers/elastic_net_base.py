@@ -94,12 +94,12 @@ class GLM(object):
         return self.solver.predict(validX, testweight, givefullpath)
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
         return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
-    def finish1(self):
-        return self.solver.finish1()
-    def finish2(self):
-        return self.solver.finish2()
-    def finish3(self):
-        return self.solver.finish3()
+    def freedata(self):
+        return self.solver.freedata()
+    def freesols(self):
+        return self.solver.freesols()
+    def freepreds(self):
+        return self.solver.freepreds()
     def finish(self):
         return self.solver.finish()
 
@@ -137,7 +137,7 @@ class GLMBaseSolver(object):
 
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
         if self.uploadeddata==1:
-            self.finish1()
+            self.freedata()
         self.uploadeddata=1
         #
         #################
@@ -355,7 +355,7 @@ class GLMBaseSolver(object):
     def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict):
         ############
         if dopredict==0 and self.didfitptr==1:
-            self.finish2()
+            self.freesols()
         else:
             # otherwise don't clear solution, just use it
             pass
@@ -678,7 +678,7 @@ class GLMBaseSolver(object):
         else:
             self.prediction=self.predict(validX, testweight=weight, givefullpath=givefullpath)
         return(self.predictions)
-    def finish1(self):
+    def freedata(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
         if self.uploadeddata==1:
             self.uploadeddata=0
@@ -694,7 +694,7 @@ class GLMBaseSolver(object):
                 self.lib.modelfree1_float(self.c)
                 self.lib.modelfree1_float(self.d)
                 self.lib.modelfree1_float(self.e)
-    def finish2(self):
+    def freesols(self):
         if self.didfitptr==1:
             self.didfitptr=0
             if self.double_precision==1:
@@ -703,7 +703,7 @@ class GLMBaseSolver(object):
             else:
                 self.lib.modelfree2_float(self.Xvsalphalambda)
                 self.lib.modelfree2_float(self.Xvsalpha)                
-    def finish3(self):
+    def freepreds(self):
         if self.didpredict==1:
             self.didpredict=0
             if self.double_precision==1:
@@ -713,8 +713,8 @@ class GLMBaseSolver(object):
                 self.lib.modelfree2_float(self.validPredsvsalphalambda)
                 self.lib.modelfree2_float(self.validPredsvsalpha)                
     def finish(self):
-        self.finish1()
-        self.finish2()
-        self.finish3()
+        self.freedata()
+        self.freesols()
+        self.freepreds()
         
 
