@@ -651,6 +651,7 @@ class GLMBaseSolver(object):
         self.prediction=self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
         return(self.prediction) # something like validY
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
+        dopredict=0 # only fit at first
         self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
         if validX==None:
             self.prediction=self.predict(trainX, testweight=weight, givefullpath=givefullpath)
@@ -658,6 +659,7 @@ class GLMBaseSolver(object):
             self.prediction=self.predict(validX, testweight=weight, givefullpath=givefullpath)
         return(self.predictions)
     def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
+        dopredict=0 # only fit at first
         self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
         if c is None or c is c_void_p(0):
             self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath)
