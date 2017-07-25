@@ -2,7 +2,7 @@ from py3nvml.py3nvml import *
 import sys
 
 def devicecount(n_gpus=0):
-    verbose = 1
+    verbose = 0
 
     try:
         nvmlInit()
