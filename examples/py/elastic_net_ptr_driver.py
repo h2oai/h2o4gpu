@@ -80,14 +80,24 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Solving")
   # below 0 ignored if trainX gives precision
   givefullpath=0
+  precision=0 # float
   if givefullpath==1:
-      Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
+      Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, precision, a, b, c, d, e, givefullpath)
   else:
-      Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
-      
+      Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, precision, a, b, c, d, e, givefullpath)
   print("Done Solving")
 
   # show something about Xvsalphalambda and Xvsalpha
+
+  print("Predicting")
+  if givefullpath==1:
+      validPredsvsalphalambdapure, validPredsvsalphapure = enet.predictptr(sourceDev, mTrain, n, mvalid, precision, c, givefullpath)
+  else:
+      validPredsvsalphapure = enet.predictptr(sourceDev, mTrain, n, mvalid, precision, c, givefullpath)
+
+  print("Done Predicting")
+
+  # show something about validPredsvsalphalambdapure, validPredsvsalphapure
 
   return enet
 
@@ -106,5 +116,5 @@ if __name__ == "__main__":
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=2, nalpha=1, validFraction=0.2)
+  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=2, nalpha=1, validFraction=0.2)

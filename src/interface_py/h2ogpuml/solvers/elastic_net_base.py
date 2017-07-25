@@ -59,8 +59,12 @@ class GLM(object):
         return self.solver.gettols()
     def predict(self, validX, testweight=None, givefullpath=0):
         return self.solver.predict(validX, testweight, givefullpath)
+    def predictptr(self, sourceDev, mTrain, n, mValid, precision, c, givefullpath=0):
+        return self.solver.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath)
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
         return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0):
+        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
     def freedata(self):
         return self.solver.freedata()
     def freesols(self):
@@ -640,21 +644,25 @@ class GLMBaseSolver(object):
         return(self.prediction) # something like validY
     def predictptr(self, sourceDev, mTrain, n, mValid, precision, c, givefullpath=0):
         dopredict=1
-        self.prediction=self.fitptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath, dopredict)
+        a = c_void_p(0)
+        b = c_void_p(0)
+        d = c_void_p(0)
+        e = c_void_p(0)
+        self.prediction=self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
         return(self.prediction) # something like validY
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
         self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
         if validX==None:
             self.prediction=self.predict(trainX, testweight=weight, givefullpath=givefullpath)
         else:
             self.prediction=self.predict(validX, testweight=weight, givefullpath=givefullpath)
         return(self.predictions)
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0):
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
         self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
         if c is None or c is c_void_p(0):
-            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath, dopredict)
+            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath)
         else:
-            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath, dopredict)
+            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath)
         return(self.predictions)
     def freedata(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
