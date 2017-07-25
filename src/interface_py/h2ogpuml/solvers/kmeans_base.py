@@ -47,26 +47,23 @@ class KMeans(object):
         if not h2ogpumlKMeansCPU:
             print(
                 '\nWarning: Cannot create a H2OGPUMLKMeans CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
-            print('> Setting h2ogpuml.KMeansCPU=None')
-            print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
 
         if not h2ogpumlKMeansGPU:
             print(
                 '\nWarning: Cannot create a H2OGPUMLKMeans GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library')
-            print('> Setting h2ogpuml.KMeansGPU=None')
             print('> Add CUDA libraries to $PATH and re-run setup.py\n\n')
 
         if ((n_gpus == 0) or (h2ogpumlKMeansGPU is None) or (deviceCount == 0)):
-            print("\nUsing CPU solver\n")
+            print("\nUsing CPU KMeans solver\n")
             self.solver = KMeansBaseSolver(h2ogpumlKMeansCPU, gpu_id, n_gpus, k, max_iterations, threshold,
                                         init_from_labels, init_labels, init_data)
         else:
             if ((n_gpus > 0) or (h2ogpumlKMeansGPU is None) or (deviceCount == 0)):
-                print("\nUsing GPU solver with %d GPUs\n" % n_gpus)
+                print("\nUsing GPU KMeans solver with %d GPUs\n" % n_gpus)
                 self.solver = KMeansBaseSolver(h2ogpumlKMeansGPU, gpu_id, n_gpus, k, max_iterations, threshold,
                                            init_from_labels, init_labels, init_data)
 
-        assert self.solver != None, "Couldn't instantiate KMeans"
+        assert self.solver != None, "Couldn't instantiate KMeans Solver"
 
     def fit(self, X, L):
         return self.solver.fit(X,L)

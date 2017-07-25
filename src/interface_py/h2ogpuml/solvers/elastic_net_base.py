@@ -51,14 +51,12 @@ class GLM(object):
         if not h2ogpumlGLMGPU:
             print(
                 '\nWarning: Cannot create a H2OGPUML Elastic Net GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library')
-            print('> Setting h2ogpuml.GLMSolverGPU=None')
-            print('> Use h2ogpuml.GLMSolverCPU(args...) or add CUDA libraries to $PATH and re-run setup.py\n\n')
+            print('> Use CPU or add CUDA libraries to $PATH and re-run setup.py\n\n')
 
         if not h2ogpumlGLMCPU:
             print(
                 '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
-            print('> Setting h2ogpuml.GLMSolverCPU=None')
-            print('> Use h2ogpuml.GLMSolverGPU(args...) and re-run setup.py\n\n')
+            print('> Use GPU or re-run setup.py\n\n')
 
 
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
@@ -71,7 +69,7 @@ class GLM(object):
                 self.solver = GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas)
 
-        assert self.solver != None, "Couldn't instantiate GLM"
+        assert self.solver != None, "Couldn't instantiate GLM Solver"
 
 
     def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):

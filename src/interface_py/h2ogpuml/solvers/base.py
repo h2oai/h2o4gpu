@@ -1,12 +1,79 @@
+import sys
 from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
 from h2ogpuml.types import ORD, cptr, make_settings, make_solution, make_info, change_settings, change_solution, Solution, FunctionVector
-from h2ogpuml.libs.cpu import h2ogpumlCPU
-from h2ogpuml.libs.gpu import h2ogpumlGPU
+from h2ogpuml.libs.cpu import pogsCPU
+from h2ogpuml.libs.gpu import pogsGPU
+from py3nvml.py3nvml import *
 
 #TODO: catch Ctrl-C
+
+class Pogs(object):
+	def __init__(self, A, **kwargs):
+		n_gpus=-1
+		verbose=1
+
+		try:
+			nvmlInit()
+			deviceCount = nvmlDeviceGetCount()
+			if verbose == 1:
+				for i in range(deviceCount):
+					handle = nvmlDeviceGetHandleByIndex(i)
+					print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
+				print("Driver Version:", nvmlSystemGetDriverVersion())
+				try:
+					import subprocess
+					maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
+					print("\nNumber of GPUS:", maxNGPUS)
+					subprocess.check_output("lscpu", shell=True)
+				except:
+					pass
+
+		except Exception as e:
+			print("No GPU, setting deviceCount=0")
+			# print(e)
+			sys.stdout.flush()
+			deviceCount = 0
+			pass
+
+		if n_gpus < 0:
+			if deviceCount >= 0:
+				n_gpus = deviceCount
+			else:
+				print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
+				n_gpus = 1
+
+		if not pogsCPU:
+			print(
+				'\nWarning: Cannot create a pogs CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
+
+		if not pogsGPU:
+			print(
+				'\nWarning: Cannot create a pogs GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library')
+			print('> Use CPU or add CUDA libraries to $PATH and re-run setup.py\n\n')
+
+		if ((n_gpus == 0) or (pogsGPU is None) or (deviceCount == 0)):
+			print("\nUsing CPU GLM solver\n")
+			self.solver = BaseSolver(A, pogsCPU)
+		else:
+			print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
+			self.solver = BaseSolver(A, pogsGPU)
+
+		assert self.solver != None, "Couldn't instantiate Pogs Solver"
+
+		self.info = self.solver.info
+		self.solution = self.solver.pysolution
+	def init(self, A, **kwargs):
+		self.solver.init(A, **kwargs)
+	def solve(self, f, g, **kwargs):
+		self.solver.solve(f, g, **kwargs)
+	def finish(self):
+		self.solver.finish()
+	def __delete__(self):
+		self.solver.finish()
+
 
 class BaseSolver(object):
 	def __init__(self, A, lib, **kwargs):
@@ -17,7 +84,7 @@ class BaseSolver(object):
 
 			assert self.dense or self.CSC or self.CSR
 			assert A.dtype == c_float or A.dtype == c_double
-			assert lib and (lib==h2ogpumlCPU or lib==h2ogpumlGPU)
+			assert lib and (lib==pogsCPU or lib==pogsGPU)
 
 			self.m = A.shape[0]
 			self.n = A.shape[1]
@@ -83,7 +150,7 @@ class BaseSolver(object):
 										cptr(g.a,c_float), cptr(g.b,c_float), cptr(g.c,c_float),
 										cptr(g.d,c_float), cptr(g.e,c_float), cptr(g.h,c_int))
 			else:
-				self.lib.h2ogpuml_solve_double(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info), 
+				self.lib.h2ogpuml_solve_double(self.work, pointer(self.settings), pointer(self.solution), pointer(self.info),
 										cptr(f.a,c_double), cptr(f.b,c_double), cptr(f.c,c_double), 
 										cptr(f.d,c_double), cptr(f.e,c_double), cptr(f.h,c_int),
 										cptr(g.a,c_double), cptr(g.b,c_double), cptr(g.c,c_double),
