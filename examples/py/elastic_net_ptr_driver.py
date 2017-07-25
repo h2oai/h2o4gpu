@@ -18,19 +18,12 @@ Elastic Net
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
-  # set solver cpu/gpu according to input args
-  if((nGPUs>0) and (h2ogpuml.ElasticNetSolverGPU is None)):
-    print("\nGPU solver unavailable, using CPU solver\n")
-    nGPUs=0
-
-  Solver = h2ogpuml.ElasticNetSolverGPU if(nGPUs>0) else h2ogpuml.ElasticNetSolverCPU
-#  Solver = h2ogpuml.ElasticNetSolverCPU
-  assert Solver != None, "Couldn't instantiate ElasticNetSolver"
+  Solver = h2ogpuml.GLM
 
   sharedA = 0
   sourceme = 0
   sourceDev = 0
-  nThreads = 1 if(nGPUs==0) else nGPUs # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
+  nThreads = None
   intercept = 1
   standardize = 0
   lambda_min_ratio = 1e-9
@@ -87,7 +80,11 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Solving")
   # below 0 ignored if trainX gives precision
   givefullpath=0
-  Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
+  if givefullpath==1:
+      Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
+  else:
+      Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, 0, a, b, c, d, e, givefullpath)
+      
   print("Done Solving")
 
   # show something about Xvsalphalambda and Xvsalpha
@@ -104,9 +101,10 @@ if __name__ == "__main__":
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
   import feather
-  #df = feather.read_dataframe("../../../h2ogpuml-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+  #df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
   ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=2, nalpha=1, validFraction=0.2)

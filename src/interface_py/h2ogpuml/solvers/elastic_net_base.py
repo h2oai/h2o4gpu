@@ -638,12 +638,23 @@ class GLMBaseSolver(object):
         dopredict=1
         self.prediction=self.fit(None, None, validX, None, testweight, givefullpath,dopredict)
         return(self.prediction) # something like validY
+    def predictptr(self, sourceDev, mTrain, n, mValid, precision, c, givefullpath=0):
+        dopredict=1
+        self.prediction=self.fitptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath, dopredict)
+        return(self.prediction) # something like validY
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
         self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
         if validX==None:
             self.prediction=self.predict(trainX, testweight=weight, givefullpath=givefullpath)
         else:
             self.prediction=self.predict(validX, testweight=weight, givefullpath=givefullpath)
+        return(self.predictions)
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0):
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
+        if c is None or c is c_void_p(0):
+            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath, dopredict)
+        else:
+            self.prediction=self.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath, dopredict)
         return(self.predictions)
     def freedata(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
