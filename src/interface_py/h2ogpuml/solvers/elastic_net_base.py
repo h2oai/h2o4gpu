@@ -10,8 +10,7 @@ from h2ogpuml.solvers.utils import devicecount
 
 class GLM(object):
     def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1,
-                 n_alphas=1):
+                 n_lambdas=100, n_folds=1, n_alphas=1):
 
         n_gpus, deviceCount = devicecount(n_gpus)
 
@@ -439,7 +438,7 @@ class GLMBaseSolver(object):
         if NUMOTHER != 3:
             print("NUMOTHER=%d but expected 3" % (NUMOTHER))
             print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (
-            int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
+                int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
             exit(0)
         #
         if givefullpath == 1 and dopredict == 0:
@@ -487,7 +486,7 @@ class GLMBaseSolver(object):
         if givefullpath == 0 and dopredict == 1:  # exclusive set of validPreds unlike X
             thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
             print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
-            thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
+                thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
             sys.stdout.flush()
             self.validPredsvsalphanew = np.fromiter(cast(validPredsvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
                                                     count=thecount)

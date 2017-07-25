@@ -1,6 +1,10 @@
 # OSX #
 *.DS_STORE
 
+# Idea #
+*.idea/
+*.idea
+
 # Compiled Object files #
 *.slo
 *.lo
