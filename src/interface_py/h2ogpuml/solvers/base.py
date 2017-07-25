@@ -7,7 +7,6 @@ from h2ogpuml.types import ORD, cptr, make_settings, make_solution, make_info, c
 from h2ogpuml.libs.cpu import pogsCPU
 from h2ogpuml.libs.gpu import pogsGPU
 from h2ogpuml.solvers.utils import devicecount
-import sys
 
 
 # TODO: catch Ctrl-C

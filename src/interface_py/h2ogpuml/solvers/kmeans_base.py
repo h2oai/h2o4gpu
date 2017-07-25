@@ -81,25 +81,34 @@ class KMeansBaseSolver(object):
         self.threshold = threshold
 
         if (data.dtype == np.float64):
-            print("Detected np.float64 data");
+            print("Detected np.float64 data")
             sys.stdout.flush()
             self.double_precision = 1
             myctype = c_double
-        if (data.dtype == np.float32):
-            print("Detected np.float32 data");
+        elif (data.dtype == np.float32):
+            print("Detected np.float32 data")
             sys.stdout.flush()
             self.double_precision = 0
             myctype = c_float
+        else:
+            print("Unknown data type, should be either np.float32 or np.float64")
+            print(data.dtype)
+            sys.stdout.flush()
+            return
 
         if self.init_from_labels == False:
             c_init_from_labels = 0
-        elif self.init_from_labels == True:
+        else:
             c_init_from_labels = 1
 
         if self.init_labels == "random":
             c_init_labels = 0
         elif self.init_labels == "randomselect":
             c_init_labels = 1
+        else:
+            print("Unknown init_labels %s" % self.init_labels)
+            sys.stdout.flush()
+            return
 
         if self.init_data == "random":
             c_init_data = 0
@@ -107,6 +116,10 @@ class KMeansBaseSolver(object):
             c_init_data = 1
         elif self.init_data == "randomselect":
             c_init_data = 2
+        else:
+            print("Unknown init_data %s" % self.init_data)
+            sys.stdout.flush()
+            return
 
         res = c_void_p(0)
         c_data = cptr(data, dtype=myctype)

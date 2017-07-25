@@ -73,9 +73,8 @@ class GLM(object):
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
         return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0):
-        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath,
-                                          dopredict)
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
+        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
 
     def freedata(self):
         return self.solver.freedata()
@@ -131,11 +130,11 @@ class GLMBaseSolver(object):
         if trainX is not None:
             try:
                 if (trainX.dtype == np.float64):
-                    print("Detected np.float64 trainX");
+                    print("Detected np.float64 trainX")
                     sys.stdout.flush()
                     self.double_precision1 = 1
                 if (trainX.dtype == np.float32):
-                    print("Detected np.float32 trainX");
+                    print("Detected np.float32 trainX")
                     sys.stdout.flush()
                     self.double_precision1 = 0
             except:
@@ -264,7 +263,7 @@ class GLMBaseSolver(object):
                                               c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         elif (self.double_precision == 0):
-            print("Detected np.float32");
+            print("Detected np.float32")
             sys.stdout.flush()
             self.double_precision = 0
             null_ptr = POINTER(c_float)()
@@ -327,7 +326,6 @@ class GLMBaseSolver(object):
             print(trainX.dtype)
             sys.stdout.flush()
             return a, b, c, d, e
-            exit(1)
 
         assert status == 0, "Failure uploading the data"
         # print("a=",hex(a.value))
@@ -489,7 +487,7 @@ class GLMBaseSolver(object):
         if givefullpath == 0 and dopredict == 1:  # exclusive set of validPreds unlike X
             thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
             print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
-            thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid));
+            thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
             sys.stdout.flush()
             self.validPredsvsalphanew = np.fromiter(cast(validPredsvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
                                                     count=thecount)
@@ -504,14 +502,12 @@ class GLMBaseSolver(object):
                 return (self.Xvsalphalambdapure, self.Xvsalphapure)
             else:
                 return (self.Xvsalphapure)
-            print("Done with fit")
         else:
             self.didpredict = 1
             if givefullpath == 1:
                 return (self.validPredsvsalphalambdapure, self.validPredsvsalphapure)
             else:
                 return (self.validPredsvsalphapure)
-            print("Done with predict")
 
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
         #
@@ -697,7 +693,7 @@ class GLMBaseSolver(object):
             self.prediction = self.predict(trainX, testweight=weight, givefullpath=givefullpath)
         else:
             self.prediction = self.predict(validX, testweight=weight, givefullpath=givefullpath)
-        return (self.predictions)
+        return (self.prediction)
 
     def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
         dopredict = 0  # only fit at first
@@ -706,7 +702,7 @@ class GLMBaseSolver(object):
             self.prediction = self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath)
         else:
             self.prediction = self.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath)
-        return (self.predictions)
+        return (self.prediction)
 
     def freedata(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again

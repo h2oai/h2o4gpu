@@ -1,4 +1,4 @@
-import os, sys, traceback, logging
+import os, logging
 from ctypes import CDLL, c_int, c_size_t, c_void_p
 from h2ogpuml.types import c_int_p, c_float_p, c_double_p, settings_s_p, settings_d_p, solution_s_p, solution_d_p, \
     info_s_p, info_d_p
