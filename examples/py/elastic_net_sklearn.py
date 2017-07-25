@@ -18,19 +18,14 @@ Elastic Net
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
-  # set solver cpu/gpu according to input args
-  if((nGPUs>0) and (h2ogpuml.ElasticNetSolverGPU is None)):
-    print("\nGPU solver unavailable, using CPU solver\n")
-    nGPUs=0
 
-  Solver = h2ogpuml.ElasticNetSolverGPU if(nGPUs>0) else h2ogpuml.ElasticNetSolverCPU
-#  Solver = h2ogpuml.ElasticNetSolverCPU
-  assert Solver != None, "Couldn't instantiate ElasticNetSolver"
+  # choose solver
+  Solver = h2ogpuml.GLM
 
   sharedA = 0
   sourceme = 0
   sourceDev = 0
-  nThreads = 1 if(nGPUs==0) else nGPUs # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
+  nThreads = None # let internal method figure this out
   intercept = 1
   standardize = 0
   lambda_min_ratio = 1e-9

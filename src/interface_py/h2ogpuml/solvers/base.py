@@ -1,4 +1,3 @@
-import sys
 from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
@@ -6,44 +5,14 @@ from scipy.sparse.csr import csr_matrix
 from h2ogpuml.types import ORD, cptr, make_settings, make_solution, make_info, change_settings, change_solution, Solution, FunctionVector
 from h2ogpuml.libs.cpu import pogsCPU
 from h2ogpuml.libs.gpu import pogsGPU
-from py3nvml.py3nvml import *
+from h2ogpuml.solvers.utils import devicecount
 
 #TODO: catch Ctrl-C
 
 class Pogs(object):
 	def __init__(self, A, **kwargs):
 		n_gpus=-1
-		verbose=1
-
-		try:
-			nvmlInit()
-			deviceCount = nvmlDeviceGetCount()
-			if verbose == 1:
-				for i in range(deviceCount):
-					handle = nvmlDeviceGetHandleByIndex(i)
-					print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
-				print("Driver Version:", nvmlSystemGetDriverVersion())
-				try:
-					import subprocess
-					maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
-					print("\nNumber of GPUS:", maxNGPUS)
-					subprocess.check_output("lscpu", shell=True)
-				except:
-					pass
-
-		except Exception as e:
-			print("No GPU, setting deviceCount=0")
-			# print(e)
-			sys.stdout.flush()
-			deviceCount = 0
-			pass
-
-		if n_gpus < 0:
-			if deviceCount >= 0:
-				n_gpus = deviceCount
-			else:
-				print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
-				n_gpus = 1
+		n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
 
 		if not pogsCPU:
 			print(

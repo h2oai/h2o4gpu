@@ -5,43 +5,13 @@ import time
 import sys
 from h2ogpuml.libs.kmeans_gpu import h2ogpumlKMeansGPU
 from h2ogpuml.libs.kmeans_cpu import h2ogpumlKMeansCPU
-from py3nvml.py3nvml import *
+from h2ogpuml.solvers.utils import devicecount
 
 
 class KMeans(object):
     def __init__(self, gpu_id=0, n_gpus=1, k = 10, max_iterations=1000, threshold=1E-3, init_from_labels=False, init_labels="randomselect", init_data="randomselect"):
 
-        verbose=1
-
-        try:
-            nvmlInit()
-            deviceCount = nvmlDeviceGetCount()
-            if verbose==1:
-                for i in range(deviceCount):
-                    handle = nvmlDeviceGetHandleByIndex(i)
-                    print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
-                print("Driver Version:", nvmlSystemGetDriverVersion())
-                try:
-                    import subprocess
-                    maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
-                    print("\nNumber of GPUS:", maxNGPUS)
-                    subprocess.check_output("lscpu", shell=True)
-                except:
-                    pass
-
-        except Exception as e:
-            print("No GPU, setting deviceCount=0")
-            #print(e)
-            sys.stdout.flush()
-            deviceCount=0
-            pass
-
-        if n_gpus<0:
-            if deviceCount>=0:
-                n_gpus = deviceCount
-            else:
-                print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
-                n_gpus=1
+        n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
 
 
         if not h2ogpumlKMeansCPU:

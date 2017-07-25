@@ -1,48 +1,17 @@
 from ctypes import *
 from h2ogpuml.types import ORD, cptr
 import numpy as np
-import time
 import sys
 from h2ogpuml.types import ORD, cptr, c_double_p, c_void_pp
 from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
 from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
-from py3nvml.py3nvml import *
+from h2ogpuml.solvers.utils import devicecount
 
 class GLM(object):
     def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7, n_lambdas=100, n_folds=1,
                  n_alphas=1):
 
-        verbose = 1
-
-        try:
-            nvmlInit()
-            deviceCount = nvmlDeviceGetCount()
-            if verbose == 1:
-                for i in range(deviceCount):
-                    handle = nvmlDeviceGetHandleByIndex(i)
-                    print("Device {}: {}".format(i, nvmlDeviceGetName(handle)))
-                print("Driver Version:", nvmlSystemGetDriverVersion())
-                try:
-                    import subprocess
-                    maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
-                    print("\nNumber of GPUS:", maxNGPUS)
-                    subprocess.check_output("lscpu", shell=True)
-                except:
-                    pass
-
-        except Exception as e:
-            print("No GPU, setting deviceCount=0")
-            #print(e)
-            sys.stdout.flush()
-            deviceCount = 0
-            pass
-
-        if n_gpus < 0:
-            if deviceCount >= 0:
-                n_gpus = deviceCount
-            else:
-                print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
-                n_gpus = 1
+        n_gpus, deviceCount = devicecount(n_gpus)
 
         if nThreads==None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
