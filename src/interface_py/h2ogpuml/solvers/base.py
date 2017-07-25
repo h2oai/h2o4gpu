@@ -18,8 +18,8 @@ class Pogs(object):
         for key, value in kwargs.items():
             if key == "n_gpus":
                 n_gpus = value
-            #print("The value of {} is {}".format(key, value))
-            #sys.stdout.flush()
+                # print("The value of {} is {}".format(key, value))
+                # sys.stdout.flush()
 
         n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
 

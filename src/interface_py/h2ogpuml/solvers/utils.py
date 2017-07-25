@@ -1,6 +1,7 @@
 from py3nvml.py3nvml import *
 import sys
 
+
 def devicecount(n_gpus=0):
     verbose = 0
 
@@ -33,4 +34,4 @@ def devicecount(n_gpus=0):
         else:
             print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
             n_gpus = 1
-    return(n_gpus, deviceCount)
+    return (n_gpus, deviceCount)
