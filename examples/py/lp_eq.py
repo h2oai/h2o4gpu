@@ -1,5 +1,6 @@
 import h2ogpuml as h2ogpuml
-from numpy import float32, vstack 
+from h2ogpuml.types import H2OFunctions
+from numpy import float32, vstack
 from numpy.random import rand, randn
 
 '''
@@ -11,58 +12,50 @@ Linear program in equality form.
 See <h2ogpuml>/matlab/examples/lp_eq.m for detailed description.
 '''
 
-def LpEq(m,n, gpu=False, double_precision=False):
-  # set solver cpu/gpu according to input args
-  if gpu and h2ogpuml.SolverGPU is None:
-    print("\nGPU solver unavailable, using CPU solver\n")
-    gpu=False
 
-  Solver = h2ogpuml.SolverGPU if gpu else h2ogpuml.SolverCPU
+def lp_eq(m, n, gpu=False, double_precision=False):
+    # Generate A and c according to:
+    #   A = 1 / n * rand(m, n)
+    #   c = 1 / n * rand(n, 1)
 
+    A = rand(m, n) / n
+    c = rand(n, 1) / n
 
-  # Generate A and c according to:
-  #   A = 1 / n * rand(m, n)
-  #   c = 1 / n * rand(n, 1)
+    # Generate b according to:
+    #   v = rand(n, 1)
+    #   b = A * v
+    b = A.dot(rand(n))
 
-  A=rand(m,n)/n
-  c=rand(n,1)/n
+    # Gather A and c into one matrix
+    A = vstack((A, c.T))
 
-  # Generate b according to:
-  #   v = rand(n, 1)
-  #   b = A * v
-  b = A.dot(rand(n))
+    # cast A as float/double according to input args
+    A = A if double_precision else float32(A)
 
-  # Gather A and c into one matrix
-  A=vstack((A,c.T))
+    # f(Ax) = Ind ( (Ax-b) == 0 ) + c^Tx
+    f = h2ogpuml.FunctionVector(m + 1, double_precision=double_precision)
+    f.b[:-1] = b[:]
+    f.h[:-1] = H2OFunctions.INDEQ0
+    f.h[-1] = H2OFunctions.IDENTITY.value
 
-  # cast A as float/double according to input args
-  A=A if double_precision else float32(A)
+    # g(x) = Ind( x >= 0 )
+    g = h2ogpuml.FunctionVector(n, double_precision=double_precision)
+    g.h[:] = H2OFunctions.INDGE0
 
+    # intialize solver
+    s = h2ogpuml.Pogs(A) if gpu else h2ogpuml.Pogs(A, n_gpus=0)
 
+    # solve
+    s.fit(f, g)
 
-  # f(Ax) = Ind ( (Ax-b) == 0 ) + c^Tx
-  f = h2ogpuml.FunctionVector(m+1,double_precision=double_precision)
-  f.b[:-1]=b[:]
-  f.h[:-1]=h2ogpuml.FUNCTION["INDEQ0"]
-  f.h[-1]=h2ogpuml.FUNCTION["IDENTITY"].value
+    # get solve time
+    t = s.info.solvetime
 
-  # g(x) = Ind( x >= 0 )
-  g = h2ogpuml.FunctionVector(n,double_precision=double_precision)
-  g.h[:] = h2ogpuml.FUNCTION["INDGE0"]
+    # tear down solver in C++/CUDA
+    s.finish()
 
-  # intialize solver 
-  s = Solver(A) 
+    return t
 
-  # solve
-  s.solve(f, g)
-
-  # get solve time
-  t = s.info.solvetime
-
-  # tear down solver in C++/CUDA
-  s.finish()
-
-  return t
 
 if __name__ == "__main__":
-   print("Solve time:\t{:.2e} seconds".format(LpEq(1000,200)))
+    print("Solve time:\t{:.2e} seconds".format(lp_eq(1000, 200)))

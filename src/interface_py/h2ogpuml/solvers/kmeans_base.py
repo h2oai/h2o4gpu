@@ -1,5 +1,5 @@
 from ctypes import *
-from h2ogpuml.types import ORD, cptr
+from h2ogpuml.types import cptr
 import numpy as np
 import time
 import sys

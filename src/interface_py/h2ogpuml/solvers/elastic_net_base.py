@@ -1,8 +1,7 @@
 from ctypes import *
-from h2ogpuml.types import ORD, cptr
 import numpy as np
 import sys
-from h2ogpuml.types import ORD, cptr, c_double_p, c_void_pp
+from h2ogpuml.types import cptr
 from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
 from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
 from h2ogpuml.solvers.utils import devicecount
@@ -10,8 +9,7 @@ from h2ogpuml.solvers.utils import devicecount
 
 class GLM(object):
     def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1,
-                 n_alphas=1):
+                 n_lambdas=100, n_folds=1, n_alphas=1):
 
         n_gpus, deviceCount = devicecount(n_gpus)
 
@@ -518,7 +516,7 @@ class GLMBaseSolver(object):
         if givefullpath == 0 and dopredict == 1:  # exclusive set of validPreds unlike X
             thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
             print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
-            thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
+                thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
             sys.stdout.flush()
             self.validPredsvsalphanew = np.fromiter(cast(validPredsvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
                                                     count=thecount)
