@@ -639,7 +639,7 @@ MatrixDense<T>::~MatrixDense() {
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(1){
+  if(0){
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     GpuData<T> *infoy = reinterpret_cast<GpuData<T>*>(this->_infoy);
     GpuData<T> *vinfo = reinterpret_cast<GpuData<T>*>(this->_vinfo);
@@ -655,7 +655,8 @@ MatrixDense<T>::~MatrixDense() {
 
   //  fprintf(stderr,"HERE1\n"); fflush(stderr);
 
-  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
+  if(0){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
+    // If 0 is used, then need to ensure user calls a finish() or something to free memory.  If 0, also allows user to call (say) fit() or fitptr() multiple times
     
     if (this->_done_init && _data) {
       //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);

@@ -45,12 +45,12 @@ class GLM(object):
         return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
 
     def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c=c_void_p(0), d=c_void_p(0), e=c_void_p(0),
-               givefullpath=0, dopredict=0):
-        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
+               givefullpath=0, dopredict=0, freeinputdata=0):
+        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata)
 
     def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0,
-            dopredict=0):
-        return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
+            dopredict=0, freeinputdata=1):
+        return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata)
 
     def getrmse(self):
         return self.solver.getrmse()
@@ -64,17 +64,17 @@ class GLM(object):
     def gettols(self):
         return self.solver.gettols()
 
-    def predict(self, validX, testweight=None, givefullpath=0):
-        return self.solver.predict(validX, testweight, givefullpath)
+    def predict(self, validX, validY=None, testweight=None, givefullpath=0):
+        return self.solver.predict(validX, validY, testweight, givefullpath)
 
-    def predictptr(self, sourceDev, mTrain, n, mValid, precision, c, givefullpath=0):
-        return self.solver.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath)
+    def predictptr(self, validXptr, validYptr=None, givefullpath=0):
+        return self.solver.predictptr(validXptr, validYptr, givefullpath)
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
-        return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath)
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=0):
+        return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath, freeinputdata)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
-        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0):
+        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, freeinputdata)
 
     def freedata(self):
         return self.solver.freedata()
@@ -342,7 +342,28 @@ class GLMBaseSolver(object):
         return a, b, c, d, e
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict):
+    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata):
+        # store some things for later call to predictptr()
+        self.sourceDev = sourceDev
+        self.mTrain = mTrain
+        self.n = n
+        self.mValid = mValid
+        self.precision = precision
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.e = e
+        self.givefullpath = givefullpath
+
+        #print("a"); print(a)
+        #print("b"); print(b)
+        #print("c"); print(c)
+        #print("d"); print(d)
+        #print("e"); print(e)
+        #sys.stdout.flush()
+
+
         ############
         if dopredict == 0 and self.didfitptr == 1:
             self.freesols()
@@ -378,11 +399,13 @@ class GLMBaseSolver(object):
             countshort = self.countshort
             countmore = self.countmore
         ################
+        #
         c_size_t_p = POINTER(c_size_t)
         if (whichprecision == 1):
             self.mydtype = np.double
             self.myctype = c_double
             print("double precision fit")
+            sys.stdout.flush()
             self.lib.elastic_net_ptr_double(
                 c_int(dopredict),
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
@@ -400,6 +423,7 @@ class GLMBaseSolver(object):
             self.mydtype = np.float
             self.myctype = c_float
             print("single precision fit")
+            sys.stdout.flush()
             self.lib.elastic_net_ptr_float(
                 c_int(dopredict),
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
@@ -414,6 +438,12 @@ class GLMBaseSolver(object):
                 cast(addressof(countmore), c_size_t_p)
             )
         #
+        # if should or user wanted to save or free data, do that now that we are done using a,b,c,d,e
+        # This means have to upload_data() again before fitptr or predictptr or only call fit and predict
+        if freeinputdata==1:
+            freedata()
+        #####################################
+        # PROCESS OUTPUT
         # save pointers
         self.Xvsalphalambda = Xvsalphalambda
         self.Xvsalpha = Xvsalpha
@@ -440,6 +470,7 @@ class GLMBaseSolver(object):
             print("NUMOTHER=%d but expected 3" % (NUMOTHER))
             print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (
             int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
+            sys.stdout.flush()
             exit(0)
         #
         if givefullpath == 1 and dopredict == 0:
@@ -509,7 +540,7 @@ class GLMBaseSolver(object):
             else:
                 return (self.validPredsvsalphapure)
 
-    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0):
+    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1):
         #
         self.givefullpath = givefullpath
         ################
@@ -579,7 +610,7 @@ class GLMBaseSolver(object):
             print("no validX")
             mValid = 0
             n2 = -1
-        print("mValid=%d" % (mValid));
+        print("mValid=%d" % (mValid))
         sys.stdout.flush()
         ###############
         if validY is not None:
@@ -604,7 +635,7 @@ class GLMBaseSolver(object):
             else:
                 print("Incorrect train inputs")
         if dopredict == 1:
-            if n1 == -1 and n2 >= 0 and mvalidY == -1 and mY == -1:
+            if (n1 == -1 and n2 >= 0 and mvalidY == -1 and mY == -1) or (n1 == -1 and n2 >= 0 and mY == -1):
                 print("Correct prediction inputs")
             else:
                 print("Incorrect prediction inputs")
@@ -634,7 +665,7 @@ class GLMBaseSolver(object):
         sourceDev = 0  # assume GPU=0 is fine as source
         a, b, c, d, e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
         precision = 0  # won't be used
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict)
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict, freeinputdata=freeinputdata)
         if dopredict == 0:
             if givefullpath == 1:
                 return (self.Xvsalphalambdapure, self.Xvsalphapure)
@@ -670,38 +701,35 @@ class GLMBaseSolver(object):
         else:
             return (self.tols2)
 
-    def predict(self, validX, testweight=None, givefullpath=0):
+    def predict(self, validX, validY=None, testweight=None, givefullpath=0, freeinputdata=1):
         # if pass None trainx and trainY, then do predict using validX and weight (if given)
         # unlike upload_data and fitptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
         dopredict = 1
-        self.prediction = self.fit(None, None, validX, None, testweight, givefullpath, dopredict)
+        self.prediction = self.fit(None, None, validX, validY, testweight, givefullpath, dopredict, freeinputdata)
         return (self.prediction)  # something like validY
 
-    def predictptr(self, sourceDev, mTrain, n, mValid, precision, c, givefullpath=0):
+    def predictptr(self, validXptr, validYptr=None, givefullpath=0, freeinputdata=0):
         dopredict = 1
-        a = c_void_p(0)
-        b = c_void_p(0)
-        d = c_void_p(0)
-        e = c_void_p(0)
-        self.prediction = self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
+        #print("%d %d %d %d %d" % (self.sourceDev, self.mTrain, self.n, self.mValid, self.precision)) ; sys.stdout.flush()
+        self.prediction = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b, validXptr, validYptr, self.e, givefullpath, dopredict, freeinputdata)
         return (self.prediction)  # something like validY
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0):
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1):
         dopredict = 0  # only fit at first
-        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict)
+        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0)
         if validX == None:
-            self.prediction = self.predict(trainX, testweight=weight, givefullpath=givefullpath)
+            self.prediction = self.predict(trainX, trainY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
         else:
-            self.prediction = self.predict(validX, testweight=weight, givefullpath=givefullpath)
+            self.prediction = self.predict(validX, validY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
         return (self.prediction)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0):
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0):
         dopredict = 0  # only fit at first
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict)
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0)
         if c is None or c is c_void_p(0):
-            self.prediction = self.predictptr(sourceDev, mTrain, n, mValid, precision, a, givefullpath)
+            self.prediction = self.predictptr(a, b, givefullpath, freeinputdata=freeinputdata)
         else:
-            self.prediction = self.predictptr(sourceDev, mTrain, n, mValid, precision, c, givefullpath)
+            self.prediction = self.predictptr(c, d, givefullpath, freeinputdata=freeinputdata)
         return (self.prediction)
 
     def freedata(self):

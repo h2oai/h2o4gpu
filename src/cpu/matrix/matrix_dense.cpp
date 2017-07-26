@@ -453,7 +453,7 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
 
-  if(1){
+  if(0){
     CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
     CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
     CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
@@ -470,7 +470,7 @@ MatrixDense<T>::~MatrixDense() {
     this->_weightinfo = 0;
   }
   
-  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
+  if(0){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
 
     if (this->_done_init && _data) {
       //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);

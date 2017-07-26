@@ -88,13 +88,41 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Done Solving")
 
   # show something about Xvsalphalambda and Xvsalpha
+  print("Xvsalpha")
+  print(Xvsalpha)
+
+  rmse=enet.getrmse()
+  print("rmse")
+  print(rmse)
+
+  print("lambdas")
+  lambdas=enet.getlambdas()
+  print(lambdas)
+
+  print("alphas")
+  alphas=enet.getalphas()
+  print(alphas)
+
+  print("tols")
+  tols=enet.gettols()
+  print(tols)
+                    
 
   print("Predicting")
-  if givefullpath==1:
-      validPredsvsalphalambdapure, validPredsvsalphapure = enet.predictptr(sourceDev, mTrain, n, mvalid, precision, c, givefullpath)
+  if 1==1:
+      if givefullpath==1:
+          validPredsvsalphalambdapure, validPredsvsalphapure = enet.predictptr(c, d, givefullpath)
+      else:
+          validPredsvsalphapure = enet.predictptr(c, d, givefullpath)
   else:
-      validPredsvsalphapure = enet.predictptr(sourceDev, mTrain, n, mvalid, precision, c, givefullpath)
+      if givefullpath==1:
+          validPredsvsalphalambdapure, validPredsvsalphapure = enet.predict(validX, validY)
+      else:
+          validPredsvsalphapure = enet.predict(validX, validY)
 
+  print("validPredsvsalphapure")
+  print(validPredsvsalphapure)
+          
   print("Done Predicting")
 
   # show something about validPredsvsalphalambdapure, validPredsvsalphapure
