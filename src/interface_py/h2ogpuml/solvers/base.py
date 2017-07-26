@@ -2,7 +2,7 @@ from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
-from h2ogpuml.types import ORD, cptr, make_settings, make_solution, make_info, change_settings, change_solution, \
+from h2ogpuml.types import H2OConstants, cptr, make_settings, make_solution, make_info, change_settings, change_solution, \
     Solution, FunctionVector
 from h2ogpuml.libs.cpu import pogsCPU
 from h2ogpuml.libs.gpu import pogsGPU
@@ -78,7 +78,7 @@ class BaseSolver(object):
             self.pysolution = Solution(self.double_precision, self.m, self.n)
             self.solution = make_solution(self.pysolution)
             self.info = make_info(self.double_precision)
-            self.order = ORD["ROW_MAJ"] if (self.CSR or self.dense) else ORD["COL_MAJ"]
+            self.order = H2OConstants.ROW_MAJ if (self.CSR or self.dense) else H2OConstants.COL_MAJ
 
             if self.dense and not self.double_precision:
                 self.work = self.lib.h2ogpuml_init_dense_single(self.wDev, self.order, self.m, self.n, cptr(A, c_float))

@@ -1,50 +1,52 @@
 from ctypes import POINTER, c_int, c_uint, c_void_p, c_float, c_double, Structure
 from numpy import float32, float64, zeros, ones, inf
 
-# H2OGPUML constants
-ORD = {}
-ORD["COL_MAJ"] = c_int(0)
-ORD["ROW_MAJ"] = c_int(1)
 
-FUNCTION = {}
-FUNCTION["ABS"] = c_int(0)
-FUNCTION["EXP"] = c_int(1)
-FUNCTION["HUBER"] = c_int(2)
-FUNCTION["IDENTITY"] = c_int(3)
-FUNCTION["INDBOX01"] = c_int(4)
-FUNCTION["INDEQ0"] = c_int(5)
-FUNCTION["INDGE0"] = c_int(6)
-FUNCTION["INDLE0"] = c_int(7)
-FUNCTION["LOGISTIC"] = c_int(8)
-FUNCTION["MAXNEG0"] = c_int(9)
-FUNCTION["MAXPOS0"] = c_int(10)
-FUNCTION["NEGENTR"] = c_int(11)
-FUNCTION["NEGLOG"] = c_int(12)
-FUNCTION["RECIPR"] = c_int(13)
-FUNCTION["SQUARE"] = c_int(14)
-FUNCTION["ZERO"] = c_int(15)
+class H2OConstants:
+    COL_MAJ = c_int(0)
+    ROW_MAJ = c_int(1)
 
-STATUS = {}
-STATUS[0] = 'H2OGPUML_SUCCESS'
-STATUS[1] = 'H2OGPUML_INFEASIBLE'
-STATUS[2] = 'H2OGPUML_UNBOUNDED'
-STATUS[3] = 'H2OGPUML_MAX_ITER'
-STATUS[4] = 'H2OGPUML_NAN_FOUND'
-STATUS[5] = 'H2OGPUML_ERROR'
 
-# Default H2OGPUML solver settings
-DEFAULTS = {}
-DEFAULTS['rho'] = 1.  # rho = 1.0
-DEFAULTS['abs_tol'] = 1e-4  # abs_tol = 1e-2
-DEFAULTS['rel_tol'] = 1e-4  # rel_tol = 1e-4
-DEFAULTS['max_iters'] = 2500  # max_iters = 2500
-DEFAULTS['verbose'] = 2  # verbose = 2
-DEFAULTS['adaptive_rho'] = 1  # adaptive_rho = True
-DEFAULTS['equil'] = 1  # equil = True
-DEFAULTS['gap_stop'] = 1  # gap_stop = True
-DEFAULTS['warm_start'] = 0  # warm_start = False
-DEFAULTS['nDev'] = 1  # number of cuda devices =1
-DEFAULTS['wDev'] = 0  # which cuda devices (0)
+class H2OFunctions:
+    ABS = c_int(0)
+    EXP = c_int(1)
+    HUBER = c_int(2)
+    IDENTITY = c_int(3)
+    INDBOX01 = c_int(4)
+    INDEQ0 = c_int(5)
+    INDGE0 = c_int(6)
+    INDLE0 = c_int(7)
+    LOGISTIC = c_int(8)
+    MAXNEG0 = c_int(9)
+    MAXPOS0 = c_int(10)
+    NEGENTR = c_int(11)
+    NEGLOG = c_int(12)
+    RECIPR = c_int(13)
+    SQUARE = c_int(14)
+    ZERO = c_int(15)
+
+
+class H2OStatus:
+    SUCCESS = 'H2OGPUML_SUCCESS'
+    INFEASIBLE = 'H2OGPUML_INFEASIBLE'
+    UNBOUNDED = 'H2OGPUML_UNBOUNDED'
+    MAX_ITER = 'H2OGPUML_MAX_ITER'
+    NAN_FOUND = 'H2OGPUML_NAN_FOUND'
+    ERROR = 'H2OGPUML_ERROR'
+
+
+class H2OSolverDefault:
+    RHO = 1.  # rho = 1.0
+    ABS_TOL = 1e-4  # abs_tol = 1e-2
+    REL_TOL = 1e-4  # rel_tol = 1e-4
+    MAX_ITERS = 2500  # max_iters = 2500
+    VERBOSE = 2  # verbose = 2
+    ADAPTIVE_RHO = 1  # adaptive_rho = True
+    EQUIL = 1  # equil = True
+    GAP_STOP = 1  # gap_stop = True
+    WARM_START = 0  # warm_start = False
+    N_DEV = 1  # number of cuda devices =1
+    W_DEV = 0  # which cuda devices (0)
 
 # pointers to C types
 c_int_p = POINTER(c_int)
@@ -156,17 +158,17 @@ def change_settings(settings, **kwargs):
 
 
 def make_settings(double_precision=False, **kwargs):
-    rho = kwargs['rho'] if 'rho' in list(kwargs.keys()) else DEFAULTS['rho']
-    relt = kwargs['abs_tol'] if 'abs_tol' in list(kwargs.keys()) else DEFAULTS['abs_tol']
-    abst = kwargs['rel_tol'] if 'rel_tol' in list(kwargs.keys()) else DEFAULTS['rel_tol']
-    maxit = kwargs['max_iters'] if 'max_iters' in list(kwargs.keys()) else DEFAULTS['max_iters']
-    verb = kwargs['verbose'] if 'verbose' in list(kwargs.keys()) else DEFAULTS['verbose']
-    adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(kwargs.keys()) else DEFAULTS['adaptive_rho']
-    equil = kwargs['equil'] if 'equil' in list(kwargs.keys()) else DEFAULTS['equil']
-    gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else DEFAULTS['gap_stop']
-    warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else DEFAULTS['warm_start']
-    ndev = kwargs['nDev'] if 'nDev' in list(kwargs.keys()) else DEFAULTS['nDev']
-    wdev = kwargs['wDev'] if 'wDev' in list(kwargs.keys()) else DEFAULTS['wDev']
+    rho = kwargs['rho'] if 'rho' in list(kwargs.keys()) else H2OSolverDefault.RHO
+    relt = kwargs['abs_tol'] if 'abs_tol' in list(kwargs.keys()) else H2OSolverDefault.ABS_TOL
+    abst = kwargs['rel_tol'] if 'rel_tol' in list(kwargs.keys()) else H2OSolverDefault.REL_TOL
+    maxit = kwargs['max_iters'] if 'max_iters' in list(kwargs.keys()) else H2OSolverDefault.MAX_ITERS
+    verb = kwargs['verbose'] if 'verbose' in list(kwargs.keys()) else H2OSolverDefault.VERBOSE
+    adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(kwargs.keys()) else H2OSolverDefault.ADAPTIVE_RHO
+    equil = kwargs['equil'] if 'equil' in list(kwargs.keys()) else H2OSolverDefault.EQUIL
+    gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else H2OSolverDefault.GAP_STOP
+    warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else H2OSolverDefault.WARM_START
+    ndev = kwargs['nDev'] if 'nDev' in list(kwargs.keys()) else H2OSolverDefault.N_DEV
+    wdev = kwargs['wDev'] if 'wDev' in list(kwargs.keys()) else H2OSolverDefault.W_DEV
     if double_precision:
         return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm, ndev, wdev)
     else:
