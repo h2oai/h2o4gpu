@@ -42,7 +42,7 @@ def main(argv):
     s = h2ogpuml.Pogs(A) if gpu else h2ogpuml.Pogs(A, n_gpus=0)
 
     # solve
-    s.solve(f, g)
+    s.fit(f, g)
     print((h2ogpuml.STATUS[s.info.status]))
 
     # tear down solver

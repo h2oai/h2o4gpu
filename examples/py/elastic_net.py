@@ -51,7 +51,7 @@ def elastic_net(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
         g.e[:] = (1 - alpha) * _lambda
 
         # solve ##TODO: let C++ do the lambda-path
-        s.solve(f, g)
+        s.fit(f, g)
 
         # add run time
         runtime += s.info.solvetime

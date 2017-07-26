@@ -42,7 +42,7 @@ def non_neg_l2(m, n, gpu=False, double_precision=False):
     s = h2ogpuml.Pogs(A) if gpu else h2ogpuml.Pogs(A, n_gpus=0)
 
     # solve
-    s.solve(f, g)
+    s.fit(f, g)
 
     # get solve time
     t = s.info.solvetime

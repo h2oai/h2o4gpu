@@ -57,7 +57,7 @@ def lasso_path(m, n, gpu=True, double_precision=False, nlambda=50):
         g.c[:] = _lambda
 
         # solve
-        s.solve(f, g)
+        s.fit(f, g)
 
         # add run time
         runtime += s.info.solvetime
