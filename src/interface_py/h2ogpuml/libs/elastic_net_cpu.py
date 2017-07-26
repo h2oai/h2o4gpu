@@ -1,13 +1,10 @@
-import os
 from ctypes import *
 from h2ogpuml.types import *
+from h2ogpuml.libs.utils import cpu_lib_path
 
-ext = ".dylib" if os.uname()[0] == "Darwin" else ".so"
-lib_path = os.path.join(os.path.dirname(__file__), "../../ch2ogpuml_cpu" + ext)
+lib_path = cpu_lib_path()
 
 try:
-    if not os.path.exists(lib_path):
-        print("WARNING: Library " + lib_path + " doesn't exist.")
     h2ogpumlGLMCPU = cdll.LoadLibrary(lib_path)
     h2ogpumlGLMCPU.make_ptr_double.argtypes = [c_int, c_int, c_int, c_size_t, c_size_t, c_size_t, c_int,
                                                c_double_p, c_double_p, c_double_p, c_double_p, c_double_p,
