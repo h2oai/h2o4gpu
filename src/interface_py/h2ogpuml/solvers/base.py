@@ -14,6 +14,9 @@ from h2ogpuml.solvers.utils import devicecount
 class Pogs(object):
     def __init__(self, A, **kwargs):
 
+        # Try to use all GPUs by default
+        n_gpus = -1
+
         for key, value in kwargs.items():
             if key == "n_gpus":
                 n_gpus = value
