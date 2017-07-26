@@ -1,4 +1,3 @@
-
 import os
 from sys import platform
 from setuptools import setup
@@ -10,38 +9,39 @@ from multiprocessing import cpu_count
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2OGPUMLPATH = os.path.join(BASEPATH, '../interface_c/')
 
+
 class H2OGPUMLBuild(build):
-  def run(self):
-    NVCC = os.popen("which nvcc").read()!=""
-    CPULIB='ch2ogpuml_cpu'
-    GPULIB='ch2ogpuml_gpu'
-    EXT=".dylib" if os.uname()[0] == "Darwin" else ".so"
+    def run(self):
+        NVCC = os.popen("which nvcc").read() != ""
+        CPULIB = 'ch2ogpuml_cpu'
+        GPULIB = 'ch2ogpuml_gpu'
+        EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
-    # run original build code
-    build.run(self)
+        # run original build code
+        build.run(self)
 
-    # build H2OGPUML
-    cmd = [ 'make' ]
+        # build H2OGPUML
+        cmd = ['make']
 
-    targets= [ CPULIB, GPULIB ] if NVCC else [ CPULIB ]
-    cmd.extend(targets)
+        targets = [CPULIB, GPULIB] if NVCC else [CPULIB]
+        cmd.extend(targets)
 
-    CPU_LIBPATH = os.path.join(H2OGPUMLPATH, CPULIB + EXT)
-    GPU_LIBPATH = os.path.join(H2OGPUMLPATH, GPULIB + EXT)
+        CPU_LIBPATH = os.path.join(H2OGPUMLPATH, CPULIB + EXT)
+        GPU_LIBPATH = os.path.join(H2OGPUMLPATH, GPULIB + EXT)
 
-    target_files = [ CPU_LIBPATH, GPU_LIBPATH ] if NVCC else [ CPU_LIBPATH ]
-    message = 'Compiling H2OGPUML---CPU and GPU' if NVCC else 'Compiling H2OGPUML---CPU only'
- 
-    def compile():
-      # compile CPU version of H2OGPUML
-      call(cmd, cwd=H2OGPUMLPATH)
+        target_files = [CPU_LIBPATH, GPU_LIBPATH] if NVCC else [CPU_LIBPATH]
+        message = 'Compiling H2OGPUML---CPU and GPU' if NVCC else 'Compiling H2OGPUML---CPU only'
 
-    self.execute(compile, [], message)
+        def compile():
+            # compile CPU version of H2OGPUML
+            call(cmd, cwd=H2OGPUMLPATH)
 
-    # copy resulting tool to library build folder
-    self.mkpath(self.build_lib)
-    for target in target_files:
-          self.copy_file(target, self.build_lib)
+        self.execute(compile, [], message)
+
+        # copy resulting tool to library build folder
+        self.mkpath(self.build_lib)
+        for target in target_files:
+            self.copy_file(target, self.build_lib)
 
 
 class H2OGPUMLInstall(install):
@@ -60,6 +60,7 @@ class H2OGPUMLInstall(install):
         # install H2OGPUML executables
         self.copy_tree(self.build_lib, self.install_lib)
 
+
 setup(
     name='h2ogpuml',
     version='0.0.3',
@@ -75,5 +76,5 @@ setup(
     description='H2O.ai Generalized Linear Modeling with Proximal Operator Graph Solver',
     install_requires=["numpy >= 1.8",
                       "scipy >= 0.13"],
-    cmdclass={'build' : H2OGPUMLBuild, 'install' : H2OGPUMLInstall}
+    cmdclass={'build': H2OGPUMLBuild, 'install': H2OGPUMLInstall}
 )
