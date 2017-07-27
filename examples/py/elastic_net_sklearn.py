@@ -124,11 +124,12 @@ if __name__ == "__main__":
     import pandas as pd
     #import feather
 
-    # df = feather.read_dataframe("../../../h2ogpuml-prototypes/glm-bench/ipums.feather")
+    # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
+    df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
     # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
     #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
     #df = pd.read_csv("Hyatt_Subset.csv")
-    df = pd.read_csv("Hyatt_Subset.nohead.csv")
+    #df = pd.read_csv("Hyatt_Subset.nohead.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
