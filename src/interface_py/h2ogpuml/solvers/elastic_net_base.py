@@ -439,7 +439,7 @@ class GLMBaseSolver(object):
         # if should or user wanted to save or free data, do that now that we are done using a,b,c,d,e
         # This means have to upload_data() again before fitptr or predictptr or only call fit and predict
         if freeinputdata==1:
-            freedata()
+            self.freedata()
         #####################################
         # PROCESS OUTPUT
         # save pointers
