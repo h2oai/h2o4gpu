@@ -63,7 +63,7 @@ const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
 const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
-#define VERBOSEENET 0
+#define VERBOSEENET 1
 
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
@@ -522,7 +522,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
       //      h2ogpuml_data.SetRho(1E-6);
       //      h2ogpuml_data.SetRho(1E-3);
       h2ogpuml_data.SetRho(1.0);
-      //	h2ogpuml_data.SetVerbose(5);
+      h2ogpuml_data.SetVerbose(5);
       //        h2ogpuml_data.SetMaxIter(100);
       h2ogpuml_data.SetMaxIter(5000);
 

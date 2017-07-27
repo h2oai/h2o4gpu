@@ -1557,8 +1557,6 @@ int MatrixDense<T>::Equil(bool equillocal) {
   return 0;
 }
 
-
-
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
 // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
@@ -1678,12 +1676,62 @@ struct absolute_value : public thrust::unary_function<T,T>
     return x < T(0) ? -x : x;
   }
 };
+// --- Operator for testing nan values
+template<typename T>
+struct isnan_test {
+    __host__ __device__ bool operator()(const T a) const {
+        return isnan(a) || isinf(a);
+    }
+};
 
+// check properties of input data
 template <typename T>
 int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
   CUDACHECK(cudaSetDevice(_wDev));
 
+  if(_data!=NULL) {// check for nan or inf in data
+	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_data);
+	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_data+this->_m*this->_n);
+	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
+	  if(h_result==true){
+		  fprintf(stderr,"Data matrix (trainX) has nan/inf or missing was not encoded\n");
+	  	  fflush(stderr);
+	  	  exit(1);
+	  }
+  }
+  if(_datay!=NULL) {// check for nan or inf in data
+	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_datay);
+	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_datay+this->_m);
+	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
+	  if(h_result==true){
+		  fprintf(stderr,"Data training predictions/labels (trainY) has nan/inf or missing was not encoded\n");
+	  	  fflush(stderr);
+	  	  exit(1);
+	  }
+  }
+  if(_vdata!=NULL) {// check for nan or inf in data
+	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_vdata);
+	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_vdata+this->_mvalid*this->_n);
+	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
+	  if(h_result==true){
+		  fprintf(stderr,"Validation Data matrix (validX) has nan/inf or missing was not encoded\n");
+	  	  fflush(stderr);
+	  	  exit(1);
+	  }
+  }
+  if(1) {// check for nan or inf in data
+	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_vdatay);
+	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_vdatay+this->_mvalid);
+	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
+	  if(h_result==true){
+		  fprintf(stderr,"Validation Data training predictions/labels (validY) has nan/inf or missing was not encoded\n");
+	  	  fflush(stderr);
+	  	  exit(1);
+	  }
+  }
+
+  // nothing else to do if _datay==NULL
   if(_datay==NULL) return(0);
 
   // setup arguments
