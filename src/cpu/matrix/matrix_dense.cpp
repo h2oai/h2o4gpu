@@ -15,7 +15,7 @@
 #include "matrix/matrix_dense.h"
 #include "util.h"
 
-#define VERBOSEOUT 1
+#define VERBOSEOUT 0
 
 
 namespace h2ogpuml {
