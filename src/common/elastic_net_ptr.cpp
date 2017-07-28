@@ -281,11 +281,6 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
     signal(SIGINT, my_function);
     signal(SIGTERM, my_function);
     int nlambda = nLambdas;
-    if (nlambda <= 1) {
-      cerr << "Must use nlambda > 1\n";
-      exit(-1);
-    }
-
     if(VERBOSEENET){
       cout << "Hardware: " << HARDWARE << endl;
     }
@@ -320,6 +315,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 
 
 
+    if(VERBOSEENET){ fprintf(stderr,"Before malloc X\n"); fflush(stderr); }
     // setup storage for returning results back to user
     // iterate over predictors (n) or other information fastest so can memcpy X
     *countmore=NUMRMSE+NUMOTHER;
@@ -334,18 +330,20 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
     *countshort=nAlphas*(n + *countmore);
     *Xvsalpha = (T*) calloc(*countshort,sizeof(T));
     //    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
-
+    if(VERBOSEENET){ fprintf(stderr,"After malloc X\n"); fflush(stderr); }
 
 
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
     //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
     // assume source thread is 0th thread (TODO: need to ensure?)
+    if(VERBOSEENET){ fprintf(stderr,"Before Asource\n"); fflush(stderr); }
     int sourceme=sourceDev;
     h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                       reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                       reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
                                       reinterpret_cast<T *>(weightptr));
+    if(VERBOSEENET){ fprintf(stderr,"After Asource\n"); fflush(stderr); }
     // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
     T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
     T lambdamax0;
@@ -353,6 +351,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
     double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
     double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
     double lambda_max0 = (double)lambdamax0;
+    if(VERBOSEENET){ fprintf(stderr,"After stats\n"); fflush(stderr); }
 
     if(1||VERBOSEENET){
       
@@ -1157,10 +1156,6 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
     signal(SIGINT, my_function);
     signal(SIGTERM, my_function);
     int nlambda = nLambdas;
-    if (nlambda <= 1) {
-      cerr << "Must use nlambda > 1\n";
-      exit(-1);
-    }
 
 
     // critical files for all threads
@@ -1197,6 +1192,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
     }
 #endif
 
+    if(VERBOSEENET){ fprintf(stderr,"Before malloc validPreds\n"); fflush(stderr); }
 
     // setup storage for returning results back to user
     if(givefullpath){
@@ -1208,17 +1204,19 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThre
     *validPredsvsalpha = (T*) calloc(*countshort/(n+NUMOTHER)*mValid,sizeof(T));
     //    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
 
+    if(VERBOSEENET){ fprintf(stderr,"After malloc validPreds\n"); fflush(stderr); }
     // for source, create class objects that creates cuda memory, cpu memory, etc.
     // This takes-in raw GPU pointer
     //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
     // assume source thread is 0th thread (TODO: need to ensure?)
     int sourceme=sourceDev;
+    if(VERBOSEENET){ fprintf(stderr,"Before Asource\n"); fflush(stderr); }
     h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
                                       reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
                                       reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
                                       reinterpret_cast<T *>(weightptr));
     // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
-
+    if(VERBOSEENET){ fprintf(stderr,"After Asource\n"); fflush(stderr); }
     // Setup each thread's h2ogpuml
     double t = timer<double>();
     double t1me0;

@@ -1720,12 +1720,22 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
 	  	  exit(1);
 	  }
   }
-  if(1) {// check for nan or inf in data
+  if(_vdatay!=NULL) {// check for nan or inf in data
 	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_vdatay);
 	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_vdatay+this->_mvalid);
 	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
 	  if(h_result==true){
 		  fprintf(stderr,"Validation Data training predictions/labels (validY) has nan/inf or missing was not encoded\n");
+	  	  fflush(stderr);
+	  	  exit(1);
+	  }
+  }
+  if(_weight!=NULL) {// check for nan or inf in data
+	  thrust::device_ptr<T> begin = thrust::device_pointer_cast(_weight);
+	  thrust::device_ptr<T> end = thrust::device_pointer_cast(_weight+this->_m);
+	  bool h_result = thrust::transform_reduce(begin, end, isnan_test<T>(), 0, thrust::plus<bool>());
+	  if(h_result==true){
+		  fprintf(stderr,"Weight Training Data has nan/inf or missing was not encoded\n");
 	  	  fflush(stderr);
 	  	  exit(1);
 	  }

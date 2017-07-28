@@ -7,6 +7,8 @@
 #include <thrust/transform.h>
 
 #include <algorithm>
+#include <limits>
+#include <deque>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_vector.cuh"
@@ -441,7 +443,14 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   bool converged = false;
   T nrm_r, nrm_s, gap, eps_gap, eps_pri, eps_dua;
 
-
+  // Stop early setup
+  unsigned int QUEUELENGTH=10;
+  std::deque<T> nrm_r_deque;
+  std::deque<T> nrm_s_deque;
+  std::deque<T> nrm_r_avg;
+  std::deque<T> nrm_s_avg;
+  std::deque<T> nrm_r_rmse;
+  std::deque<T> nrm_s_rmse;
 
   // LOOP until satisfy convergence criteria
   for (;; ++k) {
@@ -529,14 +538,65 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
     CUDA_CHECK_ERR();
     POP_RANGE("resid",resid,9);
 
+    // STOP EARLY CHECK
+    nrm_r_deque.push_back(nrm_r);
+    nrm_s_deque.push_back(nrm_s);
+
+  	nrm_r_avg.push_back(std::accumulate(nrm_r_deque.begin(), nrm_r_deque.end(), 0.0)/static_cast<T>(nrm_r_deque.size()));
+   	nrm_s_avg.push_back(std::accumulate(nrm_s_deque.begin(), nrm_s_deque.end(), 0.0)/static_cast<T>(nrm_s_deque.size()));
+	if (nrm_r_deque.size()>=QUEUELENGTH && nrm_r_avg.size()>=QUEUELENGTH){
+		T rmselocal_r=0;
+		T rmselocal_s=0;
+		for (unsigned int ii=0;ii<QUEUELENGTH;ii++){
+			rmselocal_r += std::abs(nrm_r_avg[ii] - nrm_r_deque[ii]);
+			rmselocal_s += std::abs(nrm_s_avg[ii] - nrm_s_deque[ii]);
+		}
+		nrm_r_rmse.push_back(rmselocal_r/static_cast<T>(QUEUELENGTH));
+		nrm_s_rmse.push_back(rmselocal_s/static_cast<T>(QUEUELENGTH));
+	}
+
+    bool stopearly=false;
+    if(k>QUEUELENGTH
+  		&& nrm_r_deque.size()>=QUEUELENGTH && nrm_r_avg.size()>=QUEUELENGTH
+   		&& nrm_s_deque.size()>=QUEUELENGTH && nrm_s_avg.size()>=QUEUELENGTH
+    	&& nrm_r_rmse.size()>=1
+    	&& nrm_s_rmse.size()>=1
+    	&& std::abs(nrm_r_avg.back()-nrm_r_avg.front())<nrm_r_rmse.back()
+		&& std::abs(nrm_s_avg.back()-nrm_s_avg.front())<nrm_s_rmse.back()
+    ){
+    	Printf("Stopped Early at iteration=%d: %g %g %g : %g %g %g\n",k,nrm_r_avg.back(),nrm_r_avg.front(),nrm_r_rmse.back(),nrm_s_avg.back(),nrm_s_avg.front(),nrm_s_rmse.back());
+    	fflush(stdout);
+    	stopearly=true;
+    }
+
+    if(nrm_r_deque.size()>=QUEUELENGTH){
+    	nrm_r_deque.pop_front();
+    }
+    if(nrm_s_deque.size()>=QUEUELENGTH){
+    	nrm_s_deque.pop_front();
+    }
+    if(nrm_r_avg.size()>=QUEUELENGTH){
+        nrm_r_avg.pop_front();
+    }
+    if(nrm_s_avg.size()>=QUEUELENGTH){
+    	nrm_s_avg.pop_front();
+    }
+    if(nrm_r_rmse.size()>=QUEUELENGTH){
+        nrm_r_rmse.pop_front();
+    }
+    if(nrm_s_rmse.size()>=QUEUELENGTH){
+    	nrm_s_rmse.pop_front();
+    }
 
     // Evaluate stopping criteria.
-    converged = exact && nrm_r < eps_pri && nrm_s < eps_dua &&
-        (!_gap_stop || gap < eps_gap);
-    if (_verbose > 3 && k % 1  == 0 ||
-        _verbose > 2 && k % 10  == 0 ||
-        _verbose > 1 && k % 100 == 0 ||
-        _verbose > 1 && converged) {
+    converged = stopearly || (exact && nrm_r < eps_pri && nrm_s < eps_dua &&
+        (!_gap_stop || gap < eps_gap));
+    if (
+    	(_verbose > 3 && k % 1  == 0) ||
+        (_verbose > 2 && k % 10  == 0) ||
+        (_verbose > 1 && k % 100 == 0) ||
+        (_verbose > 1 && converged)
+        ){
       T optval = FuncEval(f_gpu, y12.data) + FuncEval(g_gpu, x12.data);
       Printf("%5d : %.2e <? %.2e  %.2e  <? %.2e  %.2e  <? %.2e % .2e\n",
              k, nrm_r, eps_pri, nrm_s, eps_dua, gap, eps_gap, optval);fflush(stdout);

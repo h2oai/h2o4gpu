@@ -15,7 +15,7 @@
 #include "matrix/matrix_dense.h"
 #include "util.h"
 
-
+#define VERBOSEOUT 1
 
 
 namespace h2ogpuml {
@@ -254,7 +254,7 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     if(sharedA!=0){ // can't do this in case input pointers were from one thread and this function called on multiple threads.  However, currently, this function is only called by outside parallel region when getting first copying. For sharedA case, minimize memory use overall, so allow pointer assignment here just for source (this assumes scoring using internal calculation, not using OLDPREDS because matrix is modified).  So this call isn't only because shared memory case, but rather want minimal memory even on source thread in shared memory case
       _data = const_cast<T*>(data);
       _datay = const_cast<T*>(datay);
-      if(_datay)_dopredict=0; else _dopredict=1;
+      if(_datay) _dopredict=0; else _dopredict=1;
       _vdata = const_cast<T*>(vdata);
       _vdatay = const_cast<T*>(vdatay);
       _weight = const_cast<T*>(weight);
@@ -262,12 +262,16 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     else{
       // TODO: Properly free these at end if allocated.  Just need flag to say if allocated, as can't just check if NULL or not.
 
+      if(VERBOSEOUT){ fprintf(stderr,"1 %p\n",info->orig_data); fflush(stderr); }
       if(info->orig_data){
+    	if(VERBOSEOUT){ fprintf(stderr,"1a %p\n",info->orig_data); fflush(stderr); }
         _data = new T[this->_m * this->_n];
+        if(VERBOSEOUT){ fprintf(stderr,"1b %p\n",info->orig_data); fflush(stderr); }
         ASSERT(_data != 0);
         memcpy(_data, info->orig_data, this->_m * this->_n * sizeof(T));
+        if(VERBOSEOUT){ fprintf(stderr,"1c %p\n",info->orig_data); fflush(stderr); }
       }
-
+      if(VERBOSEOUT){ fprintf(stderr,"2\n"); fflush(stderr); }
       if(infoy->orig_data){
         _datay = new T[this->_m];
         ASSERT(_datay != 0);
@@ -275,23 +279,27 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         _dopredict=0;
       }
       else _dopredict=1;
-
+      if(VERBOSEOUT){ fprintf(stderr,"3\n"); fflush(stderr); }
       if(vinfo->orig_data){
         _vdata = new T[this->_mvalid * this->_n];
         ASSERT(_vdata != 0);
         memcpy(_vdata, vinfo->orig_data, this->_mvalid * this->_n * sizeof(T));
       }
-
+      if(VERBOSEOUT){ fprintf(stderr,"4\n"); fflush(stderr); }
       if(vinfoy->orig_data){
         _vdatay = new T[this->_mvalid];
         ASSERT(_vdatay != 0);
         memcpy(_vdatay, vinfoy->orig_data, this->_mvalid * sizeof(T));
       }
-
+      if(VERBOSEOUT){ fprintf(stderr,"5\n"); fflush(stderr); }
       if(weightinfo->orig_data){
         _weight = new T[this->_m];
         ASSERT(_weight != 0);
         memcpy(_weight, weightinfo->orig_data, this->_m * sizeof(T));
+        //for(size_t ii=0;ii<this->_m;ii++){
+//        	fprintf(stderr,"weight[%d]=%g\n",ii,_weight[ii]);
+        	//fflush(stderr);
+        //}
       }
       else{
         _weight = new T[this->_m];
@@ -299,13 +307,14 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
         std::fill(_weight, _weight + this->_m,1.0);
       }
     }
+    if(VERBOSEOUT){ fprintf(stderr,"6\n"); fflush(stderr); }
     _de = new T[this->_m + this->_n]; ASSERT(_de != 0);std::fill(_de, _de + this->_m + this->_n, 0.0); // NOTE: If passing pointers, only pass data pointers out and back in in this function, so _de still needs to get allocated and equlilibrated.  This means allocation and equilibration done twice effectively.  Can avoid during first pointer assignment if want to pass user option JONTODO
     if(sharedA>0){
       Init();
       Equil(1); // JONTODO: hack for now, should pass user bool
     }
   }
-
+  if(VERBOSEOUT){ fprintf(stderr,"7\n"); fflush(stderr); }
   
 #if 0
     if (ord=='r') {
@@ -749,6 +758,78 @@ T getVar(size_t len, T *v, T mean) {
 template <typename T>
 int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd, T *skew, T *kurt, T &lambda_max0)
 {
+  size_t n=this->_n;
+  size_t mTrain=this->_m;
+  size_t mValid=this->_mvalid;
+
+
+  if(_data!=NULL){
+	  bool gotnan=false;
+	  for (size_t j = 0; j < n*mTrain; ++j) {
+		  if(std::isnan(_data[j]) || std::isinf(_data[j])){
+			  gotnan=true;
+		  }
+	  }
+	  if(gotnan==true){
+		  fprintf(stderr,"Data matrix (trainX) has nan/inf or missing was not encoded\n");
+		  fflush(stderr);
+		  exit(1);
+	  }
+  }
+  if(_datay!=NULL){
+	  bool gotnan=false;
+	  for (size_t j = 0; j < mTrain; ++j) {
+		  if(std::isnan(_datay[j]) || std::isinf(_datay[j])){
+			  gotnan=true;
+		  }
+	  }
+	  if(gotnan==true){
+		  fprintf(stderr,"Data training predictions/labels (trainY) has nan/inf or missing was not encoded\n");
+		  fflush(stderr);
+		  exit(1);
+	  }
+  }
+  if(_vdata!=NULL){
+	  bool gotnan=false;
+	  for (size_t j = 0; j < n*mValid; ++j) {
+		  if(std::isnan(_vdata[j]) || std::isinf(_vdata[j])){
+			  gotnan=true;
+		  }
+	  }
+	  if(gotnan==true){
+		  fprintf(stderr,"Validation Data matrix (validX) has nan/inf or missing was not encoded\n");
+		  fflush(stderr);
+		  exit(1);
+	  }
+  }
+  if(_vdatay!=NULL){
+	  bool gotnan=false;
+	  for (size_t j = 0; j < mValid; ++j) {
+		  if(std::isnan(_vdatay[j]) || std::isinf(_vdatay[j])){
+			  gotnan=true;
+		  }
+	  }
+	  if(gotnan==true){
+		  fprintf(stderr,"Validation Data training predictions/labels (validY) has nan/inf or missing was not encoded\n");
+		  fflush(stderr);
+		  exit(1);
+	  }
+  }
+  if(_weight!=NULL){
+  	  bool gotnan=false;
+  	  for (size_t j = 0; j < mTrain; ++j) {
+  		  if(std::isnan(_weight[j]) || std::isinf(_weight[j])){
+  			  gotnan=true;
+  		  }
+  	  }
+  	  if(gotnan==true){
+  		  fprintf(stderr,"Weight Training Data has nan/inf or missing was not encoded\n");
+  		  fflush(stderr);
+  		  exit(1);
+  	  }
+    }
+
+  // return if nothing else to do
   if(_datay==NULL) return(0);
   
   int len=0;
@@ -773,30 +854,36 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
   skew[1]=0.0; // not implemented
   kurt[1]=0.0; // not implemented
 
-  size_t n=this->_n;
-  size_t mTrain=this->_m;
-
-  // TODO: compute on the GPU - inside of ElasticNetPtr
   // set lambda max 0 (i.e. base lambda_max)
-  lambda_max0 = static_cast<T>(0);
-  for (unsigned int j = 0; j < n-intercept; ++j) { //col
+  lambda_max0 = static_cast<T>(0.0);
+  for (size_t j = 0; j < n-intercept; ++j) { //col
     T u = 0;
     if(_weight!=NULL){
-      for (unsigned int i = 0; i < mTrain; ++i) { //row
+      for (size_t i = 0; i < mTrain; ++i) { //row
         u += _weight[i] * _data[i * n + j] * (_datay[i] - intercept*mean[0]);
-        //        fprintf(stderr,"i=%d weight=%g data=%g datay=%g intercept=%d mean=%g\n",i,_weight[i], _data[i * n + j],_datay[i],intercept,mean[0]); fflush(stderr);
+        if(!std::isfinite(u)){
+        	//fprintf(stderr,"i=%d weight=%g data=%g datay=%g intercept=%d mean=%g\n",i,_weight[i], _data[i * n + j],_datay[i],intercept,mean[0]);
+        	fprintf(stderr,"Bad product in calculating u\n");
+   		    fflush(stderr);
+        	exit(1);
+        }
       }
     }
     else{
-      for (unsigned int i = 0; i < mTrain; ++i) { //row
+      for (size_t i = 0; i < mTrain; ++i) { //row
         u += _data[i * n + j] * (_datay[i] - intercept*mean[0]);
       }
     }
+    //fprintf(stderr,"j=%zu lambda_max0: %g u=%g intercept=%d mean=%g\n",j,lambda_max0,u,intercept,mean[0]); fflush(stderr);
     lambda_max0 = static_cast<T>(std::max(lambda_max0, std::abs(u)));
   }
-  //  fprintf(stderr,"lambda_max0=%g\n",lambda_max0); fflush(stderr);
+  fprintf(stderr,"lambda_max0=%g\n",lambda_max0); fflush(stderr);
   
-  
+  if(lambda_max0==0.0 || !std::isfinite(lambda_max0)){
+	  fprintf(stderr,"Failure to compute lambda_max0\n");
+	  fflush(stderr);
+	  exit(1);
+  }
 
   return 0;
 }

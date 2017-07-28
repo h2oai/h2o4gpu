@@ -175,6 +175,63 @@ class GLMBaseSolver(object):
             mValid = 0
             n2 = -1
         self.mValid = mValid
+        ################
+        if trainY is not None:
+            try:
+                if (trainY.dtype == np.float64):
+                    self.double_precision3 = 1
+                if (trainY.dtype == np.float32):
+                    self.double_precision3 = 0
+            except:
+                self.double_precision3 = -1
+            #
+            try:
+                if trainY.value is not None:
+                    mTrain2 = trainY.shape[0]
+                else:
+                    mTrain2 = 0
+            except:
+                mTrain2 = trainY.shape[0]
+        else:
+            mTrain2 = 0
+        ################
+        if validY is not None:
+            try:
+                if (validY.dtype == np.float64):
+                    self.double_precision4 = 1
+                if (validY.dtype == np.float32):
+                    self.double_precision4 = 0
+            except:
+                self.double_precision4 = -1
+            #
+            try:
+                if validY.value is not None:
+                    mValid2 = validY.shape[0]
+                else:
+                    mValid2 = 0
+            except:
+                mValid2 = validY.shape[0]
+        else:
+            mValid2 = 0
+        ################
+        if weight is not None:
+            try:
+                if (weight.dtype == np.float64):
+                    self.double_precision5 = 1
+                if (weight.dtype == np.float32):
+                    self.double_precision5 = 0
+            except:
+                self.double_precision5 = -1
+            #
+            try:
+                if weight.value is not None:
+                    mTrain3 = weight.shape[0]
+                else:
+                    mTrain3 = 0
+            except:
+                mTrain3 = weight.shape[0]
+        else:
+            mTrain3 = 0
         ###############
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:
             if (self.double_precision1 != self.double_precision2):
@@ -186,6 +243,21 @@ class GLMBaseSolver(object):
             self.double_precision = self.double_precision1
         elif self.double_precision2 >= 0:
             self.double_precision = self.double_precision2
+        ###############
+        if self.double_precision1 >= 0 and self.double_precision3 >= 0:
+            if (self.double_precision1 != self.double_precision3):
+                print("trainX and trainY must be same precision")
+                exit(0)
+        ###############
+        if self.double_precision2 >= 0 and self.double_precision4 >= 0:
+            if (self.double_precision2 != self.double_precision4):
+                print("validX and validY must be same precision")
+                exit(0)
+        ###############
+        if self.double_precision3 >= 0 and self.double_precision5 >= 0:
+            if (self.double_precision3 != self.double_precision5):
+                print("trainY and weight must be same precision")
+                exit(0)
         ###############
         if n1 >= 0 and n2 >= 0:
             if (n1 != n2):
@@ -654,7 +726,8 @@ class GLMBaseSolver(object):
             pass
         #################
         if dopredict == 0:
-            if ((validX and validY == None) or (validX == None and validY)):
+            if ((mValid==0 or mValid==-1) and n2>0) or (mValid>0 and (n2==0 or n2==-1)):
+            #if ((validX is not None and validY == None) or (validX == None and validY is not None)):
                 print(
                     "Must input both validX and validY or neither.")  # TODO FIXME: Don't need validY if just want preds and no error, but don't return error in fit, so leave for now
                 exit(0)
