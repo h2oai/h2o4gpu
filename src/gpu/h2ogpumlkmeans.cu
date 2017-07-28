@@ -225,6 +225,9 @@ namespace h2ogpumlkmeans {
     template <typename T>
     int makePtr_dense(int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
 
+      // no more clusters than rows
+      if(k>rows) k = static_cast<int>(rows);
+
       if(rows>std::numeric_limits<int>::max()){
         fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
         fflush(stderr);
