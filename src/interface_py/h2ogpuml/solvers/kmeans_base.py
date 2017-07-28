@@ -137,7 +137,7 @@ class KMeansBaseSolver(object):
             return
 
         res = c_void_p(0)
-        c_data = cptr(data, dtype=myctype)
+
         c_labels = cptr(labels, dtype=c_int)
         t0 = time.time()
         #######################
@@ -161,13 +161,13 @@ class KMeansBaseSolver(object):
         assert lib != None, "Couldn't instantiate KMeans Library"
         #
         if self.double_precision == 0:
-            status = lib.make_ptr_float_kmeans(self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_float_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                           self.threshold, c_data, c_labels, pointer(res))
+                                           self.threshold, c_data, c_labels, None, pointer(res))
         else:
-            status = lib.make_ptr_double_kmeans(self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_double_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                            self.threshold, c_data, c_labels, pointer(res))
+                                            self.threshold, c_data, c_labels, None, pointer(res))
         if status:
             raise ValueError('KMeans failed in C++ library')
             sys.stdout.flush()
@@ -234,14 +234,39 @@ class KMeansBaseSolver(object):
             self.model.fit(self.Xnp, self.ynp)
 
     def predict(self, X):
-        self.sklearnfit()
-        return self.model.predict(X)
-        # no other choice FIXME TODO
+        assert not np.isnan(X).any(), "X contains NA"
+        self.prediction = self._predict(X)
+        return self.prediction
+
+    def _predict(self, X):
+        c_data, data_ctype = self._to_cdata(X)
+        c_init_from_labels = c_void_p(0)
+        c_init_labels = c_void_p(0)
+        c_init_data = c_void_p(0)
+        c_labels = c_void_p(0)
+        res = c_void_p(0)
+
+        rows = np.shape(X)[0]
+        cols = np.shape(X)[1]
+
+        if self.double_precision == 0:
+            self.lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
+                                           self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
+                                           self.threshold, c_data, c_labels, None, pointer(res))
+
+            preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
+            preds = np.reshape(preds, rows)
+        else:
+            self.lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
+                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
+                                            self.threshold, c_data, c_labels, None, pointer(res))
+            preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
+            preds = np.reshape(preds, rows)
+
+        return preds
 
     def transform(self, X):
-        self.sklearnfit()
-        return self.model.transform(X)
-        # no other choice FIXME TODO
+        pass
 
     def fit_transform(self, X, y):
         L = np.mod(y, self.k)
@@ -256,3 +281,21 @@ class KMeansBaseSolver(object):
         # get_params, score, set_params
         # various parameters like init, algorithm, n_init
         # need to ensure output as desired
+
+    def _to_cdata(self, data):
+        if data.dtype == np.float64:
+            print("Detected np.float64 data")
+            sys.stdout.flush()
+            self.double_precision = 1
+            myctype = c_double
+        elif data.dtype == np.float32:
+            print("Detected np.float32 data")
+            sys.stdout.flush()
+            self.double_precision = 0
+            myctype = c_float
+        else:
+            print("Unknown data type, should be either np.float32 or np.float64")
+            print(data.dtype)
+            sys.stdout.flush()
+            return None, None
+        return cptr(data, dtype=myctype), myctype
