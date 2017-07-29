@@ -247,7 +247,7 @@ namespace mycub {
   size_t temp_storage_bytes2[MAX_NGPUS];
   bool cub_initted;
   void cub_init() {
-    std::cout <<"CUB init" << std::endl;
+   // std::cout <<"CUB init" << std::endl;
     for (int q=0; q<MAX_NGPUS; q++) {
       d_key_alt_buf[q] = NULL;
       key_alt_buf_bytes[q] = 0;

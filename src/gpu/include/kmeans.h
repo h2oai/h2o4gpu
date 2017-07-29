@@ -56,6 +56,7 @@ namespace kmeans {
 
   template<typename T>
     int kmeans(
+    	int verbose,
         volatile std::atomic_int * flag,
         int n, int d, int k,
         thrust::device_vector<T>** data,
@@ -194,21 +195,21 @@ namespace kmeans {
             cudaMemcpyAsync(h_changes+q, d_changes[q], sizeof(int), cudaMemcpyDeviceToHost, cuda_stream[q]);
             cudaMemcpyAsync(h_distance_sum+q, d_distance_sum[q], sizeof(T), cudaMemcpyDeviceToHost, cuda_stream[q]);
             detail::streamsync(dList[q]);
-#if(VERBOSE)
-            std::cout << "Device " << dList[q] << ":  Iteration " << i << " produced " << h_changes[q]
-                      << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
-#endif
+            if(verbose>=2){
+            	std::cout << "Device " << dList[q] << ":  Iteration " << i << " produced " << h_changes[q]
+                << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
+            }
             distance_sum += h_distance_sum[q];
             moved_points += h_changes[q];
           }
           if (i > 0) {
             double fraction = (double)moved_points / n;
 #define NUMSTEP 10
-            if(VERBOSE || VERBOSE==0 && (i<=1 || i%NUMSTEP==0)){
+            if(verbose>1 && (i<=1 || i%NUMSTEP==0)){
               std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
             }
             if (fraction < threshold) {
-              std::cout << "Threshold triggered. Terminating early." << std::endl;
+              if(verbose){ std::cout << "Threshold triggered. Terminating early." << std::endl; }
               return i + 1;
             }
           }

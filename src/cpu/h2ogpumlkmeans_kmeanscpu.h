@@ -109,7 +109,7 @@ template<typename T>
   }
 
   template<typename T>
-  int kmeans(
+  int kmeans(int verbose,
              volatile std::atomic_int * flag,
              int n, int d, int k,
              std::vector<T> &data,

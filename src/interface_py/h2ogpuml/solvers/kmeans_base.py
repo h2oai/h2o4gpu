@@ -10,10 +10,10 @@ from h2ogpuml.solvers.utils import devicecount
 
 class KMeans(object):
     def __init__(self, gpu_id=0, n_gpus=1, k=10, max_iterations=1000, threshold=1E-3, init_from_labels=False,
-                 init_labels="randomselect", init_data="randomselect"):
+                 init_labels="randomselect", init_data="randomselect", verbose=0):
 
         self.solver = KMeansBaseSolver(gpu_id, n_gpus, k, max_iterations, threshold,
-                                       init_from_labels, init_labels, init_data)
+                                       init_from_labels, init_labels, init_data, verbose)
 
     def fit(self, X, y):
         return self.solver.fit(X, y)
@@ -33,7 +33,7 @@ class KMeans(object):
 
 class KMeansBaseSolver(object):
     def __init__(self, gpu_id=0, n_gpus=1, k=10, max_iterations=1000, threshold=1E-3, init_from_labels=False,
-                 init_labels="randomselect", init_data="randomselect"):
+                 init_labels="randomselect", init_data="randomselect", verbose=0):
         self.k = k
         self.gpu_id = gpu_id
         n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
@@ -46,6 +46,7 @@ class KMeansBaseSolver(object):
         self.threshold = threshold
         self.didfit = 0
         self.didsklearnfit = 0
+        self.verbose=verbose
 
 
     def KMeansInternal(self, ordin, k, max_iterations, init_from_labels, init_labels, init_data,
@@ -59,12 +60,14 @@ class KMeansBaseSolver(object):
         self.threshold = threshold
 
         if (data.dtype == np.float64):
-            print("Detected np.float64 data")
+            if self.verbose>0:
+                print("Detected np.float64 data")
             sys.stdout.flush()
             self.double_precision = 1
             myctype = c_double
         elif (data.dtype == np.float32):
-            print("Detected np.float32 data")
+            if self.verbose>0:
+                print("Detected np.float32 data")
             sys.stdout.flush()
             self.double_precision = 0
             myctype = c_float
@@ -110,23 +113,25 @@ class KMeansBaseSolver(object):
         cpulibgetter = CPUlib()
         cpulib = cpulibgetter.get()
         if ((self.n_gpus == 0) or (gpulib is None) or (self.deviceCount == 0)):
-             print("\nUsing CPU KMeans solver\n")
-             lib = cpulib
+            if self.verbose>0:
+                print("\nUsing CPU KMeans solver\n")
+            lib = cpulib
         elif ((self.n_gpus > 0) or (cpulib is None) or (self.deviceCount == 0)):
+            if self.verbose>0:
                 print("\nUsing GPU KMeans solver with %d GPUs\n" % self.n_gpus)
-                lib = gpulib
+            lib = gpulib
         else:
             lib = None
         assert lib != None, "Couldn't instantiate KMeans Library"
         #
         if self.double_precision == 0:
-            lib.make_ptr_float_kmeans(self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            lib.make_ptr_float_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                            self.threshold, c_data, c_labels, pointer(res))
             self.centroids = np.fromiter(cast(res, POINTER(myctype)), dtype=np.float32, count=self.k * n)
             self.centroids = np.reshape(self.centroids, (self.k, n))
         else:
-            lib.make_ptr_double_kmeans(self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            lib.make_ptr_double_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                             self.threshold, c_data, c_labels, pointer(res))
             self.centroids = np.fromiter(cast(res, POINTER(myctype)), dtype=np.float64, count=self.k * n)

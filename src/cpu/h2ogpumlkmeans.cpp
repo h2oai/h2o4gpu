@@ -17,16 +17,16 @@
 
 
 template<typename T>
-void random_data(std::vector<T>& array, int m, int n) {
+void random_data(int verbose, std::vector<T>& array, int m, int n) {
   for(int i = 0; i < m * n; i++) {
     array[i] = (T)rand()/(T)RAND_MAX;
   }
 }
 
 template<typename T>
-void nonrandom_data(const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d) {
+void nonrandom_data(int verbose, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d) {
   if(ord=='c'){
-    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+	if(verbose){ fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr); }
     int indexi,indexj;
     for(int i = 0; i < npercpu * d; i++) {
 #if(1)
@@ -50,17 +50,17 @@ void nonrandom_data(const char ord, std::vector<T>& array, const T *srcdata, int
 #endif
   }
   else{
-    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr); }
     for(int i = 0; i < npercpu * d; i++) {
       array[i] = srcdata[q*npercpu*d + i]; // shift by which cpu
     }
   }
 }
 template<typename T>
-void nonrandom_data_new(std::vector<int> v, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d) {
+void nonrandom_data_new(int verbose, std::vector<int> v, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d) {
 
   if(ord=='c'){
-    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    if(verbose){ fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr); }
      for(int i = 0; i < npercpu; i++) {
       for(int j=0;j<d;j++){
         array[i*d + j] = srcdata[v[q*npercpu + i] + j*n]; // shift by which cpu
@@ -75,7 +75,7 @@ void nonrandom_data_new(std::vector<int> v, const char ord, std::vector<T>& arra
 #endif
   }
   else{
-    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr); }
      for(int i = 0; i < npercpu; i++) {
       for(int j=0;j<d;j++){
         array[i*d + j] = srcdata[v[q*npercpu + i]*d + j]; // shift by which cpu
@@ -84,15 +84,15 @@ void nonrandom_data_new(std::vector<int> v, const char ord, std::vector<T>& arra
   }
 }
 
-void random_labels(std::vector<int>& labels, int n, int k) {
+void random_labels(int verbose, std::vector<int>& labels, int n, int k) {
   for(int i = 0; i < n; i++) {
     labels[i] = rand() % k;
   }
 }
-void nonrandom_labels(const char ord, std::vector<int>& labels, const int *srclabels, int q, int n, int npercpu) {
+void nonrandom_labels(int verbose, const char ord, std::vector<int>& labels, const int *srclabels, int q, int n, int npercpu) {
   int d=1; // only 1 dimension
   if(ord=='c'){
-    fprintf(stderr,"labels COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"labels COL ORDER -> ROW ORDER\n"); fflush(stderr); }
     int indexi,indexj;
     for(int i = 0; i < npercpu; i++) {
 #if(1)
@@ -109,7 +109,7 @@ void nonrandom_labels(const char ord, std::vector<int>& labels, const int *srcla
     }
   }
   else{
-    fprintf(stderr,"labels ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"labels ROW ORDER not changed\n"); fflush(stderr); }
     for(int i = 0; i < npercpu; i++) {
       labels[i] = srclabels[q*npercpu*d + i]; // shift by which cpu
     }
@@ -117,15 +117,15 @@ void nonrandom_labels(const char ord, std::vector<int>& labels, const int *srcla
 }
 
 template<typename T>
-void random_centroids(const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d, int k) {
+void random_centroids(int verbose, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d, int k) {
   std::random_device rd;  //Will be used to obtain a seed for the random number engine
   std::mt19937 gen(rd());
   //  std::uniform_int_distribution<>dis(0, npercpu-1); // random i in range from 0..npercpu-1
   std::uniform_int_distribution<>dis(0, n-1); // random i in range from 0..n-1 (i.e. only 1 cpu gets centroids)
   
   if(ord=='c'){
-    if(VERBOSE){
-      fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    if(verbose){
+      if(verbose) { fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr); }
     }
     for(int i = 0; i < k; i++) { // rows
       int reali = dis(gen); // + q*npercpu; // row sampled (called indexj above)
@@ -138,7 +138,7 @@ void random_centroids(const char ord, std::vector<T>& array, const T *srcdata, i
     }
   }
   else{
-    if(VERBOSE){
+    if(verbose){
       fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
     }
     for(int i = 0; i < k; i++) { // rows
@@ -150,7 +150,7 @@ void random_centroids(const char ord, std::vector<T>& array, const T *srcdata, i
   }
 }
 template<typename T>
-void random_centroids_new(std::vector<int> v, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d, int k) {
+void random_centroids_new(int verbose, std::vector<int> v, const char ord, std::vector<T>& array, const T *srcdata, int q, int n, int npercpu, int d, int k) {
 
   if(ord=='c'){
     if(VERBOSE){
@@ -194,7 +194,7 @@ namespace h2ogpumlkmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int cpu_idtry, int n_cputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+    int makePtr_dense(int verbose, int cpu_idtry, int n_cputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
 
       if(rows>std::numeric_limits<int>::max()){
         fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
@@ -259,26 +259,26 @@ namespace h2ogpumlkmeans {
 
       for (int q = 0; q < n_cpu; q++) {
         if(init_labels==0){ // random
-          random_labels(*labels[q], n/n_cpu, k);
+          random_labels(verbose, *labels[q], n/n_cpu, k);
         }
         else{
-          nonrandom_labels(ord, *labels[q], &srclabels[0], q, n, n/n_cpu);
+          nonrandom_labels(verbose, ord, *labels[q], &srclabels[0], q, n, n/n_cpu);
         }
         if(init_data==0){ // random (for testing)
-          random_data<T>(*data[q], n/n_cpu, d);
+          random_data<T>(verbose, *data[q], n/n_cpu, d);
         }
         else if(init_data==1){ // shard by row
-          nonrandom_data(ord, *data[q], &srcdata[0], q, n, n/n_cpu, d);
+          nonrandom_data(verbose, ord, *data[q], &srcdata[0], q, n, n/n_cpu, d);
         }
         else{ // shard by randomly (without replacement) selected by row
-          nonrandom_data_new(v, ord, *data[q], &srcdata[0], q, n, n/n_cpu, d);
+          nonrandom_data_new(verbose, v, ord, *data[q], &srcdata[0], q, n, n/n_cpu, d);
         }
       }
       // get non-random centroids on 1 cpu, then share with rest.
       if(init_from_labels==0){
         int masterq=0;
-        //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
-        random_centroids_new(v, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
+        //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
+        random_centroids_new(verbose, v, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
 #if(DEBUG)
         std::vector<T> h_centroidq=*centroids[q];
         for(int ii=0;ii<k*d;ii++){
@@ -291,7 +291,7 @@ namespace h2ogpumlkmeans {
       
       double t0 = timer<double>();
       int masterq=0;
-      kmeans::kmeans<T>(&flag, n,d,k,*data[masterq],*labels[masterq],*centroids[masterq],max_iterations,init_from_labels,threshold);
+      kmeans::kmeans<T>(verbose, &flag, n,d,k,*data[masterq],*labels[masterq],*centroids[masterq],max_iterations,init_from_labels,threshold);
       double timefit = static_cast<double>(timer<double>() - t0);
 
       
@@ -325,8 +325,8 @@ namespace h2ogpumlkmeans {
 
       return 0;
     }
-  template int makePtr_dense<float>(int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
-  template int makePtr_dense<double>(int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<float>(int verbose, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<double>(int verbose, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -344,11 +344,11 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<float>(cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int verbose, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<float>(verbose, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
-  int make_ptr_double_kmeans(int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<double>(cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_double_kmeans(int verbose, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<double>(verbose, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
   }
 
 #ifdef __cplusplus

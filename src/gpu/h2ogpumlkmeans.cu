@@ -32,7 +32,7 @@ void fill_array(T& array, int m, int n) {
 }
 
 template<typename T>
-void random_data(thrust::device_vector<T>& array, int m, int n) {
+void random_data(int verbose, thrust::device_vector<T>& array, int m, int n) {
   thrust::host_vector<T> host_array(m*n);
   for(int i = 0; i < m * n; i++) {
     host_array[i] = (T)rand()/(T)RAND_MAX;
@@ -41,10 +41,10 @@ void random_data(thrust::device_vector<T>& array, int m, int n) {
 }
 
 template<typename T>
-void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d) {
+void nonrandom_data(int verbose, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d) {
   thrust::host_vector<T> host_array(npergpu*d);
   if(ord=='c'){
-    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+	if(verbose){ fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr); }
     int indexi,indexj;
     for(int i = 0; i < npergpu * d; i++) {
 #if(1)
@@ -68,7 +68,7 @@ void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *sr
 #endif
   }
   else{
-    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr); }
     for(int i = 0; i < npergpu * d; i++) {
       host_array[i] = srcdata[q*npergpu*d + i]; // shift by which gpu
     }
@@ -76,11 +76,11 @@ void nonrandom_data(const char ord, thrust::device_vector<T>& array, const T *sr
   array = host_array;
 }
 template<typename T>
-void nonrandom_data_new(std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d) {
+void nonrandom_data_new(int verbose, std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d) {
   thrust::host_vector<T> host_array(npergpu*d);
  
   if(ord=='c'){
-    fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr); }
      for(int i = 0; i < npergpu; i++) {
       for(int j=0;j<d;j++){
         host_array[i*d + j] = srcdata[v[q*npergpu + i] + j*n]; // shift by which gpu
@@ -95,7 +95,7 @@ void nonrandom_data_new(std::vector<int> v, const char ord, thrust::device_vecto
 #endif
   }
   else{
-    fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr); }
      for(int i = 0; i < npergpu; i++) {
       for(int j=0;j<d;j++){
         host_array[i*d + j] = srcdata[v[q*npergpu + i]*d + j]; // shift by which gpu
@@ -105,18 +105,18 @@ void nonrandom_data_new(std::vector<int> v, const char ord, thrust::device_vecto
   array = host_array;
 }
 
-void random_labels(thrust::device_vector<int>& labels, int n, int k) {
+void random_labels(int verbose, thrust::device_vector<int>& labels, int n, int k) {
   thrust::host_vector<int> host_labels(n);
   for(int i = 0; i < n; i++) {
     host_labels[i] = rand() % k;
   }
   labels = host_labels;
 }
-void nonrandom_labels(const char ord, thrust::device_vector<int>& labels, const int *srclabels, int q, int n, int npergpu) {
+void nonrandom_labels(int verbose, const char ord, thrust::device_vector<int>& labels, const int *srclabels, int q, int n, int npergpu) {
   thrust::host_vector<int> host_labels(npergpu);
   int d=1; // only 1 dimension
   if(ord=='c'){
-    fprintf(stderr,"labels COL ORDER -> ROW ORDER\n"); fflush(stderr);
+	if(verbose){ fprintf(stderr,"labels COL ORDER -> ROW ORDER\n"); fflush(stderr); }
     int indexi,indexj;
     for(int i = 0; i < npergpu; i++) {
 #if(1)
@@ -133,7 +133,7 @@ void nonrandom_labels(const char ord, thrust::device_vector<int>& labels, const 
     }
   }
   else{
-    fprintf(stderr,"labels ROW ORDER not changed\n"); fflush(stderr);
+    if(verbose) { fprintf(stderr,"labels ROW ORDER not changed\n"); fflush(stderr); }
     for(int i = 0; i < npergpu; i++) {
       host_labels[i] = srclabels[q*npergpu*d + i]; // shift by which gpu
     }
@@ -142,7 +142,7 @@ void nonrandom_labels(const char ord, thrust::device_vector<int>& labels, const 
 }
 
 template<typename T>
-void random_centroids(const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
+void random_centroids(int verbose, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
   thrust::host_vector<T> host_array(k*d);
   std::random_device rd;  //Will be used to obtain a seed for the random number engine
   std::mt19937 gen(rd());
@@ -150,7 +150,7 @@ void random_centroids(const char ord, thrust::device_vector<T>& array, const T *
   std::uniform_int_distribution<>dis(0, n-1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
   
   if(ord=='c'){
-    if(VERBOSE){
+    if(verbose){
       fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
     }
     for(int i = 0; i < k; i++) { // rows
@@ -164,7 +164,7 @@ void random_centroids(const char ord, thrust::device_vector<T>& array, const T *
     }
   }
   else{
-    if(VERBOSE){
+    if(verbose){
       fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
     }
     for(int i = 0; i < k; i++) { // rows
@@ -177,11 +177,11 @@ void random_centroids(const char ord, thrust::device_vector<T>& array, const T *
   array = host_array;
 }
 template<typename T>
-void random_centroids_new(std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
+void random_centroids_new(int verbose, std::vector<int> v, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
   thrust::host_vector<T> host_array(k*d);
 
   if(ord=='c'){
-    if(VERBOSE){
+    if(verbose){
       fprintf(stderr,"COL ORDER -> ROW ORDER\n"); fflush(stderr);
     }
     for(int i = 0; i < k; i++) { // rows
@@ -194,7 +194,7 @@ void random_centroids_new(std::vector<int> v, const char ord, thrust::device_vec
     }
   }
   else{
-    if(VERBOSE){
+    if(verbose){
       fprintf(stderr,"ROW ORDER not changed\n"); fflush(stderr);
     }
     for(int i = 0; i < k; i++) { // rows
@@ -223,7 +223,7 @@ namespace h2ogpumlkmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+    int makePtr_dense(int verbose, int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
 
       // no more clusters than rows
       if(k>rows) k = static_cast<int>(rows);
@@ -260,7 +260,7 @@ namespace h2ogpumlkmeans {
       // also no more than rows
       n_gpu = std::min(n_gpu,n);
 
-      std::cout << n_gpu << " gpus." << std::endl;
+      if(verbose) { std::cout << n_gpu << " gpus." << std::endl; }
 
       int gpu_id;
       gpu_id = gpu_idtry % n_gpuvis;
@@ -286,12 +286,13 @@ namespace h2ogpumlkmeans {
         distances[q] = new thrust::device_vector<T>(n);
       }
 
-      std::cout << "Number of points: " << n << std::endl;
-      std::cout << "Number of dimensions: " << d << std::endl;
-      std::cout << "Number of clusters: " << k << std::endl;
-      std::cout << "Max. number of iterations: " << max_iterations << std::endl;
-      std::cout << "Stopping threshold: " << threshold << std::endl;
-
+      if(verbose){
+		  std::cout << "Number of points: " << n << std::endl;
+		  std::cout << "Number of dimensions: " << d << std::endl;
+		  std::cout << "Number of clusters: " << k << std::endl;
+		  std::cout << "Max. number of iterations: " << max_iterations << std::endl;
+		  std::cout << "Stopping threshold: " << threshold << std::endl;
+      }
       // setup random sequence for sampling data
       //      std::random_device rd;
       //      std::mt19937 g(rd());
@@ -302,30 +303,30 @@ namespace h2ogpumlkmeans {
       
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(dList[q]));
-        std::cout << "Copying data to device: " << dList[q] << std::endl;
+        if(verbose){ std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
         if(init_labels==0){ // random
-          random_labels(*labels[q], n/n_gpu, k);
+          random_labels(verbose, *labels[q], n/n_gpu, k);
         }
         else{
-          nonrandom_labels(ord, *labels[q], &srclabels[0], q, n, n/n_gpu);
+          nonrandom_labels(verbose, ord, *labels[q], &srclabels[0], q, n, n/n_gpu);
         }
         if(init_data==0){ // random (for testing)
-          random_data<T>(*data[q], n/n_gpu, d);
+          random_data<T>(verbose, *data[q], n/n_gpu, d);
         }
         else if(init_data==1){ // shard by row
-          nonrandom_data(ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
+          nonrandom_data(verbose, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
         }
         else{ // shard by randomly (without replacement) selected by row
-          nonrandom_data_new(v, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
+          nonrandom_data_new(verbose, v, ord, *data[q], &srcdata[0], q, n, n/n_gpu, d);
         }
       }
       // get non-random centroids on 1 gpu, then share with rest.
       if(init_from_labels==0){
         int masterq=0;
         CUDACHECK(cudaSetDevice(dList[masterq]));
-        //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
-        random_centroids_new(v, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
+        //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
+        random_centroids_new(verbose, v, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
         int bytecount = d*k*sizeof(T); // all centroids
 
         // copy centroids to rest of gpus asynchronously
@@ -335,7 +336,7 @@ namespace h2ogpumlkmeans {
           if(q==masterq) continue;
           
           CUDACHECK(cudaSetDevice(dList[q]));
-          std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+          if(verbose) { std::cout << "Copying centroid data to device: " << dList[q] << std::endl; }
 
           streams[q] = reinterpret_cast<cudaStream_t*>(malloc(sizeof(cudaStream_t)));
           cudaStreamCreate(streams[q]);
@@ -362,12 +363,13 @@ namespace h2ogpumlkmeans {
 
       
       double t0 = timer<double>();
-      kmeans::kmeans<T>(&flaggpu, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
+      kmeans::kmeans<T>(verbose, &flaggpu, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
       double timefit = static_cast<double>(timer<double>() - t0);
 
-      
-      std::cout << "  Time fit: " << timefit << " s" << std::endl;
-      fprintf(stderr,"Timetransfer: %g Timefit: %g\n",timetransfer,timefit); fflush(stderr);
+      if(verbose){
+    	  std::cout << "  Time fit: " << timefit << " s" << std::endl;
+    	  fprintf(stderr,"Timetransfer: %g Timefit: %g\n",timetransfer,timefit); fflush(stderr);
+      }
 
       // copy result of centroids (sitting entirely on each device) back to host
       thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*centroids[0]);
@@ -375,18 +377,18 @@ namespace h2ogpumlkmeans {
       //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
       *res = ctr->data();
 
-      // debug
-      int printcenters=0;
-      if(printcenters){
-        for(unsigned int ii=0;ii<k;ii++){
-          fprintf(stderr,"ii=%d of k=%d ",ii,k);
-          for(unsigned int jj=0;jj<d;jj++){
-            fprintf(stderr,"%g ",(*ctr)[d*ii+jj]);
-          }
-          fprintf(stderr,"\n");
-          fflush(stderr);
-        }
-      }
+	  // debug
+	  int printcenters=verbose>2;
+	  if(printcenters){
+		for(unsigned int ii=0;ii<k;ii++){
+		  fprintf(stderr,"ii=%d of k=%d ",ii,k);
+		  for(unsigned int jj=0;jj<d;jj++){
+			fprintf(stderr,"%g ",(*ctr)[d*ii+jj]);
+		  }
+		  fprintf(stderr,"\n");
+		  fflush(stderr);
+		}
+	  }
 
       // done with GPU data
       for (int q = 0; q < n_gpu; q++) {
@@ -398,8 +400,8 @@ namespace h2ogpumlkmeans {
 
       return 0;
     }
-  template int makePtr_dense<float>(int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
-  template int makePtr_dense<double>(int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<float>(int verbose, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<double>(int verbose, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -417,11 +419,11 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<float>(gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int verbose, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<float>(verbose, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
-  int make_ptr_double_kmeans(int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<double>(gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_double_kmeans(int verbose, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<double>(verbose, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
 
 #ifdef __cplusplus
