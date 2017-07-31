@@ -9,7 +9,7 @@ from h2ogpuml.solvers.utils import devicecount
 
 class GLM(object):
     def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1, n_alphas=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
+                 n_lambdas=100, n_folds=1, n_alphas=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0, family = "elasticnet"):
 
         n_gpus, deviceCount = devicecount(n_gpus)
 
@@ -30,12 +30,12 @@ class GLM(object):
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
             print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, deviceCount))
             self.solver = GLMBaseSolver(h2ogpumlGLMCPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family)
         else:
             if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
                 print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
                 self.solver = GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family)
 
         assert self.solver != None, "Couldn't instantiate GLM Solver"
 
@@ -94,7 +94,7 @@ class GLMBaseSolver(object):
         pass
 
     def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
-                 n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose):
+                 n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family):
         assert lib and (lib == h2ogpumlGLMCPU or lib == h2ogpumlGLMGPU)
         self.lib = lib
 
@@ -121,6 +121,7 @@ class GLMBaseSolver(object):
         self.stopearlyrmsefraction=stopearlyrmsefraction
         self.max_iterations=max_iterations
         self.verbose=verbose
+        self.family = ord(family.split()[0][0])
 
     def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
         if self.uploadeddata == 1:
@@ -499,6 +500,7 @@ class GLMBaseSolver(object):
                 print("double precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_double(
+                c_int(self.family),
                 c_int(dopredict),
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
                 c_int(self.ord),
@@ -519,6 +521,7 @@ class GLMBaseSolver(object):
                 print("single precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_float(
+                c_int(self.family),
                 c_int(dopredict),
                 c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
                 c_int(self.ord),

@@ -211,7 +211,7 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 #define NUMOTHER 3 // for lambda, alpha, tol
 
 template<typename T>
-double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
+double ElasticNetptr(const char family, int dopredict, int sourceDev, int datatype, int sharedA,
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
@@ -222,7 +222,7 @@ double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
 		size_t *countshort, size_t *countmore) {
 
 	if (dopredict == 0) {
-		return ElasticNetptr_fit(sourceDev, datatype, sharedA, nThreads, nGPUs,
+		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, nGPUs,
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
 				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
@@ -230,7 +230,7 @@ double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
 				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 				validPredsvsalpha, countfull, countshort, countmore);
 	} else {
-		return ElasticNetptr_predict(sourceDev, datatype, sharedA, nThreads,
+		return ElasticNetptr_predict(family, sourceDev, datatype, sharedA, nThreads,
 				nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
 				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
@@ -245,7 +245,7 @@ double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
 #define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
 
 template<typename T>
-double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
+double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
 		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
 		int intercept, int standardize, double lambda_min_ratio, int nLambdas,
 		int nFolds, int nAlphas, int stopearly, double stopearlyrmsefraction,
@@ -691,25 +691,6 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 						//            fprintf(stderr,"a=%d fold=%d sumweights=%g\n",a,fi,sumweight); fflush(stderr);
 					}
 
-					/////////////////////
-					//
-					// Setup Solve
-					//
-					//////////////////////
-					// setup f,g as functions of alpha
-					std::vector<FunctionObj<T>> f;
-					std::vector<FunctionObj<T>> g;
-					f.reserve(mTrain);
-					g.reserve(n);
-					// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-					for (unsigned int j = 0; j < mTrain; ++j)
-						f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
-					//for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
-					for (unsigned int j = 0; j < n - intercept; ++j)
-						g.emplace_back(kAbs);
-					if (intercept)
-						g.emplace_back(kZero);
-
 					////////////////////////////
 					//
 					// LOOP OVER LAMBDA
@@ -809,9 +790,58 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 						// Solve
 						//
 						////////////////////
+						// setup f,g as functions of alpha
+						std::vector<FunctionObj<T>> f;
+						std::vector<FunctionObj<T>> g;
+						f.reserve(mTrain);
+						g.reserve(n);
+						// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
+						for (unsigned int j = 0; j < mTrain; ++j)
+							f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
+						//for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
+						for (unsigned int j = 0; j < n - intercept; ++j)
+							g.emplace_back(kAbs);
+						if (intercept)
+							g.emplace_back(kZero);
 
-						DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n",
-								timer<double>());
+						DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n",timer<double>());
+						              /*
+						Start logic for type of `family` argument passed in
+						*/
+						if(family == 'e'){ //elasticnet
+							// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
+							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
+							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
+							if (intercept) g.emplace_back(kZero);
+						}else if(family == 'l'){ //logistic
+							// minimize \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
+							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kLogistic, 1.0, 0.0, trainW[j], -trainW[j]*trainY[j]); // h2ogpuml.R
+							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
+							if (intercept) g.emplace_back(kZero);
+						}else if(family == 's'){ //svm
+							// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
+							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, trainW[j]*lambda); // h2ogpuml.R}
+							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
+							if (intercept) g.emplace_back(kZero);
+						}else{
+							//throw error
+							throw "Wrong family type selected. Should be either elasticnet, logistic, or svm";
+						}
+						if(family == 'e' || family == 'l'){
+							T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
+							// assign lambda (no penalty for intercept, the last coeff, if present)
+							for (unsigned int j = 0; j < n - intercept; ++j) {
+							g[j].c = static_cast<T>(alpha * lambda * penalty_factor); //for L1
+							g[j].e = static_cast<T>((1.0 - alpha) * lambda * penalty_factor); //for L2
+							}
+							if (intercept) {
+							g[n - 1].c = 0;
+							g[n - 1].e = 0;
+							}
+						}else{
+							//Regularization term is x^T x with no additional prefactors
+							//TODO Need to multiply matrix by the labels
+						}
 						T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
 						// assign lambda (no penalty for intercept, the last coeff, if present)
 						for (unsigned int j = 0; j < n - intercept; ++j) {
@@ -1254,7 +1284,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 }
 
 template<typename T>
-double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA,
+double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int sharedA,
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
@@ -1542,7 +1572,7 @@ double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA,
 	return tf - t;
 }
 
-template double ElasticNetptr<double>(int dopredict, int sourceDev,
+template double ElasticNetptr<double>(const char family, int dopredict, int sourceDev,
 		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
 		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1553,7 +1583,7 @@ template double ElasticNetptr<double>(int dopredict, int sourceDev,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
-template double ElasticNetptr<float>(int dopredict, int sourceDev, int datatype,
+template double ElasticNetptr<float>(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1564,7 +1594,7 @@ template double ElasticNetptr<float>(int dopredict, int sourceDev, int datatype,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
-template double ElasticNetptr_fit<double>(int sourceDev, int datatype,
+template double ElasticNetptr_fit<double>(const char family, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1575,7 +1605,7 @@ template double ElasticNetptr_fit<double>(int sourceDev, int datatype,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
-template double ElasticNetptr_fit<float>(int sourceDev, int datatype,
+template double ElasticNetptr_fit<float>(const char family, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1586,7 +1616,7 @@ template double ElasticNetptr_fit<float>(int sourceDev, int datatype,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
-template double ElasticNetptr_predict<double>(int sourceDev, int datatype,
+template double ElasticNetptr_predict<double>(const char family, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1597,7 +1627,7 @@ template double ElasticNetptr_predict<double>(int sourceDev, int datatype,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
-template double ElasticNetptr_predict<float>(int sourceDev, int datatype,
+template double ElasticNetptr_predict<float>(const char family, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1621,7 +1651,7 @@ template int modelFree2<double>(double *aptr);
 extern "C" {
 #endif
 
-double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
+double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1631,7 +1661,7 @@ double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
-	return ElasticNetptr<double>(dopredict, sourceDev, datatype, sharedA,
+	return ElasticNetptr<double>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
 			stopearlyrmsefraction, max_iterations, verbose, trainXptr,
@@ -1639,7 +1669,7 @@ double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
 			Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 			validPredsvsalpha, countfull, countshort, countmore);
 }
-double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype,
+double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -1649,7 +1679,7 @@ double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
-	return ElasticNetptr<float>(dopredict, sourceDev, datatype, sharedA,
+	return ElasticNetptr<float>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
 			stopearlyrmsefraction, max_iterations, verbose, trainXptr,

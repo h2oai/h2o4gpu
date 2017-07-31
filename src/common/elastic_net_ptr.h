@@ -188,7 +188,7 @@ template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],
 // m and n are training data size
 
 template<typename T>
-double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
+double ElasticNetptr(const char family, int dopredict, int sourceDev, int datatype, int sharedA,
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
@@ -198,7 +198,7 @@ double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore);
 template<typename T>
-double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
+double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
 		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
 		int intercept, int standardize, double lambda_min_ratio, int nLambdas,
 		int nFolds, int nAlphas, int stopearly, double stopearlyrmsefraction,
@@ -208,7 +208,7 @@ double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
 		T **validPredsvsalpha, size_t *countfull, size_t *countshort,
 		size_t *countmore);
 template<typename T>
-double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA,
+double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int sharedA,
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
@@ -230,7 +230,7 @@ int modelFree2(T *aptr);
 #ifdef __cplusplus
 extern "C" {
 #endif
-double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
+double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
@@ -240,7 +240,7 @@ double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
-double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype,
+double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
