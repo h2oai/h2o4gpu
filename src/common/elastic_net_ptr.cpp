@@ -74,14 +74,14 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g lambdatype: %d fi: %d a: %d alpha: %g intercept: %d standardize: %d i: %d " \
-                                       "lambda: %g dof: %zu trainRMSE: %f ivalidRMSE: %f validRMSE: %f ", \
+                                       "lambda: %g dof: %zu trainError: %f ivalidError: %f validError: %f ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), lambdatype, fi, a, alpha,intercept,standardize, (int)i, \
-                                       lambda, dof, trainRMSE, ivalidRMSE, validRMSE);for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
+                                       lambda, dof, trainError, ivalidError, validError);for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 #define Printmescore_predict(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d intercept: %d standardize: %d i: %d " \
-                                       "validRMSE: %f ", \
+                                       "validError: %f ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a,intercept,standardize, (int)i, \
-                                       validRMSE); fflush(thefile);
+                                       validError); fflush(thefile);
 #define Printmescore_predictnovalid(thefile)  fprintf(thefile,                         \
                                        "%s.me: %d ARCH: %s:%s BLAS: %s%d COMP: %s sharedA: %d nThreads: %d nGPUs: %d time: %21.15g a: %d intercept: %d standardize: %d i: %d ", \
                                        _GITHASH_, me, TEXTARCH, HARDWARE.c_str(), TEXTBLAS, blasnumber, TEXTCOMP, sharedA, nThreads, nGPUs, timer<double>(), a,intercept,standardize, (int)i); fflush(thefile);
@@ -91,16 +91,16 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define Printmescore_predictnovalid(thefile)
 #endif
 
-#define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainRMSE, ivalidRMSE, validRMSE); fflush(thefile);
-#define Printmescoresimple_predict(thefile)   fprintf(thefile,"%21.15g %d %d %21.15g\n", timer<double>(), a, i, validRMSE); fflush(thefile);
+#define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainError, ivalidError, validError); fflush(thefile);
+#define Printmescoresimple_predict(thefile)   fprintf(thefile,"%21.15g %d %d %21.15g\n", timer<double>(), a, i, validError); fflush(thefile);
 #define Printmescoresimple_predictnovalid(thefile)   fprintf(thefile,"%21.15g %d %d\n", timer<double>(), a, i); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
 
 #if(VERBOSEENET)
-#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, bestrmse1,bestrmse2,bestrmse3 ); fflush(thefile);
+#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,besterror1,besterror2,besterror3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, besterror1,besterror2,besterror3 ); fflush(thefile);
 #else
-#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)
+#define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,besterror1,besterror2,besterror3)
 #endif
 
 #include <stdio.h>
@@ -151,21 +151,21 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 		moving_avgavg /= ((double) i);
 	}
 
-	// var variance and rmse of moving average
-	double var = 0, rmse = 0;
+	// var variance and error of moving average
+	double var = 0, error = 0;
 	{
 		int i;
 		for (i = 0; i < moving_avg.size(); ++i) {
 			var += pow(moving_avg[i] - moving_avgavg, 2.0);
 		}
-		rmse = sqrt(var) / ((double) i);
+		error = sqrt(var) / ((double) i);
 	}
 
 	// check if any of the moving averages is better than the reference (by at least tolerance relative improvement)
 	double ref = moving_avg[0];
 	bool improved = false;
 	for (int i = 1; i < moving_avg.size(); ++i) {
-		//      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d moving_avgavg=%g rmse=%g\n",ref,tolerance,moving_avg[i],i,moving_avgavg,rmse); fflush(stderr);
+		//      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d moving_avgavg=%g error=%g\n",ref,tolerance,moving_avg[i],i,moving_avgavg,error); fflush(stderr);
 		if (moreIsBetter)
 			improved |= (moving_avg[i] > ref * (1.0 + tolerance));
 		else
@@ -203,11 +203,11 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 // for many values of \lambda and multiple values of \alpha
 // See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
-#define TRAINRMSE 0
-#define CVRMSE 1
-#define VALIDRMSE 2
+#define TRAINError 0
+#define CVError 1
+#define VALIDError 2
 
-#define NUMRMSE 3 // train, hold-out CV, valid
+#define NUMError 3 // train, hold-out CV, valid
 #define NUMOTHER 3 // for lambda, alpha, tol
 
 template<typename T>
@@ -215,7 +215,7 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
-		double stopearlyrmsefraction, int max_iterations, int verbose,
+		double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
@@ -225,7 +225,7 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, nGPUs,
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
-				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+				stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 				trainYptr, validXptr, validYptr, weightptr, givefullpath,
 				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 				validPredsvsalpha, countfull, countshort, countmore);
@@ -233,7 +233,7 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 		return ElasticNetptr_predict(family, sourceDev, datatype, sharedA, nThreads,
 				nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
-				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+				stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 				trainYptr, validXptr, validYptr, weightptr, givefullpath,
 				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 				validPredsvsalpha, countfull, countshort, countmore);
@@ -241,14 +241,14 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 
 }
 
-#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
-#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nLambdas)
+#define MAPXBEST(a,which) (which + a*(n+NUMError+NUMOTHER))
 
 template<typename T>
 double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
 		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
 		int intercept, int standardize, double lambda_min_ratio, int nLambdas,
-		int nFolds, int nAlphas, int stopearly, double stopearlyrmsefraction,
+		int nFolds, int nAlphas, int stopearly, double stopearlyerrorfraction,
 		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
 		void *validXptr, void *validYptr, void *weightptr, int givefullpath,
 		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
@@ -322,7 +322,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	}
 	// setup storage for returning results back to user
 	// iterate over predictors (n) or other information fastest so can memcpy X
-	*countmore = NUMRMSE + NUMOTHER;
+	*countmore = NUMError + NUMOTHER;
 	if (givefullpath) {
 		*countfull = nLambdas * nAlphas * (n + *countmore);
 		*Xvsalphalambda = (T*) calloc(*countfull, sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
@@ -438,34 +438,34 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	T alphaarray[realfolds * 2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
 	T lambdaarray[realfolds * 2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
 	T tolarray[realfolds * 2][nAlphas]; // shared memory space for storing tolerance for various folds and alphas
-	// which rmse to use for final check of which model is best (keep validation fractional data for purely reporting)
-	int owhichrmse;
+	// which error to use for final check of which model is best (keep validation fractional data for purely reporting)
+	int owhicherror;
 	if (mValid > 0) {
 		if (realfolds <= 1)
-			owhichrmse = 2;
+			owhicherror = 2;
 		else
-			owhichrmse = 2;
+			owhicherror = 2;
 	} else {
 		if (realfolds <= 1)
-			owhichrmse = 0;
+			owhicherror = 0;
 		else
-			owhichrmse = 1;
+			owhicherror = 1;
 	}
-	// which rmse to use within lambda-loop to decide if accurate model
-	int iwhichrmse;
+	// which error to use within lambda-loop to decide if accurate model
+	int iwhicherror;
 	if (mValid > 0) {
 		if (realfolds <= 1)
-			iwhichrmse = 2;
+			iwhicherror = 2;
 		else
-			iwhichrmse = 1;
+			iwhicherror = 1;
 	} else {
 		if (realfolds <= 1)
-			iwhichrmse = 0;
+			iwhicherror = 0;
 		else
-			iwhichrmse = 1;
+			iwhicherror = 1;
 	}
-#define RMSELOOP(ri) for(int ri=0;ri<NUMRMSE;ri++)
-	T rmsearray[NUMRMSE][realfolds * 2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
+#define ErrorLOOP(ri) for(int ri=0;ri<NUMError;ri++)
+	T errorarray[NUMError][realfolds * 2][nAlphas]; // shared memory space for storing error for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
 	// Setup each thread's h2ogpuml
 	double t = timer<double>();
@@ -473,9 +473,9 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 	// critical files for all threads
 	char filename0[100];
-	sprintf(filename0, "rmse.txt");
-	FILE *filrmse = fopen(filename0, "wt");
-	if (filrmse == NULL) {
+	sprintf(filename0, "error.txt");
+	FILE *filerror = fopen(filename0, "wt");
+	if (filerror == NULL) {
 		cerr << "Cannot open filename0=" << filename0 << endl;
 		exit(0);
 	}
@@ -568,7 +568,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		h2ogpuml_data.SetRho(1.0);
 		h2ogpuml_data.SetVerbose(verbose);
 		h2ogpuml_data.SetStopEarly(stopearly);
-		h2ogpuml_data.SetStopEarlyRMSEFraction(stopearlyrmsefraction);
+		h2ogpuml_data.SetStopEarlyErrorFraction(stopearlyerrorfraction);
 		h2ogpuml_data.SetMaxIter(max_iterations);
 
 		DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n", 0);
@@ -589,7 +589,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		double alphaarrayofa[nAlphas];
 		double lambdaarrayofa[nAlphas];
 		double tolarrayofa[nAlphas];
-		double rmsearrayofa[NUMRMSE][nAlphas];
+		double errorarrayofa[NUMError][nAlphas];
 		for (int lambdatype = 0; lambdatype <= (realfolds > 1); lambdatype++) {
 			size_t nlambdalocal;
 
@@ -702,17 +702,17 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 					double norm = (mValid == 0 ? sdTrainY : sdValidY);
 					int skiplambdaamount = 0;
 					int i;
-					double trainRMSE = -1;
-					double ivalidRMSE = -1;
-					double validRMSE = -1;
+					double trainError = -1;
+					double ivalidError = -1;
+					double validError = -1;
 					double tol0 = 1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
 					double tol = tol0;
 					T lambda = -1;
 					double tbestalpha = -1, tbestlambda = -1, tbesttol =
 							std::numeric_limits<double>::max(),
-							tbestrmse[NUMRMSE];
-					RMSELOOP(ri)
-						tbestrmse[ri] = std::numeric_limits<double>::max();
+							tbesterror[NUMError];
+					ErrorLOOP(ri)
+						tbesterror[ri] = std::numeric_limits<double>::max();
 
 					// LOOP over lambda
 					for (i = 0; i < nlambdalocal; ++i) {
@@ -959,11 +959,11 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						//                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
 						//              }
 #endif
-						// RMSE: TRAIN
-						trainRMSE = h2ogpuml::getRMSE(weights, mTrain,
-								&trainPreds[0], trainY);
+						// Error: TRAIN
+						trainError = h2ogpuml::getError(weights, mTrain,
+								&trainPreds[0], trainY, family);
 						if (standardize) {
-							trainRMSE *= sdTrainY;
+							trainError *= sdTrainY;
 							for (size_t i = 0; i < mTrain; ++i) {
 								// reverse standardization
 								trainPreds[i] *= sdTrainY; //scale
@@ -972,17 +972,17 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							}
 						}
 
-						// RMSE: on fold's held-out training data
+						// Error: on fold's held-out training data
 						if (realfolds > 1) {
 							const T offset = 1.0;
-							ivalidRMSE = h2ogpuml::getRMSE(offset, weights,
-									mTrain, &trainPreds[0], trainY);
+							ivalidError = h2ogpuml::getError(offset, weights,
+									mTrain, &trainPreds[0], trainY, family);
 						} else {
-							ivalidRMSE = -1.0;
+							ivalidError = -1.0;
 						}
 
-						// VALID (preds and rmse)
-						validRMSE = -1;
+						// VALID (preds and error)
+						validError = -1;
 						if (mValid > 0) {
 
 							T weightsvalid[mValid];
@@ -1004,11 +1004,11 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 									&h2ogpuml_data.GetvalidPreds()[0],
 									&h2ogpuml_data.GetvalidPreds()[0] + mValid);
 #endif
-							// RMSE: VALIDs
-							validRMSE = h2ogpuml::getRMSE(weightsvalid, mValid,
-									&validPreds[0], validY);
+							// Error: VALIDs
+							validError = h2ogpuml::getError(weightsvalid, mValid,
+									&validPreds[0], validY, family);
 							if (standardize) {
-								validRMSE *= sdTrainY;
+								validError *= sdTrainY;
 								for (size_t i = 0; i < mValid; ++i) { //row
 									// reverse (fitted) standardization
 									validPreds[i] *= sdTrainY; //scale
@@ -1028,61 +1028,61 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						{
 							if (VERBOSEENET)
 								Printmescore(stdout);
-							Printmescoresimple(filrmse);
+							Printmescoresimple(filerror);
 							Printmescoresimple2(filvarimp);
 						}
 
-						T localrmse[NUMRMSE];
-						localrmse[0] = trainRMSE;
-						localrmse[1] = ivalidRMSE;
-						localrmse[2] = validRMSE;
-						if (tbestrmse[iwhichrmse] > localrmse[iwhichrmse]) {
+						T localerror[NUMError];
+						localerror[0] = trainError;
+						localerror[1] = ivalidError;
+						localerror[2] = validError;
+						if (tbesterror[iwhicherror] > localerror[iwhicherror]) {
 							tbestalpha = alpha;
 							tbestlambda = lambda;
 							tbesttol = tol;
-							RMSELOOP(ri)
-								tbestrmse[ri] = localrmse[ri];
+							ErrorLOOP(ri)
+								tbesterror[ri] = localerror[ri];
 						}
 
 						// save scores
-						scoring_history.push_back(localrmse[iwhichrmse]);
+						scoring_history.push_back(localerror[iwhicherror]);
 
 						if (lambdatype == LAMBDATYPEPATH) {
 							if (fi == 0 && givefullpath) { // only store first fold for user
-								//#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
-								//#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+								//#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nLambdas)
+								//#define MAPXBEST(a,which) (which + a*(n+NUMError+NUMOTHER))
 								//#define NUMOTHER 3 // for lambda, alpha, tol
 								// Save solution to return to user
 								memcpy(&((*Xvsalphalambda)[MAPXALL(i, a, 0)]),
 										&h2ogpuml_data.GetX()[0],
 										n * sizeof(T));
-								// Save rmse to return to user
-								RMSELOOP(ri)
+								// Save error to return to user
+								ErrorLOOP(ri)
 									(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] =
-											localrmse[ri];
+											localerror[ri];
 								// Save lambda to return to user
-								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE)] =
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMError)] =
 										lambda;
 								// Save alpha to return to user
-								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE+1)] =
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMError+1)] =
 										alpha;
 								// Save tol to return to user
-								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE+2)] =
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMError+2)] =
 										tol;
 							}
 						} else {                  // only done if realfolds>1
 							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
 									&h2ogpuml_data.GetX()[0], n * sizeof(T));
-							// Save rmse to return to user
-							RMSELOOP(ri)
+							// Save error to return to user
+							ErrorLOOP(ri)
 								(*Xvsalpha)[MAPXBEST(a, n + ri)] =
-										localrmse[ri];
+										localerror[ri];
 							// Save lambda to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE)] = lambda;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError)] = lambda;
 							// Save alpha to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+1)] = alpha;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError+1)] = alpha;
 							// Save tol to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+2)] = tol;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError+2)] = tol;
 						}
 
 						if (lambdatype == LAMBDATYPEPATH) {
@@ -1128,7 +1128,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 									{
 										if (VERBOSEENET)
 											Printmescore(stdout);
-										Printmescoresimple(filrmse);
+										Printmescoresimple(filerror);
 										Printmescoresimple2(filvarimp);
 									}
 								}
@@ -1143,12 +1143,12 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						pickfi = fi; // variable lambda folds
 					else
 						pickfi = realfolds + fi; // fixed-lambda folds
-					// store RMSE (thread-safe)
+					// store Error (thread-safe)
 					alphaarray[pickfi][a] = tbestalpha;
 					lambdaarray[pickfi][a] = tbestlambda;
 					tolarray[pickfi][a] = tbesttol;
-					RMSELOOP(ri)
-						rmsearray[ri][pickfi][a] = tbestrmse[ri];
+					ErrorLOOP(ri)
+						errorarray[ri][pickfi][a] = tbesterror[ri];
 
 					// if not doing folds, store best solution over all lambdas
 					if (lambdatype == LAMBDATYPEPATH && nFolds < 2) {
@@ -1156,61 +1156,61 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
 									&h2ogpuml_data.GetX()[0], n * sizeof(T)); // not quite best, last lambda TODO FIXME
 							//                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
-							// Save rmse to return to user
-							RMSELOOP(ri)
+							// Save error to return to user
+							ErrorLOOP(ri)
 								(*Xvsalpha)[MAPXBEST(a, n + ri)] =
-										tbestrmse[ri];
+										tbesterror[ri];
 							// Save lambda to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE)] = tbestlambda;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError)] = tbestlambda;
 							// Save alpha to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+1)] = tbestalpha;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError+1)] = tbestalpha;
 							// Save tol to return to user
-							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+2)] = tbesttol;
+							(*Xvsalpha)[MAPXBEST(a, n+NUMError+2)] = tbesttol;
 						}
 					}
 
 				}                // over folds
 			}                // over alpha
 
-#pragma omp barrier // barrier so alphaarray, lambdaarray, rmsearray are filled and ready to be read by all threads
+#pragma omp barrier // barrier so alphaarray, lambdaarray, errorarray are filled and ready to be read by all threads
 			int fistart;
 			if (lambdatype == LAMBDATYPEPATH)
 				fistart = 0; // variable lambda folds
 			else
 				fistart = realfolds; // fixed-lambda folds
 
-			// get CV averaged RMSE and best solution (using shared memory arrays that are thread-safe)
+			// get CV averaged Error and best solution (using shared memory arrays that are thread-safe)
 			double bestalpha = 0;
 			double bestlambda = 0;
 			double besttol = std::numeric_limits<double>::max();
-			double bestrmse[NUMRMSE];
-			RMSELOOP(ri)
-				bestrmse[ri] = std::numeric_limits<double>::max();
+			double besterror[NUMError];
+			ErrorLOOP(ri)
+				besterror[ri] = std::numeric_limits<double>::max();
 			for (size_t a = 0; a < nAlphas; ++a) { //alpha
 				alphaarrayofa[a] = 0.0;
 				lambdaarrayofa[a] = 0.0;
 				tolarrayofa[a] = std::numeric_limits<double>::max();
-				RMSELOOP(ri)
-					rmsearrayofa[ri][a] = 0.0;
+				ErrorLOOP(ri)
+					errorarrayofa[ri][a] = 0.0;
 				for (size_t fi = fistart; fi < fistart + realfolds; ++fi) { //fold
 					alphaarrayofa[a] += alphaarray[fi][a];
 					lambdaarrayofa[a] += lambdaarray[fi][a];
 #define MIN(a,b) ((a)<(b)?(a):(b))
 					tolarrayofa[a] = MIN(tolarrayofa[a], tolarray[fi][a]); // choose common min tolerance
-					RMSELOOP(ri)
-						rmsearrayofa[ri][a] += rmsearray[ri][fi][a];
+					ErrorLOOP(ri)
+						errorarrayofa[ri][a] += errorarray[ri][fi][a];
 				}
-				// get average rmse over folds for this alpha
+				// get average error over folds for this alpha
 				alphaarrayofa[a] /= ((double) (realfolds));
 				lambdaarrayofa[a] /= ((double) (realfolds));
-				RMSELOOP(ri)
-					rmsearrayofa[ri][a] /= ((double) (realfolds));
-				if (rmsearrayofa[owhichrmse][a] < bestrmse[owhichrmse]) {
+				ErrorLOOP(ri)
+					errorarrayofa[ri][a] /= ((double) (realfolds));
+				if (errorarrayofa[owhicherror][a] < besterror[owhicherror]) {
 					bestalpha = alphaarrayofa[a]; // get alpha for this case
 					bestlambda = lambdaarrayofa[a]; // get lambda for this case
 					besttol = tolarrayofa[a]; // get tol for this case
-					RMSELOOP(ri)
-						bestrmse[ri] = rmsearrayofa[ri][a]; // get best rmse as average for this alpha
+					ErrorLOOP(ri)
+						besterror[ri] = errorarrayofa[ri][a]; // get best error as average for this alpha
 				}
 				if (VERBOSEENET) {
 					if (lambdatype == LAMBDATYPEPATH && realfolds > 1)
@@ -1224,7 +1224,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 			// print result (all threads have same result, so only need to print on one thread)
 			if (me == 0 && VERBOSEENET)
-				PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,bestrmse[0],bestrmse[1],bestrmse[2]);
+				PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,besterror[0],besterror[1],besterror[2]);
 
 		} // over lambdatype
 
@@ -1245,12 +1245,12 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
 			for (size_t a = 0; a < nAlphas; ++a) { //alpha
 				fprintf(stderr,
-						"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",
+						"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g errorTrain=%21.15g erroriValid=%21.15g errorValid=%21.15g\n",
 						(fi >= realfolds ? 1 : 0),
 						(fi >= realfolds ? fi - realfolds : fi),
 						alphaarray[fi][a], lambdaarray[fi][a],
-						rmsearray[0][fi][a], rmsearray[1][fi][a],
-						rmsearray[2][fi][a]);
+						errorarray[0][fi][a], errorarray[1][fi][a],
+						errorarray[2][fi][a]);
 				fflush(stderr);
 			}
 		}
@@ -1288,7 +1288,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
-		double stopearlyrmsefraction, int max_iterations, int verbose,
+		double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
@@ -1300,9 +1300,9 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 	// critical files for all threads
 	char filename0[100];
-	sprintf(filename0, "predrmse.txt");
-	FILE *filrmse = fopen(filename0, "wt");
-	if (filrmse == NULL) {
+	sprintf(filename0, "prederror.txt");
+	FILE *filerror = fopen(filename0, "wt");
+	if (filerror == NULL) {
 		cerr << "Cannot open filename0=" << filename0 << endl;
 		exit(0);
 	}
@@ -1497,12 +1497,12 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 							&validPreds[0], mValid * sizeof(T));
 				}
 
-				// get validY so can compute RMSE
+				// get validY so can compute Error
 				T *validY = NULL;
 				validY = (T *) malloc(sizeof(T) * mValid);
 				int validYerror = Asource_.GetValidY(datatype, mValid, &validY);
 
-				// Compute RMSE for predictions
+				// Compute Error for predictions
 				if (validYerror == 0) {
 
 					T weightsvalid[mValid];
@@ -1510,18 +1510,18 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 						weightsvalid[i] = 1.0;
 					}
 
-					T validRMSE = h2ogpuml::getRMSE(weightsvalid, mValid,
-							&validPreds[0], validY);
+					T validError = h2ogpuml::getError(weightsvalid, mValid,
+							&validPreds[0], validY, family);
 					if (standardize)
-						validRMSE *= sdTrainY;
+						validError *= sdTrainY;
 
 					if (givefullpath) {
-						// Save rmse to return to user
-						int ri = VALIDRMSE;
-						(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] = validRMSE; // overwrite any old value done during fit
+						// Save error to return to user
+						int ri = VALIDError;
+						(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] = validError; // overwrite any old value done during fit
 					} else {
-						int ri = VALIDRMSE;
-						(*Xvsalpha)[MAPXBEST(a, n + ri)] = validRMSE;
+						int ri = VALIDError;
+						(*Xvsalpha)[MAPXBEST(a, n + ri)] = validError;
 					}
 
 					// report scores
@@ -1531,7 +1531,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 					{
 						if (VERBOSEENET)
 							Printmescore_predict(stdout);
-						Printmescoresimple_predict(filrmse);
+						Printmescoresimple_predict(filerror);
 					}
 
 				} else {
@@ -1542,7 +1542,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 					{
 						if (VERBOSEENET)
 							Printmescore_predictnovalid(stdout);
-						Printmescoresimple_predictnovalid(filrmse);
+						Printmescoresimple_predictnovalid(filerror);
 					}
 
 				}
@@ -1576,7 +1576,7 @@ template double ElasticNetptr<double>(const char family, int dopredict, int sour
 		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
 		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
@@ -1587,7 +1587,7 @@ template double ElasticNetptr<float>(const char family, int dopredict, int sourc
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
@@ -1598,7 +1598,7 @@ template double ElasticNetptr_fit<double>(const char family, int sourceDev, int 
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
@@ -1609,7 +1609,7 @@ template double ElasticNetptr_fit<float>(const char family, int sourceDev, int d
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
@@ -1620,7 +1620,7 @@ template double ElasticNetptr_predict<double>(const char family, int sourceDev, 
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
@@ -1631,7 +1631,7 @@ template double ElasticNetptr_predict<float>(const char family, int sourceDev, i
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
@@ -1655,7 +1655,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
@@ -1664,7 +1664,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 	return ElasticNetptr<double>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
-			stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+			stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 			trainYptr, validXptr, validYptr, weightptr, givefullpath,
 			Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 			validPredsvsalpha, countfull, countshort, countmore);
@@ -1673,7 +1673,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
@@ -1682,7 +1682,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 	return ElasticNetptr<float>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
-			stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+			stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 			trainYptr, validXptr, validYptr, weightptr, givefullpath,
 			Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 			validPredsvsalpha, countfull, countshort, countmore);

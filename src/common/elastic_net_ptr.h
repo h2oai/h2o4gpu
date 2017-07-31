@@ -17,49 +17,101 @@
 
 namespace h2ogpuml {
 
+
 template<typename T>
-T getRMSE(size_t len, const T *v1, const T *v2) {
-	double rmse = 0;
-	for (size_t i = 0; i < len; ++i) {
-		double d = v1[i] - v2[i];
-		rmse += d * d;
+T getError(size_t len, const T *v1, const T *v2, const char family) {
+	if(family == 'e'){
+		double rmse = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = v1[i] - v2[i];
+			rmse += d * d;
+		}
+		rmse /= (double) len;
+		return static_cast<T>(std::sqrt(rmse));
+	}else{ //logistic/svm
+		double logloss = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = 0;
+			if(v1[i] != v2[i]){
+				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+            	d = -(v1[i]*log(x) + (1-v1[i])*log(1-x));
+			}
+			logloss += d;
+		}
+		logloss /= (double) len;
+		return static_cast<T>(logloss);
 	}
-	rmse /= (double) len;
-	return static_cast<T>(std::sqrt(rmse));
 }
 
 template<typename T>
-T getRMSE(const T*weights, size_t len, const T *v1, const T *v2) {
-	double weightsum = 0;
-	for (size_t i = 0; i < len; ++i) {
-		weightsum += weights[i];
+T getError(const T*weights, size_t len, const T *v1, const T *v2, const char family) {
+	if(family == 'e'){
+		double weightsum = 0;
+		for (size_t i = 0; i < len; ++i) {
+			weightsum += weights[i];
+		}
+
+		double rmse = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = v1[i] - v2[i];
+			rmse += d * d * weights[i];
+		}
+
+		rmse /= weightsum;
+		return static_cast<T>(std::sqrt(rmse));
+	}else{ //logistic/svm
+		double weightsum = 0;
+		for (size_t i = 0; i < len; ++i) {
+			weightsum += weights[i];
+		}
+		double logloss = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = 0;
+			if(v1[i] != v2[i]){
+				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+				d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * weights[i];		
+			}
+			logloss += d;
+		}
+		logloss /= weightsum;
+		return static_cast<T>(logloss);
 	}
 
-	double rmse = 0;
-	for (size_t i = 0; i < len; ++i) {
-		double d = v1[i] - v2[i];
-		rmse += d * d * weights[i];
-	}
-
-	rmse /= weightsum;
-	return static_cast<T>(std::sqrt(rmse));
 }
 template<typename T>
-T getRMSE(const T offset, const T*weights, size_t len, const T *v1,
-		const T *v2) {
-	double weightsum = 0;
-	for (size_t i = 0; i < len; ++i) {
-		weightsum += offset - weights[i];
+T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2, const char family) {
+	if(family == 'e'){
+		double weightsum = 0;
+		for (size_t i = 0; i < len; ++i) {
+			weightsum += offset - weights[i];
+		}
+
+		double rmse = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = v1[i] - v2[i];
+			rmse += d * d * (offset - weights[i]);
+		}
+
+		rmse /= weightsum;
+		return static_cast<T>(std::sqrt(rmse));
+	}else{ //logistic/svm
+		double weightsum = 0;
+		for (size_t i = 0; i < len; ++i) {
+			weightsum += offset - weights[i];
+		}
+		double logloss = 0;
+		for (size_t i = 0; i < len; ++i) {
+			double d = 0;
+			if(v1[i] != v2[i]){
+				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+            	d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * (offset - weights[i]);
+			}
+			logloss += d;
+		}
+		logloss /= weightsum;
+		return static_cast<T>(logloss);
 	}
 
-	double rmse = 0;
-	for (size_t i = 0; i < len; ++i) {
-		double d = v1[i] - v2[i];
-		rmse += d * d * (offset - weights[i]);
-	}
-
-	rmse /= weightsum;
-	return static_cast<T>(std::sqrt(rmse));
 }
 
 // C++ program for implementation of Heap Sort
@@ -192,7 +244,7 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
-		double stopearlyrmsefraction, int max_iterations, int verbose,
+		double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
@@ -201,7 +253,7 @@ template<typename T>
 double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
 		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
 		int intercept, int standardize, double lambda_min_ratio, int nLambdas,
-		int nFolds, int nAlphas, int stopearly, double stopearlyrmsefraction,
+		int nFolds, int nAlphas, int stopearly, double stopearlyerrorfraction,
 		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
 		void *validXptr, void *validYptr, void *weightptr, int givefullpath,
 		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
@@ -212,7 +264,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
 		int nLambdas, int nFolds, int nAlphas, int stopearly,
-		double stopearlyrmsefraction, int max_iterations, int verbose,
+		double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
@@ -234,7 +286,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
@@ -244,7 +296,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int stopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
 		void *validYptr, void *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,

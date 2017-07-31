@@ -46,10 +46,10 @@ H2OGPUML<T, M, P>::H2OGPUML(int sharedA, int me, int wDev, const M &A) :
 				static_cast<T>(kRhoInit)), _done_init(false), _x(0), _y(0), _mu(
 				0), _lambda(0), _optval(static_cast<T>(0.)), _time(
 				static_cast<T>(0.)), _trainPreds(0), _validPreds(0), _xp(0), _trainPredsp(
-				0), _validPredsp(0), _trainrmse(0), _validrmse(0), _trainmean(
+				0), _validPredsp(0), _trainerror(0), _validerror(0), _trainmean(
 				0), _validmean(0), _trainstddev(0), _validstddev(0), _final_iter(
 				0), _abs_tol(static_cast<T>(kAbsTol)), _rel_tol(
-				static_cast<T>(kRelTol)), _max_iter(kMaxIter), _stop_early(1), _stop_early_rmse_fraction(
+				static_cast<T>(kRelTol)), _max_iter(kMaxIter), _stop_early(1), _stop_early_error_fraction(
 				1.0), _init_iter(kInitIter), _verbose(kVerbose), _adaptive_rho(
 				kAdaptiveRho), _equil(kEquil), _gap_stop(kGapStop), _init_x(
 				false), _init_lambda(false), _nDev(0), _wDev(wDev) {
@@ -72,10 +72,10 @@ H2OGPUML<T, M, P>::H2OGPUML(const M &A) :
 				static_cast<T>(kRhoInit)), _done_init(false), _x(0), _y(0), _mu(
 				0), _lambda(0), _optval(static_cast<T>(0.)), _time(
 				static_cast<T>(0.)), _trainPreds(0), _validPreds(0), _xp(0), _trainPredsp(
-				0), _validPredsp(0), _trainrmse(0), _validrmse(0), _trainmean(
+				0), _validPredsp(0), _trainerror(0), _validerror(0), _trainmean(
 				0), _validmean(0), _trainstddev(0), _validstddev(0), _final_iter(
 				0), _abs_tol(static_cast<T>(kAbsTol)), _rel_tol(
-				static_cast<T>(kRelTol)), _max_iter(kMaxIter), _stop_early(1), _stop_early_rmse_fraction(
+				static_cast<T>(kRelTol)), _max_iter(kMaxIter), _stop_early(1), _stop_early_error_fraction(
 				1.0), _init_iter(kInitIter), _verbose(kVerbose), _adaptive_rho(
 				kAdaptiveRho), _equil(kEquil), _gap_stop(kGapStop), _init_x(
 				false), _init_lambda(false), _nDev(0), _wDev(_A._wDev) {
@@ -250,8 +250,8 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 	std::deque<T> nrm_s_deque;
 	std::deque<T> nrm_r_avg;
 	std::deque<T> nrm_s_avg;
-	std::deque<T> nrm_r_rmse;
-	std::deque<T> nrm_s_rmse;
+	std::deque<T> nrm_r_error;
+	std::deque<T> nrm_s_error;
 
 	for (;; ++k) {
 		gsl::vector_memcpy(&zprev, &z);
@@ -319,29 +319,29 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 							/ static_cast<T>(nrm_s_deque.size()));
 			if (nrm_r_deque.size() >= QUEUELENGTH
 					&& nrm_r_avg.size() >= QUEUELENGTH) {
-				T rmselocal_r = 0;
-				T rmselocal_s = 0;
+				T errorlocal_r = 0;
+				T errorlocal_s = 0;
 				for (unsigned int ii = 0; ii < QUEUELENGTH; ii++) {
-					rmselocal_r += std::abs(nrm_r_avg[ii] - nrm_r_deque[ii]);
-					rmselocal_s += std::abs(nrm_s_avg[ii] - nrm_s_deque[ii]);
+					errorlocal_r += std::abs(nrm_r_avg[ii] - nrm_r_deque[ii]);
+					errorlocal_s += std::abs(nrm_s_avg[ii] - nrm_s_deque[ii]);
 				}
-				nrm_r_rmse.push_back(rmselocal_r / static_cast<T>(QUEUELENGTH));
-				nrm_s_rmse.push_back(rmselocal_s / static_cast<T>(QUEUELENGTH));
+				nrm_r_error.push_back(errorlocal_r / static_cast<T>(QUEUELENGTH));
+				nrm_s_error.push_back(errorlocal_s / static_cast<T>(QUEUELENGTH));
 			}
 
 			if (k > QUEUELENGTH && nrm_r_deque.size() >= QUEUELENGTH
 					&& nrm_r_avg.size() >= QUEUELENGTH
 					&& nrm_s_deque.size() >= QUEUELENGTH
-					&& nrm_s_avg.size() >= QUEUELENGTH && nrm_r_rmse.size() >= 1
-					&& nrm_s_rmse.size() >= 1
+					&& nrm_s_avg.size() >= QUEUELENGTH && nrm_r_error.size() >= 1
+					&& nrm_s_error.size() >= 1
 					&& std::abs(nrm_r_avg.back() - nrm_r_avg.front())
-							< nrm_r_rmse.back()
+							< nrm_r_error.back()
 					&& std::abs(nrm_s_avg.back() - nrm_s_avg.front())
-							< nrm_s_rmse.back()) {
+							< nrm_s_error.back()) {
 				Printf("Stopped Early at iteration=%d: %g %g %g : %g %g %g\n",
 						k, nrm_r_avg.back(), nrm_r_avg.front(),
-						nrm_r_rmse.back(), nrm_s_avg.back(), nrm_s_avg.front(),
-						nrm_s_rmse.back());
+						nrm_r_error.back(), nrm_s_avg.back(), nrm_s_avg.front(),
+						nrm_s_error.back());
 				fflush(stdout);
 				stopearly = true;
 			}
@@ -358,11 +358,11 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 			if (nrm_s_avg.size() >= QUEUELENGTH) {
 				nrm_s_avg.pop_front();
 			}
-			if (nrm_r_rmse.size() >= QUEUELENGTH) {
-				nrm_r_rmse.pop_front();
+			if (nrm_r_error.size() >= QUEUELENGTH) {
+				nrm_r_error.pop_front();
 			}
-			if (nrm_s_rmse.size() >= QUEUELENGTH) {
-				nrm_s_rmse.pop_front();
+			if (nrm_s_error.size() >= QUEUELENGTH) {
+				nrm_s_error.pop_front();
 			}
 		}
 
@@ -495,7 +495,7 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 		_A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.),
 				_validPreds);
 	}
-	// compute rmse (not yet)
+	// compute error (not yet)
 	for (unsigned int i = 0; i < n; i++) {
 		fprintf(stderr, "x[%d]=%g\n", i, _x[i]);
 		fflush(stderr);
@@ -544,7 +544,7 @@ int H2OGPUML<T, M, P>::Predict(void) {
 	// compute valid from validPreds = Avalid.xsolution
 	_A.Mulvalid('n', static_cast<T>(1.), _x, static_cast<T>(0.), _validPreds);
 
-	// compute rmse (not yet)
+	// compute error (not yet)
 
 	// compute mean (not yet)
 
