@@ -65,12 +65,14 @@ class KMeansBaseSolver(object):
             sys.stdout.flush()
             self.double_precision = 1
             myctype = c_double
+            mydtype = np.float64
         elif (data.dtype == np.float32):
             if self.verbose>0:
                 print("Detected np.float32 data")
             sys.stdout.flush()
             self.double_precision = 0
             myctype = c_float
+            mydtype = np.float32
         else:
             print("Unknown data type, should be either np.float32 or np.float64")
             print(data.dtype)
@@ -125,17 +127,19 @@ class KMeansBaseSolver(object):
         assert lib != None, "Couldn't instantiate KMeans Library"
         #
         if self.double_precision == 0:
-            lib.make_ptr_float_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_float_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                            self.threshold, c_data, c_labels, pointer(res))
-            self.centroids = np.fromiter(cast(res, POINTER(myctype)), dtype=np.float32, count=self.k * n)
-            self.centroids = np.reshape(self.centroids, (self.k, n))
         else:
-            lib.make_ptr_double_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_double_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                             self.threshold, c_data, c_labels, pointer(res))
-            self.centroids = np.fromiter(cast(res, POINTER(myctype)), dtype=np.float64, count=self.k * n)
-            self.centroids = np.reshape(self.centroids, (self.k, n))
+        if status:
+            raise ValueError('KMeans failed in C++ library')
+            sys.stdout.flush()
+
+        self.centroids = np.fromiter(cast(res, POINTER(myctype)), dtype=mydtype, count=self.k * n)
+        self.centroids = np.reshape(self.centroids, (self.k, n))
 
         t1 = time.time()
         return (self.centroids, t1 - t0)

@@ -56,7 +56,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     ## Constructor
     print("Setting up solver")
     enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas,
-                  nFolds, nAlphas)
+                  nFolds, nAlphas, verbose=5)
 
     print("trainX")
     print(trainX)

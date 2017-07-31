@@ -4,6 +4,7 @@
 #include <iostream>
 #include "cuda.h"
 #include <cstdlib>
+#include <unistd.h>
 #include "h2ogpumlkmeans.h"
 #include "kmeans.h"
 #include <random>
@@ -253,7 +254,7 @@ namespace h2ogpumlkmeans {
 
       // no more gpus than visible gpus
       int n_gpuvis;
-      cudaGetDeviceCount(&n_gpuvis);
+      safe_cuda(cudaGetDeviceCount(&n_gpuvis));
       int n_gpu;
       n_gpu = std::min(n_gpuvis,n_gputry);
 
@@ -278,6 +279,11 @@ namespace h2ogpumlkmeans {
       thrust::device_vector<int> *labels[n_gpu];
       thrust::device_vector<T> *centroids[n_gpu];
       thrust::device_vector<T> *distances[n_gpu];
+      if(verbose){
+    	  fprintf(stderr,"Before allocation");
+    	  fflush(stderr);
+    	  //sleep(5);
+      }
       for (int q = 0; q < n_gpu; q++) {
         CUDACHECK(cudaSetDevice(dList[q]));
         data[q] = new thrust::device_vector<T>(n/n_gpu*d);
@@ -285,13 +291,13 @@ namespace h2ogpumlkmeans {
         centroids[q] = new thrust::device_vector<T>(k * d);
         distances[q] = new thrust::device_vector<T>(n);
       }
-
       if(verbose){
 		  std::cout << "Number of points: " << n << std::endl;
 		  std::cout << "Number of dimensions: " << d << std::endl;
 		  std::cout << "Number of clusters: " << k << std::endl;
 		  std::cout << "Max. number of iterations: " << max_iterations << std::endl;
 		  std::cout << "Stopping threshold: " << threshold << std::endl;
+		  //sleep(5);
       }
       // setup random sequence for sampling data
       //      std::random_device rd;
@@ -361,9 +367,18 @@ namespace h2ogpumlkmeans {
       }
       double timetransfer = static_cast<double>(timer<double>() - t0t);
 
+      if(verbose){
+    	  fprintf(stderr,"Before kmeans() call\n");
+    	  fflush(stderr);
+      }
       
       double t0 = timer<double>();
-      kmeans::kmeans<T>(verbose, &flaggpu, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
+      int status = kmeans::kmeans<T>(verbose, &flaggpu, n,d,k,data,labels,centroids,distances,dList,n_gpu,max_iterations,init_from_labels,threshold);
+      if(status){
+    	  fprintf(stderr,"KMeans status was %d\n", status);
+    	  fflush(stderr);
+    	  return(status);
+      }
       double timefit = static_cast<double>(timer<double>() - t0);
 
       if(verbose){

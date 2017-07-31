@@ -291,7 +291,8 @@ namespace h2ogpumlkmeans {
       
       double t0 = timer<double>();
       int masterq=0;
-      kmeans::kmeans<T>(verbose, &flag, n,d,k,*data[masterq],*labels[masterq],*centroids[masterq],max_iterations,init_from_labels,threshold);
+      int status=kmeans::kmeans<T>(verbose, &flag, n,d,k,*data[masterq],*labels[masterq],*centroids[masterq],max_iterations,init_from_labels,threshold);
+      if(status) return(status);
       double timefit = static_cast<double>(timer<double>() - t0);
 
       

@@ -2,6 +2,7 @@
 #include "kmeans_labels.h"
 #include <cublas_v2.h>
 #include <cfloat>
+#include <unistd.h>
 #include "include/kmeans_general.h"
 
 cudaStream_t cuda_stream[MAX_NGPUS];
@@ -24,16 +25,16 @@ namespace kmeans {
       cublasStatus_t stat;
       cudaError_t err;
       int dev_num;
-      cudaGetDevice(&dev_num);
+      safe_cuda(cudaGetDevice(&dev_num));
       stat = cublasCreate(&detail::cublas_handle[dev_num]);
       if (stat != CUBLAS_STATUS_SUCCESS) {
         std::cout << "CUBLAS initialization failed" << std::endl;
         exit(1);
       }
-      err = cudaStreamCreate(&cuda_stream[dev_num]);
+      err = safe_cuda(cudaStreamCreate(&cuda_stream[dev_num]));
       if (err != cudaSuccess) {
         std::cout << "Stream creation failed" << std::endl;
-        exit(1);
+
       }
       cublasSetStream(cublas_handle[dev_num], cuda_stream[dev_num]);
       mycub::cub_init();
@@ -41,9 +42,9 @@ namespace kmeans {
 
     void labels_close() {
       int dev_num;
-      cudaGetDevice(&dev_num);
-      cublasDestroy(cublas_handle[dev_num]);
-      cudaStreamDestroy(cuda_stream[dev_num]);
+      safe_cuda(cudaGetDevice(&dev_num));
+      safe_cublas(cublasDestroy(cublas_handle[dev_num]));
+      safe_cuda(cudaStreamDestroy(cuda_stream[dev_num]));
       mycub::cub_close();
     }
 
@@ -52,7 +53,7 @@ namespace kmeans {
     }
 
     template<>
-    void calculate_distances<double>(int q, int n, int d, int k,
+    void calculate_distances<double>(int verbose, int q, int n, int d, int k,
           thrust::device_vector<double>& data,
           thrust::device_vector<double>& centroids,
           thrust::device_vector<double>& data_dots,
@@ -70,9 +71,9 @@ namespace kmeans {
         //But the data is in row major order, so we have to permute
         //the arguments a little
         int dev_num;
-        cudaGetDevice(&dev_num);
+        safe_cuda(cudaGetDevice(&dev_num));
         cublasStatus_t stat =
-          cublasDgemm(detail::cublas_handle[dev_num],
+        		safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
               CUBLAS_OP_T, CUBLAS_OP_N,
               n, k, d, &alpha,
               thrust::raw_pointer_cast(data.data()),
@@ -81,7 +82,7 @@ namespace kmeans {
               d,//Has to be k or d
               &beta,
               thrust::raw_pointer_cast(pairwise_distances.data()),
-              n); //Has to be n or k
+              n)); //Has to be n or k
 
         thrust::for_each(pairwise_distances.begin(), pairwise_distances.end(), absolute_value<double>() ); // in-place transformation to ensure all distances are positive indefinite
 
@@ -93,7 +94,7 @@ namespace kmeans {
       }
 
     template<>
-    void calculate_distances<float>(int q, int n, int d, int k,
+    void calculate_distances<float>(int verbose, int q, int n, int d, int k,
           thrust::device_vector<float>& data,
           thrust::device_vector<float>& centroids,
           thrust::device_vector<float>& data_dots,
@@ -132,7 +133,7 @@ namespace kmeans {
         //But the data is in row major order, so we have to permute
         //the arguments a little
         int dev_num;
-        cudaGetDevice(&dev_num);
+        safe_cuda(cudaGetDevice(&dev_num));
         // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6
         cublasStatus_t stat;
         if(0){
@@ -146,7 +147,7 @@ namespace kmeans {
           fprintf(stderr,"%d x %d : centroids size=%zu\n",ldb,K,centroids.size()); fflush(stderr);
           fprintf(stderr,"%d x %d : pairwise_distances size=%zu\n",ldc,N,pairwise_distances.size()); fflush(stderr);
           stat =
-            cublasSgemm(detail::cublas_handle[dev_num],
+        		  safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                         CUBLAS_OP_T, CUBLAS_OP_T,
                         M, N, K, &alpha,
                         thrust::raw_pointer_cast(data.data()), // <type> array of dimensions lda x k with lda>=max(1,m) if transa == CUBLAS_OP_N and lda x m with lda>=max(1,k) otherwise.
@@ -155,7 +156,7 @@ namespace kmeans {
                         ldb,
                         &beta,
                         thrust::raw_pointer_cast(pairwise_distances.data()), // <type> array of dimensions ldc x n with ldc>=max(1,m).
-                        ldc);
+                        ldc));
         }
         else if(0){
           int M=n;
@@ -168,7 +169,7 @@ namespace kmeans {
           fprintf(stderr,"B2 %d x %d : centroids size=%zu\n",ldb,N,centroids.size()); fflush(stderr);
           fprintf(stderr,"C2 %d x %d : pairwise_distances size=%zu\n",ldc,N,pairwise_distances.size()); fflush(stderr);
           stat =
-            cublasSgemm(detail::cublas_handle[dev_num],
+        		  safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                         CUBLAS_OP_N, CUBLAS_OP_N,
                         M, N, K, &alpha,
                         thrust::raw_pointer_cast(data.data()), // <type> array of dimensions lda x k with lda>=max(1,m) if transa == CUBLAS_OP_N and lda x m with lda>=max(1,k) otherwise.
@@ -177,7 +178,7 @@ namespace kmeans {
                         ldb,
                         &beta,
                         thrust::raw_pointer_cast(pairwise_distances.data()), // <type> array of dimensions ldc x n with ldc>=max(1,m).
-                        ldc);
+                        ldc));
         }
         else{
           int M=n; // rows in op(A) and C
@@ -187,13 +188,15 @@ namespace kmeans {
           int ldb=K; // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6 has mistake, transa should have been transb
           //see http://www.netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_gafe51bacb54592ff5de056acabd83c260.html#gafe51bacb54592ff5de056acabd83c260
           int ldc=M;
-#if(VERBOSE)
-          fprintf(stderr,"A3 %d x %d -> %d x %d : data size=%zu\n",K,M,M,K,data.size()); fflush(stderr);
-          fprintf(stderr,"B3 %d x %d -> %d x %d : centroids size=%zu\n",K,N,K,N,centroids.size()); fflush(stderr);
-          fprintf(stderr,"C3 %d x %d : pairwise_distances size=%zu\n",M,N,pairwise_distances.size()); fflush(stderr);
-#endif
+          if(verbose>=2){
+			  fprintf(stderr,"A3 %d x %d -> %d x %d : data size=%zu\n",K,M,M,K,data.size()); fflush(stderr);
+			  fprintf(stderr,"B3 %d x %d -> %d x %d : centroids size=%zu\n",K,N,K,N,centroids.size()); fflush(stderr);
+			  fprintf(stderr,"C3 %d x %d : pairwise_distances size=%zu\n",M,N,pairwise_distances.size()); fflush(stderr);
+			  fflush(stderr);
+			  //sleep(5);
+          }
           stat =
-          cublasSgemm(detail::cublas_handle[dev_num],
+        		  safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
               CUBLAS_OP_T, CUBLAS_OP_N,
               M, N, K, &alpha,
               thrust::raw_pointer_cast(data.data()),
@@ -202,8 +205,11 @@ namespace kmeans {
               ldb,//Has to be k or d
               &beta,
               thrust::raw_pointer_cast(pairwise_distances.data()),
-              ldc); //Has to be n or k
-
+              ldc)); //Has to be n or k
+          if(verbose>=2){
+        	  fprintf(stderr,"After cublasSgemm\n"); fflush(stderr);
+        	  //sleep(5);
+          }
 
           thrust::for_each(pairwise_distances.begin(), pairwise_distances.end(), absolute_value<float>() ); // in-place transformation to ensure all distances are positive indefinite
 #if(DEBUG)
@@ -262,10 +268,10 @@ namespace mycub {
   }
   void cub_close() {
     for (int q=0; q<MAX_NGPUS; q++) {
-      if(d_key_alt_buf[q]) cudaFree(d_key_alt_buf[q]);
-      if(d_value_alt_buf[q]) cudaFree(d_value_alt_buf[q]);
-      if(d_temp_storage[q]) cudaFree(d_temp_storage[q]);
-      if(d_temp_storage2[q]) cudaFree(d_temp_storage2[q]);
+      if(d_key_alt_buf[q]) safe_cuda(cudaFree(d_key_alt_buf[q]));
+      if(d_value_alt_buf[q]) safe_cuda(cudaFree(d_value_alt_buf[q]));
+      if(d_temp_storage[q]) safe_cuda(cudaFree(d_temp_storage[q]));
+      if(d_temp_storage2[q]) safe_cuda(cudaFree(d_temp_storage2[q]));
       d_temp_storage[q] = NULL;
       d_temp_storage2[q] = NULL;
     }
@@ -273,18 +279,18 @@ namespace mycub {
   }
   void sort_by_key_int(thrust::device_vector<int>& keys, thrust::device_vector<int>& values) {
     int dev_num;
-    cudaGetDevice(&dev_num);
+    safe_cuda(cudaGetDevice(&dev_num));
     cudaStream_t this_stream = cuda_stream[dev_num]; 
     int SIZE = keys.size();
     //int *d_key_alt_buf, *d_value_alt_buf;
     if (key_alt_buf_bytes[dev_num] < sizeof(int)*SIZE) {
-      if (d_key_alt_buf[dev_num]) cudaFree(d_key_alt_buf[dev_num]);
-      cudaMalloc(&d_key_alt_buf[dev_num], sizeof(int)*SIZE);
+      if (d_key_alt_buf[dev_num]) safe_cuda(cudaFree(d_key_alt_buf[dev_num]));
+      safe_cuda(cudaMalloc(&d_key_alt_buf[dev_num], sizeof(int)*SIZE));
       key_alt_buf_bytes[dev_num] = sizeof(int)*SIZE;
     }
     if (value_alt_buf_bytes[dev_num] < sizeof(int)*SIZE) {
-      if (d_value_alt_buf[dev_num]) cudaFree(d_value_alt_buf[dev_num]);
-      cudaMalloc(&d_value_alt_buf[dev_num], sizeof(int)*SIZE);
+      if (d_value_alt_buf[dev_num]) safe_cuda(cudaFree(d_value_alt_buf[dev_num]));
+      safe_cuda(cudaMalloc(&d_value_alt_buf[dev_num], sizeof(int)*SIZE));
       value_alt_buf_bytes[dev_num] = sizeof(int)*SIZE;
     }
     cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys.data()), (int*)d_key_alt_buf[dev_num]);
@@ -295,7 +301,7 @@ namespace mycub {
       cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys, 
           d_values, SIZE, 0, sizeof(int)*8, this_stream);
       // Allocate temporary storage for sorting operation
-      cudaMalloc(&d_temp_storage[dev_num], temp_storage_bytes[dev_num]);
+      safe_cuda(cudaMalloc(&d_temp_storage[dev_num], temp_storage_bytes[dev_num]));
     }
     // Run sorting operation
     cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys, 
