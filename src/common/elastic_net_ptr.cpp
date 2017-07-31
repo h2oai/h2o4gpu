@@ -6,7 +6,6 @@
 #include <mkl.h>
 #endif
 
-
 #ifdef HAVECUDA
 #define TEXTARCH "GPU"
 
@@ -33,29 +32,36 @@
 using namespace std;
 
 string cmd(const string& cmd) {
-  FILE *fp;
-  char c[1025];
-  string res;
+	FILE *fp;
+	char c[1025];
+	string res;
 
-  /* Open the command for reading. */
-  fp = popen(cmd.c_str(), "r");
-  if (fp == NULL) {
-    printf("Failed to run command\n" );
-    return "NA";
-  }
-  fgets(c, sizeof(c)-1, fp); //only take the first line
-  res += c;
-  pclose(fp);
-  res.erase(std::remove(res.begin(), res.end(), '\n'),res.end());
-  //  cout << "cmd: " << res << endl;
-  return res;
+	/* Open the command for reading. */
+	fp = popen(cmd.c_str(), "r");
+	if (fp == NULL) {
+		printf("Failed to run command\n");
+		return "NA";
+	}
+	fgets(c, sizeof(c) - 1, fp); //only take the first line
+	res += c;
+	pclose(fp);
+	res.erase(std::remove(res.begin(), res.end(), '\n'), res.end());
+	//  cout << "cmd: " << res << endl;
+	return res;
 }
 
-const std::string CPUTYPE = cmd("lscpu | grep 'Model name' | cut -d: -f2- | sed 's/ \\+//g' | sed 's/Intel(R)//' | sed 's/Core(TM)//' | sed 's/CPU//'");
-const std::string SOCKETS = cmd("lscpu | grep 'Socket(s)' | cut -d: -f2- | sed 's/ \\+//g'");
+const std::string CPUTYPE =
+		cmd(
+				"lscpu | grep 'Model name' | cut -d: -f2- | sed 's/ \\+//g' | sed 's/Intel(R)//' | sed 's/Core(TM)//' | sed 's/CPU//'");
+const std::string SOCKETS = cmd(
+		"lscpu | grep 'Socket(s)' | cut -d: -f2- | sed 's/ \\+//g'");
 
-const std::string GPUTYPE = cmd("nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | tail -n 1");
-const std::string NGPUS = cmd("nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | wc -l");
+const std::string GPUTYPE =
+		cmd(
+				"nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | tail -n 1");
+const std::string NGPUS =
+		cmd(
+				"nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | wc -l");
 
 #ifdef HAVECUDA
 const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
@@ -97,7 +103,6 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,bestrmse1,bestrmse2,bestrmse3)
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h> //  our new library
@@ -109,1448 +114,1559 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 
 namespace h2ogpuml {
 
-  volatile sig_atomic_t flag = 0;
-  inline void my_function(int sig){ // can be called asynchronously
-    fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
-    flag = 1; // set flag
-  }
+volatile sig_atomic_t flag = 0;
+inline void my_function(int sig) { // can be called asynchronously
+	fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
+	flag = 1; // set flag
+}
 
-  bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter, bool verbose, double norm, double *jump) {
-    if (val.size()-1 < 2*k) return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
-    vector<double> moving_avg(k+1); //one moving avg for the last k+1 scoring events (1 is reference, k consecutive attempts to improve)
+bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
+		bool verbose, double norm, double *jump) {
+	if (val.size() - 1 < 2 * k)
+		return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
+	vector<double> moving_avg(k + 1); //one moving avg for the last k+1 scoring events (1 is reference, k consecutive attempts to improve)
 
-    // compute moving average(s)
-    for (int i=0;i<moving_avg.size();++i) {
-      moving_avg[i]=0;
-      int startidx=val.size()-2*k+i;
-      for (int j=0;j<k;++j)
-        moving_avg[i]+=val[startidx+j];
-      moving_avg[i]/=k;
-    }
-    if (verbose) {
-      cout << "JUnit: moving averages: ";
-      copy(moving_avg.begin(), moving_avg.end(), ostream_iterator<double>(cout, " "));
-      cout << endl;
-    }
+	// compute moving average(s)
+	for (int i = 0; i < moving_avg.size(); ++i) {
+		moving_avg[i] = 0;
+		int startidx = val.size() - 2 * k + i;
+		for (int j = 0; j < k; ++j)
+			moving_avg[i] += val[startidx + j];
+		moving_avg[i] /= k;
+	}
+	if (verbose) {
+		cout << "JUnit: moving averages: ";
+		copy(moving_avg.begin(), moving_avg.end(),
+				ostream_iterator<double>(cout, " "));
+		cout << endl;
+	}
 
-    // get average of moving average
-    double moving_avgavg=0;
-    {
-      int i;
-      for (i=0;i<moving_avg.size();++i) {
-        moving_avgavg+=moving_avg[i];
-      }
-      moving_avgavg/=((double)i);
-    }
+	// get average of moving average
+	double moving_avgavg = 0;
+	{
+		int i;
+		for (i = 0; i < moving_avg.size(); ++i) {
+			moving_avgavg += moving_avg[i];
+		}
+		moving_avgavg /= ((double) i);
+	}
 
-    // var variance and rmse of moving average
-    double var=0,rmse=0;
-    {
-      int i;
-      for (i=0;i<moving_avg.size();++i) {
-        var += pow(moving_avg[i]-moving_avgavg,2.0);
-      }
-      rmse=sqrt(var)/((double)i);
-    }
+	// var variance and rmse of moving average
+	double var = 0, rmse = 0;
+	{
+		int i;
+		for (i = 0; i < moving_avg.size(); ++i) {
+			var += pow(moving_avg[i] - moving_avgavg, 2.0);
+		}
+		rmse = sqrt(var) / ((double) i);
+	}
 
-    // check if any of the moving averages is better than the reference (by at least tolerance relative improvement)
-    double ref = moving_avg[0];
-    bool improved = false;
-    for (int i=1;i<moving_avg.size();++i) {
-      //      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d moving_avgavg=%g rmse=%g\n",ref,tolerance,moving_avg[i],i,moving_avgavg,rmse); fflush(stderr);
-      if (moreIsBetter)
-        improved |= (moving_avg[i] > ref*(1.0+tolerance));
-      else
-        improved |= (moving_avg[i] < ref*(1.0-tolerance));
-    }
+	// check if any of the moving averages is better than the reference (by at least tolerance relative improvement)
+	double ref = moving_avg[0];
+	bool improved = false;
+	for (int i = 1; i < moving_avg.size(); ++i) {
+		//      fprintf(stderr,"ref=%g tol=%g moving=%g i=%d moving_avgavg=%g rmse=%g\n",ref,tolerance,moving_avg[i],i,moving_avgavg,rmse); fflush(stderr);
+		if (moreIsBetter)
+			improved |= (moving_avg[i] > ref * (1.0 + tolerance));
+		else
+			improved |= (moving_avg[i] < ref * (1.0 - tolerance));
+	}
 
-    // estimate normalized jump for controlling tolerance as approach stopping point
-    if(moving_avg.size()>=2){
-      //      *jump = (*std::max_element(moving_avg.begin(), moving_avg.end()) - *std::min_element(moving_avg.begin(), moving_avg.end()))/(DBL_EPSILON+norm);
-      *jump = (moving_avg.front() - moving_avg.back())/(DBL_EPSILON+ moving_avg.front()+ moving_avg.back());
-    }
-    else{
-      *jump=DBL_MAX;
-    }
+	// estimate normalized jump for controlling tolerance as approach stopping point
+	if (moving_avg.size() >= 2) {
+		//      *jump = (*std::max_element(moving_avg.begin(), moving_avg.end()) - *std::min_element(moving_avg.begin(), moving_avg.end()))/(DBL_EPSILON+norm);
+		*jump = (moving_avg.front() - moving_avg.back())
+				/ (DBL_EPSILON + moving_avg.front() + moving_avg.back());
+	} else {
+		*jump = DBL_MAX;
+	}
 
-      
-    if (improved) {
-      if (improved && verbose)
-        cout << "improved from " << ref << " to " << (moreIsBetter ? *std::max_element(moving_avg.begin(), moving_avg.end()) : *std::min_element(moving_avg.begin(), moving_avg.end())) << endl;
-      return false;
-    }
-    else {
-      if (verbose) cout << "stopped." << endl;
-      return true;
-    }
-  }
+	if (improved) {
+		if (improved && verbose)
+			cout << "improved from " << ref << " to "
+					<< (moreIsBetter ?
+							*std::max_element(moving_avg.begin(),
+									moving_avg.end()) :
+							*std::min_element(moving_avg.begin(),
+									moving_avg.end())) << endl;
+		return false;
+	} else {
+		if (verbose)
+			cout << "stopped." << endl;
+		return true;
+	}
+}
 
-
-
-  // Elastic Net
-  //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
-  //
-  // for many values of \lambda and multiple values of \alpha
-  // See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
-  // m and n are training data size
+// Elastic Net
+//   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
+//
+// for many values of \lambda and multiple values of \alpha
+// See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+// m and n are training data size
 #define TRAINRMSE 0
 #define CVRMSE 1
 #define VALIDRMSE 2
-  
+
 #define NUMRMSE 3 // train, hold-out CV, valid
 #define NUMOTHER 3 // for lambda, alpha, tol
 
 template<typename T>
-double ElasticNetptr(int dopredict,
-                     int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                     size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                     double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                     ,int givefullpath
-                     ,T **Xvsalphalambda, T **Xvsalpha
-                     ,T **validPredsvsalphalambda, T **validPredsvsalpha
-                     ,size_t *countfull, size_t *countshort, size_t *countmore
-                     ) {
+double ElasticNetptr(int dopredict, int sourceDev, int datatype, int sharedA,
+		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
+		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
+		int nLambdas, int nFolds, int nAlphas, int stopearly,
+		double stopearlyrmsefraction, int max_iterations, int verbose,
+		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
+		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
+		size_t *countshort, size_t *countmore) {
 
-
-  if(dopredict==0){
-    return ElasticNetptr_fit(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
-                             mTrain,  n,  mValid, intercept, standardize,
-                             lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                             trainXptr, trainYptr, validXptr, validYptr, weightptr
-                             ,givefullpath
-                             ,Xvsalphalambda, Xvsalpha
-                             ,validPredsvsalphalambda, validPredsvsalpha
-                             ,countfull, countshort,  countmore);
-  }
-  else{
-    return ElasticNetptr_predict(sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
-                                 mTrain,  n,  mValid, intercept, standardize,
-                                 lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                                 trainXptr, trainYptr, validXptr, validYptr, weightptr
-                                 ,givefullpath
-                                 ,Xvsalphalambda, Xvsalpha
-                                 ,validPredsvsalphalambda, validPredsvsalpha
-                                 ,countfull, countshort,  countmore);
-  }
+	if (dopredict == 0) {
+		return ElasticNetptr_fit(sourceDev, datatype, sharedA, nThreads, nGPUs,
+				ord, mTrain, n, mValid, intercept, standardize,
+				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
+				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+				trainYptr, validXptr, validYptr, weightptr, givefullpath,
+				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+				validPredsvsalpha, countfull, countshort, countmore);
+	} else {
+		return ElasticNetptr_predict(sourceDev, datatype, sharedA, nThreads,
+				nGPUs, ord, mTrain, n, mValid, intercept, standardize,
+				lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
+				stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+				trainYptr, validXptr, validYptr, weightptr, givefullpath,
+				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+				validPredsvsalpha, countfull, countshort, countmore);
+	}
 
 }
-
 
 #define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
 #define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
 
-
 template<typename T>
-double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                     size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                     double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                     void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                     ,int givefullpath
-                     ,T **Xvsalphalambda, T **Xvsalpha
-                     ,T **validPredsvsalphalambda, T **validPredsvsalpha
-                     ,size_t *countfull, size_t *countshort, size_t *countmore
-                     ) {
-    
-    if(0){
-      std::default_random_engine generator;
-      std::uniform_int_distribution<int> distribution(-100,100);
-      //T arr[] = {3,6,2,8,10,54,5,9};
-      int myn=100;
-      T arr[myn];
-      for(int ii=0;ii<myn;ii++){
-        arr[ii]=distribution(generator);
-        fprintf(stderr,"%g ",arr[ii]);fflush(stderr);
-      }
-      fprintf(stderr,"\n"); fflush(stderr);
-      int whichbeta[NUMBETA];
-      T valuebeta[NUMBETA];
-      int myk=5;
-      int whichmax=1; // 0 : larger  1: largest absolute magnitude
-      h2ogpuml::topkwrap(1,myn,myk,arr,&whichbeta[0],&valuebeta[0]);
-      for(int ii=0;ii<myk;ii++){
-        fprintf(stderr,"%d %g ",whichbeta[ii],valuebeta[ii]); fflush(stderr);
-      }
-      fprintf(stderr,"\n"); fflush(stderr);      
-      exit(0);
-    }
-    
+double ElasticNetptr_fit(int sourceDev, int datatype, int sharedA, int nThreads,
+		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
+		int intercept, int standardize, double lambda_min_ratio, int nLambdas,
+		int nFolds, int nAlphas, int stopearly, double stopearlyrmsefraction,
+		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
+		void *validXptr, void *validYptr, void *weightptr, int givefullpath,
+		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
+		T **validPredsvsalpha, size_t *countfull, size_t *countshort,
+		size_t *countmore) {
 
-    
-    
-    signal(SIGINT, my_function);
-    signal(SIGTERM, my_function);
-    int nlambda = nLambdas;
-    if(VERBOSEENET){
-      cout << "Hardware: " << HARDWARE << endl;
-    }
+	if (0) {
+		std::default_random_engine generator;
+		std::uniform_int_distribution<int> distribution(-100, 100);
+		//T arr[] = {3,6,2,8,10,54,5,9};
+		int myn = 100;
+		T arr[myn];
+		for (int ii = 0; ii < myn; ii++) {
+			arr[ii] = distribution(generator);
+			fprintf(stderr, "%g ", arr[ii]);
+			fflush(stderr);
+		}
+		fprintf(stderr, "\n");
+		fflush(stderr);
+		int whichbeta[NUMBETA];
+		T valuebeta[NUMBETA];
+		int myk = 5;
+		int whichmax = 1; // 0 : larger  1: largest absolute magnitude
+		h2ogpuml::topkwrap(1, myn, myk, arr, &whichbeta[0], &valuebeta[0]);
+		for (int ii = 0; ii < myk; ii++) {
+			fprintf(stderr, "%d %g ", whichbeta[ii], valuebeta[ii]);
+			fflush(stderr);
+		}
+		fprintf(stderr, "\n");
+		fflush(stderr);
+		exit(0);
+	}
 
-    // number of openmp threads = number of cuda devices to use
+	signal(SIGINT, my_function);
+	signal(SIGTERM, my_function);
+	int nlambda = nLambdas;
+	if (VERBOSEENET) {
+		cout << "Hardware: " << HARDWARE << endl;
+	}
+
+	// number of openmp threads = number of cuda devices to use
 #ifdef _OPENMP
-    int omt=omp_get_max_threads();
-    //      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
-    omp_set_num_threads(nThreads);  // not necessary, but most useful mode so far
-    int nth=omp_get_max_threads();
-    //      nGPUs=nth; // openmp threads = cuda/cpu devices used
-    omp_set_dynamic(0);
+	int omt=omp_get_max_threads();
+	//      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
+	omp_set_num_threads(nThreads);// not necessary, but most useful mode so far
+	int nth=omp_get_max_threads();
+	//      nGPUs=nth; // openmp threads = cuda/cpu devices used
+	omp_set_dynamic(0);
 #if(USEMKL==1)
-    mkl_set_dynamic(0);
+	mkl_set_dynamic(0);
 #endif
-    omp_set_nested(1);
-    omp_set_max_active_levels(2);
+	omp_set_nested(1);
+	omp_set_max_active_levels(2);
 #ifdef DEBUG
-    cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
+	cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
-    if (nAlphas % nThreads != 0) {
-      DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
-    }
+	if (nAlphas % nThreads != 0) {
+		DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
+	}
 #endif
 
+	// report fold setup
+	size_t realfolds = (nFolds == 0 ? 1 : nFolds);
+	size_t totalfolds = nFolds * (nFolds > 1 ? 2 : 1);
+	DEBUG_FPRINTF(stderr, "Set folds=%d realfolds=%zu Total Folds=%zu\n",
+			nFolds, realfolds, totalfolds);
 
+	if (VERBOSEENET) {
+		fprintf(stderr, "Before malloc X\n");
+		fflush(stderr);
+	}
+	// setup storage for returning results back to user
+	// iterate over predictors (n) or other information fastest so can memcpy X
+	*countmore = NUMRMSE + NUMOTHER;
+	if (givefullpath) {
+		*countfull = nLambdas * nAlphas * (n + *countmore);
+		*Xvsalphalambda = (T*) calloc(*countfull, sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
+	} else { // only give back solution for optimal lambda after CV is done
+		*countfull = 0;
+		*Xvsalphalambda = NULL;
+	}
+	*countshort = nAlphas * (n + *countmore);
+	*Xvsalpha = (T*) calloc(*countshort, sizeof(T));
+	//    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
+	if (VERBOSEENET) {
+		fprintf(stderr, "After malloc X\n");
+		fflush(stderr);
+	}
 
-    // report fold setup
-    size_t realfolds=(nFolds==0 ? 1 : nFolds);
-    size_t totalfolds=nFolds*( nFolds>1 ? 2 : 1 );
-    DEBUG_FPRINTF(stderr,"Set folds=%d realfolds=%zu Total Folds=%zu\n",nFolds,realfolds,totalfolds);
+	// for source, create class objects that creates cuda memory, cpu memory, etc.
+	// This takes-in raw GPU pointer
+	//  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+	// assume source thread is 0th thread (TODO: need to ensure?)
+	if (VERBOSEENET) {
+		fprintf(stderr, "Before Asource\n");
+		fflush(stderr);
+	}
+	int sourceme = sourceDev;
+	h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype,
+			ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr),
+			reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr),
+			reinterpret_cast<T *>(validYptr), reinterpret_cast<T *>(weightptr));
+	if (VERBOSEENET) {
+		fprintf(stderr, "After Asource\n");
+		fflush(stderr);
+	}
+	// now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
+	T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
+	T lambdamax0;
+	Asource_.Stats(intercept, min, max, mean, var, sd, skew, kurt, lambdamax0);
+	double sdTrainY = (double) sd[0], meanTrainY = (double) mean[0];
+	double sdValidY = (double) sd[1], meanValidY = (double) mean[1];
+	double lambda_max0 = (double) lambdamax0;
+	if (VERBOSEENET) {
+		fprintf(stderr, "After stats\n");
+		fflush(stderr);
+	}
 
+	if (1 || VERBOSEENET) {
 
+		FILE *myfile;
+		for (size_t filei = 0; filei <= 2; filei++) {
+			if (filei == 0)
+				myfile = stderr;
+			else if (filei == 1)
+				myfile = stdout;
+			else {
+				myfile = fopen("stats.txt", "wt");
+				if (myfile == NULL)
+					continue; // skip if can't write, don't complain
+			}
+		}
+		fprintf(myfile, "min");
+		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", min[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "max");
+		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", max[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "mean");
+		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", mean[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "var");
+		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", var[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "sd");
+		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", sd[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "skew");
+		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", skew[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "kurt");
+		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+			fprintf(myfile, " %21.15g", kurt[ii]);
+		fprintf(myfile, "\n");
+		fprintf(myfile, "lambda_max0=%g\n", lambda_max0);
+		fflush(myfile);
+	}
 
-    if(VERBOSEENET){ fprintf(stderr,"Before malloc X\n"); fflush(stderr); }
-    // setup storage for returning results back to user
-    // iterate over predictors (n) or other information fastest so can memcpy X
-    *countmore=NUMRMSE+NUMOTHER;
-    if(givefullpath){
-      *countfull=nLambdas*nAlphas*(n + *countmore);
-      *Xvsalphalambda = (T*) calloc(*countfull,sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
-    }
-    else{ // only give back solution for optimal lambda after CV is done
-      *countfull=0;
-      *Xvsalphalambda = NULL;
-    }
-    *countshort=nAlphas*(n + *countmore);
-    *Xvsalpha = (T*) calloc(*countshort,sizeof(T));
-    //    printf("inside: countfull=%zu countshort=%zu countmore=%zu\n",*countfull,*countshort,*countmore); fflush(stdout);
-    if(VERBOSEENET){ fprintf(stderr,"After malloc X\n"); fflush(stderr); }
+	// temporarily get trainX, etc. from h2ogpuml (which may be on gpu)
+	T *trainX = NULL;
+	T *trainY = NULL;
+	T *validX = NULL;
+	T *validY = NULL;
+	T *trainW = NULL;
+	if (OLDPRED)
+		trainX = (T *) malloc(sizeof(T) * mTrain * n);
+	trainY = (T *) malloc(sizeof(T) * mTrain);
+	if (OLDPRED)
+		validX = (T *) malloc(sizeof(T) * mValid * n);
+	validY = (T *) malloc(sizeof(T) * mValid);
+	trainW = (T *) malloc(sizeof(T) * mTrain);
 
+	if (OLDPRED)
+		Asource_.GetTrainX(datatype, mTrain * n, &trainX);
+	Asource_.GetTrainY(datatype, mTrain, &trainY);
+	if (OLDPRED)
+		Asource_.GetValidX(datatype, mValid * n, &validX);
+	Asource_.GetValidY(datatype, mValid, &validY);
+	Asource_.GetWeight(datatype, mTrain, &trainW);
 
-    // for source, create class objects that creates cuda memory, cpu memory, etc.
-    // This takes-in raw GPU pointer
-    //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
-    // assume source thread is 0th thread (TODO: need to ensure?)
-    if(VERBOSEENET){ fprintf(stderr,"Before Asource\n"); fflush(stderr); }
-    int sourceme=sourceDev;
-    h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
-                                      reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
-                                      reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
-                                      reinterpret_cast<T *>(weightptr));
-    if(VERBOSEENET){ fprintf(stderr,"After Asource\n"); fflush(stderr); }
-    // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
-    T min[2], max[2], mean[2], var[2], sd[2], skew[2], kurt[2];
-    T lambdamax0;
-    Asource_.Stats(intercept,min,max,mean,var,sd,skew,kurt,lambdamax0);
-    double sdTrainY=(double)sd[0], meanTrainY=(double)mean[0];
-    double sdValidY=(double)sd[1], meanValidY=(double)mean[1];
-    double lambda_max0 = (double)lambdamax0;
-    if(VERBOSEENET){ fprintf(stderr,"After stats\n"); fflush(stderr); }
-
-    if(1||VERBOSEENET){
-      
-      FILE *myfile;
-      for(size_t filei=0;filei<=2;filei++){
-        if(filei==0) myfile=stderr;
-        else if(filei==1) myfile=stdout;
-        else{
-          myfile = fopen("stats.txt","wt");
-          if(myfile==NULL) continue; // skip if can't write, don't complain
-        }
-      }
-      fprintf(myfile,"min"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",min[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"max"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",max[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"mean"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",mean[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"var"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",var[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"sd"); for(int ii=0;ii<=(mValid>0 ? 1 : 0);ii++) fprintf(myfile," %21.15g",sd[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"skew"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",skew[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"kurt"); for(int ii=0;ii<=(mValid>1 ? 1 : 0);ii++) fprintf(myfile," %21.15g",kurt[ii]); fprintf(myfile,"\n");
-      fprintf(myfile,"lambda_max0=%g\n",lambda_max0);
-      fflush(myfile);
-    }
-      
-    // temporarily get trainX, etc. from h2ogpuml (which may be on gpu)
-    T *trainX=NULL;
-    T *trainY=NULL;
-    T *validX=NULL;
-    T *validY=NULL;
-    T *trainW=NULL;
-    if(OLDPRED) trainX = (T *) malloc(sizeof(T) * mTrain * n);
-    trainY = (T *) malloc(sizeof(T) * mTrain);
-    if(OLDPRED) validX = (T *) malloc(sizeof(T) * mValid * n);
-    validY = (T *) malloc(sizeof(T) * mValid);
-    trainW = (T *) malloc(sizeof(T) * mTrain);
-
-    if(OLDPRED) Asource_.GetTrainX(datatype, mTrain * n, &trainX);
-    Asource_.GetTrainY(datatype, mTrain, &trainY);
-    if(OLDPRED) Asource_.GetValidX(datatype, mValid * n, &validX);
-    Asource_.GetValidY(datatype, mValid, &validY);
-    Asource_.GetWeight(datatype, mTrain, &trainW);
-
-
-    T alphaarray[realfolds*2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
-    T lambdaarray[realfolds*2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
-    T tolarray[realfolds*2][nAlphas]; // shared memory space for storing tolerance for various folds and alphas
-    // which rmse to use for final check of which model is best (keep validation fractional data for purely reporting)
-    int owhichrmse;
-    if(mValid>0){
-      if(realfolds<=1) owhichrmse=2;
-      else owhichrmse=2;
-    }
-    else{
-      if(realfolds<=1) owhichrmse=0;
-      else owhichrmse=1;
-    }
-    // which rmse to use within lambda-loop to decide if accurate model
-    int iwhichrmse;
-    if(mValid>0){
-      if(realfolds<=1) iwhichrmse=2;
-      else iwhichrmse=1;
-    }
-    else{
-      if(realfolds<=1) iwhichrmse=0;
-      else iwhichrmse=1;
-    }
+	T alphaarray[realfolds * 2][nAlphas]; // shared memory space for storing alpha for various folds and alphas
+	T lambdaarray[realfolds * 2][nAlphas]; // shared memory space for storing lambda for various folds and alphas
+	T tolarray[realfolds * 2][nAlphas]; // shared memory space for storing tolerance for various folds and alphas
+	// which rmse to use for final check of which model is best (keep validation fractional data for purely reporting)
+	int owhichrmse;
+	if (mValid > 0) {
+		if (realfolds <= 1)
+			owhichrmse = 2;
+		else
+			owhichrmse = 2;
+	} else {
+		if (realfolds <= 1)
+			owhichrmse = 0;
+		else
+			owhichrmse = 1;
+	}
+	// which rmse to use within lambda-loop to decide if accurate model
+	int iwhichrmse;
+	if (mValid > 0) {
+		if (realfolds <= 1)
+			iwhichrmse = 2;
+		else
+			iwhichrmse = 1;
+	} else {
+		if (realfolds <= 1)
+			iwhichrmse = 0;
+		else
+			iwhichrmse = 1;
+	}
 #define RMSELOOP(ri) for(int ri=0;ri<NUMRMSE;ri++)
-    T rmsearray[NUMRMSE][realfolds*2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
+	T rmsearray[NUMRMSE][realfolds * 2][nAlphas]; // shared memory space for storing rmse for various folds and alphas
 #define MAX(a,b) ((a)>(b) ? (a) : (b))
-    // Setup each thread's h2ogpuml
-    double t = timer<double>();
-    double t1me0;
+	// Setup each thread's h2ogpuml
+	double t = timer<double>();
+	double t1me0;
 
-    // critical files for all threads
-    char filename0[100];
-    sprintf(filename0, "rmse.txt");
-    FILE *filrmse = fopen(filename0, "wt");
-    if (filrmse == NULL) {
-      cerr << "Cannot open filename0=" << filename0 << endl;
-      exit(0);
-    }
-    sprintf(filename0, "varimp.txt");
-    FILE *filvarimp = fopen(filename0, "wt");
-    if (filvarimp == NULL) {
-      cerr << "Cannot open filename0=" << filename0 << endl;
-      exit(0);
-    }
-    
-    ////////////////////////////////
-    // PARALLEL REGION
+	// critical files for all threads
+	char filename0[100];
+	sprintf(filename0, "rmse.txt");
+	FILE *filrmse = fopen(filename0, "wt");
+	if (filrmse == NULL) {
+		cerr << "Cannot open filename0=" << filename0 << endl;
+		exit(0);
+	}
+	sprintf(filename0, "varimp.txt");
+	FILE *filvarimp = fopen(filename0, "wt");
+	if (filvarimp == NULL) {
+		cerr << "Cannot open filename0=" << filename0 << endl;
+		exit(0);
+	}
+
+	////////////////////////////////
+	// PARALLEL REGION
 #pragma omp parallel proc_bind(master)
-    {
+	{
 #ifdef _OPENMP
-      int me = omp_get_thread_num();
-      //https://software.intel.com/en-us/node/522115
-      int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
-      // set number of mkl threads per openmp thread so that not oversubscribing cores
-      int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+		int me = omp_get_thread_num();
+		//https://software.intel.com/en-us/node/522115
+		int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
+		// set number of mkl threads per openmp thread so that not oversubscribing cores
+		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
 #if(USEMKL==1)
-      //mkl_set_num_threads_local(mklperthread);
-      mkl_set_num_threads_local(mklperthread);
-      //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
+		//mkl_set_num_threads_local(mklperthread);
+		mkl_set_num_threads_local(mklperthread);
+		//But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
 #endif
 #else
-      int me=0;
+		int me = 0;
 #endif
 
-      int blasnumber;
+		int blasnumber;
 #ifdef HAVECUDA
-      blasnumber=CUDA_MAJOR;
+		blasnumber=CUDA_MAJOR;
 #else
-      blasnumber=mklperthread; // roughly accurate for openblas as well
+		blasnumber = mklperthread; // roughly accurate for openblas as well
 #endif
-        
-      // choose GPU device ID for each thread
-      int wDev = (nGPUs>0 ? me%nGPUs : 0);
 
-      // Setup file output
-      char filename[100];
-      sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, sharedA, nThreads, nGPUs);
-      FILE *fil = fopen(filename, "wt");
-      if (fil == NULL) {
-        cerr << "Cannot open filename=" << filename << endl;
-        exit(0);
-      }
-      else fflush(fil);
+		// choose GPU device ID for each thread
+		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
 
-      
+		// Setup file output
+		char filename[100];
+		sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
+				TEXTARCH, sharedA, nThreads, nGPUs);
+		FILE *fil = fopen(filename, "wt");
+		if (fil == NULL) {
+			cerr << "Cannot open filename=" << filename << endl;
+			exit(0);
+		} else
+			fflush(fil);
 
-      ////////////
-      //
-      // create class objects that creates cuda memory, cpu memory, etc.
-      //
-      ////////////
-      double t0 = timer<double>();
-      DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
+		////////////
+		//
+		// create class objects that creates cuda memory, cpu memory, etc.
+		//
+		////////////
+		double t0 = timer<double>();
+		DEBUG_FPRINTF(fil, "Moving data to the GPU. Starting at %21.15g\n", t0);
 #pragma omp barrier // not required barrier
-      h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+		h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2ogpuml_data(wDev=sourceDev) below before other cores copy data
-      h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(sharedA, me, wDev, A_);
+		h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(
+				sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
-      double t1 = timer<double>();
-      if(me==0){ //only thread=0 times entire post-warmup procedure
-        t1me0=t1;
-      }
-      DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n", t1);
-      DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n", t1 - t0);
+		double t1 = timer<double>();
+		if (me == 0) { //only thread=0 times entire post-warmup procedure
+			t1me0 = t1;
+		}
+		DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n",
+				t1);
+		DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n",
+				t1 - t0);
 
+		///////////////////////////////////////////////////
+		// BEGIN SVD
+		if (0) {
+			A_.svd1();
+		}
 
-      ///////////////////////////////////////////////////
-      // BEGIN SVD
-      if(0){
-        A_.svd1();
-      }
-     
+		////////////////////////////////////////////////
+		// BEGIN GLM
 
+		// Setup constant parameters for all models
+		h2ogpuml_data.SetnDev(1); // set how many cuda devices to use internally in h2ogpuml
+		//    h2ogpuml_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2ogpuml
+		//    h2ogpuml_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2ogpuml
+		//    h2ogpuml_data.SetAdaptiveRho(true);
+		//h2ogpuml_data.SetEquil(false);
+		//      h2ogpuml_data.SetRho(1E-6);
+		//      h2ogpuml_data.SetRho(1E-3);
+		h2ogpuml_data.SetRho(1.0);
+		h2ogpuml_data.SetVerbose(verbose);
+		h2ogpuml_data.SetStopEarly(stopearly);
+		h2ogpuml_data.SetStopEarlyRMSEFraction(stopearlyrmsefraction);
+		h2ogpuml_data.SetMaxIter(max_iterations);
 
-      ////////////////////////////////////////////////
-      // BEGIN GLM
-      
+		DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n", 0);
+		int fi, a;
 
-      // Setup constant parameters for all models
-      h2ogpuml_data.SetnDev(1); // set how many cuda devices to use internally in h2ogpuml
-      //    h2ogpuml_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2ogpuml
-      //    h2ogpuml_data.SetAbsTol(1e-5); // set how many cuda devices to use internally in h2ogpuml
-      //    h2ogpuml_data.SetAdaptiveRho(true);
-      //h2ogpuml_data.SetEquil(false);
-      //      h2ogpuml_data.SetRho(1E-6);
-      //      h2ogpuml_data.SetRho(1E-3);
-      h2ogpuml_data.SetRho(1.0);
-      h2ogpuml_data.SetVerbose(5);
-      //        h2ogpuml_data.SetMaxIter(100);
-      h2ogpuml_data.SetMaxIter(5000);
+		T *X0 = new T[n]();
+		T *L0 = new T[mTrain]();
+		int gotpreviousX0 = 0;
 
-      DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
-      int fi,a;
-
-
-      T *X0 = new T[n]();
-      T *L0 = new T[mTrain]();
-      int gotpreviousX0=0;
-
-
-      ////////////////////////////
-      //
-      // loop over normal lambda path and then final cross folded lambda model
-      //
-      ////////////////////////////
+		////////////////////////////
+		//
+		// loop over normal lambda path and then final cross folded lambda model
+		//
+		////////////////////////////
 #define LAMBDATYPEPATH 0
 #define LAMBDATYPEONE 1
-      // store various model parameters as averaged over folds during lambda-path, so that when do one final model with fixed lambda have model.
-      double alphaarrayofa[nAlphas];
-      double lambdaarrayofa[nAlphas];
-      double tolarrayofa[nAlphas];
-      double rmsearrayofa[NUMRMSE][nAlphas];
-      for(int lambdatype=0;lambdatype<=(realfolds>1);lambdatype++){
-        size_t nlambdalocal;
+		// store various model parameters as averaged over folds during lambda-path, so that when do one final model with fixed lambda have model.
+		double alphaarrayofa[nAlphas];
+		double lambdaarrayofa[nAlphas];
+		double tolarrayofa[nAlphas];
+		double rmsearrayofa[NUMRMSE][nAlphas];
+		for (int lambdatype = 0; lambdatype <= (realfolds > 1); lambdatype++) {
+			size_t nlambdalocal;
 
+			// Set Lambda
+			std::vector<T> lambdas(nlambda);
+			if (lambdatype == LAMBDATYPEPATH) {
+				nlambdalocal = nlambda;
+				const T lambda_min = lambda_min_ratio
+						* static_cast<T>(lambda_max0); // like h2ogpuml.R
+				T lambda_max = lambda_max0; // std::max(static_cast<T>(1e-2), alpha); // same as H2O
+				DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
+				DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
+				DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max);
+				DEBUG_FPRINTF(fil, "lambda_min: %f\n", lambda_min);
+				// Regularization path: geometric series from lambda_max to lambda_min
+				if (nlambdalocal > 1) {
+					double dec = std::pow(lambda_min_ratio,
+							1.0 / (nlambdalocal - 1.));
+					lambdas[0] = lambda_max;
+					for (int i = 1; i < nlambdalocal; ++i)
+						lambdas[i] = lambdas[i - 1] * dec;
+				} else { // use minimum, so user can control the value of lambda used
+					lambdas[0] = lambda_min_ratio * lambda_max;
+				}
+			} else {
+				nlambdalocal = 1;
+			}
 
-        // Set Lambda
-        std::vector <T> lambdas(nlambda);
-        if(lambdatype==LAMBDATYPEPATH){
-          nlambdalocal=nlambda;
-          const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max0); // like h2ogpuml.R
-          T lambda_max = lambda_max0; // std::max(static_cast<T>(1e-2), alpha); // same as H2O
-          DEBUG_FPRINTF(stderr, "lambda_max: %f\n", lambda_max);
-          DEBUG_FPRINTF(stderr, "lambda_min: %f\n", lambda_min);
-          DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max);
-          DEBUG_FPRINTF(fil, "lambda_min: %f\n", lambda_min);
-          // Regularization path: geometric series from lambda_max to lambda_min
-          if(nlambdalocal>1){
-            double dec = std::pow(lambda_min_ratio, 1.0 / (nlambdalocal - 1.));
-            lambdas[0] = lambda_max;
-            for (int i = 1; i < nlambdalocal; ++i)
-              lambdas[i] = lambdas[i - 1] * dec;
-          }
-          else{ // use minimum, so user can control the value of lambda used
-            lambdas[0] = lambda_min_ratio*lambda_max;
-          }
-        }
-        else{
-          nlambdalocal=1;
-        }
-
-
-        
-        //////////////////////////////
-        //
-        // LOOP OVER FOLDS AND ALPHAS
-        //
-        ///////////////////////////////
+			//////////////////////////////
+			//
+			// LOOP OVER FOLDS AND ALPHAS
+			//
+			///////////////////////////////
 #pragma omp for schedule(dynamic,1) collapse(2)
-        for (a = 0; a < nAlphas; ++a) { //alpha search
-          for (fi = 0; fi < realfolds; ++fi) { //fold
+			for (a = 0; a < nAlphas; ++a) { //alpha search
+				for (fi = 0; fi < realfolds; ++fi) { //fold
 
-            ////////////
-            // SETUP ALPHA
-            const T alpha = nAlphas == 1 ? 0.5 : static_cast<T>(a) / static_cast<T>(nAlphas > 1 ? nAlphas - 1 : 1);
+					////////////
+					// SETUP ALPHA
+					const T alpha =
+							nAlphas == 1 ?
+									0.5 :
+									static_cast<T>(a)
+											/ static_cast<T>(
+													nAlphas > 1 ?
+															nAlphas - 1 : 1);
 
-            // Setup Lambda
-            if(lambdatype==LAMBDATYPEONE) lambdas[0]=lambdaarrayofa[a];
+					// Setup Lambda
+					if (lambdatype == LAMBDATYPEONE)
+						lambdas[0] = lambdaarrayofa[a];
 
-            /////////////
-            //
-            // SETUP FOLD (and weights)
-            //
-            ////////////
-            // FOLDTYPE: 0 = any portion and can be overlapping
-            // FOLDTYPE: 1 = non-overlapping folds
+					/////////////
+					//
+					// SETUP FOLD (and weights)
+					//
+					////////////
+					// FOLDTYPE: 0 = any portion and can be overlapping
+					// FOLDTYPE: 1 = non-overlapping folds
 #define FOLDTYPE 1
-            T fractrain;
-            if(FOLDTYPE==0){
-              fractrain=(realfolds>1 ? 0.8: 1.0);
-            }
-            else{
-              fractrain=(realfolds>1 ? 1.0-1.0/((double)realfolds) : 1.0);
-            }
-            T fracvalid=1.0 - fractrain;
-            T weights[mTrain];
-            if(realfolds>1){
-              for(unsigned int j=0;j<mTrain;++j){
-                T foldon=1;
-                int jfold=j-fi*fracvalid*mTrain;
-                if(jfold>=0 && jfold<fracvalid*mTrain) foldon=1E-13;
-                
-                weights[j] = foldon*trainW[j];
-                //              fprintf(stderr,"a=%d fold=%d j=%d foldon=%g trainW=%g weights=%g\n",a,fi,j,foldon,trainW[j],weights[j]); fflush(stderr);
-              }
-            }
-            else{// then assume meant one should just copy weights
-              for(unsigned int j=0;j<mTrain;++j) weights[j] = trainW[j];
-            }
+					T fractrain;
+					if (FOLDTYPE == 0) {
+						fractrain = (realfolds > 1 ? 0.8 : 1.0);
+					} else {
+						fractrain = (
+								realfolds > 1 ?
+										1.0 - 1.0 / ((double) realfolds) : 1.0);
+					}
+					T fracvalid = 1.0 - fractrain;
+					T weights[mTrain];
+					if (realfolds > 1) {
+						for (unsigned int j = 0; j < mTrain; ++j) {
+							T foldon = 1;
+							int jfold = j - fi * fracvalid * mTrain;
+							if (jfold >= 0 && jfold < fracvalid * mTrain)
+								foldon = 1E-13;
 
-            // normalize weights before input (method has issue with small typical weights, so avoid normalization and just normalize in error itself only)
-            T sumweight=0,maxweight=-std::numeric_limits<T>::max();
-            for(unsigned int j=0;j<mTrain;++j) sumweight+=weights[j];
-            for(unsigned int j=0;j<mTrain;++j){
-              if(maxweight<weights[j]) maxweight=weights[j];
-            }
-            if(0){
-              if(sumweight!=0.0){
-                for(unsigned int j=0;j<mTrain;++j) weights[j]/=sumweight;
-              }
-              else continue; // skip this fi,a
-              //            fprintf(stderr,"a=%d fold=%d sumweights=%g\n",a,fi,sumweight); fflush(stderr);
-            }
-          
+							weights[j] = foldon * trainW[j];
+							//              fprintf(stderr,"a=%d fold=%d j=%d foldon=%g trainW=%g weights=%g\n",a,fi,j,foldon,trainW[j],weights[j]); fflush(stderr);
+						}
+					} else {   // then assume meant one should just copy weights
+						for (unsigned int j = 0; j < mTrain; ++j)
+							weights[j] = trainW[j];
+					}
 
-            /////////////////////
-            //
-            // Setup Solve
-            //
-            //////////////////////
-            // setup f,g as functions of alpha
-            std::vector <FunctionObj<T>> f;
-            std::vector <FunctionObj<T>> g;
-            f.reserve(mTrain);
-            g.reserve(n);
-            // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-            for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
-            //for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
-            for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
-            if (intercept) g.emplace_back(kZero);
+					// normalize weights before input (method has issue with small typical weights, so avoid normalization and just normalize in error itself only)
+					T sumweight = 0, maxweight = -std::numeric_limits<T>::max();
+					for (unsigned int j = 0; j < mTrain; ++j)
+						sumweight += weights[j];
+					for (unsigned int j = 0; j < mTrain; ++j) {
+						if (maxweight < weights[j])
+							maxweight = weights[j];
+					}
+					if (0) {
+						if (sumweight != 0.0) {
+							for (unsigned int j = 0; j < mTrain; ++j)
+								weights[j] /= sumweight;
+						} else
+							continue; // skip this fi,a
+						//            fprintf(stderr,"a=%d fold=%d sumweights=%g\n",a,fi,sumweight); fflush(stderr);
+					}
 
+					/////////////////////
+					//
+					// Setup Solve
+					//
+					//////////////////////
+					// setup f,g as functions of alpha
+					std::vector<FunctionObj<T>> f;
+					std::vector<FunctionObj<T>> g;
+					f.reserve(mTrain);
+					g.reserve(n);
+					// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
+					for (unsigned int j = 0; j < mTrain; ++j)
+						f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
+					//for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
+					for (unsigned int j = 0; j < n - intercept; ++j)
+						g.emplace_back(kAbs);
+					if (intercept)
+						g.emplace_back(kZero);
 
+					////////////////////////////
+					//
+					// LOOP OVER LAMBDA
+					//
+					///////////////////////////////
+					vector<double> scoring_history;
+					int gotX0 = 0;
+					double jump = DBL_MAX;
+					double norm = (mValid == 0 ? sdTrainY : sdValidY);
+					int skiplambdaamount = 0;
+					int i;
+					double trainRMSE = -1;
+					double ivalidRMSE = -1;
+					double validRMSE = -1;
+					double tol0 = 1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
+					double tol = tol0;
+					T lambda = -1;
+					double tbestalpha = -1, tbestlambda = -1, tbesttol =
+							std::numeric_limits<double>::max(),
+							tbestrmse[NUMRMSE];
+					RMSELOOP(ri)
+						tbestrmse[ri] = std::numeric_limits<double>::max();
 
-            ////////////////////////////
-            //
-            // LOOP OVER LAMBDA
-            //
-            ///////////////////////////////
-            vector<double> scoring_history;
-            int gotX0=0;
-            double jump=DBL_MAX;
-            double norm=(mValid==0 ? sdTrainY : sdValidY);
-            int skiplambdaamount=0;
-            int i;
-            double trainRMSE=-1;
-            double ivalidRMSE = -1;
-            double validRMSE = -1;
-            double tol0=1E-2; // highest acceptable tolerance (USER parameter)  Too high and won't go below standard deviation.
-            double tol=tol0;
-            T lambda=-1;
-            double tbestalpha=-1,tbestlambda=-1,tbesttol=std::numeric_limits<double>::max(),tbestrmse[NUMRMSE];
-            RMSELOOP(ri) tbestrmse[ri]=std::numeric_limits<double>::max();
+					// LOOP over lambda
+					for (i = 0; i < nlambdalocal; ++i) {
+						if (flag) {
+							continue;
+						}
 
-            // LOOP over lambda
-            for (i = 0; i < nlambdalocal; ++i) {
-              if (flag) {
-                continue;
-              }
+						// Set Lambda
+						lambda = lambdas[i];
+						DEBUG_FPRINTF(fil, "lambda %d = %f\n", i, lambda);
 
-              // Set Lambda
-              lambda = lambdas[i];
-              DEBUG_FPRINTF(fil, "lambda %d = %f\n", i, lambda);
+						//////////////
+						//
+						// if lambda path, control how go along path
+						//
+						//////////////
+						if (lambdatype == LAMBDATYPEPATH) {
 
+							// Reset Solution if starting fresh for this alpha
+							if (i == 0) {
+								// see if have previous solution for new alpha for better warmstart
+								if (gotpreviousX0) {
+									//              DEBUG_FPRINTF(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
+									//              for(unsigned int ll=0;ll<n;ll++) DEBUG_FPRINTF(stderr,"X0[%d]=%g\n",ll,X0[ll]);
+									h2ogpuml_data.SetInitX(X0);
+									h2ogpuml_data.SetInitLambda(L0);
+								} else {
+									h2ogpuml_data.ResetX(); // reset X if new alpha if expect much different solution
+								}
+							}
 
-              //////////////
-              //
-              // if lambda path, control how go along path
-              //
-              //////////////
-              if(lambdatype==LAMBDATYPEPATH){
-              
-                // Reset Solution if starting fresh for this alpha
-                if(i==0){
-                  // see if have previous solution for new alpha for better warmstart
-                  if(gotpreviousX0){
-                    //              DEBUG_FPRINTF(stderr,"m=%d a=%d i=%d Using old alpha solution\n",me,a,i);
-                    //              for(unsigned int ll=0;ll<n;ll++) DEBUG_FPRINTF(stderr,"X0[%d]=%g\n",ll,X0[ll]);
-                    h2ogpuml_data.SetInitX(X0);
-                    h2ogpuml_data.SetInitLambda(L0);
-                  }
-                  else{
-                    h2ogpuml_data.ResetX(); // reset X if new alpha if expect much different solution
-                  }
-                }
+							///////////////////////
+							//
+							// Set tolerances more automatically
+							// (NOTE: that this competes with stopEarly() below in a good way so that it doesn't stop overly early just because errors are flat due to poor tolerance).
+							// Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
+							// To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
+							double jumpuse = DBL_MAX;
+							//h2ogpuml_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
+							tol = tol0; //*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
+							h2ogpuml_data.SetRelTol(tol);
+							h2ogpuml_data.SetAbsTol(
+									1.0 * std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
+											// see if getting below stddev, if so decrease tolerance
+							if (scoring_history.size() >= 1) {
+								double ratio = (norm - scoring_history.back())
+										/ norm;
 
-                ///////////////////////
-                //
-                // Set tolerances more automatically
-                // (NOTE: that this competes with stopEarly() below in a good way so that it doesn't stop overly early just because errors are flat due to poor tolerance).
-                // Note currently using jump or jumpuse.  Only using scoring vs. standard deviation.
-                // To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
-                double jumpuse=DBL_MAX;
-                //h2ogpuml_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
-                tol=tol0;//*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
-                h2ogpuml_data.SetRelTol(tol);
-                h2ogpuml_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
-                // see if getting below stddev, if so decrease tolerance
-                if(scoring_history.size()>=1){
-                  double ratio = (norm-scoring_history.back())/norm;
+								if (ratio > 0.0) {
+									double factor = 0.05; // rate factor (USER parameter)
+									double tollow = 1E-1 * tol0; //*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
+									tol = tol0 * pow(2.0, -ratio / factor); //*lambda/lambdas[0]
+									if (tol < tollow)
+										tol = tollow;
 
-                  if(ratio>0.0){
-                    double factor=0.05; // rate factor (USER parameter)
-                    double tollow=1E-1*tol0;//*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
-                    tol = tol0*pow(2.0,-ratio/factor);//*lambda/lambdas[0]
-                    if(tol<tollow) tol=tollow;
-                
-                    h2ogpuml_data.SetRelTol(tol);
-                    h2ogpuml_data.SetAbsTol(1.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-                    jumpuse=jump;
-                  }
-                  //              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
-                }
-              }
-              else{// single lambda
-                // assume warm-start value of X and other internal variables
-                //                fprintf(stderr,"tol to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
-                tol = tolarrayofa[a];
-                h2ogpuml_data.SetRelTol(tol);
-                h2ogpuml_data.SetAbsTol(10.0*std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
-              }
+									h2ogpuml_data.SetRelTol(tol);
+									h2ogpuml_data.SetAbsTol(
+											1.0
+													* std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+									jumpuse = jump;
+								}
+								//              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tol=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tol,norm,scoring_history.back());
+							}
+						} else { // single lambda
+								 // assume warm-start value of X and other internal variables
+								 //                fprintf(stderr,"tol to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
+							tol = tolarrayofa[a];
+							h2ogpuml_data.SetRelTol(tol);
+							h2ogpuml_data.SetAbsTol(
+									10.0 * std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.
+						}
 
+						////////////////////
+						//
+						// Solve
+						//
+						////////////////////
 
+						DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n",
+								timer<double>());
+						T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
+						// assign lambda (no penalty for intercept, the last coeff, if present)
+						for (unsigned int j = 0; j < n - intercept; ++j) {
+							g[j].c = static_cast<T>(alpha * lambda
+									* penalty_factor); //for L1
+							g[j].e = static_cast<T>((1.0 - alpha) * lambda
+									* penalty_factor); //for L2
+						}
+						if (intercept) {
+							g[n - 1].c = 0;
+							g[n - 1].e = 0;
+						}
+						// Solve
+						h2ogpuml_data.Solve(f, g);
 
-              ////////////////////
-              //
-              // Solve
-              //
-              ////////////////////
-            
-              DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n", timer<double>());
-              T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
-              // assign lambda (no penalty for intercept, the last coeff, if present)
-              for (unsigned int j = 0; j < n - intercept; ++j) {
-                g[j].c = static_cast<T>(alpha * lambda * penalty_factor); //for L1
-                g[j].e = static_cast<T>((1.0 - alpha) * lambda * penalty_factor); //for L2
-              }
-              if (intercept) {
-                g[n - 1].c = 0;
-                g[n - 1].e = 0;
-              }
-              // Solve
-              h2ogpuml_data.Solve(f, g);
+						int doskiplambda = 0;
+						if (lambdatype == LAMBDATYPEPATH) {
+							/////////////////
+							//
+							// Check if getting solution was too easy and was 0 iterations.  If so, overhead is not worth it, so try skipping by 1.
+							//
+							/////////////////
+							if (h2ogpuml_data.GetFinalIter() == 0) {
+								doskiplambda = 1;
+								skiplambdaamount++;
+							} else {
+								// reset if not 0 iterations
+								skiplambdaamount = 0;
+							}
 
+							////////////////////////////////////////////
+							//
+							// Check if solution was found
+							//
+							////////////////////////////////////////////
+							int maxedout = 0;
+							if (h2ogpuml_data.GetFinalIter()
+									== h2ogpuml_data.GetMaxIter())
+								maxedout = 1;
+							else
+								maxedout = 0;
 
-            
-              int doskiplambda=0;
-              if(lambdatype==LAMBDATYPEPATH){
-                /////////////////
-                //
-                // Check if getting solution was too easy and was 0 iterations.  If so, overhead is not worth it, so try skipping by 1.
-                //
-                /////////////////
-                if(h2ogpuml_data.GetFinalIter()==0){
-                  doskiplambda=1;
-                  skiplambdaamount++;
-                }
-                else{
-                  // reset if not 0 iterations
-                  skiplambdaamount=0;
-                }
+							if (maxedout)
+								h2ogpuml_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
+							// store good high-lambda solution to start next alpha with (better than starting with low-lambda solution)
+							if (gotX0 == 0 && maxedout == 0) {
+								gotX0 = 1;
+								// TODO: FIXME: Need to get (and have solver set) best solution or return all, because last is not best.
+								gotpreviousX0 = 1;
+								memcpy(X0, &h2ogpuml_data.GetX()[0],
+										n * sizeof(T));
+								memcpy(L0, &h2ogpuml_data.GetLambda()[0],
+										mTrain * sizeof(T));
+							}
 
-            
-                ////////////////////////////////////////////
-                //
-                // Check if solution was found
-                //
-                ////////////////////////////////////////////
-                int maxedout=0;
-                if(h2ogpuml_data.GetFinalIter()==h2ogpuml_data.GetMaxIter()) maxedout=1;
-                else maxedout=0;
+						}
 
-                if(maxedout) h2ogpuml_data.ResetX(); // reset X if bad solution so don't start next lambda with bad solution
-                // store good high-lambda solution to start next alpha with (better than starting with low-lambda solution)
-                if(gotX0==0 && maxedout==0){
-                  gotX0=1;
-                  // TODO: FIXME: Need to get (and have solver set) best solution or return all, because last is not best.
-                  gotpreviousX0=1;
-                  memcpy(X0,&h2ogpuml_data.GetX()[0],n*sizeof(T));
-                  memcpy(L0,&h2ogpuml_data.GetLambda()[0],mTrain*sizeof(T));
-                }
-            
-              }
+						if (intercept) {
+							DEBUG_FPRINTF(fil, "intercept: %g\n",
+									h2ogpuml_data.GetX()[n - 1]);
+							DEBUG_FPRINTF(stdout, "intercept: %g\n",
+									h2ogpuml_data.GetX()[n - 1]);
+						}
 
-              if (intercept) {
-                DEBUG_FPRINTF(fil, "intercept: %g\n", h2ogpuml_data.GetX()[n - 1]);
-                DEBUG_FPRINTF(stdout, "intercept: %g\n", h2ogpuml_data.GetX()[n - 1]);
-              }
+						////////////////////////////////////////
+						//
+						// Get predictions for training and validation
+						//
+						//////////////////////////////////////////
 
+						// Degrees of freedom
+						size_t dof = 0;
+						{
+							for (size_t i = 0; i < n - intercept; ++i) {
+								if (std::abs(h2ogpuml_data.GetX()[i]) > 1e-8) {
+									dof++;
+								}
+							}
+						}
 
-              ////////////////////////////////////////
-              //
-              // Get predictions for training and validation
-              //
-              //////////////////////////////////////////
+						int whichbeta[NUMBETA];
+						T valuebeta[NUMBETA];
+						int whichmax = 1; // 0 : larger  1: largest absolute magnitude
+						h2ogpuml::topkwrap(whichmax, (int) (n - intercept),
+								(int) (NUMBETA),
+								const_cast<T*>(&h2ogpuml_data.GetX()[0]),
+								&whichbeta[0], &valuebeta[0]);
 
-              // Degrees of freedom
-              size_t dof = 0;
-              {
-                for (size_t i = 0; i < n - intercept; ++i) {
-                  if (std::abs(h2ogpuml_data.GetX()[i]) > 1e-8) {
-                    dof++;
-                  }
-                }
-              }
+						//              memcpy(X0,&h2ogpuml_data.GetX()[0],n*sizeof(T));
+						if (0) {
+							std::sort(const_cast<T*>(&h2ogpuml_data.GetX()[0]),
+									const_cast<T*>(&h2ogpuml_data.GetX()[n
+											- intercept]));
+							for (size_t i = 0; i < n - intercept; ++i) {
+								fprintf(stderr, "BETA: i=%zu beta=%g\n", i,
+										h2ogpuml_data.GetX()[i]);
+								fflush(stderr);
+							}
+						}
 
-              
-
-              int whichbeta[NUMBETA];
-              T valuebeta[NUMBETA];
-              int whichmax=1; // 0 : larger  1: largest absolute magnitude
-              h2ogpuml::topkwrap(whichmax,(int)(n-intercept),(int)(NUMBETA),const_cast<T*>(&h2ogpuml_data.GetX()[0]),&whichbeta[0],&valuebeta[0]);
-              
-              //              memcpy(X0,&h2ogpuml_data.GetX()[0],n*sizeof(T));
-              if(0){
-                std::sort(const_cast<T*>(&h2ogpuml_data.GetX()[0]),const_cast<T*>(&h2ogpuml_data.GetX()[n-intercept]));
-                for (size_t i = 0; i < n - intercept; ++i) {
-                  fprintf(stderr,"BETA: i=%zu beta=%g\n",i,h2ogpuml_data.GetX()[i]); fflush(stderr);
-                }
-              }
-
-
-
-
-              // TRAIN PREDS
+						// TRAIN PREDS
 #if(OLDPRED)
-              std::vector <T> trainPreds(mTrain);
-              for (size_t i = 0; i < mTrain; ++i) {
-                trainPreds[i] = 0;
-                for (size_t j = 0; j < n; ++j) {
-                  trainPreds[i] += h2ogpuml_data.GetX()[j] * trainX[i * n + j]; //add predictions
-                }
-              }
+						std::vector <T> trainPreds(mTrain);
+						for (size_t i = 0; i < mTrain; ++i) {
+							trainPreds[i] = 0;
+							for (size_t j = 0; j < n; ++j) {
+								trainPreds[i] += h2ogpuml_data.GetX()[j] * trainX[i * n + j]; //add predictions
+							}
+						}
 #else
-              std::vector <T> trainPreds(&h2ogpuml_data.GettrainPreds()[0], &h2ogpuml_data.GettrainPreds()[0]+mTrain);
-              //              for(unsigned int iii=0;iii<mTrain;iii++){
-              //                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
-              //              }
+						std::vector<T> trainPreds(
+								&h2ogpuml_data.GettrainPreds()[0],
+								&h2ogpuml_data.GettrainPreds()[0] + mTrain);
+						//              for(unsigned int iii=0;iii<mTrain;iii++){
+						//                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
+						//              }
 #endif
-              // RMSE: TRAIN
-              trainRMSE = h2ogpuml::getRMSE(weights, mTrain, &trainPreds[0], trainY);
-              if(standardize){
-                trainRMSE *= sdTrainY;
-                for (size_t i = 0; i < mTrain; ++i) {
-                  // reverse standardization
-                  trainPreds[i]*=sdTrainY; //scale
-                  trainPreds[i]+=meanTrainY; //intercept
-                  //assert(trainPreds[i] == h2ogpuml_data.GetY()[i]); //FIXME: CHECK
-                }
-              }
+						// RMSE: TRAIN
+						trainRMSE = h2ogpuml::getRMSE(weights, mTrain,
+								&trainPreds[0], trainY);
+						if (standardize) {
+							trainRMSE *= sdTrainY;
+							for (size_t i = 0; i < mTrain; ++i) {
+								// reverse standardization
+								trainPreds[i] *= sdTrainY; //scale
+								trainPreds[i] += meanTrainY; //intercept
+								//assert(trainPreds[i] == h2ogpuml_data.GetY()[i]); //FIXME: CHECK
+							}
+						}
 
-            
-              // RMSE: on fold's held-out training data
-              if(realfolds>1){
-                const T offset=1.0;
-                ivalidRMSE = h2ogpuml::getRMSE(offset, weights, mTrain, &trainPreds[0], trainY);
-              }
-              else{
-                ivalidRMSE = -1.0;
-              }
+						// RMSE: on fold's held-out training data
+						if (realfolds > 1) {
+							const T offset = 1.0;
+							ivalidRMSE = h2ogpuml::getRMSE(offset, weights,
+									mTrain, &trainPreds[0], trainY);
+						} else {
+							ivalidRMSE = -1.0;
+						}
 
+						// VALID (preds and rmse)
+						validRMSE = -1;
+						if (mValid > 0) {
 
-              // VALID (preds and rmse)
-              validRMSE = -1;
-              if (mValid > 0) {
+							T weightsvalid[mValid];
+							for (size_t i = 0; i < mValid; ++i) {          //row
+								weightsvalid[i] = 1.0;
+							}
 
-                T weightsvalid[mValid];
-                for (size_t i = 0; i < mValid; ++i) {//row
-                  weightsvalid[i] = 1.0;
-                }
-
-                // Valid Preds
+							// Valid Preds
 #if(OLDPRED)
-                std::vector <T> validPreds(mValid);
-                for (size_t i = 0; i < mValid; ++i) { //row
-                  validPreds[i] = 0;
-                  for (size_t j = 0; j < n; ++j) { //col
-                    validPreds[i] += h2ogpuml_data.GetX()[j] * validX[i * n + j]; //add predictions
-                  }
-                }
+							std::vector <T> validPreds(mValid);
+							for (size_t i = 0; i < mValid; ++i) { //row
+								validPreds[i] = 0;
+								for (size_t j = 0; j < n; ++j) { //col
+									validPreds[i] += h2ogpuml_data.GetX()[j] * validX[i * n + j];//add predictions
+								}
+							}
 #else
-                std::vector <T> validPreds(&h2ogpuml_data.GetvalidPreds()[0], &h2ogpuml_data.GetvalidPreds()[0]+mValid);
+							std::vector<T> validPreds(
+									&h2ogpuml_data.GetvalidPreds()[0],
+									&h2ogpuml_data.GetvalidPreds()[0] + mValid);
 #endif
-                // RMSE: VALIDs
-                validRMSE = h2ogpuml::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
-                if(standardize){
-                  validRMSE *= sdTrainY;
-                  for (size_t i = 0; i < mValid; ++i) { //row
-                    // reverse (fitted) standardization
-                    validPreds[i]*=sdTrainY; //scale
-                    validPreds[i]+=meanTrainY; //intercept
-                  }
-                }
-              }
+							// RMSE: VALIDs
+							validRMSE = h2ogpuml::getRMSE(weightsvalid, mValid,
+									&validPreds[0], validY);
+							if (standardize) {
+								validRMSE *= sdTrainY;
+								for (size_t i = 0; i < mValid; ++i) { //row
+									// reverse (fitted) standardization
+									validPreds[i] *= sdTrainY; //scale
+									validPreds[i] += meanTrainY; //intercept
+								}
+							}
+						}
 
-              ////////////
-              //
-              // report scores
-              //
-              ////////////
-              if(VERBOSEENET) Printmescore(fil);
+						////////////
+						//
+						// report scores
+						//
+						////////////
+						if (VERBOSEENET)
+							Printmescore(fil);
 #pragma omp critical
-              {
-                if(VERBOSEENET) Printmescore(stdout);
-                Printmescoresimple(filrmse);
-                Printmescoresimple2(filvarimp);
-              }
+						{
+							if (VERBOSEENET)
+								Printmescore(stdout);
+							Printmescoresimple(filrmse);
+							Printmescoresimple2(filvarimp);
+						}
 
-              T localrmse[NUMRMSE];
-              localrmse[0]=trainRMSE;
-              localrmse[1]=ivalidRMSE;
-              localrmse[2]=validRMSE;
-              if(tbestrmse[iwhichrmse]>localrmse[iwhichrmse]){
-                tbestalpha=alpha;
-                tbestlambda=lambda;
-                tbesttol=tol;
-                RMSELOOP(ri) tbestrmse[ri]=localrmse[ri];
-              }
+						T localrmse[NUMRMSE];
+						localrmse[0] = trainRMSE;
+						localrmse[1] = ivalidRMSE;
+						localrmse[2] = validRMSE;
+						if (tbestrmse[iwhichrmse] > localrmse[iwhichrmse]) {
+							tbestalpha = alpha;
+							tbestlambda = lambda;
+							tbesttol = tol;
+							RMSELOOP(ri)
+								tbestrmse[ri] = localrmse[ri];
+						}
 
-              // save scores
-              scoring_history.push_back(localrmse[iwhichrmse]);
+						// save scores
+						scoring_history.push_back(localrmse[iwhichrmse]);
 
+						if (lambdatype == LAMBDATYPEPATH) {
+							if (fi == 0 && givefullpath) { // only store first fold for user
+								//#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
+								//#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
+								//#define NUMOTHER 3 // for lambda, alpha, tol
+								// Save solution to return to user
+								memcpy(&((*Xvsalphalambda)[MAPXALL(i, a, 0)]),
+										&h2ogpuml_data.GetX()[0],
+										n * sizeof(T));
+								// Save rmse to return to user
+								RMSELOOP(ri)
+									(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] =
+											localrmse[ri];
+								// Save lambda to return to user
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE)] =
+										lambda;
+								// Save alpha to return to user
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE+1)] =
+										alpha;
+								// Save tol to return to user
+								(*Xvsalphalambda)[MAPXALL(i, a, n+NUMRMSE+2)] =
+										tol;
+							}
+						} else {                  // only done if realfolds>1
+							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
+									&h2ogpuml_data.GetX()[0], n * sizeof(T));
+							// Save rmse to return to user
+							RMSELOOP(ri)
+								(*Xvsalpha)[MAPXBEST(a, n + ri)] =
+										localrmse[ri];
+							// Save lambda to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE)] = lambda;
+							// Save alpha to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+1)] = alpha;
+							// Save tol to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+2)] = tol;
+						}
 
-              if(lambdatype==LAMBDATYPEPATH){
-                if(fi==0 && givefullpath){ // only store first fold for user
-                  //#define MAPXALL(i,a,which) (which + a*(n+NUMRMSE+NUMOTHER) + i*(n+NUMRMSE+NUMOTHER)*nLambdas)
-                  //#define MAPXBEST(a,which) (which + a*(n+NUMRMSE+NUMOTHER))
-                  //#define NUMOTHER 3 // for lambda, alpha, tol
-                  // Save solution to return to user
-                  memcpy( &((*Xvsalphalambda)[MAPXALL(i,a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T));
-                  // Save rmse to return to user
-                  RMSELOOP(ri) (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = localrmse[ri];
-                  // Save lambda to return to user
-                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE)] = lambda;
-                  // Save alpha to return to user
-                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE+1)] = alpha;
-                  // Save tol to return to user
-                  (*Xvsalphalambda)[MAPXALL(i,a,n+NUMRMSE+2)] = tol;
-                }
-              }
-              else{// only done if realfolds>1
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T));
-                // Save rmse to return to user
-                RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = localrmse[ri];
-                // Save lambda to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE)] = lambda;
-                // Save alpha to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+1)] = alpha;
-                // Save tol to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+2)] = tol;
-              }
-              
-              
+						if (lambdatype == LAMBDATYPEPATH) {
+							if (DOSTOPEARLY) {
+								if (scoring_history.size() >= 1) {
+									double ratio = (norm
+											- scoring_history.back()) / norm;
 
+									double fracdof = 0.5; //USER parameter.
+									//                    if((double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+									if (RELAXEARLYSTOP
+											|| ratio > 0.0
+													&& (double) dof
+															> fracdof
+																	* (double) (n)) { // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
+															//                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
+															// STOP EARLY CHECK
+										int k = 3; //TODO: ask the user for this parameter
+										double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
+										bool moreIsBetter = false;
+										bool verbose =
+												static_cast<bool>(VERBOSEENET); // true;
+										if (stopEarly(scoring_history, k,
+												tolerance, moreIsBetter,
+												verbose, norm, &jump)) {
+											break;
+										}
+									}
+								}
+							}
 
-
-              if(lambdatype==LAMBDATYPEPATH){
-                if(DOSTOPEARLY){
-                  if(scoring_history.size()>=1){
-                    double ratio = (norm-scoring_history.back())/norm;
-
-                    double fracdof=0.5; //USER parameter.
-                    //                    if((double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
-                    if(RELAXEARLYSTOP || ratio>0.0 && (double)dof>fracdof*(double)(n)){ // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
-                      //                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
-                      // STOP EARLY CHECK
-                      int k = 3; //TODO: ask the user for this parameter
-                      double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
-                      bool moreIsBetter = false;
-                      bool verbose = static_cast<bool>(VERBOSEENET);// true;
-                      if (stopEarly(scoring_history, k, tolerance, moreIsBetter, verbose,norm,&jump)) {
-                        break;
-                      }
-                    }
-                  }
-                }
-
-                //                fprintf(stderr,"doskiplambda=%d skiplambdaamount=%d\n",doskiplambda,skiplambdaamount);fflush(stderr);
-                // if can skip over lambda, do so, but still print out the score as if constant for new lambda
-                if(doskiplambda){
-                  for (int ii = 0; ii < skiplambdaamount; ++ii) {
-                    i++;
-                    if(i>=nlambdalocal) break; // don't skip beyond existing lambda
-                    lambda = lambdas[i];
-                    if(VERBOSEENET) Printmescore(fil);
+							//                fprintf(stderr,"doskiplambda=%d skiplambdaamount=%d\n",doskiplambda,skiplambdaamount);fflush(stderr);
+							// if can skip over lambda, do so, but still print out the score as if constant for new lambda
+							if (doskiplambda) {
+								for (int ii = 0; ii < skiplambdaamount; ++ii) {
+									i++;
+									if (i >= nlambdalocal)
+										break; // don't skip beyond existing lambda
+									lambda = lambdas[i];
+									if (VERBOSEENET)
+										Printmescore(fil);
 #pragma omp critical
-                    {
-                      if(VERBOSEENET) Printmescore(stdout);
-                      Printmescoresimple(filrmse);
-                      Printmescoresimple2(filvarimp);
-                    }
-                  }
-                }
-              }
-            
-            }// over lambda(s)
+									{
+										if (VERBOSEENET)
+											Printmescore(stdout);
+										Printmescoresimple(filrmse);
+										Printmescoresimple2(filvarimp);
+									}
+								}
+							}
+						}
 
+					} // over lambda(s)
 
-            // store results
-            int pickfi;
-            if(lambdatype==LAMBDATYPEPATH) pickfi=fi; // variable lambda folds
-            else pickfi=realfolds+fi; // fixed-lambda folds
-            // store RMSE (thread-safe)
-            alphaarray[pickfi][a]=tbestalpha;
-            lambdaarray[pickfi][a]=tbestlambda;
-            tolarray[pickfi][a]=tbesttol;
-            RMSELOOP(ri) rmsearray[ri][pickfi][a]=tbestrmse[ri];
+					// store results
+					int pickfi;
+					if (lambdatype == LAMBDATYPEPATH)
+						pickfi = fi; // variable lambda folds
+					else
+						pickfi = realfolds + fi; // fixed-lambda folds
+					// store RMSE (thread-safe)
+					alphaarray[pickfi][a] = tbestalpha;
+					lambdaarray[pickfi][a] = tbestlambda;
+					tolarray[pickfi][a] = tbesttol;
+					RMSELOOP(ri)
+						rmsearray[ri][pickfi][a] = tbestrmse[ri];
 
+					// if not doing folds, store best solution over all lambdas
+					if (lambdatype == LAMBDATYPEPATH && nFolds < 2) {
+						if (fi == 0) { // only store first fold for user
+							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
+									&h2ogpuml_data.GetX()[0], n * sizeof(T)); // not quite best, last lambda TODO FIXME
+							//                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
+							// Save rmse to return to user
+							RMSELOOP(ri)
+								(*Xvsalpha)[MAPXBEST(a, n + ri)] =
+										tbestrmse[ri];
+							// Save lambda to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE)] = tbestlambda;
+							// Save alpha to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+1)] = tbestalpha;
+							// Save tol to return to user
+							(*Xvsalpha)[MAPXBEST(a, n+NUMRMSE+2)] = tbesttol;
+						}
+					}
 
-            // if not doing folds, store best solution over all lambdas
-            if(lambdatype==LAMBDATYPEPATH && nFolds<2){
-              if(fi==0){ // only store first fold for user
-                memcpy( &((*Xvsalpha)[MAPXBEST(a,0)]),&h2ogpuml_data.GetX()[0],n*sizeof(T)); // not quite best, last lambda TODO FIXME
-                //                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
-                // Save rmse to return to user
-                RMSELOOP(ri) (*Xvsalpha)[MAPXBEST(a,n+ri)] = tbestrmse[ri];
-                // Save lambda to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE)] = tbestlambda;
-                // Save alpha to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+1)] = tbestalpha;
-                // Save tol to return to user
-                (*Xvsalpha)[MAPXBEST(a,n+NUMRMSE+2)] = tbesttol;
-              }
-            }
-            
-
-          }// over folds
-        }// over alpha
-
+				}                // over folds
+			}                // over alpha
 
 #pragma omp barrier // barrier so alphaarray, lambdaarray, rmsearray are filled and ready to be read by all threads
-        int fistart;
-        if(lambdatype==LAMBDATYPEPATH) fistart=0; // variable lambda folds
-        else fistart=realfolds; // fixed-lambda folds
+			int fistart;
+			if (lambdatype == LAMBDATYPEPATH)
+				fistart = 0; // variable lambda folds
+			else
+				fistart = realfolds; // fixed-lambda folds
 
-
-        // get CV averaged RMSE and best solution (using shared memory arrays that are thread-safe)
-        double bestalpha=0;
-        double bestlambda=0;
-        double besttol=std::numeric_limits<double>::max();
-        double bestrmse[NUMRMSE];
-        RMSELOOP(ri) bestrmse[ri]=std::numeric_limits<double>::max();
-        for (size_t a = 0; a < nAlphas; ++a) { //alpha
-          alphaarrayofa[a]=0.0;
-          lambdaarrayofa[a]=0.0;
-          tolarrayofa[a]=std::numeric_limits<double>::max();
-          RMSELOOP(ri) rmsearrayofa[ri][a]=0.0;
-          for (size_t fi = fistart; fi < fistart+realfolds; ++fi) { //fold
-            alphaarrayofa[a]+=alphaarray[fi][a];
-            lambdaarrayofa[a]+=lambdaarray[fi][a];
+			// get CV averaged RMSE and best solution (using shared memory arrays that are thread-safe)
+			double bestalpha = 0;
+			double bestlambda = 0;
+			double besttol = std::numeric_limits<double>::max();
+			double bestrmse[NUMRMSE];
+			RMSELOOP(ri)
+				bestrmse[ri] = std::numeric_limits<double>::max();
+			for (size_t a = 0; a < nAlphas; ++a) { //alpha
+				alphaarrayofa[a] = 0.0;
+				lambdaarrayofa[a] = 0.0;
+				tolarrayofa[a] = std::numeric_limits<double>::max();
+				RMSELOOP(ri)
+					rmsearrayofa[ri][a] = 0.0;
+				for (size_t fi = fistart; fi < fistart + realfolds; ++fi) { //fold
+					alphaarrayofa[a] += alphaarray[fi][a];
+					lambdaarrayofa[a] += lambdaarray[fi][a];
 #define MIN(a,b) ((a)<(b)?(a):(b))
-            tolarrayofa[a]=MIN(tolarrayofa[a],tolarray[fi][a]); // choose common min tolerance
-            RMSELOOP(ri) rmsearrayofa[ri][a]+=rmsearray[ri][fi][a];
-          }
-          // get average rmse over folds for this alpha
-          alphaarrayofa[a]/=((double)(realfolds));
-          lambdaarrayofa[a]/=((double)(realfolds));
-          RMSELOOP(ri) rmsearrayofa[ri][a]/=((double)(realfolds));
-          if(rmsearrayofa[owhichrmse][a]<bestrmse[owhichrmse]){
-            bestalpha=alphaarrayofa[a]; // get alpha for this case
-            bestlambda=lambdaarrayofa[a]; // get lambda for this case
-            besttol=tolarrayofa[a]; // get tol for this case
-            RMSELOOP(ri) bestrmse[ri]=rmsearrayofa[ri][a]; // get best rmse as average for this alpha
-          }
-          if(VERBOSEENET){
-            if(lambdatype==LAMBDATYPEPATH && realfolds>1) fprintf(stderr,"To use for last CV models: alpha=%g lambda=%g tol=%g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
-          }
-        }
+					tolarrayofa[a] = MIN(tolarrayofa[a], tolarray[fi][a]); // choose common min tolerance
+					RMSELOOP(ri)
+						rmsearrayofa[ri][a] += rmsearray[ri][fi][a];
+				}
+				// get average rmse over folds for this alpha
+				alphaarrayofa[a] /= ((double) (realfolds));
+				lambdaarrayofa[a] /= ((double) (realfolds));
+				RMSELOOP(ri)
+					rmsearrayofa[ri][a] /= ((double) (realfolds));
+				if (rmsearrayofa[owhichrmse][a] < bestrmse[owhichrmse]) {
+					bestalpha = alphaarrayofa[a]; // get alpha for this case
+					bestlambda = lambdaarrayofa[a]; // get lambda for this case
+					besttol = tolarrayofa[a]; // get tol for this case
+					RMSELOOP(ri)
+						bestrmse[ri] = rmsearrayofa[ri][a]; // get best rmse as average for this alpha
+				}
+				if (VERBOSEENET) {
+					if (lambdatype == LAMBDATYPEPATH && realfolds > 1)
+						fprintf(stderr,
+								"To use for last CV models: alpha=%g lambda=%g tol=%g\n",
+								alphaarrayofa[a], lambdaarrayofa[a],
+								tolarrayofa[a]);
+					fflush(stderr);
+				}
+			}
 
+			// print result (all threads have same result, so only need to print on one thread)
+			if (me == 0 && VERBOSEENET)
+				PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,bestrmse[0],bestrmse[1],bestrmse[2]);
 
-        
-        // print result (all threads have same result, so only need to print on one thread)
-        if(me==0 && VERBOSEENET) PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,bestrmse[0],bestrmse[1],bestrmse[2]);
-          
-      }// over lambdatype
+		} // over lambdatype
 
-      if(X0) delete [] X0;
-      if(L0) delete [] L0;
-      if (fil != NULL) fclose(fil);
-    } // end parallel region
+		if (X0)
+			delete[] X0;
+		if (L0)
+			delete[] L0;
+		if (fil != NULL)
+			fclose(fil);
+	} // end parallel region
 
+	///////////////////////
+	//
+	// report over all folds, cross-validated model, and over alphas
+	//
+	///////////////////////
+	if (VERBOSEENET) {
+		for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
+			for (size_t a = 0; a < nAlphas; ++a) { //alpha
+				fprintf(stderr,
+						"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",
+						(fi >= realfolds ? 1 : 0),
+						(fi >= realfolds ? fi - realfolds : fi),
+						alphaarray[fi][a], lambdaarray[fi][a],
+						rmsearray[0][fi][a], rmsearray[1][fi][a],
+						rmsearray[2][fi][a]);
+				fflush(stderr);
+			}
+		}
+	}
 
-    ///////////////////////
-    //
-    // report over all folds, cross-validated model, and over alphas
-    //
-    ///////////////////////
-    if(VERBOSEENET){
-      for (size_t fi = 0; fi < totalfolds; ++fi) { //fold
-        for (size_t a = 0; a < nAlphas; ++a) { //alpha
-          fprintf(stderr,"pass=%d fold=%zu alpha=%21.15g lambda=%21.15g rmseTrain=%21.15g rmseiValid=%21.15g rmseValid=%21.15g\n",(fi>=realfolds ? 1 : 0),(fi>=realfolds ? fi-realfolds : fi),alphaarray[fi][a],lambdaarray[fi][a],rmsearray[0][fi][a],rmsearray[1][fi][a],rmsearray[2][fi][a]); fflush(stderr);
-        }
-      }
-    }
+	// free any malloc's
+	if (trainX && OLDPRED)
+		free(trainX);
+	if (trainY)
+		free(trainY);
+	if (validX && OLDPRED)
+		free(validX);
+	if (validY)
+		free(validY);
+	if (trainW)
+		free(trainW);
 
-    // free any malloc's
-    if(trainX && OLDPRED) free(trainX);
-    if(trainY) free(trainY);
-    if(validX && OLDPRED) free(validX);
-    if(validY) free(validY);
-    if(trainW) free(trainW);
-
-    double tf = timer<double>();
-    if(VERBOSEENET){
-      fprintf(stdout, "END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
-      fflush(stdout);
-    }
-    if (flag) {
-      fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
-      flag = 0; // set flag
-    }
-    return tf - t;
-  }
-
-
-
+	double tf = timer<double>();
+	if (VERBOSEENET) {
+		fprintf(stdout,
+				"END SOLVE: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n",
+				(int) mTrain, (int) n, (int) mValid, tf - t, tf - t1me0);
+		fflush(stdout);
+	}
+	if (flag) {
+		fprintf(stderr, "Signal caught. Terminated early.\n");
+		fflush(stderr);
+		flag = 0; // set flag
+	}
+	return tf - t;
+}
 
 template<typename T>
-double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                             size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                             double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                             void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                             ,int givefullpath
-                             ,T **Xvsalphalambda, T **Xvsalpha
-                             ,T **validPredsvsalphalambda, T **validPredsvsalpha
-                             ,size_t *countfull, size_t *countshort, size_t *countmore
-                     ) {
-    
-    
-    
-    signal(SIGINT, my_function);
-    signal(SIGTERM, my_function);
-    int nlambda = nLambdas;
+double ElasticNetptr_predict(int sourceDev, int datatype, int sharedA,
+		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
+		size_t mValid, int intercept, int standardize, double lambda_min_ratio,
+		int nLambdas, int nFolds, int nAlphas, int stopearly,
+		double stopearlyrmsefraction, int max_iterations, int verbose,
+		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
+		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
+		size_t *countshort, size_t *countmore) {
 
+	signal(SIGINT, my_function);
+	signal(SIGTERM, my_function);
+	int nlambda = nLambdas;
 
-    // critical files for all threads
-    char filename0[100];
-    sprintf(filename0, "predrmse.txt");
-    FILE *filrmse = fopen(filename0, "wt");
-    if (filrmse == NULL) {
-      cerr << "Cannot open filename0=" << filename0 << endl;
-      exit(0);
-    }
-    
-    if(VERBOSEENET){
-      cout << "Hardware: " << HARDWARE << endl;
-    }
+	// critical files for all threads
+	char filename0[100];
+	sprintf(filename0, "predrmse.txt");
+	FILE *filrmse = fopen(filename0, "wt");
+	if (filrmse == NULL) {
+		cerr << "Cannot open filename0=" << filename0 << endl;
+		exit(0);
+	}
 
-    // number of openmp threads = number of cuda devices to use
+	if (VERBOSEENET) {
+		cout << "Hardware: " << HARDWARE << endl;
+	}
+
+	// number of openmp threads = number of cuda devices to use
 #ifdef _OPENMP
-    int omt=omp_get_max_threads();
-    //      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
-    omp_set_num_threads(nThreads);  // not necessary, but most useful mode so far
-    int nth=omp_get_max_threads();
-    //      nGPUs=nth; // openmp threads = cuda/cpu devices used
-    omp_set_dynamic(0);
+	int omt=omp_get_max_threads();
+	//      omp_set_num_threads(MIN(omt,nGPUs));  // not necessary, but most useful mode so far
+	omp_set_num_threads(nThreads);// not necessary, but most useful mode so far
+	int nth=omp_get_max_threads();
+	//      nGPUs=nth; // openmp threads = cuda/cpu devices used
+	omp_set_dynamic(0);
 #if(USEMKL==1)
-    mkl_set_dynamic(0);
+	mkl_set_dynamic(0);
 #endif
-    omp_set_nested(1);
-    omp_set_max_active_levels(2);
+	omp_set_nested(1);
+	omp_set_max_active_levels(2);
 #ifdef DEBUG
-    cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
+	cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
 #endif
-    if (nAlphas % nThreads != 0) {
-      DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
-    }
+	if (nAlphas % nThreads != 0) {
+		DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
+	}
 #endif
 
-    if(VERBOSEENET){ fprintf(stderr,"Before malloc validPreds\n"); fflush(stderr); }
+	if (VERBOSEENET) {
+		fprintf(stderr, "Before malloc validPreds\n");
+		fflush(stderr);
+	}
 
-    // setup storage for returning results back to user
-    if(givefullpath){
-      *validPredsvsalphalambda = (T*) calloc(*countfull/(n+NUMOTHER)*mValid,sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
-    }
-    else{ // only give back solution for optimal lambda after CV is done
-      *validPredsvsalphalambda = NULL;
-    }
-    *validPredsvsalpha = (T*) calloc(*countshort/(n+NUMOTHER)*mValid,sizeof(T));
-    //    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
+	// setup storage for returning results back to user
+	if (givefullpath) {
+		*validPredsvsalphalambda = (T*) calloc(
+				*countfull / (n + NUMOTHER) * mValid, sizeof(T)); // +NUMOTHER for values of lambda, alpha, and tolerance
+	} else { // only give back solution for optimal lambda after CV is done
+		*validPredsvsalphalambda = NULL;
+	}
+	*validPredsvsalpha = (T*) calloc(*countshort / (n + NUMOTHER) * mValid,
+			sizeof(T));
+	//    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
 
-    if(VERBOSEENET){ fprintf(stderr,"After malloc validPreds\n"); fflush(stderr); }
-    // for source, create class objects that creates cuda memory, cpu memory, etc.
-    // This takes-in raw GPU pointer
-    //  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
-    // assume source thread is 0th thread (TODO: need to ensure?)
-    int sourceme=sourceDev;
-    if(VERBOSEENET){ fprintf(stderr,"Before Asource\n"); fflush(stderr); }
-    h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype, ord, mTrain, n, mValid,
-                                      reinterpret_cast<T *>(trainXptr), reinterpret_cast<T *>(trainYptr),
-                                      reinterpret_cast<T *>(validXptr), reinterpret_cast<T *>(validYptr),
-                                      reinterpret_cast<T *>(weightptr));
-    // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
-    if(VERBOSEENET){ fprintf(stderr,"After Asource\n"); fflush(stderr); }
-    // Setup each thread's h2ogpuml
-    double t = timer<double>();
-    double t1me0;
+	if (VERBOSEENET) {
+		fprintf(stderr, "After malloc validPreds\n");
+		fflush(stderr);
+	}
+	// for source, create class objects that creates cuda memory, cpu memory, etc.
+	// This takes-in raw GPU pointer
+	//  h2ogpuml::MatrixDense<T> Asource_(sourceDev, ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr));
+	// assume source thread is 0th thread (TODO: need to ensure?)
+	int sourceme = sourceDev;
+	if (VERBOSEENET) {
+		fprintf(stderr, "Before Asource\n");
+		fflush(stderr);
+	}
+	h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype,
+			ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr),
+			reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr),
+			reinterpret_cast<T *>(validYptr), reinterpret_cast<T *>(weightptr));
+	// now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
+	if (VERBOSEENET) {
+		fprintf(stderr, "After Asource\n");
+		fflush(stderr);
+	}
+	// Setup each thread's h2ogpuml
+	double t = timer<double>();
+	double t1me0;
 
-    ////////////////////////////////
-    // PARALLEL REGION
+	////////////////////////////////
+	// PARALLEL REGION
 #pragma omp parallel proc_bind(master)
-    {
+	{
 #ifdef _OPENMP
-      int me = omp_get_thread_num();
-      //https://software.intel.com/en-us/node/522115
-      int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
-      // set number of mkl threads per openmp thread so that not oversubscribing cores
-      int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+		int me = omp_get_thread_num();
+		//https://software.intel.com/en-us/node/522115
+		int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
+		// set number of mkl threads per openmp thread so that not oversubscribing cores
+		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
 #if(USEMKL==1)
-      //mkl_set_num_threads_local(mklperthread);
-      mkl_set_num_threads_local(mklperthread);
-      //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
+		//mkl_set_num_threads_local(mklperthread);
+		mkl_set_num_threads_local(mklperthread);
+		//But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
 #endif
 #else
-      int me=0;
+		int me = 0;
 #endif
 
-      int blasnumber;
+		int blasnumber;
 #ifdef HAVECUDA
-      blasnumber=CUDA_MAJOR;
+		blasnumber=CUDA_MAJOR;
 #else
-      blasnumber=mklperthread; // roughly accurate for openblas as well
+		blasnumber = mklperthread; // roughly accurate for openblas as well
 #endif
-        
-      // choose GPU device ID for each thread
-      int wDev = (nGPUs>0 ? me%nGPUs : 0);
 
-      // Setup file output
-      char filename[100];
-      sprintf(filename, "predme%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_, TEXTARCH, sharedA, nThreads, nGPUs);
-      FILE *fil = fopen(filename, "wt");
-      if (fil == NULL) {
-        cerr << "Cannot open filename=" << filename << endl;
-        exit(0);
-      }
-      else fflush(fil);
+		// choose GPU device ID for each thread
+		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
 
-      
+		// Setup file output
+		char filename[100];
+		sprintf(filename, "predme%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
+				TEXTARCH, sharedA, nThreads, nGPUs);
+		FILE *fil = fopen(filename, "wt");
+		if (fil == NULL) {
+			cerr << "Cannot open filename=" << filename << endl;
+			exit(0);
+		} else
+			fflush(fil);
 
-      ////////////
-      //
-      // create class objects that creates cuda memory, cpu memory, etc.
-      //
-      ////////////
-      double t0 = timer<double>();
-      DEBUG_FPRINTF(fil, "Pred: Moving data to the GPU. Starting at %21.15g\n", t0);
+		////////////
+		//
+		// create class objects that creates cuda memory, cpu memory, etc.
+		//
+		////////////
+		double t0 = timer<double>();
+		DEBUG_FPRINTF(fil,
+				"Pred: Moving data to the GPU. Starting at %21.15g\n", t0);
 #pragma omp barrier // not required barrier
-      h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
+		h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_);
 #pragma omp barrier // required barrier for wDev=sourceDev so that Asource_._data (etc.) is not overwritten inside h2ogpuml_data(wDev=sourceDev) below before other cores copy data
-      h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(sharedA, me, wDev, A_);
+		h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(
+				sharedA, me, wDev, A_);
 #pragma omp barrier // not required barrier
-      double t1 = timer<double>();
-      if(me==0){ //only thread=0 times entire post-warmup procedure
-        t1me0=t1;
-      }
-      DEBUG_FPRINTF(fil, "Pred: Done moving data to the GPU. Stopping at %21.15g\n", t1);
-      DEBUG_FPRINTF(fil, "Pred: Done moving data to the GPU. Took %g secs\n", t1 - t0);
+		double t1 = timer<double>();
+		if (me == 0) { //only thread=0 times entire post-warmup procedure
+			t1me0 = t1;
+		}
+		DEBUG_FPRINTF(fil,
+				"Pred: Done moving data to the GPU. Stopping at %21.15g\n", t1);
+		DEBUG_FPRINTF(fil, "Pred: Done moving data to the GPU. Took %g secs\n",
+				t1 - t0);
 
+		////////////////////////////////////////////////
+		// BEGIN GLM
+		DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n", 0);
 
-      ////////////////////////////////////////////////
-      // BEGIN GLM
-      DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n",0);
-
-      int a,i;
-      //////////////////////////////
-      // LOOP OVER ALPHAS
-      ///////////////////////////////
+		int a, i;
+		//////////////////////////////
+		// LOOP OVER ALPHAS
+		///////////////////////////////
 #pragma omp for schedule(dynamic,1) collapse(1)
-      for (a = 0; a < nAlphas; ++a) { //alpha search
+		for (a = 0; a < nAlphas; ++a) { //alpha search
 
-        int nlambdalocal;
-        if(givefullpath){ // then need to loop over same nlambda
-          nlambdalocal=nlambda;
-        }
-        else{
-          nlambdalocal=1; // only 1 lambda
-        }
+			int nlambdalocal;
+			if (givefullpath) { // then need to loop over same nlambda
+				nlambdalocal = nlambda;
+			} else {
+				nlambdalocal = 1; // only 1 lambda
+			}
 
-        // LOOP over lambda
-        for (i = 0; i < nlambdalocal; ++i) {
+			// LOOP over lambda
+			for (i = 0; i < nlambdalocal; ++i) {
 
-          // copy existing solution to X0
-          T *X0 = new T[n]();
-          if(givefullpath){
-            memcpy(X0, &((*Xvsalphalambda)[MAPXALL(i,a,0)]),n*sizeof(T));
-          }
-          else{
-            memcpy(X0, &((*Xvsalpha)[MAPXBEST(a,0)]),n*sizeof(T));
-          }
+				// copy existing solution to X0
+				T *X0 = new T[n]();
+				if (givefullpath) {
+					memcpy(X0, &((*Xvsalphalambda)[MAPXALL(i, a, 0)]),
+							n * sizeof(T));
+				} else {
+					memcpy(X0, &((*Xvsalpha)[MAPXBEST(a, 0)]), n * sizeof(T));
+				}
 
-          // set X from X0
-          h2ogpuml_data.SetInitX(X0);
+				// set X from X0
+				h2ogpuml_data.SetInitX(X0);
 
-          // compute predictions
-          h2ogpuml_data.Predict();
+				// compute predictions
+				h2ogpuml_data.Predict();
 
-          // Get valid prediction
-          std::vector <T> validPreds(&h2ogpuml_data.GetvalidPreds()[0], &h2ogpuml_data.GetvalidPreds()[0]+mValid);
+				// Get valid prediction
+				std::vector<T> validPreds(&h2ogpuml_data.GetvalidPreds()[0],
+						&h2ogpuml_data.GetvalidPreds()[0] + mValid);
 
-          T sdTrainY=1.0 ; // TODO FIXME not impliemented yet
-          T meanTrainY=1.0 ; // TODO FIXME not impliemented yet
-          // correct validPreds
-          if(standardize){
-            for (size_t i = 0; i < mValid; ++i) { //row
-              // reverse (fitted) standardization
-              validPreds[i]*=sdTrainY; //scale
-              validPreds[i]+=meanTrainY; //intercept
-            }
-          }
-          
-          // save preds (exclusive set, unlike X)
-          if(givefullpath){ // save all preds
-            memcpy(&((*validPredsvsalphalambda)[MAPXALL(i,a,0)]),&validPreds[0],mValid*sizeof(T));
-          }
-          else{ // save only best pred per lambda
-            memcpy(&((*validPredsvsalpha)[MAPXBEST(a,0)]),&validPreds[0],mValid*sizeof(T));
-          }
+				T sdTrainY = 1.0; // TODO FIXME not impliemented yet
+				T meanTrainY = 1.0; // TODO FIXME not impliemented yet
+				// correct validPreds
+				if (standardize) {
+					for (size_t i = 0; i < mValid; ++i) { //row
+						// reverse (fitted) standardization
+						validPreds[i] *= sdTrainY; //scale
+						validPreds[i] += meanTrainY; //intercept
+					}
+				}
 
-          
+				// save preds (exclusive set, unlike X)
+				if (givefullpath) { // save all preds
+					memcpy(&((*validPredsvsalphalambda)[MAPXALL(i, a, 0)]),
+							&validPreds[0], mValid * sizeof(T));
+				} else { // save only best pred per lambda
+					memcpy(&((*validPredsvsalpha)[MAPXBEST(a, 0)]),
+							&validPreds[0], mValid * sizeof(T));
+				}
 
-          // get validY so can compute RMSE
-          T *validY=NULL;
-          validY = (T *) malloc(sizeof(T) * mValid);
-          int validYerror=Asource_.GetValidY(datatype, mValid, &validY);
+				// get validY so can compute RMSE
+				T *validY = NULL;
+				validY = (T *) malloc(sizeof(T) * mValid);
+				int validYerror = Asource_.GetValidY(datatype, mValid, &validY);
 
-          // Compute RMSE for predictions
-          if(validYerror==0){
-            
-            T weightsvalid[mValid];
-            for (size_t i = 0; i < mValid; ++i) {//row
-              weightsvalid[i] = 1.0;
-            }
-            
-            T validRMSE = h2ogpuml::getRMSE(weightsvalid,mValid, &validPreds[0], validY);
-            if(standardize) validRMSE *= sdTrainY;
+				// Compute RMSE for predictions
+				if (validYerror == 0) {
 
-            if(givefullpath){
-              // Save rmse to return to user
-              int ri=VALIDRMSE; (*Xvsalphalambda)[MAPXALL(i,a,n+ri)] = validRMSE; // overwrite any old value done during fit
-            }
-            else{
-              int ri=VALIDRMSE; (*Xvsalpha)[MAPXBEST(a,n+ri)] = validRMSE;
-            }
+					T weightsvalid[mValid];
+					for (size_t i = 0; i < mValid; ++i) { //row
+						weightsvalid[i] = 1.0;
+					}
 
-            
-            // report scores
-            if(VERBOSEENET) Printmescore_predict(fil);
+					T validRMSE = h2ogpuml::getRMSE(weightsvalid, mValid,
+							&validPreds[0], validY);
+					if (standardize)
+						validRMSE *= sdTrainY;
+
+					if (givefullpath) {
+						// Save rmse to return to user
+						int ri = VALIDRMSE;
+						(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] = validRMSE; // overwrite any old value done during fit
+					} else {
+						int ri = VALIDRMSE;
+						(*Xvsalpha)[MAPXBEST(a, n + ri)] = validRMSE;
+					}
+
+					// report scores
+					if (VERBOSEENET)
+						Printmescore_predict(fil);
 #pragma omp critical
-            {
-              if(VERBOSEENET) Printmescore_predict(stdout);
-              Printmescoresimple_predict(filrmse);
-            }
+					{
+						if (VERBOSEENET)
+							Printmescore_predict(stdout);
+						Printmescoresimple_predict(filrmse);
+					}
 
-          }
-          else{
-            // report scores
-            if(VERBOSEENET) Printmescore_predictnovalid(fil);
+				} else {
+					// report scores
+					if (VERBOSEENET)
+						Printmescore_predictnovalid(fil);
 #pragma omp critical
-            {
-              if(VERBOSEENET) Printmescore_predictnovalid(stdout);
-              Printmescoresimple_predictnovalid(filrmse);
-            }
+					{
+						if (VERBOSEENET)
+							Printmescore_predictnovalid(stdout);
+						Printmescoresimple_predictnovalid(filrmse);
+					}
 
-          }
+				}
 
+				if (X0)
+					delete[] X0;
+			} // over lambda(s)
 
-        
-          if(X0) delete [] X0;
-        }// over lambda(s)
+		} // over alpha
 
+		if (fil != NULL)
+			fclose(fil);
+	} // end parallel region
 
-      }// over alpha
+	double tf = timer<double>();
+	if (VERBOSEENET) {
+		fprintf(stdout,
+				"END PREDICT: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n",
+				(int) mTrain, (int) n, (int) mValid, tf - t, tf - t1me0);
+		fflush(stdout);
+	}
+	if (flag) {
+		fprintf(stderr, "Signal caught. Terminated early.\n");
+		fflush(stderr);
+		flag = 0; // set flag
+	}
+	return tf - t;
+}
 
-      if (fil != NULL) fclose(fil);
-    } // end parallel region
+template double ElasticNetptr<double>(int dopredict, int sourceDev,
+		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		double **Xvsalphalambda, double **Xvsalpha,
+		double **validPredsvsalphalambda, double **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
+template double ElasticNetptr<float>(int dopredict, int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		float **Xvsalphalambda, float **Xvsalpha,
+		float **validPredsvsalphalambda, float **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
-    double tf = timer<double>();
-    if(VERBOSEENET){
-      fprintf(stdout, "END PREDICT: type 1 mTrain %d n %d mValid %d twall %g tsolve(post-dataongpu) %g\n", (int) mTrain, (int) n,   (int) mValid, tf - t, tf - t1me0);
-      fflush(stdout);
-    }
-    if (flag) {
-      fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
-      flag = 0; // set flag
-    }
-    return tf - t;
-  }
-  
+template double ElasticNetptr_fit<double>(int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		double **Xvsalphalambda, double **Xvsalpha,
+		double **validPredsvsalphalambda, double **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
+template double ElasticNetptr_fit<float>(int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		float **Xvsalphalambda, float **Xvsalpha,
+		float **validPredsvsalphalambda, float **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
+template double ElasticNetptr_predict<double>(int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		double **Xvsalphalambda, double **Xvsalpha,
+		double **validPredsvsalphalambda, double **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
-  template double ElasticNetptr<double>(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                        size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                        double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                        void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                        ,int givefullpath
-                                        ,double **Xvsalphalambda, double **Xvsalpha
-                                        ,double **validPredsvsalphalambda, double **validPredsvsalpha
-                                        ,size_t *countfull, size_t *countshort, size_t *countmore
-                                        );
+template double ElasticNetptr_predict<float>(int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		float **Xvsalphalambda, float **Xvsalpha,
+		float **validPredsvsalphalambda, float **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore);
 
-  template double ElasticNetptr<float>(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                       size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                       double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                       void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                       ,int givefullpath
-                                       ,float **Xvsalphalambda, float **Xvsalpha
-                                       ,float **validPredsvsalphalambda, float **validPredsvsalpha
-                                       ,size_t *countfull, size_t *countshort, size_t *countmore
-                                       );
+template<typename T>
+int modelFree2(T *aptr) {
+	free(aptr);
+	return (0);
+}
 
-
-
-  template double ElasticNetptr_fit<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                            size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                            double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                            void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                            ,int givefullpath
-                                            ,double **Xvsalphalambda, double **Xvsalpha
-                                            ,double **validPredsvsalphalambda, double **validPredsvsalpha
-                                            ,size_t *countfull, size_t *countshort, size_t *countmore
-                                        );
-
-  template double ElasticNetptr_fit<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                           size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                           double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                           void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                           ,int givefullpath
-                                           ,float **Xvsalphalambda, float **Xvsalpha
-                                           ,float **validPredsvsalphalambda, float **validPredsvsalpha
-                                           ,size_t *countfull, size_t *countshort, size_t *countmore
-                                           );
-
-
-
-  template double ElasticNetptr_predict<double>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                                size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                                double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                                void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                                ,int givefullpath
-                                                ,double **Xvsalphalambda, double **Xvsalpha
-                                                ,double **validPredsvsalphalambda, double **validPredsvsalpha
-                                                ,size_t *countfull, size_t *countshort, size_t *countmore
-                                                );
-
-  template double ElasticNetptr_predict<float>(int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                               size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                               double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                               void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                               ,int givefullpath
-                                               ,float **Xvsalphalambda, float **Xvsalpha
-                                               ,float **validPredsvsalphalambda, float **validPredsvsalpha
-                                               ,size_t *countfull, size_t *countshort, size_t *countmore
-                                       );
-
-
-
-
-  template <typename T>
-  int modelFree2(T *aptr){
-    free(aptr);
-    return(0);
-  }
-
-  template int modelFree2<float>(float *aptr);
-  template int modelFree2<double>(double *aptr);
-  
-
+template int modelFree2<float>(float *aptr);
+template int modelFree2<double>(double *aptr);
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
 
-    double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                  size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                  double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                  void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                  ,int givefullpath
-                                  ,double **Xvsalphalambda, double **Xvsalpha
-                                  ,double **validPredsvsalphalambda, double **validPredsvsalpha
-                                  ,size_t *countfull, size_t *countshort, size_t *countmore
-                                  ) {
-      return ElasticNetptr<double>(dopredict,
-                                   sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
-                                   mTrain, n, mValid, intercept, standardize,
-                                   lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                                   trainXptr, trainYptr, validXptr, validYptr, weightptr
-                                   ,givefullpath
-                                   ,Xvsalphalambda, Xvsalpha
-                                   ,validPredsvsalphalambda, validPredsvsalpha
-                                   ,countfull, countshort, countmore
-                                   );
-    }
-    double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
-                                 size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
-                                 double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
-                                 void *trainXptr, void *trainYptr, void *validXptr, void *validYptr, void *weightptr
-                                 ,int givefullpath
-                                 ,float **Xvsalphalambda, float **Xvsalpha
-                                 ,float **validPredsvsalphalambda, float **validPredsvsalpha
-                                 ,size_t *countfull, size_t *countshort, size_t *countmore
-                                 ) {
-      return ElasticNetptr<float>(dopredict,
-                                  sourceDev, datatype, sharedA, nThreads, nGPUs, ord,
-                                  mTrain, n, mValid, intercept, standardize,
-                                  lambda_min_ratio, nLambdas, nFolds, nAlphas,
-                                  trainXptr, trainYptr, validXptr, validYptr, weightptr
-                                  ,givefullpath
-                                  ,Xvsalphalambda, Xvsalpha
-                                  ,validPredsvsalphalambda, validPredsvsalpha
-                                  ,countfull, countshort, countmore
-                                  );
-    }
+double elastic_net_ptr_double(int dopredict, int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		double **Xvsalphalambda, double **Xvsalpha,
+		double **validPredsvsalphalambda, double **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore) {
+	return ElasticNetptr<double>(dopredict, sourceDev, datatype, sharedA,
+			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
+			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
+			stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+			trainYptr, validXptr, validYptr, weightptr, givefullpath,
+			Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+			validPredsvsalpha, countfull, countshort, countmore);
+}
+double elastic_net_ptr_float(int dopredict, int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
+		double lambda_min_ratio, int nLambdas, int nFolds, int nAlphas,
+		int stopearly, double stopearlyrmsefraction, int max_iterations,
+		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
+		void *validYptr, void *weightptr, int givefullpath,
+		float **Xvsalphalambda, float **Xvsalpha,
+		float **validPredsvsalphalambda, float **validPredsvsalpha,
+		size_t *countfull, size_t *countshort, size_t *countmore) {
+	return ElasticNetptr<float>(dopredict, sourceDev, datatype, sharedA,
+			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
+			lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly,
+			stopearlyrmsefraction, max_iterations, verbose, trainXptr,
+			trainYptr, validXptr, validYptr, weightptr, givefullpath,
+			Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+			validPredsvsalpha, countfull, countshort, countmore);
+}
 
-    int modelfree2_float(float *aptr){
-      return modelFree2<float>(aptr);
-    }
-    int modelfree2_double(double *aptr){
-      return modelFree2<double>(aptr);
-    }
+int modelfree2_float(float *aptr) {
+	return modelFree2<float>(aptr);
+}
+int modelfree2_double(double *aptr) {
+	return modelFree2<double>(aptr);
+}
 
 #ifdef __cplusplus
-  }
+}
 #endif
 
-
-
-
-  
 }
