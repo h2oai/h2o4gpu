@@ -33,8 +33,8 @@ T getError(size_t len, const T *v1, const T *v2, const char family) {
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
 			if(v1[i] != v2[i]){
-				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
-            	d = -(v1[i]*log(x) + (1-v1[i])*log(1-x));
+			    double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+            		    d = -(v1[i]*log(x) + (1-v1[i])*log(1-x));
 			}
 			logloss += d;
 		}
@@ -68,8 +68,8 @@ T getError(const T*weights, size_t len, const T *v1, const T *v2, const char fam
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
 			if(v1[i] != v2[i]){
-				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
-				d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * weights[i];		
+			    double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+			    d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * weights[i];		
 			}
 			logloss += d;
 		}
@@ -103,8 +103,8 @@ T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
 			if(v1[i] != v2[i]){
-				double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
-            	d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * (offset - weights[i]);
+			    double x = std::min(std::max(1e-15, static_cast<double>(v2[i])), 1-1e-15);
+            		    d = -(v1[i]*log(x) + (1-v1[i])*log(1-x)) * (offset - weights[i]);
 			}
 			logloss += d;
 		}
