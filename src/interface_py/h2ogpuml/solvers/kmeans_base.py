@@ -5,7 +5,6 @@ import time
 import sys
 from h2ogpuml.libs.kmeans_gpu import GPUlib
 from h2ogpuml.libs.kmeans_cpu import CPUlib
-from h2ogpuml.solvers.utils import devicecount
 
 
 class KMeans(object):
@@ -136,6 +135,8 @@ class KMeansBaseSolver(object):
             sys.stdout.flush()
             return
 
+        c_preds = c_void_p(0)
+
         res = c_void_p(0)
 
         c_labels = cptr(labels, dtype=c_int)
@@ -163,11 +164,11 @@ class KMeansBaseSolver(object):
         if self.double_precision == 0:
             status = lib.make_ptr_float_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                           self.threshold, c_data, c_labels, None, pointer(res))
+                                           self.threshold, c_data, c_labels, None, pointer(res), pointer(c_preds))
         else:
             status = lib.make_ptr_double_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                            self.threshold, c_data, c_labels, None, pointer(res))
+                                            self.threshold, c_data, c_labels, None, pointer(res), pointer(c_preds))
         if status:
             raise ValueError('KMeans failed in C++ library')
             sys.stdout.flush()
@@ -244,25 +245,25 @@ class KMeansBaseSolver(object):
         c_init_labels = c_void_p(0)
         c_init_data = c_void_p(0)
         c_labels = c_void_p(0)
-        res = c_void_p(0)
 
         rows = np.shape(X)[0]
         cols = np.shape(X)[1]
 
+        centroids = self.centroids
+
+        c_preds = c_void_p(0)
+
         if self.double_precision == 0:
             self.lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                           self.threshold, c_data, c_labels, None, pointer(res))
-
-            preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
-            preds = np.reshape(preds, rows)
+                                           self.threshold, c_data, c_labels, None, pointer(centroids), pointer(c_preds))
         else:
             self.lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                            self.threshold, c_data, c_labels, None, pointer(res))
-            preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
-            preds = np.reshape(preds, rows)
+                                            self.threshold, c_data, c_labels, None, pointer(centroids), pointer(c_preds))
 
+        preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
+        preds = np.reshape(preds, rows)
         return preds
 
     def transform(self, X):
