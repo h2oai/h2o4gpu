@@ -39,16 +39,15 @@ class GLM(object):
 
         assert self.solver != None, "Couldn't instantiate GLM Solver"
 
-    def upload_data(self, sourceDev, trainX, trainY, validX, validY, weight):
-        return self.solver.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
 
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c=c_void_p(0), d=c_void_p(0), e=c_void_p(0),
-               givefullpath=0, dopredict=0, freeinputdata=0, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
-        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+    def upload_data(self, *args):
+        return self.solver.upload_data(*args)
 
-    def fit(self, trainX, trainY, validX=c_void_p(0), validY=c_void_p(0), weight=c_void_p(0), givefullpath=0,
-            dopredict=0, freeinputdata=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
-        return self.solver.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args):
+        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args)
+
+    def fit(self, trainX, trainY, *args):
+        return self.solver.fit(trainX, trainY, *args)
 
     def getrmse(self):
         return self.solver.getrmse()
@@ -62,17 +61,17 @@ class GLM(object):
     def gettols(self):
         return self.solver.gettols()
 
-    def predict(self, validX, validY=None, testweight=None, givefullpath=0):
-        return self.solver.predict(validX, validY, testweight, givefullpath)
+    def predict(self, validX, *args):
+        return self.solver.predict(validX, *args)
 
-    def predictptr(self, validXptr, validYptr=None, givefullpath=0):
-        return self.solver.predictptr(validXptr, validYptr, givefullpath)
+    def predictptr(self, validXptr, *args):
+        return self.solver.predictptr(validXptr, *args)
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=0, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
-        return self.solver.fit_predict(trainX, trainY, validX, validY, weight, givefullpath, freeinputdata, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+    def fit_predict(self, trainX, trainY, *args):
+        return self.solver.fit_predict(trainX, trainY, *args)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
-        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, freeinputdata, stopearly, stopearlyrmsefraction, max_iterations, verbose)
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args):
+        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args)
 
     def freedata(self):
         return self.solver.freedata()
@@ -180,6 +179,7 @@ class GLMBaseSolver(object):
         else:
             mValid = 0
             n2 = -1
+            self.double_precision2 = -1
         self.mValid = mValid
         ################
         if trainY is not None:
@@ -200,6 +200,7 @@ class GLMBaseSolver(object):
                 mTrain2 = trainY.shape[0]
         else:
             mTrain2 = 0
+            self.double_precision3 = -1
         ################
         if validY is not None:
             try:
@@ -219,6 +220,7 @@ class GLMBaseSolver(object):
                 mValid2 = validY.shape[0]
         else:
             mValid2 = 0
+            self.double_precision4 = -1
         ################
         if weight is not None:
             try:
@@ -238,6 +240,7 @@ class GLMBaseSolver(object):
                 mTrain3 = weight.shape[0]
         else:
             mTrain3 = 0
+            self.double_precision5 = -1
         ###############
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:
             if (self.double_precision1 != self.double_precision2):
@@ -419,7 +422,7 @@ class GLMBaseSolver(object):
         return a, b, c, d, e
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata, stopearly, stopearlyrmsefraction, max_iterations, verbose):
+    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0, freeinputdata=0, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         # store some things for later call to predictptr()
         self.sourceDev = sourceDev
         self.mTrain = mTrain
@@ -432,6 +435,17 @@ class GLMBaseSolver(object):
         self.d = d
         self.e = e
         self.givefullpath = givefullpath
+
+        if stopearly is None:
+            stopearly=self.stopearly
+        if stopearlyrmsefraction is None:
+            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if max_iterations is None:
+            max_iterations = self.max_iterations
+        if verbose is None:
+            verbose = self.verbose
+
+
 
         #print("a"); print(a)
         #print("b"); print(b)
@@ -622,7 +636,7 @@ class GLMBaseSolver(object):
             else:
                 return (self.validPredsvsalphapure)
 
-    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
+    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         #
         self.givefullpath = givefullpath
         ################
@@ -631,6 +645,15 @@ class GLMBaseSolver(object):
         self.validX = validX
         self.validY = validY
         self.weight = weight
+        #
+        if stopearly is None:
+            stopearly=self.stopearly
+        if stopearlyrmsefraction is None:
+            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if max_iterations is None:
+            max_iterations = self.max_iterations
+        if verbose is None:
+            verbose = self.verbose
         ##############
         if trainX is not None:
             try:
@@ -813,7 +836,15 @@ class GLMBaseSolver(object):
         self.prediction = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b, validXptr, validYptr, self.e, givefullpath, dopredict, freeinputdata)
         return (self.prediction)  # something like validY
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
+        if stopearly is None:
+            stopearly=self.stopearly
+        if stopearlyrmsefraction is None:
+            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if max_iterations is None:
+            max_iterations = self.max_iterations
+        if verbose is None:
+            verbose = self.verbose
         dopredict = 0  # only fit at first
         self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
         if validX == None:
@@ -822,8 +853,16 @@ class GLMBaseSolver(object):
             self.prediction = self.predict(validX, validY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
         return (self.prediction)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0):
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         dopredict = 0  # only fit at first
+        if stopearly is None:
+            stopearly=self.stopearly
+        if stopearlyrmsefraction is None:
+            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if max_iterations is None:
+            max_iterations = self.max_iterations
+        if verbose is None:
+            verbose = self.verbose
         self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
         if c is None or c is c_void_p(0):
             self.prediction = self.predictptr(a, b, givefullpath, freeinputdata=freeinputdata)
