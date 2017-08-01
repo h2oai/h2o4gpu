@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
   int init_from_labels=1;//true as set above, otherwise internally will set initial centroids "smartly"
   int init_labels=1; // randomly select from input
   int init_data=2; // randomly (without replacement) select from input
-  h2ogpumlkmeans::makePtr_dense<real_t>(verbose, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &res);
+  int seed=12345;
+  h2ogpumlkmeans::makePtr_dense<real_t>(verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &res);
 
   // report something about centroids that site in res as k*cols data block
 #endif

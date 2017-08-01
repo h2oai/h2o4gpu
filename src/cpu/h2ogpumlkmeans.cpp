@@ -15,6 +15,8 @@
 
 #include "h2ogpumlkmeans_kmeanscpu.h"
 
+//  FIXME: This kmeans back-end is not working.
+//  FIXME: not really using seed.  Need to follow like gpu code.
 
 template<typename T>
 void random_data(int verbose, std::vector<T>& array, int m, int n) {
@@ -194,7 +196,7 @@ namespace h2ogpumlkmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int verbose, int cpu_idtry, int n_cputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+    int makePtr_dense(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
 
       if(rows>std::numeric_limits<int>::max()){
         fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
@@ -326,8 +328,8 @@ namespace h2ogpumlkmeans {
 
       return 0;
     }
-  template int makePtr_dense<float>(int verbose, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
-  template int makePtr_dense<double>(int verbose, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<float>(int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<double>(int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -345,11 +347,11 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int verbose, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<float>(verbose, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<float>(verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
-  int make_ptr_double_kmeans(int verbose, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<double>(verbose, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_double_kmeans(int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<double>(verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
   }
 
 #ifdef __cplusplus

@@ -143,10 +143,15 @@ void nonrandom_labels(int verbose, const char ord, thrust::device_vector<int>& l
 }
 
 template<typename T>
-void random_centroids(int verbose, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
-  thrust::host_vector<T> host_array(k*d);
-  std::random_device rd;  //Will be used to obtain a seed for the random number engine
-  std::mt19937 gen(rd());
+void random_centroids(int verbose, int seed, const char ord, thrust::device_vector<T>& array, const T *srcdata, int q, int n, int npergpu, int d, int k) {
+  thrust::host_vector <T> host_array(k * d);
+  if (seed >= 0) {
+  }
+  else {
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    seed=rd();
+  }
+  std::mt19937 gen(seed);
   //  std::uniform_int_distribution<>dis(0, npergpu-1); // random i in range from 0..npergpu-1
   std::uniform_int_distribution<>dis(0, n-1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
   
@@ -224,8 +229,19 @@ namespace h2ogpumlkmeans {
     }
 
     template <typename T>
-    int makePtr_dense(int verbose, int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+    int makePtr_dense(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
       if(verbose) { std::cout << " Start makePtr_dense." << std::endl; }
+      // init random seed if use the C function rand()
+      if(seed>=0) {
+        srand(seed);
+      }
+      else {
+        srand(unsigned(time(NULL)));
+      }
+      if(verbose) { std::cout << "Seed: " << seed << std::endl; }
+
+        //cudaError_t err=cudaDeviceReset();
+        //if(err!=cudaSuccess){printf("%s in %s at line %d\n",cudaGetErrorString(err),__FILE__,__LINE__);}
 
       // no more clusters than rows
       if(k>rows){
@@ -309,7 +325,12 @@ namespace h2ogpumlkmeans {
       //      std::mt19937 g(rd());
       std::vector<int> v(n);
       std::iota (std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., 99.
-      std::random_shuffle(v.begin(), v.end());
+      if(seed>=0) {
+        std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
+      }
+      else {
+        std::random_shuffle(v.begin(), v.end());
+      }
 
       
       for (int q = 0; q < n_gpu; q++) {
@@ -420,8 +441,8 @@ namespace h2ogpumlkmeans {
 
       return 0;
     }
-  template int makePtr_dense<float>(int verbose, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
-  template int makePtr_dense<double>(int verbose, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<float>(int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float *srcdata, const int *srclabels, void **a);
+  template int makePtr_dense<double>(int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double *srcdata, const int *srclabels, void **a);
 
 
 // Explicit template instantiation.
@@ -439,11 +460,11 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
-  int make_ptr_float_kmeans(int verbose, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<float>(verbose, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_float_kmeans(int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, float threshold, const float* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<float>(verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
-  int make_ptr_double_kmeans(int verbose, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
-    return h2ogpumlkmeans::makePtr_dense<double>(verbose, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
+  int make_ptr_double_kmeans(int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, double threshold, const double* srcdata, const int* srclabels, void** res) {
+    return h2ogpumlkmeans::makePtr_dense<double>(verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, srcdata, srclabels, res);
 }
 
 #ifdef __cplusplus

@@ -10,10 +10,10 @@ from h2ogpuml.solvers.utils import devicecount
 
 class KMeans(object):
     def __init__(self, gpu_id=0, n_gpus=1, k=10, max_iterations=1000, threshold=1E-3, init_from_labels=False,
-                 init_labels="randomselect", init_data="randomselect", verbose=0):
+                 init_labels="randomselect", init_data="randomselect", verbose=0, seed=None):
 
         self.solver = KMeansBaseSolver(gpu_id, n_gpus, k, max_iterations, threshold,
-                                       init_from_labels, init_labels, init_data, verbose)
+                                       init_from_labels, init_labels, init_data, verbose, seed)
 
     def fit(self, X, y):
         return self.solver.fit(X, y)
@@ -38,10 +38,11 @@ class KMeans(object):
 
 class KMeansBaseSolver(object):
     def __init__(self, gpu_id=0, n_gpus=1, k=10, max_iterations=1000, threshold=1E-3, init_from_labels=False,
-                 init_labels="randomselect", init_data="randomselect", verbose=0):
+                 init_labels="randomselect", init_data="randomselect", verbose=0, seed=None):
         self.k = k
         self.gpu_id = gpu_id
-        n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
+        #n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
+        deviceCount=2
         self.n_gpus = n_gpus
         self.deviceCount=deviceCount
         self.max_iterations = max_iterations
@@ -52,10 +53,15 @@ class KMeansBaseSolver(object):
         self.didfit = 0
         self.didsklearnfit = 0
         self.verbose=verbose
+        if seed is None:
+            import random
+            self.seed = random.randint(0,32000)
+        else:
+            self.seed = seed
 
     def get_params(self):
         # input must be sklearn args
-        params = {'n_clusters': self.k, 'n_gpus': self.n_gpus, 'max_iterations': self.max_iterations, 'init': 'random', 'algorithm': 'auto', 'precompute_distances': True, 'tol': self.threshold, 'n_jobs': -1, 'random_state': 12345, 'verbose': self.verbose, 'copy_x': True}
+        params = {'n_clusters': self.k, 'n_gpus': self.n_gpus, 'max_iterations': self.max_iterations, 'init': 'random', 'algorithm': 'auto', 'precompute_distances': True, 'tol': self.threshold, 'n_jobs': -1, 'random_state': self.seed, 'verbose': self.verbose, 'copy_x': True}
         return params
 
 # input must be sklearn args
@@ -69,6 +75,8 @@ class KMeansBaseSolver(object):
             self.n_gpus = n_gpus
         if max_iter is not None:
             self.max_iterations = max_iter
+        if random_state is not None:
+            self.seed = random_state
         if verbose is not None:
             self.verbose = verbose
         # can add more if want to modify
@@ -153,11 +161,11 @@ class KMeansBaseSolver(object):
         assert lib != None, "Couldn't instantiate KMeans Library"
         #
         if self.double_precision == 0:
-            status = lib.make_ptr_float_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_float_kmeans(self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                            self.threshold, c_data, c_labels, pointer(res))
         else:
-            status = lib.make_ptr_double_kmeans(self.verbose, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
+            status = lib.make_ptr_double_kmeans(self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                             self.threshold, c_data, c_labels, pointer(res))
         if status:
