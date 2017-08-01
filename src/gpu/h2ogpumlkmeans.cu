@@ -400,8 +400,11 @@ namespace h2ogpumlkmeans {
 
                 streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
                 cudaStreamCreate(streams[q]);
-                cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*centroids[q])[0]), dList[q],
-                                    thrust::raw_pointer_cast(&(*centroids[masterq])[0]), dList[masterq], bytecount,
+                cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*centroids[q])[0]),
+                                    dList[q],
+                                    thrust::raw_pointer_cast(&(*centroids[masterq])[0]),
+                                    dList[masterq],
+                                    bytecount,
                                     *(streams[q]));
             }
             // get non-random centroids on 1 gpu, then share with rest.
@@ -486,6 +489,7 @@ namespace h2ogpumlkmeans {
         }
 
         double t0 = timer<double>();
+
         int status = kmeans::kmeans<T>(verbose, &flaggpu, n, d, k, data, labels, centroids, distances, dList, n_gpu,
                                        max_iterations, init_from_labels, threshold);
         if (status) {
@@ -493,6 +497,7 @@ namespace h2ogpumlkmeans {
             fflush(stderr);
             return (status);
         }
+
         double timefit = static_cast<double>(timer<double>() - t0);
 
         if (verbose) {
@@ -528,7 +533,6 @@ namespace h2ogpumlkmeans {
                        size_t rows, size_t cols,
                        const char ord, int k,
                        const T *srcdata, void **centroid, void **preds) {
-        // TODO check is fitted
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -564,42 +568,50 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
-        thrust::device_vector <T> *d_centroids[n_gpu];
-        thrust::device_vector <T> *pairwise_distances[MAX_NGPUS];
-        thrust::device_vector <T> *data_dots[MAX_NGPUS];
-        thrust::device_vector <T> *centroid_dots[MAX_NGPUS];
+        thrust::device_vector<T> *d_centroids(k * m);
+        thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
+        thrust::device_vector<T> *data_dots[MAX_NGPUS];
+        thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
+        thrust::device_vector<T> *distances[n_gpu];
         int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
 
-        for (int i = 0; i < n_gpu; i++) {
-            CUDACHECK(cudaSetDevice(dList[i]));
-            std::cout << "Copying data to device: " << dList[q] << std::endl;
-            nonrandom_data(ord, *data[q], &srcdata[0], q, n, n / n_gpu, m);
+        // Move centroids from host memory to GPU
+        nonrandom_data(ord, *d_centroids, &srcdata[0], 0, k, k, m);
 
-            d_data[i] = new thrust::device_vector<T>(n / n_gpu * m);
-            d_centroids[i] = new thrust::device_vector<T>(k * m);
+        for (int q = 0; q < n_gpu; q++) {
+            CUDACHECK(cudaSetDevice(dList[q]));
+            std::cout << "Copying data to device: " << dList[q] << std::endl;
+
+            nonrandom_data(ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
+
+            distances[q] = new thrust::device_vector<T>(n);
+            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
             cudaMalloc(&d_changes[q], sizeof(int));
-            detail::labels_init(); // TODO necessary??
-            data_dots[q] = new thrust::device_vector<T>(n / n_gpu);
+            kmeans::detail::labels_init(); // TODO necessary??
+            data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
             centroid_dots[q] = new thrust::device_vector<T>(k);
 
             cudaSetDevice(dList[q]);
             pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
 
-            detail::calculate_distances(q, n / n_gpu, d, k,
-                                        *data[q], *centroids[q], *data_dots[q],
-                                        *centroid_dots[q], *pairwise_distances[q]);
+            kmeans::detail::calculate_distances(q, n/n_gpu, m, k,
+                *d_data[q], *d_centroids, *data_dots[q],
+                *centroid_dots[q], *pairwise_distances[q]);
 
-            detail::relabel(n / n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
+            kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 
+//         Move the resulting labels into host memory
+        // TODO make this work for multiple GPUs
+        thrust::host_vector<T> h_labels(n);
         for (int q = 0; q < n_gpu; q++) {
             thrust::host_vector <T> *h_labels = new thrust::host_vector<T>(*d_labels[q]);
-            // TODO copy labels to preds
         }
+        *preds = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {
             cudaSetDevice(dList[q]);
-            detail::labels_close();
+            kmeans::detail::labels_close();
             delete (d_labels[q]);
             delete (pairwise_distances[q]);
             delete (data_dots[q]);

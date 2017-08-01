@@ -230,7 +230,6 @@ namespace h2ogpumlkmeans {
                    size_t rows, size_t cols, const char ord, int k, int max_iterations,
                    int init_from_labels, int init_labels, int init_data, T threshold,
                    const T *srcdata, const int *srclabels, void **centroid) {
-
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -264,7 +263,6 @@ namespace h2ogpumlkmeans {
             dList[idx] = device_idx;
         }
 
-
         double t0t = timer<double>();
         std::vector <T> *data[n_cpu];
         std::vector<int> *labels[n_cpu];
@@ -276,7 +274,6 @@ namespace h2ogpumlkmeans {
             centroids[q] = new std::vector<T>(k * d);
             distances[q] = new std::vector<T>(n);
         }
-
 
         std::cout << "Number of points: " << n << std::endl;
         std::cout << "Number of dimensions: " << d << std::endl;
@@ -326,7 +323,6 @@ namespace h2ogpumlkmeans {
                                        *centroids[masterq], max_iterations, init_from_labels, threshold);
         if (status) return (status);
         double timefit = static_cast<double>(timer<double>() - t0);
-
 
         std::cout << "  Time fit: " << timefit << " s" << std::endl;
         fprintf(stderr, "Timetransfer: %g Timefit: %g\n", timetransfer, timefit);
@@ -388,28 +384,35 @@ namespace h2ogpumlkmeans {
 
         std::vector <T> *data[n_cpu];
         std::vector<int> *labels[n_cpu];
-        std::vector <T> *centroids[n_cpu];
-        std::vector <T> *pairwise_distances[n_cpu];
+
+        std::vector<T> *l_centroids[n_cpu];
+        std::vector<T> *pairwise_distances[n_cpu];
+
+        std::vector<T> *data_dots[n_cpu];
+
+        std::vector<T> centroid_dots(k);
 
         for (int q = 0; q < n_cpu; q++) {
-            data[q] = new std::vector<T>(n / n_cpu * m);
-            labels[q] = new std::vector<int>(n / n_cpu * m);
-            centroids[q] = new std::vector<T>(k * m);
-            distances[q] = new std::vector<T>(n);
+            data[q] = new std::vector<T>(n/n_cpu * m);
+            labels[q] = new std::vector<int>(n/n_cpu * m);
+            l_centroids[q] = new std::vector<T>(k * m);
+            pairwise_distances[q] = new std::vector<T>(n/n_cpu * k);
+            data_dots[q] = new std::vector <T>(n/n_cpu);
 
             nonrandom_data(ord, *data[q], &srcdata[0], q, n, n / n_cpu, m);
 
-            compute_distances(data, data_dots, n, d, centroids, centroid_dots,
-                              k, pairwise_distances);
+            kmeans::compute_distances(*data[q], *data_dots[q], n, m, *l_centroids[q], centroid_dots,
+                                    k, *pairwise_distances[q]);
 
-            relabel(data, n, pairwise_distances, k, labels);
+            kmeans::relabel(*data[q], n, *pairwise_distances[q], k, *labels[q]);
         }
 
         for (int q = 0; q < n_cpu; q++) {
-            delete (data[q]);
-            delete (labels[q]);
-            delete (centroids[q]);
-            delete (distances[q]);
+            delete(data[q]);
+            delete(labels[q]);
+            delete(l_centroids[q]);
+            delete(pairwise_distances[q]);
+            delete(data_dots[q]);
         }
 
         return 0;
@@ -466,7 +469,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict<double>(int cpu_idtry, int n_cputry,
                                size_t rows, size_t cols,
                                const char ord, int k,
-                               const double *srcdata, void **centroid, void **preds)
+                               const double *srcdata, void **centroid, void **preds);
 
 // Explicit template instantiation.
 #if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE == 1
