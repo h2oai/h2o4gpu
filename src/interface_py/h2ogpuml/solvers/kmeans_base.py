@@ -30,6 +30,11 @@ class KMeans(object):
     def fit_predict(self, X, y):
         return self.solver.fit_predict(X, y)
 
+    def get_params(self):
+        return self.solver.get_params()
+
+    def set_params(self, **kwargs):
+        return self.solver.set_params(**kwargs)
 
 class KMeansBaseSolver(object):
     def __init__(self, gpu_id=0, n_gpus=1, k=10, max_iterations=1000, threshold=1E-3, init_from_labels=False,
@@ -48,6 +53,25 @@ class KMeansBaseSolver(object):
         self.didsklearnfit = 0
         self.verbose=verbose
 
+    def get_params(self):
+        # input must be sklearn args
+        params = {'n_clusters': self.k, 'n_gpus': self.n_gpus, 'max_iterations': self.max_iterations, 'init': 'random', 'algorithm': 'auto', 'precompute_distances': True, 'tol': self.threshold, 'n_jobs': -1, 'random_state': 12345, 'verbose': self.verbose, 'copy_x': True}
+        return params
+
+# input must be sklearn args
+    def set_params(self, n_clusters=None, n_gpus=None, max_iter=None, init=None, algorithm=None, precompute_distances=None, tol=None, n_jobs=None, random_state=None, verbose=None, copy_x=None):
+        if n_clusters is not None:
+            if self.verbose>1:
+                print("Changing n_clusters from %d to %d" % (self.k,n_clusters))
+                sys.stdout.flush()
+            self.k = n_clusters
+        if n_gpus is not None:
+            self.n_gpus = n_gpus
+        if max_iter is not None:
+            self.max_iterations = max_iter
+        if verbose is not None:
+            self.verbose = verbose
+        # can add more if want to modify
 
     def KMeansInternal(self, ordin, k, max_iterations, init_from_labels, init_labels, init_data,
                        threshold, mTrain, n, data, labels):
@@ -117,10 +141,12 @@ class KMeansBaseSolver(object):
         if ((self.n_gpus == 0) or (gpulib is None) or (self.deviceCount == 0)):
             if self.verbose>0:
                 print("\nUsing CPU KMeans solver\n")
+                sys.stdout.flush()
             lib = cpulib
         elif ((self.n_gpus > 0) or (cpulib is None) or (self.deviceCount == 0)):
             if self.verbose>0:
                 print("\nUsing GPU KMeans solver with %d GPUs\n" % self.n_gpus)
+                sys.stdout.flush()
             lib = gpulib
         else:
             lib = None

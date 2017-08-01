@@ -225,9 +225,14 @@ namespace h2ogpumlkmeans {
 
     template <typename T>
     int makePtr_dense(int verbose, int gpu_idtry, int n_gputry, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int* srclabels, void ** res) {
+      if(verbose) { std::cout << " Start makePtr_dense." << std::endl; }
 
       // no more clusters than rows
-      if(k>rows) k = static_cast<int>(rows);
+      if(k>rows){
+          k = static_cast<int>(rows);
+          fprintf(stderr,"Number of clusters adjusted to be equal to number of rows.\n");
+          fflush(stderr);
+      }
 
       if(rows>std::numeric_limits<int>::max()){
         fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());

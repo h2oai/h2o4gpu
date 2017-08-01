@@ -171,6 +171,7 @@ namespace kmeans {
     	 fflush(stderr);
       }
       int i=0;
+      bool done=false;
       for(; i < max_iterations; i++) {
         if (*flag) continue;
         //Average the centroids from each device (same as averaging centroid updates)
@@ -244,13 +245,16 @@ namespace kmeans {
             }
             if (fraction < threshold) {
               if(verbose){ std::cout << "Threshold triggered. Terminating early." << std::endl; }
+                done=true;
             }
           }
         }
         if (*flag) {
           fprintf(stderr, "Signal caught. Terminated early.\n"); fflush(stderr);
           *flag = 0; // set flag
+            done=true;
         }
+          if(done) break;
       }
       for (int q = 0; q < n_gpu; q++) {
     	safe_cuda(cudaSetDevice(dList[q]));
