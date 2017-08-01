@@ -795,17 +795,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						std::vector<FunctionObj<T>> g;
 						f.reserve(mTrain);
 						g.reserve(n);
-						// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-						for (unsigned int j = 0; j < mTrain; ++j)
-							f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2ogpuml.R
-						//for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2ogpuml.R
-						for (unsigned int j = 0; j < n - intercept; ++j)
-							g.emplace_back(kAbs);
-						if (intercept)
-							g.emplace_back(kZero);
 
-						DEBUG_FPRINTF(fil, "Starting to solve at %21.15g\n",timer<double>());
-						              /*
+						/*
 						Start logic for type of `family` argument passed in
 						*/
 						if(family == 'e'){ //elasticnet
@@ -818,29 +809,14 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kLogistic, 1.0, 0.0, trainW[j], -trainW[j]*trainY[j]); // h2ogpuml.R
 							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
 							if (intercept) g.emplace_back(kZero);
-						}else if(family == 's'){ //svm
-							// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
-							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, trainW[j]*lambda); // h2ogpuml.R}
-							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
-							if (intercept) g.emplace_back(kZero);
+						// }else if(family == 's'){ //svm
+						// 	// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
+						// 	for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, trainW[j]*lambda); // h2ogpuml.R}
+						// 	for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
+						// 	if (intercept) g.emplace_back(kZero);
 						}else{
 							//throw error
-							throw "Wrong family type selected. Should be either elasticnet, logistic, or svm";
-						}
-						if(family == 'e' || family == 'l'){
-							T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
-							// assign lambda (no penalty for intercept, the last coeff, if present)
-							for (unsigned int j = 0; j < n - intercept; ++j) {
-							g[j].c = static_cast<T>(alpha * lambda * penalty_factor); //for L1
-							g[j].e = static_cast<T>((1.0 - alpha) * lambda * penalty_factor); //for L2
-							}
-							if (intercept) {
-							g[n - 1].c = 0;
-							g[n - 1].e = 0;
-							}
-						}else{
-							//Regularization term is x^T x with no additional prefactors
-							//TODO Need to multiply matrix by the labels
+							throw "Wrong family type selected. Should be either elasticnet or logistic";
 						}
 						T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
 						// assign lambda (no penalty for intercept, the last coeff, if present)
@@ -959,6 +935,9 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						//                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
 						//              }
 #endif
+						if(family == 'l'){
+							std::transform(trainPreds.begin(), trainPreds.end(), trainPreds.begin(),[](T i) -> T { return 1/(1+exp(-i)); });
+						}
 						// Error: TRAIN
 						trainError = h2ogpuml::getError(weights, mTrain,
 								&trainPreds[0], trainY, family);
