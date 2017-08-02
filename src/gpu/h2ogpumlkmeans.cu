@@ -306,9 +306,6 @@ namespace h2ogpumlkmeans {
         int n_gpu;
         n_gpu = std::min(n_gpuvis, n_gputry);
 
-        std::cout << n_gpuvis << " CUDA visible devices." << std::endl;
-        std::cout << n_gputry << " GPUs to try." << std::endl;
-
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 
@@ -338,7 +335,7 @@ namespace h2ogpumlkmeans {
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             data[q] = new thrust::device_vector<T>(n / n_gpu * d);
-            labels[q] = new thrust::device_vector<int>(n / n_gpu * d);
+            labels[q] = new thrust::device_vector<int>(n / n_gpu * d); // TODO should this size really be multiplied by d??
             d_centroids[q] = new thrust::device_vector<T>(k * d);
             distances[q] = new thrust::device_vector<T>(n);
         }
@@ -570,7 +567,7 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
-        thrust::device_vector<T> *d_centroids;
+        thrust::device_vector<T> *d_centroids = new thrust::device_vector<T>(k * m);
         thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
         thrust::device_vector<T> *data_dots[MAX_NGPUS];
         thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
@@ -578,37 +575,38 @@ namespace h2ogpumlkmeans {
         int *d_changes[MAX_NGPUS];
 
         // Move centroids from host memory to GPU
-        nonrandom_data(ord, *d_centroids, &srcdata[0], 0, k, k, m);
+        nonrandom_data(ord, *d_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             std::cout << "Copying data to device: " << dList[q] << std::endl;
-
+            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
             nonrandom_data(ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
 
             distances[q] = new thrust::device_vector<T>(n);
-            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
             cudaMalloc(&d_changes[q], sizeof(int));
-            kmeans::detail::labels_init(); // TODO necessary??
+
+            kmeans::detail::labels_init();
             data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
             centroid_dots[q] = new thrust::device_vector<T>(k);
 
-            cudaSetDevice(dList[q]);
             pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
 
             kmeans::detail::calculate_distances(q, n/n_gpu, m, k,
                 *d_data[q], *d_centroids, *data_dots[q],
                 *centroid_dots[q], *pairwise_distances[q]);
 
+            d_labels[q] = new thrust::device_vector<int>(n/n_gpu);
             kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 
         // Move the resulting labels into host memory
-        // TODO make this work for multiple GPUs
-        thrust::host_vector<T> *h_labels;
-        for (int q = 0; q < n_gpu; q++) {
-            thrust::host_vector <T> *h_labels = new thrust::host_vector<T>(*d_labels[q]);
-        }
+//        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(n);
+//        for (int q = 0; q < n_gpu; q++) {
+//            thrust::copy(d_labels[q]->begin(), d_labels[q]->end(), h_labels->begin());
+//        }
+
+        thrust::host_vector<T> *h_labels = new thrust::host_vector<T>(*d_labels[0]);
         *preds = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {

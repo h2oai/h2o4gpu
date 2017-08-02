@@ -20,6 +20,9 @@ class KMeans(object):
     def predict(self, X):
         return self.solver.predict(X)
 
+    def sklearnpredict(self, X):
+        return self.solver.sklearnpredict(X)
+
     def transform(self, X):
         return self.solver.transform(X)
 
@@ -232,6 +235,10 @@ class KMeansBaseSolver(object):
             self.model = SKCluster.KMeans(self.k, max_iter=1, init=self.centroids, n_init=1)
             self.model.fit(self.Xnp, self.ynp)
 
+    def sklearnpredict(self, X):
+        self.sklearnfit()
+        return self.model.predict(X)
+
     def predict(self, X):
         assert not np.isnan(X).any(), "X contains NA"
         self.prediction = self._predict(X)
@@ -239,10 +246,9 @@ class KMeansBaseSolver(object):
 
     def _predict(self, X):
         c_data, data_ctype = self._to_cdata(X)
-        c_init_from_labels = c_void_p(0)
-        c_init_labels = c_void_p(0)
-        c_init_data = c_void_p(0)
-        c_labels = c_void_p(0)
+        c_init_from_labels = 0
+        c_init_labels = 0
+        c_init_data = 0
 
         rows = np.shape(X)[0]
         cols = np.shape(X)[1]
