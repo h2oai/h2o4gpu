@@ -602,7 +602,7 @@ namespace h2ogpumlkmeans {
 
         // Move the resulting labels into host memory
         // TODO make this work for multiple GPUs
-        thrust::host_vector<T> h_labels(n);
+        thrust::host_vector<T> *h_labels;
         for (int q = 0; q < n_gpu; q++) {
             thrust::host_vector <T> *h_labels = new thrust::host_vector<T>(*d_labels[q]);
         }
