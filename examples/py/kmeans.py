@@ -67,7 +67,7 @@ for x in range(0, num + 1):
 print(labels.shape)
 
 n_gpus = 1
-model = h2ogpuml.KMeansGPU(n_gpus=n_gpus, k=k, threshold=1e-7, max_iterations=1000)
+model = h2ogpuml.KMeans(n_gpus=n_gpus, k=k, threshold=1e-7, max_iterations=1000)
 centroids, timefit0, timefit1 = model.fit(trainencflt, labels)
 
 # train_labels = model.predict(trainencflt)
