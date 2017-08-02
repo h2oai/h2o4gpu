@@ -660,9 +660,13 @@ namespace h2ogpumlkmeans {
                                     const double *srcdata, const int *srclabels, void **centroid);
 
     template int kmeans_predict<float>(int gpu_idtry, int n_gputry,
-                                       size_t rows, size_t cols,
-                                       const char ord, int k,
-                                       const float *srcdata, void **centroid, void **preds);
+                                        size_t rows, size_t cols,
+                                        const char ord, int k,
+                                        const float* srcdata, const float* centroids, void** preds);
+    template int kmeans_predict<double>(int gpu_idtry, int n_gputry,
+                                         size_t rows, size_t cols,
+                                         const char ord, int k,
+                                         const double* srcdata, const double* centroids, void** preds);
 
     template int kmeans_predict<double>(int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
