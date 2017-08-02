@@ -306,6 +306,9 @@ namespace h2ogpumlkmeans {
         int n_gpu;
         n_gpu = std::min(n_gpuvis, n_gputry);
 
+        std::cout << n_gpuvis << " CUDA visible devices." << std::endl;
+        std::cout << n_gputry << " GPUs to try." << std::endl;
+
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 

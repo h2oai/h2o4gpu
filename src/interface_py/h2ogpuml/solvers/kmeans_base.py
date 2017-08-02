@@ -137,8 +137,6 @@ class KMeansBaseSolver(object):
 
         res = c_void_p(0)
 
-        c_centroids = c_void_p(0) # TODO proper type?
-
         c_labels = cptr(labels, dtype=c_int)
         t0 = time.time()
         #######################
