@@ -567,12 +567,12 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
-        thrust::device_vector<T> *d_centroids(k * m);
+        thrust::device_vector<T> *d_centroids;
         thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
         thrust::device_vector<T> *data_dots[MAX_NGPUS];
         thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
         thrust::device_vector<T> *distances[n_gpu];
-        int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
+        int *d_changes[MAX_NGPUS];
 
         // Move centroids from host memory to GPU
         nonrandom_data(ord, *d_centroids, &srcdata[0], 0, k, k, m);
@@ -600,7 +600,7 @@ namespace h2ogpumlkmeans {
             kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 
-//         Move the resulting labels into host memory
+        // Move the resulting labels into host memory
         // TODO make this work for multiple GPUs
         thrust::host_vector<T> h_labels(n);
         for (int q = 0; q < n_gpu; q++) {
