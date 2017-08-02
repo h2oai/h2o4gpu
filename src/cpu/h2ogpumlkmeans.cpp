@@ -421,11 +421,11 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int cpu_idtry, int n_cputry, size_t rows, size_t cols, const char ord, int k,
                       int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold,
-                      const T *srcdata, const int *srclabels, void **res) {
+                      const T *srcdata, const int *srclabels, void **preds) {
         if (dopredict == 0) {
             return kmeans_fit(cpu_idtry, n_cputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                              srcdata, srclabels, centroids);
+                              srcdata, srclabels, preds);
         } else {
             return kmeans_predict(cpu_idtry, n_cputry, rows, cols,
                                   ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,

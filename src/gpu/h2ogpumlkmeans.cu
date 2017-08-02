@@ -261,7 +261,7 @@ namespace h2ogpumlkmeans {
                    size_t rows, size_t cols, const char ord,
                    int k, int max_iterations, int init_from_labels,
                    int init_labels, int init_data, T threshold,
-                   const T *srcdata, const int *srclabels, void **centroid) {
+                   const T *srcdata, const int *srclabels, void **preds) {
         if (verbose) {
             std::cout << " Start makePtr_dense." << std::endl;
         }
@@ -276,7 +276,6 @@ namespace h2ogpumlkmeans {
         if (verbose) {
             std::cout << "Seed: " << seed << std::endl;
         }
-
         // no more clusters than rows
         if (k > rows) {
             k = static_cast<int>(rows);
@@ -510,7 +509,7 @@ namespace h2ogpumlkmeans {
         thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*centroids[0]);
         // TODO FIXME: When do delete this ctr memory?
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
-        *res = ctr->data();
+        *preds = ctr->data();
 
         // debug
         int printcenters = verbose > 2;
@@ -532,7 +531,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int gpu_idtry, int n_gputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T *srcdata, void **centroid, void **preds) {
+                       const T* srcdata, const T* centroids, void** preds) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
