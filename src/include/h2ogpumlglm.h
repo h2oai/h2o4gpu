@@ -131,7 +131,7 @@ private:
 	// Output for internal post-processing (e.g. on GPU if GPU or on CPU if CPU)
 	T *_xp, *_trainPredsp, *_validPredsp;
 
-	T _trainrmse, _validrmse;
+	T _trainerror, _validerror;
 	T _trainmean, _validmean;
 	T _trainstddev, _validstddev;
 	unsigned int _final_iter;
@@ -140,7 +140,7 @@ private:
 	T _abs_tol, _rel_tol;
 	unsigned int _max_iter, _stop_early, _init_iter, _verbose;
 	bool _adaptive_rho, _equil, _gap_stop, _init_x, _init_lambda;
-	double _stop_early_rmse_fraction;
+	double _stop_early_error_fraction;
 	// cuda number of devices and which device(s) to use
 	int _nDev, _wDev;
 	// NCCL communicator
@@ -204,8 +204,8 @@ public:
 	unsigned int GetStopEarly() const {
 		return _stop_early;
 	}
-	double GetStopEarlyRMSEFraction() const {
-		return _stop_early_rmse_fraction;
+	double GetStopEarlyerrorFraction() const {
+		return _stop_early_error_fraction;
 	}
 	unsigned int GetInitIter() const {
 		return _init_iter;
@@ -246,7 +246,7 @@ public:
 		os << "abs_tol: " << _abs_tol << sep;
 		os << "max_iter: " << _max_iter << sep;
 		os << "stop_early: " << _stop_early << sep;
-		os << "stop_early_rmse_fraction: " << _stop_early_rmse_fraction << sep;
+		os << "stop_early_error_fraction: " << _stop_early_error_fraction << sep;
 		os << "init_iter: " << _init_iter << sep;
 		os << "verbose: " << _verbose << sep;
 		os << "adaptive_rho: " << _adaptive_rho << sep;
@@ -290,8 +290,8 @@ public:
 	void SetStopEarly(unsigned int stop_early) {
 		_stop_early = stop_early;
 	}
-	void SetStopEarlyRMSEFraction(unsigned int stop_early_rmse_fraction) {
-		_stop_early_rmse_fraction = stop_early_rmse_fraction;
+	void SetStopEarlyErrorFraction(unsigned int stop_early_error_fraction) {
+		_stop_early_error_fraction = stop_early_error_fraction;
 	}
 	void SetInitIter(unsigned int init_iter) {
 		_init_iter = init_iter;

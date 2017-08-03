@@ -11,7 +11,7 @@ Elastic Net
 '''
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0):
     # choose solver
     Solver = h2ogpuml.GLM
 
@@ -55,8 +55,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Constructor
     print("Setting up solver")
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas,
-                  nFolds, nAlphas, verbose=5)
+    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=verbose,family=family)
 
     print("trainX")
     print(trainX)
@@ -125,7 +124,8 @@ if __name__ == "__main__":
     import feather
 
     # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
-    df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+    #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+    df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
     # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
     #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
     #df = pd.read_csv("Hyatt_Subset.csv")
@@ -134,5 +134,5 @@ if __name__ == "__main__":
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     # elastic_net(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
+    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0, family="logistic",verbose=0)
     # elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)

@@ -1,6 +1,9 @@
 # OSX #
 *.DS_STORE
 
+# Visual Studio Code
+*.vscode
+
 # Idea #
 *.idea/
 *.idea
