@@ -568,14 +568,14 @@ namespace h2ogpumlkmeans {
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
         thrust::device_vector<T> *d_centroids = new thrust::device_vector<T>(k * m);
-        thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
-        thrust::device_vector<T> *data_dots[MAX_NGPUS];
-        thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
+        thrust::device_vector<T> *pairwise_distances[n_gpu];
+        thrust::device_vector<T> *data_dots[n_gpu];
+        thrust::device_vector<T> *centroid_dots[n_gpu];
         thrust::device_vector<T> *distances[n_gpu];
-        int *d_changes[MAX_NGPUS];
+        int *d_changes[n_gpu];
 
         // Move centroids from host memory to GPU
-        nonrandom_data(ord, *d_centroids, &centroids[0], 0, k, k, m);
+        nonrandom_data('r', *d_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
@@ -592,11 +592,13 @@ namespace h2ogpumlkmeans {
 
             pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
 
+            kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
+
             kmeans::detail::calculate_distances(q, n/n_gpu, m, k,
                 *d_data[q], *d_centroids, *data_dots[q],
                 *centroid_dots[q], *pairwise_distances[q]);
 
-            d_labels[q] = new thrust::device_vector<int>(n/n_gpu);
+            d_labels[q] = new thrust::device_vector<int>(n/n_gpu*m);
             kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 

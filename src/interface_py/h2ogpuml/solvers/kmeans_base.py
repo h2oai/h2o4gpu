@@ -245,7 +245,7 @@ class KMeansBaseSolver(object):
         return self.prediction
 
     def _predict(self, X):
-        c_data, data_ctype = self._to_cdata(X)
+        c_data, _ = self._to_cdata(X)
         c_init_from_labels = 0
         c_init_labels = 0
         c_init_data = 0
@@ -253,7 +253,7 @@ class KMeansBaseSolver(object):
         rows = np.shape(X)[0]
         cols = np.shape(X)[1]
 
-        c_centroids, data_ctype = self._to_cdata(self.centroids)
+        c_centroids, _ = self._to_cdata(self.centroids)
         c_res = c_void_p(0)
 
         if self.double_precision == 0:
