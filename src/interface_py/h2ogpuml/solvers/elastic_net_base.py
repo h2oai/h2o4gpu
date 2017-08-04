@@ -571,8 +571,7 @@ class GLMBaseSolver(object):
             sys.stdout.flush()
             exit(0)
         #
-        if givefullpath == 1:
-            if dopredict == 0:
+        if givefullpath == 1 and dopredict == 0:
                 # Xvsalphalambda contains solution (and other data) for all lambda and alpha
                 self.Xvsalphalambdanew = np.fromiter(cast(Xvsalphalambda, POINTER(self.myctype)), dtype=self.mydtype,
                                                      count=countfull_value)
@@ -589,15 +588,15 @@ class GLMBaseSolver(object):
                 self.info.alphas = self.alphas
                 self.info.tols = self.tols
             #
-            else:
-                thecount = int(countfull_value / (n + NUMALLOTHER) * mValid)
-                self.validPredsvsalphalambdanew = np.fromiter(cast(validPredsvsalphalambda, POINTER(self.myctype)),
-                                                              dtype=self.mydtype, count=thecount)
-                self.validPredsvsalphalambdanew = np.reshape(self.validPredsvsalphalambdanew,
-                                                             (self.n_lambdas, self.n_alphas, mValid))
-                self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:, :, 0:mValid]
-                #
-        if dopredict == 0:
+        if givefullpath==1 and dopredict==1:
+            thecount = int(countfull_value / (n + NUMALLOTHER) * mValid)
+            self.validPredsvsalphalambdanew = np.fromiter(cast(validPredsvsalphalambda, POINTER(self.myctype)),
+                                                          dtype=self.mydtype, count=thecount)
+            self.validPredsvsalphalambdanew = np.reshape(self.validPredsvsalphalambdanew,
+                                                         (self.n_lambdas, self.n_alphas, mValid))
+            self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:, :, 0:mValid]
+            #
+        if dopredict == 0: # givefullpath==0 or 1
             # Xvsalpha contains only best of all lambda for each alpha
             self.Xvsalphanew = np.fromiter(cast(Xvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
                                            count=countshort_value)
@@ -614,7 +613,7 @@ class GLMBaseSolver(object):
             self.info.alphas2 = self.alphas2
             self.info.tols2 = self.tols2
         #
-        if dopredict == 1:
+        if givefullpath==0 and dopredict == 1: # preds exclusively operate for Xvsalpha or Xvsalphalambda
             thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
             if verbose>0:
                 print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
@@ -636,9 +635,9 @@ class GLMBaseSolver(object):
         else:
             self.didpredict = 1
             if givefullpath == 1:
-                return (self.validPredsvsalphalambdapure, self.validPredsvsalphapure)
+                return self.validPredsvsalphalambdapure
             else:
-                return (None, self.validPredsvsalphapure)
+                return self.validPredsvsalphapure
 
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         #
@@ -804,41 +803,50 @@ class GLMBaseSolver(object):
                 return (None, self.validPredsvsalphapure)
 
     def getrmse(self):
-        if self.givefullpath:
-            return (self.rmsevsalphalambda)
+        if self.givefullpath==1:
+            return (self.rmsevsalphalambda, self.rmsevsalpha)
         else:
-            return (self.rmsevsalpha)
+            return (None, self.rmsevsalpha)
 
     def getlambdas(self):
-        if self.givefullpath:
-            return (self.lambdas)
+        if self.givefullpath==1:
+            return (self.lambdas, self.lambdas2)
         else:
-            return (self.lambdas2)
+            return (None, self.lambdas2)
 
     def getalphas(self):
-        if self.givefullpath:
-            return (self.alphas)
+        if self.givefullpath==1:
+            return (self.alphas, self.alphas2)
         else:
-            return (self.alphas2)
+            return (None, self.alphas2)
 
     def gettols(self):
-        if self.givefullpath:
-            return (self.tols)
+        if self.givefullpath==1:
+            return (self.tols, self.tols2)
         else:
-            return (self.tols2)
+            return (None, self.tols2)
 
     def predict(self, validX, validY=None, testweight=None, givefullpath=0, freeinputdata=1):
         # if pass None trainx and trainY, then do predict using validX and weight (if given)
         # unlike upload_data and fitptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
         dopredict = 1
-        self.prediction = self.fit(None, None, validX, validY, testweight, givefullpath, dopredict, freeinputdata)
-        return (self.prediction)  # something like validY
+        if givefullpath==1:
+            self.predictionfull = self.fit(None, None, validX, validY, testweight, givefullpath, dopredict, freeinputdata)
+        else:
+            self.predictionfull = None
+        self.prediction = self.fit(None, None, validX, validY, testweight, 0, dopredict, freeinputdata)
+        return (self.predictionfull, self.prediction)  # something like validY
 
     def predictptr(self, validXptr, validYptr=None, givefullpath=0, freeinputdata=0):
         dopredict = 1
         #print("%d %d %d %d %d" % (self.sourceDev, self.mTrain, self.n, self.mValid, self.precision)) ; sys.stdout.flush()
-        self.prediction = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b, validXptr, validYptr, self.e, givefullpath, dopredict, freeinputdata)
-        return (self.prediction)  # something like validY
+        self.prediction = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b,
+                                      validXptr, validYptr, self.e, 0, dopredict, freeinputdata)
+        if givefullpath==1: # then need to run twice
+            self.predictionfull = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b, validXptr, validYptr, self.e, givefullpath, dopredict, freeinputdata)
+        else:
+            self.predictionfull = None
+        return (self.predictionfull, self.prediction)  # something like validY
 
     def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         if stopearly is None:
@@ -852,10 +860,20 @@ class GLMBaseSolver(object):
         dopredict = 0  # only fit at first
         self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
         if validX == None:
-            self.prediction = self.predict(trainX, trainY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            if givefullpath==1:
+                self.predictionfull = self.predict(trainX, trainY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            else:
+                self.predictionfull = None
+            self.prediction = self.predict(trainX, trainY, testweight=weight, givefullpath=0,
+                                       freeinputdata=freeinputdata)
         else:
-            self.prediction = self.predict(validX, validY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
-        return (self.prediction)
+            if givefullpath==1:
+                self.predictionfull = self.predict(validX, validY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            else:
+                self.predictionfull = None
+            self.prediction = self.predict(validX, validY, testweight=weight, givefullpath=0,
+                                           freeinputdata=freeinputdata)
+        return (self.predictionfull, self.prediction)
 
     def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         dopredict = 0  # only fit at first
@@ -869,10 +887,18 @@ class GLMBaseSolver(object):
             verbose = self.verbose
         self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
         if c is None or c is c_void_p(0):
-            self.prediction = self.predictptr(a, b, givefullpath, freeinputdata=freeinputdata)
+            self.prediction = self.predictptr(a, b, 0, freeinputdata=freeinputdata)
+            if givefullpath==1:
+                self.predictionfull = self.predictptr(a, b, givefullpath, freeinputdata=freeinputdata)
+            else:
+                self.predictionfull = None
         else:
-            self.prediction = self.predictptr(c, d, givefullpath, freeinputdata=freeinputdata)
-        return (self.prediction)
+            self.prediction = self.predictptr(c, d, 0, freeinputdata=freeinputdata)
+            if givefullpath==1:
+                self.predictionfull = self.predictptr(c, d, givefullpath, freeinputdata=freeinputdata)
+            else:
+                self.predictionfull = None
+        return (self.predictionfull, self.prediction)
 
     def freedata(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
