@@ -545,11 +545,13 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 							< nrm_r_error.back()
 					&& std::abs(nrm_s_avg.back() - nrm_s_avg.front())
 							< nrm_s_error.back()) {
-				Printf("Stopped Early at iteration=%d: %g %g %g : %g %g %g\n",
-						k, nrm_r_avg.back(), nrm_r_avg.front(),
-						nrm_r_error.back(), nrm_s_avg.back(), nrm_s_avg.front(),
-						nrm_s_error.back());
-				fflush(stdout);
+				if(_verbose > 2){
+					Printf("Stopped Early at iteration=%d: %g %g %g : %g %g %g\n",
+							k, nrm_r_avg.back(), nrm_r_avg.front(),
+							nrm_r_error.back(), nrm_s_avg.back(), nrm_s_avg.front(),
+							nrm_s_error.back());
+					fflush(stdout);
+				}
 				stopearly = true;
 			}
 

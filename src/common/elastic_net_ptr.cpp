@@ -69,7 +69,7 @@ const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
 const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
-#define VERBOSEENET 0
+#define VERBOSEENET 1
 
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \

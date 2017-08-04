@@ -571,32 +571,33 @@ class GLMBaseSolver(object):
             sys.stdout.flush()
             exit(0)
         #
-        if givefullpath == 1 and dopredict == 0:
-            # Xvsalphalambda contains solution (and other data) for all lambda and alpha
-            self.Xvsalphalambdanew = np.fromiter(cast(Xvsalphalambda, POINTER(self.myctype)), dtype=self.mydtype,
-                                                 count=countfull_value)
-            self.Xvsalphalambdanew = np.reshape(self.Xvsalphalambdanew, (self.n_lambdas, self.n_alphas, numall))
-            self.Xvsalphalambdapure = self.Xvsalphalambdanew[:, :, 0:n]
-            self.rmsevsalphalambda = self.Xvsalphalambdanew[:, :, n:n + NUMRMSE]
-            self.lambdas = self.Xvsalphalambdanew[:, :, n + NUMRMSE:n + NUMRMSE + 1]
-            self.alphas = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 1:n + NUMRMSE + 2]
-            self.tols = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 2:n + NUMRMSE + 3]
+        if givefullpath == 1:
+            if dopredict == 0:
+                # Xvsalphalambda contains solution (and other data) for all lambda and alpha
+                self.Xvsalphalambdanew = np.fromiter(cast(Xvsalphalambda, POINTER(self.myctype)), dtype=self.mydtype,
+                                                     count=countfull_value)
+                self.Xvsalphalambdanew = np.reshape(self.Xvsalphalambdanew, (self.n_lambdas, self.n_alphas, numall))
+                self.Xvsalphalambdapure = self.Xvsalphalambdanew[:, :, 0:n]
+                self.rmsevsalphalambda = self.Xvsalphalambdanew[:, :, n:n + NUMRMSE]
+                self.lambdas = self.Xvsalphalambdanew[:, :, n + NUMRMSE:n + NUMRMSE + 1]
+                self.alphas = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 1:n + NUMRMSE + 2]
+                self.tols = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 2:n + NUMRMSE + 3]
+                #
+                self.solution.Xvsalphalambdapure = self.Xvsalphalambdapure
+                self.info.rmsevsalphalambda = self.rmsevsalphalambda
+                self.info.lambdas = self.lambdas
+                self.info.alphas = self.alphas
+                self.info.tols = self.tols
             #
-            self.solution.Xvsalphalambdapure = self.Xvsalphalambdapure
-            self.info.rmsevsalphalambda = self.rmsevsalphalambda
-            self.info.lambdas = self.lambdas
-            self.info.alphas = self.alphas
-            self.info.tols = self.tols
-        #
-        if givefullpath == 1 and dopredict == 1:
-            thecount = int(countfull_value / (n + NUMALLOTHER) * mValid)
-            self.validPredsvsalphalambdanew = np.fromiter(cast(validPredsvsalphalambda, POINTER(self.myctype)),
-                                                          dtype=self.mydtype, count=thecount)
-            self.validPredsvsalphalambdanew = np.reshape(self.validPredsvsalphalambdanew,
-                                                         (self.n_lambdas, self.n_alphas, mValid))
-            self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:, :, 0:mValid]
-            #
-        if givefullpath == 0 and dopredict == 0:
+            else:
+                thecount = int(countfull_value / (n + NUMALLOTHER) * mValid)
+                self.validPredsvsalphalambdanew = np.fromiter(cast(validPredsvsalphalambda, POINTER(self.myctype)),
+                                                              dtype=self.mydtype, count=thecount)
+                self.validPredsvsalphalambdanew = np.reshape(self.validPredsvsalphalambdanew,
+                                                             (self.n_lambdas, self.n_alphas, mValid))
+                self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:, :, 0:mValid]
+                #
+        if dopredict == 0:
             # Xvsalpha contains only best of all lambda for each alpha
             self.Xvsalphanew = np.fromiter(cast(Xvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
                                            count=countshort_value)
@@ -613,7 +614,7 @@ class GLMBaseSolver(object):
             self.info.alphas2 = self.alphas2
             self.info.tols2 = self.tols2
         #
-        if givefullpath == 0 and dopredict == 1:  # exclusive set of validPreds unlike X
+        if dopredict == 1:
             thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
             if verbose>0:
                 print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
