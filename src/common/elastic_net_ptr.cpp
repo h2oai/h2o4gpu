@@ -241,7 +241,7 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 
 }
 
-#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nLambdas)
+#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nAlphas)
 #define MAPXBEST(a,which) (which + a*(n+NUMError+NUMOTHER))
 
 template<typename T>

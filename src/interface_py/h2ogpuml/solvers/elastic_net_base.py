@@ -632,13 +632,13 @@ class GLMBaseSolver(object):
             if givefullpath == 1:
                 return (self.Xvsalphalambdapure, self.Xvsalphapure)
             else:
-                return (self.Xvsalphapure)
+                return (None, self.Xvsalphapure)
         else:
             self.didpredict = 1
             if givefullpath == 1:
                 return (self.validPredsvsalphalambdapure, self.validPredsvsalphapure)
             else:
-                return (self.validPredsvsalphapure)
+                return (None, self.validPredsvsalphapure)
 
     def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
         #
@@ -796,12 +796,12 @@ class GLMBaseSolver(object):
             if givefullpath == 1:
                 return (self.Xvsalphalambdapure, self.Xvsalphapure)
             else:
-                return (self.Xvsalphapure)
+                return (None, self.Xvsalphapure)
         else:
             if givefullpath == 1:
                 return (self.validPredsvsalphalambdapure, self.validPredsvsalphapure)
             else:
-                return (self.validPredsvsalphapure)
+                return (None, self.validPredsvsalphapure)
 
     def getrmse(self):
         if self.givefullpath:
