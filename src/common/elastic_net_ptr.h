@@ -18,6 +18,16 @@
 namespace h2ogpuml {
 
 
+/**
+ * Calculate error based on family.
+ *
+ * If family == 'logistic',then compute logloss else compute rmse
+ *
+ * @param len Length of outcome vector
+ * @param v1 Predictions made by solver
+ * @param v2 Actualy `Y` values
+ * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
+ */
 template<typename T>
 T getError(size_t len, const T *v1, const T *v2, const char family) {
 	if(family == 'e'){
@@ -43,6 +53,17 @@ T getError(size_t len, const T *v1, const T *v2, const char family) {
 	}
 }
 
+/**
+ * Calculate error based on family.
+ *
+ * If family == 'logistic',then compute logloss else compute rmse
+ *
+ * @param weights Weight vector given to observations
+ * @param len Length of outcome vector
+ * @param v1 Predictions made by solver
+ * @param v2 Actualy `Y` values
+ * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
+ */
 template<typename T>
 T getError(const T*weights, size_t len, const T *v1, const T *v2, const char family) {
 	if(family == 'e'){
@@ -78,6 +99,19 @@ T getError(const T*weights, size_t len, const T *v1, const T *v2, const char fam
 	}
 
 }
+
+/**
+ * Calculate error based on family.
+ *
+ * If family == 'logistic',then compute logloss else compute rmse
+ *
+ * @param offset Offset vector given to observations
+ * @param weights Weight vector given to observations
+ * @param len Length of outcome vector
+ * @param v1 Predictions made by solver
+ * @param v2 Actualy `Y` values
+ * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
+ */
 template<typename T>
 T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2, const char family) {
 	if(family == 'e'){
