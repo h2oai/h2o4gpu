@@ -93,8 +93,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("tols")
     tols = enet.gettols()
     print(tols)
+    
+    print(Xvsalpha)
+    print(len(Xvsalpha)) 
+    testvalidY = np.dot(trainX, Xvsalpha[1].T)
 
-    testvalidY = np.dot(trainX, Xvsalpha.T)
     print("testvalidY (newvalidY should be this)")
     print(testvalidY)
 
@@ -124,7 +127,7 @@ if __name__ == "__main__":
     import feather
 
     # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
-    #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+    #df = feather.read_dataframe("../../../h2oai-prototypes/gtc-demo/ipums.feather")
     df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
     # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
     #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
