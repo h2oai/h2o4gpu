@@ -48,3 +48,6 @@
 # Entire build directory #
 /src/build/*
 
+# Temp space
+./tmp
+

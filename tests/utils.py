@@ -146,7 +146,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     print("Solving") ; sys.stdout.flush()
     if use_gpu == 1:
-        enet.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
+        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath)
     else:
         enet.fit(a, b, c, d, e, givefullpath)
     #t1 = time.time()
@@ -173,21 +173,21 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     print('Predicting') ; sys.stdout.flush()
     if use_gpu == 1:
-        pred_valfull, pred_val = enet.predictptr(c, d, givefullpath)
+        pred_valfull, pred_val = enet.predict_ptr(c, d, givefullpath)
     else:
         pred_valfull, pred_val = enet.predict(c, givefullpath)
     print('Done Predicting') ; sys.stdout.flush()
     print('predicted values:\n', pred_val)
-    if givefullpath==1:
+    if givefullpath == 1:
         print('full predicted values:\n', pred_valfull)
 
+    # Display most important metrics
+    rmse_full, rmse = enet.get_error
+    alphas_full, alphas = enet.get_alphas
+    lambdas_full, lambdas = enet.get_lambdas
+    tols_full, tols = enet.get_tols
     if display == 1:
-        # Display most important metrics
-        rmse_full, rmse = enet.get_error
-        alphas_full, alphas = enet.get_alphas
-        lambdas_full, lambdas = enet.get_lambdas
-        tols_full, tols = enet.get_tols
-        if givefullpath==1:
+        if givefullpath == 1:
             print('Test RMSE full path: ', (rmse_full))
             print('Test ALPHAS full path: ', (alphas_full))
             print('Test LAMBDAS full path: ', (lambdas_full))

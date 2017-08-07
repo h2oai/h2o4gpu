@@ -94,7 +94,7 @@ def test_glm_hyatt_cpu_fold1(): fun(False, 1, 3, 1, classification=False)
 def test_glm_hyatt_cpu_fold5(): fun(False, 5, 100, 3, classification=False)
 
 if __name__ == '__main__':
-#	test_glm_hyatt_gpu_fold1()
-#	test_glm_hyatt_gpu_fold5()
+	test_glm_hyatt_gpu_fold1()
+	test_glm_hyatt_gpu_fold5()
 	test_glm_hyatt_cpu_fold1()
-#	test_glm_hyatt_cpu_fold5()
+	test_glm_hyatt_cpu_fold5()
