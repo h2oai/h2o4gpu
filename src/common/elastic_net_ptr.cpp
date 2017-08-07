@@ -935,6 +935,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						//                fprintf(stderr,"trainPreds[%d]=%g\n",iii,trainPreds[iii]);
 						//              }
 #endif
+						//Compute inverse logit of predictions if family == 'logistic' to get actual probabilities.
 						if(family == 'l'){
 							std::transform(trainPreds.begin(), trainPreds.end(), trainPreds.begin(),[](T i) -> T { return 1/(1+exp(-i)); });
 						}
