@@ -33,7 +33,7 @@ class GLM(object):
 
         #TODO Add type checking
 
-        n_gpus, deviceCount = devicecount(n_gpus)
+        n_gpus, device_count = devicecount(n_gpus)
 
         if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
@@ -49,12 +49,12 @@ class GLM(object):
                 '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
             print('> Use GPU or re-run setup.py\n\n')
 
-        if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
-            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, deviceCount))
+        if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
+            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
             self.solver = _GLMBaseSolver(h2ogpumlGLMCPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
                                         lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family)
         else:
-            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
+            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
                 print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
                 self.solver = _GLMBaseSolver(h2ogpumlGLMGPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
                                             lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family)
@@ -454,7 +454,7 @@ class _GLMBaseSolver(object):
         return a, b, c, d, e
 
     # source_dev here because generally want to take in any pointer, not just from our test code
-    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, givefullpath=0, do_predict=0, freeinputdata=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0, free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         # store some things for later call to predict_ptr()
         self.source_dev = source_dev
         self.m_train = m_train
@@ -466,7 +466,7 @@ class _GLMBaseSolver(object):
         self.c = c
         self.d = d
         self.e = e
-        self.givefullpath = givefullpath
+        self.give_full_path = give_full_path
 
         if stop_early is None:
             stop_early=self.stop_early
@@ -498,9 +498,9 @@ class _GLMBaseSolver(object):
         ###############
         # not calling with self.source_dev because want option to never use default but instead input pointers from foreign code's pointers
         if hasattr(self, 'double_precision'):
-            whichprecision = self.double_precision
+            which_precision = self.double_precision
         else:
-            whichprecision = precision
+            which_precision = precision
             self.double_precision = precision
         ##############
         if do_predict == 0:
@@ -509,22 +509,22 @@ class _GLMBaseSolver(object):
             x_vs_alpha = c_void_p(0)
             valid_pred_vs_alpha_lambda = c_void_p(0)
             valid_pred_vs_alpha = c_void_p(0)
-            countfull = c_size_t(0)
-            countshort = c_size_t(0)
-            countmore = c_size_t(0)
+            count_full = c_size_t(0)
+            count_short = c_size_t(0)
+            count_more = c_size_t(0)
         else:
             # restore if predict
             x_vs_alpha_lambda = self.x_vs_alpha_lambda
             x_vs_alpha = self.x_vs_alpha
             valid_pred_vs_alpha_lambda = self.valid_pred_vs_alpha_lambda
             valid_pred_vs_alpha = self.valid_pred_vs_alpha
-            countfull = self.countfull
-            countshort = self.countshort
-            countmore = self.countmore
+            count_full = self.count_full
+            count_short = self.count_short
+            count_more = self.count_more
         ################
         #
         c_size_t_p = POINTER(c_size_t)
-        if (whichprecision == 1):
+        if (which_precision == 1):
             self.mydtype = np.double
             self.myctype = c_double
             if verbose>0:
@@ -539,11 +539,11 @@ class _GLMBaseSolver(object):
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
-                , givefullpath
+                , give_full_path
                 , pointer(x_vs_alpha_lambda), pointer(x_vs_alpha)
                 , pointer(valid_pred_vs_alpha_lambda), pointer(valid_pred_vs_alpha)
-                , cast(addressof(countfull), c_size_t_p), cast(addressof(countshort), c_size_t_p),
-                cast(addressof(countmore), c_size_t_p)
+                , cast(addressof(count_full), c_size_t_p), cast(addressof(count_short), c_size_t_p),
+                cast(addressof(count_more), c_size_t_p)
             )
         else:
             self.mydtype = np.float
@@ -560,16 +560,16 @@ class _GLMBaseSolver(object):
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
-                , givefullpath
+                , give_full_path
                 , pointer(x_vs_alpha_lambda), pointer(x_vs_alpha)
                 , pointer(valid_pred_vs_alpha_lambda), pointer(valid_pred_vs_alpha)
-                , cast(addressof(countfull), c_size_t_p), cast(addressof(countshort), c_size_t_p),
-                cast(addressof(countmore), c_size_t_p)
+                , cast(addressof(count_full), c_size_t_p), cast(addressof(count_short), c_size_t_p),
+                cast(addressof(count_more), c_size_t_p)
             )
         #
         # if should or user wanted to save or free data, do that now that we are done using a,b,c,d,e
         # This means have to upload_data() again before fit_ptr or predict_ptr or only call fit and predict
-        if freeinputdata==1:
+        if free_input_data==1:
             self.free_data()
         #####################################
         # PROCESS OUTPUT
@@ -578,77 +578,77 @@ class _GLMBaseSolver(object):
         self.x_vs_alpha = x_vs_alpha
         self.valid_pred_vs_alpha_lambda = valid_pred_vs_alpha_lambda
         self.valid_pred_vs_alpha = valid_pred_vs_alpha
-        self.countfull = countfull
-        self.countshort = countshort
-        self.countmore = countmore
+        self.count_full = count_full
+        self.count_short = count_short
+        self.count_more = count_more
         #
-        countfull_value = countfull.value
-        countshort_value = countshort.value
-        countmore_value = countmore.value
-        # print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
+        count_full_value = count_full.value
+        count_short_value = count_short.value
+        count_more_value = count_more.value
+        # print("counts=%d %d %d" % (count_full_value,count_short_value,count_more_value))
         ######
-        if givefullpath == 1:
-            numall = int(countfull_value / (self.n_alphas * self.n_lambdas))
+        if give_full_path == 1:
+            num_all = int(count_full_value / (self.n_alphas * self.n_lambdas))
         else:
-            numall = int(countshort_value / (self.n_alphas))
+            num_all = int(count_short_value / (self.n_alphas))
         #
-        NUMALLOTHER = numall - n
+        NUMALLOTHER = num_all - n
         NUMERROR = 3  # should be consistent with src/common/elastic_net_ptr.cpp
         NUMOTHER = NUMALLOTHER - NUMERROR
         if NUMOTHER != 3:
             print("NUMOTHER=%d but expected 3" % (NUMOTHER))
-            print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (
-            int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
+            print("count_full_value=%d count_short_value=%d count_more_value=%d num_all=%d NUMALLOTHER=%d" % (
+            int(count_full_value), int(count_short_value), int(count_more_value), int(num_all), int(NUMALLOTHER)))
             sys.stdout.flush()
             exit(0)
         #
-        if givefullpath == 1 and do_predict == 0:
+        if give_full_path == 1 and do_predict == 0:
                 # x_vs_alpha_lambda contains solution (and other data) for all lambda and alpha
                 self.x_vs_alpha_lambdanew = np.fromiter(cast(x_vs_alpha_lambda, POINTER(self.myctype)), dtype=self.mydtype,
-                                                     count=countfull_value)
-                self.x_vs_alpha_lambdanew = np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas, self.n_alphas, numall))
+                                                     count=count_full_value)
+                self.x_vs_alpha_lambdanew = np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas, self.n_alphas, num_all))
                 self.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdanew[:, :, 0:n]
-                self.errorvsalphalambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
+                self.error_vs_alpha_lambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
                 self.lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
                 self.alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
                 self.tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
                 #
                 self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
-                self.info.errorvsalphalambda = self.errorvsalphalambda
+                self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
                 self.info.lambdas = self.lambdas
                 self.info.alphas = self.alphas
                 self.info.tols = self.tols
             #
-        if givefullpath==1 and do_predict==1:
-            thecount = int(countfull_value / (n + NUMALLOTHER) * m_valid)
+        if give_full_path==1 and do_predict==1:
+            thecount = int(count_full_value / (n + NUMALLOTHER) * m_valid)
             self.valid_pred_vs_alpha_lambdanew = np.fromiter(cast(valid_pred_vs_alpha_lambda, POINTER(self.myctype)),
                                                           dtype=self.mydtype, count=thecount)
             self.valid_pred_vs_alpha_lambdanew = np.reshape(self.valid_pred_vs_alpha_lambdanew,
                                                          (self.n_lambdas, self.n_alphas, m_valid))
             self.valid_pred_vs_alpha_lambdapure = self.valid_pred_vs_alpha_lambdanew[:, :, 0:m_valid]
             #
-        if do_predict == 0: # givefullpath==0 or 1
+        if do_predict == 0: # give_full_path==0 or 1
             # x_vs_alpha contains only best of all lambda for each alpha
             self.x_vs_alphanew = np.fromiter(cast(x_vs_alpha, POINTER(self.myctype)), dtype=self.mydtype,
-                                           count=countshort_value)
-            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas, numall))
+                                           count=count_short_value)
+            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
-            self.errorvsalpha = self.x_vs_alphanew[:, n:n + NUMERROR]
+            self.error_vs_alpha = self.x_vs_alphanew[:, n:n + NUMERROR]
             self.lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
             self.alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
             self.tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alphapure = self.x_vs_alphapure
-            self.info.errorvsalpha = self.errorvsalpha
+            self.info.error_vs_alpha = self.error_vs_alpha
             self.info.lambdas2 = self.lambdas2
             self.info.alphas2 = self.alphas2
             self.info.tols2 = self.tols2
         #
-        if givefullpath==0 and do_predict == 1: # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
-            thecount = int(countshort_value / (n + NUMALLOTHER) * m_valid)
+        if give_full_path==0 and do_predict == 1: # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+            thecount = int(count_short_value / (n + NUMALLOTHER) * m_valid)
             if verbose>0:
-                print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d m_valid=%d" % (
-                    thecount, countfull_value, countshort_value, n, NUMALLOTHER, m_valid))
+                print("thecount=%d count_full_value=%d count_short_value=%d n=%d NUMALLOTHER=%d m_valid=%d" % (
+                    thecount, count_full_value, count_short_value, n, NUMALLOTHER, m_valid))
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = np.fromiter(cast(valid_pred_vs_alpha, POINTER(self.myctype)), dtype=self.mydtype,
                                                     count=thecount)
@@ -659,20 +659,20 @@ class _GLMBaseSolver(object):
         # return numpy objects
         if do_predict == 0:
             self.did_predict = 0
-            if givefullpath == 1:
+            if give_full_path == 1:
                 return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
             else:
                 return (None, self.x_vs_alphapure)
         else:
             self.did_predict = 1
-            if givefullpath == 1:
+            if give_full_path == 1:
                 return self.valid_pred_vs_alpha_lambdapure
             else:
                 return self.valid_pred_vs_alphapure
 
-    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, givefullpath=0, do_predict=0, freeinputdata=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0, free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
-        self.givefullpath = givefullpath
+        self.give_full_path = give_full_path
         ################
         self.train_x = train_x
         self.train_y = train_y
@@ -821,65 +821,65 @@ class _GLMBaseSolver(object):
         source_dev = 0  # assume GPU=0 is fine as source
         a, b, c, d, e = self.upload_data(source_dev, train_x, train_y, valid_x, valid_y, weight)
         precision = 0  # won't be used
-        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, givefullpath, do_predict=do_predict, freeinputdata=freeinputdata, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
+        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path, do_predict=do_predict, free_input_data=free_input_data, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
         if do_predict == 0:
-            if givefullpath == 1:
+            if give_full_path == 1:
                 return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
             else:
                 return (None, self.x_vs_alphapure)
         else:
-            if givefullpath == 1:
+            if give_full_path == 1:
                 return (self.valid_pred_vs_alpha_lambdapure, self.valid_pred_vs_alphapure)
             else:
                 return (None, self.valid_pred_vs_alphapure)
 
     def get_error(self):
-        if self.givefullpath==1:
-            return (self.errorvsalphalambda, self.errorvsalpha)
+        if self.give_full_path==1:
+            return (self.error_vs_alpha_lambda, self.error_vs_alpha)
         else:
-            return (None, self.errorvsalpha)
+            return (None, self.error_vs_alpha)
 
     def get_lambdas(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.lambdas, self.lambdas2)
         else:
             return (None, self.lambdas2)
 
     def get_alphas(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.alphas, self.alphas2)
         else:
             return (None, self.alphas2)
 
     def get_tols(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.tols, self.tols2)
         else:
             return (None, self.tols2)
 
-    def predict(self, valid_x, valid_y=None, testweight=None, givefullpath=0, freeinputdata=1):
+    def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
         do_predict = 1
-        if givefullpath==1:
-            self.predictionfull = self.fit(None, None, valid_x, valid_y, testweight, givefullpath, do_predict, freeinputdata)
+        if give_full_path==1:
+            self.prediction_full = self.fit(None, None, valid_x, valid_y, testweight, give_full_path, do_predict, free_input_data)
         else:
-            self.predictionfull = None
-        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, 0, do_predict, freeinputdata)
-        return (self.predictionfull, self.prediction)  # something like valid_y
+            self.prediction_full = None
+        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, 0, do_predict, free_input_data)
+        return (self.prediction_full, self.prediction)  # something like valid_y
 
-    def predict_ptr(self, valid_xptr, valid_yptr=None, givefullpath=0, freeinputdata=0):
+    def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0):
         do_predict = 1
         #print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
         self.prediction = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a, self.b,
-                                      valid_xptr, valid_yptr, self.e, 0, do_predict, freeinputdata)
-        if givefullpath==1: # then need to run twice
-            self.predictionfull = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a, self.b, valid_xptr, valid_yptr, self.e, givefullpath, do_predict, freeinputdata)
+                                      valid_xptr, valid_yptr, self.e, 0, do_predict, free_input_data)
+        if give_full_path==1: # then need to run twice
+            self.prediction_full = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a, self.b, valid_xptr, valid_yptr, self.e, give_full_path, do_predict, free_input_data)
         else:
-            self.predictionfull = None
-        return (self.predictionfull, self.prediction)  # something like valid_y
+            self.prediction_full = None
+        return (self.prediction_full, self.prediction)  # something like valid_y
 
-    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, givefullpath=0, freeinputdata=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         if stop_early is None:
             stop_early=self.stop_early
         if stop_early_error_fraction is None:
@@ -889,24 +889,24 @@ class _GLMBaseSolver(object):
         if verbose is None:
             verbose = self.verbose
         do_predict = 0  # only fit at first
-        self.fit(train_x, train_y, valid_x, valid_y, weight, givefullpath, do_predict, freeinputdata=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
+        self.fit(train_x, train_y, valid_x, valid_y, weight, give_full_path, do_predict, free_input_data=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
         if valid_x == None:
-            if givefullpath==1:
-                self.predictionfull = self.predict(train_x, train_y, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            if give_full_path==1:
+                self.prediction_full = self.predict(train_x, train_y, testweight=weight, give_full_path=give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-            self.prediction = self.predict(train_x, train_y, testweight=weight, givefullpath=0,
-                                       freeinputdata=freeinputdata)
+                self.prediction_full = None
+            self.prediction = self.predict(train_x, train_y, testweight=weight, give_full_path=0,
+                                       free_input_data=free_input_data)
         else:
-            if givefullpath==1:
-                self.predictionfull = self.predict(valid_x, valid_y, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            if give_full_path==1:
+                self.prediction_full = self.predict(valid_x, valid_y, testweight=weight, give_full_path=give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-            self.prediction = self.predict(valid_x, valid_y, testweight=weight, givefullpath=0,
-                                           freeinputdata=freeinputdata)
-        return (self.predictionfull, self.prediction)
+                self.prediction_full = None
+            self.prediction = self.predict(valid_x, valid_y, testweight=weight, give_full_path=0,
+                                           free_input_data=free_input_data)
+        return (self.prediction_full, self.prediction)
 
-    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         do_predict = 0  # only fit at first
         if stop_early is None:
             stop_early=self.stop_early
@@ -916,20 +916,20 @@ class _GLMBaseSolver(object):
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
-        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, givefullpath, do_predict, freeinputdata=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
+        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path, do_predict, free_input_data=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
         if c is None or c is c_void_p(0):
-            self.prediction = self.predict_ptr(a, b, 0, freeinputdata=freeinputdata)
-            if givefullpath==1:
-                self.predictionfull = self.predict_ptr(a, b, givefullpath, freeinputdata=freeinputdata)
+            self.prediction = self.predict_ptr(a, b, 0, free_input_data=free_input_data)
+            if give_full_path==1:
+                self.prediction_full = self.predict_ptr(a, b, give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
+                self.prediction_full = None
         else:
-            self.prediction = self.predict_ptr(c, d, 0, freeinputdata=freeinputdata)
-            if givefullpath==1:
-                self.predictionfull = self.predict_ptr(c, d, givefullpath, freeinputdata=freeinputdata)
+            self.prediction = self.predict_ptr(c, d, 0, free_input_data=free_input_data)
+            if give_full_path==1:
+                self.prediction_full = self.predict_ptr(c, d, give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-        return (self.predictionfull, self.prediction)
+                self.prediction_full = None
+        return (self.prediction_full, self.prediction)
 
     def free_data(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
