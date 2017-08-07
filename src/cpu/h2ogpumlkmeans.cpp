@@ -385,34 +385,40 @@ namespace h2ogpumlkmeans {
         std::vector <T> *data[n_cpu];
         std::vector<int> *labels[n_cpu];
 
-        std::vector<T> *l_centroids[n_cpu];
+        std::vector<T> *l_centroids = new std::vector<T>(k * m);
         std::vector<T> *pairwise_distances[n_cpu];
-
         std::vector<T> *data_dots[n_cpu];
+        std::vector<T> *centroid_dots[n_cpu];
 
-        std::vector<T> centroid_dots(k);
+        nonrandom_data('r', *l_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_cpu; q++) {
             data[q] = new std::vector<T>(n/n_cpu * m);
-            labels[q] = new std::vector<int>(n/n_cpu * m);
-            l_centroids[q] = new std::vector<T>(k * m);
+            nonrandom_data(ord, *data[q], &srcdata[0], q, n, n/n_cpu, m);
+
+            data_dots[q] = new std::vector<T>(n/n_cpu);
+            centroid_dots[q] = new std::vector<T>(k);
+
             pairwise_distances[q] = new std::vector<T>(n/n_cpu * k);
-            data_dots[q] = new std::vector <T>(n/n_cpu);
 
-            nonrandom_data(ord, *data[q], &srcdata[0], q, n, n / n_cpu, m);
+            kmeans::self_dot(*data[q], n/n_cpu, m, *data_dots[q]);
 
-            kmeans::compute_distances(*data[q], *data_dots[q], n, m, *l_centroids[q], centroid_dots,
+            kmeans::compute_distances(*data[q], *data_dots[q], n/n_cpu, m, *l_centroids, *centroid_dots[q],
                                     k, *pairwise_distances[q]);
 
-            kmeans::relabel(*data[q], n, *pairwise_distances[q], k, *labels[q]);
+            labels[q] = new std::vector<int>(n/n_cpu);
+            kmeans::relabel(*data[q], n/n_cpu, *pairwise_distances[q], k, *labels[q]);
         }
+
+        std::vector<int> *ctr = new std::vector<int>(*labels[0]);
+        *preds = ctr->data();
 
         for (int q = 0; q < n_cpu; q++) {
             delete(data[q]);
-            delete(labels[q]);
-            delete(l_centroids[q]);
+//            delete(labels[q]);
             delete(pairwise_distances[q]);
             delete(data_dots[q]);
+            delete(centroid_dots[q]);
         }
 
         return 0;

@@ -608,7 +608,7 @@ namespace h2ogpumlkmeans {
 //            thrust::copy(d_labels[q]->begin(), d_labels[q]->end(), h_labels->begin());
 //        }
 
-        thrust::host_vector<T> *h_labels = new thrust::host_vector<T>(*d_labels[0]);
+        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(*d_labels[0]);
         *preds = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {
