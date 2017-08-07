@@ -78,20 +78,23 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("np.shape(Xvsalpha)")
     print(np.shape(Xvsalpha))
 
-    rmse = enet.getrmse()
-    print("rmse")
-    print(rmse)
+    error = enet.get_error
+    if family == 'logloss':
+        print("logloss")
+    else:
+        print("rmse")
+    print(error)
 
     print("lambdas")
-    lambdas = enet.getlambdas()
+    lambdas = enet.getlambdas
     print(lambdas)
 
     print("alphas")
-    alphas = enet.getalphas()
+    alphas = enet.getalphas
     print(alphas)
 
     print("tols")
-    tols = enet.gettols()
+    tols = enet.gettols
     print(tols)
     
     print(Xvsalpha)

@@ -6,10 +6,32 @@ from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
 from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
 from h2ogpuml.solvers.utils import devicecount
 
+"""
+H2O GLM Solver
+
+:param sharedA 
+:param nThreads
+:param n_gpus
+:param ord
+:param intercept
+:param standardize
+:param lambda_min_ratio
+:param n_lambdas
+:param n_folds
+:param n_alphas
+:param stopearly
+:param stopearlyerrorfraction
+:param max_interations
+:param verbose
+:param family
+"""
 
 class GLM(object):
+    # TODO sharedA and standardize do not work currently. Always need to set to 0.
     def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1, n_alphas=1, stopearly=1, stopearlyrmsefraction=1.0, max_iterations=5000, verbose=0, family = "elasticnet"):
+                 n_lambdas=100, n_folds=1, n_alphas=1, stopearly=1, stopearlyerrorfraction=1.0, max_iterations=5000, verbose=0, family = "elasticnet"):
+
+        #TODO Add type checking
 
         n_gpus, deviceCount = devicecount(n_gpus)
 
@@ -29,13 +51,13 @@ class GLM(object):
 
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
             print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, deviceCount))
-            self.solver = GLMBaseSolver(h2ogpumlGLMCPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family)
+            self.solver = _GLMBaseSolver(h2ogpumlGLMCPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
+                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family)
         else:
             if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
                 print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
-                self.solver = GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family)
+                self.solver = _GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
+                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family)
 
         assert self.solver != None, "Couldn't instantiate GLM Solver"
 
@@ -49,18 +71,6 @@ class GLM(object):
     def fit(self, trainX, trainY, *args):
         return self.solver.fit(trainX, trainY, *args)
 
-    def getrmse(self):
-        return self.solver.getrmse()
-
-    def getlambdas(self):
-        return self.solver.getlambdas()
-
-    def getalphas(self):
-        return self.solver.getalphas()
-
-    def gettols(self):
-        return self.solver.gettols()
-
     def predict(self, validX, *args):
         return self.solver.predict(validX, *args)
 
@@ -73,20 +83,41 @@ class GLM(object):
     def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args):
         return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args)
 
+    #Define all properties of GLM class
+    @property
+    def gettols(self):
+        return self.solver.gettols()
+
+    @property
+    def get_error(self):
+        return self.solver.get_error()
+
+    @property
+    def getlambdas(self):
+        return self.solver.getlambdas()
+
+    @property
+    def getalphas(self):
+        return self.solver.getalphas()
+
+    @property
     def freedata(self):
         return self.solver.freedata()
 
+    @property
     def freesols(self):
         return self.solver.freesols()
 
+    @property
     def freepreds(self):
         return self.solver.freepreds()
 
+    @property
     def finish(self):
         return self.solver.finish()
 
 
-class GLMBaseSolver(object):
+class _GLMBaseSolver(object):
     class info:
         pass
 
@@ -94,7 +125,7 @@ class GLMBaseSolver(object):
         pass
 
     def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
-                 n_folds, n_alphas, stopearly, stopearlyrmsefraction, max_iterations, verbose, family):
+                 n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family):
         assert lib and (lib == h2ogpumlGLMCPU or lib == h2ogpumlGLMGPU)
         self.lib = lib
 
@@ -118,7 +149,7 @@ class GLMBaseSolver(object):
         self.didfitptr = 0
         self.didpredict = 0
         self.stopearly=stopearly
-        self.stopearlyrmsefraction=stopearlyrmsefraction
+        self.stopearlyerrorfraction=stopearlyerrorfraction
         self.max_iterations=max_iterations
         self.verbose=verbose
         self.family = ord(family.split()[0][0])
@@ -423,7 +454,7 @@ class GLMBaseSolver(object):
         return a, b, c, d, e
 
     # sourceDev here because generally want to take in any pointer, not just from our test code
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0, freeinputdata=0, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
+    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0, freeinputdata=0, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
         # store some things for later call to predictptr()
         self.sourceDev = sourceDev
         self.mTrain = mTrain
@@ -439,8 +470,8 @@ class GLMBaseSolver(object):
 
         if stopearly is None:
             stopearly=self.stopearly
-        if stopearlyrmsefraction is None:
-            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if stopearlyerrorfraction is None:
+            stopearlyerrorfraction=self.stopearlyerrorfraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
@@ -506,7 +537,7 @@ class GLMBaseSolver(object):
                 c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
-                c_int(stopearly), c_double(stopearlyrmsefraction), c_int(max_iterations), c_int(verbose),
+                c_int(stopearly), c_double(stopearlyerrorfraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
                 , givefullpath
                 , pointer(Xvsalphalambda), pointer(Xvsalpha)
@@ -527,7 +558,7 @@ class GLMBaseSolver(object):
                 c_int(self.ord),
                 c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
-                c_int(stopearly), c_double(stopearlyrmsefraction), c_int(max_iterations), c_int(verbose),
+                c_int(stopearly), c_double(stopearlyerrorfraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
                 , givefullpath
                 , pointer(Xvsalphalambda), pointer(Xvsalpha)
@@ -562,8 +593,8 @@ class GLMBaseSolver(object):
             numall = int(countshort_value / (self.n_alphas))
         #
         NUMALLOTHER = numall - n
-        NUMRMSE = 3  # should be consistent with src/common/elastic_net_ptr.cpp
-        NUMOTHER = NUMALLOTHER - NUMRMSE
+        NUMERROR = 3  # should be consistent with src/common/elastic_net_ptr.cpp
+        NUMOTHER = NUMALLOTHER - NUMERROR
         if NUMOTHER != 3:
             print("NUMOTHER=%d but expected 3" % (NUMOTHER))
             print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (
@@ -577,13 +608,13 @@ class GLMBaseSolver(object):
                                                      count=countfull_value)
                 self.Xvsalphalambdanew = np.reshape(self.Xvsalphalambdanew, (self.n_lambdas, self.n_alphas, numall))
                 self.Xvsalphalambdapure = self.Xvsalphalambdanew[:, :, 0:n]
-                self.rmsevsalphalambda = self.Xvsalphalambdanew[:, :, n:n + NUMRMSE]
-                self.lambdas = self.Xvsalphalambdanew[:, :, n + NUMRMSE:n + NUMRMSE + 1]
-                self.alphas = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 1:n + NUMRMSE + 2]
-                self.tols = self.Xvsalphalambdanew[:, :, n + NUMRMSE + 2:n + NUMRMSE + 3]
+                self.errorvsalphalambda = self.Xvsalphalambdanew[:, :, n:n + NUMERROR]
+                self.lambdas = self.Xvsalphalambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
+                self.alphas = self.Xvsalphalambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
+                self.tols = self.Xvsalphalambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
                 #
                 self.solution.Xvsalphalambdapure = self.Xvsalphalambdapure
-                self.info.rmsevsalphalambda = self.rmsevsalphalambda
+                self.info.errorvsalphalambda = self.errorvsalphalambda
                 self.info.lambdas = self.lambdas
                 self.info.alphas = self.alphas
                 self.info.tols = self.tols
@@ -602,13 +633,13 @@ class GLMBaseSolver(object):
                                            count=countshort_value)
             self.Xvsalphanew = np.reshape(self.Xvsalphanew, (self.n_alphas, numall))
             self.Xvsalphapure = self.Xvsalphanew[:, 0:n]
-            self.rmsevsalpha = self.Xvsalphanew[:, n:n + NUMRMSE]
-            self.lambdas2 = self.Xvsalphanew[:, n + NUMRMSE:n + NUMRMSE + 1]
-            self.alphas2 = self.Xvsalphanew[:, n + NUMRMSE + 1:n + NUMRMSE + 2]
-            self.tols2 = self.Xvsalphanew[:, n + NUMRMSE + 2:n + NUMRMSE + 3]
+            self.errorvsalpha = self.Xvsalphanew[:, n:n + NUMERROR]
+            self.lambdas2 = self.Xvsalphanew[:, n + NUMERROR:n + NUMERROR + 1]
+            self.alphas2 = self.Xvsalphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
+            self.tols2 = self.Xvsalphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.Xvsalphapure = self.Xvsalphapure
-            self.info.rmsevsalpha = self.rmsevsalpha
+            self.info.errorvsalpha = self.errorvsalpha
             self.info.lambdas2 = self.lambdas2
             self.info.alphas2 = self.alphas2
             self.info.tols2 = self.tols2
@@ -639,7 +670,7 @@ class GLMBaseSolver(object):
             else:
                 return self.validPredsvsalphapure
 
-    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
+    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
         #
         self.givefullpath = givefullpath
         ################
@@ -651,8 +682,8 @@ class GLMBaseSolver(object):
         #
         if stopearly is None:
             stopearly=self.stopearly
-        if stopearlyrmsefraction is None:
-            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if stopearlyerrorfraction is None:
+            stopearlyerrorfraction=self.stopearlyerrorfraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
@@ -776,7 +807,7 @@ class GLMBaseSolver(object):
                 print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid, mvalidY))
                 exit(0)
         else:
-            # otherwise mValid is used, and mvalidY can be there or not (sets whether do RMSE or not)
+            # otherwise mValid is used, and mvalidY can be there or not (sets whether do error or not)
             pass
         #################
         if dopredict == 0:
@@ -790,7 +821,7 @@ class GLMBaseSolver(object):
         sourceDev = 0  # assume GPU=0 is fine as source
         a, b, c, d, e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
         precision = 0  # won't be used
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict, freeinputdata=freeinputdata, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict, freeinputdata=freeinputdata, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
         if dopredict == 0:
             if givefullpath == 1:
                 return (self.Xvsalphalambdapure, self.Xvsalphapure)
@@ -802,11 +833,11 @@ class GLMBaseSolver(object):
             else:
                 return (None, self.validPredsvsalphapure)
 
-    def getrmse(self):
+    def get_error(self):
         if self.givefullpath==1:
-            return (self.rmsevsalphalambda, self.rmsevsalpha)
+            return (self.errorvsalphalambda, self.errorvsalpha)
         else:
-            return (None, self.rmsevsalpha)
+            return (None, self.errorvsalpha)
 
     def getlambdas(self):
         if self.givefullpath==1:
@@ -848,17 +879,17 @@ class GLMBaseSolver(object):
             self.predictionfull = None
         return (self.predictionfull, self.prediction)  # something like validY
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
+    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
         if stopearly is None:
             stopearly=self.stopearly
-        if stopearlyrmsefraction is None:
-            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if stopearlyerrorfraction is None:
+            stopearlyerrorfraction=self.stopearlyerrorfraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
         dopredict = 0  # only fit at first
-        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
+        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
         if validX == None:
             if givefullpath==1:
                 self.predictionfull = self.predict(trainX, trainY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
@@ -875,17 +906,17 @@ class GLMBaseSolver(object):
                                            freeinputdata=freeinputdata)
         return (self.predictionfull, self.prediction)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=None, stopearlyrmsefraction=None, max_iterations=None, verbose=None):
+    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
         dopredict = 0  # only fit at first
         if stopearly is None:
             stopearly=self.stopearly
-        if stopearlyrmsefraction is None:
-            stopearlyrmsefraction=self.stopearlyrmsefraction
+        if stopearlyerrorfraction is None:
+            stopearlyerrorfraction=self.stopearlyerrorfraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyrmsefraction=stopearlyrmsefraction, max_iterations=max_iterations, verbose=verbose)
+        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
         if c is None or c is c_void_p(0):
             self.prediction = self.predictptr(a, b, 0, freeinputdata=freeinputdata)
             if givefullpath==1:
