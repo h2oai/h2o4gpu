@@ -9,8 +9,8 @@ from h2ogpuml.solvers.utils import devicecount
 """
 H2O GLM Solver
 
-:param sharedA 
-:param nThreads
+:param shared_a 
+:param n_threads
 :param n_gpus
 :param ord
 :param intercept
@@ -19,25 +19,25 @@ H2O GLM Solver
 :param n_lambdas
 :param n_folds
 :param n_alphas
-:param stopearly
-:param stopearlyerrorfraction
+:param stop_early
+:param stop_early_error_fraction
 :param max_interations
 :param verbose
 :param family
 """
 
 class GLM(object):
-    # TODO sharedA and standardize do not work currently. Always need to set to 0.
-    def __init__(self, sharedA=0, nThreads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1, n_alphas=1, stopearly=1, stopearlyerrorfraction=1.0, max_iterations=5000, verbose=0, family = "elasticnet"):
+    # TODO shared_a and standardize do not work currently. Always need to set to 0.
+    def __init__(self, shared_a=0, n_threads=None, n_gpus=-1, ord='r', intercept=1, standardize=0, lambda_min_ratio=1E-7,
+                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0, family = "elasticnet"):
 
         #TODO Add type checking
 
-        n_gpus, deviceCount = devicecount(n_gpus)
+        n_gpus, device_count = devicecount(n_gpus)
 
-        if nThreads == None:
+        if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
-            nThreads = 1 if (n_gpus == 0) else n_gpus
+            n_threads = 1 if (n_gpus == 0) else n_gpus
 
         if not h2ogpumlGLMGPU:
             print(
@@ -49,15 +49,15 @@ class GLM(object):
                 '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
             print('> Use GPU or re-run setup.py\n\n')
 
-        if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
-            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, deviceCount))
-            self.solver = _GLMBaseSolver(h2ogpumlGLMCPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family)
+        if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
+            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
+            self.solver = _GLMBaseSolver(h2ogpumlGLMCPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
+                                        lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family)
         else:
-            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (deviceCount == 0)):
+            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
                 print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
-                self.solver = _GLMBaseSolver(h2ogpumlGLMGPU, sharedA, nThreads, n_gpus, ord, intercept, standardize,
-                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family)
+                self.solver = _GLMBaseSolver(h2ogpumlGLMGPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
+                                            lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family)
 
         assert self.solver != None, "Couldn't instantiate GLM Solver"
 
@@ -65,23 +65,23 @@ class GLM(object):
     def upload_data(self, *args):
         return self.solver.upload_data(*args)
 
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args):
-        return self.solver.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args)
+    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, *args):
+        return self.solver.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, *args)
 
-    def fit(self, trainX, trainY, *args):
-        return self.solver.fit(trainX, trainY, *args)
+    def fit(self, train_x, train_y, *args):
+        return self.solver.fit(train_x, train_y, *args)
 
-    def predict(self, validX, *args):
-        return self.solver.predict(validX, *args)
+    def predict(self, valid_x, *args):
+        return self.solver.predict(valid_x, *args)
 
-    def predictptr(self, validXptr, *args):
-        return self.solver.predictptr(validXptr, *args)
+    def predict_ptr(self, valid_xptr, *args):
+        return self.solver.predict_ptr(valid_xptr, *args)
 
-    def fit_predict(self, trainX, trainY, *args):
-        return self.solver.fit_predict(trainX, trainY, *args)
+    def fit_predict(self, train_x, train_y, *args):
+        return self.solver.fit_predict(train_x, train_y, *args)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args):
-        return self.solver.fit_predictptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, *args)
+    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, *args):
+        return self.solver.fit_predict_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, *args)
 
     #Define all properties of GLM class
     @property
@@ -101,16 +101,16 @@ class GLM(object):
         return self.solver.get_alphas()
 
     @property
-    def freedata(self):
-        return self.solver.freedata()
+    def free_data(self):
+        return self.solver.free_data()
 
     @property
-    def freesols(self):
-        return self.solver.freesols()
+    def free_sols(self):
+        return self.solver.free_sols()
 
     @property
-    def freepreds(self):
-        return self.solver.freepreds()
+    def free_preds(self):
+        return self.solver.free_preds()
 
     @property
     def finish(self):
@@ -124,20 +124,20 @@ class _GLMBaseSolver(object):
     class solution:
         pass
 
-    def __init__(self, lib, sharedA, nThreads, nGPUs, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
-                 n_folds, n_alphas, stopearly, stopearlyerrorfraction, max_iterations, verbose, family):
+    def __init__(self, lib, shared_a, n_threads, n_gpus, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
+                 n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family):
         assert lib and (lib == h2ogpumlGLMCPU or lib == h2ogpumlGLMGPU)
         self.lib = lib
 
         self.n = 0
-        self.mTrain = 0
-        self.mValid = 0
+        self.m_train = 0
+        self.m_valid = 0
 
-        self.nGPUs = nGPUs
-        self.sourceDev = 0  # assume Dev=0 is source of data for upload_data
-        self.sourceme = 0  # assume thread=0 is source of data for upload_data
-        self.sharedA = sharedA
-        self.nThreads = nThreads
+        self.n_gpus = n_gpus
+        self.source_dev = 0  # assume Dev=0 is source of data for upload_data
+        self.source_me = 0  # assume thread=0 is source of data for upload_data
+        self.shared_a = shared_a
+        self.n_threads = n_threads
         self.ord = ord(ordin)
         self.intercept = intercept
         self.standardize = standardize
@@ -145,113 +145,113 @@ class _GLMBaseSolver(object):
         self.n_lambdas = n_lambdas
         self.n_folds = n_folds
         self.n_alphas = n_alphas
-        self.uploadeddata = 0
-        self.didfitptr = 0
-        self.didpredict = 0
-        self.stopearly=stopearly
-        self.stopearlyerrorfraction=stopearlyerrorfraction
+        self.uploaded_data = 0
+        self.did_fit_ptr = 0
+        self.did_predict = 0
+        self.stop_early=stop_early
+        self.stop_early_error_fraction=stop_early_error_fraction
         self.max_iterations=max_iterations
         self.verbose=verbose
         self.family = ord(family.split()[0][0])
 
-    def upload_data(self, sourceDev, trainX, trainY, validX=None, validY=None, weight=None):
-        if self.uploadeddata == 1:
-            self.freedata()
-        self.uploadeddata = 1
+    def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
+        if self.uploaded_data == 1:
+            self.free_data()
+        self.uploaded_data = 1
         #
         #################
-        if trainX is not None:
+        if train_x is not None:
             try:
-                if (trainX.dtype == np.float64):
+                if (train_x.dtype == np.float64):
                     if self.verbose > 0:
-                        print("Detected np.float64 trainX")
+                        print("Detected np.float64 train_x")
                     sys.stdout.flush()
                     self.double_precision1 = 1
-                if (trainX.dtype == np.float32):
+                if (train_x.dtype == np.float32):
                     if self.verbose > 0:
-                        print("Detected np.float32 trainX")
+                        print("Detected np.float32 train_x")
                     sys.stdout.flush()
                     self.double_precision1 = 0
             except:
                 self.double_precision1 = -1
             try:
-                if trainX.value is not None:
-                    mTrain = trainX.shape[0]
-                    n1 = trainX.shape[1]
+                if train_x.value is not None:
+                    m_train = train_x.shape[0]
+                    n1 = train_x.shape[1]
                 else:
-                    mTrain = 0
+                    m_train = 0
                     n1 = -1
             except:
-                mTrain = trainX.shape[0]
-                n1 = trainX.shape[1]
+                m_train = train_x.shape[0]
+                n1 = train_x.shape[1]
         else:
-            mTrain = 0
+            m_train = 0
             n1 = -1
-        self.mTrain = mTrain
+        self.m_train = m_train
         ################
-        if validX is not None:
+        if valid_x is not None:
             try:
-                if (validX.dtype == np.float64):
+                if (valid_x.dtype == np.float64):
                     self.double_precision2 = 1
-                if (validX.dtype == np.float32):
+                if (valid_x.dtype == np.float32):
                     self.double_precision2 = 0
             except:
                 self.double_precision2 = -1
             #
             try:
-                if validX.value is not None:
-                    mValid = validX.shape[0]
-                    n2 = validX.shape[1]
+                if valid_x.value is not None:
+                    m_valid = valid_x.shape[0]
+                    n2 = valid_x.shape[1]
                 else:
-                    mValid = 0
+                    m_valid = 0
                     n2 = -1
             except:
-                mValid = validX.shape[0]
-                n2 = validX.shape[1]
+                m_valid = valid_x.shape[0]
+                n2 = valid_x.shape[1]
         else:
-            mValid = 0
+            m_valid = 0
             n2 = -1
             self.double_precision2 = -1
-        self.mValid = mValid
+        self.m_valid = m_valid
         ################
-        if trainY is not None:
+        if train_y is not None:
             try:
-                if (trainY.dtype == np.float64):
+                if (train_y.dtype == np.float64):
                     self.double_precision3 = 1
-                if (trainY.dtype == np.float32):
+                if (train_y.dtype == np.float32):
                     self.double_precision3 = 0
             except:
                 self.double_precision3 = -1
             #
             try:
-                if trainY.value is not None:
-                    mTrain2 = trainY.shape[0]
+                if train_y.value is not None:
+                    m_train2 = train_y.shape[0]
                 else:
-                    mTrain2 = 0
+                    m_train2 = 0
             except:
-                mTrain2 = trainY.shape[0]
+                m_train2 = train_y.shape[0]
         else:
-            mTrain2 = 0
+            m_train2 = 0
             self.double_precision3 = -1
         ################
-        if validY is not None:
+        if valid_y is not None:
             try:
-                if (validY.dtype == np.float64):
+                if (valid_y.dtype == np.float64):
                     self.double_precision4 = 1
-                if (validY.dtype == np.float32):
+                if (valid_y.dtype == np.float32):
                     self.double_precision4 = 0
             except:
                 self.double_precision4 = -1
             #
             try:
-                if validY.value is not None:
-                    mValid2 = validY.shape[0]
+                if valid_y.value is not None:
+                    m_valid2 = valid_y.shape[0]
                 else:
-                    mValid2 = 0
+                    m_valid2 = 0
             except:
-                mValid2 = validY.shape[0]
+                m_valid2 = valid_y.shape[0]
         else:
-            mValid2 = 0
+            m_valid2 = 0
             self.double_precision4 = -1
         ################
         if weight is not None:
@@ -265,18 +265,18 @@ class _GLMBaseSolver(object):
             #
             try:
                 if weight.value is not None:
-                    mTrain3 = weight.shape[0]
+                    m_train3 = weight.shape[0]
                 else:
-                    mTrain3 = 0
+                    m_train3 = 0
             except:
-                mTrain3 = weight.shape[0]
+                m_train3 = weight.shape[0]
         else:
-            mTrain3 = 0
+            m_train3 = 0
             self.double_precision5 = -1
         ###############
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:
             if (self.double_precision1 != self.double_precision2):
-                print("trainX and validX must be same precision")
+                print("train_x and valid_x must be same precision")
                 exit(0)
             else:
                 self.double_precision = self.double_precision1  # either one
@@ -287,22 +287,22 @@ class _GLMBaseSolver(object):
         ###############
         if self.double_precision1 >= 0 and self.double_precision3 >= 0:
             if (self.double_precision1 != self.double_precision3):
-                print("trainX and trainY must be same precision")
+                print("train_x and train_y must be same precision")
                 exit(0)
         ###############
         if self.double_precision2 >= 0 and self.double_precision4 >= 0:
             if (self.double_precision2 != self.double_precision4):
-                print("validX and validY must be same precision")
+                print("valid_x and valid_y must be same precision")
                 exit(0)
         ###############
         if self.double_precision3 >= 0 and self.double_precision5 >= 0:
             if (self.double_precision3 != self.double_precision5):
-                print("trainY and weight must be same precision")
+                print("train_y and weight must be same precision")
                 exit(0)
         ###############
         if n1 >= 0 and n2 >= 0:
             if (n1 != n2):
-                print("trainX and validX must have same number of columns")
+                print("train_x and valid_x must have same number of columns")
                 exit(0)
             else:
                 n = n1  # either one
@@ -320,44 +320,44 @@ class _GLMBaseSolver(object):
         if (self.double_precision == 1):
             null_ptr = POINTER(c_double)()
             #
-            if trainX is not None:
+            if train_x is not None:
                 try:
-                    if trainX.value is not None:
-                        A = cptr(trainX, dtype=c_double)
+                    if train_x.value is not None:
+                        A = cptr(train_x, dtype=c_double)
                     else:
                         A = null_ptr
                 except:
-                    A = cptr(trainX, dtype=c_double)
+                    A = cptr(train_x, dtype=c_double)
             else:
                 A = null_ptr
-            if trainY is not None:
+            if train_y is not None:
                 try:
-                    if trainY.value is not None:
-                        B = cptr(trainY, dtype=c_double)
+                    if train_y.value is not None:
+                        B = cptr(train_y, dtype=c_double)
                     else:
                         B = null_ptr
                 except:
-                    B = cptr(trainY, dtype=c_double)
+                    B = cptr(train_y, dtype=c_double)
             else:
                 B = null_ptr
-            if validX is not None:
+            if valid_x is not None:
                 try:
-                    if validX.value is not None:
-                        C = cptr(validX, dtype=c_double)
+                    if valid_x.value is not None:
+                        C = cptr(valid_x, dtype=c_double)
                     else:
                         C = null_ptr
                 except:
-                    C = cptr(validX, dtype=c_double)
+                    C = cptr(valid_x, dtype=c_double)
             else:
                 C = null_ptr
-            if validY is not None:
+            if valid_y is not None:
                 try:
-                    if validY.value is not None:
-                        D = cptr(validY, dtype=c_double)
+                    if valid_y.value is not None:
+                        D = cptr(valid_y, dtype=c_double)
                     else:
                         D = null_ptr
                 except:
-                    D = cptr(validY, dtype=c_double)
+                    D = cptr(valid_y, dtype=c_double)
             else:
                 D = null_ptr
             if weight is not None:
@@ -370,8 +370,8 @@ class _GLMBaseSolver(object):
                     E = cptr(weight, dtype=c_double)
             else:
                 E = null_ptr
-            status = self.lib.make_ptr_double(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev),
-                                              c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
+            status = self.lib.make_ptr_double(c_int(self.shared_a), c_int(self.source_me), c_int(source_dev),
+                                              c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         elif (self.double_precision == 0):
             if self.verbose>0:
@@ -380,44 +380,44 @@ class _GLMBaseSolver(object):
             self.double_precision = 0
             null_ptr = POINTER(c_float)()
             #
-            if trainX is not None:
+            if train_x is not None:
                 try:
-                    if trainX.value is not None:
-                        A = cptr(trainX, dtype=c_float)
+                    if train_x.value is not None:
+                        A = cptr(train_x, dtype=c_float)
                     else:
                         A = null_ptr
                 except:
-                    A = cptr(trainX, dtype=c_float)
+                    A = cptr(train_x, dtype=c_float)
             else:
                 A = null_ptr
-            if trainY is not None:
+            if train_y is not None:
                 try:
-                    if trainY.value is not None:
-                        B = cptr(trainY, dtype=c_float)
+                    if train_y.value is not None:
+                        B = cptr(train_y, dtype=c_float)
                     else:
                         B = null_ptr
                 except:
-                    B = cptr(trainY, dtype=c_float)
+                    B = cptr(train_y, dtype=c_float)
             else:
                 B = null_ptr
-            if validX is not None:
+            if valid_x is not None:
                 try:
-                    if validX.value is not None:
-                        C = cptr(validX, dtype=c_float)
+                    if valid_x.value is not None:
+                        C = cptr(valid_x, dtype=c_float)
                     else:
                         C = null_ptr
                 except:
-                    C = cptr(validX, dtype=c_float)
+                    C = cptr(valid_x, dtype=c_float)
             else:
                 C = null_ptr
-            if validY is not None:
+            if valid_y is not None:
                 try:
-                    if validY.value is not None:
-                        D = cptr(validY, dtype=c_float)
+                    if valid_y.value is not None:
+                        D = cptr(valid_y, dtype=c_float)
                     else:
                         D = null_ptr
                 except:
-                    D = cptr(validY, dtype=c_float)
+                    D = cptr(valid_y, dtype=c_float)
             else:
                 D = null_ptr
             if weight is not None:
@@ -430,12 +430,12 @@ class _GLMBaseSolver(object):
                     E = cptr(weight, dtype=c_float)
             else:
                 E = null_ptr
-            status = self.lib.make_ptr_float(c_int(self.sharedA), c_int(self.sourceme), c_int(sourceDev),
-                                             c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.ord),
+            status = self.lib.make_ptr_float(c_int(self.shared_a), c_int(self.source_me), c_int(source_dev),
+                                             c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.ord),
                                              A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         else:
             print("Unknown numpy type detected")
-            print(trainX.dtype)
+            print(train_x.dtype)
             sys.stdout.flush()
             return a, b, c, d, e
 
@@ -453,25 +453,25 @@ class _GLMBaseSolver(object):
         self.e = e
         return a, b, c, d, e
 
-    # sourceDev here because generally want to take in any pointer, not just from our test code
-    def fitptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, dopredict=0, freeinputdata=0, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
-        # store some things for later call to predictptr()
-        self.sourceDev = sourceDev
-        self.mTrain = mTrain
+    # source_dev here because generally want to take in any pointer, not just from our test code
+    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0, free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+        # store some things for later call to predict_ptr()
+        self.source_dev = source_dev
+        self.m_train = m_train
         self.n = n
-        self.mValid = mValid
+        self.m_valid = m_valid
         self.precision = precision
         self.a = a
         self.b = b
         self.c = c
         self.d = d
         self.e = e
-        self.givefullpath = givefullpath
+        self.give_full_path = give_full_path
 
-        if stopearly is None:
-            stopearly=self.stopearly
-        if stopearlyerrorfraction is None:
-            stopearlyerrorfraction=self.stopearlyerrorfraction
+        if stop_early is None:
+            stop_early=self.stop_early
+        if stop_early_error_fraction is None:
+            stop_early_error_fraction=self.stop_early_error_fraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
@@ -488,43 +488,43 @@ class _GLMBaseSolver(object):
 
 
         ############
-        if dopredict == 0 and self.didfitptr == 1:
-            self.freesols()
+        if do_predict == 0 and self.did_fit_ptr == 1:
+            self.free_sols()
         else:
             # otherwise don't clear solution, just use it
             pass
         ################
-        self.didfitptr = 1
+        self.did_fit_ptr = 1
         ###############
-        # not calling with self.sourceDev because want option to never use default but instead input pointers from foreign code's pointers
+        # not calling with self.source_dev because want option to never use default but instead input pointers from foreign code's pointers
         if hasattr(self, 'double_precision'):
-            whichprecision = self.double_precision
+            which_precision = self.double_precision
         else:
-            whichprecision = precision
+            which_precision = precision
             self.double_precision = precision
         ##############
-        if dopredict == 0:
+        if do_predict == 0:
             # initialize if doing fit
-            Xvsalphalambda = c_void_p(0)
-            Xvsalpha = c_void_p(0)
-            validPredsvsalphalambda = c_void_p(0)
-            validPredsvsalpha = c_void_p(0)
-            countfull = c_size_t(0)
-            countshort = c_size_t(0)
-            countmore = c_size_t(0)
+            x_vs_alpha_lambda = c_void_p(0)
+            x_vs_alpha = c_void_p(0)
+            valid_pred_vs_alpha_lambda = c_void_p(0)
+            valid_pred_vs_alpha = c_void_p(0)
+            count_full = c_size_t(0)
+            count_short = c_size_t(0)
+            count_more = c_size_t(0)
         else:
             # restore if predict
-            Xvsalphalambda = self.Xvsalphalambda
-            Xvsalpha = self.Xvsalpha
-            validPredsvsalphalambda = self.validPredsvsalphalambda
-            validPredsvsalpha = self.validPredsvsalpha
-            countfull = self.countfull
-            countshort = self.countshort
-            countmore = self.countmore
+            x_vs_alpha_lambda = self.x_vs_alpha_lambda
+            x_vs_alpha = self.x_vs_alpha
+            valid_pred_vs_alpha_lambda = self.valid_pred_vs_alpha_lambda
+            valid_pred_vs_alpha = self.valid_pred_vs_alpha
+            count_full = self.count_full
+            count_short = self.count_short
+            count_more = self.count_more
         ################
         #
         c_size_t_p = POINTER(c_size_t)
-        if (whichprecision == 1):
+        if (which_precision == 1):
             self.mydtype = np.double
             self.myctype = c_double
             if verbose>0:
@@ -532,18 +532,18 @@ class _GLMBaseSolver(object):
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_double(
                 c_int(self.family),
-                c_int(dopredict),
-                c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
+                c_int(do_predict),
+                c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
-                c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
+                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
-                c_int(stopearly), c_double(stopearlyerrorfraction), c_int(max_iterations), c_int(verbose),
+                c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
-                , givefullpath
-                , pointer(Xvsalphalambda), pointer(Xvsalpha)
-                , pointer(validPredsvsalphalambda), pointer(validPredsvsalpha)
-                , cast(addressof(countfull), c_size_t_p), cast(addressof(countshort), c_size_t_p),
-                cast(addressof(countmore), c_size_t_p)
+                , give_full_path
+                , pointer(x_vs_alpha_lambda), pointer(x_vs_alpha)
+                , pointer(valid_pred_vs_alpha_lambda), pointer(valid_pred_vs_alpha)
+                , cast(addressof(count_full), c_size_t_p), cast(addressof(count_short), c_size_t_p),
+                cast(addressof(count_more), c_size_t_p)
             )
         else:
             self.mydtype = np.float
@@ -553,388 +553,388 @@ class _GLMBaseSolver(object):
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_float(
                 c_int(self.family),
-                c_int(dopredict),
-                c_int(sourceDev), c_int(1), c_int(self.sharedA), c_int(self.nThreads), c_int(self.nGPUs),
+                c_int(do_predict),
+                c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
-                c_size_t(mTrain), c_size_t(n), c_size_t(mValid), c_int(self.intercept), c_int(self.standardize),
+                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self.standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
-                c_int(stopearly), c_double(stopearlyerrorfraction), c_int(max_iterations), c_int(verbose),
+                c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
-                , givefullpath
-                , pointer(Xvsalphalambda), pointer(Xvsalpha)
-                , pointer(validPredsvsalphalambda), pointer(validPredsvsalpha)
-                , cast(addressof(countfull), c_size_t_p), cast(addressof(countshort), c_size_t_p),
-                cast(addressof(countmore), c_size_t_p)
+                , give_full_path
+                , pointer(x_vs_alpha_lambda), pointer(x_vs_alpha)
+                , pointer(valid_pred_vs_alpha_lambda), pointer(valid_pred_vs_alpha)
+                , cast(addressof(count_full), c_size_t_p), cast(addressof(count_short), c_size_t_p),
+                cast(addressof(count_more), c_size_t_p)
             )
         #
         # if should or user wanted to save or free data, do that now that we are done using a,b,c,d,e
-        # This means have to upload_data() again before fitptr or predictptr or only call fit and predict
-        if freeinputdata==1:
-            self.freedata()
+        # This means have to upload_data() again before fit_ptr or predict_ptr or only call fit and predict
+        if free_input_data==1:
+            self.free_data()
         #####################################
         # PROCESS OUTPUT
         # save pointers
-        self.Xvsalphalambda = Xvsalphalambda
-        self.Xvsalpha = Xvsalpha
-        self.validPredsvsalphalambda = validPredsvsalphalambda
-        self.validPredsvsalpha = validPredsvsalpha
-        self.countfull = countfull
-        self.countshort = countshort
-        self.countmore = countmore
+        self.x_vs_alpha_lambda = x_vs_alpha_lambda
+        self.x_vs_alpha = x_vs_alpha
+        self.valid_pred_vs_alpha_lambda = valid_pred_vs_alpha_lambda
+        self.valid_pred_vs_alpha = valid_pred_vs_alpha
+        self.count_full = count_full
+        self.count_short = count_short
+        self.count_more = count_more
         #
-        countfull_value = countfull.value
-        countshort_value = countshort.value
-        countmore_value = countmore.value
-        # print("counts=%d %d %d" % (countfull_value,countshort_value,countmore_value))
+        count_full_value = count_full.value
+        count_short_value = count_short.value
+        count_more_value = count_more.value
+        # print("counts=%d %d %d" % (count_full_value,count_short_value,count_more_value))
         ######
-        if givefullpath == 1:
-            numall = int(countfull_value / (self.n_alphas * self.n_lambdas))
+        if give_full_path == 1:
+            num_all = int(count_full_value / (self.n_alphas * self.n_lambdas))
         else:
-            numall = int(countshort_value / (self.n_alphas))
+            num_all = int(count_short_value / (self.n_alphas))
         #
-        NUMALLOTHER = numall - n
+        NUMALLOTHER = num_all - n
         NUMERROR = 3  # should be consistent with src/common/elastic_net_ptr.cpp
         NUMOTHER = NUMALLOTHER - NUMERROR
         if NUMOTHER != 3:
             print("NUMOTHER=%d but expected 3" % (NUMOTHER))
-            print("countfull_value=%d countshort_value=%d countmore_value=%d numall=%d NUMALLOTHER=%d" % (
-            int(countfull_value), int(countshort_value), int(countmore_value), int(numall), int(NUMALLOTHER)))
+            print("count_full_value=%d count_short_value=%d count_more_value=%d num_all=%d NUMALLOTHER=%d" % (
+            int(count_full_value), int(count_short_value), int(count_more_value), int(num_all), int(NUMALLOTHER)))
             sys.stdout.flush()
             exit(0)
         #
-        if givefullpath == 1 and dopredict == 0:
-                # Xvsalphalambda contains solution (and other data) for all lambda and alpha
-                self.Xvsalphalambdanew = np.fromiter(cast(Xvsalphalambda, POINTER(self.myctype)), dtype=self.mydtype,
-                                                     count=countfull_value)
-                self.Xvsalphalambdanew = np.reshape(self.Xvsalphalambdanew, (self.n_lambdas, self.n_alphas, numall))
-                self.Xvsalphalambdapure = self.Xvsalphalambdanew[:, :, 0:n]
-                self.errorvsalphalambda = self.Xvsalphalambdanew[:, :, n:n + NUMERROR]
-                self.lambdas = self.Xvsalphalambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
-                self.alphas = self.Xvsalphalambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
-                self.tols = self.Xvsalphalambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
+        if give_full_path == 1 and do_predict == 0:
+                # x_vs_alpha_lambda contains solution (and other data) for all lambda and alpha
+                self.x_vs_alpha_lambdanew = np.fromiter(cast(x_vs_alpha_lambda, POINTER(self.myctype)), dtype=self.mydtype,
+                                                     count=count_full_value)
+                self.x_vs_alpha_lambdanew = np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas, self.n_alphas, num_all))
+                self.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdanew[:, :, 0:n]
+                self.error_vs_alpha_lambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
+                self.lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
+                self.alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
+                self.tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
                 #
-                self.solution.Xvsalphalambdapure = self.Xvsalphalambdapure
-                self.info.errorvsalphalambda = self.errorvsalphalambda
+                self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
+                self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
                 self.info.lambdas = self.lambdas
                 self.info.alphas = self.alphas
                 self.info.tols = self.tols
             #
-        if givefullpath==1 and dopredict==1:
-            thecount = int(countfull_value / (n + NUMALLOTHER) * mValid)
-            self.validPredsvsalphalambdanew = np.fromiter(cast(validPredsvsalphalambda, POINTER(self.myctype)),
+        if give_full_path==1 and do_predict==1:
+            thecount = int(count_full_value / (n + NUMALLOTHER) * m_valid)
+            self.valid_pred_vs_alpha_lambdanew = np.fromiter(cast(valid_pred_vs_alpha_lambda, POINTER(self.myctype)),
                                                           dtype=self.mydtype, count=thecount)
-            self.validPredsvsalphalambdanew = np.reshape(self.validPredsvsalphalambdanew,
-                                                         (self.n_lambdas, self.n_alphas, mValid))
-            self.validPredsvsalphalambdapure = self.validPredsvsalphalambdanew[:, :, 0:mValid]
+            self.valid_pred_vs_alpha_lambdanew = np.reshape(self.valid_pred_vs_alpha_lambdanew,
+                                                         (self.n_lambdas, self.n_alphas, m_valid))
+            self.valid_pred_vs_alpha_lambdapure = self.valid_pred_vs_alpha_lambdanew[:, :, 0:m_valid]
             #
-        if dopredict == 0: # givefullpath==0 or 1
-            # Xvsalpha contains only best of all lambda for each alpha
-            self.Xvsalphanew = np.fromiter(cast(Xvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
-                                           count=countshort_value)
-            self.Xvsalphanew = np.reshape(self.Xvsalphanew, (self.n_alphas, numall))
-            self.Xvsalphapure = self.Xvsalphanew[:, 0:n]
-            self.errorvsalpha = self.Xvsalphanew[:, n:n + NUMERROR]
-            self.lambdas2 = self.Xvsalphanew[:, n + NUMERROR:n + NUMERROR + 1]
-            self.alphas2 = self.Xvsalphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
-            self.tols2 = self.Xvsalphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
+        if do_predict == 0: # give_full_path==0 or 1
+            # x_vs_alpha contains only best of all lambda for each alpha
+            self.x_vs_alphanew = np.fromiter(cast(x_vs_alpha, POINTER(self.myctype)), dtype=self.mydtype,
+                                           count=count_short_value)
+            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas, num_all))
+            self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
+            self.error_vs_alpha = self.x_vs_alphanew[:, n:n + NUMERROR]
+            self.lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
+            self.alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
+            self.tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
-            self.solution.Xvsalphapure = self.Xvsalphapure
-            self.info.errorvsalpha = self.errorvsalpha
+            self.solution.x_vs_alphapure = self.x_vs_alphapure
+            self.info.error_vs_alpha = self.error_vs_alpha
             self.info.lambdas2 = self.lambdas2
             self.info.alphas2 = self.alphas2
             self.info.tols2 = self.tols2
         #
-        if givefullpath==0 and dopredict == 1: # preds exclusively operate for Xvsalpha or Xvsalphalambda
-            thecount = int(countshort_value / (n + NUMALLOTHER) * mValid)
+        if give_full_path==0 and do_predict == 1: # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+            thecount = int(count_short_value / (n + NUMALLOTHER) * m_valid)
             if verbose>0:
-                print("thecount=%d countfull_value=%d countshort_value=%d n=%d NUMALLOTHER=%d mValid=%d" % (
-                    thecount, countfull_value, countshort_value, n, NUMALLOTHER, mValid))
+                print("thecount=%d count_full_value=%d count_short_value=%d n=%d NUMALLOTHER=%d m_valid=%d" % (
+                    thecount, count_full_value, count_short_value, n, NUMALLOTHER, m_valid))
                 sys.stdout.flush()
-            self.validPredsvsalphanew = np.fromiter(cast(validPredsvsalpha, POINTER(self.myctype)), dtype=self.mydtype,
+            self.valid_pred_vs_alphanew = np.fromiter(cast(valid_pred_vs_alpha, POINTER(self.myctype)), dtype=self.mydtype,
                                                     count=thecount)
-            self.validPredsvsalphanew = np.reshape(self.validPredsvsalphanew, (self.n_alphas, mValid))
-            self.validPredsvsalphapure = self.validPredsvsalphanew[:, 0:mValid]
+            self.valid_pred_vs_alphanew = np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas, m_valid))
+            self.valid_pred_vs_alphapure = self.valid_pred_vs_alphanew[:, 0:m_valid]
         #
         #######################
         # return numpy objects
-        if dopredict == 0:
-            self.didpredict = 0
-            if givefullpath == 1:
-                return (self.Xvsalphalambdapure, self.Xvsalphapure)
+        if do_predict == 0:
+            self.did_predict = 0
+            if give_full_path == 1:
+                return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
             else:
-                return (None, self.Xvsalphapure)
+                return (None, self.x_vs_alphapure)
         else:
-            self.didpredict = 1
-            if givefullpath == 1:
-                return self.validPredsvsalphalambdapure
+            self.did_predict = 1
+            if give_full_path == 1:
+                return self.valid_pred_vs_alpha_lambdapure
             else:
-                return self.validPredsvsalphapure
+                return self.valid_pred_vs_alphapure
 
-    def fit(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, dopredict=0, freeinputdata=1, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
+    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0, free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
-        self.givefullpath = givefullpath
+        self.give_full_path = give_full_path
         ################
-        self.trainX = trainX
-        self.trainY = trainY
-        self.validX = validX
-        self.validY = validY
+        self.train_x = train_x
+        self.train_y = train_y
+        self.valid_x = valid_x
+        self.valid_y = valid_y
         self.weight = weight
         #
-        if stopearly is None:
-            stopearly=self.stopearly
-        if stopearlyerrorfraction is None:
-            stopearlyerrorfraction=self.stopearlyerrorfraction
+        if stop_early is None:
+            stop_early=self.stop_early
+        if stop_early_error_fraction is None:
+            stop_early_error_fraction=self.stop_early_error_fraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
         ##############
-        if trainX is not None:
+        if train_x is not None:
             try:
-                if trainX.value is not None:
+                if train_x.value is not None:
                     # get shapes
-                    shapeX = np.shape(trainX)
-                    mTrain = shapeX[0]
-                    n1 = shapeX[1]
+                    shape_x = np.shape(train_x)
+                    m_train = shape_x[0]
+                    n1 = shape_x[1]
                 else:
                     if verbose > 0:
-                        print("no trainX")
+                        print("no train_x")
                     n1 = -1
             except:
                 # get shapes
-                shapeX = np.shape(trainX)
-                mTrain = shapeX[0]
-                n1 = shapeX[1]
+                shape_x = np.shape(train_x)
+                m_train = shape_x[0]
+                n1 = shape_x[1]
         else:
             if verbose>0:
-                print("no trainX")
-            mTrain = 0
+                print("no train_x")
+            m_train = 0
             n1 = -1
         #############
-        if trainY is not None:
+        if train_y is not None:
             try:
-                if trainY.value is not None:
+                if train_y.value is not None:
                     # get shapes
                     if verbose > 0:
                         print("Doing fit")
-                    shapeY = np.shape(trainY)
-                    mY = shapeY[0]
-                    if (mTrain != mY):
-                        print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain, mY))
+                    shape_y = np.shape(train_y)
+                    m_y = shape_y[0]
+                    if (m_train != m_y):
+                        print("training X and Y must have same number of rows, but m_train=%d m_y=%d\n" % (m_train, m_y))
                 else:
-                    mY = -1
+                    m_y = -1
             except:
                 # get shapes
                 if verbose > 0:
                     print("Doing fit")
-                shapeY = np.shape(trainY)
-                mY = shapeY[0]
-                if (mTrain != mY):
-                    print("training X and Y must have same number of rows, but mTrain=%d mY=%d\n" % (mTrain, mY))
+                shape_y = np.shape(train_y)
+                m_y = shape_y[0]
+                if (m_train != m_y):
+                    print("training X and Y must have same number of rows, but m_train=%d m_y=%d\n" % (m_train, m_y))
         else:
             if verbose>0:
                 print("Doing predict")
-            mY = -1
+            m_y = -1
         ###############
-        if validX is not None:
+        if valid_x is not None:
             try:
-                if validX.value is not None:
-                    shapevalidX = np.shape(validX)
-                    mValid = shapevalidX[0]
-                    n2 = shapevalidX[1]
+                if valid_x.value is not None:
+                    shapevalid_x = np.shape(valid_x)
+                    m_valid = shapevalid_x[0]
+                    n2 = shapevalid_x[1]
                 else:
                     if verbose>0:
-                        print("no validX")
-                    mValid = 0
+                        print("no valid_x")
+                    m_valid = 0
                     n2 = -1
             except:
-                shapevalidX = np.shape(validX)
-                mValid = shapevalidX[0]
-                n2 = shapevalidX[1]
+                shapevalid_x = np.shape(valid_x)
+                m_valid = shapevalid_x[0]
+                n2 = shapevalid_x[1]
         else:
             if verbose>0:
-                print("no validX")
-            mValid = 0
+                print("no valid_x")
+            m_valid = 0
             n2 = -1
         if verbose > 0:
-            print("mValid=%d" % (mValid))
+            print("m_valid=%d" % (m_valid))
         sys.stdout.flush()
         ###############
-        if validY is not None:
+        if valid_y is not None:
             try:
-                if validY.value is not None:
-                    shapevalidY = np.shape(validY)
-                    mvalidY = shapevalidY[0]
+                if valid_y.value is not None:
+                    shapevalid_y = np.shape(valid_y)
+                    m_valid_y = shapevalid_y[0]
                 else:
                     if verbose > 0:
-                        print("no validY")
-                    mvalidY = -1
+                        print("no valid_y")
+                    m_valid_y = -1
             except:
-                shapevalidY = np.shape(validY)
-                mvalidY = shapevalidY[0]
+                shapevalid_y = np.shape(valid_y)
+                m_valid_y = shapevalid_y[0]
         else:
             if verbose>0:
-                print("no validY")
-            mvalidY = -1
+                print("no valid_y")
+            m_valid_y = -1
         ################
-        # check dopredict input
-        if dopredict == 0:
+        # check do_predict input
+        if do_predict == 0:
             if verbose>0:
-                if n1 >= 0 and mY >= 0:
+                if n1 >= 0 and m_y >= 0:
                     print("Correct train inputs")
                 else:
                     print("Incorrect train inputs")
                     exit(0)
-        if dopredict == 1:
-            if (n1 == -1 and n2 >= 0 and mvalidY == -1 and mY == -1) or (n1 == -1 and n2 >= 0 and mY == -1):
+        if do_predict == 1:
+            if (n1 == -1 and n2 >= 0 and m_valid_y == -1 and m_y == -1) or (n1 == -1 and n2 >= 0 and m_y == -1):
                 if verbose > 0:
                     print("Correct prediction inputs")
             else:
                 print("Incorrect prediction inputs")
                 exit(0)
         #################
-        if dopredict == 0:
+        if do_predict == 0:
             if (n1 >= 0 and n2 >= 0 and n1 != n2):
-                print("trainX and validX must have same number of columns, but n=%d n2=%d\n" % (n1, n2))
+                print("train_x and valid_x must have same number of columns, but n=%d n2=%d\n" % (n1, n2))
                 exit(0)
             else:
                 n = n1  # either
         else:
-            n = n2  # pick validX
+            n = n2  # pick valid_x
         ##################
-        if dopredict == 0:
-            if (mValid >= 0 and mvalidY >= 0 and mValid != mvalidY):
-                print("validX and validY must have same number of rows, but mValid=%d mvalidY=%d\n" % (mValid, mvalidY))
+        if do_predict == 0:
+            if (m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y):
+                print("valid_x and valid_y must have same number of rows, but m_valid=%d m_valid_y=%d\n" % (m_valid, m_valid_y))
                 exit(0)
         else:
-            # otherwise mValid is used, and mvalidY can be there or not (sets whether do error or not)
+            # otherwise m_valid is used, and m_valid_y can be there or not (sets whether do error or not)
             pass
         #################
-        if dopredict == 0:
-            if ((mValid==0 or mValid==-1) and n2>0) or (mValid>0 and (n2==0 or n2==-1)):
-            #if ((validX is not None and validY == None) or (validX == None and validY is not None)):
+        if do_predict == 0:
+            if ((m_valid==0 or m_valid==-1) and n2>0) or (m_valid>0 and (n2==0 or n2==-1)):
+            #if ((valid_x is not None and valid_y == None) or (valid_x == None and valid_y is not None)):
                 print(
-                    "Must input both validX and validY or neither.")  # TODO FIXME: Don't need validY if just want preds and no error, but don't return error in fit, so leave for now
+                    "Must input both valid_x and valid_y or neither.")  # TODO FIXME: Don't need valid_y if just want preds and no error, but don't return error in fit, so leave for now
                 exit(0)
                 #
         ##############
-        sourceDev = 0  # assume GPU=0 is fine as source
-        a, b, c, d, e = self.upload_data(sourceDev, trainX, trainY, validX, validY, weight)
+        source_dev = 0  # assume GPU=0 is fine as source
+        a, b, c, d, e = self.upload_data(source_dev, train_x, train_y, valid_x, valid_y, weight)
         precision = 0  # won't be used
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict=dopredict, freeinputdata=freeinputdata, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
-        if dopredict == 0:
-            if givefullpath == 1:
-                return (self.Xvsalphalambdapure, self.Xvsalphapure)
+        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path, do_predict=do_predict, free_input_data=free_input_data, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
+        if do_predict == 0:
+            if give_full_path == 1:
+                return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
             else:
-                return (None, self.Xvsalphapure)
+                return (None, self.x_vs_alphapure)
         else:
-            if givefullpath == 1:
-                return (self.validPredsvsalphalambdapure, self.validPredsvsalphapure)
+            if give_full_path == 1:
+                return (self.valid_pred_vs_alpha_lambdapure, self.valid_pred_vs_alphapure)
             else:
-                return (None, self.validPredsvsalphapure)
+                return (None, self.valid_pred_vs_alphapure)
 
     def get_error(self):
-        if self.givefullpath==1:
-            return (self.errorvsalphalambda, self.errorvsalpha)
+        if self.give_full_path==1:
+            return (self.error_vs_alpha_lambda, self.error_vs_alpha)
         else:
-            return (None, self.errorvsalpha)
+            return (None, self.error_vs_alpha)
 
     def get_lambdas(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.lambdas, self.lambdas2)
         else:
             return (None, self.lambdas2)
 
     def get_alphas(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.alphas, self.alphas2)
         else:
             return (None, self.alphas2)
 
     def get_tols(self):
-        if self.givefullpath==1:
+        if self.give_full_path==1:
             return (self.tols, self.tols2)
         else:
             return (None, self.tols2)
 
-    def predict(self, validX, validY=None, testweight=None, givefullpath=0, freeinputdata=1):
-        # if pass None trainx and trainY, then do predict using validX and weight (if given)
-        # unlike upload_data and fitptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
-        dopredict = 1
-        if givefullpath==1:
-            self.predictionfull = self.fit(None, None, validX, validY, testweight, givefullpath, dopredict, freeinputdata)
+    def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
+        # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
+        # unlike upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
+        do_predict = 1
+        if give_full_path==1:
+            self.prediction_full = self.fit(None, None, valid_x, valid_y, testweight, give_full_path, do_predict, free_input_data)
         else:
-            self.predictionfull = None
-        self.prediction = self.fit(None, None, validX, validY, testweight, 0, dopredict, freeinputdata)
-        return (self.predictionfull, self.prediction)  # something like validY
+            self.prediction_full = None
+        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, 0, do_predict, free_input_data)
+        return (self.prediction_full, self.prediction)  # something like valid_y
 
-    def predictptr(self, validXptr, validYptr=None, givefullpath=0, freeinputdata=0):
-        dopredict = 1
-        #print("%d %d %d %d %d" % (self.sourceDev, self.mTrain, self.n, self.mValid, self.precision)) ; sys.stdout.flush()
-        self.prediction = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b,
-                                      validXptr, validYptr, self.e, 0, dopredict, freeinputdata)
-        if givefullpath==1: # then need to run twice
-            self.predictionfull = self.fitptr(self.sourceDev, self.mTrain, self.n, self.mValid, self.precision, self.a, self.b, validXptr, validYptr, self.e, givefullpath, dopredict, freeinputdata)
+    def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0):
+        do_predict = 1
+        #print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
+        self.prediction = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a, self.b,
+                                      valid_xptr, valid_yptr, self.e, 0, do_predict, free_input_data)
+        if give_full_path==1: # then need to run twice
+            self.prediction_full = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a, self.b, valid_xptr, valid_yptr, self.e, give_full_path, do_predict, free_input_data)
         else:
-            self.predictionfull = None
-        return (self.predictionfull, self.prediction)  # something like validY
+            self.prediction_full = None
+        return (self.prediction_full, self.prediction)  # something like valid_y
 
-    def fit_predict(self, trainX, trainY, validX=None, validY=None, weight=None, givefullpath=0, freeinputdata=1, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
-        if stopearly is None:
-            stopearly=self.stopearly
-        if stopearlyerrorfraction is None:
-            stopearlyerrorfraction=self.stopearlyerrorfraction
+    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+        if stop_early is None:
+            stop_early=self.stop_early
+        if stop_early_error_fraction is None:
+            stop_early_error_fraction=self.stop_early_error_fraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
-        dopredict = 0  # only fit at first
-        self.fit(trainX, trainY, validX, validY, weight, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
-        if validX == None:
-            if givefullpath==1:
-                self.predictionfull = self.predict(trainX, trainY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+        do_predict = 0  # only fit at first
+        self.fit(train_x, train_y, valid_x, valid_y, weight, give_full_path, do_predict, free_input_data=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
+        if valid_x == None:
+            if give_full_path==1:
+                self.prediction_full = self.predict(train_x, train_y, testweight=weight, give_full_path=give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-            self.prediction = self.predict(trainX, trainY, testweight=weight, givefullpath=0,
-                                       freeinputdata=freeinputdata)
+                self.prediction_full = None
+            self.prediction = self.predict(train_x, train_y, testweight=weight, give_full_path=0,
+                                       free_input_data=free_input_data)
         else:
-            if givefullpath==1:
-                self.predictionfull = self.predict(validX, validY, testweight=weight, givefullpath=givefullpath, freeinputdata=freeinputdata)
+            if give_full_path==1:
+                self.prediction_full = self.predict(valid_x, valid_y, testweight=weight, give_full_path=give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-            self.prediction = self.predict(validX, validY, testweight=weight, givefullpath=0,
-                                           freeinputdata=freeinputdata)
-        return (self.predictionfull, self.prediction)
+                self.prediction_full = None
+            self.prediction = self.predict(valid_x, valid_y, testweight=weight, give_full_path=0,
+                                           free_input_data=free_input_data)
+        return (self.prediction_full, self.prediction)
 
-    def fit_predictptr(self, sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath=0, freeinputdata=0, stopearly=None, stopearlyerrorfraction=None, max_iterations=None, verbose=None):
-        dopredict = 0  # only fit at first
-        if stopearly is None:
-            stopearly=self.stopearly
-        if stopearlyerrorfraction is None:
-            stopearlyerrorfraction=self.stopearlyerrorfraction
+    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
+        do_predict = 0  # only fit at first
+        if stop_early is None:
+            stop_early=self.stop_early
+        if stop_early_error_fraction is None:
+            stop_early_error_fraction=self.stop_early_error_fraction
         if max_iterations is None:
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
-        self.fitptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, givefullpath, dopredict, freeinputdata=0, stopearly=stopearly, stopearlyerrorfraction=stopearlyerrorfraction, max_iterations=max_iterations, verbose=verbose)
+        self.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path, do_predict, free_input_data=0, stop_early=stop_early, stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations, verbose=verbose)
         if c is None or c is c_void_p(0):
-            self.prediction = self.predictptr(a, b, 0, freeinputdata=freeinputdata)
-            if givefullpath==1:
-                self.predictionfull = self.predictptr(a, b, givefullpath, freeinputdata=freeinputdata)
+            self.prediction = self.predict_ptr(a, b, 0, free_input_data=free_input_data)
+            if give_full_path==1:
+                self.prediction_full = self.predict_ptr(a, b, give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
+                self.prediction_full = None
         else:
-            self.prediction = self.predictptr(c, d, 0, freeinputdata=freeinputdata)
-            if givefullpath==1:
-                self.predictionfull = self.predictptr(c, d, givefullpath, freeinputdata=freeinputdata)
+            self.prediction = self.predict_ptr(c, d, 0, free_input_data=free_input_data)
+            if give_full_path==1:
+                self.prediction_full = self.predict_ptr(c, d, give_full_path, free_input_data=free_input_data)
             else:
-                self.predictionfull = None
-        return (self.predictionfull, self.prediction)
+                self.prediction_full = None
+        return (self.prediction_full, self.prediction)
 
-    def freedata(self):
+    def free_data(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
-        if self.uploadeddata == 1:
-            self.uploadeddata = 0
+        if self.uploaded_data == 1:
+            self.uploaded_data = 0
             if self.double_precision == 1:
                 self.lib.modelfree1_double(self.a)
                 self.lib.modelfree1_double(self.b)
@@ -948,27 +948,27 @@ class _GLMBaseSolver(object):
                 self.lib.modelfree1_float(self.d)
                 self.lib.modelfree1_float(self.e)
 
-    def freesols(self):
-        if self.didfitptr == 1:
-            self.didfitptr = 0
+    def free_sols(self):
+        if self.did_fit_ptr == 1:
+            self.did_fit_ptr = 0
             if self.double_precision == 1:
-                self.lib.modelfree2_double(self.Xvsalphalambda)
-                self.lib.modelfree2_double(self.Xvsalpha)
+                self.lib.modelfree2_double(self.x_vs_alpha_lambda)
+                self.lib.modelfree2_double(self.x_vs_alpha)
             else:
-                self.lib.modelfree2_float(self.Xvsalphalambda)
-                self.lib.modelfree2_float(self.Xvsalpha)
+                self.lib.modelfree2_float(self.x_vs_alpha_lambda)
+                self.lib.modelfree2_float(self.x_vs_alpha)
 
-    def freepreds(self):
-        if self.didpredict == 1:
-            self.didpredict = 0
+    def free_preds(self):
+        if self.did_predict == 1:
+            self.did_predict = 0
             if self.double_precision == 1:
-                self.lib.modelfree2_double(self.validPredsvsalphalambda)
-                self.lib.modelfree2_double(self.validPredsvsalpha)
+                self.lib.modelfree2_double(self.valid_pred_vs_alpha_lambda)
+                self.lib.modelfree2_double(self.valid_pred_vs_alpha)
             else:
-                self.lib.modelfree2_float(self.validPredsvsalphalambda)
-                self.lib.modelfree2_float(self.validPredsvsalpha)
+                self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
+                self.lib.modelfree2_float(self.valid_pred_vs_alpha)
 
     def finish(self):
-        self.freedata()
-        self.freesols()
-        self.freepreds()
+        self.free_data()
+        self.free_sols()
+        self.free_preds()

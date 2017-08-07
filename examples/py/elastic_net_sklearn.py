@@ -42,7 +42,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
     validX = np.copy(X[H:-1, :])
-
+    validY = np.copy(y[H:-1])	
     mTrain = trainX.shape[0]
     mvalid = validX.shape[0]
     print("mTrain=%d mvalid=%d" % (mTrain, mvalid))
@@ -64,8 +64,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Solve
     print("Solving")
-    Xvsalpha = enet.fit(trainX, trainY)
-    # Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+    # Xvsalpha = enet.fit(trainX, trainY)
+    Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
     # Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
     # Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, 0)
     # givefullpath=1
@@ -79,7 +79,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(np.shape(Xvsalpha))
 
     error = enet.get_error
-    if family == 'logloss':
+    if family == 'logistic':
         print("logloss")
     else:
         print("rmse")
@@ -99,13 +99,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     
     print(Xvsalpha)
     print(len(Xvsalpha)) 
-    testvalidY = np.dot(trainX, Xvsalpha[1].T)
+    testvalidY = np.dot(trainX, Xvsalpha[0].T)
 
     print("testvalidY (newvalidY should be this)")
     print(testvalidY)
 
     print("Predicting, assuming unity weights")
-    if validX == None or mvalid == 0:
+    if validX is None or mvalid == 0:
         print("Using trainX for validX")
         newvalidY = enet.predict(trainX)  # for testing
     else:
@@ -140,5 +140,5 @@ if __name__ == "__main__":
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     # elastic_net(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0, family="logistic",verbose=0)
+    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="logistic",verbose=0)
     # elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
