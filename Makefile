@@ -48,6 +48,8 @@ help:
 	@echo "make allclean Clean everything, then Compile and Install everything"
 	@echo "make test     Run tests"
 	@echo "make clean    Clean all build files"
+	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2ogpuml/src/interface_py:/home/jon/h2ogpuml;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
+	@echo "Example Pycharm working directory: /home/jon/h2ogpuml/"
 
 sync_smalldata:
 	@echo "---- Synchronizing test data ----"
@@ -100,9 +102,13 @@ cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
 
-test: all sync_smalldata
+dotest:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml tests 2> ./tmp/h2oai-test.$(LOGEXT).log
+
+test: all sync_smalldata dotest
+
+testquick: dotest
 
 deps_clean: 
 	@echo "----- Cleaning deps -----"

@@ -85,20 +85,20 @@ class GLM(object):
 
     #Define all properties of GLM class
     @property
-    def gettols(self):
-        return self.solver.gettols()
+    def get_tols(self):
+        return self.solver.get_tols()
 
     @property
     def get_error(self):
         return self.solver.get_error()
 
     @property
-    def getlambdas(self):
-        return self.solver.getlambdas()
+    def get_lambdas(self):
+        return self.solver.get_lambdas()
 
     @property
-    def getalphas(self):
-        return self.solver.getalphas()
+    def get_alphas(self):
+        return self.solver.get_alphas()
 
     @property
     def freedata(self):
@@ -839,19 +839,19 @@ class _GLMBaseSolver(object):
         else:
             return (None, self.errorvsalpha)
 
-    def getlambdas(self):
+    def get_lambdas(self):
         if self.givefullpath==1:
             return (self.lambdas, self.lambdas2)
         else:
             return (None, self.lambdas2)
 
-    def getalphas(self):
+    def get_alphas(self):
         if self.givefullpath==1:
             return (self.alphas, self.alphas2)
         else:
             return (None, self.alphas2)
 
-    def gettols(self):
+    def get_tols(self):
         if self.givefullpath==1:
             return (self.tols, self.tols2)
         else:
