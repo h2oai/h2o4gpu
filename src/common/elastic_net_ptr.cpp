@@ -980,10 +980,15 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 								}
 							}
 #else
+
 							std::vector<T> validPreds(
 									&h2ogpuml_data.GetvalidPreds()[0],
 									&h2ogpuml_data.GetvalidPreds()[0] + mValid);
 #endif
+							//Compute inverse logit of predictions if family == 'logistic' to get actual probabilities.
+							if(family == 'l'){
+								std::transform(validPreds.begin(), validPreds.end(), validPreds.begin(),[](T i) -> T { return 1/(1+exp(-i)); });
+							}
 							// Error: VALIDs
 							validError = h2ogpuml::getError(weightsvalid, mValid,
 									&validPreds[0], validY, family);
