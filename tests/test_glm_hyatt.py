@@ -6,9 +6,13 @@ import numpy as np
 import pandas as pd
 import logging
 
+
 print(sys.path)
 
-from tests.utils import find_file, runglm
+try:
+    from utils import find_file, runglm
+except:
+    from tests.utils import find_file, runglm
 
 logging.basicConfig(level=logging.DEBUG)
 
