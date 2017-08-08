@@ -100,6 +100,11 @@ class GLM(object):
                                            verbose)
 
     # Define all properties of GLM class
+
+    @property
+    def get_family(self):
+        return self.solver.family_str
+
     @property
     def get_X(self):
         return self.solver.get_X()
@@ -221,6 +226,7 @@ class _GLMBaseSolver(object):
         self.max_iterations = max_iterations
         self.verbose = verbose
         self.family = ord(family.split()[0][0])
+        self.family_str = family
 
     def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
         if self.uploaded_data == 1:
