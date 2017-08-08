@@ -2,7 +2,7 @@ import time
 import sys
 import os
 import numpy as np
-# import pandas as pd
+import pandas as pd
 import logging
 import feather
 
@@ -35,7 +35,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     # Rscript ipums.R  runs glmnet on ipums
     #
-    df = feather.read_dataframe("./tests/data/ipums.feather")
+    df = pd.read_csv("./tests/data/ipums_1k.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')

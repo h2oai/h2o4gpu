@@ -30,8 +30,8 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     if 1==0: # not yet
         target=None
         import datatable as dt # omp problem in pycharm
-        train = find_file("xtrain.txt")
-        test = find_file("xtest.txt")
+        train = find_file("./testsbig/data/xtrain.txt")
+        test = find_file("./testsbig/data/xtest.txt")
 
         train = os.path.normpath(os.path.join(os.getcwd(), train))
         train_df = dt.fread(train).topandas()
@@ -49,10 +49,10 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
         # should all be explicitly np.float32 or all np.float64
-        xtrain = np.loadtxt("./tests/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
-        ytrain = np.loadtxt("./tests/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
-        xtest = np.loadtxt("./tests/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
-        ytest = np.loadtxt("./tests/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
+        xtrain = np.loadtxt("./testsbig/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
+        ytrain = np.loadtxt("./testsbig/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
+        xtest = np.loadtxt("./testsbig/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
+        ytest = np.loadtxt("./testsbig/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
         wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
         print("Testing GLM")
 

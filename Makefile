@@ -92,7 +92,7 @@ cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
 getotherdata:
-	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/tests/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
+	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/testsbig/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
 
 dotest:
 	mkdir -p ./tmp/
