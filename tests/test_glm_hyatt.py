@@ -75,8 +75,11 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     write=1
     pred_val, rmse = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
     # check rmse
+    print(rmse[0])
+    print(rmse[1])
+    print(rmse[2])
+    sys.stdout.flush()
 
-    
     print('/n Total execution time:%d' % (time.time() - t1))
 
 
