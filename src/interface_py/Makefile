@@ -1,3 +1,5 @@
+thepwd = "$(shell pwd)"
+
 default: all
 
 all:
@@ -5,6 +7,9 @@ all:
 	python setup.py install
 	rm -rf dist
 	python setup.py sdist bdist_wheel
+    # for pycharm
+	ln -sf $(thepwd)/build/lib/ch2ogpuml_cpu.so .
+	ln -sf $(thepwd)/build/lib/ch2ogpuml_gpu.so .
 
 #	python3 setup.py clean --all && rm -rf h2ogpuml.egg-info && rm -rf h2ogpuml/__pycache__/
 #	python3 setup.py install
