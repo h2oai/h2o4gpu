@@ -1,4 +1,5 @@
 matplotlib==2.0.0
+numba==0.34.0
 numpy==1.12.0
 packaging==16.8
 pandas==0.19.2
