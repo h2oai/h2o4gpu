@@ -22,7 +22,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     sys.stdout.flush()
 
     print("Reading Data")
-    df = feather.read_dataframe("./tests/data/credit.feather")
+    df = feather.read_dataframe("./data/credit.feather")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
@@ -37,7 +37,13 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print(logloss_train[0, 2])
     print(logloss_test[0, 2])
     sys.stdout.flush()
-
+    
+    if validFraction==0.0:
+        assert logloss_train[0, 0] < .48
+        assert logloss_train[0, 1] < .48
+        assert logloss_train[0, 2] < .48
+        assert logloss_test[0, 2] < .48
+            
     print('/n Total execution time:%d' % (time.time() - t1))
 
     print("TEST PASSED")

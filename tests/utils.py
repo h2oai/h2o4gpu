@@ -2,6 +2,7 @@ import cProfile
 import pstats
 import os
 
+import math
 import pytest
 import h2ogpuml
 import numpy as np
@@ -303,6 +304,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     testvalidY = np.dot(trainX, Xvsalpha.T)
     print("testvalidY (newvalidY should be this)")
+    if family != "logistic":
+        print(testvalidY)
+    else:
+        inverse_logit = lambda t: 1/(1 + math.exp(-t))
+        func = np.vectorize(inverse_logit)
+        print(func(testvalidY))
+
     print(testvalidY)
 
     print("Predicting, assuming unity weights")
