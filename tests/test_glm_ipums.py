@@ -52,10 +52,16 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print(rmse_test[0, 2])
     sys.stdout.flush()
 
-    assert rmse_train[0, 0] < 0.03
-    assert rmse_train[0, 1] < 0.03
-    assert rmse_train[0, 2] < 0.03
-    assert rmse_test[0, 2] < 0.03
+    if validFraction==0.0:
+        assert rmse_train[0, 0] < 34000
+        assert rmse_train[0, 1] < 34000
+        assert rmse_train[0, 2] < 34000
+        assert rmse_test[0, 2] < 34000
+    else:
+        assert rmse_train[0, 0] < 30000
+        assert rmse_train[0, 1] < 30000
+        assert rmse_train[0, 2] < 30000
+        assert rmse_test[0, 2] < 30000
 
     print('/n Total execution time:%d' % (time.time() - t1))
 
