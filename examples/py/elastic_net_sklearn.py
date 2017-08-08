@@ -86,15 +86,15 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(error)
 
     print("lambdas")
-    lambdas = enet.getlambdas
+    lambdas = enet.get_lambdas
     print(lambdas)
 
     print("alphas")
-    alphas = enet.getalphas
+    alphas = enet.get_alphas
     print(alphas)
 
     print("tols")
-    tols = enet.gettols
+    tols = enet.get_tols
     print(tols)
     
     print(Xvsalpha)
