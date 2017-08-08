@@ -360,7 +360,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int verbose, int cpu_idtry, int n_cputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T *srcdata, void **centroids, void **preds) {
+                       const T *srcdata, const T *centroids, void **preds) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows>%d now implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -427,7 +427,7 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, void **centroids, void **preds) {
+                      T threshold, const T *srcdata, const int *srclabels, const T *centroids, void **preds) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, cpu_idtry, n_cputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
@@ -469,13 +469,13 @@ namespace h2ogpumlkmeans {
     int kmeans_predict<float>(int verbose, int cpu_idtry, int n_cputry,
                               size_t rows, size_t cols,
                               const char ord, int k,
-                              const float *srcdata, void **centroid, void **preds);
+                              const float *srcdata, const float *centroid, void **preds);
 
     template
     int kmeans_predict<double>(int verbose, int cpu_idtry, int n_cputry,
                                size_t rows, size_t cols,
                                const char ord, int k,
-                               const double *srcdata, void **centroid, void **preds);
+                               const double *srcdata, const double *centroid, void **preds);
 
 // Explicit template instantiation.
 #if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE == 1
@@ -501,7 +501,7 @@ extern "C" {
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
-                          void **centroids, void **preds) {
+                          const float *centroids, void **preds) {
     return h2ogpumlkmeans::makePtr_dense<float>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                 srcdata, srclabels, centroids,
@@ -511,7 +511,7 @@ int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                            int init_data, double threshold, const double *srcdata, const int *srclabels,
-                           void **centroids, void **preds) {
+                           const double *centroids, void **preds) {
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                  srcdata, srclabels, centroids,
