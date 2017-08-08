@@ -91,6 +91,8 @@ cleanpy:
 cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
+getotherdata:
+	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/tests/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
 
 dotest:
 	mkdir -p ./tmp/
@@ -111,7 +113,7 @@ deps_fetch: deps_clean
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 
-deps_install: deps_fetch
+deps_install: deps_fetch getotherdata
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
