@@ -575,7 +575,7 @@ namespace h2ogpumlkmeans {
 
             kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
 
-            kmeans::detail::calculate_distances(q, n/n_gpu, m, k,
+            kmeans::detail::calculate_distances(verbose, q, n/n_gpu, m, k,
                 *d_data[q], *d_centroids, *data_dots[q],
                 *centroid_dots[q], *pairwise_distances[q]);
 
@@ -611,7 +611,7 @@ namespace h2ogpumlkmeans {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                              srcdata, srclabels, centroids);
+                              srcdata, srclabels, preds);
         } else {
             return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
                                   ord, k,

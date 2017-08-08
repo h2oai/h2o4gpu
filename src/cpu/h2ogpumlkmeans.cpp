@@ -440,16 +440,16 @@ namespace h2ogpumlkmeans {
     }
 
     template
-    int makePtr_dense<float>(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols,
+    int makePtr_dense<float>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                              const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                              int init_data, float threshold, const float *srcdata, const int *srclabels,
-                             void **centroid, void **preds);
+                             const float *centroids, void **preds);
 
     template
-    int makePtr_dense<double>(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols,
+    int makePtr_dense<double>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                               const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                               int init_data, double threshold, const double *srcdata, const int *srclabels,
-                              void **centroid, void **preds);
+                              const double *centroids, void **preds);
 
     template
     int kmeans_fit<float>(int verbose, int seed, int cpu_idtry, int n_cputry,
