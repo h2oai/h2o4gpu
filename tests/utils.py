@@ -325,7 +325,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     error_test = enet.get_error
     if family != "logistic":
-        print("error_test")
+        print("rmse_test")
     else:
         print("logloss_test")
     print(error_test)
