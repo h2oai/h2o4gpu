@@ -16,7 +16,6 @@
 *run
 
 # Compiled Dynamic Libraries #
-*.so
 *.dylib
 *.dll
 
