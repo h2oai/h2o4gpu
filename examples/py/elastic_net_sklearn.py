@@ -1,12 +1,15 @@
 import h2ogpuml as h2ogpuml
 from h2ogpuml.types import *
-
+import math
 '''
 Elastic Net
 
-   minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
+   minimize (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2 for family == 'elasticnet'
+   
+   minimize \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1 for family == 'logistic'
 
    for 100 values of \lambda, and alpha in [0,1]
+
    See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
 '''
 
@@ -99,10 +102,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     
     print(Xvsalpha)
     print(len(Xvsalpha)) 
-    testvalidY = np.dot(trainX, Xvsalpha[0].T)
+    testvalidY = np.dot(validX, Xvsalpha[0].T)
 
     print("testvalidY (newvalidY should be this)")
-    print(testvalidY)
+    inverse_logit = lambda t: 1/(1 + math.exp(-t))
+    func = np.vectorize(inverse_logit)
+    print(func(testvalidY))
 
     print("Predicting, assuming unity weights")
     if validX is None or mvalid == 0:
@@ -113,7 +118,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         newvalidY = enet.predict(validX)
     print("newvalidY")
     print(newvalidY)
-
+    print("newvalidY Predictions")
+    print((newvalidY[1][1]))
+    print("Predictions max")
+    print(newvalidY[1][1].max())
+    print("Predictions min")
+    print(newvalidY[1][1].min())
     print("Done Reporting")
     return enet
 

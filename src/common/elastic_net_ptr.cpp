@@ -1462,6 +1462,11 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 				std::vector<T> validPreds(&h2ogpuml_data.GetvalidPreds()[0],
 						&h2ogpuml_data.GetvalidPreds()[0] + mValid);
 
+				//Compute inverse logit of predictions if family == 'logistic' to get actual probabilities.
+				if(family == 'l'){
+					std::transform(validPreds.begin(), validPreds.end(), validPreds.begin(),[](T i) -> T { return 1/(1+exp(-i)); });
+				}
+
 				T sdTrainY = 1.0; // TODO FIXME not impliemented yet
 				T meanTrainY = 1.0; // TODO FIXME not impliemented yet
 				// correct validPreds
