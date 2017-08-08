@@ -1,6 +1,43 @@
 # OSX #
 *.DS_STORE
 
+*.idea/
+*.txt
+*.so
+*.gz
+*.swp
+*.csv
+*.cache
+*.metadata
+*.cproject
+*.project
+tests/smalldata
+src/cpulib
+src/gpulib
+build/
+cmake-build-debug/
+env/
+examples/cpp/cpuall
+examples/cpp/gpuall
+examples/cpp/h2ogpuml-glm-cpu
+examples/cpp/h2ogpuml-glm-cpu-orig
+examples/cpp/h2ogpuml-glm-cpu-ptr
+examples/cpp/h2ogpuml-glm-gpu
+examples/cpp/h2ogpuml-glm-gpu-orig
+examples/cpp/h2ogpuml-glm-gpu-ptr
+examples/cpp/h2ogpuml-kmeans-cpu
+examples/cpp/h2ogpuml-kmeans-gpu
+examples/py/1
+examples/py/@
+examples/py/Untitled.ipynb
+examples/py/Untitled2.ipynb
+examples/py/alpha
+examples/py/preds
+src/interface_c/ch2ogpuml_cpu
+src/interface_c/ch2ogpuml_gpu
+src/py3nvml/
+tmp/
+
 # Visual Studio Code
 *.vscode
 
