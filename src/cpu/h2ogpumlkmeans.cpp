@@ -266,12 +266,12 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         std::vector <T> *data[n_cpu];
         std::vector<int> *labels[n_cpu];
-        std::vector <T> *centroids[n_cpu];
+        std::vector <T> *l_centroids[n_cpu];
         std::vector <T> *distances[n_cpu];
         for (int q = 0; q < n_cpu; q++) {
             data[q] = new std::vector<T>(n / n_cpu * d);
             labels[q] = new std::vector<int>(n / n_cpu * d);
-            centroids[q] = new std::vector<T>(k * d);
+            l_centroids[q] = new std::vector<T>(k * d);
             distances[q] = new std::vector<T>(n);
         }
 
@@ -306,9 +306,9 @@ namespace h2ogpumlkmeans {
         if (init_from_labels == 0) {
             int masterq = 0;
             //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
-            random_centroids_new(verbose, v, ord, *centroids[masterq], &srcdata[0], masterq, n, n / n_cpu, d, k);
+            random_centroids_new(verbose, v, ord, *l_centroids[masterq], &srcdata[0], masterq, n, n / n_cpu, d, k);
 #if(DEBUG)
-            std::vector<T> h_centroidq=*centroids[q];
+            std::vector<T> h_centroidq=*l_centroids[q];
             for(int ii=0;ii<k*d;ii++){
               fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
             }
@@ -320,7 +320,7 @@ namespace h2ogpumlkmeans {
         double t0 = timer<double>();
         int masterq = 0;
         int status = kmeans::kmeans<T>(verbose, &flag, n, d, k, *data[masterq], *labels[masterq],
-                                       *centroids[masterq], max_iterations, init_from_labels, threshold);
+                                       *l_centroids[masterq], max_iterations, init_from_labels, threshold);
         if (status) return (status);
         double timefit = static_cast<double>(timer<double>() - t0);
 
@@ -329,7 +329,7 @@ namespace h2ogpumlkmeans {
         fflush(stderr);
 
         // copy result of centroids (sitting entirely on each device) back to host
-        std::vector <T> *ctr = new std::vector<T>(*centroids[0]);
+        std::vector <T> *ctr = new std::vector<T>(*l_centroids[0]);
         *centroids = ctr->data();
 
         // debug
@@ -349,7 +349,7 @@ namespace h2ogpumlkmeans {
         for (int q = 0; q < n_cpu; q++) {
             delete (data[q]);
             delete (labels[q]);
-            delete (centroids[q]);
+            delete (l_centroids[q]);
             delete (distances[q]);
         }
 
@@ -434,8 +434,8 @@ namespace h2ogpumlkmeans {
                               srcdata, srclabels, preds);
         } else {
             return kmeans_predict(verbose, cpu_idtry, n_cputry, rows, cols,
-                                  ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                  srcdata, srclabels, centroids, preds);
+                                  ord, k,
+                                  srcdata, centroids, preds);
         }
     }
 
@@ -498,7 +498,7 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
-int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
+int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
                           void **centroids, void **preds) {

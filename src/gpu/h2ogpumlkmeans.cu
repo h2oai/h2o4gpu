@@ -283,6 +283,12 @@ namespace h2ogpumlkmeans {
             fflush(stderr);
         }
 
+        if(rows>std::numeric_limits<int>::max()){
+            fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
+            fflush(stderr);
+            exit(0);
+        }
+
         int n = rows;
         int d = cols;
 
@@ -312,6 +318,9 @@ namespace h2ogpumlkmeans {
         if (verbose) {
             std::cout << n_gpu << " gpus." << std::endl;
         }
+
+        int gpu_id;
+        gpu_id = gpu_idtry % n_gpuvis;
 
         // setup GPU list to use
         std::vector<int> dList(n_gpu);
@@ -386,7 +395,7 @@ namespace h2ogpumlkmeans {
             CUDACHECK(cudaSetDevice(dList[masterq]));
             //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
 
-            random_centroids_new(verbose, v, ord, *centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
+            random_centroids_new(verbose, v, ord, *d_centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
             int bytecount = d * k * sizeof(T); // all centroids
 
             // copy centroids to rest of gpus asynchronously
@@ -400,9 +409,9 @@ namespace h2ogpumlkmeans {
 
                 streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
                 cudaStreamCreate(streams[q]);
-                cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*centroids[q])[0]),
+                cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
                                     dList[q],
-                                    thrust::raw_pointer_cast(&(*centroids[masterq])[0]),
+                                    thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
                                     dList[masterq],
                                     bytecount,
                                     *(streams[q]));
@@ -412,7 +421,7 @@ namespace h2ogpumlkmeans {
                 int masterq = 0;
                 CUDACHECK(cudaSetDevice(dList[masterq]));
                 //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
-                random_centroids_new(v, ord, *d_centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
+                random_centroids_new(verbose, v, ord, *d_centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
                 int bytecount = d * k * sizeof(T); // all centroids
 
                 // copy centroids to rest of gpus asynchronously
@@ -428,7 +437,7 @@ namespace h2ogpumlkmeans {
                     cudaStreamCreate(streams[q]);
                     cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
                                         dList[q],
-                                        thrust::raw_pointer_cast(&(*centroids[masterq])[0]),
+                                        thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
                                         dList[masterq],
                                         bytecount,
                                         *(streams[q]));
@@ -454,7 +463,7 @@ namespace h2ogpumlkmeans {
             double timetransfer = static_cast<double>(timer<double>() - t0t);
 
             double t0 = timer<double>();
-            kmeans::kmeans<T>(&flaggpu, n, d, k, dataj, labels, d_centroids, distances, dList, n_gpu, max_iterations,
+            kmeans::kmeans<T>(&flaggpu, n, d, k, data, labels, d_centroids, distances, dList, n_gpu, max_iterations,
                               init_from_labels, threshold);
             double timefit = static_cast<double>(timer<double>() - t0);
 
@@ -490,7 +499,7 @@ namespace h2ogpumlkmeans {
 
         double t0 = timer<double>();
 
-        int status = kmeans::kmeans<T>(verbose, &flaggpu, n, d, k, data, labels, centroids, distances, dList, n_gpu,
+        int status = kmeans::kmeans<T>(verbose, &flaggpu, n, d, k, data, labels, d_centroids, distances, dList, n_gpu,
                                        max_iterations, init_from_labels, threshold);
         if (status) {
             fprintf(stderr, "KMeans status was %d\n", status);
@@ -507,7 +516,7 @@ namespace h2ogpumlkmeans {
         }
 
         // copy result of centroids (sitting entirely on each device) back to host
-        thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*centroids[0]);
+        thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
         // TODO FIXME: When do delete this ctr memory?
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
         *preds = ctr->data();
@@ -627,15 +636,15 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, void **centroid, void **preds) {
+                      T threshold, const T *srcdata, const int *srclabels, void **centroids, void **preds) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
                               srcdata, srclabels, centroids);
         } else {
             return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
-                                  ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                  srcdata, srclabels, centroids, preds);
+                                  ord, k,
+                                  srcdata, centroids, preds);
         }
     }
 
@@ -696,8 +705,8 @@ extern "C" {
 
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
-                          int init_data, float threshold, const float *srcdata, const int *srclabels, void **centroid,
-                          void **preds) {
+                          int init_data, float threshold, const float *srcdata, const int *srclabels,
+                          void **centroids, void **preds) {
     return h2ogpumlkmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                 srcdata, srclabels, centroids, preds);
@@ -706,7 +715,7 @@ int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                            int init_data, double threshold, const double *srcdata, const int *srclabels,
-                           void **centroid, void **preds) {
+                           void **centroids, void **preds) {
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                  srcdata, srclabels, centroids, preds);
