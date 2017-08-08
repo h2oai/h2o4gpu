@@ -36,8 +36,8 @@ namespace h2ogpumlkmeans {
   };
 
   template <typename T>
-    int makePtr_dense(int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int*srclabels, const T* centroids, void ** res);
+    int makePtr_dense(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int*srclabels, const T* centroids, void ** preds);
   template <typename T>
-    int makePtr_dense_cpu(int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int*srclabels, const T* centroids, void ** res);
+    int makePtr_dense_cpu(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols, const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data, T threshold, const T* srcdata, const int*srclabels, const T* centroids, void ** preds);
 
 }  // namespace h2ogpumlkmeans

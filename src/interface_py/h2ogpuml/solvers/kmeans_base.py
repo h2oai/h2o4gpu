@@ -139,7 +139,7 @@ class KMeansBaseSolver(object):
             return
 
         res = c_void_p(0)
-
+        c_data = cptr(data, dtype=myctype)
         c_labels = cptr(labels, dtype=c_int)
         t0 = time.time()
         #######################
@@ -165,11 +165,11 @@ class KMeansBaseSolver(object):
         if self.double_precision == 0:
             status = lib.make_ptr_float_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                           self.threshold, c_data, c_labels, None, pointer(c_centroids), pointer(res))
+                                           self.threshold, c_data, c_labels, None, pointer(res))
         else:
             status = lib.make_ptr_double_kmeans(0, self.verbose, self.seed, self.gpu_id, self.n_gpus, mTrain, n, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                            self.threshold, c_data, c_labels, None, pointer(c_centroids), pointer(res))
+                                            self.threshold, c_data, c_labels, None, pointer(res))
         if status:
             raise ValueError('KMeans failed in C++ library')
             sys.stdout.flush()
@@ -259,11 +259,11 @@ class KMeansBaseSolver(object):
         if self.double_precision == 0:
             self.lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
                                            self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                           self.threshold, c_data, c_labels, c_centroids, pointer(c_res))
+                                           self.threshold, c_data, None, c_centroids, pointer(c_res))
         else:
             self.lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self.gpu_id, self.n_gpus, rows, cols, c_int(self.ord), self.k,
                                             self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
-                                            self.threshold, c_data, c_labels, c_centroids, pointer(c_res))
+                                            self.threshold, c_data, None, c_centroids, pointer(c_res))
 
         preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
         preds = np.reshape(preds, rows)
