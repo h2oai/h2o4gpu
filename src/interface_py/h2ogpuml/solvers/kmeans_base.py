@@ -25,6 +25,9 @@ class KMeans(object):
     def transform(self, X):
         return self.solver.transform(X)
 
+    def sklearntransform(self, X):
+        return self.solver.sklearntransform(X)
+
     def fit_transform(self, X, y):
         return self.solver.fit_transform(X, y)
 
@@ -282,6 +285,10 @@ class KMeansBaseSolver(object):
         preds = np.fromiter(cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
         preds = np.reshape(preds, rows)
         return preds
+
+    def sklearntransform(self, X):
+        self.sklearnfit()
+        return self.model.transform(X)
 
     def transform(self, X):
         pass
