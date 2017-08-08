@@ -186,25 +186,29 @@ def printallerrors(display, enet, str, give_full_path):
     lambdas_best = enet.get_lambdas_best
     tols_best = enet.get_tols_best
 
+    loss = "RMSE"
+
+    if enet.get_family == "logistic":
+        loss = "LOGLOSS"
     if display == 1:
         # Display most important metrics
-        print('Default %s RMSE best: ', (str,error))
-        print('Default %s ALPHAS best: ', (str, alphas))
-        print('Default %s LAMBDAS best: ', (str, lambdas))
-        print('Default %s TOLS best: ', (str, tols))
+        print('%s for %s  ' % (loss,str),error)
+        print('ALPHAS for %s  ' % str, alphas)
+        print('LAMBDAS for %s  ' % str, lambdas)
+        print('TOLS for %s  ' % str, tols)
         if give_full_path == 1:
-            print('%s RMSE full path: ', (str, error_full))
-            print('%s ALPHAS full path: ', (str, alphas_full))
-            print('%s LAMBDAS full path: ', (str, lambdas_full))
-            print('%s TOLS full path: ', (str, tols_full))
-        print('%s RMSE best: ', (str, error_best))
-        print('%s ALPHAS best: ', (str, alphas_best))
-        print('%s LAMBDAS best: ', (str, lambdas_best))
-        print('%s TOLS best: ', (str, tols_best))
+            print('full path : ', (str, loss, error_full))
+            print('ALPHAS full path : ', (str, alphas_full))
+            print('LAMBDAS full path : ', (str, lambdas_full))
+            print('TOLS full path : ', (str, tols_full))
+        print('Best %s for %s  ' % (loss, str),error_best)
+        print('Best ALPHAS for %s  ' % str, alphas_best)
+        print('Best LAMBDAS for %s  ' % str, lambdas_best)
+        print('Best TOls for %s  ' % str, tols_best)
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False):
     # choose solver
     Solver = h2ogpuml.GLM
 
@@ -329,6 +333,10 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     else:
         print("logloss_test")
     print(error_test)
+
+    if print_all_errors:
+        print("PRINT ALL ERRORS")
+        print(printallerrors(display=1, enet=enet, str="Train", give_full_path=0))
 
     #enet.finish()
     print("Done Reporting")
