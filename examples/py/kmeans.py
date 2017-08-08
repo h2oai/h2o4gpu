@@ -70,4 +70,12 @@ n_gpus = 1
 model = h2ogpuml.KMeans(n_gpus=n_gpus, k=k, threshold=1e-7, max_iterations=1000)
 centroids, timefit0, timefit1 = model.fit(trainencflt, labels)
 
-# train_labels = model.predict(trainencflt)
+train_labels = model.predict(trainencflt)
+sklearn_labels = model.sklearnpredict(trainencflt)
+
+diffs = 0
+for tl in zip(train_labels, sklearn_labels):
+    if tl[0] != tl[1]:
+        diffs = diffs + 1
+
+print(diffs)
