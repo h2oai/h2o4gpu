@@ -152,7 +152,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     #t1 = time.time()
     print("Done Solving\n") ; sys.stdout.flush()
 
-    rmse_train = printallerrors(display, enet, "Train", give_full_path)
+    error_train = printallerrors(display, enet, "Train", give_full_path)
 
     print('Predicting') ; sys.stdout.flush()
     if use_gpu == 1:
@@ -162,45 +162,45 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print('Done Predicting') ; sys.stdout.flush()
     print('predicted values:\n', pred_val)
 
-    rmse_test = printallerrors(display, enet, "Test", give_full_path)
+    error_test = printallerrors(display, enet, "Test", give_full_path)
 
     if write == 0:
-        os.system('rm -f rmse.txt; rm -f pred*.txt; rm -f varimp.txt; rm -f me*.txt; rm -f stats.txt')
+        os.system('rm -f error.txt; rm -f pred*.txt; rm -f varimp.txt; rm -f me*.txt; rm -f stats.txt')
     #enet.finish()
 
-    return pred_val, rmse_train, rmse_test
+    return pred_val, error_train, error_test
 
 def printallerrors(display, enet, str, give_full_path):
-    rmse = enet.get_error
+    error = enet.get_error
     alphas = enet.get_alphas
     lambdas = enet.get_lambdas
     tols = enet.get_tols
     if give_full_path == 1:
-        rmse_full = enet.get_error_full
+        error_full = enet.get_error_full
         alphas_full = enet.get_alphas_full
         lambdas_full = enet.get_lambdas_full
         tols_full = enet.get_tols_full
-    rmse_best = enet.get_error_best
+    error_best = enet.get_error_best
     alphas_best = enet.get_alphas_best
     lambdas_best = enet.get_lambdas_best
     tols_best = enet.get_tols_best
 
     if display == 1:
         # Display most important metrics
-        print('Default %s RMSE best: ', (str,rmse))
+        print('Default %s RMSE best: ', (str,error))
         print('Default %s ALPHAS best: ', (str, alphas))
         print('Default %s LAMBDAS best: ', (str, lambdas))
         print('Default %s TOLS best: ', (str, tols))
         if give_full_path == 1:
-            print('%s RMSE full path: ', (str, rmse_full))
+            print('%s RMSE full path: ', (str, error_full))
             print('%s ALPHAS full path: ', (str, alphas_full))
             print('%s LAMBDAS full path: ', (str, lambdas_full))
             print('%s TOLS full path: ', (str, tols_full))
-        print('%s RMSE best: ', (str, rmse_best))
+        print('%s RMSE best: ', (str, error_best))
         print('%s ALPHAS best: ', (str, alphas_best))
         print('%s LAMBDAS best: ', (str, lambdas_best))
         print('%s TOLS best: ', (str, tols_best))
-    return rmse_best
+    return error_best
 
 
 def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0):
@@ -233,15 +233,21 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("Size of Train rows=%d valid rows=%d" % (H, HO))
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
-    validX = np.copy(X[H:-1, :])
+
+    if validFraction != 0.0:
+        validX = np.copy(X[H:-1, :])
+        validY = np.copy(y[H:-1])
+        mvalid = validX.shape[0]
+        validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
 
     mTrain = trainX.shape[0]
-    mvalid = validX.shape[0]
-    print("mTrain=%d mvalid=%d" % (mTrain, mvalid))
+    if validFraction != 0.0:
+        print("mTrain=%d mvalid=%d" % (mTrain, mvalid))
+    else:
+        print("mTrain=%d" % mTrain)
 
     if intercept == 1:
         trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
         n = trainX.shape[1]
         print("New n=%d" % n)
 
@@ -256,8 +262,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Solve
     print("Solving")
-    Xvsalpha = enet.fit(trainX, trainY)
-    # Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+    if validFraction == 0.0:
+        Xvsalpha = enet.fit(trainX, trainY)
+    else:
+        Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+
     # Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
     # Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, 0)
     # give_full_path=1 ; Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, give_full_path)
@@ -273,9 +282,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("np.shape(Xvsalpha)")
     print(np.shape(Xvsalpha))
 
-    rmse_train = enet.get_error
-    print("rmse_train")
-    print(rmse_train)
+    error_train = enet.get_error
+    if family != "logistic":
+        print("error_train")
+    else:
+        print("logloss_train")
+    print(error_train)
 
     print("lambdas")
     lambdas = enet.get_lambdas
@@ -294,7 +306,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(testvalidY)
 
     print("Predicting, assuming unity weights")
-    if validX == None or mvalid == 0:
+    if validFraction == 0.0:
         print("Using trainX for validX")
         newvalidY = enet.predict(trainX)  # for testing
     else:
@@ -303,10 +315,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("newvalidY")
     print(newvalidY)
 
-    rmse_test = enet.get_error
-    print("rmse_test")
-    print(rmse_test)
+    error_test = enet.get_error
+    if family != "logistic":
+        print("error_test")
+    else:
+        print("logloss_test")
+    print(error_test)
 
     #enet.finish()
     print("Done Reporting")
-    return rmse_train, rmse_test
+    return error_train, error_test
