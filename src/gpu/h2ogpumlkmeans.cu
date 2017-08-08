@@ -459,37 +459,8 @@ namespace h2ogpumlkmeans {
 #endif
                 }
             }
-
-            double timetransfer = static_cast<double>(timer<double>() - t0t);
-
-            double t0 = timer<double>();
-            kmeans::kmeans<T>(&flaggpu, n, d, k, data, labels, d_centroids, distances, dList, n_gpu, max_iterations,
-                              init_from_labels, threshold);
-            double timefit = static_cast<double>(timer<double>() - t0);
-
-            std::cout << "  Time fit: " << timefit << " s" << std::endl;
-            fprintf(stderr, "Timetransfer: %g Timefit: %g\n", timetransfer, timefit);
-            fflush(stderr);
-
-            // copy result of centroids (sitting entirely on each device) back to host
-            thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
-            // TODO FIXME: When do delete this ctr memory?
-            //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
-            *centroids = ctr->data();
-
-            // debug
-            int printcenters = 0;
-            if (printcenters) {
-                for (unsigned int ii = 0; ii < k; ii++) {
-                    fprintf(stderr, "ii=%d of k=%d ", ii, k);
-                    for (unsigned int jj = 0; jj < d; jj++) {
-                        fprintf(stderr, "%g ", (*ctr)[d * ii + jj]);
-                    }
-                    fprintf(stderr, "\n");
-                    fflush(stderr);
-                }
-            }
         }
+
         double timetransfer = static_cast<double>(timer<double>() - t0t);
 
         if (verbose) {
@@ -538,7 +509,7 @@ namespace h2ogpumlkmeans {
     }
 
     template<typename T>
-    int kmeans_predict(int gpu_idtry, int n_gputry,
+    int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
                        const T* srcdata, const T* centroids, void** preds) {
@@ -585,13 +556,13 @@ namespace h2ogpumlkmeans {
         int *d_changes[n_gpu];
 
         // Move centroids from host memory to GPU
-        nonrandom_data('r', *d_centroids, &centroids[0], 0, k, k, m);
+        nonrandom_data(verbose, 'r', *d_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             std::cout << "Copying data to device: " << dList[q] << std::endl;
             d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
-            nonrandom_data(ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
+            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
 
             distances[q] = new thrust::device_vector<T>(n);
             cudaMalloc(&d_changes[q], sizeof(int));
@@ -672,7 +643,7 @@ namespace h2ogpumlkmeans {
                                     int init_from_labels, int init_labels, int init_data, double threshold,
                                     const double *srcdata, const int *srclabels, void **centroid);
 
-    template int kmeans_predict<float>(int gpu_idtry, int n_gputry,
+    template int kmeans_predict<float>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
                                         const char ord, int k,
                                         const float* srcdata, const float* centroids, void** preds);

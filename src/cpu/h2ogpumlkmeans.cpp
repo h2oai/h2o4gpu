@@ -390,7 +390,7 @@ namespace h2ogpumlkmeans {
         std::vector<T> *data_dots[n_cpu];
         std::vector<T> *centroid_dots[n_cpu];
 
-        nonrandom_data('r', *l_centroids, &centroids[0], 0, k, k, m);
+        nonrandom_data(verbose, 'r', *l_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_cpu; q++) {
             data[q] = new std::vector<T>(n/n_cpu * m);
