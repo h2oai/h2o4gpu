@@ -172,19 +172,15 @@ class GLM(object):
     def get_alphas_best(self):
         return self.solver.get_alphas_best()
 
-    @property
     def free_data(self):
         return self.solver.free_data()
 
-    @property
     def free_sols(self):
         return self.solver.free_sols()
 
-    @property
     def free_preds(self):
         return self.solver.free_preds()
 
-    @property
     def finish(self):
         return self.solver.finish()
 
