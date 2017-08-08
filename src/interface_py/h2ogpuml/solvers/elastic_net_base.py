@@ -732,9 +732,9 @@ class _GLMBaseSolver(object):
         if do_predict == 0:
             self.did_predict = 0
             if give_full_path == 1:
-                return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
+                return self.x_vs_alpha_lambdapure
             else:
-                return (None, self.x_vs_alphapure)
+                return self.x_vs_alphapure
         else:
             self.did_predict = 1
             if give_full_path == 1:
@@ -902,14 +902,14 @@ class _GLMBaseSolver(object):
                      verbose=verbose)
         if do_predict == 0:
             if give_full_path == 1:
-                return (self.x_vs_alpha_lambdapure, self.x_vs_alphapure)
+                return self.x_vs_alpha_lambdapure
             else:
-                return (None, self.x_vs_alphapure)
+                return self.x_vs_alphapure
         else:
             if give_full_path == 1:
-                return (self.valid_pred_vs_alpha_lambdapure, self.valid_pred_vs_alphapure)
+                return self.valid_pred_vs_alpha_lambdapure
             else:
-                return (None, self.valid_pred_vs_alphapure)
+                return self.valid_pred_vs_alphapure
 
     def get_X(self):
         if self.give_full_path == 1:
@@ -993,7 +993,10 @@ class _GLMBaseSolver(object):
         else:
             self.prediction_full = None
         self.prediction = self.fit(None, None, valid_x, valid_y, testweight, 0, do_predict, free_input_data)
-        return (self.prediction_full, self.prediction)  # something like valid_y
+        if give_full_path:
+            return self.prediction_full  # something like valid_y
+        else:
+            return self.prediction  # something like valid_y
 
     def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0, verbose=0):
         do_predict = 1
@@ -1007,7 +1010,10 @@ class _GLMBaseSolver(object):
                                                 do_predict, free_input_data, verbose)
         else:
             self.prediction_full = None
-        return (self.prediction_full, self.prediction)  # something like valid_y
+        if give_full_path:
+            return self.prediction_full  # something like valid_y
+        else:
+            return self.prediction  # something like valid_y
 
     def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0,
                     free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
@@ -1040,7 +1046,10 @@ class _GLMBaseSolver(object):
                 self.prediction_full = None
             self.prediction = self.predict(valid_x, valid_y, testweight=weight, give_full_path=0,
                                            free_input_data=free_input_data)
-        return (self.prediction_full, self.prediction)
+        if give_full_path:
+            return self.prediction_full  # something like valid_y
+        else:
+            return self.prediction  # something like valid_y
 
     def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0,
                         free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
@@ -1061,15 +1070,14 @@ class _GLMBaseSolver(object):
             self.prediction = self.predict_ptr(a, b, 0, free_input_data=free_input_data)
             if give_full_path == 1:
                 self.prediction_full = self.predict_ptr(a, b, give_full_path, free_input_data=free_input_data)
-            else:
-                self.prediction_full = None
         else:
             self.prediction = self.predict_ptr(c, d, 0, free_input_data=free_input_data)
             if give_full_path == 1:
                 self.prediction_full = self.predict_ptr(c, d, give_full_path, free_input_data=free_input_data)
-            else:
-                self.prediction_full = None
-        return (self.prediction_full, self.prediction)
+        if give_full_path:
+            return self.prediction_full  # something like valid_y
+        else:
+            return self.prediction  # something like valid_y
 
     def free_data(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again

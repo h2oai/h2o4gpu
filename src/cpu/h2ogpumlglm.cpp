@@ -496,10 +496,6 @@ H2OGPUMLStatus H2OGPUML<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 				_validPreds);
 	}
 	// compute error (not yet)
-	for (unsigned int i = 0; i < n; i++) {
-		fprintf(stderr, "x[%d]=%g\n", i, _x[i]);
-		fflush(stderr);
-	}
 
 	// compute mean (not yet)
 

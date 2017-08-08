@@ -156,13 +156,11 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     print('Predicting') ; sys.stdout.flush()
     if use_gpu == 1:
-        pred_valfull, pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
+        pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
     else:
-        pred_valfull, pred_val = enet.predict(c, give_full_path=give_full_path)
+        pred_val = enet.predict(c, give_full_path=give_full_path)
     print('Done Predicting') ; sys.stdout.flush()
     print('predicted values:\n', pred_val)
-    if give_full_path == 1:
-        print('full predicted values:\n', pred_valfull)
 
     rmse_test = printallerrors(display, enet, "Test", give_full_path)
 

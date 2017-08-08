@@ -27,7 +27,8 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
 
     if 1==0: # not yet
-        #import datatable as dt # omp problem in pycharm
+        target=None
+        import datatable as dt # omp problem in pycharm
         train = find_file("xtrain.txt")
         test = find_file("xtest.txt")
 
@@ -73,11 +74,12 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     #    nAlphas=1
     t1 = time.time()
     write=1
-    pred_val, rmse = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
+    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
     # check rmse
-    print(rmse[0])
-    print(rmse[1])
-    print(rmse[2])
+    print(rmse_train[0,0])
+    print(rmse_train[0,1])
+    print(rmse_train[0,2])
+    print(rmse_test[0,2])
     sys.stdout.flush()
 
     print('/n Total execution time:%d' % (time.time() - t1))
@@ -101,7 +103,7 @@ def test_glm_hyatt_cpu_fold1(): fun(False, 1, 3, 1, classification=False)
 def test_glm_hyatt_cpu_fold5(): fun(False, 5, 100, 3, classification=False)
 
 if __name__ == '__main__':
-	test_glm_hyatt_gpu_fold1()
-	test_glm_hyatt_gpu_fold5()
+#	test_glm_hyatt_gpu_fold1()
+#	test_glm_hyatt_gpu_fold5()
 	test_glm_hyatt_cpu_fold1()
 	test_glm_hyatt_cpu_fold5()
