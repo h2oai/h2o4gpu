@@ -26,6 +26,7 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     name = sys._getframe(1).f_code.co_name
     #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
 
+    print("Reading Data")
     if 1==0: # not yet
         target=None
         import datatable as dt # omp problem in pycharm
@@ -47,40 +48,35 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
         classes = 1 if not classification else len(y.unique())
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
+        # should all be explicitly np.float32 or all np.float64
+        xtrain = np.loadtxt("./tests/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
+        ytrain = np.loadtxt("./tests/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
+        xtest = np.loadtxt("./tests/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
+        ytest = np.loadtxt("./tests/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
+        wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
         print("Testing GLM")
-
 
     # seed = np.random.randint(0, 2 ** 31 - 1)
     seed = 1034753 if use_seed else None
 
 
-    xtrain = np.loadtxt("./tests/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
-    ytrain = np.loadtxt("./tests/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
-    xtest = np.loadtxt("./tests/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
-    ytest = np.loadtxt("./tests/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
-    wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
-
-    #use_gpu = 1  # set it to 1 for using GPUS, 0 for CPU
     display = 1
-    #if 1==1:
-    #    write = 0
-    #    nFolds=5
-    #    nLambdas=100
-    #    nAlphas=8
-    #else:
-    #    write = 1
-    #    nFolds=1
-    #    nLambdas=1
-    #    nAlphas=1
     t1 = time.time()
     write=1
     pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
+
     # check rmse
     print(rmse_train[0,0])
     print(rmse_train[0,1])
     print(rmse_train[0,2])
     print(rmse_test[0,2])
     sys.stdout.flush()
+
+    # FIXME: But these below should really be order 1 to 1.5 according to Wamsi!
+    assert rmse_train[0,0]<10
+    assert rmse_train[0,1]<10
+    assert rmse_train[0,2]<21
+    assert rmse_test[0,2]<21
 
     print('/n Total execution time:%d' % (time.time() - t1))
 
@@ -93,17 +89,25 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     print("DONE.")
     sys.stdout.flush()
 
+def test_glm_hyatt_gpu_fold1_quick(): fun(True, 1, 5, 3, classification=False)
 
 def test_glm_hyatt_gpu_fold1(): fun(True, 1, 100, 8, classification=False)
 
 def test_glm_hyatt_gpu_fold5(): fun(True, 5, 100, 3, classification=False)
 
-def test_glm_hyatt_cpu_fold1(): fun(False, 1, 3, 1, classification=False)
+
+def test_glm_hyatt_cpu_fold1_quick(): fun(False, 1, 5, 3, classification=False)
+
+def test_glm_hyatt_cpu_fold1(): fun(False, 1, 100, 8, classification=False)
 
 def test_glm_hyatt_cpu_fold5(): fun(False, 5, 100, 3, classification=False)
 
+
 if __name__ == '__main__':
-#	test_glm_hyatt_gpu_fold1()
-#	test_glm_hyatt_gpu_fold5()
+	test_glm_hyatt_gpu_fold1_quick()
+	test_glm_hyatt_gpu_fold1()
+	test_glm_hyatt_gpu_fold5()
+
+	test_glm_hyatt_cpu_fold1_quick()
 	test_glm_hyatt_cpu_fold1()
 	test_glm_hyatt_cpu_fold5()

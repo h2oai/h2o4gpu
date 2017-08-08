@@ -272,9 +272,9 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("np.shape(Xvsalpha)")
     print(np.shape(Xvsalpha))
 
-    rmse = enet.get_error
-    print("rmse")
-    print(rmse)
+    rmse_train = enet.get_error
+    print("rmse_train")
+    print(rmse_train)
 
     print("lambdas")
     lambdas = enet.get_lambdas
@@ -302,5 +302,9 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("newvalidY")
     print(newvalidY)
 
+    rmse_test = enet.get_error
+    print("rmse_test")
+    print(rmse_test)
+
     print("Done Reporting")
-    return enet, rmse
+    return rmse_train, rmse_test

@@ -19,7 +19,7 @@ pyenv global 3.6.1
 - Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
 ````
 R
-install.packages(c("data.table", "feather"))
+install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
 quit()
 ````
 
