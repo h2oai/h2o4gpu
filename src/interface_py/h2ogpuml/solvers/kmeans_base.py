@@ -279,7 +279,7 @@ class KMeansBaseSolver(object):
                                        self.max_iterations, c_init_from_labels, c_init_labels, c_init_data,
                                        self.threshold, c_data, None, c_centroids, pointer(c_res))
 
-        preds = np.fromiter(cast(res, POINTER(data_ctype)), dtype=np.int32, count=rows)
+        preds = np.fromiter(cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
         preds = np.reshape(preds, rows)
         return preds
 
