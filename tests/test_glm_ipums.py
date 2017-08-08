@@ -33,8 +33,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
     #  b=A.dot(x_true)+0.5*randn(m)
 
-    # NOTE: To produce ipums.feather do:
-    # cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums.R ; cd ~/h2ogpuml/tests/data/ ; ln -s ~/h2oai-prototypes/glm-bench/ipums.feather .
+    # Rscript ipums.R  runs glmnet on ipums
     #
     df = feather.read_dataframe("./tests/data/ipums.feather")
     print(df.shape)
@@ -58,10 +57,16 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
         assert rmse_train[0, 2] < 34000
         assert rmse_test[0, 2] < 34000
     else:
-        assert rmse_train[0, 0] < 30000
-        assert rmse_train[0, 1] < 30000
-        assert rmse_train[0, 2] < 30000
-        assert rmse_test[0, 2] < 30000
+        if nLambdas>20:
+            assert rmse_train[0, 0] < 30000
+            assert rmse_train[0, 1] < 30000
+            assert rmse_train[0, 2] < 30000
+            assert rmse_test[0, 2] < 30000
+        else:
+            assert rmse_train[0, 0] < 34000
+            assert rmse_train[0, 1] < 34000
+            assert rmse_train[0, 2] < 34000
+            assert rmse_test[0, 2] < 34000
 
     print('/n Total execution time:%d' % (time.time() - t1))
 
