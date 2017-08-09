@@ -1,7 +1,5 @@
 import cProfile
 import pstats
-import os
-
 import math
 import pytest
 import h2ogpuml
@@ -172,23 +170,23 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     return pred_val, error_train, error_test
 
 def printallerrors(display, enet, str, give_full_path):
-    error = enet.get_error
-    alphas = enet.get_alphas
-    lambdas = enet.get_lambdas
-    tols = enet.get_tols
+    error = enet.error
+    alphas = enet.alphas
+    lambdas = enet.lambdas
+    tols = enet.tols
     if give_full_path == 1:
-        error_full = enet.get_error_full
-        alphas_full = enet.get_alphas_full
-        lambdas_full = enet.get_lambdas_full
-        tols_full = enet.get_tols_full
-    error_best = enet.get_error_best
-    alphas_best = enet.get_alphas_best
-    lambdas_best = enet.get_lambdas_best
-    tols_best = enet.get_tols_best
+        error_full = enet.error_full
+        alphas_full = enet.alphas_full
+        lambdas_full = enet.lambdas_full
+        tols_full = enet.tols_full
+    error_best = enet.error_best
+    alphas_best = enet.alphas_best
+    lambdas_best = enet.lambdas_best
+    tols_best = enet.tols_best
 
     loss = "RMSE"
 
-    if enet.get_family == "logistic":
+    if enet.family == "logistic":
         loss = "LOGLOSS"
     if display == 1:
         # Display most important metrics
@@ -228,20 +226,20 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # Setup Train/validation Set Split
     morig = X.shape[0]
     norig = X.shape[1]
-    print("Original m=%d n=%d" % (morig, norig))
+    print("Original m=%d n=%d" % (morig, norig)) ; sys.stdout.flush()
     fortran = X.flags.f_contiguous
-    print("fortran=%d" % fortran)
+    print("fortran=%d" % fortran) ; sys.stdout.flush()
 
     # Do train/valid split
     HO = int(validFraction * morig)
     H = morig - HO
-    print("Size of Train rows=%d valid rows=%d" % (H, HO))
+    print("Size of Train rows=%d valid rows=%d" % (H, HO)) ; sys.stdout.flush()
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
 
     if validFraction != 0.0:
-        validX = np.copy(X[H:-1, :])
-        validY = np.copy(y[H:-1])
+        validX = np.copy(X[H:morig, :])
+        validY = np.copy(y[H:morig])
         mvalid = validX.shape[0]
         validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
 
@@ -257,7 +255,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         print("New n=%d" % n)
 
     ## Constructor
-    print("Setting up solver")
+    print("Setting up solver") ; sys.stdout.flush()
     enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=verbose, family=family)
 
     print("trainX")
@@ -277,7 +275,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # give_full_path=1 ; Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, give_full_path)
     print("Done Solving")
 
-    X=enet.get_X
+    X=enet.X
     print("X")
     print(X)
 
@@ -287,7 +285,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("np.shape(Xvsalpha)")
     print(np.shape(Xvsalpha))
 
-    error_train = enet.get_error
+    error_train = enet.error
     if family != "logistic":
         print("error_train")
     else:
@@ -295,15 +293,15 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(error_train)
 
     print("lambdas")
-    lambdas = enet.get_lambdas
+    lambdas = enet.lambdas
     print(lambdas)
 
     print("alphas")
-    alphas = enet.get_alphas
+    alphas = enet.alphas
     print(alphas)
 
     print("tols")
-    tols = enet.get_tols
+    tols = enet.tols
     print(tols)
 
     testvalidY = np.dot(trainX, Xvsalpha.T)
@@ -327,7 +325,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("newvalidY")
     print(newvalidY)
 
-    error_test = enet.get_error
+    error_test = enet.error
     if family != "logistic":
         print("rmse_test")
     else:

@@ -42,12 +42,9 @@ class GLM(object):
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
-
-        self.n_gpus = n_gpus
         self.source_dev = 0  # assume Dev=0 is source of data for upload_data
         self.source_me = 0  # assume thread=0 is source of data for upload_data
         self.shared_a = shared_a
-        self.n_threads = n_threads
         self.ord = ord(order)
         self.intercept = intercept
         self.standardize = standardize
@@ -62,15 +59,17 @@ class GLM(object):
         self.stop_early_error_fraction = stop_early_error_fraction
         self.max_iterations = max_iterations
         self.verbose = verbose
-        self.family = ord(family.split()[0][0])
+        self._family = ord(family.split()[0][0])
 
         # TODO Add type checking
 
         n_gpus, device_count = devicecount(n_gpus)
+        self.n_gpus = n_gpus
 
         if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
             n_threads = 1 if (n_gpus == 0) else n_gpus
+        self.n_threads = n_threads
 
         if not h2ogpumlGLMGPU:
             print(
@@ -469,7 +468,7 @@ class GLM(object):
                 print("double precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_double(
-                c_int(self.family),
+                c_int(self._family),
                 c_int(do_predict),
                 c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
@@ -490,7 +489,7 @@ class GLM(object):
                 print("single precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_float(
-                c_int(self.family),
+                c_int(self._family),
                 c_int(do_predict),
                 c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
@@ -547,15 +546,15 @@ class GLM(object):
             self.x_vs_alpha_lambdanew = np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas, self.n_alphas, num_all))
             self.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdanew[:, :, 0:n]
             self.error_vs_alpha_lambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
-            self.lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
-            self.alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
-            self.tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
+            self._lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
+            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
+            self._tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
-            self.info.lambdas = self.lambdas
-            self.info.alphas = self.alphas
-            self.info.tols = self.tols
+            self.info.lambdas = self._lambdas
+            self.info.alphas = self._alphas
+            self.info.tols = self._tols
             #
         if give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + NUMALLOTHER) * m_valid)
@@ -572,15 +571,15 @@ class GLM(object):
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + NUMERROR]
-            self.lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
-            self.alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
-            self.tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
+            self._lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
+            self._alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
+            self._tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
-            self.info.lambdas2 = self.lambdas2
-            self.info.alphas2 = self.alphas2
-            self.info.tols2 = self.tols2
+            self.info.lambdas2 = self._lambdas2
+            self.info.alphas2 = self._alphas2
+            self.info.tols2 = self._tols2
         #
         if give_full_path == 0 and do_predict == 1:  # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
             thecount = int(count_short_value / (n + NUMALLOTHER) * m_valid)
@@ -757,7 +756,7 @@ class GLM(object):
                 # if ((valid_x is not None and valid_y == None) or (valid_x == None and valid_y is not None)):
                 print(
                     "Must input both valid_x and valid_y or neither.")  # TODO FIXME: Don't need valid_y if just want preds and no error, but don't return error in fit, so leave for now
-                exit(0)
+                exit(1)
                 #
         ##############
         source_dev = 0  # assume GPU=0 is fine as source
@@ -877,12 +876,12 @@ class GLM(object):
     #################### Properties and setters of properties
     @property
     def family(self):
-        return self.family
+        return self._family
 
     @family.setter
     def family(self, value):
         # add check
-        self.family = value
+        self._family = value
 
     @property
     def X(self):
@@ -924,39 +923,39 @@ class GLM(object):
     @property
     def lambdas(self):
         if self.give_full_path == 1:
-            return self.lambdas
+            return self._lambdas
         else:
-            return self.lambdas2
+            return self._lambdas2
 
     @lambdas.setter
     def lambdas(self, value):
         # add check
-        self.lambdas = value
+        self._lambdas = value
 
     #@lambdas2.setter
     #def lambdas2(self, value):
     #    # add check
-    #    self.lambdas2 = value
+    #    self._lambdas2 = value
 
     @property
     def alphas(self):
         if self.give_full_path == 1:
-            return self.alphas
+            return self._alphas
         else:
-            return self.alphas2
+            return self._alphas2
     @alphas.setter
     def alphas(self,value):
-        self.alphas = value
+        self._alphas = value
 
     @property
     def tols(self):
         if self.give_full_path == 1:
-            return self.tols
+            return self._tols
         else:
-            return self.tols2
+            return self._tols2
     @tols.setter
     def tols(self,value):
-        self.tols = value
+        self._tols = value
 
     @property
     def error_full(self):
@@ -964,15 +963,15 @@ class GLM(object):
 
     @property
     def lambdas_full(self):
-        return self.lambdas
+        return self._lambdas
 
     @property
     def alphas_full(self):
-        return self.alphas
+        return self._alphas
 
     @property
     def tols_full(self):
-        return self.tols
+        return self._tols
 
     @property
     def error_best(self):
@@ -980,15 +979,15 @@ class GLM(object):
 
     @property
     def lambdas_best(self):
-        return self.lambdas2
+        return self._lambdas2
 
     @property
     def alphas_best(self):
-        return self.alphas2
+        return self._alphas2
 
     @property
     def tols_best(self):
-        return self.tols2
+        return self._tols2
 
     #################### Free up memory functions
     def free_data(self):
