@@ -26,13 +26,43 @@ H2O GLM Solver
 :param family
 """
 
-
+# TODO shared_a and standardize do not work currently. Always need to set to 0.
 class GLM(object):
-    # TODO shared_a and standardize do not work currently. Always need to set to 0.
-    def __init__(self, shared_a=0, n_threads=None, n_gpus=-1, ord='r', intercept=1, standardize=0,
+    class info:
+        pass
+
+    class solution:
+        pass
+
+    def __init__(self, shared_a=0, n_threads=None, n_gpus=-1, order='r', intercept=1, standardize=0,
                  lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
                  verbose=0, family="elasticnet"):
+
+        self.n = 0
+        self.m_train = 0
+        self.m_valid = 0
+
+        self.n_gpus = n_gpus
+        self.source_dev = 0  # assume Dev=0 is source of data for upload_data
+        self.source_me = 0  # assume thread=0 is source of data for upload_data
+        self.shared_a = shared_a
+        self.n_threads = n_threads
+        self.ord = ord(order)
+        self.intercept = intercept
+        self.standardize = standardize
+        self.lambda_min_ratio = lambda_min_ratio
+        self.n_lambdas = n_lambdas
+        self.n_folds = n_folds
+        self.n_alphas = n_alphas
+        self.uploaded_data = 0
+        self.did_fit_ptr = 0
+        self.did_predict = 0
+        self.stop_early = stop_early
+        self.stop_early_error_fraction = stop_early_error_fraction
+        self.max_iterations = max_iterations
+        self.verbose = verbose
+        self.family = ord(family.split()[0][0])
 
         # TODO Add type checking
 
@@ -52,181 +82,16 @@ class GLM(object):
                 '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
             print('> Use GPU or re-run setup.py\n\n')
 
+        self.lib=None
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
             print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
-            self.solver = _GLMBaseSolver(h2ogpumlGLMCPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
-                                         lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early,
-                                         stop_early_error_fraction, max_iterations, verbose, family)
-        else:
-            if ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
+            self.lib = h2ogpumlGLMCPU
+        elif ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
                 print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
-                self.solver = _GLMBaseSolver(h2ogpumlGLMGPU, shared_a, n_threads, n_gpus, ord, intercept, standardize,
-                                             lambda_min_ratio, n_lambdas, n_folds, n_alphas, stop_early,
-                                             stop_early_error_fraction, max_iterations, verbose, family)
+                self.lib = h2ogpumlGLMGPU
+        else:
+            raise RuntimeError( "Couldn't instantiate GLM Solver")
 
-        assert self.solver != None, "Couldn't instantiate GLM Solver"
-
-    def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
-        return self.solver.upload_data(source_dev, train_x, train_y, valid_x, valid_y, weight)
-
-    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0,
-                free_input_data=0, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0):
-        return self.solver.fit_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path,
-                                   do_predict, free_input_data, stop_early, stop_early_error_fraction, max_iterations,
-                                   verbose)
-
-    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0,
-            free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
-        return self.solver.fit(train_x, train_y, valid_x, valid_y, weight, give_full_path, do_predict, free_input_data,
-                               stop_early, stop_early_error_fraction, max_iterations, verbose)
-
-    def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
-        return self.solver.predict(valid_x, valid_y, testweight, give_full_path, free_input_data)
-
-    def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0, verbose=0):
-        return self.solver.predict_ptr(valid_xptr, valid_yptr, give_full_path, free_input_data, verbose)
-
-    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0,
-                    free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
-                    verbose=None):
-        return self.solver.fit_predict(train_x, train_y, valid_x, valid_y, weight, give_full_path, free_input_data,
-                                       stop_early, stop_early_error_fraction, max_iterations, verbose)
-
-    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0,
-                        free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
-                        verbose=None):
-        return self.solver.fit_predict_ptr(source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path,
-                                           free_input_data, stop_early, stop_early_error_fraction, max_iterations,
-                                           verbose)
-
-    # Define all properties of GLM class
-
-    @property
-    def get_family(self):
-        return self.solver.family_str
-
-    @property
-    def get_X(self):
-        return self.solver.get_X()
-
-    @property
-    def get_Xfull(self):
-        return self.solver.get_X_full()
-
-    @property
-    def get_Xbest(self):
-        return self.solver.get_X_best()
-
-    @property
-    def get_validPreds(self):
-        return self.solver.get_validPreds()
-
-    @property
-    def get_validPredsfull(self):
-        return self.solver.get_validPreds_full()
-
-    @property
-    def get_validPredsbest(self):
-        return self.solver.get_validPreds_best()
-
-    @property
-    def get_tols(self):
-        return self.solver.get_tols()
-
-    @property
-    def get_error(self):
-        return self.solver.get_error()
-
-    @property
-    def get_lambdas(self):
-        return self.solver.get_lambdas()
-
-    @property
-    def get_alphas(self):
-        return self.solver.get_alphas()
-
-    @property
-    def get_tols_full(self):
-        return self.solver.get_tols_full()
-
-    @property
-    def get_error_full(self):
-        return self.solver.get_error_full()
-
-    @property
-    def get_lambdas_full(self):
-        return self.solver.get_lambdas_full()
-
-    @property
-    def get_alphas_full(self):
-        return self.solver.get_alphas_full()
-
-    @property
-    def get_tols_best(self):
-        return self.solver.get_tols_best()
-
-    @property
-    def get_error_best(self):
-        return self.solver.get_error_best()
-
-    @property
-    def get_lambdas_best(self):
-        return self.solver.get_lambdas_best()
-
-    @property
-    def get_alphas_best(self):
-        return self.solver.get_alphas_best()
-
-    def free_data(self):
-        return self.solver.free_data()
-
-    def free_sols(self):
-        return self.solver.free_sols()
-
-    def free_preds(self):
-        return self.solver.free_preds()
-
-    def finish(self):
-        return self.solver.finish()
-
-
-class _GLMBaseSolver(object):
-    class info:
-        pass
-
-    class solution:
-        pass
-
-    def __init__(self, lib, shared_a, n_threads, n_gpus, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
-                 n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family):
-        assert lib and (lib == h2ogpumlGLMCPU or lib == h2ogpumlGLMGPU)
-        self.lib = lib
-
-        self.n = 0
-        self.m_train = 0
-        self.m_valid = 0
-
-        self.n_gpus = n_gpus
-        self.source_dev = 0  # assume Dev=0 is source of data for upload_data
-        self.source_me = 0  # assume thread=0 is source of data for upload_data
-        self.shared_a = shared_a
-        self.n_threads = n_threads
-        self.ord = ord(ordin)
-        self.intercept = intercept
-        self.standardize = standardize
-        self.lambda_min_ratio = lambda_min_ratio
-        self.n_lambdas = n_lambdas
-        self.n_folds = n_folds
-        self.n_alphas = n_alphas
-        self.uploaded_data = 0
-        self.did_fit_ptr = 0
-        self.did_predict = 0
-        self.stop_early = stop_early
-        self.stop_early_error_fraction = stop_early_error_fraction
-        self.max_iterations = max_iterations
-        self.verbose = verbose
-        self.family = ord(family.split()[0][0])
-        self.family_str = family
 
     def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
         if self.uploaded_data == 1:
@@ -913,78 +778,6 @@ class _GLMBaseSolver(object):
             else:
                 return self.valid_pred_vs_alphapure
 
-    def get_X(self):
-        if self.give_full_path == 1:
-            return self.x_vs_alpha_lambdapure
-        else:
-            return self.x_vs_alphapure
-
-    def get_X_full(self):
-        return self.x_vs_alpha_lambdapure
-
-    def get_X_best(self):
-        return self.x_vs_alphapure
-
-    def get_validPreds(self):
-        if self.give_full_path == 1:
-            return self.valid_pred_vs_alpha_lambdapure
-        else:
-            return self.valid_pred_vs_alphapure
-
-    def get_validPreds_full(self):
-        return self.valid_pred_vs_alpha_lambdapure
-
-    def get_validPreds_best(self):
-        return self.valid_pred_vs_alphapure
-
-    def get_error(self):
-        if self.give_full_path == 1:
-            return self.error_vs_alpha_lambda
-        else:
-            return self.error_vs_alpha
-
-    def get_lambdas(self):
-        if self.give_full_path == 1:
-            return self.lambdas
-        else:
-            return self.lambdas2
-
-    def get_alphas(self):
-        if self.give_full_path == 1:
-            return self.alphas
-        else:
-            return self.alphas2
-
-    def get_tols(self):
-        if self.give_full_path == 1:
-            return self.tols
-        else:
-            return self.tols2
-
-    def get_error_full(self):
-        return self.error_vs_alpha_lambda
-
-    def get_lambdas_full(self):
-        return self.lambdas
-
-    def get_alphas_full(self):
-        return self.alphas
-
-    def get_tols_full(self):
-        return self.tols
-
-    def get_error_best(self):
-        return self.error_vs_alpha
-
-    def get_lambdas_best(self):
-        return self.lambdas2
-
-    def get_alphas_best(self):
-        return self.alphas2
-
-    def get_tols_best(self):
-        return self.tols2
-
     def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
@@ -1081,6 +874,123 @@ class _GLMBaseSolver(object):
         else:
             return self.prediction  # something like valid_y
 
+    #################### Properties and setters of properties
+    @property
+    def family(self):
+        return self.family
+
+    @family.setter
+    def family(self, value):
+        # add check
+        self.family = value
+
+    @property
+    def X(self):
+        if self.give_full_path == 1:
+            return self.x_vs_alpha_lambdapure
+        else:
+            return self.x_vs_alphapure
+
+    @property
+    def X_full(self):
+        return self.x_vs_alpha_lambdapure
+
+    @property
+    def X_best(self):
+        return self.x_vs_alphapure
+
+    @property
+    def validPreds(self):
+        if self.give_full_path == 1:
+            return self.valid_pred_vs_alpha_lambdapure
+        else:
+            return self.valid_pred_vs_alphapure
+
+    @property
+    def validPreds_full(self):
+        return self.valid_pred_vs_alpha_lambdapure
+
+    @property
+    def validPreds_best(self):
+        return self.valid_pred_vs_alphapure
+
+    @property
+    def error(self):
+        if self.give_full_path == 1:
+            return self.error_vs_alpha_lambda
+        else:
+            return self.error_vs_alpha
+
+    @property
+    def lambdas(self):
+        if self.give_full_path == 1:
+            return self.lambdas
+        else:
+            return self.lambdas2
+
+    @lambdas.setter
+    def lambdas(self, value):
+        # add check
+        self.lambdas = value
+
+    #@lambdas2.setter
+    #def lambdas2(self, value):
+    #    # add check
+    #    self.lambdas2 = value
+
+    @property
+    def alphas(self):
+        if self.give_full_path == 1:
+            return self.alphas
+        else:
+            return self.alphas2
+    @alphas.setter
+    def alphas(self,value):
+        self.alphas = value
+
+    @property
+    def tols(self):
+        if self.give_full_path == 1:
+            return self.tols
+        else:
+            return self.tols2
+    @tols.setter
+    def tols(self,value):
+        self.tols = value
+
+    @property
+    def error_full(self):
+        return self.error_vs_alpha_lambda
+
+    @property
+    def lambdas_full(self):
+        return self.lambdas
+
+    @property
+    def alphas_full(self):
+        return self.alphas
+
+    @property
+    def tols_full(self):
+        return self.tols
+
+    @property
+    def error_best(self):
+        return self.error_vs_alpha
+
+    @property
+    def lambdas_best(self):
+        return self.lambdas2
+
+    @property
+    def alphas_best(self):
+        return self.alphas2
+
+    @property
+    def tols_best(self):
+        return self.tols2
+
+    #################### Free up memory functions
     def free_data(self):
         # NOTE: For now, these are automatically freed when done with fit -- ok, since not used again
         if self.uploaded_data == 1:
@@ -1122,3 +1032,5 @@ class _GLMBaseSolver(object):
         self.free_data()
         self.free_sols()
         self.free_preds()
+
+

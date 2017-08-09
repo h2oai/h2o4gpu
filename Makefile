@@ -58,7 +58,7 @@ sync_smalldata:
 
 all: cpp c py r
 
-default: 
+default: all
 
 cpp:
 	$(MAKE) -j all -C src/
