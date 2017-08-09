@@ -5,6 +5,7 @@ from h2ogpuml.types import cptr
 from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
 from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
 from h2ogpuml.solvers.utils import devicecount
+from h2ogpuml.util.typechecks import assert_is_type
 
 """
 H2O GLM Solver
@@ -38,6 +39,22 @@ class GLM(object):
                  lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
                  verbose=0, family="elasticnet"):
+
+        # Type Checking
+        assert_is_type(shared_a, int)
+        assert_is_type(n_threads, int, None)
+        assert_is_type(n_gpus, int)
+        assert_is_type(order, str)
+        assert_is_type(intercept, int)
+        assert_is_type(standardize, int)
+        assert_is_type(n_lambdas, int)
+        assert_is_type(n_folds, int)
+        assert_is_type(n_alphas, int)
+        assert_is_type(stop_early, int)
+        assert_is_type(stop_early_error_fraction, float)
+        assert_is_type(max_iterations, int)
+        assert_is_type(verbose, int)
+        assert_is_type(family, str)
 
         self.n = 0
         self.m_train = 0
