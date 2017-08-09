@@ -63,10 +63,10 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
             assert rmse_train[0, 2] < 50000
             assert rmse_test[0, 2] < 50000
         else:
-            assert rmse_train[0, 0] < 57000
-            assert rmse_train[0, 1] < 57000
-            assert rmse_train[0, 2] < 57000
-            assert rmse_test[0, 2] < 57000
+            assert rmse_train[0, 0] < 59000
+            assert rmse_train[0, 1] < 59000
+            assert rmse_train[0, 2] < 59000
+            assert rmse_test[0, 2] < 59000
 
     print('/n Total execution time:%d' % (time.time() - t1))
 
