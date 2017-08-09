@@ -42,12 +42,9 @@ class GLM(object):
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
-
-        self.n_gpus = n_gpus
         self.source_dev = 0  # assume Dev=0 is source of data for upload_data
         self.source_me = 0  # assume thread=0 is source of data for upload_data
         self.shared_a = shared_a
-        self.n_threads = n_threads
         self.ord = ord(order)
         self.intercept = intercept
         self.standardize = standardize
@@ -62,15 +59,17 @@ class GLM(object):
         self.stop_early_error_fraction = stop_early_error_fraction
         self.max_iterations = max_iterations
         self.verbose = verbose
-        self.family = ord(family.split()[0][0])
+        self._family = ord(family.split()[0][0])
 
         # TODO Add type checking
 
         n_gpus, device_count = devicecount(n_gpus)
+        self.n_gpus = n_gpus
 
         if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
             n_threads = 1 if (n_gpus == 0) else n_gpus
+        self.n_threads = n_threads
 
         if not h2ogpumlGLMGPU:
             print(
@@ -469,7 +468,7 @@ class GLM(object):
                 print("double precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_double(
-                c_int(self.family),
+                c_int(self._family),
                 c_int(do_predict),
                 c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
@@ -490,7 +489,7 @@ class GLM(object):
                 print("single precision fit")
                 sys.stdout.flush()
             self.lib.elastic_net_ptr_float(
-                c_int(self.family),
+                c_int(self._family),
                 c_int(do_predict),
                 c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
@@ -757,7 +756,7 @@ class GLM(object):
                 # if ((valid_x is not None and valid_y == None) or (valid_x == None and valid_y is not None)):
                 print(
                     "Must input both valid_x and valid_y or neither.")  # TODO FIXME: Don't need valid_y if just want preds and no error, but don't return error in fit, so leave for now
-                exit(0)
+                exit(1)
                 #
         ##############
         source_dev = 0  # assume GPU=0 is fine as source
@@ -877,12 +876,12 @@ class GLM(object):
     #################### Properties and setters of properties
     @property
     def family(self):
-        return self.family
+        return self._family
 
     @family.setter
     def family(self, value):
         # add check
-        self.family = value
+        self._family = value
 
     @property
     def X(self):
