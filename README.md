@@ -53,7 +53,7 @@ To compile everything and install R and python interfaces as user:
 git clone git@github.com:h2ogpuml/h2ogpuml.git
 cd h2ogpuml
 bash gitshallow_submodules.sh
-make -j allclean
+make veryallclean
 
 
 To compile base library:

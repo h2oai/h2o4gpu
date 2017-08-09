@@ -56,9 +56,9 @@ sync_smalldata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
-all: cpp c py r
-
 default: all
+
+all: cpp c py r
 
 cpp:
 	$(MAKE) -j all -C src/
@@ -73,6 +73,8 @@ py:
 r:
 	$(MAKE) -j all -C src/interface_r
 
+
+veryallclean: clean deps_fetch deps_install all
 
 allclean: clean all
 
