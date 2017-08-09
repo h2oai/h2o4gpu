@@ -1,5 +1,6 @@
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
+#include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <iostream>
 #include "cuda.h"
@@ -393,8 +394,7 @@ namespace h2ogpumlkmeans {
         if (init_from_labels == 0) {
             int masterq = 0;
             CUDACHECK(cudaSetDevice(dList[masterq]));
-            //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
-
+            //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
             random_centroids_new(verbose, v, ord, *d_centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
             int bytecount = d * k * sizeof(T); // all centroids
 
@@ -405,7 +405,7 @@ namespace h2ogpumlkmeans {
                 if (q == masterq) continue;
 
                 CUDACHECK(cudaSetDevice(dList[q]));
-                if (verbose) { std::cout << "Copying centroid data to device: " << dList[q] << std::endl; }
+                std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
 
                 streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
                 cudaStreamCreate(streams[q]);
@@ -416,48 +416,21 @@ namespace h2ogpumlkmeans {
                                     bytecount,
                                     *(streams[q]));
             }
-            // get non-random centroids on 1 gpu, then share with rest.
-            if (init_from_labels == 0) {
-                int masterq = 0;
-                CUDACHECK(cudaSetDevice(dList[masterq]));
-                //random_centroids(ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_gpu, d, k);
-                random_centroids_new(verbose, v, ord, *d_centroids[masterq], &srcdata[0], masterq, n, n / n_gpu, d, k);
-                int bytecount = d * k * sizeof(T); // all centroids
-
-                // copy centroids to rest of gpus asynchronously
-                std::vector < cudaStream_t * > streams;
-                streams.resize(n_gpu);
-                for (int q = 0; q < n_gpu; q++) {
-                    if (q == masterq) continue;
-
-                    CUDACHECK(cudaSetDevice(dList[q]));
-                    std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
-
-                    streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
-                    cudaStreamCreate(streams[q]);
-                    cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
-                                        dList[q],
-                                        thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
-                                        dList[masterq],
-                                        bytecount,
-                                        *(streams[q]));
-                }
-                for (int q = 0; q < n_gpu; q++) {
-                    if (q == masterq) continue;
-                    cudaSetDevice(dList[q]);
-                    cudaStreamSynchronize(*(streams[q]));
-                }
-                for (int q = 0; q < n_gpu; q++) {
-                    if (q == masterq) continue;
-                    cudaSetDevice(dList[q]);
-                    cudaStreamDestroy(*(streams[q]));
+            for (int q = 0; q < n_gpu; q++) {
+                if (q == masterq) continue;
+                cudaSetDevice(dList[q]);
+                cudaStreamSynchronize(*(streams[q]));
+            }
+            for (int q = 0; q < n_gpu; q++) {
+                if (q == masterq) continue;
+                cudaSetDevice(dList[q]);
+                cudaStreamDestroy(*(streams[q]));
 #if(DEBUG)
-                    thrust::host_vector<T> h_centroidq=*d_centroids[q];
-                    for(int ii=0;ii<k*d;ii++){
-                        fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
-                    }
-#endif
+                thrust::host_vector<T> h_centroidq=*d_centroids[q];
+                for(int ii=0;ii<k*d;ii++){
+                    fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
                 }
+#endif
             }
         }
 
@@ -583,13 +556,12 @@ namespace h2ogpumlkmeans {
             kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 
-        // Move the resulting labels into host memory
-//        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(n);
-//        for (int q = 0; q < n_gpu; q++) {
-//            thrust::copy(d_labels[q]->begin(), d_labels[q]->end(), h_labels->begin());
-//        }
+        // Move the resulting labels into host memory from all devices
+        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
+        for (int q = 0; q < n_gpu; q++) {
+            h_labels->insert(h_labels->end(), d_labels[q]->begin(), d_labels[q]->end());
+        }
 
-        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(*d_labels[0]);
         *preds = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {
