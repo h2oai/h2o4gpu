@@ -546,14 +546,14 @@ class GLM(object):
             self.x_vs_alpha_lambdanew = np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas, self.n_alphas, num_all))
             self.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdanew[:, :, 0:n]
             self.error_vs_alpha_lambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
-            self.lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
-            self.alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
+            self._lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
+            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
             self.tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
-            self.info.lambdas = self.lambdas
-            self.info.alphas = self.alphas
+            self.info.lambdas = self._lambdas
+            self.info.alphas = self._alphas
             self.info.tols = self.tols
             #
         if give_full_path == 1 and do_predict == 1:
@@ -571,14 +571,14 @@ class GLM(object):
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + NUMERROR]
-            self.lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
-            self.alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
+            self._lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
+            self._alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
             self.tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
-            self.info.lambdas2 = self.lambdas2
-            self.info.alphas2 = self.alphas2
+            self.info.lambdas2 = self._lambdas2
+            self.info.alphas2 = self._alphas2
             self.info.tols2 = self.tols2
         #
         if give_full_path == 0 and do_predict == 1:  # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
@@ -923,29 +923,29 @@ class GLM(object):
     @property
     def lambdas(self):
         if self.give_full_path == 1:
-            return self.lambdas
+            return self._lambdas
         else:
-            return self.lambdas2
+            return self._lambdas2
 
     @lambdas.setter
     def lambdas(self, value):
         # add check
-        self.lambdas = value
+        self._lambdas = value
 
     #@lambdas2.setter
     #def lambdas2(self, value):
     #    # add check
-    #    self.lambdas2 = value
+    #    self._lambdas2 = value
 
     @property
     def alphas(self):
         if self.give_full_path == 1:
-            return self.alphas
+            return self._alphas
         else:
-            return self.alphas2
+            return self._alphas2
     @alphas.setter
     def alphas(self,value):
-        self.alphas = value
+        self._alphas = value
 
     @property
     def tols(self):
@@ -963,11 +963,11 @@ class GLM(object):
 
     @property
     def lambdas_full(self):
-        return self.lambdas
+        return self._lambdas
 
     @property
     def alphas_full(self):
-        return self.alphas
+        return self._alphas
 
     @property
     def tols_full(self):
@@ -979,11 +979,11 @@ class GLM(object):
 
     @property
     def lambdas_best(self):
-        return self.lambdas2
+        return self._lambdas2
 
     @property
     def alphas_best(self):
-        return self.alphas2
+        return self._alphas2
 
     @property
     def tols_best(self):
