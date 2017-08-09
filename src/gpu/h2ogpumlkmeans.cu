@@ -521,19 +521,20 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
-        thrust::device_vector<T> *d_centroids = new thrust::device_vector<T>(k * m);
+        thrust::device_vector<T> *d_centroids[n_gpu];
         thrust::device_vector<T> *pairwise_distances[n_gpu];
         thrust::device_vector<T> *data_dots[n_gpu];
         thrust::device_vector<T> *centroid_dots[n_gpu];
         thrust::device_vector<T> *distances[n_gpu];
         int *d_changes[n_gpu];
 
-        // Move centroids from host memory to GPU
-        nonrandom_data(verbose, 'r', *d_centroids, &centroids[0], 0, k, k, m);
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
-            std::cout << "Copying data to device: " << dList[q] << std::endl;
+            // Move centroids from host memory to GPU
+            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            d_centroids[q] = new thrust::device_vector<T>(k * m);
+            nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
             d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
             nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
 
@@ -549,7 +550,7 @@ namespace h2ogpumlkmeans {
             kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
 
             kmeans::detail::calculate_distances(verbose, q, n/n_gpu, m, k,
-                *d_data[q], *d_centroids, *data_dots[q],
+                *d_data[q], *d_centroids[q], *data_dots[q],
                 *centroid_dots[q], *pairwise_distances[q]);
 
             d_labels[q] = new thrust::device_vector<int>(n/n_gpu*m);
