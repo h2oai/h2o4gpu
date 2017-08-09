@@ -6,8 +6,8 @@ import random
 class TestKmeans(object):
 
     def test_preds_vs_scikit(self):
-        train_file = "./data/kmeans_homesite_train.csv"
-        test_file = "./data/kmeans_homesite_test.csv"
+        train_file = "./tests/data/kmeans_homesite_train.csv"
+        test_file = "./tests/data/kmeans_homesite_test.csv"
 
         train = pd.read_csv(train_file)
         test = pd.read_csv(test_file)
