@@ -548,13 +548,13 @@ class GLM(object):
             self.error_vs_alpha_lambda = self.x_vs_alpha_lambdanew[:, :, n:n + NUMERROR]
             self._lambdas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR:n + NUMERROR + 1]
             self._alphas = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 1:n + NUMERROR + 2]
-            self.tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
+            self._tols = self.x_vs_alpha_lambdanew[:, :, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
             self.info.lambdas = self._lambdas
             self.info.alphas = self._alphas
-            self.info.tols = self.tols
+            self.info.tols = self._tols
             #
         if give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + NUMALLOTHER) * m_valid)
@@ -573,13 +573,13 @@ class GLM(object):
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + NUMERROR]
             self._lambdas2 = self.x_vs_alphanew[:, n + NUMERROR:n + NUMERROR + 1]
             self._alphas2 = self.x_vs_alphanew[:, n + NUMERROR + 1:n + NUMERROR + 2]
-            self.tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
+            self._tols2 = self.x_vs_alphanew[:, n + NUMERROR + 2:n + NUMERROR + 3]
             #
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
             self.info.lambdas2 = self._lambdas2
             self.info.alphas2 = self._alphas2
-            self.info.tols2 = self.tols2
+            self.info.tols2 = self._tols2
         #
         if give_full_path == 0 and do_predict == 1:  # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
             thecount = int(count_short_value / (n + NUMALLOTHER) * m_valid)
@@ -950,12 +950,12 @@ class GLM(object):
     @property
     def tols(self):
         if self.give_full_path == 1:
-            return self.tols
+            return self._tols
         else:
-            return self.tols2
+            return self._tols2
     @tols.setter
     def tols(self,value):
-        self.tols = value
+        self._tols = value
 
     @property
     def error_full(self):
@@ -971,7 +971,7 @@ class GLM(object):
 
     @property
     def tols_full(self):
-        return self.tols
+        return self._tols
 
     @property
     def error_best(self):
@@ -987,7 +987,7 @@ class GLM(object):
 
     @property
     def tols_best(self):
-        return self.tols2
+        return self._tols2
 
     #################### Free up memory functions
     def free_data(self):
