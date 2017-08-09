@@ -345,7 +345,7 @@ namespace h2ogpumlkmeans {
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             data[q] = new thrust::device_vector<T>(n / n_gpu * d);
-            labels[q] = new thrust::device_vector<int>(n / n_gpu);
+            labels[q] = new thrust::device_vector<int>(n / n_gpu * d); // TODO should this size really be multiplied by d??
             d_centroids[q] = new thrust::device_vector<T>(k * d);
             distances[q] = new thrust::device_vector<T>(n);
         }
