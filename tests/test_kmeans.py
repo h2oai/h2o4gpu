@@ -1,11 +1,13 @@
 import h2ogpuml as h2ogpuml
 import pandas as pd
+import numpy as np
+import random
 
 class TestKmeans(object):
 
     def test_preds_vs_scikit(self):
-        train_file = "./tests/data/kmeans_homesite_train.csv"
-        test_file = "./tests/data/kmeans_homesite_test.csv"
+        train_file = "./data/kmeans_homesite_train.csv"
+        test_file = "./data/kmeans_homesite_test.csv"
 
         train = pd.read_csv(train_file)
         test = pd.read_csv(test_file)
@@ -46,13 +48,11 @@ class TestKmeans(object):
         trainenc = dataset.iloc[:train.shape[0], :].reset_index(drop=True)
 
         trainencflt = trainenc.values.astype(np.float32)
-        k = 1000
+        k = 10
         rows = np.shape(trainencflt)[0]
         print(rows)
         np.random.seed(1234)
         # labels = np.random.randint(rows, size=rows) % k
-        import random
-        import numpy as np
 
         labels = np.asarray([])
         num = int(rows / k)
@@ -76,4 +76,4 @@ class TestKmeans(object):
             if tl[0] != tl[1]:
                 diffs = diffs + 1
 
-        assert diffs <= 0.1
+        assert diffs/trainencflt.shape[0] <= 0.1
