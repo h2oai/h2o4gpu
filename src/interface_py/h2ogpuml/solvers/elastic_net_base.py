@@ -78,8 +78,6 @@ class GLM(object):
         self.verbose = verbose
         self._family = ord(family.split()[0][0])
 
-        # TODO Add type checking
-
         n_gpus, device_count = devicecount(n_gpus)
         self.n_gpus = n_gpus
 
