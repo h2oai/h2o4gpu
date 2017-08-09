@@ -6,8 +6,7 @@ All H2OGPUML exceptions derive from :class:`H2OGPUMLError`.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-__all__ = ("H2OGPUMLStartupError", "H2OGPUMLConnectionError", "H2OGPUMLServerError", "H2OGPUMLResponseError",
-           "H2OGPUMLValueError", "H2OGPUMLTypeError", "H2OGPUMLJobCancelled")
+__all__ = ("H2OGPUMLValueError", "H2OGPUMLTypeError")
 
 
 class H2OGPUMLError(Exception):
