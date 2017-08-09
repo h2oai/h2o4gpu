@@ -34,8 +34,10 @@ class GLM(object):
     class solution:
         pass
 
-    def __init__(self, shared_a, n_threads, n_gpus, ordin, intercept, standardize, lambda_min_ratio, n_lambdas,
-                 n_folds, n_alphas, stop_early, stop_early_error_fraction, max_iterations, verbose, family):
+    def __init__(self, shared_a=0, n_threads=None, n_gpus=-1, order='r', intercept=1, standardize=0,
+                 lambda_min_ratio=1E-7,
+                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
+                 verbose=0, family="elasticnet"):
 
         self.n = 0
         self.m_train = 0
@@ -46,7 +48,7 @@ class GLM(object):
         self.source_me = 0  # assume thread=0 is source of data for upload_data
         self.shared_a = shared_a
         self.n_threads = n_threads
-        self.ord = ord(ordin)
+        self.ord = ord(order)
         self.intercept = intercept
         self.standardize = standardize
         self.lambda_min_ratio = lambda_min_ratio
