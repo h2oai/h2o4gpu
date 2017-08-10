@@ -899,7 +899,7 @@ class GLM(object):
     def shared_a(self):
         return self._shared_a
 
-    @family.setter
+    @shared_a.setter
     def shared_a(self, value):
         # add check
         self.__shared_a = value
@@ -908,7 +908,7 @@ class GLM(object):
     def standardize(self):
         return self._standardize
 
-    @family.setter
+    @standardize.setter
     def standardize(self, value):
         # add check
         self._standardize = value
