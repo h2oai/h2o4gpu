@@ -309,9 +309,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     if family != "logistic":
         print(testvalidY)
     else:
-        inverse_logit = lambda t: 1/(1 + math.exp(-t))
-        func = np.vectorize(inverse_logit)
-        print(func(testvalidY))
+        try:
+            inverse_logit = lambda t: 1/(1 + math.exp(-t))
+            testvalidY = np.round(testvalidY,1) #Round to avoid math OverFlow error
+            func = np.vectorize(inverse_logit)
+            print(func(testvalidY))
+        except OverflowError:
+            print(testvalidY)
 
     print(testvalidY)
 
