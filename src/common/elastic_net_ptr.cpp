@@ -70,6 +70,7 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #endif
 
 #define VERBOSEENET 0
+#define VERBOSEANIM 0
 
 #if(VERBOSEENET)
 #define Printmescore(thefile)  fprintf(thefile,                         \
@@ -91,11 +92,20 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define Printmescore_predictnovalid(thefile)
 #endif
 
+#if(VERBOSEANIM)
 #define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainError, ivalidError, validError); fflush(thefile);
 #define Printmescoresimple_predict(thefile)   fprintf(thefile,"%21.15g %d %d %21.15g\n", timer<double>(), a, i, validError); fflush(thefile);
 #define Printmescoresimple_predictnovalid(thefile)   fprintf(thefile,"%21.15g %d %d\n", timer<double>(), a, i); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
+#else
+#define Printmescoresimple(thefile)
+#define Printmescoresimple_predict(thefile)
+#define Printmescoresimple_predictnovalid(thefile)
+#define NUMBETA 10 // number of beta to report
+#define Printmescoresimple2(thefile)
+
+#endif
 
 #if(VERBOSEENET)
 #define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,besterror1,besterror2,besterror3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, besterror1,besterror2,besterror3 ); fflush(thefile);
@@ -367,15 +377,15 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		fflush(stderr);
 	}
 
-	if (1 || VERBOSEENET) {
+	if (verbose || VERBOSEANIM || VERBOSEENET) {
 
 		FILE *myfile;
 		for (size_t filei = 0; filei <= 2; filei++) {
-			if (filei == 0)
+			if (filei == 0 && verbose>2)
 				myfile = stderr;
-			else if (filei == 1)
+			else if (filei == 1 && verbose>2)
 				myfile = stdout;
-			else {
+			else if(verbose>2) {
 				myfile = fopen("stats.txt", "wt");
 				if (myfile == NULL)
 					continue; // skip if can't write, don't complain
@@ -471,19 +481,23 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	double t = timer<double>();
 	double t1me0;
 
+	FILE *filerror = NULL;
+	FILE *filvarimp = NULL;
+	if(VERBOSEANIM){
 	// critical files for all threads
 	char filename0[100];
 	sprintf(filename0, "error.txt");
-	FILE *filerror = fopen(filename0, "wt");
+	filerror = fopen(filename0, "wt");
 	if (filerror == NULL) {
 		cerr << "Cannot open filename0=" << filename0 << endl;
 		exit(0);
 	}
 	sprintf(filename0, "varimp.txt");
-	FILE *filvarimp = fopen(filename0, "wt");
+	filvarimp = fopen(filename0, "wt");
 	if (filvarimp == NULL) {
 		cerr << "Cannot open filename0=" << filename0 << endl;
 		exit(0);
+	}
 	}
 
 	////////////////////////////////
@@ -515,16 +529,19 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		// choose GPU device ID for each thread
 		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
 
+		FILE *fil = NULL;
+		if(VERBOSEANIM){
 		// Setup file output
 		char filename[100];
 		sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
 				TEXTARCH, sharedA, nThreads, nGPUs);
-		FILE *fil = fopen(filename, "wt");
+		fil = fopen(filename, "wt");
 		if (fil == NULL) {
 			cerr << "Cannot open filename=" << filename << endl;
 			exit(0);
 		} else
 			fflush(fil);
+		}
 
 		////////////
 		//
@@ -1013,8 +1030,10 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						{
 							if (VERBOSEENET)
 								Printmescore(stdout);
-							Printmescoresimple(filerror);
-							Printmescoresimple2(filvarimp);
+							if (VERBOSEANIM){
+								Printmescoresimple(filerror);
+								Printmescoresimple2(filvarimp);
+							}
 						}
 
 						T localerror[NUMError];
@@ -1113,8 +1132,10 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 									{
 										if (VERBOSEENET)
 											Printmescore(stdout);
-										Printmescoresimple(filerror);
-										Printmescoresimple2(filvarimp);
+										if (VERBOSEANIM){
+											Printmescoresimple(filerror);
+											Printmescoresimple2(filvarimp);
+										}
 									}
 								}
 							}
@@ -1252,6 +1273,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		free(validY);
 	if (trainW)
 		free(trainW);
+	if (filerror != NULL) fclose(filerror);
+	if (filvarimp != NULL) fclose(filvarimp);
 
 	double tf = timer<double>();
 	if (VERBOSEENET) {
@@ -1283,13 +1306,16 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 	signal(SIGTERM, my_function);
 	int nlambda = nLambdas;
 
+	FILE *filerror = NULL;
+	if(VERBOSEANIM){
 	// critical files for all threads
 	char filename0[100];
 	sprintf(filename0, "prederror.txt");
-	FILE *filerror = fopen(filename0, "wt");
+	filerror = fopen(filename0, "wt");
 	if (filerror == NULL) {
 		cerr << "Cannot open filename0=" << filename0 << endl;
 		exit(0);
+	}
 	}
 
 	if (VERBOSEENET) {
@@ -1388,16 +1414,19 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		// choose GPU device ID for each thread
 		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
 
+		FILE *fil=NULL;
+		if(VERBOSEANIM){
 		// Setup file output
 		char filename[100];
 		sprintf(filename, "predme%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
 				TEXTARCH, sharedA, nThreads, nGPUs);
-		FILE *fil = fopen(filename, "wt");
+		fil = fopen(filename, "wt");
 		if (fil == NULL) {
 			cerr << "Cannot open filename=" << filename << endl;
 			exit(0);
 		} else
 			fflush(fil);
+		}
 
 		////////////
 		//
@@ -1521,7 +1550,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 					{
 						if (VERBOSEENET)
 							Printmescore_predict(stdout);
-						Printmescoresimple_predict(filerror);
+						if (VERBOSEANIM)
+							Printmescoresimple_predict(filerror);
 					}
 
 				} else {
@@ -1532,7 +1562,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 					{
 						if (VERBOSEENET)
 							Printmescore_predictnovalid(stdout);
-						Printmescoresimple_predictnovalid(filerror);
+						if (VERBOSEANIM)
+							Printmescoresimple_predictnovalid(filerror);
 					}
 
 				}
@@ -1546,6 +1577,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		if (fil != NULL)
 			fclose(fil);
 	} // end parallel region
+
+	if (filerror != NULL) fclose(filerror);
 
 	double tf = timer<double>();
 	if (VERBOSEENET) {

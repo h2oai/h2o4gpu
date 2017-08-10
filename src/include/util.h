@@ -465,11 +465,13 @@
   } while (0)
 
 #define DEBUG_FPRINTF(thefile, message, ...)     \
+	if(thefile!=NULL){ \
   do { \
     fprintf(thefile, message, __VA_ARGS__);      \
     fprintf(thefile,"\n");			 \
     fflush(thefile); \
-  } while (0)
+  } while (0) \
+	}
 
 #define DEBUG_PRINT(message) \
   do { \
