@@ -109,9 +109,9 @@ dotestbig:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
 
-test: all sync_smalldata dotest
+test: all sync_data dotest
 
-testbig: all sync_smalldata dotestbig
+testbig: all sync_data dotestbig
 
 testquick: dotest
 
