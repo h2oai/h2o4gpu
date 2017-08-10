@@ -67,11 +67,11 @@ for x in range(0, num + 1):
 print(labels.shape)
 
 n_gpus = 1
-model = h2ogpuml.KMeans(n_gpus=n_gpus, k=k, threshold=1e-7, max_iterations=1000)
-centroids, timefit0, timefit1 = model.fit(trainencflt, labels)
+model = h2ogpuml.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7, max_iter=1000)
+centroids = model.fit(trainencflt, labels)
 
 train_labels = model.predict(trainencflt)
-sklearn_labels = model.sklearnpredict(trainencflt)
+sklearn_labels = model.sklearn_predict(trainencflt)
 
 diffs = 0
 for tl in zip(train_labels, sklearn_labels):
