@@ -210,18 +210,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # choose solver
     Solver = h2ogpuml.GLM
 
-    sharedA = 0
     nThreads = None  # let internal method figure this out
     intercept = 1
-    standardize = 0
     lambda_min_ratio = 1e-9
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
-
-    if standardize:
-        print("implement standardization transformer")
-        exit()
 
     # Setup Train/validation Set Split
     morig = X.shape[0]
@@ -256,7 +250,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Constructor
     print("Setting up solver") ; sys.stdout.flush()
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=verbose, family=family)
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                  n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family)
 
     print("trainX")
     print(trainX)
