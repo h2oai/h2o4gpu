@@ -56,6 +56,11 @@ sync_smalldata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
+sync_data:
+	@echo "---- Synchronizing data dir in test/ ----"
+	mkdir -p $(DATA_DIR)
+	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
+
 default: all
 
 all: cpp c py r
