@@ -10,12 +10,10 @@ from h2ogpuml.util.typechecks import assert_is_type
 """
 H2O GLM Solver
 
-:param shared_a 
 :param n_threads
 :param n_gpus
-:param ord
+:param order
 :param intercept
-:param standardize
 :param lambda_min_ratio
 :param n_lambdas
 :param n_folds
@@ -27,7 +25,6 @@ H2O GLM Solver
 :param family
 """
 
-# TODO shared_a and standardize do not work currently. Always need to set to 0.
 class GLM(object):
     class info:
         pass
@@ -35,18 +32,15 @@ class GLM(object):
     class solution:
         pass
 
-    def __init__(self, shared_a=0, n_threads=None, n_gpus=-1, order='r', intercept=1, standardize=0,
-                 lambda_min_ratio=1E-7,
+    def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=1,lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
                  verbose=0, family="elasticnet"):
 
         # Type Checking
-        assert_is_type(shared_a, int)
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
         assert_is_type(order, str)
         assert_is_type(intercept, int)
-        assert_is_type(standardize, int)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
@@ -61,10 +55,8 @@ class GLM(object):
         self.m_valid = 0
         self.source_dev = 0  # assume Dev=0 is source of data for upload_data
         self.source_me = 0  # assume thread=0 is source of data for upload_data
-        self.shared_a = shared_a
         self.ord = ord(order)
         self.intercept = intercept
-        self.standardize = standardize
         self.lambda_min_ratio = lambda_min_ratio
         self.n_lambdas = n_lambdas
         self.n_folds = n_folds
@@ -77,6 +69,11 @@ class GLM(object):
         self.max_iterations = max_iterations
         self.verbose = verbose
         self._family = ord(family.split()[0][0])
+        
+        #Experimental features
+        # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
+        self._shared_a = 0
+        self._standardize = 0
 
         n_gpus, device_count = devicecount(n_gpus)
         self.n_gpus = n_gpus
@@ -323,7 +320,7 @@ class GLM(object):
                     E = cptr(weight, dtype=c_double)
             else:
                 E = null_ptr
-            status = self.lib.make_ptr_double(c_int(self.shared_a), c_int(self.source_me), c_int(source_dev),
+            status = self.lib.make_ptr_double(c_int(self._shared_a), c_int(self.source_me), c_int(source_dev),
                                               c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.ord),
                                               A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         elif (self.double_precision == 0):
@@ -383,7 +380,7 @@ class GLM(object):
                     E = cptr(weight, dtype=c_float)
             else:
                 E = null_ptr
-            status = self.lib.make_ptr_float(c_int(self.shared_a), c_int(self.source_me), c_int(source_dev),
+            status = self.lib.make_ptr_float(c_int(self._shared_a), c_int(self.source_me), c_int(source_dev),
                                              c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.ord),
                                              A, B, C, D, E, pointer(a), pointer(b), pointer(c), pointer(d), pointer(e))
         else:
@@ -485,9 +482,9 @@ class GLM(object):
             self.lib.elastic_net_ptr_double(
                 c_int(self._family),
                 c_int(do_predict),
-                c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
+                c_int(source_dev), c_int(1), c_int(self._shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
-                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self.standardize),
+                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self._standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
@@ -506,9 +503,9 @@ class GLM(object):
             self.lib.elastic_net_ptr_float(
                 c_int(self._family),
                 c_int(do_predict),
-                c_int(source_dev), c_int(1), c_int(self.shared_a), c_int(self.n_threads), c_int(self.n_gpus),
+                c_int(source_dev), c_int(1), c_int(self._shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
-                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self.standardize),
+                c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self._standardize),
                 c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
@@ -897,6 +894,24 @@ class GLM(object):
     def family(self, value):
         # add check
         self._family = value
+        
+    @property
+    def shared_a(self):
+        return self._shared_a
+
+    @family.setter
+    def shared_a(self, value):
+        # add check
+        self.__shared_a = value
+
+    @property
+    def standardize(self):
+        return self._standardize
+
+    @family.setter
+    def standardize(self, value):
+        # add check
+        self._standardize = value
 
     @property
     def X(self):
