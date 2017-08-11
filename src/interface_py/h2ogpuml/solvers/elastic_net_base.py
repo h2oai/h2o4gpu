@@ -103,7 +103,7 @@ class GLM(object):
         else:
             raise RuntimeError( "Couldn't instantiate GLM Solver")
 
-
+    # TODO Add typechecking
     def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
         if self.uploaded_data == 1:
             self.free_data()
@@ -403,6 +403,7 @@ class GLM(object):
         self.e = e
         return a, b, c, d, e
 
+    # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
     def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0,
                 free_input_data=0, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0):
@@ -620,6 +621,7 @@ class GLM(object):
             else:
                 return self.valid_pred_vs_alphapure
 
+    # TODO Add typechecking
     def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0,
             free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
@@ -789,6 +791,7 @@ class GLM(object):
             else:
                 return self.valid_pred_vs_alphapure
 
+    # TODO Add typechecking
     def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
@@ -804,6 +807,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0, verbose=0):
         do_predict = 1
         # print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
@@ -821,6 +825,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0,
                     free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                     verbose=None):
@@ -857,6 +862,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0,
                         free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                         verbose=None):
