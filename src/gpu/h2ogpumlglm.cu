@@ -904,12 +904,12 @@ int H2OGPUML<T, M, P>::Predict() {
 	size_t n = _A.Cols();
 
 	// copy over X (assume called SetInitX) directly from CPU to GPU during fit
+	fprintf(stderr,"cml::vector: %lld wDev=%d\n",n,_wDev); fflush(stderr);
 	cml::vector<T> xtemp = cml::vector_calloc<T>(n);
 	CUDA_CHECK_ERR();
 
 	cml::vector_memcpy(&xtemp, _x); // _x->xtemp
 	CUDA_CHECK_ERR();
-
 	// compute valid from validPreds = Avalid.xsolution
 	_A.Mulvalid('n', static_cast<T>(1.), xtemp.data, static_cast<T>(0.),
 			_validPredsp);
@@ -927,7 +927,6 @@ int H2OGPUML<T, M, P>::Predict() {
 
 	// Free memory.
 	cml::vector_free(&xtemp);
-
 	CUDA_CHECK_ERR();
 
 	return 0;
@@ -953,6 +952,7 @@ template<typename T, typename M, typename P>
 H2OGPUML<T, M, P>::~H2OGPUML() {
 	CUDACHECK(cudaSetDevice(_wDev));
 
+	if(1){
 	if (_z)
 		cudaFree(_z);
 	if (_zt)
@@ -963,9 +963,9 @@ H2OGPUML<T, M, P>::~H2OGPUML() {
 		cudaFree(_trainPredsp);
 	if (_validPredsp)
 		cudaFree(_validPredsp);
-	_z = _zt = _xp = _trainPredsp = _validPredsp = 0;
 	CUDA_CHECK_ERR();
-
+	}
+	_z = _zt = _xp = _trainPredsp = _validPredsp = 0;
 #ifdef USE_NCCL2
 	for(int i=0; i<_nDev; ++i)
 	ncclCommDestroy(_comms[i]);

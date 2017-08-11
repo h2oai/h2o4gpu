@@ -254,6 +254,9 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev, int dataty
 #define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nAlphas)
 #define MAPXBEST(a,which) (which + a*(n+NUMError+NUMOTHER))
 
+#define MAPPREDALL(i,a,which, m) (which + a*m + i*m*nAlphas)
+#define MAPPREDBEST(a,which, m) (which + a*m)
+
 template<typename T>
 double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
 		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
@@ -390,37 +393,40 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 				if (myfile == NULL)
 					continue; // skip if can't write, don't complain
 			}
+			else myfile = NULL;
 		}
-		fprintf(myfile, "min");
-		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", min[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "max");
-		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", max[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "mean");
-		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", mean[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "var");
-		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", var[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "sd");
-		for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", sd[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "skew");
-		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", skew[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "kurt");
-		for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
-			fprintf(myfile, " %21.15g", kurt[ii]);
-		fprintf(myfile, "\n");
-		fprintf(myfile, "lambda_max0=%g\n", lambda_max0);
-		fflush(myfile);
+		if(myfile!=NULL){
+			fprintf(myfile, "min");
+			for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", min[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "max");
+			for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", max[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "mean");
+			for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", mean[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "var");
+			for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", var[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "sd");
+			for (int ii = 0; ii <= (mValid > 0 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", sd[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "skew");
+			for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", skew[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "kurt");
+			for (int ii = 0; ii <= (mValid > 1 ? 1 : 0); ii++)
+				fprintf(myfile, " %21.15g", kurt[ii]);
+			fprintf(myfile, "\n");
+			fprintf(myfile, "lambda_max0=%g\n", lambda_max0);
+			fflush(myfile);
+		}
 	}
 
 	// temporarily get trainX, etc. from h2ogpuml (which may be on gpu)
@@ -1341,7 +1347,6 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		exit(0);
 	}
 	}
-
 	if (VERBOSEENET) {
 		cout << "Hardware: " << HARDWARE << endl;
 	}
@@ -1381,7 +1386,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 	}
 	*validPredsvsalpha = (T*) calloc(*countshort / (n + NUMOTHER) * mValid,
 			sizeof(T));
-	//    printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
+//	printf("inside Pred: countfull=%zu countshort=%zu\n",*countfull/(n+NUMOTHER)*mValid,*countshort/(n+NUMOTHER)*mValid); fflush(stdout);
 
 	if (VERBOSEENET) {
 		fprintf(stderr, "After malloc validPreds\n");
@@ -1480,11 +1485,13 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		DEBUG_FPRINTF(fil, "BEGIN SOLVE: %d\n", 0);
 
 		int a, i;
+
 		//////////////////////////////
 		// LOOP OVER ALPHAS
 		///////////////////////////////
 #pragma omp for schedule(dynamic,1) collapse(1)
 		for (a = 0; a < nAlphas; ++a) { //alpha search
+
 
 			int nlambdalocal;
 			if (givefullpath) { // then need to loop over same nlambda
@@ -1507,6 +1514,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 				// set X from X0
 				h2ogpuml_data.SetInitX(X0);
+
 
 				// compute predictions
 				h2ogpuml_data.Predict();
@@ -1533,16 +1541,18 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 				// save preds (exclusive set, unlike X)
 				if (givefullpath) { // save all preds
-					memcpy(&((*validPredsvsalphalambda)[MAPXALL(i, a, 0)]),
+					memcpy(&((*validPredsvsalphalambda)[MAPPREDALL(i, a, 0, mValid)]),
 							&validPreds[0], mValid * sizeof(T));
 				} else { // save only best pred per lambda
-					memcpy(&((*validPredsvsalpha)[MAPXBEST(a, 0)]),
+					memcpy(&((*validPredsvsalpha)[MAPPREDBEST(a, 0, mValid)]),
 							&validPreds[0], mValid * sizeof(T));
 				}
 
 				// get validY so can compute Error
-				T *validY = NULL;
-				validY = (T *) malloc(sizeof(T) * mValid);
+				//T *validY = NULL;
+				//validY = (T *) malloc(sizeof(T) * mValid);
+				fprintf(stderr,"mValid=%zu\n",mValid); fflush(stderr);
+				T *validY = new T[mValid];
 				int validYerror = Asource_.GetValidY(datatype, mValid, &validY);
 
 				// Compute Error for predictions
@@ -1594,6 +1604,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 				if (X0)
 					delete[] X0;
+				if (validY)
+					delete[] validY;
 			} // over lambda(s)
 
 		} // over alpha
