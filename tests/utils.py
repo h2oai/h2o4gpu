@@ -119,7 +119,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     sourceme = 0
     sourceDev = 0
-    intercept = 1
+    intercept = True
     nThreads = None
     lambda_min_ratio = 1e-9
     give_full_path = 1
@@ -214,7 +214,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     Solver = h2ogpuml.GLM
 
     nThreads = None  # let internal method figure this out
-    intercept = 1
+    intercept = True
     lambda_min_ratio = 1e-9
     nFolds = nfolds
     nLambdas = nlambda
@@ -246,7 +246,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     else:
         print("mTrain=%d" % mTrain)
 
-    if intercept == 1:
+    if intercept is True:
         trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
         n = trainX.shape[1]
         print("New n=%d" % n)
