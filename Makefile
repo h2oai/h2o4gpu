@@ -56,6 +56,11 @@ sync_smalldata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
+sync_data:
+	@echo "---- Synchronizing data dir in test/ ----"
+	mkdir -p $(DATA_DIR)
+	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
+
 default: all
 
 all: cpp c py r
@@ -104,9 +109,9 @@ dotestbig:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
 
-test: all sync_smalldata dotest
+test: all sync_data dotest
 
-testbig: all sync_smalldata dotestbig
+testbig: all sync_data dotestbig
 
 testquick: dotest
 

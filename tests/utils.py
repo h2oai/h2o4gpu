@@ -117,12 +117,10 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     fortran = 1
     print("fortran=%d" % (fortran))
 
-    sharedA = 0
     sourceme = 0
     sourceDev = 0
     intercept = 1
     nThreads = None
-    standardize = 0
     lambda_min_ratio = 1e-9
     give_full_path = 1
     precision = 0
@@ -141,7 +139,8 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print("Setting up Solver") ; sys.stdout.flush()
 
     Solver = h2ogpuml.GLM
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=5)
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
+                  n_folds=nFolds, n_alphas=nAlphas, verbose=5)
 
     print("Solving") ; sys.stdout.flush()
     if use_gpu == 1:
@@ -210,18 +209,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # choose solver
     Solver = h2ogpuml.GLM
 
-    sharedA = 0
     nThreads = None  # let internal method figure this out
     intercept = 1
-    standardize = 0
     lambda_min_ratio = 1e-9
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
-
-    if standardize:
-        print("implement standardization transformer")
-        exit()
 
     # Setup Train/validation Set Split
     morig = X.shape[0]
@@ -256,7 +249,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Constructor
     print("Setting up solver") ; sys.stdout.flush()
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=verbose, family=family)
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                  n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family)
 
     print("trainX")
     print(trainX)
@@ -309,9 +303,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     if family != "logistic":
         print(testvalidY)
     else:
-        inverse_logit = lambda t: 1/(1 + math.exp(-t))
-        func = np.vectorize(inverse_logit)
-        print(func(testvalidY))
+        try:
+            inverse_logit = lambda t: 1/(1 + math.exp(-t))
+            testvalidY = np.round(testvalidY,1) #Round to avoid math OverFlow error
+            func = np.vectorize(inverse_logit)
+            print(func(testvalidY))
+        except OverflowError:
+            print(testvalidY)
 
     print(testvalidY)
 
