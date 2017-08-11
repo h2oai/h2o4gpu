@@ -117,12 +117,10 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     fortran = 1
     print("fortran=%d" % (fortran))
 
-    sharedA = 0
     sourceme = 0
     sourceDev = 0
     intercept = 1
     nThreads = None
-    standardize = 0
     lambda_min_ratio = 1e-9
     give_full_path = 1
     precision = 0
@@ -141,7 +139,8 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print("Setting up Solver") ; sys.stdout.flush()
 
     Solver = h2ogpuml.GLM
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=5)
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
+                  n_folds=nFolds, n_alphs=nAlphas, verbose=5)
 
     print("Solving") ; sys.stdout.flush()
     if use_gpu == 1:
