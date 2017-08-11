@@ -959,6 +959,14 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						// Error: TRAIN
 						trainError = h2ogpuml::getError(weights, mTrain,
 								&trainPreds[0], trainY, family);
+
+						if(verbose){
+							if(family == 'l'){
+								std::cout << "Training Logloss = " << trainError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+							} else {
+								std::cout << "Training RMSE = " << trainError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+							}
+						}
 						if (standardize) {
 							trainError *= sdTrainY;
 							for (size_t i = 0; i < mTrain; ++i) {
@@ -974,6 +982,13 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							const T offset = 1.0;
 							ivalidError = h2ogpuml::getError(offset, weights,
 									mTrain, &trainPreds[0], trainY, family);
+							if(verbose){
+								if(family == 'l'){
+									std::cout << "Average CV Logloss = " << ivalidError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+								} else {
+									std::cout << "Average CV RMSE = " << ivalidError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+								}
+							}
 						} else {
 							ivalidError = -1.0;
 						}
@@ -1009,6 +1024,15 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							// Error: VALIDs
 							validError = h2ogpuml::getError(weightsvalid, mValid,
 									&validPreds[0], validY, family);
+
+							if(verbose){
+								if(family == 'l'){
+									std::cout << "Validation Logloss = " << validError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+								} else {
+									std::cout << "Validation RMSE = " << validError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
+								}
+							}
+
 							if (standardize) {
 								validError *= sdTrainY;
 								for (size_t i = 0; i < mValid; ++i) { //row
