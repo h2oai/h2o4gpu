@@ -323,13 +323,13 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             print("Using trainX for validX")
             newvalidY = enet.predict(trainX)  # for testing
             if get_preds:
-                print("Saving preds (Need to tranpose output")
+                print("Saving preds (Need to tranpose output)")
                 np.savetxt("preds_train.csv", newvalidY, delimiter=",")
         else:
             print("Using validX for validX")
             newvalidY = enet.predict(validX)
             if get_preds:
-                print("Saving preds (Need to transpose output")
+                print("Saving preds (Need to transpose output)")
                 np.savetxt("preds_valid.csv", newvalidY, delimiter=",")
         print("newvalidY")
         print(newvalidY)
