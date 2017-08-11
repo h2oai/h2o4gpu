@@ -140,7 +140,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     Solver = h2ogpuml.GLM
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
-                  n_folds=nFolds, n_alphs=nAlphas, verbose=5)
+                  n_folds=nFolds, n_alphas=nAlphas, verbose=5)
 
     print("Solving") ; sys.stdout.flush()
     if use_gpu == 1:
