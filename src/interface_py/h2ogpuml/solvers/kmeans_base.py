@@ -122,20 +122,10 @@ class KMeans(object):
             self.sklearn_model.fit(self.Xnp, self.ynp)
 
     def predict(self, X):
-        assert self._centroids is not None, \
-            "Centroids are None. Run fit() first."
+        cols, rows = self._validate_centroids(X)
 
         Xnp = self._to_np(X)
         self._check_data_content("X", Xnp)
-
-        rows = np.shape(Xnp)[0]
-        cols = np.shape(Xnp)[1]
-
-        centroids_dim = np.shape(self._centroids)[1]
-        assert cols == centroids_dim, \
-            "The dimension of X [%d] and centroids [%d] is not equal." % \
-            (cols, centroids_dim)
-
         c_data, _ = self._to_cdata(Xnp)
         c_init_from_labels = 0
         c_init_labels = 0
@@ -182,8 +172,34 @@ class KMeans(object):
         return self.sklearn_model.predict(X)
 
     def transform(self, X):
-        self._check_data_content("X", X)
-        pass
+        cols, rows = self._validate_centroids(X)
+
+        Xnp = self._to_np(X)
+        c_data, c_data_type = self._to_cdata(Xnp)
+        c_centroids, _ = self._to_cdata(self._centroids)
+        c_res = c_void_p(0)
+
+        lib = self._load_lib()
+
+        data_ord = ord('c' if np.isfortran(Xnp) else 'r')
+
+        if self.double_precision == 0:
+            lib.kmeans_transform_float(self.verbose,
+                                       self._gpu_id, self.n_gpus,
+                                       rows, cols, c_int(data_ord),
+                                       c_data, c_centroids,
+                                       pointer(c_res))
+        else:
+            lib.kmeans_transform_double(self.verbose,
+                                        self._gpu_id, self.n_gpus,
+                                        rows, cols, c_int(data_ord),
+                                        c_data, c_centroids,
+                                        pointer(c_res))
+
+        transformed = np.fromiter(cast(c_res, POINTER(c_data_type)),
+                                  dtype=c_data_type, count=rows * cols)
+        transformed = np.reshape(transformed, rows)
+        return transformed
 
     def sklearn_transform(self, X):
         """
@@ -366,6 +382,17 @@ class KMeans(object):
         if self.do_checks == 1:
             assert np.isfinite(data).all(), "%s contains Inf" % name
             assert not np.isnan(data).any(), "%s contains NA" % name
+
+    def _validate_centroids(self, X):
+        assert self._centroids is not None, \
+            "Centroids are None. Run fit() first."
+        rows = np.shape(X)[0]
+        cols = np.shape(X)[1]
+        centroids_dim = np.shape(self._centroids)[1]
+        assert cols == centroids_dim, \
+            "The dimension of X [%d] and centroids [%d] is not equal." % \
+            (cols, centroids_dim)
+        return cols, rows
 
     @staticmethod
     def _to_np(data):
