@@ -209,7 +209,7 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False):
     # choose solver
     Solver = h2ogpuml.GLM
 
@@ -322,9 +322,15 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         if validFraction == 0.0:
             print("Using trainX for validX")
             newvalidY = enet.predict(trainX)  # for testing
+            if get_preds:
+                print("Saving preds (Need to tranpose output")
+                np.savetxt("preds_train.csv", newvalidY, delimiter=",")
         else:
             print("Using validX for validX")
             newvalidY = enet.predict(validX)
+            if get_preds:
+                print("Saving preds (Need to transpose output")
+                np.savetxt("preds_valid.csv", newvalidY, delimiter=",")
         print("newvalidY")
         print(newvalidY)
 
