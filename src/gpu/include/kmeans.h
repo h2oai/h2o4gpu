@@ -80,7 +80,7 @@ namespace kmeans {
       thrust::device_vector<int> *counts[MAX_NGPUS];
 
 
-#if(DEBUG)
+#if(DEBUGKMEANS)
       // debug
       thrust::host_vector<T> *h_data_dots[MAX_NGPUS];
       thrust::host_vector<T> *h_centroid_dots[MAX_NGPUS];
@@ -134,7 +134,7 @@ namespace kmeans {
 			//throw std::runtime_error(ss.str());
 		}
 
-#if(DEBUG)
+#if(DEBUGKMEANS)
         // debug
         h_data_dots[q] = new thrust::host_vector <T>(n/n_gpu);
         h_centroid_dots[q] = new thrust::host_vector<T>(k*d);
@@ -192,14 +192,14 @@ namespace kmeans {
         }
         for (int q = 0; q < n_gpu; q++) {
         	safe_cuda(cudaSetDevice(dList[q]));
-#if(DEBUG)
+#if(DEBUGKMEANS)
           fprintf(stderr,"q=%d\n",q); fflush(stderr);
 #endif
           detail::calculate_distances(verbose, q, n/n_gpu, d, k,
               *data[q], *centroids[q], *data_dots[q],
               *centroid_dots[q], *pairwise_distances[q]);
 
-#if(DEBUG)
+#if(DEBUGKMEANS)
           *h_pairwise_distances[0] = *pairwise_distances[0];
           size_t countpos=0;
           size_t countneg=0;

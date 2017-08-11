@@ -4,7 +4,7 @@
 
 #define VERBOSE 0
 #define CHECK 1
-#define DEBUG 0
+#define DEBUGKMEANS 0
 
 // TODO(pseudotensor): Avoid throw for python exception handling.  Need to avoid all exit's and return exit code all the way back.
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }

@@ -47,7 +47,7 @@ void nonrandom_data(int verbose, const char ord, std::vector <T> &array, const T
             array[i] = srcdata[indexi*d + indexj];
 #endif
         }
-#if(DEBUG)
+#if(DEBUGKMEANS)
         for(int i = 0; i < npercpu; i++) {
           for(int j = 0; j < d; j++) {
             fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,array[i*d+j]); fflush(stderr);
@@ -80,7 +80,7 @@ nonrandom_data_new(int verbose, std::vector<int> v, const char ord, std::vector 
                 array[i * d + j] = srcdata[v[q * npercpu + i] + j * n]; // shift by which cpu
             }
         }
-#if(DEBUG)
+#if(DEBUGKMEANS)
         for(int i = 0; i < npercpu; i++) {
           for(int j = 0; j < d; j++) {
             fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,array[i*d+j]); fflush(stderr);
@@ -158,7 +158,7 @@ void random_centroids(int verbose, const char ord, std::vector <T> &array, const
             int reali = dis(gen); // + q*npercpu; // row sampled (called indexj above)
             for (int j = 0; j < d; j++) { // cols
                 array[i * d + j] = srcdata[reali + j * n];
-#if(DEBUG)
+#if(DEBUGKMEANS)
                 fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,reali,array[i*d+j]); fflush(stderr);
 #endif
             }
@@ -188,7 +188,7 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord, std::
         for (int i = 0; i < k; i++) { // rows
             for (int j = 0; j < d; j++) { // cols
                 array[i * d + j] = srcdata[v[i] + j * n];
-#if(DEBUG)
+#if(DEBUGKMEANS)
                 fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,v[i],array[i*d+j]); fflush(stderr);
 #endif
             }
@@ -307,10 +307,12 @@ namespace h2ogpumlkmeans {
             int masterq = 0;
             //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
             random_centroids_new(verbose, v, ord, *l_centroids[masterq], &srcdata[0], masterq, n, n / n_cpu, d, k);
-#if(DEBUG)
-            std::vector<T> h_centroidq=*l_centroids[q];
-            for(int ii=0;ii<k*d;ii++){
-              fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
+#if(DEBUGKMEANS)
+            for (int q = 0; q < n_cpu; q++) {
+				std::vector<T> h_centroidq=*l_centroids[q];
+				for(int ii=0;ii<k*d;ii++){
+				  fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
+				}
             }
 #endif
         }
