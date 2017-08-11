@@ -31,7 +31,7 @@ class GLM(object):
 
     class solution:
         pass
-
+#TODO: add gpu_id like kmeans and ensure wraps around deviceCount
     def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=1,lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
                  verbose=0, family="elasticnet"):

@@ -152,15 +152,19 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     error_train = printallerrors(display, enet, "Train", give_full_path)
 
-    print('Predicting') ; sys.stdout.flush()
-    if use_gpu == 1:
-        pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
-    else:
-        pred_val = enet.predict(c, give_full_path=give_full_path)
-    print('Done Predicting') ; sys.stdout.flush()
-    print('predicted values:\n', pred_val)
+    if 1==1: # FIXME: leads to seg faults currently
+        print('Predicting') ; sys.stdout.flush()
+        if use_gpu == 1:
+            pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
+        else:
+            pred_val = enet.predict(c, give_full_path=give_full_path)
+        print('Done Predicting') ; sys.stdout.flush()
+        print('predicted values:\n', pred_val)
 
-    error_test = printallerrors(display, enet, "Test", give_full_path)
+        error_test = printallerrors(display, enet, "Test", give_full_path)
+    else:
+        pred_val = None
+        error_test = error_train
 
     if write == 0:
         os.system('rm -f error.txt; rm -f pred*.txt; rm -f varimp.txt; rm -f me*.txt; rm -f stats.txt')
@@ -313,15 +317,16 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     print(testvalidY)
 
-    print("Predicting, assuming unity weights")
-    if validFraction == 0.0:
-        print("Using trainX for validX")
-        newvalidY = enet.predict(trainX)  # for testing
-    else:
-        print("Using validX for validX")
-        newvalidY = enet.predict(validX)
-    print("newvalidY")
-    print(newvalidY)
+    if 1==1: # FIXME: leads to seg faults currently
+        print("Predicting, assuming unity weights")
+        if validFraction == 0.0:
+            print("Using trainX for validX")
+            newvalidY = enet.predict(trainX)  # for testing
+        else:
+            print("Using validX for validX")
+            newvalidY = enet.predict(validX)
+        print("newvalidY")
+        print(newvalidY)
 
     error_test = enet.error
     if family != "logistic":

@@ -72,11 +72,12 @@ ProjectorDirect<T, M>::ProjectorDirect(const M& A)
 template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
 
-  checkwDev(_wDev);
-  CUDACHECK(cudaSetDevice(_wDev));
 
-  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
+  if(0){ // FIXME: segfaults sometimes
+	  checkwDev(_wDev);
+	  CUDACHECK(cudaSetDevice(_wDev));
 
+	  GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
 
   if (info->AA) {
     cudaFree(info->AA);
@@ -89,9 +90,10 @@ ProjectorDirect<T, M>::~ProjectorDirect() {
     info->L = 0;
     CUDA_CHECK_ERR();
   }
-  
   delete info;
-  this->_info = 0;
+    this->_info = 0;
+  }
+
 }
 
 template <typename T, typename M>
