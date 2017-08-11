@@ -119,7 +119,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     sourceme = 0
     sourceDev = 0
-    intercept = 1
+    intercept = True
     nThreads = None
     lambda_min_ratio = 1e-9
     give_full_path = 1
@@ -205,12 +205,12 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False):
     # choose solver
     Solver = h2ogpuml.GLM
 
     nThreads = None  # let internal method figure this out
-    intercept = 1
+    intercept = True
     lambda_min_ratio = 1e-9
     nFolds = nfolds
     nLambdas = nlambda
@@ -230,6 +230,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
 
+    validX = None
+    validY = None
     if validFraction != 0.0:
         validX = np.copy(X[H:morig, :])
         validY = np.copy(y[H:morig])
@@ -242,7 +244,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     else:
         print("mTrain=%d" % mTrain)
 
-    if intercept == 1:
+    if intercept is True:
         trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
         n = trainX.shape[1]
         print("New n=%d" % n)
@@ -316,10 +318,16 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("Predicting, assuming unity weights")
     if validFraction == 0.0:
         print("Using trainX for validX")
-        newvalidY = enet.predict(trainX)  # for testing
+        if trainY is not None:
+            newvalidY = enet.predict(trainX, trainY)  # for testing
+        else:
+            newvalidY = enet.predict(trainX)  # for testing
     else:
         print("Using validX for validX")
-        newvalidY = enet.predict(validX)
+        if validY is not None:
+            newvalidY = enet.predict(validX, validY)
+        else:
+            newvalidY = enet.predict(validX)
     print("newvalidY")
     print(newvalidY)
 
