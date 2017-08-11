@@ -569,10 +569,96 @@ namespace h2ogpumlkmeans {
 
         for (int q = 0; q < n_gpu; q++) {
             safe_cuda(cudaSetDevice(dList[q]));
-            safe_cuda(cudaDeviceSynchronize());
             safe_cuda(cudaFree(d_changes[q]));
             kmeans::detail::labels_close();
             delete (d_labels[q]);
+            delete (pairwise_distances[q]);
+            delete (data_dots[q]);
+            delete (centroid_dots[q]);
+        }
+
+        return 0;
+    }
+
+    template<typename T>
+    int kmeans_transform<T>(int verbose,
+                                int gpu_id, int n_gpu,
+                                size_t m, size_t n, const char ord,
+                                const T* src_data, const T* centroids,
+                                void **preds) {
+        if (rows > std::numeric_limits<int>::max()) {
+            fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
+            fflush(stderr);
+            exit(0);
+        }
+
+        int n = rows;
+        int m = cols;
+        std::signal(SIGINT, my_function_gpu);
+        std::signal(SIGTERM, my_function_gpu);
+
+        // no more gpus than visible gpus
+        int n_gpuvis;
+        cudaGetDeviceCount(&n_gpuvis);
+        int n_gpu;
+        n_gpu = std::min(n_gpuvis, n_gputry);
+
+        // also no more than rows
+        n_gpu = std::min(n_gpu, n);
+
+        std::cout << n_gpu << " gpus." << std::endl;
+
+        int gpu_id = gpu_idtry % n_gpuvis;
+
+        // setup GPU list to use
+        std::vector<int> dList(n_gpu);
+        for (int idx = 0; idx < n_gpu; idx++) {
+            int device_idx = (gpu_id + idx) % n_gpuvis;
+            dList[idx] = device_idx;
+        }
+
+        thrust::device_vector <T> *d_data[n_gpu];
+        thrust::device_vector<T> *d_centroids[n_gpu];
+        thrust::device_vector<T> *pairwise_distances[n_gpu];
+        thrust::device_vector<T> *data_dots[n_gpu];
+        thrust::device_vector<T> *centroid_dots[n_gpu];
+        thrust::device_vector<T> *distances[n_gpu];
+
+        for (int q = 0; q < n_gpu; q++) {
+            CUDACHECK(cudaSetDevice(dList[q]));
+            kmeans::detail::labels_init();
+
+            data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
+            centroid_dots[q] = new thrust::device_vector<T>(k);
+            pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
+
+            d_centroids[q] = new thrust::device_vector<T>(k * m);
+            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
+            distances[q] = new thrust::device_vector<T>(n);
+
+            // Move centroids from host memory to GPU
+            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
+
+            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
+
+            kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
+
+            kmeans::detail::calculate_distances(verbose, q, n/n_gpu, m, k,
+                *d_data[q], *d_centroids[q], *data_dots[q],
+                *centroid_dots[q], *pairwise_distances[q]);
+        }
+
+        // Move the resulting labels into host memory from all devices
+        thrust::host_vector<T> *h_pairwise_distances = new thrust::host_vector<T>(0);
+        for (int q = 0; q < n_gpu; q++) {
+            h_pairwise_distances->insert(h_pairwise_distances->end(), d_pairwise_distances[q]->begin(), pairwise_distances[q]->end());
+        }
+        *preds = h_pairwise_distances->data();
+
+        for (int q = 0; q < n_gpu; q++) {
+            safe_cuda(cudaSetDevice(dList[q]));
+            kmeans::detail::labels_close();
             delete (pairwise_distances[q]);
             delete (data_dots[q]);
             delete (centroid_dots[q]);
@@ -630,6 +716,18 @@ namespace h2ogpumlkmeans {
                                         const char ord, int k,
                                         const double *srcdata, const double *centroids, void **preds);
 
+    template int kmeans_transform<float>(int verbose,
+                                         int gpu_id, int n_gpu,
+                                         size_t m, size_t n, const char ord,
+                                         const float * src_data, const float * centroids,
+                                         void **preds);
+
+    template int kmeans_transform<double>(int verbose,
+                                         int gpu_id, int n_gpu,
+                                         size_t m, size_t n, const char ord,
+                                         const double * src_data, const double * centroids,
+                                         void **preds);
+
 // Explicit template instantiation.
 #if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE == 1
 
@@ -651,6 +749,7 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
+// Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
@@ -667,6 +766,23 @@ int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                  srcdata, srclabels, centroids, preds);
+}
+
+// Transform
+int kmeans_transform_float(int verbose,
+                           int gpu_id, int n_gpu,
+                           size_t m, size_t n, const char ord,
+                           const float * src_data, const float * centroids,
+                           void **preds) {
+    return h2ogpumlkmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
+}
+
+int kmeans_transform_double(int verbose,
+                           int gpu_id, int n_gpu,
+                           size_t m, size_t n, const char ord,
+                           const double * src_data, const double * centroids,
+                           void **preds) {
+    return h2ogpumlkmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
 }
 
 #ifdef __cplusplus

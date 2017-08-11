@@ -425,6 +425,70 @@ namespace h2ogpumlkmeans {
     }
 
     template<typename T>
+    int kmeans_transform<T>(int verbose,
+                                int gpu_id, int n_gpu,
+                                size_t m, size_t n, const char ord,
+                                const T* src_data, const T* centroids,
+                                void **preds) {
+        if (rows > std::numeric_limits<int>::max()) {
+            fprintf(stderr, "rows>%d now implemented\n", std::numeric_limits<int>::max());
+            fflush(stderr);
+            exit(0);
+        }
+
+        int n = rows;
+        int m = cols;
+        std::signal(SIGINT, my_function);
+        std::signal(SIGTERM, my_function);
+
+        int n_cpu = 1;
+        int cpu_id = 0;
+        int n_cpuvis = n_cpu;
+
+        std::vector<int> dList(n_cpu);
+        for (int idx = 0; idx < n_cpu; idx++) {
+            int device_idx = (cpu_id * idx) % n_cpuvis;
+            dList[idx] = device_idx;
+        }
+
+        std::vector <T> *data[n_cpu];
+
+        std::vector<T> *l_centroids = new std::vector<T>(k * m);
+        std::vector<T> *pairwise_distances[n_cpu];
+        std::vector<T> *data_dots[n_cpu];
+        std::vector<T> *centroid_dots[n_cpu];
+
+        nonrandom_data(verbose, 'r', *l_centroids, &centroids[0], 0, k, k, m);
+
+        for (int q = 0; q < n_cpu; q++) {
+            data[q] = new std::vector<T>(n/n_cpu * m);
+            nonrandom_data(verbose, ord, *data[q], &srcdata[0], q, n, n/n_cpu, m);
+
+            data_dots[q] = new std::vector<T>(n/n_cpu);
+            centroid_dots[q] = new std::vector<T>(k);
+
+            pairwise_distances[q] = new std::vector<T>(n/n_cpu * k);
+
+            kmeans::self_dot(*data[q], n/n_cpu, m, *data_dots[q]);
+
+            kmeans::compute_distances(*data[q], *data_dots[q], n/n_cpu, m, *l_centroids, *centroid_dots[q],
+                                    k, *pairwise_distances[q]);
+        }
+
+        std::vector<int> *ctr = new std::vector<int>(*pairwise_distances[0]);
+        *preds = ctr->data();
+
+        for (int q = 0; q < n_cpu; q++) {
+            delete(data[q]);
+            delete(pairwise_distances[q]);
+            delete(data_dots[q]);
+            delete(centroid_dots[q]);
+        }
+
+        return 0;
+    }
+
+    template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
                       T threshold, const T *srcdata, const int *srclabels, const T *centroids, void **preds) {
@@ -477,6 +541,20 @@ namespace h2ogpumlkmeans {
                                const char ord, int k,
                                const double *srcdata, const double *centroid, void **preds);
 
+    template
+    int kmeans_transform<float>(int verbose,
+                                int gpu_id, int n_gpu,
+                                size_t m, size_t n, const char ord,
+                                const float * src_data, const float * centroids,
+                                void **preds);
+
+    template
+    int kmeans_transform<double>(int verbose,
+                                 int gpu_id, int n_gpu,
+                                 size_t m, size_t n, const char ord,
+                                 const double * src_data, const double * centroids,
+                                 void **preds);
+
 // Explicit template instantiation.
 #if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE == 1
 
@@ -498,6 +576,7 @@ namespace h2ogpumlkmeans {
 extern "C" {
 #endif
 
+// Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
@@ -516,6 +595,23 @@ int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int cpu_id, int
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                  srcdata, srclabels, centroids,
                                                  preds);
+}
+
+// Transform
+int kmeans_transform_float(int verbose,
+                           int gpu_id, int n_gpu,
+                           size_t m, size_t n, const char ord,
+                           const float * src_data, const float * centroids,
+                           void **preds) {
+    return h2ogpumlkmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
+}
+
+int kmeans_transform_double(int verbose,
+                           int gpu_id, int n_gpu,
+                           size_t m, size_t n, const char ord,
+                           const double * src_data, const double * centroids,
+                           void **preds) {
+    return h2ogpumlkmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
 }
 
 #ifdef __cplusplus
