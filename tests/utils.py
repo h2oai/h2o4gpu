@@ -164,7 +164,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     if write == 0:
         os.system('rm -f error.txt; rm -f pred*.txt; rm -f varimp.txt; rm -f me*.txt; rm -f stats.txt')
-    #enet.finish()
+    enet.finish()
 
     return pred_val, error_train, error_test
 
@@ -348,6 +348,6 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         print("PRINT ALL ERRORS")
         print(printallerrors(display=1, enet=enet, str="Train", give_full_path=0))
 
-    #enet.finish()
+    enet.finish()
     print("Done Reporting")
     return error_train, error_test
