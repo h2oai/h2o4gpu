@@ -55,13 +55,26 @@ cd h2ogpuml
 bash gitshallow_submodules.sh
 make veryallclean
 
+install python package and make wheel:
+-----
 
-To compile base library:
+make
+
+This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
+
+test python package
+------
+
+make test && make testbig
+
+
+To compile base library (unecessary if already did make allclean or make veryallclean):
 ------
 
 BASE=`pwd`
 
 cd $BASE/src && make -j all
+
 
 To run gpu C++ version:
 ------
@@ -85,20 +98,6 @@ test R package
 ------
 
 cd $BASE/examples/R && R CMD BATCH simple.R
-
-
-install python package and make wheel:
------
-
-make
-
-This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
-
-test python package
-------
-
-cd $BASE/examples/py && python elastic_net_sklearn.py
-
 
 
 Issues
