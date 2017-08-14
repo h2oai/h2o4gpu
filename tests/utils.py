@@ -9,7 +9,8 @@ from numba import cuda
 from numba.cuda.cudadrv import driver
 from time import time
 from ctypes import *
-
+import h2o
+from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 def cprofile(file):
     def inner_cprofile(func):
@@ -205,7 +206,12 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False, run_h2o=True):
+
+    #Start up h2o
+    if run_h2o:
+        h2o.init(strict_version_check=False)
+
     # choose solver
     Solver = h2ogpuml.GLM
 
@@ -230,6 +236,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
 
+    if run_h2o:
+        print("Build Training H2OFrames")
+        trainX_h2o = h2o.H2OFrame(trainX)
+        trainY_h2o = h2o.H2OFrame(trainY)
+        train_h2o = trainX_h2o.cbind(trainY_h2o)
+
     validX = None
     validY = None
     if validFraction != 0.0:
@@ -237,6 +249,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         validY = np.copy(y[H:morig])
         mvalid = validX.shape[0]
         validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
+
+        if run_h2o:
+            print("Build Validation H2OFrames")
+            validX_h2o = h2o.H2OFrame(validX)
+            validY_h2o = h2o.H2OFrame(validY)
+            valid_h2o = validX_h2o.cbind(validY_h2o)
 
     mTrain = trainX.shape[0]
     if validFraction != 0.0:
@@ -254,17 +272,30 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio,
                   n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family)
 
+    if run_h2o:
+        print("Setting up H2O Solver")
+        if family == "logistic":
+            h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio, lambda_search=True, nlambdas=nLambdas,nfolds=nfolds, family="binomial")
+        else:
+            h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio, lambda_search=True, nlambdas=nLambdas,nfolds=nfolds, family="gaussian")
+
     print("trainX")
     print(trainX)
     print("trainY")
     print(trainY)
 
     ## Solve
-    print("Solving")
     if validFraction == 0.0:
+        print("Solving")
         Xvsalpha = enet.fit(trainX, trainY)
+        if run_h2o:
+            print("Solving using H2O")
+            h2o_glm.train(x=train_h2o.columns[:-1],y=train_h2o.columns[-1],training_frame=train_h2o)
     else:
         Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+        if run_h2o:
+            print("Solving using H2O")
+            h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1], training_frame=train_h2o, validation_frame=valid_h2o)
 
     # Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
     # Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, 0)
@@ -350,4 +381,4 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     #enet.finish()
     print("Done Reporting")
-    return error_train, error_test
+    return error_train, error_test, h2o_glm
