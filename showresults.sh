@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 path="results"
 list=`ls $path | sort`
 #for fil in $list ; do echo $fil ; done
