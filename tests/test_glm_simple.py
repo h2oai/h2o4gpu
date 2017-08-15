@@ -112,8 +112,8 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
                 assert rmse_train[-1, 0] < 0.54
                 assert rmse_train[-1, 1] < 0.54
-                assert rmse_train[-1, 2] < 2
-                assert rmse_test[-1, 2] < 2
+                assert rmse_train[-1, 2] < 2.2
+                assert rmse_test[-1, 2] < 2.2
         else:
             if nFolds == 1:
                 assert rmse_train[0, 0] < 0.4
