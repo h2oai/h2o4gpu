@@ -88,18 +88,18 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     print("DONE.")
     sys.stdout.flush()
 
-def test_glm_hyatt_gpu_fold1_quick(): fun(True, 1, 5, 3, classification=False)
+def test_glm_hyatt_gpu_fold1_quick(): fun(use_gpu=True, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
 
-def test_glm_hyatt_gpu_fold1(): fun(True, 1, 100, 8, classification=False)
+def test_glm_hyatt_gpu_fold1(): fun(use_gpu=True, nFolds=1, nLambdas=10, nAlphas=8, classification=False)
 
-def test_glm_hyatt_gpu_fold5(): fun(True, 5, 100, 3, classification=False)
+def test_glm_hyatt_gpu_fold5(): fun(use_gpu=True, nFolds=5, nLambdas=10, nAlphas=3, classification=False)
 
 
-def test_glm_hyatt_cpu_fold1_quick(): fun(False, 1, 5, 3, classification=False)
-
-def test_glm_hyatt_cpu_fold1(): fun(False, 1, 100, 8, classification=False)
-
-def test_glm_hyatt_cpu_fold5(): fun(False, 5, 100, 3, classification=False)
+# def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
+#
+# def test_glm_hyatt_cpu_fold1(): fun(use_gpu=False, nFolds=1, nLambdas=10, nAlphas=8, classification=False)
+#
+# def test_glm_hyatt_cpu_fold5(): fun(use_gpu=False, nFolds=5, nLambdas=10, nAlphas=3, classification=False)
 
 
 if __name__ == '__main__':
@@ -107,6 +107,6 @@ if __name__ == '__main__':
 	test_glm_hyatt_gpu_fold1()
 	test_glm_hyatt_gpu_fold5()
 
-	test_glm_hyatt_cpu_fold1_quick()
-	test_glm_hyatt_cpu_fold1()
-	test_glm_hyatt_cpu_fold5()
+	# test_glm_hyatt_cpu_fold1_quick()
+	# test_glm_hyatt_cpu_fold1()
+	# test_glm_hyatt_cpu_fold5()
