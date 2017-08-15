@@ -367,7 +367,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("Done Reporting")
 
     if run_h2o:
-        for alpha in [item for alphas[0] in alphas for item in alphas[0]]:
+        alphas_h2o = [item for alphas[0] in alphas for item in alphas[0]]
+        for alpha in alphas_h2o:
             print("Setting up H2O Solver with alpha = %s" % alpha)
             if family == "logistic":
                 h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio,
@@ -435,26 +436,41 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                 error_range=1
 
             #Compare to H2O
-            for i in range(nAlphas):
-                for j in range(error_range):
-                    if j == 0: #Compare to train error
-                        print("Actual Train Error")
-                        print(error_train[i, j] - h2o_train_error)
-                        print("Absolute Train Error")
-                        print(abs(error_train[i, j] - h2o_train_error))
-                        assert abs(error_train[i, j] - h2o_train_error) <= tolerance
-                    elif j == 1: #Compare to average cv error
-                        print("Actual CV Error")
-                        print(error_train[i, j] - h2o_cv_error)
-                        print("Absolute CV Error")
-                        print(abs(error_train[i, j] - h2o_cv_error))
-                        assert abs(error_train[i, j] - h2o_cv_error) <= tolerance
-                    elif j == 2: #Compare to validation error
-                        print("Actual Valid Error")
-                        print(error_train[i, j] - h2o_valid_error)
-                        print("Absolute CV Error")
-                        print(abs(error_train[i, j] - h2o_valid_error))
-                        assert abs(error_train[i, j] - h2o_valid_error) <= tolerance
+            index = alphas_h2o.index(alpha)
+            for j in range(error_range):
+                if j == 0: #Compare to train error
+                    print("Actual Train Error with alpha = %s" % alpha)
+                    print(error_train[index, j] - h2o_train_error)
+                    print("Absolute Train Error with alpha = %s" % alpha)
+                    print(abs(error_train[index, j] - h2o_train_error))
+                    if error_train[index,j] > h2o_train_error:
+                        assert abs(error_train[index, j] - h2o_train_error) <= tolerance
+                    else:
+                        print("H2O Train Error is larger than GPU GLM with alpha = %s" % alpha)
+                        print("H2O Train Error is %s" % h2o_train_error)
+                        print("H2O GPU ML Error is %s" % error_train[index, j])
+                elif j == 1: #Compare to average cv error
+                    print("Actual CV Error with alpha = %s" % alpha)
+                    print(error_train[index, j] - h2o_cv_error)
+                    print("Absolute CV Error with alpha = %s" % alpha)
+                    print(abs(error_train[index, j] - h2o_cv_error))
+                    if error_train[index,j] > h2o_cv_error:
+                        assert abs(error_train[index, j] - h2o_cv_error) <= tolerance
+                    else:
+                        print("H2O CV Error is larger than GPU GLM with alpha = %s" % alpha)
+                        print("H2O CV Error is %s" % h2o_cv_error)
+                        print("H2O GPU ML Error is %s" % error_train[index,j])
+                elif j == 2: #Compare to validation error
+                    print("Actual Valid Error with alpha = %s" % alpha)
+                    print(error_train[index, j] - h2o_valid_error)
+                    print("Absolute Valid Error with alpha = %s" % alpha)
+                    print(abs(error_train[index, j] - h2o_valid_error))
+                    if error_train[index,j] > h2o_valid_error:
+                        assert abs(error_train[index, j] - h2o_valid_error) <= tolerance
+                    else:
+                        print("H2O Valid Error is larger than GPU GLM with alpha = %s" % alpha)
+                        print("H2O Valid Error is %s" % h2o_valid_error)
+                        print("H2O GPU ML Error is %s" % error_train[index, j])
 
 
 

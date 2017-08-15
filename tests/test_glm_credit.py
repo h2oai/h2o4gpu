@@ -51,7 +51,7 @@ def test_glm_credit_gpu_quick_train_valid_5fold(): func(nGPUs=1, nFolds=5, nLamb
 
 
 if __name__ == '__main__':
-    #test_glm_credit_gpu_quick_train()
+    test_glm_credit_gpu_quick_train()
     test_glm_credit_gpu_quick_train_5fold()
-    #test_glm_credit_gpu_quick_train_valid_nofold()
-    #test_glm_credit_gpu_quick_train_valid_5fold()
+    test_glm_credit_gpu_quick_train_valid_nofold()
+    test_glm_credit_gpu_quick_train_valid_5fold()
