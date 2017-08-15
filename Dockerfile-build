@@ -1,4 +1,3 @@
-
 # Copy this file and Run from one level higher than the git pull directory
 # To build: docker build -t opsh2oai/h2oai-nv -f Dockerfile-nvdocker .
 # To run with docker run -it -p 12345:12345 opsh2oai/h2oai-nv
@@ -7,7 +6,14 @@ FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04
 MAINTAINER H2o.ai <ops@h2o.ai>
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
+ENV CUDADIR=/usr/local/cuda/include/
+ENV OMP_NUM_THREADS=32
+ENV MKL_NUM_THREADS=32
+ENV VECLIB_MAXIMUM_THREADS=32
 
 RUN \
   apt-get -y update && \
@@ -26,19 +32,6 @@ RUN \
     build-essential && \
   apt-get install -y libopenblas-dev
 
-#RUN \
-#  wget https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64-deb && \
-#  wget https://developer.nvidia.com/compute/cuda/8.0/Prod2/patches/2/cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64-deb
-
-#RUN \
-#  dpkg -i cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb && \
-#  apt-get update && \
-#  apt-get install cuda
-
-#dpkg -i cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64-deb && \
-#apt-get update && \
-#apt-get install cuda
-
 RUN \
   mkdir h2oai_env && \
   virtualenv --python=/usr/bin/python3.6 h2oai_env && \
@@ -51,14 +44,3 @@ COPY requirements.txt requirements.txt
 RUN \
   . h2oai_env/bin/activate && \
   pip install -r requirements.txt
-
-ENV CUDA_HOME=/usr/local/cuda
-
-#export PATH=/usr/local/cuda/bin:$PATH
-#export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
-#ENV CUDADIR=/usr/local/cuda/include/
-#export OMP_NUM_THREADS=32
-#export MKL_NUM_THREADS=32
-#export VECLIB_MAXIMUM_THREADS=32
-
