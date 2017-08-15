@@ -19,14 +19,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_seed=True):
     name = str(sys._getframe().f_code.co_name)
+    name = str(sys._getframe(1).f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
     sys.stdout.flush()
     
-    name = sys._getframe(1).f_code.co_name
-    #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
-
     print("Reading Data")
     if 1==0: # not yet
         target=None

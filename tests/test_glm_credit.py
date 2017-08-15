@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=0,family="elasticnet", print_all_errors=False, tolerance=.001):
     name = str(sys._getframe().f_code.co_name)
+    name = str(sys._getframe(1).f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))

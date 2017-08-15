@@ -86,6 +86,7 @@ veryallclean: clean deps_fetch deps_install all
 allclean: clean all
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean
+	rm -rf ./results/
 
 cleancpp:
 	$(MAKE) -j clean -C src/

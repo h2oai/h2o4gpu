@@ -18,13 +18,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     name = str(sys._getframe().f_code.co_name)
+    name = sys._getframe(1).f_code.co_name
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
     sys.stdout.flush()
 
-    name = sys._getframe(1).f_code.co_name
-    #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
 
     print("Reading Data")
     # from numpy.random import randn
