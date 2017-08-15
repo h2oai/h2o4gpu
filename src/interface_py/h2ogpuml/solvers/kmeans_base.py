@@ -42,7 +42,7 @@ class KMeans(object):
         self.Xnp = None
         self.ynp = None
 
-        self._centroids = None
+        self.cluster_centers_ = None
 
         self.lib = self._load_lib()
 
@@ -110,14 +110,14 @@ class KMeans(object):
         """Instantiates a scikit-learn model using previously found,
         with fit(), centroids. """
 
-        assert self._centroids is not None, \
+        assert self.cluster_centers_ is not None, \
             "Centroids are None. Run fit() first."
 
         if self._did_sklearn_fit == 0:
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
             self.sklearn_model = sk_cluster.KMeans(self._n_clusters, max_iter=1,
-                                                   init=self._centroids,
+                                                   init=self.cluster_centers_,
                                                    n_init=1)
             self.sklearn_model.fit(self.Xnp, self.ynp)
 
@@ -131,7 +131,7 @@ class KMeans(object):
         c_init_labels = 0
         c_init_data = 0
 
-        c_centroids, _ = self._to_cdata(self._centroids)
+        c_centroids, _ = self._to_cdata(self.cluster_centers_)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -176,7 +176,7 @@ class KMeans(object):
 
         Xnp = self._to_np(X)
         c_data, c_data_type = self._to_cdata(Xnp)
-        c_centroids, _ = self._to_cdata(self._centroids)
+        c_centroids, _ = self._to_cdata(self.cluster_centers_)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -215,8 +215,7 @@ class KMeans(object):
 
     def fit_transform(self, X, y):
         L = np.mod(y, self._n_clusters)
-        self.fit(X, L)
-        return self.transform(X)
+        return self.fit(X, L).transform(X)
 
     def fit_predict(self, X, y):
         L = np.mod(y, self._n_clusters)
@@ -294,7 +293,8 @@ class KMeans(object):
             status = lib.make_ptr_float_kmeans(0, self.verbose, self.seed,
                                                self._gpu_id, self.n_gpus,
                                                rows, cols,
-                                               c_int(data_ord), self._n_clusters,
+                                               c_int(data_ord),
+                                               self._n_clusters,
                                                self._max_iter,
                                                c_init_from_labels,
                                                c_init_labels,
@@ -329,9 +329,9 @@ class KMeans(object):
             )
             self._n_clusters = centroids.shape[0]
 
-        self._centroids = centroids
+        self.cluster_centers_ = centroids
 
-        return self._centroids
+        return self.cluster_centers_
 
     def _to_cdata(self, data):
         if data.dtype == np.float64:
@@ -385,11 +385,11 @@ class KMeans(object):
             assert not np.isnan(data).any(), "%s contains NA" % name
 
     def _validate_centroids(self, X):
-        assert self._centroids is not None, \
+        assert self.cluster_centers_ is not None, \
             "Centroids are None. Run fit() first."
         rows = np.shape(X)[0]
         cols = np.shape(X)[1]
-        centroids_dim = np.shape(self._centroids)[1]
+        centroids_dim = np.shape(self.cluster_centers_)[1]
         assert cols == centroids_dim, \
             "The dimension of X [%d] and centroids [%d] is not equal." % \
             (cols, centroids_dim)
@@ -400,7 +400,7 @@ class KMeans(object):
         import pandas as pd
         return data.values if isinstance(data, pd.DataFrame) else data
 
-    #################### Properties and setters of properties
+    # Properties and setters of properties
 
     @property
     def n_clusters(self):
@@ -435,5 +435,5 @@ class KMeans(object):
                          "Number of maximum iterations must be non-negative.")
         self._max_iter = value
 
-    #################### Free up memory functions
+    # Free up memory functions
     # TODO check what has to be freed (predictions??).
