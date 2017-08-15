@@ -515,7 +515,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             print('',file=f1)
 
         # for pytest only:
-        if os.getenv("H2OGLM_DISABLEPYTEST") is not None:
+        if os.getenv("H2OGLM_DISABLEPYTEST") is None:
             assert doassert==0
 
     return error_train, error_test
