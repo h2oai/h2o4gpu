@@ -206,13 +206,13 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False, run_h2o=True):
+def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0, print_all_errors=False, get_preds=False, run_h2o=True,tolerance=.001):
 
     #Start up h2o
     if run_h2o:
         h2o.init(strict_version_check=False)
 
-    # choose solver
+    #Choose solver
     Solver = h2ogpuml.GLM
 
     nThreads = None  # let internal method figure this out
@@ -222,14 +222,14 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     nLambdas = nlambda
     nAlphas = nalpha
 
-    # Setup Train/validation Set Split
+    #Setup Train/validation Set Split
     morig = X.shape[0]
     norig = X.shape[1]
     print("Original m=%d n=%d" % (morig, norig)) ; sys.stdout.flush()
     fortran = X.flags.f_contiguous
     print("fortran=%d" % fortran) ; sys.stdout.flush()
 
-    # Do train/valid split
+    #Do train/valid split
     HO = int(validFraction * morig)
     H = morig - HO
     print("Size of Train rows=%d valid rows=%d" % (H, HO)) ; sys.stdout.flush()
@@ -267,46 +267,30 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         n = trainX.shape[1]
         print("New n=%d" % n)
 
-    ## Constructor
+    #Constructor
     print("Setting up solver") ; sys.stdout.flush()
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept, lambda_min_ratio=lambda_min_ratio,
                   n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family)
-
-    if run_h2o:
-        print("Setting up H2O Solver")
-        if family == "logistic":
-            h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio, lambda_search=True, nlambdas=nLambdas,nfolds=nfolds, family="binomial")
-        else:
-            h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio, lambda_search=True, nlambdas=nLambdas,nfolds=nfolds, family="gaussian")
 
     print("trainX")
     print(trainX)
     print("trainY")
     print(trainY)
 
-    ## Solve
+    #Solve
     if validFraction == 0.0:
         print("Solving")
         Xvsalpha = enet.fit(trainX, trainY)
-        if run_h2o:
-            print("Solving using H2O")
-            h2o_glm.train(x=train_h2o.columns[:-1],y=train_h2o.columns[-1],training_frame=train_h2o)
     else:
         Xvsalpha = enet.fit(trainX, trainY, validX, validY)
-        if run_h2o:
-            print("Solving using H2O")
-            h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1], training_frame=train_h2o, validation_frame=valid_h2o)
 
-    # Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
-    # Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, 0)
-    # give_full_path=1 ; Xvsalphalambda = enet.fit(trainX, trainY, validX, validY, trainW, give_full_path)
     print("Done Solving")
 
     X=enet.X
     print("X")
     print(X)
 
-    # show something about Xvsalphalambda or Xvsalpha
+    #Show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
     print(Xvsalpha)
     print("np.shape(Xvsalpha)")
@@ -381,4 +365,97 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     enet.finish()
     print("Done Reporting")
-    return error_train, error_test, h2o_glm
+
+    if run_h2o:
+        for alpha in [item for alphas[0] in alphas for item in alphas[0]]:
+            print("Setting up H2O Solver with alpha = %s" % alpha)
+            if family == "logistic":
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                                                        lambda_search=True, nlambdas=nLambdas, nfolds=nfolds,
+                                                        family="binomial",alpha=alpha)
+            else:
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                                                        lambda_search=True, nlambdas=nLambdas, nfolds=nfolds,
+                                                        family="gaussian",alpha=alpha)
+            # Solve
+            if validFraction == 0.0:
+                print("Solving using H2O")
+                h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1], training_frame=train_h2o)
+            else:
+                print("Solving using H2O")
+                h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1], training_frame=train_h2o,
+                                  validation_frame=valid_h2o)
+            print("\nComparing results to H2O")
+            print("\nH2O GLM Summary")
+            print(h2o_glm)
+
+            if family == "logistic":
+                print("\nTraining Logloss")
+                print(h2o_glm.logloss())
+                h2o_train_error = h2o_glm.logloss()
+            else:
+                print("\nTraining RMSE")
+                print(h2o_glm.rmse())
+                h2o_train_error = h2o_glm.rmse()
+
+            if validFraction > 0.0:
+                if family == "logistic":
+                    print("\nValidation Logloss")
+                    print(h2o_glm.logloss(valid=True))
+                    h2o_valid_error = h2o_glm.logloss(valid=True)
+                else:
+                    print("\nValidation RMSE")
+                    print(h2o_glm.rmse(valid=True))
+                    h2o_valid_error = h2o_glm.rmse(valid=True)
+
+            if nFolds > 0:
+                if family == "logistic":
+                    print("\nCross Validation Logloss")
+                    print(h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[8]])
+                    print("\n")
+                    h2o_cv_error = h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[8]]['mean'].as_matrix().astype(float)
+
+                else:
+                    print("\nCross Validation RMSE")
+                    print(h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[19]])
+                    print("\n")
+                    h2o_cv_error = h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[19]]['mean'].as_matrix().astype(float)
+
+            #Tolerance for h2o glm - gpu glm logloss
+            tolerance = tolerance
+
+            #Train and nfolds
+            if validFraction==0.0 and nFolds > 0:
+                error_range=2
+            #Train, valid, and nfolds
+            elif validFraction>0.0 and nfolds>0:
+                error_range=3
+            #Train set only
+            else:
+                error_range=1
+
+            #Compare to H2O
+            for i in range(nAlphas):
+                for j in range(error_range):
+                    if j == 0: #Compare to train error
+                        print("Actual Train Error")
+                        print(error_train[i, j] - h2o_train_error)
+                        print("Absolute Train Error")
+                        print(abs(error_train[i, j] - h2o_train_error))
+                        assert abs(error_train[i, j] - h2o_train_error) <= tolerance
+                    elif j == 1: #Compare to average cv error
+                        print("Actual CV Error")
+                        print(error_train[i, j] - h2o_cv_error)
+                        print("Absolute CV Error")
+                        print(abs(error_train[i, j] - h2o_cv_error))
+                        assert abs(error_train[i, j] - h2o_cv_error) <= tolerance
+                    elif j == 2: #Compare to validation error
+                        print("Actual Valid Error")
+                        print(error_train[i, j] - h2o_valid_error)
+                        print("Absolute CV Error")
+                        print(abs(error_train[i, j] - h2o_valid_error))
+                        assert abs(error_train[i, j] - h2o_valid_error) <= tolerance
+
+
+
+    return error_train, error_test
