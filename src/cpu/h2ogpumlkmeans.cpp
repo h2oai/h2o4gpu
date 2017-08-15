@@ -425,11 +425,11 @@ namespace h2ogpumlkmeans {
     }
 
     template<typename T>
-    int kmeans_transform<T>(int verbose,
-                                int gpu_id, int n_gpu,
-                                size_t m, size_t n, const char ord,
-                                const T* src_data, const T* centroids,
-                                void **preds) {
+    int kmeans_transform(int verbose,
+                            int gpu_id, int n_gpu,
+                            size_t rows, size_t cols, const char ord, int k,
+                            const T* srcdata, const T* centroids,
+                            void **preds) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows>%d now implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -475,7 +475,7 @@ namespace h2ogpumlkmeans {
                                     k, *pairwise_distances[q]);
         }
 
-        std::vector<int> *ctr = new std::vector<int>(*pairwise_distances[0]);
+        std::vector<T> *ctr = new std::vector<T>(*pairwise_distances[0]);
         *preds = ctr->data();
 
         for (int q = 0; q < n_cpu; q++) {
@@ -544,14 +544,14 @@ namespace h2ogpumlkmeans {
     template
     int kmeans_transform<float>(int verbose,
                                 int gpu_id, int n_gpu,
-                                size_t m, size_t n, const char ord,
+                                size_t m, size_t n, const char ord, int k,
                                 const float * src_data, const float * centroids,
                                 void **preds);
 
     template
     int kmeans_transform<double>(int verbose,
                                  int gpu_id, int n_gpu,
-                                 size_t m, size_t n, const char ord,
+                                 size_t m, size_t n, const char ord, int k,
                                  const double * src_data, const double * centroids,
                                  void **preds);
 
@@ -600,18 +600,18 @@ int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int cpu_id, int
 // Transform
 int kmeans_transform_float(int verbose,
                            int gpu_id, int n_gpu,
-                           size_t m, size_t n, const char ord,
+                           size_t m, size_t n, const char ord, int k,
                            const float * src_data, const float * centroids,
                            void **preds) {
-    return h2ogpumlkmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
+    return h2ogpumlkmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
 }
 
 int kmeans_transform_double(int verbose,
                            int gpu_id, int n_gpu,
-                           size_t m, size_t n, const char ord,
+                           size_t m, size_t n, const char ord, int k,
                            const double * src_data, const double * centroids,
                            void **preds) {
-    return h2ogpumlkmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, src_data, centroids, preds);
+    return h2ogpumlkmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
 }
 
 #ifdef __cplusplus

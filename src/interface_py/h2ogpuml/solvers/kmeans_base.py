@@ -187,18 +187,19 @@ class KMeans(object):
             lib.kmeans_transform_float(self.verbose,
                                        self._gpu_id, self.n_gpus,
                                        rows, cols, c_int(data_ord),
-                                       c_data, c_centroids,
+                                       self._n_clusters, c_data, c_centroids,
                                        pointer(c_res))
         else:
             lib.kmeans_transform_double(self.verbose,
                                         self._gpu_id, self.n_gpus,
                                         rows, cols, c_int(data_ord),
-                                        c_data, c_centroids,
+                                        self._n_clusters, c_data, c_centroids,
                                         pointer(c_res))
 
         transformed = np.fromiter(cast(c_res, POINTER(c_data_type)),
-                                  dtype=c_data_type, count=rows * cols)
-        transformed = np.reshape(transformed, rows)
+                                  dtype=c_data_type,
+                                  count=rows * self._n_clusters)
+        transformed = np.reshape(transformed, (rows, self._n_clusters))
         return transformed
 
     def sklearn_transform(self, X):

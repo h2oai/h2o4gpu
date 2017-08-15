@@ -64,18 +64,20 @@ def load_kmeans_lib(lib_path):
             c_size_t,  # rows
             c_size_t,  # cols
             c_int,  # data_ord
+            c_int, # k
             c_float_p,  # data
             c_float_p,  # centroids
             c_void_pp]  # result
         h2ogpuml_kmeans_lib.kmeans_transform_float.restype = c_int
 
-        h2ogpuml_kmeans_lib.kmeans_transform_float.argtypes = [
+        h2ogpuml_kmeans_lib.kmeans_transform_double.argtypes = [
             c_int,  # verbose
             c_int,  # gpu_id
             c_int,  # n_gpus
             c_size_t,  # rows
             c_size_t,  # cols
             c_int,  # data_ord
+            c_int, # k
             c_double_p,  # data
             c_double_p,  # centroids
             c_void_pp]  # result
