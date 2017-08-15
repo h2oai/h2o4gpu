@@ -425,19 +425,15 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             if nFolds > 1:
                 if family == "logistic":
                     print("\nCross Validation Logloss")
-                    print(h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[8]])
+                    print( h2o_glm.model_performance(xval=True).logloss())
                     print("\n")
-                    h2o_cv_error = h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[8]][
-                        'mean'].as_matrix().astype(float)
+                    h2o_cv_error = h2o_glm.model_performance(xval=True).logloss()
 
                 else:
                     print("\nCross Validation RMSE")
-                    print(h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[19]])
+                    print(h2o_glm.model_performance(xval=True).rmse())
                     print("\n")
-                    h2o_cv_error = h2o_glm.cross_validation_metrics_summary().as_data_frame().iloc[[19]][
-                        'mean'].as_matrix().astype(float)
-            else:
-                h2o_cv_error = -1
+                    h2o_cv_error = h2o_glm.model_performance(xval=True).rmse()
 
             # Tolerance for h2o glm - gpu glm logloss
             tolerance = tolerance
