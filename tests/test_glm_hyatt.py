@@ -90,9 +90,9 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
 
 def test_glm_hyatt_gpu_fold1_quick(): fun(use_gpu=True, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
 
-def test_glm_hyatt_gpu_fold1(): fun(use_gpu=True, nFolds=1, nLambdas=10, nAlphas=8, classification=False)
+def test_glm_hyatt_gpu_fold1(): fun(use_gpu=True, nFolds=1, nLambdas=100, nAlphas=8, classification=False)
 
-def test_glm_hyatt_gpu_fold5(): fun(use_gpu=True, nFolds=5, nLambdas=10, nAlphas=3, classification=False)
+def test_glm_hyatt_gpu_fold5(): fun(use_gpu=True, nFolds=5, nLambdas=100, nAlphas=3, classification=False)
 
 
 # def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
