@@ -65,7 +65,10 @@ sync_data: sync_smalldata sync_otherdata
 
 default: all
 
-all: cpp c py r
+all: update_submodule cpp c py r
+
+update_submodule:
+	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
 	$(MAKE) -j all -C src/
@@ -163,4 +166,12 @@ deps_install: deps_fetch sync_data
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
+
+wheel_in_docker:
+	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+
+clean_in_docker:
+	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make clean'
 
