@@ -48,7 +48,7 @@ testenc = dataset.iloc[train.shape[0]:, :].reset_index(drop=True)
 
 trainencflt = trainenc.values.astype(np.float32)
 testencflt = testenc.values.astype(np.float32)
-k = 1000
+k = 10
 rows = np.shape(trainencflt)[0]
 print(rows)
 np.random.seed(1234)
@@ -79,3 +79,13 @@ for tl in zip(train_labels, sklearn_labels):
         diffs = diffs + 1
 
 print(diffs)
+
+transformed = model.transform(trainencflt)
+sklearn_transformed = model.sklearn_transform(trainencflt)
+
+transform_diffs = 0
+for tl in zip(map(lambda tr: np.argmin(tr), transformed), map(lambda tr: np.argmin(tr), sklearn_transformed)):
+    if tl[0] != tl[1]:
+        transform_diffs = transform_diffs + 1
+
+print(transform_diffs)

@@ -199,7 +199,9 @@ class KMeans(object):
         transformed = np.fromiter(cast(c_res, POINTER(c_data_type)),
                                   dtype=c_data_type,
                                   count=rows * self._n_clusters)
-        transformed = np.reshape(transformed, (rows, self._n_clusters))
+        transformed = np.reshape(transformed,
+                                 (rows, self._n_clusters),
+                                 order='F')
         return transformed
 
     def sklearn_transform(self, X):
