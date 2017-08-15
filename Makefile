@@ -122,6 +122,11 @@ dotestperf:
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml tests 2> ./tmp/h2oai-test.$(LOGEXT).log
 	bash showresults.sh
 
+dotestperfpython:
+	mkdir -p ./tmp/
+	bash getresults.sh $(LOGEXT)
+	bash showresults.sh
+
 dotestbigperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
