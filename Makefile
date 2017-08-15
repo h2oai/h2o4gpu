@@ -103,6 +103,8 @@ cleanr:
 getotherdata:
 	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/testsbig/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
 
+#################3
+
 dotest:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml tests 2> ./tmp/h2oai-test.$(LOGEXT).log
@@ -111,6 +113,17 @@ dotestbig:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
 
+dotestperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml tests 2> ./tmp/h2oai-test.$(LOGEXT).log
+
+dotestbigperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
+
+
+###################
+
 test: all sync_data dotest
 
 testbig: all sync_data dotestbig
@@ -118,6 +131,18 @@ testbig: all sync_data dotestbig
 testquick: dotest
 
 testbigquick: dotestbig
+
+################
+
+testperf: all sync_data dotestperf
+
+testbigperf: all sync_data dotestbigperf
+
+testquickperf: dotestperf
+
+testbigquickperf: dotestbigperf
+
+################
 
 deps_clean: 
 	@echo "----- Cleaning deps -----"

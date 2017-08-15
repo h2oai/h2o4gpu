@@ -73,7 +73,7 @@ def skip_if_no_smalldata():
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu):
+def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu, name=None):
     if use_gpu == 1:
 
         # nFolds, nAlphas, nLambdas = arg
@@ -135,7 +135,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
         c, d = xtest, ytest
         e = wtrain
 
-    print("Setting up Solver");
+    print("Setting up Solver")
     sys.stdout.flush()
 
     Solver = h2ogpuml.GLM
@@ -143,25 +143,25 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
                   n_folds=nFolds, n_alphas=nAlphas, verbose=5)
 
-    print("Solving");
+    print("Solving")
     sys.stdout.flush()
     if use_gpu == 1:
         enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, give_full_path=give_full_path)
     else:
         enet.fit(a, b, c, d, e, give_full_path=give_full_path)
     # t1 = time.time()
-    print("Done Solving\n");
+    print("Done Solving\n")
     sys.stdout.flush()
 
     error_train = printallerrors(display, enet, "Train", give_full_path)
 
-    print('Predicting');
+    print('Predicting')
     sys.stdout.flush()
     if use_gpu == 1:
         pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
     else:
         pred_val = enet.predict(c, give_full_path=give_full_path)
-    print('Done Predicting');
+    print('Done Predicting')
     sys.stdout.flush()
     print('predicted values:\n', pred_val)
 
@@ -212,7 +212,13 @@ def printallerrors(display, enet, str, give_full_path):
 
 
 def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
-                print_all_errors=False, get_preds=False, run_h2o=True, tolerance=.01):
+                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None):
+    doassert=0
+
+    # override run_h2o False default if environ exists
+    if os.getenv("H2OGLM_PERFORMANCE") is not None:
+        run_h2o = True
+
     # Start up h2o
     if run_h2o:
         h2o.init(strict_version_check=False)
@@ -230,16 +236,16 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # Setup Train/validation Set Split
     morig = X.shape[0]
     norig = X.shape[1]
-    print("Original m=%d n=%d" % (morig, norig));
+    print("Original m=%d n=%d" % (morig, norig))
     sys.stdout.flush()
     fortran = X.flags.f_contiguous
-    print("fortran=%d" % fortran);
+    print("fortran=%d" % fortran)
     sys.stdout.flush()
 
     # Do train/valid split
     HO = int(validFraction * morig)
     H = morig - HO
-    print("Size of Train rows=%d valid rows=%d" % (H, HO));
+    print("Size of Train rows=%d valid rows=%d" % (H, HO))
     sys.stdout.flush()
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
@@ -276,7 +282,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         print("New n=%d" % n)
 
     # Constructor
-    print("Setting up solver");
+    print("Setting up solver")
     sys.stdout.flush()
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio,
@@ -448,41 +454,54 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             else:
                 error_range = 1
 
+            path="./results"
+            os.makedirs(path, exist_ok=True)
+            f1=open(os.path.join(path, name + ".dat"), 'wt+')
+            # TODO(navdeep): output error and performance metrics summary
+            print('%s' % (name), file=f1, end="")
+
             # Compare to H2O
             index = alphas_h2o.index(alpha)
             for j in range(error_range):
                 if j == 0:  # Compare to train error
-                    print("Actual Train Error with alpha = %s" % alpha)
-                    print(error_train[index, j] - h2o_train_error)
-                    print("Absolute Train Error with alpha = %s" % alpha)
-                    print(abs(error_train[index, j] - h2o_train_error))
+                    thisrelerror = abs(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_train_error))
                     if error_train[index, j] > h2o_train_error:
-                        assert abs(error_train[index, j] - h2o_train_error) <= tolerance
+                        if abs(error_train[index, j] - h2o_train_error) > tolerance:
+                            print("Train error failure: %g %g" % (error_train[index, j],h2o_train_error))
+                            doassert = 1
                     else:
                         print("H2O Train Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                 elif j == 1:  # Compare to average cv error
-                    print("Actual CV Error with alpha = %s" % alpha)
-                    print(error_train[index, j] - h2o_cv_error)
-                    print("Absolute CV Error with alpha = %s" % alpha)
-                    print(abs(error_train[index, j] - h2o_cv_error))
+                    thisrelerror = abs(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_cv_error))
                     if error_train[index, j] > h2o_cv_error:
-                        assert abs(error_train[index, j] - h2o_cv_error) <= tolerance
+                        if abs(error_train[index, j] - h2o_cv_error) > tolerance:
+                            print("CV error failure: %g %g" % (error_train[index, j],h2o_cv_error))
+                            doassert = 1
                     else:
                         print("H2O CV Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                 elif j == 2:  # Compare to validation error
-                    print("Actual Valid Error with alpha = %s" % alpha)
-                    print(error_train[index, j] - h2o_valid_error)
-                    print("Absolute Valid Error with alpha = %s" % alpha)
-                    print(abs(error_train[index, j] - h2o_valid_error))
+                    thisrelerror = abs(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_valid_error))
                     if error_train[index, j] > h2o_valid_error:
-                        assert abs(error_train[index, j] - h2o_valid_error) <= tolerance
+                        if abs(error_train[index, j] - h2o_valid_error) > tolerance:
+                            print("Valid error failure: %g %g" % (error_train[index, j],h2o_valid_error))
+                            doassert = 1
                     else:
                         print("H2O Valid Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
 
+
+                # TODO(navdeep): output error and performance metrics summary
+                print(' %g' % thisrelerror, file=f1, end="")
+
+            print('',file=f1)
+
+        assert doassert==0
+
     return error_train, error_test
+
+# TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?

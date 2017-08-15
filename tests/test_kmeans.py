@@ -1,4 +1,5 @@
 import h2ogpuml as h2ogpuml
+import sys
 import pandas as pd
 import numpy as np
 import random
@@ -6,6 +7,7 @@ import random
 class TestKmeans(object):
 
     def test_preds_vs_scikit(self):
+        name = str(sys._getframe().f_code.co_name)
         train_file = "./data/kmeans_homesite_train.csv"
         test_file = "./data/kmeans_homesite_test.csv"
 

@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_seed=True):
+    name = str(sys._getframe().f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
@@ -63,7 +64,7 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     display = 1
     t1 = time.time()
     write=1
-    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
+    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu, name=name)
 
     # check rmse
     print(rmse_train[0,0])

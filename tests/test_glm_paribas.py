@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=0,family="elasticnet", print_all_errors=False, tolerance=.001):
+    name = str(sys._getframe().f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
@@ -32,7 +33,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=0
     t1 = time.time()
 
     elastic_net(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                validFraction=validFraction, verbose=verbose,family=family,print_all_errors=print_all_errors,tolerance=tolerance)
+                validFraction=validFraction, verbose=verbose,family=family,print_all_errors=print_all_errors,tolerance=tolerance, name=name)
 
     sys.stdout.flush()
 
