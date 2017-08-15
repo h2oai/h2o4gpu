@@ -505,3 +505,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     return error_train, error_test
 
 # TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?
+# TODO(navdeep): You can mimic my "showresults.sh" process for make testperf and have timers that measure fit and predict performance for h2ogpuml and h2o-3.  I think just showing the ratio of the two is good, showing time for h2ogpuml over h2o-3 (so smaller is better).
+# TODO(navdeep): Can use timers like:
+#import time
+#start = time.time()
+#print("hello")
+#end = time.time()
+#print(end - start)
+# TODO(navdeep): So every time we do make testperf, we'll get error and performance info.  For error info, would be cool if markdown or something (instead of text) and bad numbers were highlighted.  Also need h2o-3 results as separate file that's also printed so we can compare and see what went wrong.
