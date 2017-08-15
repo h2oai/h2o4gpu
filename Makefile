@@ -136,7 +136,7 @@ dotestperfpython:
 	bash getresults.sh $(LOGEXT)
 	bash showresults.sh
 
-dotestperfpython:
+dotestbigperfpython:
 	mkdir -p ./tmp/
 	bash getresultsbig.sh $(LOGEXT)
 	bash showresults.sh
