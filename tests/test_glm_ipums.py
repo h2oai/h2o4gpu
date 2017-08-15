@@ -35,7 +35,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     # Rscript ipums.R  runs glmnet on ipums
     #
-    df = pd.read_csv("./tests/data/ipums_1k.csv")
+    df = pd.read_csv("./data/ipums_1k.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')

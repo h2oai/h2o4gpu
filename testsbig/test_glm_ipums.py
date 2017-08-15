@@ -35,7 +35,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     # Rscript ipums.R  runs glmnet on ipums
     #
-    df = feather.read_dataframe("./testsbig/data/ipums.feather")
+    df = feather.read_dataframe("./data/ipums.feather")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')

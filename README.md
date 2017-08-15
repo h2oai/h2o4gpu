@@ -7,9 +7,10 @@ H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
-CUDA8 for GPU version, OpenMP (for distributed GPU version) and run:
+CUDA8 for GPU version and OpenMP
 
-pip install -r requirements.txt
+Environment
+--------
 
 - Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
 ````
@@ -22,6 +23,17 @@ R
 install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
 quit()
 ````
+
+- Install dev environment:
+
+```
+sudo apt-get install libopenblas-dev
+```
+
+If you are using conda, you probably need to do:
+```
+conda install libgcc
+```
 
 
 Add to .bashrc or your own environment (e.g.):
@@ -50,12 +62,11 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 To compile everything and install R and python interfaces as user:
 -----
 
-git clone git@github.com:h2ogpuml/h2ogpuml.git
+git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
 cd h2ogpuml
-bash gitshallow_submodules.sh
 make veryallclean
 
-install python package and make wheel:
+To install python package and make wheel:
 -----
 
 make
@@ -103,11 +114,10 @@ cd $BASE/examples/R && R CMD BATCH simple.R
 Issues
 =====================
 
-If you are using conda, you probably need to do:  conda install libgcc
 
 ```
 
-Problem Classes
+Solver Classes
 ===============
 
 Among others, the solver can be used for the following classes of problems

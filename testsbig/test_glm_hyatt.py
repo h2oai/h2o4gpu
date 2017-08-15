@@ -49,10 +49,10 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
         # should all be explicitly np.float32 or all np.float64
-        xtrain = np.loadtxt("./testsbig/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
-        ytrain = np.loadtxt("./testsbig/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
-        xtest = np.loadtxt("./testsbig/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
-        ytest = np.loadtxt("./testsbig/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
+        xtrain = np.loadtxt("./data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
+        ytrain = np.loadtxt("./data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
+        xtest = np.loadtxt("./data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
+        ytest = np.loadtxt("./data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
         wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
         print("Testing GLM")
 

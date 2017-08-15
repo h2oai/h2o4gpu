@@ -22,7 +22,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=0
     sys.stdout.flush()
 
     print("Reading Data")
-    df = feather.read_dataframe("./tests/data/bnp.feather")
+    df = feather.read_dataframe("./data/bnp.feather")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')

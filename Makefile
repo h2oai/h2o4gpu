@@ -56,10 +56,12 @@ sync_smalldata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
-sync_data:
+sync_otherdata:
 	@echo "---- Synchronizing data dir in test/ ----"
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
+
+sync_data: sync_smalldata sync_otherdata
 
 default: all
 
@@ -127,8 +129,9 @@ deps_fetch: deps_clean
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
+	bash gitshallow_submodules.sh
 
-deps_install: deps_fetch getotherdata
+deps_install: deps_fetch sync_data
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
