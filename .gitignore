@@ -2,6 +2,8 @@
 *.DS_STORE
 
 # Ignore artifacts made from make, h2ogpuml
+data/
+smalldata/
 tests/smalldata
 tests/data
 *.idea/

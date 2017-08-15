@@ -45,7 +45,7 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
     sys.stdout.flush()
 
 def test_glm_credit_gpu_quick_train(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.0,verbose=0,family="logistic",print_all_errors=False,tolerance=.009)
-def test_glm_credit_gpu_quick_train_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.0,verbose=0,family="logistic",print_all_errors=False,tolerance=.04)
+def test_glm_credit_gpu_quick_train_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.0,verbose=0,family="logistic",print_all_errors=False,tolerance=.009)
 def test_glm_credit_gpu_quick_train_valid_nofold(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.2,verbose=0,family="logistic",print_all_errors=False,tolerance=.009)
 def test_glm_credit_gpu_quick_train_valid_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.2,verbose=0,family="logistic",print_all_errors=False,tolerance=.009)
 
