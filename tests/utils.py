@@ -472,6 +472,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("Train error failure: %g %g" % (error_train[index, j],h2o_train_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                        else:
+                            print(' -', file=f1, end="")
                     else:
                         print("H2O Train Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
@@ -484,6 +486,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("CV error failure: %g %g" % (error_train[index, j],h2o_cv_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                        else:
+                            print(' -', file=f1, end="")
                     else:
                         print("H2O CV Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
@@ -496,6 +500,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("Valid error failure: %g %g" % (error_train[index, j],h2o_valid_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                        else:
+                            print(' -', file=f1, end="")
                     else:
                         print("H2O Valid Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
