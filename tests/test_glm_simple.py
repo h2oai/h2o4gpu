@@ -190,10 +190,10 @@ if __name__ == '__main__':
 
     test_glm_simple_gpu_fold1_quick()
     test_glm_simple_gpu_fold1()
-    test_glm_simple_gpu_fold3() # fails for some reason with malloc error during predict
+    test_glm_simple_gpu_fold3()
 
     test_glm_simple_gpu2_fold1_quick()
-    test_glm_simple_gpu2_fold1() # also fails
+    test_glm_simple_gpu2_fold1()
     test_glm_simple_gpu2_fold3()
 
     test_glm_simple_cpu_fold1_quick()

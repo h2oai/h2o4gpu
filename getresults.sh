@@ -8,6 +8,6 @@ echo "LOG FILE: ./tmp/h2ogpuml-test.$LOGEXT.log"
 for test in $tests
 do
     echo "Doing $test"
-	H2OGLM_PERFORMANCE=1 python $test  &>> ./tmp/h2ogpuml-test.$LOGEXT.log
+	H2OGLM_DISABLEPYTEST=1 H2OGLM_PERFORMANCE=1 python $test  &>> ./tmp/h2ogpuml-test.$LOGEXT.log
 done
 
