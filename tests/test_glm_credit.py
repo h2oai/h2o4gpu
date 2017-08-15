@@ -31,8 +31,77 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
 
     t1 = time.time()
 
-    elastic_net(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
+    logloss_train, logloss_test = elastic_net(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
                 validFraction=validFraction, verbose=verbose,family=family,print_all_errors=print_all_errors,tolerance=tolerance, name=name)
+
+
+    # check logloss
+    print(logloss_train[0, 0])
+    print(logloss_train[0, 1])
+    print(logloss_train[0, 2])
+    print(logloss_test[0, 2])
+    sys.stdout.flush()
+
+    #Train only
+    if validFraction==0.0 and nFolds == 0:
+        assert logloss_train[0, 0] < .47
+        assert logloss_train[1,0] < .47
+        assert logloss_train[2,0] < .47
+        assert logloss_test[0, 0] < .47
+        assert logloss_test[1, 0] < .47
+        assert logloss_test[2, 0] < .47
+
+    #Train + nfolds
+    if validFraction==0.0 and nFolds > 0:
+        assert logloss_train[0, 0] < .48
+        assert logloss_train[0, 1] < .44
+        assert logloss_train[1, 0] < .48
+        assert logloss_train[1, 1] < .48
+        assert logloss_train[2, 0] < .48
+        assert logloss_train[2, 1] < .44
+        assert logloss_test[0, 0] < .48
+        assert logloss_test[0, 1] < .44
+        assert logloss_test[1, 0] < .48
+        assert logloss_test[1, 1] < .48
+        assert logloss_test[2, 0] < .48
+        assert logloss_test[2, 1] < .44
+
+    #Train + validation
+    if validFraction > 0.0 and nFolds == 0:
+        assert logloss_train[0, 0] < .48
+        assert logloss_train[0, 2] < .44
+        assert logloss_train[1, 0] < .48
+        assert logloss_train[1, 2] < .44
+        assert logloss_train[2, 0] < .48
+        assert logloss_train[2, 2] < .44
+        assert logloss_test[0, 0] < .48
+        assert logloss_test[0, 2] < .44
+        assert logloss_test[1, 0] < .48
+        assert logloss_test[1, 2] < .44
+        assert logloss_test[2, 0] < .48
+        assert logloss_test[2, 2] < .44
+
+    #Train + validation + nfolds
+    if validFraction > 0.0 and nFolds > 0:
+        assert logloss_train[0, 0] < .48
+        assert logloss_train[0, 1] < .48
+        assert logloss_train[0, 2] < .44
+        assert logloss_train[1, 0] < .48
+        assert logloss_train[1, 1] < .48
+        assert logloss_train[1, 2] < .44
+        assert logloss_train[2, 0] < .48
+        assert logloss_train[2, 1] < .48
+        assert logloss_train[2, 2] < .44
+        assert logloss_test[0, 0] < .48
+        assert logloss_test[0, 1] < .48
+        assert logloss_test[0, 2] < .44
+        assert logloss_test[1, 0] < .48
+        assert logloss_test[1, 1] < .48
+        assert logloss_test[1, 2] < .44
+        assert logloss_test[2, 0] < .48
+        assert logloss_test[2, 1] < .48
+        assert logloss_test[2, 2] < .44
+    
 
     sys.stdout.flush()
 
