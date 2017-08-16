@@ -107,13 +107,13 @@ def test_glm_ipums_gpu2_fold1(): fun(2, 1, 20, 3, validFraction=0.2)
 def test_glm_ipums_gpu2_fold5(): fun(3, 5, 20, 3, validFraction=0.2)
 
 
-def test_glm_ipums_cpu_fold1_quick(): fun(0, 1, 3, 3, validFraction=0.2)
+#def test_glm_ipums_cpu_fold1_quick(): fun(0, 1, 3, 3, validFraction=0.2)
 
 
-def test_glm_ipums_cpu_fold1(): fun(0, 1, 20, 3, validFraction=0.2)
+#def test_glm_ipums_cpu_fold1(): fun(0, 1, 20, 3, validFraction=0.2)
 
 
-def test_glm_ipums_cpu_fold5(): fun(0, 5, 20, 3, validFraction=0.2)
+#def test_glm_ipums_cpu_fold5(): fun(0, 5, 20, 3, validFraction=0.2)
 
 
 if __name__ == '__main__':
@@ -129,6 +129,6 @@ if __name__ == '__main__':
     test_glm_ipums_gpu2_fold1()
     test_glm_ipums_gpu2_fold5()
 
-    test_glm_ipums_cpu_fold1_quick()
-    test_glm_ipums_cpu_fold1()
-    test_glm_ipums_cpu_fold5()
+#    test_glm_ipums_cpu_fold1_quick()
+#    test_glm_ipums_cpu_fold1()
+#    test_glm_ipums_cpu_fold5()

@@ -1077,3 +1077,4 @@ class GLM(object):
         self.free_preds()
 
 
+#TODO(jon): add option to pass in min max of alphas and lambdamax.
