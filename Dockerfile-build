@@ -33,5 +33,5 @@ RUN \
   update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
   python -m pip install --upgrade pip && \
   apt-get clean && \
-  rm -rf /var/cache/apt/*
+  rm -rf /var/cache/apt/* && \
   apt-get install -y libopenblas-dev
