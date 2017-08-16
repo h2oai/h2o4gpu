@@ -39,8 +39,8 @@ pipeline {
                     mkdir h2oai_env
                     virtualenv --python=/usr/bin/python3.6 h2oai_env
                     . h2oai_env/bin/activate
-                    pip install --upgrade pip setuptools python-dateutil numpy psutil 
-                    pip install -r requirements.txt
+                    .h2oai_env/bin/python -m pip install --upgrade pip setuptools python-dateutil numpy psutil
+                    .h2oai_env/bin/python -m pip install install -r requirements.txt
                     make allclean
                 """
                 stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
