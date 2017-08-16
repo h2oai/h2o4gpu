@@ -22,7 +22,7 @@ pipeline {
             agent {
                 dockerfile {
                     label "gpu"
-                    filename "Dockerfile.build"
+                    filename "Dockerfile-build"
                 }
             }
             steps {
