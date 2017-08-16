@@ -48,8 +48,10 @@ CUB_HOME=../cub/
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
+OPTFLAG=-O3
 ifeq ($(USEDEBUG),1)
 DFLAGS+=-DDEBUG
+OPTFLAG=-O0 -g # override default
 endif
 ifeq ($(USENCCL),1)
 DFLAGS+=-DUSE_NCCL
@@ -63,7 +65,7 @@ ifeq ($(USENVTX),1)
 CUDFLAGS+=-I/usr/local/cuda/include
 endif
 
-CXXFLAGS=$(IFLAGS) -O3 $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include
 endif
@@ -81,7 +83,7 @@ endif
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
-CUFLAGS=$(IFLAGS) -std=c++11 -O3 $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
+CUFLAGS=$(IFLAGS) -std=c++11 $(OPTFLAG) $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas $(NVCC_GENCODE)
 #-gencode arch=compute_20,code=sm_20
 

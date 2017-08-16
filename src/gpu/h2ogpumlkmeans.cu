@@ -65,7 +65,7 @@ void nonrandom_data(int verbose, const char ord, thrust::device_vector <T> &arra
             host_array[i] = srcdata[indexi*d + indexj];
 #endif
         }
-#if(DEBUG)
+#if(DEBUGKMEANS)
         for(int i = 0; i < npergpu; i++) {
           for(int j = 0; j < d; j++) {
             fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
@@ -99,7 +99,7 @@ void nonrandom_data_new(int verbose, std::vector<int> v, const char ord, thrust:
                 host_array[i * d + j] = srcdata[v[q * npergpu + i] + j * n]; // shift by which gpu
             }
         }
-#if(DEBUG)
+#if(DEBUGKMEANS)
         for(int i = 0; i < npergpu; i++) {
           for(int j = 0; j < d; j++) {
             fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
@@ -186,7 +186,7 @@ void random_centroids(int verbose, int seed, const char ord,
             int reali = dis(gen); // + q*npergpu; // row sampled (called indexj above)
             for (int j = 0; j < d; j++) { // cols
                 host_array[i * d + j] = srcdata[reali + j * n];
-#if(DEBUG)
+#if(DEBUGKMEANS)
                 fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,reali,host_array[i*d+j]); fflush(stderr);
 #endif
             }
@@ -219,7 +219,7 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord, thrus
         for (int i = 0; i < k; i++) { // rows
             for (int j = 0; j < d; j++) { // cols
                 host_array[i * d + j] = srcdata[v[i] + j * n];
-#if(DEBUG)
+#if(DEBUGKMEANS)
                 fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,v[i],host_array[i*d+j]); fflush(stderr);
 #endif
             }
@@ -425,7 +425,7 @@ namespace h2ogpumlkmeans {
                 if (q == masterq) continue;
                 cudaSetDevice(dList[q]);
                 cudaStreamDestroy(*(streams[q]));
-#if(DEBUG)
+#if(DEBUGKMEANS)
                 thrust::host_vector<T> h_centroidq=*d_centroids[q];
                 for(int ii=0;ii<k*d;ii++){
                     fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);

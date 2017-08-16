@@ -17,13 +17,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
+    name = str(sys._getframe().f_code.co_name)
+    name = sys._getframe(1).f_code.co_name
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
     sys.stdout.flush()
 
-    name = sys._getframe(1).f_code.co_name
-    #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
 
     print("Reading Data")
     # from numpy.random import randn
@@ -35,14 +35,14 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     # Rscript ipums.R  runs glmnet on ipums
     #
-    df = pd.read_csv("./tests/data/ipums_1k.csv")
+    df = pd.read_csv("./data/ipums_1k.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
 
     t1 = time.time()
     rmse_train, rmse_test = elastic_net(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0)
+                                        validFraction=validFraction, verbose=0, name=name)
 
     # check rmse
     print(rmse_train[0, 0])
@@ -78,41 +78,40 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print("DONE.")
     sys.stdout.flush()
 
-
-def test_glm_ipums_gpu_fold1_quick_0(): fun(1, 1, 3, 3, validFraction=0)
-
-
-def test_glm_ipums_gpu_fold1_0(): fun(1, 1, 20, 3, validFraction=0)
+def test_glm_ipums_gpu_fold1_quick_0(): fun(nGPUs=1, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold5_0(): fun(1, 5, 20, 3, validFraction=0)
+def test_glm_ipums_gpu_fold1_0(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold1_quick(): fun(1, 1, 5, 3, validFraction=0.2)
+def test_glm_ipums_gpu_fold5_0(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold1(): fun(1, 1, 20, 3, validFraction=0.2)
+def test_glm_ipums_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu_fold5(): fun(1, 5, 20, 3, validFraction=0.2)
+def test_glm_ipums_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu2_fold1_quick(): fun(2, 1, 3, 3, validFraction=0.2)
+def test_glm_ipums_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu2_fold1(): fun(2, 1, 20, 3, validFraction=0.2)
+def test_glm_ipums_gpu2_fold1_quick(): fun(nGPUs=2, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu2_fold5(): fun(3, 5, 20, 3, validFraction=0.2)
+def test_glm_ipums_gpu2_fold1(): fun(nGPUs=2, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_cpu_fold1_quick(): fun(0, 1, 3, 3, validFraction=0.2)
+def test_glm_ipums_gpu2_fold5(): fun(nGPUs=3, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_cpu_fold1(): fun(0, 1, 20, 3, validFraction=0.2)
-
-
-def test_glm_ipums_cpu_fold5(): fun(0, 5, 20, 3, validFraction=0.2)
+# def test_glm_ipums_cpu_fold1_quick(): fun(nGPUs=0, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0.2)
+#
+#
+# def test_glm_ipums_cpu_fold1(): fun(nGPUs=0, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
+#
+#
+# def test_glm_ipums_cpu_fold5(): fun(nGPUs=0, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
 if __name__ == '__main__':
@@ -128,6 +127,6 @@ if __name__ == '__main__':
     test_glm_ipums_gpu2_fold1()
     test_glm_ipums_gpu2_fold5()
 
-    test_glm_ipums_cpu_fold1_quick()
-    test_glm_ipums_cpu_fold1()
-    test_glm_ipums_cpu_fold5()
+    # test_glm_ipums_cpu_fold1_quick()
+    # test_glm_ipums_cpu_fold1()
+    # test_glm_ipums_cpu_fold5()

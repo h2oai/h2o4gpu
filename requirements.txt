@@ -27,4 +27,5 @@ xgbfir==0.2
 xlrd==1.0.0
 wheel==0.29.0
 future==0.16.0
+h2o==3.10.4.8
 -e git+https://github.com/fbcotter/py3nvml@ae2e8702a2dab9b5f0f020c19f379f6ac50d3452#egg=py3nvml

@@ -7,9 +7,10 @@ H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
-CUDA8 for GPU version, OpenMP (for distributed GPU version) and run:
+CUDA8 for GPU version and OpenMP
 
-pip install -r requirements.txt
+Environment
+--------
 
 - Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
 ````
@@ -22,6 +23,17 @@ R
 install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
 quit()
 ````
+
+- Install dev environment:
+
+```
+sudo apt-get install libopenblas-dev
+```
+
+If you are using conda, you probably need to do:
+```
+conda install libgcc
+```
 
 
 Add to .bashrc or your own environment (e.g.):
@@ -50,18 +62,30 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 To compile everything and install R and python interfaces as user:
 -----
 
-git clone git@github.com:h2ogpuml/h2ogpuml.git
+git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
 cd h2ogpuml
-bash gitshallow_submodules.sh
 make veryallclean
 
+To install python package and make wheel:
+-----
 
-To compile base library:
+make
+
+This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
+
+test python package
+------
+
+make test && make testbig
+
+
+To compile base library (unecessary if already did make allclean or make veryallclean):
 ------
 
 BASE=`pwd`
 
 cd $BASE/src && make -j all
+
 
 To run gpu C++ version:
 ------
@@ -87,28 +111,13 @@ test R package
 cd $BASE/examples/R && R CMD BATCH simple.R
 
 
-install python package and make wheel:
------
-
-make
-
-This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
-
-test python package
-------
-
-cd $BASE/examples/py && python elastic_net_sklearn.py
-
-
-
 Issues
 =====================
 
-If you are using conda, you probably need to do:  conda install libgcc
 
 ```
 
-Problem Classes
+Solver Classes
 ===============
 
 Among others, the solver can be used for the following classes of problems

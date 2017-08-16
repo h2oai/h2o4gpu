@@ -18,14 +18,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_seed=True):
+    name = str(sys._getframe().f_code.co_name)
+    name = str(sys._getframe(1).f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
     sys.stdout.flush()
     
-    name = sys._getframe(1).f_code.co_name
-    #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
-
     print("Reading Data")
     if 1==0: # not yet
         target=None
@@ -49,10 +48,10 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
         # should all be explicitly np.float32 or all np.float64
-        xtrain = np.loadtxt("./tests/data/xtrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
-        ytrain = np.loadtxt("./tests/data/ytrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
-        xtest = np.loadtxt("./tests/data/xtesthyatt_1k.csv", delimiter=',', dtype=np.float32)
-        ytest = np.loadtxt("./tests/data/ytesthyatt_1k.csv", delimiter=',', dtype=np.float32)
+        xtrain = np.loadtxt("./data/xtrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
+        ytrain = np.loadtxt("./data/ytrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
+        xtest = np.loadtxt("./data/xtesthyatt_1k.csv", delimiter=',', dtype=np.float32)
+        ytest = np.loadtxt("./data/ytesthyatt_1k.csv", delimiter=',', dtype=np.float32)
         wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
         print("Testing GLM")
 
@@ -63,7 +62,7 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     display = 1
     t1 = time.time()
     write=1
-    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
+    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu, name=name)
 
     # check rmse
     print(rmse_train[0,0])
@@ -89,18 +88,18 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     print("DONE.")
     sys.stdout.flush()
 
-def test_glm_hyatt_gpu_fold1_quick(): fun(True, 1, 5, 3, classification=False)
+def test_glm_hyatt_gpu_fold1_quick(): fun(use_gpu=True, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
 
-def test_glm_hyatt_gpu_fold1(): fun(True, 1, 100, 8, classification=False)
+def test_glm_hyatt_gpu_fold1(): fun(use_gpu=True, nFolds=1, nLambdas=100, nAlphas=8, classification=False)
 
-def test_glm_hyatt_gpu_fold5(): fun(True, 5, 100, 3, classification=False)
+def test_glm_hyatt_gpu_fold5(): fun(use_gpu=True, nFolds=5, nLambdas=100, nAlphas=3, classification=False)
 
 
-def test_glm_hyatt_cpu_fold1_quick(): fun(False, 1, 5, 3, classification=False)
-
-def test_glm_hyatt_cpu_fold1(): fun(False, 1, 100, 8, classification=False)
-
-def test_glm_hyatt_cpu_fold5(): fun(False, 5, 100, 3, classification=False)
+# def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
+#
+# def test_glm_hyatt_cpu_fold1(): fun(use_gpu=False, nFolds=1, nLambdas=10, nAlphas=8, classification=False)
+#
+# def test_glm_hyatt_cpu_fold5(): fun(use_gpu=False, nFolds=5, nLambdas=10, nAlphas=3, classification=False)
 
 
 if __name__ == '__main__':
@@ -108,6 +107,6 @@ if __name__ == '__main__':
 	test_glm_hyatt_gpu_fold1()
 	test_glm_hyatt_gpu_fold5()
 
-	test_glm_hyatt_cpu_fold1_quick()
-	test_glm_hyatt_cpu_fold1()
-	test_glm_hyatt_cpu_fold5()
+	# test_glm_hyatt_cpu_fold1_quick()
+	# test_glm_hyatt_cpu_fold1()
+	# test_glm_hyatt_cpu_fold5()

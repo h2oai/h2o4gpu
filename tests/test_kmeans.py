@@ -1,4 +1,5 @@
 import h2ogpuml as h2ogpuml
+import sys
 import pandas as pd
 import numpy as np
 import random
@@ -59,8 +60,9 @@ class TestKmeans(object):
 
     @staticmethod
     def _fetch_data():
-        train_file = "./tests/data/kmeans_homesite_train.csv"
-        test_file = "./tests/data/kmeans_homesite_test.csv"
+        train_file = "./data/kmeans_homesite_train.csv"
+        test_file = "./data/kmeans_homesite_test.csv"
+
         train = pd.read_csv(train_file)
         test = pd.read_csv(test_file)
         train.drop(['QuoteConversion_Flag'], axis=1, inplace=True)

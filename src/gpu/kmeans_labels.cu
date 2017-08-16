@@ -103,7 +103,7 @@ namespace kmeans {
         detail::make_self_dots(k, d, centroids, centroid_dots);
         detail::make_all_dots(n, k, data_dots, centroid_dots, pairwise_distances);
 
-#if(DEBUG)
+#if(DEBUGKMEANS)
         thrust::host_vector<float> h_data_dots = data_dots;
         thrust::host_vector<float> h_centroid_dots = centroid_dots;
         thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
@@ -212,7 +212,7 @@ namespace kmeans {
           }
 
           thrust::for_each(pairwise_distances.begin(), pairwise_distances.end(), absolute_value<float>() ); // in-place transformation to ensure all distances are positive indefinite
-#if(DEBUG)
+#if(DEBUGKMEANS)
           thrust::host_vector<float> h_data = data;
           thrust::host_vector<float> h_centroids = centroids;
           thrust::host_vector<float> h_pairwise_distances = pairwise_distances;

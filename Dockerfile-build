@@ -1,0 +1,46 @@
+# Copy this file and Run from one level higher than the git pull directory
+# To build: docker build -t opsh2oai/h2oai-nv -f Dockerfile-nvdocker .
+# To run with docker run -it -p 12345:12345 opsh2oai/h2oai-nv
+
+FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04
+MAINTAINER H2o.ai <ops@h2o.ai>
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
+ENV CUDADIR=/usr/local/cuda/include/
+ENV OMP_NUM_THREADS=32
+ENV MKL_NUM_THREADS=32
+ENV VECLIB_MAXIMUM_THREADS=32
+
+RUN \
+  apt-get -y update && \
+  apt-get -y install curl apt-utils python-software-properties \
+  software-properties-common iputils-ping wget cpio net-tools \
+  git zip s3cmd dirmngr && \
+  # Setup Repos
+  add-apt-repository ppa:fkrull/deadsnakes  && \
+  apt-get update -yqq && \
+  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+  # Install H2o dependencies
+  apt-get install -y \
+    python3.6 \
+    python3.6-dev \
+    virtualenv \
+    build-essential && \
+  apt-get install -y libopenblas-dev
+
+RUN \
+  mkdir h2oai_env && \
+  virtualenv --python=/usr/bin/python3.6 h2oai_env && \
+  . h2oai_env/bin/activate && \
+  pip install --upgrade pip setuptools python-dateutil numpy \
+  psutil 
+
+# Add requirements
+COPY requirements.txt requirements.txt
+RUN \
+  . h2oai_env/bin/activate && \
+  pip install -r requirements.txt

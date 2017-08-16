@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_seed=True):
+    name = str(sys._getframe().f_code.co_name)
     t = time.time()
 
     print("cwd: %s" % (os.getcwd()))
@@ -49,10 +50,10 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
         # should all be explicitly np.float32 or all np.float64
-        xtrain = np.loadtxt("./testsbig/data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
-        ytrain = np.loadtxt("./testsbig/data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
-        xtest = np.loadtxt("./testsbig/data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
-        ytest = np.loadtxt("./testsbig/data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
+        xtrain = np.loadtxt("./data/xtrainhyatt.csv", delimiter=',', dtype=np.float32)
+        ytrain = np.loadtxt("./data/ytrainhyatt.csv", delimiter=',', dtype=np.float32)
+        xtest = np.loadtxt("./data/xtesthyatt.csv", delimiter=',', dtype=np.float32)
+        ytest = np.loadtxt("./data/ytesthyatt.csv", delimiter=',', dtype=np.float32)
         wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
         print("Testing GLM")
 
@@ -63,7 +64,7 @@ def fun(use_gpu=False, nFolds=1, nLambdas=100, nAlphas=8, classification=False, 
     display = 1
     t1 = time.time()
     write=1
-    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu)
+    pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu, name=name)
 
     # check rmse
     print(rmse_train[0,0])

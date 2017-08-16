@@ -39,8 +39,10 @@ LINKFLAGS+=-lnccl
 endif
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
+OPTFLAG=-O3
 ifeq ($(USEDEBUG),1)
 DFLAGS+=-DDEBUG
+OPTFLAG=-O0 -g # override default
 endif
 ifeq ($(USENCCL),1)
 DFLAGS+=-DUSE_NCCL
@@ -73,7 +75,7 @@ SHARED=so
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) -O3 $(HASH) -I$(H2OGPUMLROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2OGPUMLROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif

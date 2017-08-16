@@ -10,19 +10,19 @@ from h2ogpuml.util.typechecks import assert_is_type
 """
 H2O GLM Solver
 
-:param n_threads
-:param n_gpus
-:param order
-:param intercept
-:param lambda_min_ratio
-:param n_lambdas
-:param n_folds
-:param n_alphas
-:param stop_early
-:param stop_early_error_fraction
-:param max_interations
-:param verbose
-:param family
+:param int n_threads: Number of threads to use in the gpu. Default is None.
+:param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
+:param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
+:param bool intercept: Include constant term in the model. Default is True.
+:param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
+:param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
+:param int n_folds: Number of cross validation folds. Default is 1.
+:param int n_alphas: Number of alphas to be used in a search. Default is 1.
+:param bool stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
+:param float stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
+:param int max_interations: Maximum number of iterations. Default is 5000
+:param int verbose: Print verbose information to the console if set to > 0. Default is 0.
+:param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 """
 
 class GLM(object):
@@ -31,24 +31,26 @@ class GLM(object):
 
     class solution:
         pass
-
-    def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=1,lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000,
+#TODO: add gpu_id like kmeans and ensure wraps around deviceCount
+    def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=True,lambda_min_ratio=1E-7,
+                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=True, stop_early_error_fraction=1.0, max_iterations=5000,
                  verbose=0, family="elasticnet"):
 
         # Type Checking
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
         assert_is_type(order, str)
-        assert_is_type(intercept, int)
+        assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
+        assert_is_type(intercept, bool)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
-        assert_is_type(stop_early, int)
+        assert_is_type(stop_early, bool)
         assert_is_type(stop_early_error_fraction, float)
         assert_is_type(max_iterations, int)
         assert_is_type(verbose, int)
         assert_is_type(family, str)
+        assert family in ['logistic', 'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
 
         self.n = 0
         self.m_train = 0
@@ -56,7 +58,10 @@ class GLM(object):
         self.source_dev = 0  # assume Dev=0 is source of data for upload_data
         self.source_me = 0  # assume thread=0 is source of data for upload_data
         self.ord = ord(order)
-        self.intercept = intercept
+        if intercept is True:
+            self.intercept = 1
+        else:
+            self.intercept = 0
         self.lambda_min_ratio = lambda_min_ratio
         self.n_lambdas = n_lambdas
         self.n_folds = n_folds
@@ -64,7 +69,10 @@ class GLM(object):
         self.uploaded_data = 0
         self.did_fit_ptr = 0
         self.did_predict = 0
-        self.stop_early = stop_early
+        if stop_early is True:
+            self.stop_early = 1
+        else:
+            self.stop_early = 0
         self.stop_early_error_fraction = stop_early_error_fraction
         self.max_iterations = max_iterations
         self.verbose = verbose
@@ -103,7 +111,7 @@ class GLM(object):
         else:
             raise RuntimeError( "Couldn't instantiate GLM Solver")
 
-
+    # TODO Add typechecking
     def upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
         if self.uploaded_data == 1:
             self.free_data()
@@ -403,6 +411,7 @@ class GLM(object):
         self.e = e
         return a, b, c, d, e
 
+    # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
     def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0,
                 free_input_data=0, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0):
@@ -620,6 +629,7 @@ class GLM(object):
             else:
                 return self.valid_pred_vs_alphapure
 
+    # TODO Add typechecking
     def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0,
             free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
@@ -789,6 +799,7 @@ class GLM(object):
             else:
                 return self.valid_pred_vs_alphapure
 
+    # TODO Add typechecking
     def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
@@ -804,6 +815,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0, verbose=0):
         do_predict = 1
         # print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
@@ -821,6 +833,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0,
                     free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                     verbose=None):
@@ -857,6 +870,7 @@ class GLM(object):
         else:
             return self.prediction  # something like valid_y
 
+    # TODO Add typechecking
     def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0,
                         free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                         verbose=None):

@@ -11,6 +11,9 @@ def devicecount(n_gpus=0):
             print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
             n_gpus = 1
 
+    if n_gpus > deviceCount:
+        n_gpus = deviceCount
+
     return (n_gpus, deviceCount)
 
 # get GPU info, but do in sub-process to avoid mixing parent-child cuda contexts

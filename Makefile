@@ -56,14 +56,19 @@ sync_smalldata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
-sync_data:
+sync_otherdata:
 	@echo "---- Synchronizing data dir in test/ ----"
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
 
+sync_data: sync_smalldata sync_otherdata
+
 default: all
 
-all: cpp c py r
+all: update_submodule cpp c py r
+
+update_submodule:
+	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
 	$(MAKE) -j all -C src/
@@ -84,6 +89,7 @@ veryallclean: clean deps_fetch deps_install all
 allclean: clean all
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean
+	rm -rf ./results/
 
 cleancpp:
 	$(MAKE) -j clean -C src/
@@ -101,13 +107,43 @@ cleanr:
 getotherdata:
 	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/testsbig/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
 
+#################3
+
 dotest:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml tests 2> ./tmp/h2oai-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2oai-test.xml testsbig 2> ./tmp/h2oai-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+
+#####################
+
+dotestperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	bash showresults.sh
+
+dotestbigperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	bash showresults.sh
+
+#########################
+
+dotestperfpython:
+	mkdir -p ./tmp/
+	bash getresults.sh $(LOGEXT)
+	bash showresults.sh
+
+dotestbigperfpython:
+	mkdir -p ./tmp/
+	bash getresultsbig.sh $(LOGEXT)
+	bash showresults.sh
+
+
+
+###################
 
 test: all sync_data dotest
 
@@ -116,6 +152,18 @@ testbig: all sync_data dotestbig
 testquick: dotest
 
 testbigquick: dotestbig
+
+################
+
+testperf: all sync_data dotestperf
+
+testbigperf: all sync_data dotestbigperf
+
+testquickperf: dotestperf
+
+testbigquickperf: dotestbigperf
+
+################
 
 deps_clean: 
 	@echo "----- Cleaning deps -----"
@@ -127,9 +175,18 @@ deps_fetch: deps_clean
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
+	bash gitshallow_submodules.sh
 
-deps_install: deps_fetch getotherdata
+deps_install: deps_fetch sync_data
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
+
+wheel_in_docker:
+	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+
+clean_in_docker:
+	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make clean'
 
