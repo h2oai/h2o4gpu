@@ -36,6 +36,7 @@ pipeline {
                         userRemoteConfigs: scm.userRemoteConfigs])
 
                 sh """
+                    rm -rf h2oai_env
                     mkdir h2oai_env
                     virtualenv --python=/usr/bin/python3.6 h2oai_env
                     . h2oai_env/bin/activate
