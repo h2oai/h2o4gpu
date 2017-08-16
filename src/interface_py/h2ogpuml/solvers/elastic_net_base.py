@@ -34,7 +34,7 @@ class GLM(object):
 #TODO: add gpu_id like kmeans and ensure wraps around deviceCount
     def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=True,lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=True, stop_early_error_fraction=1.0, max_iterations=5000,
-                 verbose=0, family="elasticnet"):
+                 verbose=0, family="elasticnet", give_full_path=0):
 
         # Type Checking
         assert_is_type(n_threads, int, None)
@@ -77,6 +77,8 @@ class GLM(object):
         self.max_iterations = max_iterations
         self.verbose = verbose
         self._family = ord(family.split()[0][0])
+
+        self.give_full_path = give_full_path
         
         #Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
@@ -113,7 +115,7 @@ class GLM(object):
 
     # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
-    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0, do_predict=0,
+    def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=None, do_predict=0,
                 free_input_data=0, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0):
         # store some things for later call to predict_ptr()
         self.source_dev = source_dev
@@ -126,7 +128,10 @@ class GLM(object):
         self.c = c
         self.d = d
         self.e = e
-        self.give_full_path = give_full_path
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
 
         if stop_early is None:
             stop_early = self.stop_early
@@ -330,10 +335,13 @@ class GLM(object):
                 return self.valid_pred_vs_alphapure
 
     # TODO Add typechecking
-    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0, do_predict=0,
+    def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=None, do_predict=0,
             free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
-        self.give_full_path = give_full_path
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
         ################
         self.train_x = train_x
         self.train_y = train_y
@@ -500,7 +508,12 @@ class GLM(object):
                 return self.valid_pred_vs_alphapure
 
     # TODO Add typechecking
-    def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=0, free_input_data=1):
+    def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=None, free_input_data=1):
+        # override self if chose to pass this option
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike _upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
         do_predict = 1
@@ -509,14 +522,23 @@ class GLM(object):
                                             free_input_data)
         else:
             self.prediction_full = None
-        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, 0, do_predict, free_input_data)
-        if give_full_path:
+        oldgivefullpath = self.give_full_path
+        tempgivefullpath = 0
+        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, tempgivefullpath, do_predict, free_input_data)
+        self.give_full_path = oldgivefullpath
+        if give_full_path == 1:
             return self.prediction_full  # something like valid_y
         else:
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
-    def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=0, free_input_data=0, verbose=0):
+    def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=None, free_input_data=0, verbose=0):
+        # override self if chose to pass this option
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
+
         do_predict = 1
         # print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
         self.prediction = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a,
@@ -528,15 +550,21 @@ class GLM(object):
                                                 do_predict, free_input_data, verbose)
         else:
             self.prediction_full = None
-        if give_full_path:
+        if give_full_path == 1:
             return self.prediction_full  # something like valid_y
         else:
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
-    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=0,
+    def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=None,
                     free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                     verbose=None):
+        # override self if chose to pass this option
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
+
         if stop_early is None:
             stop_early = self.stop_early
         if stop_early_error_fraction is None:
@@ -571,9 +599,15 @@ class GLM(object):
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
-    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=0,
+    def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=None,
                         free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                         verbose=None):
+        # override self if chose to pass this option
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
+
         do_predict = 0  # only fit at first
         if stop_early is None:
             stop_early = self.stop_early

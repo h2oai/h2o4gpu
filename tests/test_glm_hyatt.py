@@ -58,7 +58,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
         classes = 1 if not classification else len(y.unique())
         print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
     else:
-        if 1 == 1:  # avoid for now so get info
+        if 1 == 0:  # avoid for now so get info
             # should all be explicitly np.float32 or all np.float64
             xtrain = np.loadtxt("./data/xtrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
             ytrain = np.loadtxt("./data/ytrainhyatt_1k.csv", delimiter=',', dtype=np.float32)

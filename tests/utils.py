@@ -141,14 +141,14 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     Solver = h2ogpuml.GLM
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
-                  n_folds=nFolds, n_alphas=nAlphas, verbose=5)
+                  n_folds=nFolds, n_alphas=nAlphas, verbose=5, give_full_path=give_full_path)
 
     print("Solving")
     sys.stdout.flush()
     if use_gpu == 1:
-        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e, give_full_path=give_full_path)
+        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e)
     else:
-        enet.fit(a, b, c, d, e, give_full_path=give_full_path)
+        enet.fit(a, b, c, d, e)
     # t1 = time.time()
     print("Done Solving\n")
     sys.stdout.flush()
@@ -158,9 +158,9 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print('Predicting')
     sys.stdout.flush()
     if use_gpu == 1:
-        pred_val = enet.predict_ptr(c, d, give_full_path=give_full_path)
+        pred_val = enet.predict_ptr(c, d)
     else:
-        pred_val = enet.predict(c, give_full_path=give_full_path)
+        pred_val = enet.predict(c)
     print('Done Predicting')
     sys.stdout.flush()
     print('predicted values:\n', pred_val)
@@ -234,6 +234,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
+    give_full_path = 1
 
     # Setup Train/validation Set Split
     morig = X.shape[0]
@@ -288,7 +289,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     sys.stdout.flush()
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio,
-                  n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family)
+                  n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family, give_full_path=give_full_path)
 
     print("trainX")
     print(trainX)
@@ -333,7 +334,9 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     tols = enet.tols
     print(tols)
 
-    testvalidY = np.dot(trainX, Xvsalpha.T)
+    Xvsalphabest=enet.X_best
+
+    testvalidY = np.dot(trainX, Xvsalphabest.T)
     print("testvalidY (newvalidY should be this)")
     if family != "logistic":
         print(testvalidY)
@@ -379,7 +382,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     if print_all_errors:
         print("PRINT ALL ERRORS")
-        print(printallerrors(display=1, enet=enet, str="Train", give_full_path=0))
+        print(printallerrors(display=1, enet=enet, str="Train", give_full_path=give_full_path))
 
     enet.finish()
     print("Done Reporting")
@@ -518,7 +521,14 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         if os.getenv("H2OGLM_DISABLEPYTEST") is None:
             assert doassert==0
 
-    return error_train, error_test
+    if len(np.shape(error_train)) == 2:
+       myerror_train = error_train
+       myerror_test = error_test
+    if len(np.shape(error_train)) == 3:
+        myerror_train = error_train[0]
+        myerror_test = error_test[0]
+
+    return myerror_train, myerror_test
 
 # TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?
 # TODO(navdeep): You can mimic my "showresults.sh" process for make testperf and have timers that measure fit and predict performance for h2ogpuml and h2o-3.  I think just showing the ratio of the two is good, showing time for h2ogpuml over h2o-3 (so smaller is better).
