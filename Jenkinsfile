@@ -36,6 +36,7 @@ pipeline {
                         userRemoteConfigs: scm.userRemoteConfigs])
 
                 sh """
+                    . /h2oai/bin/activate
                     make allclean
                 """
                 stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
@@ -47,7 +48,7 @@ pipeline {
             agent {
                 dockerfile {
                     label "gpu"
-                    filename "Dockerfile.build"
+                    filename "Dockerfile-build"
                 }
             }
             steps {
