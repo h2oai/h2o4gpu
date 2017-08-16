@@ -119,6 +119,27 @@ class GLM(object):
 
     # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
+    """
+    Train a model using GLM Solver with pointers to data on GPU
+    
+    :param source_dev
+    :param m_train
+    :parm n
+    :param m_valid
+    :param precision
+    :param a
+    :param b
+    :param c
+    :param d
+    :param e
+    :param give_full_path
+    :param do_predict
+    :param free_input_data
+    :param stop_early
+    :param stop_early_error_fraction
+    :param max_iterations
+    :param verbose
+    """
     def fit_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=None, do_predict=0,
                 free_input_data=0, stop_early=1, stop_early_error_fraction=1.0, max_iterations=5000, verbose=0):
         # store some things for later call to predict_ptr()
@@ -339,6 +360,22 @@ class GLM(object):
                 return self.valid_pred_vs_alphapure
 
     # TODO Add typechecking
+    """
+    Train the model using GLM Solver
+    
+    :param train_x
+    :param train_ y
+    :param valid_x
+    :param valid_y
+    :param weight
+    :param give_full_path
+    :param do_predict
+    :param free_input_data
+    :param stop_early
+    :param stop_early_error_fraction
+    :param max_iterations
+    :param verbose
+    """
     def fit(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=None, do_predict=0,
             free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None, verbose=None):
         #
@@ -512,6 +549,15 @@ class GLM(object):
                 return self.valid_pred_vs_alphapure
 
     # TODO Add typechecking
+    """
+    Obtains predictions from fitted GLM Solver
+
+    :param valid_x
+    :param valid_ y
+    :param testweight
+    :param give_full_path
+    :param free_input_data
+    """
     def predict(self, valid_x, valid_y=None, testweight=None, give_full_path=None, free_input_data=1):
         # override self if chose to pass this option
         if give_full_path is not None:
@@ -537,6 +583,14 @@ class GLM(object):
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
+    """
+    Obtains predictions from fitted GLM Solver with data that is on GPU
+
+    :param valid_xptr
+    :param valid_ yptr
+    :param free_input_data
+    :param verbose
+    """
     def predict_ptr(self, valid_xptr, valid_yptr=None, give_full_path=None, free_input_data=0, verbose=0):
         # override self if chose to pass this option
         if give_full_path is not None:
@@ -561,6 +615,21 @@ class GLM(object):
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
+    """
+    Train a model using GLM Solver and predict on validation set
+
+    :param train_x
+    :param train_ y
+    :param valid_x
+    :param valid_y
+    :param weight
+    :param give_full_path
+    :param free_input_data
+    :param stop_early
+    :param stop_early_error_fraction
+    :param max_iterations
+    :param verbose
+    """
     def fit_predict(self, train_x, train_y, valid_x=None, valid_y=None, weight=None, give_full_path=None,
                     free_input_data=1, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                     verbose=None):
@@ -604,6 +673,26 @@ class GLM(object):
             return self.prediction  # something like valid_y
 
     # TODO Add typechecking
+    """
+     Train a model using GLM Solver with pointers to data on GPU and predict on validation set that also has a pointer on GPU
+
+    :param source_dev
+    :param m_train
+    :parm n
+    :param m_valid
+    :param precision
+    :param a
+    :param b
+    :param c
+    :param d
+    :param e
+    :param give_full_path
+    :param free_input_data
+    :param stop_early
+    :param stop_early_error_fraction
+    :param max_iterations
+    :param verbose
+    """
     def fit_predict_ptr(self, source_dev, m_train, n, m_valid, precision, a, b, c, d, e, give_full_path=None,
                         free_input_data=0, stop_early=None, stop_early_error_fraction=None, max_iterations=None,
                         verbose=None):
