@@ -28,6 +28,7 @@ RUN \
   apt-get install -y \
     python3.6 \
     python3.6-dev \
+    python3-pip \
     virtualenv \
     build-essential && \
   apt-get install -y libopenblas-dev
