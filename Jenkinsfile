@@ -36,7 +36,7 @@ pipeline {
                         userRemoteConfigs: scm.userRemoteConfigs])
 
                 sh """
-                    . /h2oai/bin/activate
+                    . /h2oai_env/bin/activate
                     make allclean
                 """
                 stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
