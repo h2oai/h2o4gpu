@@ -230,7 +230,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     nThreads = None  # let internal method figure this out
     intercept = True
-    lambda_min_ratio = 1e-9
+    lambda_min_ratio = 1e-9 # Causes issue for h2o-3 when using 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
@@ -395,11 +395,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             if nfoldsh2o == 1:
                 nfoldsh2o = 0
             if family == "logistic":
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="binomial", alpha=alpha)
             else:
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept, lambda_min_ratio=lambda_min_ratio,
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="gaussian", alpha=alpha)
             # Solve
