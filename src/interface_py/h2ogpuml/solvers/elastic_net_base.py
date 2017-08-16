@@ -25,15 +25,18 @@ H2O GLM Solver
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 """
 
+
 class GLM(object):
     class info:
         pass
 
     class solution:
         pass
-#TODO: add gpu_id like kmeans and ensure wraps around deviceCount
-    def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=True,lambda_min_ratio=1E-7,
-                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=True, stop_early_error_fraction=1.0, max_iterations=5000,
+
+    # TODO: add gpu_id like kmeans and ensure wraps around deviceCount
+    def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=True, lambda_min_ratio=1E-7,
+                 n_lambdas=100, n_folds=1, n_alphas=1, stop_early=True, stop_early_error_fraction=1.0,
+                 max_iterations=5000,
                  verbose=0, family="elasticnet", give_full_path=0):
 
         # Type Checking
@@ -50,7 +53,8 @@ class GLM(object):
         assert_is_type(max_iterations, int)
         assert_is_type(verbose, int)
         assert_is_type(family, str)
-        assert family in ['logistic', 'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
+        assert family in ['logistic',
+                          'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
 
         self.n = 0
         self.m_train = 0
@@ -79,8 +83,8 @@ class GLM(object):
         self._family = ord(family.split()[0][0])
 
         self.give_full_path = give_full_path
-        
-        #Experimental features
+
+        # Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
         self._shared_a = 0
         self._standardize = 0
@@ -103,15 +107,15 @@ class GLM(object):
                 '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML CPU library')
             print('> Use GPU or re-run setup.py\n\n')
 
-        self.lib=None
+        self.lib = None
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
             print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
             self.lib = h2ogpumlGLMCPU
         elif ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
-                print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
-                self.lib = h2ogpumlGLMGPU
+            print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
+            self.lib = h2ogpumlGLMGPU
         else:
-            raise RuntimeError( "Couldn't instantiate GLM Solver")
+            raise RuntimeError("Couldn't instantiate GLM Solver")
 
     # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
@@ -475,7 +479,7 @@ class GLM(object):
         if do_predict == 0:
             if (m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y):
                 print("valid_x and valid_y must have same number of rows, but m_valid=%d m_valid_y=%d\n" % (
-                m_valid, m_valid_y))
+                    m_valid, m_valid_y))
                 exit(0)
         else:
             # otherwise m_valid is used, and m_valid_y can be there or not (sets whether do error or not)
@@ -524,7 +528,8 @@ class GLM(object):
             self.prediction_full = None
         oldgivefullpath = self.give_full_path
         tempgivefullpath = 0
-        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, tempgivefullpath, do_predict, free_input_data)
+        self.prediction = self.fit(None, None, valid_x, valid_y, testweight, tempgivefullpath, do_predict,
+                                   free_input_data)
         self.give_full_path = oldgivefullpath
         if give_full_path == 1:
             return self.prediction_full  # something like valid_y
@@ -642,7 +647,7 @@ class GLM(object):
     def family(self, value):
         # add check
         self._family = value
-        
+
     @property
     def shared_a(self):
         return self._shared_a
@@ -710,8 +715,8 @@ class GLM(object):
         # add check
         self._lambdas = value
 
-    #@lambdas2.setter
-    #def lambdas2(self, value):
+    # @lambdas2.setter
+    # def lambdas2(self, value):
     #    # add check
     #    self._lambdas2 = value
 
@@ -721,8 +726,9 @@ class GLM(object):
             return self._alphas
         else:
             return self._alphas2
+
     @alphas.setter
-    def alphas(self,value):
+    def alphas(self, value):
         self._alphas = value
 
     @property
@@ -731,8 +737,9 @@ class GLM(object):
             return self._tols
         else:
             return self._tols2
+
     @tols.setter
-    def tols(self,value):
+    def tols(self, value):
         self._tols = value
 
     @property
@@ -810,10 +817,9 @@ class GLM(object):
         self.free_sols()
         self.free_preds()
 
+    # TODO(jon): add option to pass in min max of alphas and lambdamax.
 
-#TODO(jon): add option to pass in min max of alphas and lambdamax.
-
-#Util/Hidden Functions
+    # Util/Hidden Functions
     def _upload_data(self, source_dev, train_x, train_y, valid_x=None, valid_y=None, weight=None):
         if self.uploaded_data == 1:
             self.free_data()
