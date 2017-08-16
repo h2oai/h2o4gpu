@@ -18,17 +18,20 @@ ENV VECLIB_MAXIMUM_THREADS=32
 RUN \
   apt-get -y update && \
   apt-get -y install curl apt-utils python-software-properties \
-  software-properties-common iputils-ping wget cpio net-tools \
+  software-properties-common iputils-ping wget cpio net-tools build-essential \
   git zip s3cmd dirmngr && \
   # Setup Repos
   add-apt-repository ppa:fkrull/deadsnakes  && \
-  apt-get update -yqq && \
+    apt-get update -yqq && \
   curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   # Install H2o dependencies
-  apt-get install -y \
+  apt-get -y --no-install-recommends  install \
     python3.6 \
     python3.6-dev \
-    python3-pip \
-    virtualenv \
-    build-essential && \
+    python3.6-venv \
+    python3-pip && \
+  update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
+  python -m pip install --upgrade pip && \
+  apt-get clean && \
+  rm -rf /var/cache/apt/*
   apt-get install -y libopenblas-dev
