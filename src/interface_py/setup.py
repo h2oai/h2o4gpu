@@ -76,17 +76,18 @@ setup(
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
-    package_dir={'interface_py': 'h2ogpuml','interface_py': 'xgboost'},
+    package_dir={'interface_py': 'h2ogpuml','interface_py': 'xgboost','interface_py': 'py3nvml'},
     package_data={'xgboost': ['*']},
     packages=['h2ogpuml',
               'h2ogpuml.libs',
               'h2ogpuml.solvers',
 	          'h2ogpuml.util',
-              'xgboost'
+              'xgboost',
+              'py3nvml'
     ],
     license='Apache v2.0',
     zip_safe=False,
-    description='H2O.ai Generalized Linear Modeling with Proximal Operator Graph Solver',
+    description='H2O.ai GPU Edition',
     install_requires=reqs,
     cmdclass={'build': H2OGPUMLBuild, 'install': H2OGPUMLInstall}
 )

@@ -4,16 +4,17 @@ default: all
 
 all:
 
-	# for incorporating xgboost
+	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../../xgboost/python-package/xgboost .
+	ln -sf ../../../py3nvml/build/lib/py3nvml .
 
 	python setup.py sdist bdist_wheel
 
-	# update build with xgboost
+	# update build with xgboost shared library
 	mkdir -p build/lib/xgboost/
 	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/lib/libxgboost.so  . ; cd ../../../
 
-	# Make wheel with xgboost added
+	# Make wheel with other builds added
 	rm -rf dist/*.whl
 	python setup.py sdist bdist_wheel
 

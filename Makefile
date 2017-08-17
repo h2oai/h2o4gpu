@@ -178,7 +178,7 @@ deps_fetch: deps_clean
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 	bash gitshallow_submodules.sh
 
-deps_install: deps_fetch sync_data libxgboost
+deps_install: deps_fetch sync_data libxgboost libpy3nvml
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
@@ -193,4 +193,7 @@ clean_in_docker:
 
 libxgboost:
 	cd xgboost ; git submodule init ; git submodule update dmlc-core ; git submodule update nccl ; git submodule update cub ; git submodule update rabit ; mkdir -p build ; cd build ; cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release ; make -j  ; cd ../python-package ; python setup.py sdist bdist_wheel ; cd dist ; pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
+
+libpy3nvml:
+	cd py3nvml ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
 
