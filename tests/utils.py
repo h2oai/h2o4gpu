@@ -395,6 +395,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
             if nfoldsh2o == 1:
                 nfoldsh2o = 0
             if family == "logistic":
+                #TODO need to figure out a proper lamba min for h2o-3
                 h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="binomial", alpha=alpha)
