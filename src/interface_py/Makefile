@@ -5,8 +5,8 @@ default: all
 all:
 
 	# for incorporating xgboost and py3nvml builds
-	ln -sf ../../../xgboost/python-package/xgboost .
-	ln -sf ../../../py3nvml/build/lib/py3nvml .
+	ln -sf ../../xgboost/python-package/xgboost .
+	ln -sf ../../py3nvml/py3nvml .
 
 	python setup.py sdist bdist_wheel
 
