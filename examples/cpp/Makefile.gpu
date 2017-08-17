@@ -6,7 +6,7 @@ include ../../src/config2.mk
 H2OGPUMLROOT=../../src
 
 # Example Files
-EXSRC=lasso.cpp lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp  svm.cpp
+EXSRC=./pogs/lasso.cpp ./pogs/lasso_path.cpp  ./pogs/logistic.cpp  ./pogs/lp_eq.cpp  ./pogs/lp_ineq.cpp  ./pogs/nonneg_l2.cpp  ./pogs/svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_ptr_driver.cpp
 EXSRC4=kmeans_driver.cpp
@@ -87,7 +87,7 @@ all: h2ogpuml-glm-gpu-orig h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans
 default: h2ogpuml-glm-gpu-orig h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
 
 # GPU
-h2ogpuml-glm-gpu-orig: run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
+h2ogpuml-glm-gpu-orig: ./pogs/run_all_orig.cpp examples.h $(EXSRC) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
 	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu-orig $(EXSRC) $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a  $(CULDFLAGS)
 
 h2ogpuml-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a

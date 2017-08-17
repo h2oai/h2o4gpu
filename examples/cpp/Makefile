@@ -13,7 +13,7 @@ all: cpuall gpuall
 
 default: gpuall
 
-SOURCESORIG=lasso.cpp  lasso_path2.cpp  lasso_path.cpp  logistic.cpp  lp_eq.cpp  lp_ineq.cpp  nonneg_l2.cpp run_all_orig.cpp  svm.cpp
+SOURCESORIG=./pogs/lasso.cpp  ./pogs/lasso_path2.cpp  ./pogs/lasso_path.cpp  ./pogs/logistic.cpp  ./pogs/lp_eq.cpp  ./pogs/lp_ineq.cpp  ./pogs/nonneg_l2.cpp ./pogs/run_all_orig.cpp  ./pogs/svm.cpp
 SOURCESALT=elastic_net.cpp run_all.cpp
 SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp
 

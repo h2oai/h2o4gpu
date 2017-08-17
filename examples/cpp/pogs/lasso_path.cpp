@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "reader.h"
 #include <limits>
 #include <random>
 #include "matrix/matrix_dense.h"

@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iterator>
 #include "examples.h"
-#include "reader.h"
+#include "../reader.h"
 #include "timer.h"
 
 typedef float real_t;
