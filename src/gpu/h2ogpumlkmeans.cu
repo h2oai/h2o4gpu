@@ -13,7 +13,7 @@
 
 #include "h2ogpumlkmeans.h"
 #include "include/kmeans.h"
-#include "kmeans_general.h"
+#include "include/kmeans_labels.h"
 
 #define CUDACHECK(cmd) do {                             \
     cudaError_t e = cmd;                                \
