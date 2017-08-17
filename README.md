@@ -38,8 +38,7 @@ conda install libgcc
 ```
 
 
-Add to .bashrc or your own environment (e.g.):
-------
+- Add to .bashrc or your own environment (e.g.):
 
 ```
 export CUDA_HOME=/usr/local/cuda
@@ -52,8 +51,10 @@ export MKL_NUM_THREADS=32
 export VECLIB_MAXIMUM_THREADS=32
 ```
 
-On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2ogpuml.
+Compiling and Running
 ------
+
+- Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2ogpuml.
 
 ```
 sudo nvidia-smi -pm 1
@@ -66,8 +67,7 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 ```
 
 
-To compile everything and install R and python interfaces as user:
------
+- To compile everything and install R and python interfaces as user:
 
 ```
 git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
@@ -75,8 +75,7 @@ cd h2ogpuml
 make veryallclean
 ```
 
-To install python package and make wheel:
------
+- To install python package and make wheel:
 
 ```
 make
@@ -84,16 +83,14 @@ make
 
 This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
 
-test python package
-------
+- test python package
 
 ```
 make test && make testbig
 ```
 
 
-To compile base library (unecessary if already did make allclean or make veryallclean):
-------
+- To compile base library (unecessary if already did make allclean or make veryallclean):
 
 ```
 BASE=`pwd`
@@ -102,22 +99,20 @@ cd $BASE/src && make -j all
 ```
 
 
-To run gpu C++ version:
-------
+- To run gpu C++ version:
 
 ```
 cd $BASE/examples/cpp && make -j all ; make run
 ```
 
-Or, to run 16-gpu version on ipums.txt data:
+- Or, to run 16-gpu version on ipums.txt data:
 
 ```
 ./h2ogpuml-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 ```
 
 
-install R package (assume in h2ogpuml base directory to start with)
-------
+- Install R package (assume in h2ogpuml base directory to start with)
 
 ```
 cd $BASE/src/interface_r && make
@@ -125,8 +120,7 @@ cd $BASE/src/interface_r && make
 # Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
 ```
 
-test R package
-------
+- test R package
 
 ```
 cd $BASE/examples/R && R CMD BATCH simple.R
@@ -135,7 +129,7 @@ cd $BASE/examples/R && R CMD BATCH simple.R
 
 
 Solver Classes
-===============
+------
 
 Among others, the solver can be used for the following classes of problems
 
@@ -148,7 +142,7 @@ Planned:
 
 
 References
-==========
+-----
 1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][pogs]
 2. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
 3. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
@@ -164,7 +158,7 @@ References
 [prox_algs]: http://www.stanford.edu/~boyd/papers/prox_algs.html "Proximal Algorithms -- N. Parikh and S. Boyd"
 
 Copyright
----------
+-----
 Copyright (c) 2017, H2O.ai, Inc., Mountain View, CA
 Apache License Version 2.0 (see LICENSE file)
 
