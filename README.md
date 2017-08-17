@@ -75,13 +75,7 @@ cd h2ogpuml
 make veryallclean
 ```
 
-- To install python package and make wheel:
-
-```
-make
-```
-
-This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
+This installs full h2ogpuml as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
 
 - test python package
 
@@ -89,15 +83,11 @@ This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/
 make test && make testbig
 ```
 
-
-- To compile base library (unecessary if already did make allclean or make veryallclean):
+- test performance and accuracy of python package
 
 ```
-BASE=`pwd`
-
-cd $BASE/src && make -j all
+make testperf && make testperfbig
 ```
-
 
 - To run gpu C++ version:
 
@@ -110,7 +100,6 @@ cd $BASE/examples/cpp && make -j all ; make run
 ```
 ./h2ogpuml-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 ```
-
 
 - Install R package (assume in h2ogpuml base directory to start with)
 
