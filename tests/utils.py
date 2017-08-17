@@ -73,7 +73,14 @@ def skip_if_no_smalldata():
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, use_gpu, name=None):
+def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None):
+
+    if nGPUs > 0:
+        use_gpu = True
+    else:
+        use_gpu = False
+    
+
     if use_gpu == 1:
 
         # nFolds, nAlphas, nLambdas = arg
@@ -97,7 +104,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
         import subprocess
         maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
         print("Maximum Number of GPUS:", maxNGPUS)
-        nGPUs = maxNGPUS  # choose all GPUs
+        #nGPUs = maxNGPUS  # choose all GPUs
         # nGPUs = 1
 
         n = train_data_mat.shape[1]
@@ -105,7 +112,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
         mValid = test_data_mat.shape[0]
 
     else:
-        nGPUs = 0
+        #nGPUs = 0
         n = xtrain.shape[1]
         mTrain = xtrain.shape[0]
         mValid = xtest.shape[0]
@@ -118,7 +125,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     sourceme = 0
     sourceDev = 0
-    intercept = True
+    intercept = True # should be passed in from above if user added intercept
     nThreads = None
     lambda_min_ratio = 1e-9
     give_full_path = 1
