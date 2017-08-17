@@ -9,16 +9,10 @@
 #include <cfloat>
 #include "kmeans_general.h"
 
-extern inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort = true);
-
-extern inline cudaError_t throw_on_cuda_error(cudaError_t code, const char *file, int line);
-
 #ifdef CUBLAS_API_H_
 // cuBLAS API errors
 static const char *cudaGetErrorEnum(cublasStatus_t error);
 #endif
-
-extern inline cublasStatus_t throw_on_cublas_error(cublasStatus_t code, const char *file, int line);
 
 extern cudaStream_t cuda_stream[MAX_NGPUS];
 

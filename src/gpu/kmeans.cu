@@ -130,19 +130,6 @@ namespace kmeans {
                                             *data[q], *centroids[q], *data_dots[q],
                                             *centroid_dots[q], *pairwise_distances[q]);
 
-                if(verbose) {
-                    *h_pairwise_distances[0] = *pairwise_distances[0];
-                    size_t countpos = 0;
-                    size_t countneg = 0;
-                    for (int ll = 0; ll < (*h_pairwise_distances[0]).size(); ll++) {
-                        T result = (*h_pairwise_distances[0])[ll];
-                        if (result > 0) countpos++;
-                        if (result < 0) countneg++;
-                    }
-                    fprintf(stderr, "countpos=%zu countneg=%zu\n", countpos, countneg);
-                    fflush(stderr);
-                }
-
                 detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
                 //TODO remove one memcpy
                 detail::memcpy(*labels_copy[q], *labels[q]);
