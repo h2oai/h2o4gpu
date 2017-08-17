@@ -573,10 +573,15 @@ namespace h2ogpumlkmeans {
             safe_cuda(cudaSetDevice(dList[q]));
             safe_cuda(cudaFree(d_changes[q]));
             kmeans::detail::labels_close();
-            delete (d_labels[q]);
-            delete (pairwise_distances[q]);
-            delete (data_dots[q]);
-            delete (centroid_dots[q]);
+            delete(d_labels[q]);
+            delete(pairwise_distances[q]);
+            delete(data_dots[q]);
+            delete(centroid_dots[q]);
+            delete(d_centroids[q]);
+            delete(d_data[q]);
+            delete(distances[q]);
+            delete(d_labels[q]);
+            delete(h_labels);
         }
 
         return 0;
@@ -660,9 +665,12 @@ namespace h2ogpumlkmeans {
         for (int q = 0; q < n_gpu; q++) {
             safe_cuda(cudaSetDevice(dList[q]));
             kmeans::detail::labels_close();
-            delete (d_pairwise_distances[q]);
-            delete (data_dots[q]);
-            delete (centroid_dots[q]);
+            delete(d_centroids[q]);
+            delete(d_data[q]);
+            delete(h_pairwise_distances);
+            delete(d_pairwise_distances[q]);
+            delete(data_dots[q]);
+            delete(centroid_dots[q]);
         }
 
         return 0;
