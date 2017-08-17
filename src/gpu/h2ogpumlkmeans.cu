@@ -14,13 +14,13 @@
 #include "include/kmeans_general.h"
 #include <csignal>
 
-#define CUDACHECK(cmd) do {                         \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));   \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
+#define CUDACHECK(cmd) do {                             \
+    cudaError_t e = cmd;                                \
+    if( e != cudaSuccess ) {                            \
+      printf("Cuda failure %s:%d '%s'\n",               \
+             __FILE__,__LINE__,cudaGetErrorString(e));  \
+      exit(EXIT_FAILURE);                               \
+    }                                                   \
   } while(0)
 
 
@@ -65,13 +65,14 @@ void nonrandom_data(int verbose, const char ord, thrust::device_vector <T> &arra
             host_array[i] = srcdata[indexi*d + indexj];
 #endif
         }
-#if(DEBUGKMEANS)
-        for(int i = 0; i < npergpu; i++) {
-          for(int j = 0; j < d; j++) {
-            fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
-          }
+        if (verbose) {
+            for (int i = 0; i < npergpu; i++) {
+                for (int j = 0; j < d; j++) {
+                    fprintf(stderr, "q=%d initdata[%d,%d]=%g\n", q, i, j, host_array[i * d + j]);
+                    fflush(stderr);
+                }
+            }
         }
-#endif
     } else {
         if (verbose) {
             fprintf(stderr, "ROW ORDER not changed\n");
@@ -99,13 +100,14 @@ void nonrandom_data_new(int verbose, std::vector<int> v, const char ord, thrust:
                 host_array[i * d + j] = srcdata[v[q * npergpu + i] + j * n]; // shift by which gpu
             }
         }
-#if(DEBUGKMEANS)
-        for(int i = 0; i < npergpu; i++) {
-          for(int j = 0; j < d; j++) {
-            fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,host_array[i*d+j]); fflush(stderr);
-          }
+        if (verbose) {
+            for (int i = 0; i < npergpu; i++) {
+                for (int j = 0; j < d; j++) {
+                    fprintf(stderr, "q=%d initdata[%d,%d]=%g\n", q, i, j, host_array[i * d + j]);
+                    fflush(stderr);
+                }
+            }
         }
-#endif
     } else {
         if (verbose) {
             fprintf(stderr, "ROW ORDER not changed\n");
@@ -174,7 +176,6 @@ void random_centroids(int verbose, int seed, const char ord,
         seed = rd();
     }
     std::mt19937 gen(seed);
-    //  std::uniform_int_distribution<>dis(0, npergpu-1); // random i in range from 0..npergpu-1
     std::uniform_int_distribution<> dis(0, n - 1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
 
     if (ord == 'c') {
@@ -186,9 +187,10 @@ void random_centroids(int verbose, int seed, const char ord,
             int reali = dis(gen); // + q*npergpu; // row sampled (called indexj above)
             for (int j = 0; j < d; j++) { // cols
                 host_array[i * d + j] = srcdata[reali + j * n];
-#if(DEBUGKMEANS)
-                fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,reali,host_array[i*d+j]); fflush(stderr);
-#endif
+                if (verbose) {
+                    fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, reali, host_array[i * d + j]);
+                    fflush(stderr);
+                }
             }
         }
     } else {
@@ -219,9 +221,10 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord, thrus
         for (int i = 0; i < k; i++) { // rows
             for (int j = 0; j < d; j++) { // cols
                 host_array[i * d + j] = srcdata[v[i] + j * n];
-#if(DEBUGKMEANS)
-                fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,v[i],host_array[i*d+j]); fflush(stderr);
-#endif
+                if (verbose) {
+                    fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, v[i], host_array[i * d + j]);
+                    fflush(stderr);
+                }
             }
         }
     } else {
@@ -284,8 +287,8 @@ namespace h2ogpumlkmeans {
             fflush(stderr);
         }
 
-        if(rows>std::numeric_limits<int>::max()){
-            fprintf(stderr,"rows>%d now implemented\n",std::numeric_limits<int>::max());
+        if (rows > std::numeric_limits<int>::max()) {
+            fprintf(stderr, "rows>%d now implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
             exit(0);
         }
@@ -345,7 +348,8 @@ namespace h2ogpumlkmeans {
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             data[q] = new thrust::device_vector<T>(n / n_gpu * d);
-            labels[q] = new thrust::device_vector<int>(n / n_gpu * d); // TODO should this size really be multiplied by d??
+            labels[q] = new thrust::device_vector<int>(
+                    n / n_gpu * d); // TODO should this size really be multiplied by d??
             d_centroids[q] = new thrust::device_vector<T>(k * d);
             distances[q] = new thrust::device_vector<T>(n);
         }
@@ -425,12 +429,13 @@ namespace h2ogpumlkmeans {
                 if (q == masterq) continue;
                 cudaSetDevice(dList[q]);
                 cudaStreamDestroy(*(streams[q]));
-#if(DEBUGKMEANS)
-                thrust::host_vector<T> h_centroidq=*d_centroids[q];
-                for(int ii=0;ii<k*d;ii++){
-                    fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
+                if (verbose) {
+                    thrust::host_vector <T> h_centroidq = *d_centroids[q];
+                    for (int ii = 0; ii < k * d; ii++) {
+                        fprintf(stderr, "q=%d initcent[%d]=%g\n", q, ii, h_centroidq[ii]);
+                        fflush(stderr);
+                    }
                 }
-#endif
             }
         }
 
@@ -465,9 +470,7 @@ namespace h2ogpumlkmeans {
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
         *preds = ctr->data();
 
-        // debug
-        int printcenters = verbose > 2;
-        if (printcenters) {
+        if (verbose) {
             for (unsigned int ii = 0; ii < k; ii++) {
                 fprintf(stderr, "ii=%d of k=%d ", ii, k);
                 for (unsigned int jj = 0; jj < d; jj++) {
@@ -485,7 +488,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T* srcdata, const T* centroids, void** preds) {
+                       const T *srcdata, const T *centroids, void **preds) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -521,11 +524,11 @@ namespace h2ogpumlkmeans {
         double t0t = timer<double>();
         thrust::device_vector <T> *d_data[n_gpu];
         thrust::device_vector<int> *d_labels[n_gpu];
-        thrust::device_vector<T> *d_centroids[n_gpu];
-        thrust::device_vector<T> *pairwise_distances[n_gpu];
-        thrust::device_vector<T> *data_dots[n_gpu];
-        thrust::device_vector<T> *centroid_dots[n_gpu];
-        thrust::device_vector<T> *distances[n_gpu];
+        thrust::device_vector <T> *d_centroids[n_gpu];
+        thrust::device_vector <T> *pairwise_distances[n_gpu];
+        thrust::device_vector <T> *data_dots[n_gpu];
+        thrust::device_vector <T> *centroid_dots[n_gpu];
+        thrust::device_vector <T> *distances[n_gpu];
         int *d_changes[n_gpu];
 
 
@@ -533,14 +536,14 @@ namespace h2ogpumlkmeans {
             CUDACHECK(cudaSetDevice(dList[q]));
             kmeans::detail::labels_init();
 
-            data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
+            data_dots[q] = new thrust::device_vector<T>(n / n_gpu);
             centroid_dots[q] = new thrust::device_vector<T>(k);
             pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
 
             d_centroids[q] = new thrust::device_vector<T>(k * m);
-            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
+            d_data[q] = new thrust::device_vector<T>(n / n_gpu * m);
             distances[q] = new thrust::device_vector<T>(n);
-            d_labels[q] = new thrust::device_vector<int>(n/n_gpu);
+            d_labels[q] = new thrust::device_vector<int>(n / n_gpu);
 
             cudaMalloc(&d_changes[q], sizeof(int));
 
@@ -548,15 +551,15 @@ namespace h2ogpumlkmeans {
             std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
-            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
+            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n / n_gpu, m);
 
-            kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
+            kmeans::detail::make_self_dots(n / n_gpu, m, *d_data[q], *data_dots[q]);
 
-            kmeans::detail::calculate_distances(verbose, q, n/n_gpu, m, k,
-                *d_data[q], *d_centroids[q], *data_dots[q],
-                *centroid_dots[q], *pairwise_distances[q]);
+            kmeans::detail::calculate_distances(verbose, q, n / n_gpu, m, k,
+                                                *d_data[q], *d_centroids[q], *data_dots[q],
+                                                *centroid_dots[q], *pairwise_distances[q]);
 
-            kmeans::detail::relabel(n/n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
+            kmeans::detail::relabel(n / n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
         }
 
         // Move the resulting labels into host memory from all devices
@@ -582,10 +585,10 @@ namespace h2ogpumlkmeans {
 
     template<typename T>
     int kmeans_transform(int verbose,
-                                int gpu_idtry, int n_gputry,
-                                size_t rows, size_t cols, const char ord, int k,
-                                const T* srcdata, const T* centroids,
-                                void **preds) {
+                         int gpu_idtry, int n_gputry,
+                         size_t rows, size_t cols, const char ord, int k,
+                         const T *srcdata, const T *centroids,
+                         void **preds) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -618,39 +621,40 @@ namespace h2ogpumlkmeans {
         }
 
         thrust::device_vector <T> *d_data[n_gpu];
-        thrust::device_vector<T> *d_centroids[n_gpu];
-        thrust::device_vector<T> *d_pairwise_distances[n_gpu];
-        thrust::device_vector<T> *data_dots[n_gpu];
-        thrust::device_vector<T> *centroid_dots[n_gpu];
+        thrust::device_vector <T> *d_centroids[n_gpu];
+        thrust::device_vector <T> *d_pairwise_distances[n_gpu];
+        thrust::device_vector <T> *data_dots[n_gpu];
+        thrust::device_vector <T> *centroid_dots[n_gpu];
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             kmeans::detail::labels_init();
 
-            data_dots[q] = new thrust::device_vector <T>(n/n_gpu);
+            data_dots[q] = new thrust::device_vector<T>(n / n_gpu);
             centroid_dots[q] = new thrust::device_vector<T>(k);
             d_pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
 
             d_centroids[q] = new thrust::device_vector<T>(k * m);
-            d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
+            d_data[q] = new thrust::device_vector<T>(n / n_gpu * m);
 
             // Move centroids from host memory to GPU
             std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
-            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
+            nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n / n_gpu, m);
 
-            kmeans::detail::make_self_dots(n/n_gpu, m, *d_data[q], *data_dots[q]);
+            kmeans::detail::make_self_dots(n / n_gpu, m, *d_data[q], *data_dots[q]);
 
-            kmeans::detail::calculate_distances(verbose, q, n/n_gpu, m, k,
-                *d_data[q], *d_centroids[q], *data_dots[q],
-                *centroid_dots[q], *d_pairwise_distances[q]);
+            kmeans::detail::calculate_distances(verbose, q, n / n_gpu, m, k,
+                                                *d_data[q], *d_centroids[q], *data_dots[q],
+                                                *centroid_dots[q], *d_pairwise_distances[q]);
         }
 
         // Move the resulting labels into host memory from all devices
-        thrust::host_vector<T> *h_pairwise_distances = new thrust::host_vector<T>(0);
+        thrust::host_vector <T> *h_pairwise_distances = new thrust::host_vector<T>(0);
         for (int q = 0; q < n_gpu; q++) {
-            h_pairwise_distances->insert(h_pairwise_distances->end(), d_pairwise_distances[q]->begin(), d_pairwise_distances[q]->end());
+            h_pairwise_distances->insert(h_pairwise_distances->end(), d_pairwise_distances[q]->begin(),
+                                         d_pairwise_distances[q]->end());
         }
         *preds = h_pairwise_distances->data();
 
@@ -705,9 +709,9 @@ namespace h2ogpumlkmeans {
                                     const double *srcdata, const int *srclabels, void **centroid);
 
     template int kmeans_predict<float>(int verbose, int gpu_idtry, int n_gputry,
-                                        size_t rows, size_t cols,
-                                        const char ord, int k,
-                                        const float* srcdata, const float* centroids, void** preds);
+                                       size_t rows, size_t cols,
+                                       const char ord, int k,
+                                       const float *srcdata, const float *centroids, void **preds);
 
     template int kmeans_predict<double>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
@@ -717,14 +721,14 @@ namespace h2ogpumlkmeans {
     template int kmeans_transform<float>(int verbose,
                                          int gpu_id, int n_gpu,
                                          size_t m, size_t n, const char ord, int k,
-                                         const float * src_data, const float * centroids,
+                                         const float *src_data, const float *centroids,
                                          void **preds);
 
     template int kmeans_transform<double>(int verbose,
-                                         int gpu_id, int n_gpu,
-                                         size_t m, size_t n, const char ord, int k,
-                                         const double * src_data, const double * centroids,
-                                         void **preds);
+                                          int gpu_id, int n_gpu,
+                                          size_t m, size_t n, const char ord, int k,
+                                          const double *src_data, const double *centroids,
+                                          void **preds);
 
 // Explicit template instantiation.
 #if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE == 1
@@ -770,16 +774,16 @@ int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int
 int kmeans_transform_float(int verbose,
                            int gpu_id, int n_gpu,
                            size_t m, size_t n, const char ord, int k,
-                           const float * src_data, const float * centroids,
+                           const float *src_data, const float *centroids,
                            void **preds) {
     return h2ogpumlkmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
 }
 
 int kmeans_transform_double(int verbose,
-                           int gpu_id, int n_gpu,
-                           size_t m, size_t n, const char ord, int k,
-                           const double * src_data, const double * centroids,
-                           void **preds) {
+                            int gpu_id, int n_gpu,
+                            size_t m, size_t n, const char ord, int k,
+                            const double *src_data, const double *centroids,
+                            void **preds) {
     return h2ogpumlkmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
 }
 

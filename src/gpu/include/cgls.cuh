@@ -111,9 +111,7 @@
 //  Reference:
 //  http://web.stanford.edu/group/SOL/software/cgls/
 //
-
-#ifndef CGLS_CUH_
-#define CGLS_CUH_
+#pragma once
 
 #include <assert.h>
 #include <stdio.h>

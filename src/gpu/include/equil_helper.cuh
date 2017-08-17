@@ -1,5 +1,4 @@
-#ifndef EQUIL_HELPER_CUH_
-#define EQUIL_HELPER_CUH_
+#pragma once
 
 #include <thrust/functional.h>
 

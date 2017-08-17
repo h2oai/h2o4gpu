@@ -1,5 +1,4 @@
-#ifndef _CUDA_UTILS_H
-#define _CUDA_UTILS_H
+#pragma once
 
 #define CUDACHECK(cmd) do {                         \
     cudaError_t e = cmd;                              \

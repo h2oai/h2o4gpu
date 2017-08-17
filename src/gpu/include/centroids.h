@@ -1,6 +1,5 @@
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
-#ifndef CENTROIDS_H
-#define CENTROIDS_H
+#pragma once
 #include <thrust/device_vector.h>
 #include "kmeans_labels.h"
 #include "kmeans_general.h"

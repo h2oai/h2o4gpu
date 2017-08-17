@@ -47,13 +47,14 @@ void nonrandom_data(int verbose, const char ord, std::vector <T> &array, const T
             array[i] = srcdata[indexi*d + indexj];
 #endif
         }
-#if(DEBUGKMEANS)
-        for(int i = 0; i < npercpu; i++) {
-          for(int j = 0; j < d; j++) {
-            fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,array[i*d+j]); fflush(stderr);
-          }
+
+        if(verbose) {
+            for(int i = 0; i < npercpu; i++) {
+              for(int j = 0; j < d; j++) {
+                fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,array[i*d+j]); fflush(stderr);
+              }
+            }
         }
-#endif
     } else {
         if (verbose) {
             fprintf(stderr, "ROW ORDER not changed\n");
@@ -80,13 +81,14 @@ nonrandom_data_new(int verbose, std::vector<int> v, const char ord, std::vector 
                 array[i * d + j] = srcdata[v[q * npercpu + i] + j * n]; // shift by which cpu
             }
         }
-#if(DEBUGKMEANS)
-        for(int i = 0; i < npercpu; i++) {
-          for(int j = 0; j < d; j++) {
-            fprintf(stderr,"q=%d initdata[%d,%d]=%g\n",q,i,j,array[i*d+j]); fflush(stderr);
-          }
+        if (verbose) {
+            for (int i = 0; i < npercpu; i++) {
+                for (int j = 0; j < d; j++) {
+                    fprintf(stderr, "q=%d initdata[%d,%d]=%g\n", q, i, j, array[i * d + j]);
+                    fflush(stderr);
+                }
+            }
         }
-#endif
     } else {
         if (verbose) {
             fprintf(stderr, "ROW ORDER not changed\n");
@@ -158,9 +160,10 @@ void random_centroids(int verbose, const char ord, std::vector <T> &array, const
             int reali = dis(gen); // + q*npercpu; // row sampled (called indexj above)
             for (int j = 0; j < d; j++) { // cols
                 array[i * d + j] = srcdata[reali + j * n];
-#if(DEBUGKMEANS)
-                fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,reali,array[i*d+j]); fflush(stderr);
-#endif
+                if(verbose) {
+                    fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, reali, array[i * d + j]);
+                    fflush(stderr);
+                }
             }
         }
     } else {
@@ -188,9 +191,10 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord, std::
         for (int i = 0; i < k; i++) { // rows
             for (int j = 0; j < d; j++) { // cols
                 array[i * d + j] = srcdata[v[i] + j * n];
-#if(DEBUGKMEANS)
-                fprintf(stderr,"q=%d initcent[%d,%d reali=%d]=%g\n",q,i,j,v[i],array[i*d+j]); fflush(stderr);
-#endif
+                if(verbose) {
+                    fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, v[i], array[i * d + j]);
+                    fflush(stderr);
+                }
             }
         }
     } else {
@@ -241,8 +245,7 @@ namespace h2ogpumlkmeans {
         std::signal(SIGINT, my_function);
         std::signal(SIGTERM, my_function);
 
-        int printsrcdata = 0;
-        if (printsrcdata) {
+        if (verbose) {
             for (unsigned int ii = 0; ii < n; ii++) {
                 for (unsigned int jj = 0; jj < d; jj++) {
                     fprintf(stderr, "%2g ", srcdata[ii * d + jj]);
@@ -305,20 +308,20 @@ namespace h2ogpumlkmeans {
         // get non-random centroids on 1 cpu, then share with rest.
         if (init_from_labels == 0) {
             int masterq = 0;
-            //random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq, n, n/n_cpu, d, k);
             random_centroids_new(verbose, v, ord, *l_centroids[masterq], &srcdata[0], masterq, n, n / n_cpu, d, k);
-#if(DEBUGKMEANS)
-            for (int q = 0; q < n_cpu; q++) {
-				std::vector<T> h_centroidq=*l_centroids[q];
-				for(int ii=0;ii<k*d;ii++){
-				  fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
-				}
+
+            if(verbose) {
+                for (int q = 0; q < n_cpu; q++) {
+                    std::vector <T> h_centroidq = *l_centroids[q];
+                    for (int ii = 0; ii < k * d; ii++) {
+                        fprintf(stderr, "q=%d initcent[%d]=%g\n", q, ii, h_centroidq[ii]);
+                        fflush(stderr);
+                    }
+                }
             }
-#endif
         }
         double timetransfer = static_cast<double>(timer<double>() - t0t);
-
-
+        
         double t0 = timer<double>();
         int masterq = 0;
         int status = kmeans::kmeans<T>(verbose, &flag, n, d, k, *data[masterq], *labels[masterq],
@@ -334,9 +337,7 @@ namespace h2ogpumlkmeans {
         std::vector <T> *ctr = new std::vector<T>(*l_centroids[0]);
         *centroids = ctr->data();
 
-        // debug
-        int printcenters = 0;
-        if (printcenters) {
+        if (verbose) {
             for (unsigned int ii = 0; ii < k; ii++) {
                 fprintf(stderr, "ii=%d of k=%d ", ii, k);
                 for (unsigned int jj = 0; jj < d; jj++) {

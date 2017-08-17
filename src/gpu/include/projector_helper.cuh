@@ -1,5 +1,4 @@
-#ifndef PROJECTOR_HELPER_CUH_
-#define PROJECTOR_HELPER_CUH_
+#pragma once
 
 #include "cml/cml_blas.cuh" 
 #include "cml/cml_vector.cuh" 

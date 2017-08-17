@@ -1,10 +1,7 @@
-#ifndef __KMEANS_GENERAL_H
-#define  __KMEANS_GENERAL_H
+#pragma once
 #define MAX_NGPUS 16
 
-#define VERBOSE 0
 #define CHECK 1
-#define DEBUGKMEANS 0
 
 // TODO(pseudotensor): Avoid throw for python exception handling.  Need to avoid all exit's and return exit code all the way back.
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }

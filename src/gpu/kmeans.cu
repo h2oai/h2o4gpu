@@ -1,61 +1,12 @@
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
-#pragma once
-
-#include <atomic>
 #include <signal.h>
 #include <string>
 #include <sstream>
-#include <thrust/device_vector.h>
 #include <thrust/reduce.h>
-#include "centroids.h"
-#include "kmeans_labels.h"
 #include "kmeans_general.h"
-
-template<typename T>
-void print_array(T &array, int m, int n) {
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            typename T::value_type value = array[i * n + j];
-            std::cout << value << " ";
-        }
-        std::cout << std::endl;
-    }
-}
+#include "kmeans.h"
 
 namespace kmeans {
-
-    //! kmeans clusters data into k groups
-    /*!
-
-      \param n Number of data points
-      \param d Number of dimensions
-      \param k Number of clusters
-      \param data Data points, in row-major order. This vector must have
-      size n * d, and since it's in row-major order, data point x occupies
-      positions [x * d, (x + 1) * d) in the vector. The vector is passed
-      by reference since it is shared with the caller and not copied.
-      \param labels Cluster labels. This vector has size n.
-      The vector is passed by reference since it is shared with the caller
-      and not copied.
-      \param centroids Centroid locations, in row-major order. This
-      vector must have size k * d, and since it's in row-major order,
-      centroid x occupies positions [x * d, (x + 1) * d) in the
-      vector. The vector is passed by reference since it is shared
-      with the caller and not copied.
-      \param distances Distances from points to centroids. This vector has
-      size n. It is passed by reference since it is shared with the caller
-      and not copied.
-      \param init_from_labels If true, the labels need to be initialized
-      before calling kmeans. If false, the centroids need to be
-      initialized before calling kmeans. Defaults to true, which means
-      the labels must be initialized.
-      \param threshold This controls early termination of the kmeans
-      iterations. If the ratio of points being reassigned to a different
-      centroid is less than the threshold, than the iterations are
-      terminated. Defaults to 1e-3.
-      \param max_iterations Maximum number of iterations to run
-      \return The number of iterations actually performed.
-     */
 
     template<typename T>
     int kmeans(
@@ -79,10 +30,12 @@ namespace kmeans {
         thrust::device_vector<int> *range[MAX_NGPUS];
         thrust::device_vector<int> *indices[MAX_NGPUS];
         thrust::device_vector<int> *counts[MAX_NGPUS];
-
+        thrust::host_vector <T> h_centroids(k * d);
+        thrust::host_vector <T> h_centroids_tmp(k * d);
+        int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
+        T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
 
         if (verbose) {
-            // debug
             thrust::host_vector <T> *h_data_dots[MAX_NGPUS];
             thrust::host_vector <T> *h_centroid_dots[MAX_NGPUS];
             thrust::host_vector <T> *h_pairwise_distances[MAX_NGPUS];
@@ -92,19 +45,13 @@ namespace kmeans {
             thrust::host_vector<int> *h_counts[MAX_NGPUS];
         }
 
-
-        thrust::host_vector <T> h_centroids(k * d);
-        thrust::host_vector <T> h_centroids_tmp(k * d);
-        int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
-        T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
-
-
         for (int q = 0; q < n_gpu; q++) {
 
             if (verbose) {
                 fprintf(stderr, "Before kmeans() Allocation: gpu: %d\n", q);
                 fflush(stderr);
             }
+
             safe_cuda(cudaSetDevice(dList[q]));
             safe_cuda(cudaMalloc(&d_changes[q], sizeof(int)));
             safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
@@ -125,7 +72,6 @@ namespace kmeans {
                 ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: "
                    << d << " error: " << e.what() << std::endl;
                 return (-1);
-                // throw std::runtime_error(ss.str());
             }
             catch (std::bad_alloc &e) {
                 // output an error message and exit
@@ -133,7 +79,6 @@ namespace kmeans {
                 ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: "
                    << d << " error: " << e.what() << std::endl;
                 return (-1);
-                //throw std::runtime_error(ss.str());
             }
 
             if (verbose) {
@@ -224,11 +169,11 @@ namespace kmeans {
                 detail::find_centroids(q, n / n_gpu, d, k, *data[q], *labels[q], *centroids[q], *range[q], *indices[q],
                                        *counts[q]);
                 detail::memcpy(*labels[q], *labels_copy[q]);
-                //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
                 mycub::sum_reduce(*distances[q], d_distance_sum[q]);
             }
 
             // whether to perform per iteration check
+            // TODO pass as parameter
             int docheck = 1;
             if (docheck) {
                 double distance_sum = 0.0;
@@ -270,10 +215,15 @@ namespace kmeans {
         for (int q = 0; q < n_gpu; q++) {
             safe_cuda(cudaSetDevice(dList[q]));
             safe_cuda(cudaFree(d_changes[q]));
+            safe_cuda(cudaFree(d_distance_sum[q]));
             detail::labels_close();
-            delete (pairwise_distances[q]);
-            delete (data_dots[q]);
-            delete (centroid_dots[q]);
+            delete(pairwise_distances[q]);
+            delete(data_dots[q]);
+            delete(centroid_dots[q]);
+            delete(labels_copy[q]);
+            delete(range[q]);
+            delete(counts[q]);
+            delete(indices[q]);
         }
         if (verbose) {
             fprintf(stderr, "Iterations: %d\n", i);
