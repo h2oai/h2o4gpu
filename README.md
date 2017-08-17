@@ -75,7 +75,7 @@ cd h2ogpuml
 make veryallclean
 ```
 
-This installs full h2ogpuml as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
+This installs full h2ogpuml as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2ogpuml-0.0.1-py2.py3-none-any.whl
 
 - test python package
 
