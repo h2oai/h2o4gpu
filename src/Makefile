@@ -233,7 +233,7 @@ $(OBJDIR)/gpu/h2ogpuml_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJD
 $(OBJDIR)/gpu/h2ogpuml.o: gpu/h2ogpumlglm.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
-$(OBJDIR)/gpu/h2ogpumlkmeans.o: gpu/h2ogpumlkmeans.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/h2ogpumlkmeans.o: gpu/h2ogpumlkmeans.cu gpu/kmeans_labels.cu gpu/kmeans.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
@@ -251,12 +251,6 @@ $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector Makefile 
 
 $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
-
-$(OBJDIR)/gpu/kmeans_labels.o: gpu/kmeans_labels.cu $(GPU_KMEANS_HDR)
-	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
-
-$(OBJDIR)/gpu/kmeans.o: gpu/kmeans.cu $(GPU_KMEANS_HDR)
-	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2OGPUML_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
