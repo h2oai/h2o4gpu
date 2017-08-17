@@ -85,7 +85,7 @@ r:
 	$(MAKE) -j all -C src/interface_r
 
 
-veryallclean: clean deps_fetch deps_install all
+veryallclean: clean deps_fetch alldeps_install all
 
 allclean: clean all
 
@@ -178,7 +178,9 @@ deps_fetch: deps_clean
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 	bash gitshallow_submodules.sh
 
-deps_install: deps_fetch sync_data libxgboost libpy3nvml
+alldeps_install: deps_install sync_data libxgboost libpy3nvml
+
+deps_install: deps_fetch
 	@echo "---- Install dependencies ----"
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
