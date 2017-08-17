@@ -366,7 +366,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         if validY is not None:
             newvalidY = enet.predict(validX, validY)
         else:
-            newvalidY = enet.predict(trainX)
+            newvalidY = enet.predict(validX)
         if get_preds:
             print("Saving valid preds (Need to tranpose output)")
             np.savetxt("preds_valid.csv", newvalidY, delimiter=",")
