@@ -133,10 +133,6 @@ cd $BASE/examples/R && R CMD BATCH simple.R
 ```
 
 
-```text
-
-
-```
 
 Solver Classes
 ===============
@@ -153,7 +149,7 @@ Planned:
 
 References
 ==========
-1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][h2ogpuml]
+1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][pogs]
 2. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
 3. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
 4. [Proximal Algorithms -- N. Parikh and S. Boyd][prox_algs]
