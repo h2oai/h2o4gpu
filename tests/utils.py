@@ -533,8 +533,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
        myerror_train = error_train
        myerror_test = error_test
     if len(np.shape(error_train)) == 3:
-        myerror_train = error_train[0]
-        myerror_test = error_test[0]
+        myerror_train = error_train[-1]
+        myerror_test = error_test[-1]
 
     return myerror_train, myerror_test
 

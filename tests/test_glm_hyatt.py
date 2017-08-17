@@ -72,6 +72,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
         else:
             # should all be explicitly np.float32 or all np.float64
             xfull = np.loadtxt("./data/xfullhyatt_2k.csv", delimiter=',', dtype=np.float32)
+            #xfull = np.asfortranarray(xfull0)
             yfull = np.loadtxt("./data/yfullhyatt_2k.csv", delimiter=',', dtype=np.float32)
 
             t1 = time.time()
@@ -81,17 +82,17 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
         print("Testing GLM")
 
     # check rmse
-    print(rmse_train[0, 0])
-    print(rmse_train[0, 1])
-    print(rmse_train[0, 2])
-    print(rmse_test[0, 2])
+    print(rmse_train[-1, 0])
+    print(rmse_train[-1, 1])
+    print(rmse_train[-1, 2])
+    print(rmse_test[-1, 2])
     sys.stdout.flush()
 
     # FIXME: But these below should really be order 1 to 1.5 according to Wamsi!
-    assert rmse_train[0, 0] < 14
-    assert rmse_train[0, 1] < 14
-    assert rmse_train[0, 2] < 21
-    assert rmse_test[0, 2] < 21
+    assert rmse_train[-1, 0] < 14
+    assert rmse_train[-1, 1] < 14
+    assert rmse_train[-1, 2] < 21
+    assert rmse_test[-1, 2] < 21
 
     print('/n Total execution time:%d' % (time.time() - t1))
 
@@ -104,7 +105,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
     sys.stdout.flush()
 
 
-def test_glm_hyatt_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nAlphas=3, classification=False,
+def test_glm_hyatt_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, classification=False,
                                           validFraction=0.5)
 
 
@@ -113,7 +114,7 @@ def test_glm_hyatt_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, 
 def test_glm_hyatt_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=100, nAlphas=3, classification=False, validFraction=0.5)
 
 
-# def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=5, nAlphas=3, classification=False)
+# def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=20, nAlphas=3, classification=False)
 #
 # def test_glm_hyatt_cpu_fold1(): fun(use_gpu=False, nFolds=1, nLambdas=10, nAlphas=8, classification=False)
 #
