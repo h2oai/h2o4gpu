@@ -11,7 +11,7 @@
 #include <vector>
 #include <csignal>
 
-#include "include/h2ogpumlkmeans.h"
+#include "h2ogpumlkmeans.h"
 #include "include/kmeans.h"
 
 #define CUDACHECK(cmd) do {                             \
