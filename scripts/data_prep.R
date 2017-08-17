@@ -1,4 +1,10 @@
-#Prep data for h2ogpuml
+#'Prep data for h2ogpuml
+#'
+#'@param data_path Path to data
+#'@param response Response column as a string
+#'@param output_csv_name Name of save csv file
+#'@param output_feather_name Name of saved feather file
+#'@export
 prepData <- function(data_path="", response="", output_csv_name="data.csv", output_feather_name="data.feather"){
   wd <- getwd()
   print(paste0("CSV will be saved to current working directory -> ",wd))
