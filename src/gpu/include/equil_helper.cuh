@@ -198,6 +198,3 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 
 }  // namespace
 }  // namespace h2ogpuml
-
-#endif  // EQUIL_HELPER_CUH_
-

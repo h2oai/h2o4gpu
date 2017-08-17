@@ -57,6 +57,3 @@ void CheckProjection(const Matrix<T> *A, const T *x0, const T *y0,
 
 }  // namespace
 }  // namespace h2ogpuml
-
-#endif  // PROJECTOR_HELPER_CUH_
-

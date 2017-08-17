@@ -10,9 +10,9 @@
 #include <algorithm>
 #include <vector>
 #include <csignal>
-#include "include/h2ogpumlkmeans.h"
-#include "include/kmeans.h"
-#include "include/kmeans_general.h"
+#include "h2ogpumlkmeans.h"
+#include "kmeans.h"
+#include "kmeans_general.h"
 
 #define CUDACHECK(cmd) do {                             \
     cudaError_t e = cmd;                                \

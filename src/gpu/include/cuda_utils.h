@@ -31,6 +31,3 @@ int checkwDev(int wDev){
   }
   else return(0);
 }
-
-
-#endif

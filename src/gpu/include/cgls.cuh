@@ -674,6 +674,3 @@ int Solve(const T *val_a, const INT *ptr_a, const INT *ind_a, const T *val_at,
 }
 
 }  // namespace cgls
-
-#endif  // CGLS_CUH_
-
