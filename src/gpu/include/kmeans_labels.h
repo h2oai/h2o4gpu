@@ -5,7 +5,6 @@
 #include <cub/cub.cuh>
 #include <iostream>
 #include <sstream>
-#include <cublas_v2.h>
 #include <cfloat>
 #include "kmeans_general.h"
 
