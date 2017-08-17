@@ -60,7 +60,16 @@ class H2OGPUMLInstall(install):
         # install H2OGPUML executables
         self.copy_tree(self.build_lib, self.install_lib)
 
+from pip.req import parse_requirements
 
+# parse_requirements() returns generator of pip.req.InstallRequirement objects
+install_reqs = parse_requirements('../../requirements.txt', session='hack')
+
+# reqs is a list of requirement
+# e.g. ['django==1.5.1', 'mezzanine==1.4.6']
+reqs = [str(ir.req) for ir in install_reqs]
+
+        
 setup(
     name='h2ogpuml',
     version='0.0.3',
@@ -78,7 +87,6 @@ setup(
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai Generalized Linear Modeling with Proximal Operator Graph Solver',
-    install_requires=["numpy >= 1.8",
-                      "scipy >= 0.13"],
+    install_requires=reqs,
     cmdclass={'build': H2OGPUMLBuild, 'install': H2OGPUMLInstall}
 )
