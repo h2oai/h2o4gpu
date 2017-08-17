@@ -3,3 +3,6 @@
 	url = https://github.com/NVlabs/cub.git
 	shallow = true
     
+[submodule "xgboost"]
+	path = xgboost
+	url = https://github.com/h2oai/xgboost
