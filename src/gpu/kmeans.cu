@@ -3,8 +3,10 @@
 #include <string>
 #include <sstream>
 #include <thrust/reduce.h>
+
 #include "include/kmeans_general.h"
 #include "include/kmeans.h"
+#include "include/kmeans_labels.h"
 
 namespace kmeans {
 

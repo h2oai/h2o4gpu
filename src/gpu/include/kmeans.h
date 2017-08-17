@@ -4,7 +4,6 @@
 #include <atomic>
 #include <thrust/device_vector.h>
 #include "centroids.h"
-#include "kmeans_labels.h"
 
 namespace kmeans {
 
