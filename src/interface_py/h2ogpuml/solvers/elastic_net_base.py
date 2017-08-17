@@ -116,10 +116,12 @@ class GLM(object):
 
         self.lib = None
         if ((n_gpus == 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
-            print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
+            if verbose>0:
+                print("\nUsing CPU GLM solver %d %d\n" % (n_gpus, device_count))
             self.lib = h2ogpumlGLMCPU
         elif ((n_gpus > 0) or (h2ogpumlGLMGPU is None) or (device_count == 0)):
-            print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
+            if verbose > 0:
+                print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
             self.lib = h2ogpumlGLMGPU
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
