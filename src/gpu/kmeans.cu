@@ -3,8 +3,8 @@
 #include <string>
 #include <sstream>
 #include <thrust/reduce.h>
-#include "kmeans_general.h"
-#include "kmeans.h"
+#include "include/kmeans_general.h"
+#include "include/kmeans.h"
 
 namespace kmeans {
 

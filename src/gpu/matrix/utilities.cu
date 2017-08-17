@@ -15,7 +15,7 @@ extern "C" int iDivUp(int a, int b){ return ((a % b) != 0) ? (a / b + 1) : (a / 
 /* CUDA ERROR CHECK */
 /********************/
 // --- Credit to http://stackoverflow.com/questions/14038589/what-is-the-canonical-way-to-check-for-errors-using-the-cuda-runtime-api
-void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
+void gpu_assert(cudaError_t code, char *file, int line, bool abort=true)
 {
    if (code != cudaSuccess)
    {
@@ -24,7 +24,7 @@ void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
    }
 }
 
-extern "C" void gpuErrchk(cudaError_t ans) { gpuAssert((ans), __FILE__, __LINE__); }
+extern "C" void gpuErrchk(cudaError_t ans) { gpu_assert((ans), __FILE__, __LINE__); }
 
 /**************************/
 /* CUSOLVE ERROR CHECKING */

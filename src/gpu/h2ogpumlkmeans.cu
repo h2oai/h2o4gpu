@@ -2,17 +2,17 @@
 #include "matrix/matrix_dense.h"
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
-#include <iostream>
 #include "cuda.h"
-#include <cstdlib>
 #include <unistd.h>
-#include "h2ogpumlkmeans.h"
-#include "kmeans.h"
+#include <iostream>
+#include <cstdlib>
 #include <random>
 #include <algorithm>
 #include <vector>
-#include "include/kmeans_general.h"
 #include <csignal>
+#include "include/h2ogpumlkmeans.h"
+#include "include/kmeans.h"
+#include "include/kmeans_general.h"
 
 #define CUDACHECK(cmd) do {                             \
     cudaError_t e = cmd;                                \
@@ -22,16 +22,6 @@
       exit(EXIT_FAILURE);                               \
     }                                                   \
   } while(0)
-
-
-template<typename T>
-void fill_array(T &array, int m, int n) {
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            array[i * n + j] = (i % 2) * 3 + j;
-        }
-    }
-}
 
 template<typename T>
 void random_data(int verbose, thrust::device_vector <T> &array, int m, int n) {
@@ -469,6 +459,14 @@ namespace h2ogpumlkmeans {
         // TODO FIXME: When do delete this ctr memory?
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
         *preds = ctr->data();
+
+        for (int q = 0; q < n_gpu; q++) {
+            CUDACHECK(cudaSetDevice(dList[q]));
+            delete (data[q]);
+            delete (labels[q]);
+            delete (d_centroids[q]);
+            delete (distances[q]);
+        }
 
         if (verbose) {
             for (unsigned int ii = 0; ii < k; ii++) {

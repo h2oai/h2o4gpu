@@ -155,7 +155,7 @@ GPU_PRJ_OBJ=\
 
 GPU_KMEANS_HDR=gpu/include/kmeans_labels.h gpu/include/centroids.h gpu/include/kmeans.h
 
-GPU_OBJ=$(OBJDIR)/gpu/h2ogpumlkmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2ogpumlglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
+GPU_OBJ=$(OBJDIR)/gpu/h2ogpumlkmeans.o $(OBJDIR)/gpu/kmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2ogpumlglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
@@ -255,6 +255,8 @@ $(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 $(OBJDIR)/gpu/kmeans_labels.o: gpu/kmeans_labels.cu $(GPU_KMEANS_HDR)
 	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
+$(OBJDIR)/gpu/kmeans.o: gpu/kmeans.cu $(GPU_KMEANS_HDR)
+	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2OGPUML_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
