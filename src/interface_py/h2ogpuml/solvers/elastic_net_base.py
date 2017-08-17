@@ -343,21 +343,8 @@ class GLM(object):
                                                       count=thecount)
             self.valid_pred_vs_alphanew = np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas, m_valid))
             self.valid_pred_vs_alphapure = self.valid_pred_vs_alphanew[:, 0:m_valid]
-        #
-        #######################
-        # return numpy objects
-        if do_predict == 0:
-            self.did_predict = 0
-            if give_full_path == 1:
-                return self.x_vs_alpha_lambdapure
-            else:
-                return self.x_vs_alphapure
-        else:
-            self.did_predict = 1
-            if give_full_path == 1:
-                return self.valid_pred_vs_alpha_lambdapure
-            else:
-                return self.valid_pred_vs_alphapure
+
+        return self
 
     # TODO Add typechecking
     """
@@ -537,16 +524,7 @@ class GLM(object):
                      free_input_data=free_input_data, stop_early=stop_early,
                      stop_early_error_fraction=stop_early_error_fraction, max_iterations=max_iterations,
                      verbose=verbose)
-        if do_predict == 0:
-            if give_full_path == 1:
-                return self.x_vs_alpha_lambdapure
-            else:
-                return self.x_vs_alphapure
-        else:
-            if give_full_path == 1:
-                return self.valid_pred_vs_alpha_lambdapure
-            else:
-                return self.valid_pred_vs_alphapure
+        return self
 
     # TODO Add typechecking
     """
@@ -569,13 +547,13 @@ class GLM(object):
         do_predict = 1
         if give_full_path == 1:
             self.prediction_full = self.fit(None, None, valid_x, valid_y, testweight, give_full_path, do_predict,
-                                            free_input_data)
+                                            free_input_data).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
         oldgivefullpath = self.give_full_path
         tempgivefullpath = 0
         self.prediction = self.fit(None, None, valid_x, valid_y, testweight, tempgivefullpath, do_predict,
-                                   free_input_data)
+                                   free_input_data).valid_pred_vs_alphapure
         self.give_full_path = oldgivefullpath
         if give_full_path == 1:
             return self.prediction_full  # something like valid_y
@@ -602,11 +580,11 @@ class GLM(object):
         # print("%d %d %d %d %d" % (self.source_dev, self.m_train, self.n, self.m_valid, self.precision)) ; sys.stdout.flush()
         self.prediction = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision, self.a,
                                        self.b,
-                                       valid_xptr, valid_yptr, self.e, 0, do_predict, free_input_data, verbose)
+                                       valid_xptr, valid_yptr, self.e, 0, do_predict, free_input_data, verbose).valid_pred_vs_alphapure
         if give_full_path == 1:  # then need to run twice
             self.prediction_full = self.fit_ptr(self.source_dev, self.m_train, self.n, self.m_valid, self.precision,
                                                 self.a, self.b, valid_xptr, valid_yptr, self.e, give_full_path,
-                                                do_predict, free_input_data, verbose)
+                                                do_predict, free_input_data, verbose).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
         if give_full_path == 1:

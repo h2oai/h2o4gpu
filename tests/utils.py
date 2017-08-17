@@ -311,27 +311,27 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     # Show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
-    print(Xvsalpha)
+    print(Xvsalpha.x_vs_alphapure)
     print("np.shape(Xvsalpha)")
-    print(np.shape(Xvsalpha))
+    print(np.shape(Xvsalpha.x_vs_alphapure))
 
-    error_train = enet.error
+    error_train = enet.error_vs_alpha
     if family != "logistic":
         print("error_train")
     else:
         print("logloss_train")
     print(error_train)
 
-    print("lambdas")
-    lambdas = enet.lambdas
+    print("Best lambdas")
+    lambdas = enet.lambdas_best
     print(lambdas)
 
-    print("alphas")
-    alphas = enet.alphas
+    print("Best alphas")
+    alphas = enet.alphas_best
     print(alphas)
 
-    print("tols")
-    tols = enet.tols
+    print("Best tols")
+    tols = enet.tols_best
     print(tols)
 
     Xvsalphabest=enet.X_best
@@ -366,14 +366,14 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         if validY is not None:
             newvalidY = enet.predict(validX, validY)
         else:
-            newvalidY = enet.predict(validX)
+            newvalidY = enet.predict(trainX)
         if get_preds:
             print("Saving valid preds (Need to tranpose output)")
             np.savetxt("preds_valid.csv", newvalidY, delimiter=",")
     print("newvalidY")
     print(newvalidY)
 
-    error_test = enet.error
+    error_test = enet.error_vs_alpha
     if family != "logistic":
         print("rmse_test")
     else:
