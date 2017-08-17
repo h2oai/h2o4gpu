@@ -20,8 +20,8 @@ namespace kmeans {
             std::vector<int> dList,
             int n_gpu,
             int max_iterations,
-            int init_from_labels = 0,
-            double threshold = 1e-3) {
+            int init_from_labels,
+            double threshold) {
 
         thrust::device_vector <T> *data_dots[MAX_NGPUS];
         thrust::device_vector <T> *centroid_dots[MAX_NGPUS];
@@ -34,16 +34,6 @@ namespace kmeans {
         thrust::host_vector <T> h_centroids_tmp(k * d);
         int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
         T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
-
-        if (verbose) {
-            thrust::host_vector <T> *h_data_dots[MAX_NGPUS];
-            thrust::host_vector <T> *h_centroid_dots[MAX_NGPUS];
-            thrust::host_vector <T> *h_pairwise_distances[MAX_NGPUS];
-            thrust::host_vector<int> *h_labels_copy[MAX_NGPUS];
-            thrust::host_vector<int> *h_range[MAX_NGPUS];
-            thrust::host_vector<int> *h_indices[MAX_NGPUS];
-            thrust::host_vector<int> *h_counts[MAX_NGPUS];
-        }
 
         for (int q = 0; q < n_gpu; q++) {
 
@@ -79,16 +69,6 @@ namespace kmeans {
                 ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: "
                    << d << " error: " << e.what() << std::endl;
                 return (-1);
-            }
-
-            if (verbose) {
-                h_data_dots[q] = new thrust::host_vector<T>(n / n_gpu);
-                h_centroid_dots[q] = new thrust::host_vector<T>(k * d);
-                h_pairwise_distances[q] = new thrust::host_vector<T>(n / n_gpu * k);
-                h_labels_copy[q] = new thrust::host_vector<int>(n / n_gpu * d);
-                h_range[q] = new thrust::host_vector<int>(n / n_gpu);
-                h_counts[q] = new thrust::host_vector<int>(k);
-                h_indices[q] = new thrust::host_vector<int>(n / n_gpu);
             }
 
             if (verbose) {
