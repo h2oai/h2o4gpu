@@ -109,4 +109,5 @@ xgbfir==0.2
 xlrd==1.0.0
 XlsxWriter==0.9.8
 cmake==0.8.0
+feather-format==0.4.0
 
