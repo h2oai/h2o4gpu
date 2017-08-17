@@ -1,23 +1,25 @@
 [H2OGPUML](https://github.com/h2ogpuml/h2ogpuml)
 
-```text
 ---
 
 H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
-CUDA8 for GPU version and OpenMP
+CUDA8 (for GPU version) and OpenMP
 
 Environment
 --------
 
 - Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
+
 ````
 pyenv install 3.6.1
 pyenv global 3.6.1
 ````
+
 - Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
+
 ````
 R
 install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
@@ -39,6 +41,7 @@ conda install libgcc
 Add to .bashrc or your own environment (e.g.):
 ------
 
+```
 export CUDA_HOME=/usr/local/cuda
 export PATH=/usr/local/cuda/bin:$PATH
 export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
@@ -47,72 +50,90 @@ export CUDADIR=/usr/local/cuda/include/
 export OMP_NUM_THREADS=32
 export MKL_NUM_THREADS=32
 export VECLIB_MAXIMUM_THREADS=32
-
+```
 
 On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2ogpuml.
 ------
 
+```
 sudo nvidia-smi -pm 1
+```
 
 or
 
+```
 sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
+```
 
 
 To compile everything and install R and python interfaces as user:
 -----
 
+```
 git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
 cd h2ogpuml
 make veryallclean
+```
 
 To install python package and make wheel:
 -----
 
+```
 make
+```
 
 This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
 
 test python package
 ------
 
+```
 make test && make testbig
+```
 
 
 To compile base library (unecessary if already did make allclean or make veryallclean):
 ------
 
+```
 BASE=`pwd`
 
 cd $BASE/src && make -j all
+```
 
 
 To run gpu C++ version:
 ------
 
+```
 cd $BASE/examples/cpp && make -j all ; make run
+```
 
 Or, to run 16-gpu version on ipums.txt data:
 
+```
 ./h2ogpuml-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
+```
 
 
 install R package (assume in h2ogpuml base directory to start with)
 ------
 
+```
 cd $BASE/src/interface_r && make
 
 # Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
-
+```
 
 test R package
 ------
 
+```
 cd $BASE/examples/R && R CMD BATCH simple.R
+```
 
 
-Issues
-=====================
+```text
 
 
 ```
