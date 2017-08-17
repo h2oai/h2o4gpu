@@ -904,7 +904,6 @@ int H2OGPUML<T, M, P>::Predict() {
 	size_t n = _A.Cols();
 
 	// copy over X (assume called SetInitX) directly from CPU to GPU during fit
-	fprintf(stderr,"cml::vector: %lld wDev=%d\n",n,_wDev); fflush(stderr);
 	cml::vector<T> xtemp = cml::vector_calloc<T>(n);
 	CUDA_CHECK_ERR();
 

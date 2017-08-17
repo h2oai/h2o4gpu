@@ -1574,7 +1574,6 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 				// get validY so can compute Error
 				//T *validY = NULL;
 				//validY = (T *) malloc(sizeof(T) * mValid);
-				fprintf(stderr,"mValid=%zu\n",mValid); fflush(stderr);
 				T *validY = new T[mValid];
 				int validYerror = Asource_.GetValidY(datatype, mValid, &validY);
 
