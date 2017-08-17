@@ -136,8 +136,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
     meanValidYn = std::accumulate(begin(validY), end(validY), T(0)) / validY.size();
     sdValidYn = std::sqrt(getVarV(validY, meanValidYn));
   }
-    
 
+  T alpha_min = 0.0;
+  T alpha_max = 1.0;
+
+  T lambda_max = 0; // let algo set this
   // set lambda_min_ratio
   T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
@@ -203,7 +206,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   double stopearlyrmsefraction=1.0;
   int maxiterations=5000;
   int verbose=0;
-  double time = h2ogpuml::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, stopearly, stopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
+  double time = h2ogpuml::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, stopearly, stopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
 
   // print out some things about Xvsalphalambda and Xvsalpha
   printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);

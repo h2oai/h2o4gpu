@@ -37,7 +37,7 @@ class GLM(object):
     def __init__(self, n_threads=None, n_gpus=-1, order='r', intercept=True, lambda_min_ratio=1E-7,
                  n_lambdas=100, n_folds=1, n_alphas=1, stop_early=True, stop_early_error_fraction=1.0,
                  max_iterations=5000,
-                 verbose=0, family="elasticnet", give_full_path=0):
+                 verbose=0, family="elasticnet", give_full_path=0, lambda_max=None, alpha_max=None, alpha_min=None):
 
         # Type Checking
         assert_is_type(n_threads, int, None)
@@ -83,6 +83,13 @@ class GLM(object):
         self._family = ord(family.split()[0][0])
 
         self.give_full_path = give_full_path
+
+        if lambda_max is None:
+            self.lambda_max = 0.0 # to trigger C code to compute
+        if alpha_max is None:
+            self.alpha_max = 1.0 # as default
+        if alpha_min is None:
+            self.alpha_min = 0.0 # as default
 
         # Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
@@ -224,7 +231,8 @@ class GLM(object):
                 c_int(source_dev), c_int(1), c_int(self._shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
                 c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self._standardize),
-                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
+                c_double(self.lambda_max), c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds),
+                c_int(self.n_alphas), c_double(self.alpha_min), c_double(self.alpha_max),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
                 , give_full_path
@@ -245,7 +253,8 @@ class GLM(object):
                 c_int(source_dev), c_int(1), c_int(self._shared_a), c_int(self.n_threads), c_int(self.n_gpus),
                 c_int(self.ord),
                 c_size_t(m_train), c_size_t(n), c_size_t(m_valid), c_int(self.intercept), c_int(self._standardize),
-                c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds), c_int(self.n_alphas),
+                c_double(self.lambda_max), c_double(self.lambda_min_ratio), c_int(self.n_lambdas), c_int(self.n_folds),
+                c_int(self.n_alphas), c_double(self.alpha_min), c_double(self.alpha_max),
                 c_int(stop_early), c_double(stop_early_error_fraction), c_int(max_iterations), c_int(verbose),
                 a, b, c, d, e
                 , give_full_path
