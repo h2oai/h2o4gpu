@@ -57,6 +57,7 @@ class GLM(object):
             lambda_max=None,
             alpha_max=None,
             alpha_min=None,
+            # TODO: Add tol, check for pandas vs. numpy, autotedect order, control memory with deconstructor
     ):
 
         # Type Checking
@@ -76,6 +77,9 @@ class GLM(object):
         assert_is_type(family, str)
         assert family in ['logistic',
                           'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
+        assert_is_type(lambda_max, float)
+        assert_is_type(alpha_max, float)
+        assert_is_type(alpha_min, float)
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
@@ -179,11 +183,11 @@ class GLM(object):
             n,
             m_valid,
             precision,
-            a,
-            b,
-            c,
-            d,
-            e,
+            a, # trainX_ptr or train_xptr
+            b, # trainY_ptr
+            c, # validX_ptr
+            d, # validY_ptr or valid_xptr  # keep consistent with later uses
+            e, # weight_ptr
             give_full_path=None,
             do_predict=0,
             free_input_data=0,
