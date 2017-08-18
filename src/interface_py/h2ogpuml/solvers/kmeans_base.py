@@ -4,7 +4,7 @@ import numpy as np
 import sys
 from h2ogpuml.libs.kmeans_gpu import GPUlib
 from h2ogpuml.libs.kmeans_cpu import CPUlib
-from h2ogpuml.solvers.utils import devicecount
+from h2ogpuml.solvers.utils import devicecount, _to_np, _check_data_content, _check_data_size
 from h2ogpuml.util.typechecks import assert_is_type, assert_satisfies
 
 
@@ -80,10 +80,10 @@ class KMeans(object):
             self.tol = tol
 
     def fit(self, X, y=None):
-        Xnp = self._to_np(X)
-        ynp = self._to_np(y)
+        Xnp = _to_np(X)
+        ynp = _to_np(y)
 
-        self._check_data_content("X", Xnp)
+        _check_data_content(self.do_checks, "X", Xnp)
 
         # Cached for sklearn fit
         self.Xnp = Xnp
@@ -92,7 +92,7 @@ class KMeans(object):
         if ynp is None:
             ynp = np.random.randint(rows, size=rows) % self._n_clusters
 
-        self._check_data_content("y", ynp)
+        _check_data_content(self.do_checks, "y", ynp)
 
         ynp = ynp.astype(np.int)
         ynp = np.mod(ynp, self._n_clusters)
@@ -124,8 +124,8 @@ class KMeans(object):
     def predict(self, X):
         cols, rows = self._validate_centroids(X)
 
-        Xnp = self._to_np(X)
-        self._check_data_content("X", Xnp)
+        Xnp = _to_np(X)
+        _check_data_content(self.do_checks, "X", Xnp)
         c_data, _ = self._to_cdata(Xnp)
         c_init_from_labels = 0
         c_init_labels = 0
@@ -167,14 +167,14 @@ class KMeans(object):
         This method always runs on CPU, not on GPUs.
         """
 
-        self._check_data_content("X", X)
+        _check_data_content(self.do_checks, "X", X)
         self.sklearn_fit()
         return self.sklearn_model.predict(X)
 
     def transform(self, X):
         cols, rows = self._validate_centroids(X)
 
-        Xnp = self._to_np(X)
+        Xnp = _to_np(X)
         c_data, c_data_type = self._to_cdata(Xnp)
         c_centroids, _ = self._to_cdata(self.cluster_centers_)
         c_res = c_void_p(0)
@@ -211,7 +211,7 @@ class KMeans(object):
         This method always runs on CPU, not on GPUs.
         """
 
-        self._check_data_content("X", X)
+        _check_data_content(self.do_checks, "X", X)
         self.sklearn_fit()
         return self.sklearn_model.transform(X)
 
@@ -381,10 +381,6 @@ class KMeans(object):
         else:
             raise RuntimeError("Couldn't instantiate KMeans Solver")
 
-    def _check_data_content(self, name, data):
-        if self.do_checks == 1:
-            assert np.isfinite(data).all(), "%s contains Inf" % name
-            assert not np.isnan(data).any(), "%s contains NA" % name
 
     def _validate_centroids(self, X):
         assert self.cluster_centers_ is not None, \
@@ -396,11 +392,6 @@ class KMeans(object):
             "The dimension of X [%d] and centroids [%d] is not equal." % \
             (cols, centroids_dim)
         return cols, rows
-
-    @staticmethod
-    def _to_np(data):
-        import pandas as pd
-        return data.values if isinstance(data, pd.DataFrame) else data
 
     # Properties and setters of properties
 

@@ -6,8 +6,9 @@ import sys
 from h2ogpuml.types import cptr
 from h2ogpuml.libs.elastic_net_cpu import h2ogpumlGLMCPU
 from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
-from h2ogpuml.solvers.utils import devicecount
+from h2ogpuml.solvers.utils import devicecount, _get_data, _check_data_size, _convert_to_ptr, _checkEqual
 from h2ogpuml.util.typechecks import assert_is_type
+
 
 """
 H2O GLM Solver
@@ -37,12 +38,10 @@ class GLM(object):
         pass
 
     # TODO: add gpu_id like kmeans and ensure wraps around deviceCount
-
     def __init__(
             self,
             n_threads=None,
             n_gpus=-1,
-            order='r',
             intercept=True,
             lambda_min_ratio=1E-7,
             n_lambdas=100,
@@ -57,6 +56,7 @@ class GLM(object):
             lambda_max=None,
             alpha_max=None,
             alpha_min=None,
+            order = None,
             # TODO: Add tol, check for pandas vs. numpy, autotedect order, control memory with deconstructor
     ):
 
@@ -64,8 +64,6 @@ class GLM(object):
 
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
-        assert_is_type(order, str)
-        assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
         assert_is_type(intercept, bool)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
@@ -80,12 +78,17 @@ class GLM(object):
         assert_is_type(lambda_max, float, None)
         assert_is_type(alpha_max, float, None)
         assert_is_type(alpha_min, float, None)
+
+        if order is not None:
+            assert_is_type(order, str)
+            assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
+            self.ord = ord(order)
+
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
         self.source_dev = 0  # assume Dev=0 is source of data for _upload_data
         self.source_me = 0  # assume thread=0 is source of data for _upload_data
-        self.ord = ord(order)
         if intercept is True:
             self.intercept = 1
         else:
@@ -183,6 +186,7 @@ class GLM(object):
             n,
             m_valid,
             precision,
+            order,
             a, # trainX_ptr or train_xptr
             b, # trainY_ptr
             c, # validX_ptr
@@ -194,8 +198,16 @@ class GLM(object):
             stop_early=1,
             stop_early_error_fraction=1.0,
             max_iterations=5000,
-            verbose=0,
+            verbose=0
     ):
+
+        if order in ['r', 'c']:
+            self.ord = ord(order)
+        elif order in [ord('r'), ord('c')]:
+            self.ord = order
+        else:
+            assert False, "Order should be set to 'r' or 'c' or %d or %d but got " % (ord('r'), ord('c')) + order
+
 
         # store some things for later call to predict_ptr()
 
@@ -557,22 +569,12 @@ class GLM(object):
             verbose=None,
     ):
 
-        #
-
         if give_full_path is not None:
             self.give_full_path = give_full_path
         else:
             give_full_path = self.give_full_path
 
-        # ###############
-
-        self.train_x = train_x
-        self.train_y = train_y
-        self.valid_x = valid_x
-        self.valid_y = valid_y
-        self.weight = weight
-
-        #
+        ################
 
         if stop_early is None:
             stop_early = self.stop_early
@@ -583,114 +585,29 @@ class GLM(object):
         if verbose is None:
             verbose = self.verbose
 
-        # #############
+        ##############
 
-        if train_x is not None:
-            try:
-                if train_x.value is not None:
+        train_x_np, m_train, n1, fortran1 = _get_data(train_x, verbose=verbose)
+        train_y_np, m_y, n_y, fortran2 = _get_data(train_y, verbose=verbose)
+        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, verbose=verbose)
+        valid_y_np, m_valid_y, n_valid_y, fortran4 = _get_data(valid_y, verbose=verbose)
+        weight_np, m_weight, n_weight, fortran5 = _get_data(weight, verbose=verbose)
 
-                    # get shapes
+        # check that inputs all have same 'c' or 'r' order
+        fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
+        _checkEqual(fortran_list)
 
-                    shape_x = np.shape(train_x)
-                    m_train = shape_x[0]
-                    n1 = shape_x[1]
-                else:
-                    if verbose > 0:
-                        print('no train_x')
-                    n1 = -1
-            except:
-
-                # get shapes
-
-                shape_x = np.shape(train_x)
-                m_train = shape_x[0]
-                n1 = shape_x[1]
+        if fortran1:
+            order = 'c'
         else:
-            if verbose > 0:
-                print('no train_x')
-            m_train = 0
-            n1 = -1
-
-        # ############
-
-        if train_y is not None:
-            try:
-                if train_y.value is not None:
-
-                    # get shapes
-
-                    if verbose > 0:
-                        print('Doing fit')
-                    shape_y = np.shape(train_y)
-                    m_y = shape_y[0]
-                    if m_train != m_y:
-                        print('training X and Y must have same number of rows, but m_train=%d m_y=%d\n'
-                              % (m_train, m_y))
-                else:
-                    m_y = -1
-            except:
-
-                # get shapes
-
-                if verbose > 0:
-                    print('Doing fit')
-                shape_y = np.shape(train_y)
-                m_y = shape_y[0]
-                if m_train != m_y:
-                    print('training X and Y must have same number of rows, but m_train=%d m_y=%d\n'
-                          % (m_train, m_y))
-        else:
-            if verbose > 0:
-                print('Doing predict')
-            m_y = -1
-
-        # ##############
-
-        if valid_x is not None:
-            try:
-                if valid_x.value is not None:
-                    shapevalid_x = np.shape(valid_x)
-                    m_valid = shapevalid_x[0]
-                    n2 = shapevalid_x[1]
-                else:
-                    if verbose > 0:
-                        print('no valid_x')
-                    m_valid = 0
-                    n2 = -1
-            except:
-                shapevalid_x = np.shape(valid_x)
-                m_valid = shapevalid_x[0]
-                n2 = shapevalid_x[1]
-        else:
-            if verbose > 0:
-                print('no valid_x')
-            m_valid = 0
-            n2 = -1
-        if verbose > 0:
-            print('m_valid=%d' % m_valid)
-        sys.stdout.flush()
-
-        # ##############
-
-        if valid_y is not None:
-            try:
-                if valid_y.value is not None:
-                    shapevalid_y = np.shape(valid_y)
-                    m_valid_y = shapevalid_y[0]
-                else:
-                    if verbose > 0:
-                        print('no valid_y')
-                    m_valid_y = -1
-            except:
-                shapevalid_y = np.shape(valid_y)
-                m_valid_y = shapevalid_y[0]
-        else:
-            if verbose > 0:
-                print('no valid_y')
-            m_valid_y = -1
+            order = 'r'
+        self.ord = ord(order)
 
         # ###############
         # check do_predict input
+
+        if m_train>=1 and m_y>=1 and m_train != m_y:
+            print('training X and Y must have same number of rows, but m_train=%d m_y=%d\n' % (m_train, m_y))
 
         if do_predict == 0:
             if verbose > 0:
@@ -727,9 +644,7 @@ class GLM(object):
                       % (m_valid, m_valid_y))
                 exit(0)
         else:
-
             # otherwise m_valid is used, and m_valid_y can be there or not (sets whether do error or not)
-
             pass
 
         # ################
@@ -749,11 +664,11 @@ class GLM(object):
         source_dev = 0  # assume GPU=0 is fine as source
         (a, b, c, d, e) = self._upload_data(
             source_dev,
-            train_x,
-            train_y,
-            valid_x,
-            valid_y,
-            weight,
+            train_x_np,
+            train_y_np,
+            valid_x_np,
+            valid_y_np,
+            weight_np,
         )
         precision = 0  # won't be used
         self.fit_ptr(
@@ -762,6 +677,7 @@ class GLM(object):
             n,
             m_valid,
             precision,
+            self.ord,
             a,
             b,
             c,
@@ -791,7 +707,7 @@ class GLM(object):
             self,
             valid_x,
             valid_y=None,
-            testweight=None,
+            weight=None,
             give_full_path=None,
             free_input_data=1,
     ):
@@ -806,14 +722,31 @@ class GLM(object):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike _upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
 
+        valid_x_np, n2, m_valid, fortran1 = _get_data(valid_x, verbose=self.verbose)
+        valid_y_np, n_valid_y, m_valid_y, fortran2 = _get_data(valid_y, verbose=self.verbose)
+        weight_np, n_weight, m_weight, fortran3 = _get_data(weight, verbose=self.verbose)
+
+        # check that inputs all have same 'c' or 'r' order
+        fortran_list = [fortran1, fortran2, fortran3]
+        _checkEqual(fortran_list)
+
+        if fortran1:
+            order = 'c'
+        else:
+            order = 'r'
+        self.ord = ord(order)
+
+        ################
+        # do checks on inputs
+
         do_predict = 1
         if give_full_path == 1:
             self.prediction_full = self.fit(
                 None,
                 None,
-                valid_x,
-                valid_y,
-                testweight,
+                valid_x_np,
+                valid_y_np,
+                weight_np,
                 give_full_path,
                 do_predict,
                 free_input_data,
@@ -825,9 +758,9 @@ class GLM(object):
         self.prediction = self.fit(
             None,
             None,
-            valid_x,
-            valid_y,
-            testweight,
+            valid_x_np,
+            valid_y_np,
+            weight_np,
             tempgivefullpath,
             do_predict,
             free_input_data,
@@ -855,7 +788,7 @@ class GLM(object):
             free_input_data=0,
             verbose=0,
     ):
-
+        # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
 
         if give_full_path is not None:
@@ -873,6 +806,7 @@ class GLM(object):
             self.n,
             self.m_valid,
             self.precision,
+            self.ord,
             self.a,
             self.b,
             valid_xptr,
@@ -890,6 +824,7 @@ class GLM(object):
                 self.n,
                 self.m_valid,
                 self.precision,
+                self.ord,
                 self.a,
                 self.b,
                 valid_xptr,
@@ -924,6 +859,7 @@ class GLM(object):
     :param verbose
     """
 
+
     def fit_predict(
             self,
             train_x,
@@ -955,6 +891,8 @@ class GLM(object):
         if verbose is None:
             verbose = self.verbose
         do_predict = 0  # only fit at first
+
+        # let fit() check and convert (to numpy) train_x, train_y, valid_x, valid_y, weight
         self.fit(
             train_x,
             train_y,
@@ -1024,6 +962,7 @@ class GLM(object):
             n,
             m_valid,
             precision,
+            order,
             a,
             b,
             c,
@@ -1036,6 +975,12 @@ class GLM(object):
             max_iterations=None,
             verbose=None,
     ):
+        if order is not None:
+            assert_is_type(order, str)
+            assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
+            self.ord = ord(order)
+        else:
+            assert self.ord in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + self.ord
 
         # override self if chose to pass this option
 
@@ -1059,6 +1004,7 @@ class GLM(object):
             n,
             m_valid,
             precision,
+            self.ord,
             a,
             b,
             c,
@@ -1088,6 +1034,27 @@ class GLM(object):
             return self.prediction_full  # something like valid_y
         else:
             return self.prediction  # something like valid_y
+
+    def fit_transform(
+            self,
+            train_x,
+            train_y,
+            valid_x=None,
+            valid_y=None,
+            weight=None,
+            give_full_path=None,
+            free_input_data=1,
+            stop_early=None,
+            stop_early_error_fraction=None,
+            max_iterations=None,
+            verbose=None,
+    ):
+
+        return (self.fit_predict(self, train_x, train_y, valid_x, valid_y, weight, give_full_path, free_input_data,
+                                 stop_early, stop_early_error_fraction, max_iterations, verbose))
+
+    def transform(self):
+        return
 
     # ################### Properties and setters of properties
 
@@ -1300,137 +1267,14 @@ class GLM(object):
         #
         # ################
 
-        if train_x is not None:
-            try:
-                if train_x.dtype == np.float64:
-                    if self.verbose > 0:
-                        print('Detected np.float64 train_x')
-                    sys.stdout.flush()
-                    self.double_precision1 = 1
-                if train_x.dtype == np.float32:
-                    if self.verbose > 0:
-                        print('Detected np.float32 train_x')
-                    sys.stdout.flush()
-                    self.double_precision1 = 0
-            except:
-                self.double_precision1 = -1
-            try:
-                if train_x.value is not None:
-                    m_train = train_x.shape[0]
-                    n1 = train_x.shape[1]
-                else:
-                    m_train = 0
-                    n1 = -1
-            except:
-                m_train = train_x.shape[0]
-                n1 = train_x.shape[1]
-        else:
-            m_train = 0
-            n1 = -1
+        self.double_precision1, m_train, n1 = _check_data_size(train_x, verbose=self.verbose)
         self.m_train = m_train
-
-        # ###############
-
-        if valid_x is not None:
-            try:
-                if valid_x.dtype == np.float64:
-                    self.double_precision2 = 1
-                if valid_x.dtype == np.float32:
-                    self.double_precision2 = 0
-            except:
-                self.double_precision2 = -1
-
-            #
-
-            try:
-                if valid_x.value is not None:
-                    m_valid = valid_x.shape[0]
-                    n2 = valid_x.shape[1]
-                else:
-                    m_valid = 0
-                    n2 = -1
-            except:
-                m_valid = valid_x.shape[0]
-                n2 = valid_x.shape[1]
-        else:
-            m_valid = 0
-            n2 = -1
-            self.double_precision2 = -1
+        self.double_precision3, m_train2, n_train2 = _check_data_size(train_y, verbose=self.verbose)
+        self.double_precision2, m_valid, n2 = _check_data_size(valid_x, verbose=self.verbose)
         self.m_valid = m_valid
+        self.double_precision4, m_valid2, n_valid2 = _check_data_size(valid_y, verbose=self.verbose)
+        self.double_precision5, m_train3, n_train3 = _check_data_size(weight, verbose=self.verbose)
 
-        # ###############
-
-        if train_y is not None:
-            try:
-                if train_y.dtype == np.float64:
-                    self.double_precision3 = 1
-                if train_y.dtype == np.float32:
-                    self.double_precision3 = 0
-            except:
-                self.double_precision3 = -1
-
-            #
-
-            try:
-                if train_y.value is not None:
-                    m_train2 = train_y.shape[0]
-                else:
-                    m_train2 = 0
-            except:
-                m_train2 = train_y.shape[0]
-        else:
-            m_train2 = 0
-            self.double_precision3 = -1
-
-        # ###############
-
-        if valid_y is not None:
-            try:
-                if valid_y.dtype == np.float64:
-                    self.double_precision4 = 1
-                if valid_y.dtype == np.float32:
-                    self.double_precision4 = 0
-            except:
-                self.double_precision4 = -1
-
-            #
-
-            try:
-                if valid_y.value is not None:
-                    m_valid2 = valid_y.shape[0]
-                else:
-                    m_valid2 = 0
-            except:
-                m_valid2 = valid_y.shape[0]
-        else:
-            m_valid2 = 0
-            self.double_precision4 = -1
-
-        # ###############
-
-        if weight is not None:
-            try:
-                if weight.dtype == np.float64:
-                    self.double_precision5 = 1
-                if weight.dtype == np.float32:
-                    self.double_precision5 = 0
-            except:
-                self.double_precision5 = -1
-
-            #
-
-            try:
-                if weight.value is not None:
-                    m_train3 = weight.shape[0]
-                else:
-                    m_train3 = 0
-            except:
-                m_train3 = weight.shape[0]
-        else:
-            m_train3 = 0
-            self.double_precision5 = -1
-
-        # ##############
 
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:
             if self.double_precision1 != self.double_precision2:
@@ -1466,6 +1310,7 @@ class GLM(object):
 
         # ##############
 
+        n = -1
         if n1 >= 0 and n2 >= 0:
             if n1 != n2:
                 print('train_x and valid_x must have same number of columns')
@@ -1486,60 +1331,25 @@ class GLM(object):
         d = c_void_p(0)
         e = c_void_p(0)
         if self.double_precision == 1:
-            null_ptr = POINTER(c_double)()
+            c_ftype = c_double
 
-            #
+            if self.verbose > 0:
+                print('Detected np.float64')
+                sys.stdout.flush()
+        else:
+            c_ftype = c_float
 
-            if train_x is not None:
-                try:
-                    if train_x.value is not None:
-                        A = cptr(train_x, dtype=c_double)
-                    else:
-                        A = null_ptr
-                except:
-                    A = cptr(train_x, dtype=c_double)
-            else:
-                A = null_ptr
-            if train_y is not None:
-                try:
-                    if train_y.value is not None:
-                        B = cptr(train_y, dtype=c_double)
-                    else:
-                        B = null_ptr
-                except:
-                    B = cptr(train_y, dtype=c_double)
-            else:
-                B = null_ptr
-            if valid_x is not None:
-                try:
-                    if valid_x.value is not None:
-                        C = cptr(valid_x, dtype=c_double)
-                    else:
-                        C = null_ptr
-                except:
-                    C = cptr(valid_x, dtype=c_double)
-            else:
-                C = null_ptr
-            if valid_y is not None:
-                try:
-                    if valid_y.value is not None:
-                        D = cptr(valid_y, dtype=c_double)
-                    else:
-                        D = null_ptr
-                except:
-                    D = cptr(valid_y, dtype=c_double)
-            else:
-                D = null_ptr
-            if weight is not None:
-                try:
-                    if weight.value is not None:
-                        E = cptr(weight, dtype=c_double)
-                    else:
-                        E = null_ptr
-                except:
-                    E = cptr(weight, dtype=c_double)
-            else:
-                E = null_ptr
+            if self.verbose > 0:
+                print('Detected np.float32')
+                sys.stdout.flush()
+
+        A = _convert_to_ptr(train_x, c_ftype)
+        B = _convert_to_ptr(train_y, c_ftype)
+        C = _convert_to_ptr(valid_x, c_ftype)
+        D = _convert_to_ptr(valid_y, c_ftype)
+        E = _convert_to_ptr(weight, c_ftype)
+
+        if self.double_precision == 1:
             status = self.lib.make_ptr_double(
                 c_int(self._shared_a),
                 c_int(self.source_me),
@@ -1560,64 +1370,6 @@ class GLM(object):
                 pointer(e),
             )
         elif self.double_precision == 0:
-            if self.verbose > 0:
-                print('Detected np.float32')
-                sys.stdout.flush()
-            self.double_precision = 0
-            null_ptr = POINTER(c_float)()
-
-            #
-
-            if train_x is not None:
-                try:
-                    if train_x.value is not None:
-                        A = cptr(train_x, dtype=c_float)
-                    else:
-                        A = null_ptr
-                except:
-                    A = cptr(train_x, dtype=c_float)
-            else:
-                A = null_ptr
-            if train_y is not None:
-                try:
-                    if train_y.value is not None:
-                        B = cptr(train_y, dtype=c_float)
-                    else:
-                        B = null_ptr
-                except:
-                    B = cptr(train_y, dtype=c_float)
-            else:
-                B = null_ptr
-            if valid_x is not None:
-                try:
-                    if valid_x.value is not None:
-                        C = cptr(valid_x, dtype=c_float)
-                    else:
-                        C = null_ptr
-                except:
-                    C = cptr(valid_x, dtype=c_float)
-            else:
-                C = null_ptr
-            if valid_y is not None:
-                try:
-                    if valid_y.value is not None:
-                        D = cptr(valid_y, dtype=c_float)
-                    else:
-                        D = null_ptr
-                except:
-                    D = cptr(valid_y, dtype=c_float)
-            else:
-                D = null_ptr
-            if weight is not None:
-                try:
-                    if weight.value is not None:
-                        E = cptr(weight, dtype=c_float)
-                    else:
-                        E = null_ptr
-                except:
-                    E = cptr(weight, dtype=c_float)
-            else:
-                E = null_ptr
             status = self.lib.make_ptr_float(
                 c_int(self._shared_a),
                 c_int(self.source_me),
@@ -1658,3 +1410,4 @@ class GLM(object):
         self.d = d
         self.e = e
         return (a, b, c, d, e)
+

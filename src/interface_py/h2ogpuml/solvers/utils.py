@@ -1,4 +1,7 @@
 import sys
+import numpy as np
+from ctypes import *
+from h2ogpuml.types import cptr
 
 def devicecount(n_gpus=0):
 
@@ -43,3 +46,123 @@ def getgpuinfo_subprocess():
         sys.stdout.flush()
         pass
     return (total_gpus, total_mem)
+
+
+def _to_np(data):
+    import pandas as pd
+    return data.values if isinstance(data, pd.DataFrame) else data
+
+
+def _get_data(data, verbose=0):
+
+    # default is no data
+    datalocal = None
+    m = 0
+    n = -1
+    fortran = None
+
+    if data is not None:
+        try:
+            datalocal = _to_np(data)
+            fortran = datalocal.flags.f_contiguous
+            if datalocal.value is not None:
+                # get shapes
+                shape_x = np.shape(datalocal)
+                m = shape_x[0]
+                try:
+                    n = shape_x[1]
+                except:
+                    n = 1
+            else:
+                if verbose > 0:
+                    print('no data')
+                n = -1
+        except:
+            datalocal = _to_np(data)
+            # get shapes
+            shape_x = np.shape(datalocal)
+            m = shape_x[0]
+            try:
+                n = shape_x[1]
+            except:
+                n = 1
+
+
+    else:
+        if verbose > 0:
+            print('no data')
+
+
+
+    return datalocal, m, n, fortran
+
+
+
+def _check_data_content(do_check, name, data):
+    if do_check == 1:
+        assert np.isfinite(data).all(), "%s contains Inf" % name
+        assert not np.isnan(data).any(), "%s contains NA" % name
+
+def _check_data_size(data, verbose=0):
+
+    double_precision=-1
+    m = 0
+    n = -1
+
+    if data is not None:
+        try:
+            if data.dtype == np.float64:
+                if verbose > 0:
+                    print('Detected np.float64 data')
+                sys.stdout.flush()
+                double_precision = 1
+            if data.dtype == np.float32:
+                if verbose > 0:
+                    print('Detected np.float32 data')
+                sys.stdout.flush()
+                double_precision = 0
+        except:
+            double_precision = -1
+        try:
+            if data.value is not None:
+                m = data.shape[0]
+                try:
+                    n = data.shape[1]
+                except:
+                    n = 1
+            else:
+                m = 0
+                n = -1
+        except:
+            m = data.shape[0]
+            try:
+                n = data.shape[1]
+            except:
+                n = 1
+
+    return double_precision, m, n
+
+
+def _convert_to_ptr(data, c_ftype=c_float):
+    null_ptr = POINTER(c_ftype)()
+
+    if data is not None:
+        try:
+            if data.value is not None:
+                data_ptr = cptr(data, dtype=c_ftype)
+            else:
+                data_ptr = null_ptr
+        except:
+            data_ptr = cptr(data, dtype=c_ftype)
+    else:
+        data_ptr = null_ptr
+
+    return data_ptr
+
+def _checkEqual(iterator):
+    iterator = iter(iterator)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return True
+    return all(first == rest for rest in iterator)

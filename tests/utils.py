@@ -153,7 +153,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print("Solving")
     sys.stdout.flush()
     if use_gpu == 1:
-        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, a, b, c, d, e)
+        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, None, a, b, c, d, e)
     else:
         enet.fit(a, b, c, d, e)
     # t1 = time.time()
