@@ -86,7 +86,7 @@ make test && make testbig
 - test performance and accuracy of python package
 
 ```
-make testperf && make testperfbig
+make testperf && make testbigperf
 ```
 
 - To run gpu C++ version:
