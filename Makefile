@@ -44,11 +44,14 @@ endif
 
 
 help:
-	@echo "make          Compile and Install everything"
-	@echo "make all      Compile and Install everything"
-	@echo "make allclean Clean everything, then Compile and Install everything"
-	@echo "make test     Run tests"
-	@echo "make clean    Clean all build files"
+	@echo "make             Compile and Install everything"
+	@echo "make cleanbuild  Clean everything, then Compile, then only Build"
+	@echo "make fullinstall Clean everything, then Compile and Install everything"
+	@echo "make clean       Clean all build files"
+	@echo "make test        Run tests"
+	@echo "make testbig     Run tests for big data"
+	@echo "make testperf    Run performance and accuracy tests"
+	@echo "make testbigperf Run performance and accuracy tests for big data"
 	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2ogpuml/src/interface_py:/home/jon/h2ogpuml;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
 	@echo "Example Pycharm working directory: /home/jon/h2ogpuml/"
 
