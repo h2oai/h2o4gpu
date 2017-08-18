@@ -42,7 +42,6 @@ entrypoints==0.2.3
 execnet==1.4.1
 future==0.16.0
 h2o==3.10.4.8
-h2ogpuml==0.0.3
 html5lib==0.999999999
 imagesize==0.7.1
 ipykernel==4.6.1
@@ -108,4 +107,3 @@ xlrd==1.0.0
 XlsxWriter==0.9.8
 cmake==0.8.0
 feather-format==0.4.0
-

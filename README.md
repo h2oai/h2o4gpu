@@ -6,7 +6,7 @@ H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
-CUDA8 (for GPU version) and OpenMP
+CUDA 8
 
 Environment
 --------

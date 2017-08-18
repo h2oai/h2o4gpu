@@ -77,9 +77,9 @@ class GLM(object):
         assert_is_type(family, str)
         assert family in ['logistic',
                           'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
-        assert_is_type(lambda_max, float)
-        assert_is_type(alpha_max, float)
-        assert_is_type(alpha_min, float)
+        assert_is_type(lambda_max, float, None)
+        assert_is_type(alpha_max, float, None)
+        assert_is_type(alpha_min, float, None)
         self.n = 0
         self.m_train = 0
         self.m_valid = 0

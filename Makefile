@@ -28,6 +28,8 @@ endif
 RANDOM := $(shell bash -c 'echo $$RANDOM')
 LOGEXT=$(RANDOM)$(shell date +'_%Y.%m.%d-%H:%M:%S')
 
+NUMPROCS := $(shell cat /proc/cpuinfo|grep processor|wc -l)
+
 #
 # Docker image tagging
 #
@@ -106,7 +108,7 @@ fullinstall: cleanbuild install
 
 #############################################
 
-clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean
+clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/
 
 cleancpp:
@@ -191,6 +193,10 @@ testbigquickperf: dotestbigperf
 deps_clean: 
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
+	# sometimes --upgrade leaves extra packages around
+	sed 's/==.*//g' requirements.txt > requirements_plain.txt
+	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
+	rm -rf requirements_plain.txt
 
 deps_fetch: deps_clean
 	@echo "---- Fetch dependencies ---- "
@@ -204,6 +210,8 @@ alldeps_install: deps_install sync_data libxgboost libpy3nvml
 
 deps_install: deps_fetch
 	@echo "---- Install dependencies ----"
+	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
+	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
 
@@ -219,10 +227,14 @@ clean_in_docker:
 
 ###################
 xgboost_clean:
+	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
 
 libxgboost:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package && python setup.py sdist bdist_wheel && cd dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
+
+py3nvml_clean:
+	-pip uninstall -y py3nvml
 
 libpy3nvml:
 	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
