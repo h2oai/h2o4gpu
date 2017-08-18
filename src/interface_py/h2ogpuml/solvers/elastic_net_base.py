@@ -9,7 +9,6 @@ from h2ogpuml.libs.elastic_net_gpu import h2ogpumlGLMGPU
 from h2ogpuml.solvers.utils import devicecount
 from h2ogpuml.util.typechecks import assert_is_type
 
-
 """
 H2O GLM Solver
 :param int n_threads: Number of threads to use in the gpu. Default is None.
@@ -26,6 +25,8 @@ H2O GLM Solver
 :param int verbose: Print verbose information to the console if set to > 0. Default is 0.
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 """
+
+
 class GLM(object):
     class info:
 
@@ -73,7 +74,8 @@ class GLM(object):
         assert_is_type(max_iterations, int)
         assert_is_type(verbose, int)
         assert_is_type(family, str)
-        assert family in ['logistic', 'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
+        assert family in ['logistic',
+                          'elasticnet'], "family should be set to 'logistic' or 'elasticnet' but got " + family
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
@@ -125,21 +127,23 @@ class GLM(object):
         self.n_threads = n_threads
 
         if not h2ogpumlGLMGPU:
-            print('\nWarning: Cannot create a H2OGPUML Elastic Net GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library '
-                  '>Use CPU or add CUDA libraries to $PATH and re-run setup.py')
+            print(
+                '\nWarning: Cannot create a H2OGPUML Elastic Net GPU Solver instance without linking Python module to a compiled H2OGPUML GPU library '
+                '>Use CPU or add CUDA libraries to $PATH and re-run setup.py')
 
         if not h2ogpumlGLMCPU:
-            print('\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML '
-                  '>CPU library Use GPU or re-run setup.py')
+            print(
+                '\nWarning: Cannot create a H2OGPUML Elastic Net CPU Solver instance without linking Python module to a compiled H2OGPUML '
+                '>CPU library Use GPU or re-run setup.py')
 
         self.lib = None
         if n_gpus == 0 or h2ogpumlGLMGPU is None or device_count == 0:
             if verbose > 0:
-                print('Using CPU GLM solver %d %d' % n_gpus,device_count)
+                print('Using CPU GLM solver %d %d' % n_gpus, device_count)
             self.lib = h2ogpumlGLMCPU
         elif n_gpus > 0 or h2ogpumlGLMGPU is None or device_count == 0:
             if verbose > 0:
-                print('Using GPU GLM solver with %d GPUs'% n_gpus)
+                print('Using GPU GLM solver with %d GPUs' % n_gpus)
             self.lib = h2ogpumlGLMGPU
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
@@ -167,6 +171,7 @@ class GLM(object):
     :param max_iterations
     :param verbose
     """
+
     def fit_ptr(
             self,
             source_dev,
@@ -406,9 +411,9 @@ class GLM(object):
         if NUMOTHER != 3:
             print('NUMOTHER=%d but expected 3' % NUMOTHER)
             print('count_full_value=%d count_short_value=%d count_more_value=%d num_all=%d NUMALLOTHER=%d' %
-                 (int(count_full_value), int(count_short_value),
-                 int(count_more_value), int(num_all),
-                 int(NUMALLOTHER)))
+                  (int(count_full_value), int(count_short_value),
+                   int(count_more_value), int(num_all),
+                   int(NUMALLOTHER)))
             sys.stdout.flush()
             exit(0)
 
@@ -492,14 +497,14 @@ class GLM(object):
                            * m_valid)
             if verbose > 0:
                 print('thecount=%d count_full_value=%d count_short_value=%d n=%d NUMALLOTHER=%d m_valid=%d'
-                % (
-                    thecount,
-                    count_full_value,
-                    count_short_value,
-                    n,
-                    NUMALLOTHER,
-                    m_valid,
-                ))
+                      % (
+                          thecount,
+                          count_full_value,
+                          count_short_value,
+                          n,
+                          NUMALLOTHER,
+                          m_valid,
+                      ))
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
                 np.fromiter(cast(valid_pred_vs_alpha,
@@ -531,6 +536,7 @@ class GLM(object):
     :param max_iterations
     :param verbose
     """
+
     def fit(
             self,
             train_x,
@@ -615,7 +621,7 @@ class GLM(object):
                     m_y = shape_y[0]
                     if m_train != m_y:
                         print('training X and Y must have same number of rows, but m_train=%d m_y=%d\n'
-                        % (m_train, m_y))
+                              % (m_train, m_y))
                 else:
                     m_y = -1
             except:
@@ -628,7 +634,7 @@ class GLM(object):
                 m_y = shape_y[0]
                 if m_train != m_y:
                     print('training X and Y must have same number of rows, but m_train=%d m_y=%d\n'
-                    % (m_train, m_y))
+                          % (m_train, m_y))
         else:
             if verbose > 0:
                 print('Doing predict')
@@ -714,7 +720,7 @@ class GLM(object):
         if do_predict == 0:
             if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
                 print('valid_x and valid_y must have same number of rows, but m_valid=%d m_valid_y=%d\n' \
-                     % (m_valid, m_valid_y))
+                      % (m_valid, m_valid_y))
                 exit(0)
         else:
 
@@ -729,7 +735,8 @@ class GLM(object):
                     > 0 and (n2 == 0 or n2 == -1):
                 # if ((valid_x is not None and valid_y == None) or (valid_x == None and valid_y is not None)):
 
-                print('Must input both valid_x and valid_y or neither.')  # TODO FIXME: Don't need valid_y if just want preds and no error, but don't return error in fit, so leave for now
+                print(
+                    'Must input both valid_x and valid_y or neither.')  # TODO FIXME: Don't need valid_y if just want preds and no error, but don't return error in fit, so leave for now
                 exit(1)
 
                 #
@@ -775,6 +782,7 @@ class GLM(object):
     :param give_full_path
     :param free_input_data
     """
+
     def predict(
             self,
             valid_x,
@@ -834,6 +842,7 @@ class GLM(object):
     :param free_input_data
     :param verbose
     """
+
     def predict_ptr(
             self,
             valid_xptr,
@@ -910,6 +919,7 @@ class GLM(object):
     :param max_iterations
     :param verbose
     """
+
     def fit_predict(
             self,
             train_x,
@@ -1002,6 +1012,7 @@ class GLM(object):
     :param max_iterations
     :param verbose
     """
+
     def fit_predict_ptr(
             self,
             source_dev,
@@ -1643,6 +1654,3 @@ class GLM(object):
         self.d = d
         self.e = e
         return (a, b, c, d, e)
-
-
-
