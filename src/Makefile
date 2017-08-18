@@ -234,7 +234,7 @@ $(OBJDIR)/gpu/h2ogpuml.o: gpu/h2ogpumlglm.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJD
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/h2ogpumlkmeans.o: gpu/h2ogpumlkmeans.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
-	$(CUXX)  gpu/kmeans.cu  -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/kmeans_labels.o: gpu/kmeans_labels.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@
