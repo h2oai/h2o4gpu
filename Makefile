@@ -136,7 +136,7 @@ getotherdata:
 
 ##################
 
-dotest:
+dotestjenkins:
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p build/test-reports/
 	$(PYTHON) -m pytest -rxs \
@@ -144,9 +144,14 @@ dotest:
 			--junitxml=build/test-reports/TEST-h2ogpuml.xml \
 			tests
 
+dotest:
+	rm -rf build/test-reports 2>/dev/null
+	mkdir -p build/test-reports/
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
+
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-testbig.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
 
 #####################
 
@@ -173,6 +178,8 @@ dotestbigperfpython:
 	bash showresults.sh
 
 ###################
+
+testjenkins: all sync_data dotestjenkins
 
 test: all sync_data dotest
 

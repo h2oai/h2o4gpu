@@ -294,7 +294,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # Constructor
     print("Setting up solver")
     sys.stdout.flush()
-    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio,
                   n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family, give_full_path=give_full_path)
 
