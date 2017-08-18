@@ -48,10 +48,8 @@ pipeline {
                     . h2oai_env/bin/activate
                     python -m pip install --upgrade pip setuptools python-dateutil numpy psutil feather-format --no-cache-dir
                     python -m pip install -r requirements.txt --no-cache-dir
-                    make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${
-                        AWS_SECRET_ACCESS_KEY
-                    } fullinstall
-                """
+                    make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstall
+                        """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                     // Archive artifacts
                     arch 'src/interface_py/dist/*.whl'
