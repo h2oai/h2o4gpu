@@ -20,6 +20,11 @@ RUN \
   apt-get -y install curl apt-utils python-software-properties \
   software-properties-common iputils-ping wget cpio net-tools build-essential \
   git zip s3cmd dirmngr && \
+  apt-get -y --no-install-recommends  install \
+      python3-dateutil \
+      python3-magic && \
+  wget http://launchpadlibrarian.net/326935544/s3cmd_2.0.0-1_all.deb && \
+  dpkg -i s3cmd_2.0.0-1_all.deb && \
   # Setup Repos
   add-apt-repository ppa:fkrull/deadsnakes  && \
   apt-get update -yqq && \
