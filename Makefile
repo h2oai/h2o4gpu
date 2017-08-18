@@ -110,6 +110,8 @@ fullinstall: cleanbuild install
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/
+	@echo "----- Cleaning properly -----"
+	git clean -f -d -x
 
 cleancpp:
 	$(MAKE) -j clean -C src/
@@ -126,8 +128,6 @@ cleanr:
 
 .PHONY: mrproper
 mrproper: clean
-	@echo "----- Cleaning properly -----"
-	git clean -f -d -x
 
 ##################
 
