@@ -263,7 +263,13 @@ namespace kmeans {
         delete(pairwise_distances[q]);
         delete(data_dots[q]);
         delete(centroid_dots[q]);
+        delete(labels_copy[q]);
+        delete(range[q]);
+        delete(counts[q]);
+        delete(indices[q]);
       }
+
+
       if(verbose){
     	  fprintf(stderr,"Iterations: %d\n",i);
     	  fflush(stderr);
