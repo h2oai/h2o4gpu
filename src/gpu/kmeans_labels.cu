@@ -5,14 +5,106 @@
 #include <cub/cub.cuh>
 #include <iostream>
 #include <sstream>
+#include <cublas_v2.h>
 #include <cfloat>
 #include "include/kmeans_general.h"
 
+inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+    if (code != cudaSuccess) {
+        fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+        std::stringstream ss;
+        ss << file << "(" << line << ")";
+        std::string file_and_line;
+        ss >> file_and_line;
+        thrust::system_error(code, thrust::cuda_category(), file_and_line);
+    }
+}
+
+
+inline cudaError_t throw_on_cuda_error(cudaError_t code, const char *file,
+                                       int line) {
+    if (code != cudaSuccess) {
+        std::stringstream ss;
+        ss << file << "(" << line << ")";
+        std::string file_and_line;
+        ss >> file_and_line;
+        thrust::system_error(code, thrust::cuda_category(), file_and_line);
+    }
+
+    return code;
+}
+
+#ifdef CUBLAS_API_H_
+// cuBLAS API errors
+static const char *cudaGetErrorEnum(cublasStatus_t error)
+{
+    switch (error)
+    {
+        case CUBLAS_STATUS_SUCCESS:
+            return "CUBLAS_STATUS_SUCCESS";
+
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            return "CUBLAS_STATUS_NOT_INITIALIZED";
+
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            return "CUBLAS_STATUS_ALLOC_FAILED";
+
+        case CUBLAS_STATUS_INVALID_VALUE:
+            return "CUBLAS_STATUS_INVALID_VALUE";
+
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            return "CUBLAS_STATUS_ARCH_MISMATCH";
+
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            return "CUBLAS_STATUS_MAPPING_ERROR";
+
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            return "CUBLAS_STATUS_EXECUTION_FAILED";
+
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            return "CUBLAS_STATUS_INTERNAL_ERROR";
+    }
+
+    return "<unknown>";
+}
+#endif
+inline cublasStatus_t throw_on_cublas_error(cublasStatus_t code, const char *file,
+                                            int line) {
+
+
+    if (code != CUBLAS_STATUS_SUCCESS) {
+        fprintf(stderr,"cublas error: %s %s %d\n", cudaGetErrorEnum(code), file, line);
+        std::stringstream ss;
+        ss << file << "(" << line << ")";
+        std::string file_and_line;
+        ss >> file_and_line;
+        thrust::system_error(code, thrust::cuda_category(), file_and_line);
+    }
+
+    return code;
+}
+
+
 extern cudaStream_t cuda_stream[MAX_NGPUS];
+
+template<unsigned int i>
+extern __global__ void debugMark(){};
 
 cudaStream_t cuda_stream[MAX_NGPUS];
 namespace kmeans {
     namespace detail {
+
+        template<typename T>
+        struct absolute_value {
+            __host__ __device__
+
+            void operator()(T &x) const {
+                x = (x > 0 ? x : -x);
+            }
+        };
+
+
         cublasHandle_t cublas_handle[MAX_NGPUS];
 
         void labels_init() {
@@ -253,9 +345,10 @@ namespace kmeans {
                 exit(1);
             }
         }
+
+
     }
 }
-
 namespace mycub {
     void *d_key_alt_buf[MAX_NGPUS];
     unsigned int key_alt_buf_bytes[MAX_NGPUS];
@@ -324,7 +417,7 @@ namespace mycub {
         cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys,
                                         d_values, SIZE, 0, sizeof(int) * 8, this_stream);
         // Sorted keys and values are referenced by d_keys.Current() and d_values.Current()
+
+
     }
-
-
 }
