@@ -72,7 +72,7 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 ```
 git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
 cd h2ogpuml
-make veryallclean
+make fullinstall
 ```
 
 This installs full h2ogpuml as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2ogpuml-0.0.1-py2.py3-none-any.whl

@@ -64,9 +64,13 @@ sync_otherdata:
 
 sync_data: sync_smalldata sync_otherdata
 
-default: all
+default: fullinstall
+
+#########################################
 
 all: update_submodule cpp c py r
+
+install: update_submodule cpp c pyinstall rinstall
 
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
@@ -84,10 +88,20 @@ py:
 r:
 	$(MAKE) -j all -C src/interface_r
 
+pyinstall: py
+	$(MAKE) -j install -C src/interface_py
 
-veryallclean: clean deps_fetch alldeps_install all
+rinstall: r
+	$(MAKE) -j install -C src/interface_r
 
-allclean: clean all
+
+build: deps_fetch alldeps_install all
+
+cleanbuild: clean build
+
+fullinstall: cleanbuild install
+
+#############################################
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean
 	rm -rf ./results/
@@ -105,10 +119,17 @@ cleanpy:
 cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
+.PHONY: mrproper
+mrproper: clean
+	@echo "----- Cleaning properly -----"
+	git clean -f -d -x
+
+##################
+
 getotherdata:
 	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/testsbig/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
 
-#################3
+##################
 
 dotest:
 	mkdir -p ./tmp/
@@ -141,8 +162,6 @@ dotestbigperfpython:
 	mkdir -p ./tmp/
 	bash getresultsbig.sh $(LOGEXT)
 	bash showresults.sh
-
-
 
 ###################
 
@@ -185,6 +204,8 @@ deps_install: deps_fetch
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
 
+###################
+
 wheel_in_docker:
 	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
@@ -193,11 +214,12 @@ clean_in_docker:
 	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make clean'
 
+###################
 xgboost_clean:
 	rm -rf xgboost/build/
 
 libxgboost:
-	cd xgboost ; git submodule init ; git submodule update dmlc-core ; git submodule update nccl ; git submodule update cub ; git submodule update rabit ; mkdir -p build ; cd build ; cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release ; make -j  ; cd ../python-package ; python setup.py sdist bdist_wheel ; cd dist ; pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
+	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package && python setup.py sdist bdist_wheel && cd dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
 
 libpy3nvml:
 	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.

@@ -22,7 +22,7 @@ all:
 	ln -sf $(thepwd)/build/lib/ch2ogpuml_cpu.so .
 	ln -sf $(thepwd)/build/lib/ch2ogpuml_gpu.so .
 
-	# install
+install:
 	python setup.py install
 
 #	python3 setup.py clean --all && rm -rf h2ogpuml.egg-info && rm -rf h2ogpuml/__pycache__/
