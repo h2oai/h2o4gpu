@@ -2,6 +2,9 @@
 *.DS_STORE
 
 # Ignore artifacts made from make, h2ogpuml
+src/interface_py/py3nvml
+src/interface_py/xgboost
+deps/
 data/
 smalldata/
 tests/smalldata
