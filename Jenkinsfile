@@ -39,7 +39,8 @@ pipeline {
                         extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
-
+                
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]])
                 sh """
                     rm -rf h2oai_env
                     mkdir h2oai_env
