@@ -145,8 +145,7 @@ dotestjenkins:
 			tests
 
 dotest:
-	rm -rf build/test-reports 2>/dev/null
-	mkdir -p build/test-reports/
+	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
 
 dotestbig:
