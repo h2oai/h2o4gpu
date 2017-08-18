@@ -22,13 +22,16 @@ RUN \
   git zip s3cmd dirmngr && \
   # Setup Repos
   add-apt-repository ppa:fkrull/deadsnakes  && \
-    apt-get update -yqq && \
+  apt-get update -yqq && \
+
+
   curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   # Install H2o dependencies
   apt-get -y --no-install-recommends  install \
     python3.6 \
     python3.6-dev \
     python3.6-venv \
+    virtualenv \
     python3-pip && \
   update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
   python -m pip install --upgrade pip && \

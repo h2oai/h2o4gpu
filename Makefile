@@ -12,17 +12,17 @@ DEPS_DIR = deps
 OS := $(shell uname)
 ## Python has crazy ideas about os names
 ifeq ($(OS), Darwin)
-        PY_OS ?= "macosx"
+		PY_OS ?= "macosx"
 else
-        PY_OS ?= $(OS)
+		PY_OS ?= $(OS)
 endif
 
 # see if have ccache for faster compile times if no changes to file
 theccache=$(shell echo `which ccache`)
 ifeq ($(theccache),)
-        theccacheclean=
+		theccacheclean=
 else
-        theccacheclean=$(theccache) -C
+		theccacheclean=$(theccache) -C
 endif
 
 RANDOM := $(shell bash -c 'echo $$RANDOM')
@@ -40,7 +40,7 @@ DOCKER_VERSION_TAG ?= "latest"
 #
 S3_CMD_LINE := s3cmd --skip-existing
 ifeq ($(shell test -n "$(AWS_ACCESS_KEY_ID)" -a -n "$(AWS_SECRET_ACCESS_KEY)" && printf "true"), true)
-        S3_CMD_LINE += --access_key=$(AWS_ACCESS_KEY_ID) --secret_key=$(AWS_SECRET_ACCESS_KEY)
+		S3_CMD_LINE += --access_key=$(AWS_ACCESS_KEY_ID) --secret_key=$(AWS_SECRET_ACCESS_KEY)
 endif
 
 
@@ -73,7 +73,7 @@ default: fullinstall
 
 #########################################
 
-all: update_submodule cpp c py r
+all: update_submodule cpp c py 
 
 install: update_submodule cpp c pyinstall rinstall
 
@@ -137,8 +137,12 @@ getotherdata:
 ##################
 
 dotest:
-	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	rm -rf build/test-reports 2>/dev/null
+	mkdir -p build/test-reports/
+	$(PYTHON) -m pytest -rxs \
+			--junit-prefix=$(OS) \
+			--junitxml=build/test-reports/TEST-h2ogpuml.xml \
+			tests
 
 dotestbig:
 	mkdir -p ./tmp/

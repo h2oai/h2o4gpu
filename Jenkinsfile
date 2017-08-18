@@ -3,6 +3,7 @@
 @Library('test-shared-library') _
 
 import ai.h2o.ci.Utils
+
 def utilsLib = new Utils()
 
 pipeline {
@@ -28,20 +29,20 @@ pipeline {
             steps {
                 dumpInfo 'Linux Build Info'
                 checkout([
-                        $class: 'GitSCM',
-                        branches: scm.branches,
+                        $class                           : 'GitSCM',
+                        branches                         : scm.branches,
                         doGenerateSubmoduleConfigurations: false,
-                        extensions: scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
-                        submoduleCfg: [],
-                        userRemoteConfigs: scm.userRemoteConfigs])
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : scm.userRemoteConfigs])
 
                 sh """
                     rm -rf h2oai_env
                     mkdir h2oai_env
                     virtualenv --python=/usr/bin/python3.6 h2oai_env
                     . h2oai_env/bin/activate
-                    python -m pip install --upgrade pip setuptools python-dateutil numpy psutil
-                    python -m pip install install -r requirements.txt
+                    python -m pip install --upgrade pip setuptools python-dateutil numpy psutil feather-format --no-cache-dir
+                    python -m pip install -r requirements.txt --no-cache-dir
                     make allclean
                 """
                 stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
@@ -54,19 +55,27 @@ pipeline {
                 dockerfile {
                     label "gpu"
                     filename "Dockerfile-build"
+                    args "-v /home/0xdiag/h2ogpuml/data:/data"
                 }
             }
             steps {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 script {
-                    try {
-                        sh """
-                            dotest PYTHON=.venv/bin/python
-                        """
-                    } finally {
-                        junit testResults: 'build/test-reports/TEST-*.xml', keepLongStdio: true, allowEmptyResults: false
-                        deleteDir()
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        try {
+                            sh """
+                            rm -rf data
+                            ln -s /data ./data
+                            ls data/
+                            make dotest PYTHON=h2oai_env/bin/python
+                               """
+                        }
+                        finally {
+                            arch 'tmp/*.log'
+                            junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+                            deleteDir()
+                        }
                     }
                 }
             }
@@ -92,7 +101,7 @@ pipeline {
                     version = null // This is necessary, else version:Tuple will be serialized
                     s3up {
                         localArtifact = 'dist/*.whl'
-                        artifactId = "pydatatable"
+                        artifactId = "h2ogpuml"
                         majorVersion = _majorVersion
                         buildVersion = _buildVersion
                         keepPrivate = true
