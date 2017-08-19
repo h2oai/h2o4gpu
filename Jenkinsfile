@@ -46,7 +46,8 @@ pipeline {
                     mkdir h2oai_env
                     virtualenv --python=/usr/bin/python3.6 h2oai_env
                     . h2oai_env/bin/activate
-                    python -m pip install --upgrade pip setuptools python-dateutil numpy psutil feather-format setuptools --no-cache-dir
+                    python -m pip install -U setuptools
+                    python -m pip install --upgrade pip python-dateutil numpy psutil feather-format --no-cache-dir
                     python -m pip install -r requirements.txt --no-cache-dir
                     make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstall
                         """
