@@ -229,7 +229,7 @@ namespace h2ogpumlkmeans {
     int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry,
                    size_t rows, size_t cols, const char ord, int k, int max_iterations,
                    int init_from_labels, int init_labels, int init_data, T threshold,
-                   const T *srcdata, const int *srclabels, void **centroids) {
+                   const T *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -332,7 +332,10 @@ namespace h2ogpumlkmeans {
 
         // copy result of centroids (sitting entirely on each device) back to host
         std::vector <T> *ctr = new std::vector<T>(*l_centroids[0]);
-        *centroids = ctr->data();
+        *pred_centroids = ctr->data();
+
+        std::vector <T> *lbls = new std::vector<T>(*labels[0]);
+        *pred_labels = lbls->data();
 
         // debug
         int printcenters = 0;
@@ -362,7 +365,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int verbose, int cpu_idtry, int n_cputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T *srcdata, const T *centroids, void **preds) {
+                       const T *srcdata, const T *centroids, void **pred_labels) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows>%d now implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -493,15 +496,16 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, const T *centroids, void **preds) {
+                      T threshold, const T *srcdata, const int *srclabels, const T *centroids,
+                      void **pred_centroids, void **pred_labels) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, cpu_idtry, n_cputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                              srcdata, srclabels, preds);
+                              srcdata, srclabels, pred_centroids, pred_labels);
         } else {
             return kmeans_predict(verbose, cpu_idtry, n_cputry, rows, cols,
                                   ord, k,
-                                  srcdata, centroids, preds);
+                                  srcdata, centroids, pred_labels);
         }
     }
 
@@ -509,39 +513,39 @@ namespace h2ogpumlkmeans {
     int makePtr_dense<float>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                              const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                              int init_data, float threshold, const float *srcdata, const int *srclabels,
-                             const float *centroids, void **preds);
+                             const float *centroids, void **pred_centroids, void **pred_labels);
 
     template
     int makePtr_dense<double>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                               const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                               int init_data, double threshold, const double *srcdata, const int *srclabels,
-                              const double *centroids, void **preds);
+                              const double *centroids, void **pred_centroids, void **pred_labels);
 
     template
     int kmeans_fit<float>(int verbose, int seed, int cpu_idtry, int n_cputry,
                           size_t rows, size_t cols,
                           const char ord, int k, int max_iterations,
                           int init_from_labels, int init_labels, int init_data, float threshold,
-                          const float *srcdata, const int *srclabels, void **centroid);
+                          const float *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels);
 
     template
     int kmeans_fit<double>(int verbose, int seed, int cpu_idtry, int n_cputry,
                            size_t rows, size_t cols,
                            const char ord, int k, int max_iterations,
                            int init_from_labels, int init_labels, int init_data, double threshold,
-                           const double *srcdata, const int *srclabels, void **centroid);
+                           const double *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels);
 
     template
     int kmeans_predict<float>(int verbose, int cpu_idtry, int n_cputry,
                               size_t rows, size_t cols,
                               const char ord, int k,
-                              const float *srcdata, const float *centroid, void **preds);
+                              const float *srcdata, const float *centroid, void **pred_labels);
 
     template
     int kmeans_predict<double>(int verbose, int cpu_idtry, int n_cputry,
                                size_t rows, size_t cols,
                                const char ord, int k,
-                               const double *srcdata, const double *centroid, void **preds);
+                               const double *srcdata, const double *centroid, void **pred_labels);
 
     template
     int kmeans_transform<float>(int verbose,
@@ -582,21 +586,21 @@ extern "C" {
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
-                          const float *centroids, void **preds) {
+                          const float *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<float>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                 srcdata, srclabels, centroids,
-                                                preds);
+                                                pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                            int init_data, double threshold, const double *srcdata, const int *srclabels,
-                           const double *centroids, void **preds) {
+                           const double *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
                                                  srcdata, srclabels, centroids,
-                                                 preds);
+                                                 pred_centroids, pred_labels);
 }
 
 // Transform

@@ -44,6 +44,8 @@ class KMeans(object):
 
         self.cluster_centers_ = None
 
+        self.labels_ = None
+
         self.lib = self._load_lib()
 
         if seed is None:
@@ -145,7 +147,7 @@ class KMeans(object):
                                       self._max_iter, c_init_from_labels,
                                       c_init_labels, c_init_data,
                                       self.tol, c_data, None, c_centroids,
-                                      pointer(c_res))
+                                      None, pointer(c_res))
         else:
             lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self._gpu_id,
                                        self.n_gpus, rows, cols,
@@ -153,7 +155,7 @@ class KMeans(object):
                                        self._max_iter, c_init_from_labels,
                                        c_init_labels, c_init_data,
                                        self.tol, c_data, None, c_centroids,
-                                       pointer(c_res))
+                                       None, pointer(c_res))
 
         preds = np.fromiter(cast(c_res, POINTER(c_int)), dtype=np.int32,
                             count=rows)
@@ -282,7 +284,8 @@ class KMeans(object):
             sys.stdout.flush()
             return
 
-        res = c_void_p(0)
+        pred_centers = c_void_p(0)
+        pred_labels = c_void_p(0)
         c_data = cptr(data, dtype=data_ctype)
         c_labels = cptr(labels, dtype=c_int)
 
@@ -302,7 +305,7 @@ class KMeans(object):
                                                c_init_labels,
                                                c_init_data,
                                                self.tol, c_data, c_labels,
-                                               None, pointer(res))
+                                               None, pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(0, self.verbose, self.seed,
                                                 self._gpu_id, self.n_gpus,
@@ -314,11 +317,11 @@ class KMeans(object):
                                                 c_init_labels,
                                                 c_init_data,
                                                 self.tol, c_data, c_labels,
-                                                None, pointer(res))
+                                                None, pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
-        centroids = np.fromiter(cast(res, POINTER(data_ctype)),
+        centroids = np.fromiter(cast(pred_centers, POINTER(data_ctype)),
                                 dtype=data_dtype,
                                 count=self._n_clusters * cols)
         centroids = np.reshape(centroids, (self._n_clusters, cols))
@@ -333,7 +336,10 @@ class KMeans(object):
 
         self.cluster_centers_ = centroids
 
-        return self.cluster_centers_
+        labels = np.fromiter(cast(pred_labels, POINTER(c_int)), dtype=np.int32, count=rows)
+        self.labels_ = np.reshape(labels, rows)
+
+        return self.cluster_centers_, self.labels_
 
     def _to_cdata(self, data):
         if data.dtype == np.float64:

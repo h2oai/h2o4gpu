@@ -262,7 +262,7 @@ namespace h2ogpumlkmeans {
                    size_t rows, size_t cols, const char ord,
                    int k, int max_iterations, int init_from_labels,
                    int init_labels, int init_data, T threshold,
-                   const T *srcdata, const int *srclabels, void **preds) {
+                   const T *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels) {
         if (verbose) {
             std::cout << " Start makePtr_dense." << std::endl;
         }
@@ -463,7 +463,14 @@ namespace h2ogpumlkmeans {
         thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
         // TODO FIXME: When do delete this ctr memory?
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
-        *preds = ctr->data();
+        *pred_centroids = ctr->data();
+
+        // copy assigned labels
+        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
+        for (int q = 0; q < n_gpu; q++) {
+            h_labels->insert(h_labels->end(), labels[q]->begin(), labels[q]->end());
+        }
+        *pred_labels = h_labels->data();
 
         // debug
         int printcenters = verbose > 2;
@@ -492,7 +499,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T* srcdata, const T* centroids, void** preds) {
+                       const T* srcdata, const T* centroids, void** pred_labels) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -572,7 +579,7 @@ namespace h2ogpumlkmeans {
             h_labels->insert(h_labels->end(), d_labels[q]->begin(), d_labels[q]->end());
         }
 
-        *preds = h_labels->data();
+        *pred_labels = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {
             safe_cuda(cudaSetDevice(dList[q]));
@@ -682,15 +689,16 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, const T *centroids, void **preds) {
+                      T threshold, const T *srcdata, const int *srclabels, const T *centroids,
+                      void **pred_centroids, void **pred_labels) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                              srcdata, srclabels, preds);
+                              srcdata, srclabels, pred_centroids, pred_labels);
         } else {
             return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
                                   ord, k,
-                                  srcdata, centroids, preds);
+                                  srcdata, centroids, pred_labels);
         }
     }
 
@@ -698,35 +706,37 @@ namespace h2ogpumlkmeans {
     makePtr_dense<float>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                          const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                          int init_data, float threshold, const float *srcdata, const int *srclabels,
-                         const float *centroids, void **preds);
+                         const float *centroids, void **pred_centroids, void **pred_labels);
 
     template int
     makePtr_dense<double>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, double threshold, const double *srcdata, const int *srclabels,
-                          const double *centroids, void **preds);
+                          const double *centroids, void **pred_centroids, void **pred_labels);
 
     template int kmeans_fit<float>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                    size_t rows, size_t cols,
                                    const char ord, int k, int max_iterations,
                                    int init_from_labels, int init_labels, int init_data, float threshold,
-                                   const float *srcdata, const int *srclabels, void **centroids);
+                                   const float *srcdata, const int *srclabels,
+                                   void **pred_centroids, void **pred_labels);
 
     template int kmeans_fit<double>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                     size_t rows, size_t cols,
                                     const char ord, int k, int max_iterations,
                                     int init_from_labels, int init_labels, int init_data, double threshold,
-                                    const double *srcdata, const int *srclabels, void **centroid);
+                                    const double *srcdata, const int *srclabels,
+                                    void **pred_centroids, void **pred_labels);
 
     template int kmeans_predict<float>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
                                         const char ord, int k,
-                                        const float* srcdata, const float* centroids, void** preds);
+                                        const float* srcdata, const float* centroids, void **pred_labels);
 
     template int kmeans_predict<double>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
                                         const char ord, int k,
-                                        const double *srcdata, const double *centroids, void **preds);
+                                        const double *srcdata, const double *centroids, void **pred_labels);
 
     template int kmeans_transform<float>(int verbose,
                                          int gpu_id, int n_gpu,
@@ -765,19 +775,19 @@ extern "C" {
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
-                          const float *centroids, void **preds) {
+                          const float *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                                srcdata, srclabels, centroids, preds);
+                                                srcdata, srclabels, centroids, pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                            int init_data, double threshold, const double *srcdata, const int *srclabels,
-                           const double *centroids, void **preds) {
+                           const double *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                                 srcdata, srclabels, centroids, preds);
+                                                 srcdata, srclabels, centroids, pred_centroids, pred_labels);
 }
 
 // Transform
