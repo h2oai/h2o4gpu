@@ -334,7 +334,7 @@ namespace h2ogpumlkmeans {
         std::vector <T> *ctr = new std::vector<T>(*l_centroids[0]);
         *pred_centroids = ctr->data();
 
-        std::vector <T> *lbls = new std::vector<T>(*labels[0]);
+        std::vector <int> *lbls = new std::vector<int>(*labels[0]);
         *pred_labels = lbls->data();
 
         // debug
@@ -416,7 +416,7 @@ namespace h2ogpumlkmeans {
         }
 
         std::vector<int> *ctr = new std::vector<int>(*labels[0]);
-        *preds = ctr->data();
+        *pred_labels = ctr->data();
 
         for (int q = 0; q < n_cpu; q++) {
             delete(data[q]);
