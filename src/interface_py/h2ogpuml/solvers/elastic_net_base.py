@@ -654,12 +654,11 @@ class GLM(object):
                     print('Incorrect train inputs')
                     exit(0)
         if do_predict == 1:
-            if n1 == -1 and n2 >= 0 and m_valid_y == -1 and m_y == -1 \
-                    or n1 == -1 and n2 >= 0 and m_y == -1:
+            if n1 == -1 and n2 >= 0:
                 if verbose > 0:
                     print('Correct prediction inputs')
             else:
-                print('Incorrect prediction inputs')
+                print('Incorrect prediction inputs: %d %d %d %d' % (n1,n2,m_valid_y,m_y))
 
         # ################
 
