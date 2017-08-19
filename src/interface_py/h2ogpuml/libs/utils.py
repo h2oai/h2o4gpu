@@ -38,6 +38,7 @@ def load_kmeans_lib(lib_path):
                                                               c_float_p,
                                                               c_int_p,
                                                               c_float_p,
+                                                              c_void_pp,
                                                               c_void_pp]
         h2ogpuml_kmeans_lib.make_ptr_float_kmeans.restype = c_int
 
@@ -53,6 +54,7 @@ def load_kmeans_lib(lib_path):
                                                                c_double_p,
                                                                c_int_p,
                                                                c_double_p,
+                                                               c_void_pp,
                                                                c_void_pp]
         h2ogpuml_kmeans_lib.make_ptr_double_kmeans.restype = c_int
 

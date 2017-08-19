@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
   int gpu_id = 0;
 
   void* preds;
+  void* pred_labels;
 
 #if 0
   // creates random data inside
@@ -62,7 +63,7 @@ int main(int argc, char **argv) {
   std::vector<real_t> centroids(1);
   centroids[0] = static_cast<real_t>(drand48());
 
-  h2ogpumlkmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds);
+  h2ogpumlkmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
 
   // report something about centroids that site in res as k*cols data block
 #endif
