@@ -127,10 +127,10 @@ class GLM(object):
 
         if lambda_max is None:
             self.lambda_max = 0.0  # to trigger C code to compute
-        if alpha_max is None:
-            self.alpha_max = 1.0  # as default
-        if alpha_min is None:
-            self.alpha_min = 0.0  # as default
+        if alpha_max is not 1.0:
+            self.alpha_max = alpha_max  # as default
+        if alpha_min is not 0.0:
+            self.alpha_min = alpha_min  # as default
 
         # Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
