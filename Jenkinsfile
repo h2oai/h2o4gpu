@@ -26,7 +26,7 @@ pipeline {
         stage('Build on Linux') {
             agent {
                 dockerfile {
-                    label "gpu"
+                    label "mr-dl11"
                     filename "Dockerfile-build"
                     args "-v /home/0xdiag/h2ogpuml/data:/data"
                 }
@@ -57,7 +57,7 @@ pipeline {
         stage('Test on Linux') {
             agent {
                 dockerfile {
-                    label "gpu"
+                    label "mr-dl11"
                     filename "Dockerfile-build"
                     args "-v /home/0xdiag/h2ogpuml/data:/data"
                 }
