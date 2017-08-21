@@ -122,19 +122,14 @@ class GLM(object):
         self.max_iterations = max_iterations
         self.verbose = verbose
         self._family = ord(family.split()[0][0])
-
         self.give_full_path = give_full_path
-
         if lambda_max is None:
             self.lambda_max = 0.0  # to trigger C code to compute
-        if alpha_max is not 1.0:
-            self.alpha_max = alpha_max  # as default
-        if alpha_min is not 0.0:
-            self.alpha_min = alpha_min  # as default
+        self.alpha_max = alpha_max  # as default
+        self.alpha_min = alpha_min  # as default
 
         # Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
-
         self._shared_a = 0
         self._standardize = 0
 
