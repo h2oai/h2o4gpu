@@ -197,6 +197,10 @@ testquickperf: dotestperf
 
 testbigquickperf: dotestbigperf
 
+# uses https://github.com/Azure/fast_retraining
+testlightgdbvsxgb:
+	export MOUNT_POINT=./data/
+
 ################
 
 deps_clean: 
