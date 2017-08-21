@@ -46,14 +46,16 @@ endif
 
 
 help:
-	@echo "make             Compile and Install everything"
-	@echo "make cleanbuild  Clean everything, then Compile, then only Build"
-	@echo "make fullinstall Clean everything, then Compile and Install everything"
-	@echo "make clean       Clean all build files"
-	@echo "make test        Run tests"
-	@echo "make testbig     Run tests for big data"
-	@echo "make testperf    Run performance and accuracy tests"
-	@echo "make testbigperf Run performance and accuracy tests for big data"
+	@echo "make                 fullinstall"
+	@echo "make fullinstalldev  Clean everything, then compile and install project for development."
+	@echo "make fullinstall     Clean everything, then compile and install everything."
+	@echo "make clean           Clean all build files."
+	@echo "make build           Build the whole project."
+	@echo "make sync_smalldata  Syncs the data needed for tests."
+	@echo "make test            Run tests."
+	@echo "make testbig         Run tests for big data."
+	@echo "make testperf        Run performance and accuracy tests."
+	@echo "make testbigperf     Run performance and accuracy tests for big data."
 	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2ogpuml/src/interface_py:/home/jon/h2ogpuml;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
 	@echo "Example Pycharm working directory: /home/jon/h2ogpuml/"
 
@@ -99,15 +101,15 @@ rinstall: r
 
 build: update_submodule cpp c py 
 
-install: update_submodule cpp c pyinstall
+install: pyinstall
 
-alldeps: deps_clean deps_fetch alldeps_install
+alldeps: deps_fetch alldeps_install
 
-cleanbuild: clean build
+fullinstall: clean build alldeps sync_data install
 
-fullinstall: cleanbuild install
+fullinstalldev: clean build alldeps sync_smalldata install
 
-fullinstalljenkins: cleanjenkins deps_fetch deps_install libxgboost libpy3nvml all install
+fullinstalljenkins: cleanjenkins build alldeps install
 
 #############################################
 
@@ -177,8 +179,6 @@ dotestbigperfpython:
 
 ###################
 
-testjenkins: build sync_data dotestjenkins
-
 test: build sync_data dotest
 
 testbig: build sync_data dotestbig
@@ -215,14 +215,14 @@ deps_fetch:
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 	bash gitshallow_submodules.sh
 
-alldeps_install: deps_clean deps_install sync_data libxgboost libpy3nvml
-
-deps_install: deps_fetch
+deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade --no-cache-dir
 	pip install -r requirements.txt --upgrade --no-cache-dir
+
+alldeps_install: deps_install libxgboost libpy3nvml
 
 ###################
 
