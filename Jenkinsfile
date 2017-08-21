@@ -28,6 +28,7 @@ pipeline {
                 dockerfile {
                     label "gpu"
                     filename "Dockerfile-build"
+                    args "-v /home/0xdiag/h2ogpuml/data:/data"
                 }
             }
             steps {
@@ -42,13 +43,10 @@ pipeline {
 
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
-                    rm -rf h2oai_env
-                    mkdir h2oai_env
-                    virtualenv --python=/usr/bin/python3.6 h2oai_env
-                    . h2oai_env/bin/activate
-                    python -m pip install --upgrade pip setuptools python-dateutil numpy psutil feather-format setuptools --no-cache-dir
-                    python -m pip install -r requirements.txt --no-cache-dir
-                    make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstall
+                    rm -rf data
+                    ln -s /data ./data
+                    . /h2oai_env/bin/activate
+                    make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                     // Archive artifacts
@@ -68,20 +66,18 @@ pipeline {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        try {
-                            sh """
+                    try {
+                        sh """
                             rm -rf data
                             ln -s /data ./data
-                            ls data/
-                            make dotest PYTHON=h2oai_env/bin/python
-                               """
-                        }
-                        finally {
-                            arch 'tmp/*.log'
-                            junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                            deleteDir()
-                        }
+                            . /h2oai_env/bin/activate
+                            pip install --upgrade `find src/interface_py/dist -name "*h2ogpuml*.whl"`
+                            make dotest
+                        """
+                    } finally {
+                        arch 'tmp/*.log'
+                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+                        deleteDir()
                     }
                 }
             }

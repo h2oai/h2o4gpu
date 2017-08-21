@@ -75,7 +75,7 @@ default: fullinstall
 
 all: update_submodule cpp c py 
 
-install: update_submodule cpp c pyinstall rinstall
+install: update_submodule cpp c pyinstall
 
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
@@ -100,13 +100,17 @@ rinstall: r
 	$(MAKE) -j install -C src/interface_r
 
 
-build: deps_fetch alldeps_install all
+build: deps_clean deps_fetch alldeps_install all
 
 cleanbuild: clean build
 
 fullinstall: cleanbuild install
 
+fullinstalljenkins: cleanjenkins deps_fetch deps_install libxgboost libpy3nvml all install
+
 #############################################
+
+cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/
@@ -136,15 +140,9 @@ getotherdata:
 
 ##################
 
-dotestjenkins:
-	rm -rf build/test-reports 2>/dev/null
-	mkdir -p build/test-reports/
-	$(PYTHON) -m pytest -rxs \
-			--junit-prefix=$(OS) \
-			--junitxml=build/test-reports/TEST-h2ogpuml.xml \
-			tests
-
 dotest:
+	rm -rf ./tmp/
+	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
 
@@ -208,7 +206,7 @@ deps_clean:
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
 	rm -rf requirements_plain.txt
 
-deps_fetch: deps_clean
+deps_fetch:
 	@echo "---- Fetch dependencies ---- "
 	@mkdir -p "$(DEPS_DIR)"
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
@@ -216,14 +214,14 @@ deps_fetch: deps_clean
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 	bash gitshallow_submodules.sh
 
-alldeps_install: deps_install sync_data libxgboost libpy3nvml
+alldeps_install: deps_clean deps_install sync_data libxgboost libpy3nvml
 
 deps_install: deps_fetch
 	@echo "---- Install dependencies ----"
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
-	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
-	pip install -r requirements.txt --upgrade
+	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade --no-cache-dir
+	pip install -r requirements.txt --upgrade --no-cache-dir
 
 ###################
 

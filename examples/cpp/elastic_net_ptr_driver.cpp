@@ -202,11 +202,13 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   size_t countmore=0;
   int dopredict=0;
   const char family='e';
-  int stopearly=1;
-  double stopearlyrmsefraction=1.0;
+  double tol = 1E-2;
+  int lambdastopearly=1;
+  int glmstopearly=1;
+  double glmstopearlyrmsefraction=1.0;
   int maxiterations=5000;
   int verbose=0;
-  double time = h2ogpuml::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, stopearly, stopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
+  double time = h2ogpuml::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, tol, lambdastopearly, glmstopearly, glmstopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
 
   // print out some things about Xvsalphalambda and Xvsalpha
   printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);
