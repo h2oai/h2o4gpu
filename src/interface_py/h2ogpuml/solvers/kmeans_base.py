@@ -237,9 +237,7 @@ class KMeans(object):
             data_ctype = c_double
             data_dtype = np.float64
         elif data.dtype == np.float32:
-            if self.verbose > 0:
-                print("Detected np.float32 data")
-                sys.stdout.flush()
+            self._print_verbose(0, "Detected np.float32 data")
             self.double_precision = 0
             data_ctype = c_float
             data_dtype = np.float32
@@ -325,10 +323,9 @@ class KMeans(object):
 
         if np.isnan(centroids).any():
             centroids = centroids[~np.isnan(centroids).any(axis=1)]
-            print(
-                "Removed %d empty centroids" %
-                (self._n_clusters - centroids.shape[0])
-            )
+            self._print_verbose(0,
+                                "Removed %d empty centroids" % (self._n_clusters - centroids.shape[0])
+                                )
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids
@@ -337,13 +334,11 @@ class KMeans(object):
 
     def _to_cdata(self, data):
         if data.dtype == np.float64:
-            print("Detected np.float64 data")
-            sys.stdout.flush()
+            self._print_verbose(1, "Detected np.float64 data")
             self.double_precision = 1
             my_ctype = c_double
         elif data.dtype == np.float32:
-            print("Detected np.float32 data")
-            sys.stdout.flush()
+            self._print_verbose(1, "Detected np.float32 data")
             self.double_precision = 0
             my_ctype = c_float
         else:
@@ -369,14 +364,10 @@ class KMeans(object):
         cpu_lib = cpu_lib_getter.get()
 
         if (self.n_gpus == 0) or (gpu_lib is None) or (self.deviceCount == 0):
-            if self.verbose > 0:
-                print("\nUsing CPU KMeans solver.\n")
-                sys.stdout.flush()
+            self._print_verbose(0, "\nUsing CPU KMeans solver.\n")
             return cpu_lib
         elif (self.n_gpus > 0) or (cpu_lib is None) or (self.deviceCount == 0):
-            if self.verbose > 0:
-                print("\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
-                sys.stdout.flush()
+            self._print_verbose(0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
         else:
             raise RuntimeError("Couldn't instantiate KMeans Solver")
