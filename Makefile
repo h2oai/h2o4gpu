@@ -69,8 +69,6 @@ sync_otherdata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
 
-sync_data: sync_smalldata sync_otherdata
-
 default: fullinstall
 
 #########################################
@@ -99,21 +97,15 @@ rinstall: r
 
 ##############################################
 
-build: update_submodule cpp c py 
-
-install: pyinstall
-
 alldeps: deps_fetch alldeps_install
 
-fullinstall: clean build alldeps sync_data install
+build: update_submodule cpp c py r
 
-fullinstalldev: clean build alldeps sync_smalldata install
+install: pyinstall rinstall
 
-fullinstalljenkins: cleanjenkins build alldeps install
+fullinstall: clean build alldeps sync_smalldata install
 
 #############################################
-
-cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/
@@ -131,10 +123,6 @@ cleanpy:
 cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
-.PHONY: mrproper
-mrproper: clean
-	@echo "----- Cleaning properly -----"
-	git clean -f -d -x
 
 ##################
 
@@ -251,4 +239,26 @@ py3nvml_clean:
 
 libpy3nvml:
 	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
+
+
+#################### Jenkins specific
+
+cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
+
+buildjekins: update_submodule cpp c py # r -- not yet
+
+installjenkins: pyinstall # rinstall -- not yet
+
+fullinstalljenkins: cleanjenkins buildjekins alldeps installjekins
+
+.PHONY: mrproper
+mrproper: clean
+	@echo "----- Cleaning properly -----"
+	git clean -f -d -x
+
+#################### H2O.ai specific
+
+fullinstallprivate: clean build alldeps sync_data sync_smalldata install
+
+sync_data: sync_smalldata sync_otherdata
 
