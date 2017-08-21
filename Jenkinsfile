@@ -71,7 +71,6 @@ pipeline {
                             rm -rf data
                             ln -s /data ./data
                             . /h2oai_env/bin/activate
-                            pip uninstall h2ogpuml
                             pip uninstall py3nvml
                             pip install --upgrade `find src/interface_py/dist -name "*h2ogpuml*.whl"`
                             make dotest
