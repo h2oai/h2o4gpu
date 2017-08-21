@@ -27,6 +27,10 @@ H2O GLM Solver
 :param int max_interations: Maximum number of iterations. Default is 5000
 :param int verbose: Print verbose information to the console if set to > 0. Default is 0.
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+:param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
+:param alpha_max: Maximum alpha.  Default is 1.0.
+:param alpha_min: Minimum alpha.  Default is 0.0.
+:param order: Order of data.  Default is None, and internally determined whether row 'r' or column 'c' major order.
 """
 
 
@@ -58,8 +62,8 @@ class GLM(object):
             family='elasticnet',
             give_full_path=0,
             lambda_max=None,
-            alpha_max=None,
-            alpha_min=None,
+            alpha_max=1.0,
+            alpha_min=0.0,
             order = None,
     ):
 
@@ -208,11 +212,11 @@ class GLM(object):
             do_predict=0,
             free_input_data=0,
             tol=None,
-            lambda_stop_early=1,
-            glm_stop_early=1,
-            glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
-            verbose=0
+            lambda_stop_early=None,
+            glm_stop_early=None,
+            glm_stop_early_error_fraction=None,
+            max_iterations=None,
+            verbose=None
     ):
 
         if order in ['r', 'c']:
@@ -235,6 +239,8 @@ class GLM(object):
         self.c = c
         self.d = d
         self.e = e
+
+        # override self if passed parameter is not None
         if give_full_path is not None:
             self.give_full_path = give_full_path
         else:
@@ -243,9 +249,8 @@ class GLM(object):
             self.tol = tol
         else:
             tol = self.tol
-            
-            
 
+        # Don't override self if pass option, but use self if option is None
         if lambda_stop_early is None:
             lambda_stop_early = self.lambda_stop_early
         if glm_stop_early is None:
@@ -599,6 +604,7 @@ class GLM(object):
             verbose=None,
     ):
 
+        # override self if passed
         if give_full_path is not None:
             self.give_full_path = give_full_path
         else:
@@ -608,8 +614,7 @@ class GLM(object):
         else:
             tol = self.tol
 
-        ################
-
+        # Don't override self if pass option, but use self if option is None
         if lambda_stop_early is None:
             lambda_stop_early = self.lambda_stop_early
         if glm_stop_early is None:
@@ -917,7 +922,6 @@ class GLM(object):
     ):
 
         # override self if chose to pass this option
-
         if give_full_path is not None:
             self.give_full_path = give_full_path
         else:
@@ -927,6 +931,7 @@ class GLM(object):
         else:
             tol = self.tol
 
+        # Don't override self if pass option, but use self if option is None
         if lambda_stop_early is None:
             lambda_stop_early = self.lambda_stop_early
         if glm_stop_early is None:
@@ -1036,7 +1041,6 @@ class GLM(object):
             assert self.ord in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + self.ord
 
         # override self if chose to pass this option
-
         if give_full_path is not None:
             self.give_full_path = give_full_path
         else:
@@ -1047,6 +1051,8 @@ class GLM(object):
             tol = self.tol
 
         do_predict = 0  # only fit at first
+
+        # Don't override self if pass option, but use self if option is None
         if lambda_stop_early is None:
             lambda_stop_early = self.lambda_stop_early
         if glm_stop_early is None:
@@ -1057,6 +1063,7 @@ class GLM(object):
             max_iterations = self.max_iterations
         if verbose is None:
             verbose = self.verbose
+
         self.fit_ptr(
             source_dev,
             m_train,
