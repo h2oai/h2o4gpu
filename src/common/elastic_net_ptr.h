@@ -24,27 +24,27 @@ namespace h2ogpuml {
  * If family == 'logistic',then compute logloss else compute rmse
  *
  * @param len Length of outcome vector
- * @param v1 Predictions made by solver
- * @param v2 Actualy `Y` values
+ * @param predicted Predictions made by solver
+ * @param actual Actual `Y` values
  * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
  */
 template<typename T>
-T getError(size_t len, const T *v1, const T *v2, const char family) {
+T getError(size_t len, const T *predicted, const T *actual, const char family) {
 	if(family == 'e'){
 		double rmse = 0;
 		for (size_t i = 0; i < len; ++i) {
-			double d = v1[i] - v2[i];
+			double d = predicted[i] - actual[i];
 			rmse += d * d;
 		}
 		rmse /= (double) len;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic/svm
+	}else{ //logistic
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(v1[i] != v2[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(v1[i])), 1-1e-15);
-            		    d = -1 * (v2[i]*log(x) + (1-v2[i])*log(1-x));
+			if(predicted[i] != actual[i]){
+			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
+            		    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x));
 			}
 			logloss += d;
 		}
@@ -60,12 +60,12 @@ T getError(size_t len, const T *v1, const T *v2, const char family) {
  *
  * @param weights Weight vector given to observations
  * @param len Length of outcome vector
- * @param v1 Predictions made by solver
- * @param v2 Actualy `Y` values
+ * @param predicted Predictions made by solver
+ * @param actual Actual `Y` values
  * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
  */
 template<typename T>
-T getError(const T*weights, size_t len, const T *v1, const T *v2, const char family) {
+T getError(const T*weights, size_t len, const T *predicted, const T *actual, const char family) {
 	if(family == 'e'){
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
@@ -74,13 +74,13 @@ T getError(const T*weights, size_t len, const T *v1, const T *v2, const char fam
 
 		double rmse = 0;
 		for (size_t i = 0; i < len; ++i) {
-			double d = v1[i] - v2[i];
+			double d = predicted[i] - actual[i];
 			rmse += d * d * weights[i];
 		}
 
 		rmse /= weightsum;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic/svm
+	}else{ //logistic
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += weights[i];
@@ -88,9 +88,9 @@ T getError(const T*weights, size_t len, const T *v1, const T *v2, const char fam
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(v1[i] != v2[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(v1[i])), 1-1e-15);
-			    d = -1 * (v2[i]*log(x) + (1-v2[i])*log(1-x)) * weights[i];		
+			if(predicted[i] != actual[i]){
+			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
+			    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x)) * weights[i];
 			}
 			logloss += d;
 		}
@@ -108,12 +108,12 @@ T getError(const T*weights, size_t len, const T *v1, const T *v2, const char fam
  * @param offset Offset vector given to observations
  * @param weights Weight vector given to observations
  * @param len Length of outcome vector
- * @param v1 Predictions made by solver
- * @param v2 Actualy `Y` values
+ * @param predicted Predictions made by solver
+ * @param actual Actual `Y` values
  * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
  */
 template<typename T>
-T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2, const char family) {
+T getError(const T offset, const T*weights, size_t len, const T *predicted, const T *actual, const char family) {
 	if(family == 'e'){
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
@@ -122,13 +122,13 @@ T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2
 
 		double rmse = 0;
 		for (size_t i = 0; i < len; ++i) {
-			double d = v1[i] - v2[i];
+			double d = predicted[i] - actual[i];
 			rmse += d * d * (offset - weights[i]);
 		}
 
 		rmse /= weightsum;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic/svm
+	}else{ //logistic
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += offset - weights[i];
@@ -136,9 +136,9 @@ T getError(const T offset, const T*weights, size_t len, const T *v1, const T *v2
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(v1[i] != v2[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(v1[i])), 1-1e-15);
-            		    d = -1 * (v2[i]*log(x) + (1-v2[i])*log(1-x)) * (offset - weights[i]);
+			if(predicted[i] != actual[i]){
+			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
+            		    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x)) * (offset - weights[i]);
 			}
 			logloss += d;
 		}
