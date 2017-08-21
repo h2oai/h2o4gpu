@@ -61,7 +61,6 @@ class GLM(object):
             alpha_max=None,
             alpha_min=None,
             order = None,
-            # TODO: Add tol, control memory with deconstructor
     ):
 
         # Type Checking
