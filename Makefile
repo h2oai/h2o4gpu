@@ -73,10 +73,6 @@ default: fullinstall
 
 #########################################
 
-all: update_submodule cpp c py 
-
-install: update_submodule cpp c pyinstall
-
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
@@ -99,8 +95,13 @@ pyinstall: py
 rinstall: r
 	$(MAKE) -j install -C src/interface_r
 
+##############################################
 
-build: deps_clean deps_fetch alldeps_install all
+build: update_submodule cpp c py 
+
+install: update_submodule cpp c pyinstall
+
+alldeps: deps_clean deps_fetch alldeps_install
 
 cleanbuild: clean build
 
@@ -176,11 +177,11 @@ dotestbigperfpython:
 
 ###################
 
-testjenkins: all sync_data dotestjenkins
+testjenkins: build sync_data dotestjenkins
 
-test: all sync_data dotest
+test: build sync_data dotest
 
-testbig: all sync_data dotestbig
+testbig: build sync_data dotestbig
 
 testquick: dotest
 
@@ -188,9 +189,9 @@ testbigquick: dotestbig
 
 ################
 
-testperf: all sync_data dotestperf
+testperf: build sync_data dotestperf
 
-testbigperf: all sync_data dotestbigperf
+testbigperf: build sync_data dotestbigperf
 
 testquickperf: dotestperf
 

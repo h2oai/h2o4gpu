@@ -86,6 +86,17 @@ make test && make testbig
 - test performance and accuracy of python package
 
 ```
+# for lightgbm vs. xgboost comparisons, should install lightgbm first
+git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+mkdir build ; cd build
+cmake .. -DUSE_GPU=1 -DOpenCL_INCLUDE_DIR=$CUDA_HOME/include/
+make -j
+cd ../python-package ; python setup.py install
+cd ../
+pip install -r requirements.txt  
+```
+
+```
 make testperf && make testbigperf
 ```
 

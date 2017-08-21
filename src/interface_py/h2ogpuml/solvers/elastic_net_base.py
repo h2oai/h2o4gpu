@@ -27,6 +27,10 @@ H2O GLM Solver
 :param int max_interations: Maximum number of iterations. Default is 5000
 :param int verbose: Print verbose information to the console if set to > 0. Default is 0.
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+:param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
+:param alpha_max: Maximum alpha.  Default is 1.0.
+:param alpha_min: Minimum alpha.  Default is 0.0.
+:param order: Order of data.  Default is None, and internally determined whether row 'r' or column 'c' major order.
 """
 
 
@@ -58,10 +62,9 @@ class GLM(object):
             family='elasticnet',
             give_full_path=0,
             lambda_max=None,
-            alpha_max=None,
-            alpha_min=None,
+            alpha_max=1.0,
+            alpha_min=0.0,
             order = None,
-            # TODO: Add tol, control memory with deconstructor
     ):
 
         # Type Checking
@@ -89,6 +92,8 @@ class GLM(object):
             assert_is_type(order, str)
             assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
             self.ord = ord(order)
+        else:
+            self.ord = None
 
         self.n = 0
         self.m_train = 0
@@ -119,19 +124,22 @@ class GLM(object):
         self.max_iterations = max_iterations
         self.verbose = verbose
         self._family = ord(family.split()[0][0])
-
         self.give_full_path = give_full_path
-
         if lambda_max is None:
             self.lambda_max = 0.0  # to trigger C code to compute
+        else:
+            self.lambda_max = lambda_max
         if alpha_max is None:
             self.alpha_max = 1.0  # as default
+        else:
+            self.alpha_max = alpha_max
         if alpha_min is None:
             self.alpha_min = 0.0  # as default
+        else:
+            self.alpha_min = alpha_min
 
         # Experimental features
         # TODO _shared_a and _standardize do not work currently. Always need to set to 0.
-
         self._shared_a = 0
         self._standardize = 0
 
@@ -165,6 +173,55 @@ class GLM(object):
             self.lib = h2ogpumlGLMGPU
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
+
+
+
+
+    def none_checks_simple(self, fail, give_full_path, verbose, order):
+
+        # override self if passed parameter is not None
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
+
+        if verbose is None:
+            verbose = self.verbose
+
+        if order in ['r', 'c']:
+            self.ord = ord(order)
+        elif order in [ord('r'), ord('c')]:
+            self.ord = order
+        elif self.ord is not None and fail:
+            assert self.ord in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + self.ord
+        elif fail:
+            assert False, "Order should be set to 'r' or 'c' or %d or %d but got " % (ord('r'), ord('c')) + order
+
+        return give_full_path, verbose, order
+
+    def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order):
+
+        give_full_path, verbose, order = self.none_checks_simple(fail,give_full_path, verbose, order)
+
+        if tol is not None:
+            self.tol = tol
+        else:
+            tol = self.tol
+
+        # Don't override self if pass option, but use self if option is None
+        if lambda_stop_early is None:
+            lambda_stop_early = self.lambda_stop_early
+        if glm_stop_early is None:
+            glm_stop_early = self.glm_stop_early
+        if glm_stop_early_error_fraction is None:
+            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
+        if max_iterations is None:
+            max_iterations = self.max_iterations
+        if verbose is None:
+            verbose = self.verbose
+
+        return give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order
+
 
     # TODO Add typechecking
     # source_dev here because generally want to take in any pointer, not just from our test code
@@ -209,20 +266,12 @@ class GLM(object):
             do_predict=0,
             free_input_data=0,
             tol=None,
-            lambda_stop_early=1,
-            glm_stop_early=1,
-            glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
-            verbose=0
+            lambda_stop_early=None,
+            glm_stop_early=None,
+            glm_stop_early_error_fraction=None,
+            max_iterations=None,
+            verbose=None
     ):
-
-        if order in ['r', 'c']:
-            self.ord = ord(order)
-        elif order in [ord('r'), ord('c')]:
-            self.ord = order
-        else:
-            assert False, "Order should be set to 'r' or 'c' or %d or %d but got " % (ord('r'), ord('c')) + order
-
 
         # store some things for later call to predict_ptr()
 
@@ -236,34 +285,8 @@ class GLM(object):
         self.c = c
         self.d = d
         self.e = e
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
-        if tol is not None:
-            self.tol = tol
-        else:
-            tol = self.tol
-            
-            
 
-        if lambda_stop_early is None:
-            lambda_stop_early = self.lambda_stop_early
-        if glm_stop_early is None:
-            glm_stop_early = self.glm_stop_early
-        if glm_stop_early_error_fraction is None:
-            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
-        if verbose is None:
-            verbose = self.verbose
-
-        # print("a"); print(a)
-        # print("b"); print(b)
-        # print("c"); print(c)
-        # print("d"); print(d)
-        # print("e"); print(e)
-        # sys.stdout.flush()
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
 
         # ###########
 
@@ -598,29 +621,12 @@ class GLM(object):
             glm_stop_early_error_fraction=None,
             max_iterations=None,
             verbose=None,
+            order=None,
     ):
 
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
-        if tol is not None:
-            self.tol = tol
-        else:
-            tol = self.tol
-
-        ################
-
-        if lambda_stop_early is None:
-            lambda_stop_early = self.lambda_stop_early
-        if glm_stop_early is None:
-            glm_stop_early = self.glm_stop_early
-        if glm_stop_early_error_fraction is None:
-            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
-        if verbose is None:
-            verbose = self.verbose
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False,
+            give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations,
+            verbose, order)
 
         ##############
 
@@ -634,11 +640,15 @@ class GLM(object):
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
         _checkEqual(fortran_list)
 
-        if fortran1:
-            order = 'c'
-        else:
-            order = 'r'
-        self.ord = ord(order)
+        # set order
+        if order is None:
+            if fortran1:
+                order = 'c'
+            else:
+                order = 'r'
+            self.ord = ord(order)
+
+        # now can do checks
 
         # ###############
         # check do_predict input
@@ -748,14 +758,11 @@ class GLM(object):
             weight=None,
             give_full_path=None,
             free_input_data=1,
+            verbose=0,
+            order=None
     ):
 
-        # override self if chose to pass this option
-
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
+        give_full_path, verbose, order = self.none_checks_simple(False, give_full_path, verbose, order)
 
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike _upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
@@ -768,6 +775,7 @@ class GLM(object):
         fortran_list = [fortran1, fortran2, fortran3]
         _checkEqual(fortran_list)
 
+        # override order
         if fortran1:
             order = 'c'
         else:
@@ -825,14 +833,12 @@ class GLM(object):
             give_full_path=None,
             free_input_data=0,
             verbose=0,
+            order=None
     ):
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
 
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
+        give_full_path, verbose, order = self.none_checks_simple(True, give_full_path, verbose, order)
 
         do_predict = 1
 
@@ -914,30 +920,12 @@ class GLM(object):
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
             max_iterations=None,
-            verbose=None
+            verbose=None,
+            order=None
     ):
 
-        # override self if chose to pass this option
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
 
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
-        if tol is not None:
-            self.tol = tol
-        else:
-            tol = self.tol
-
-        if lambda_stop_early is None:
-            lambda_stop_early = self.lambda_stop_early
-        if glm_stop_early is None:
-            glm_stop_early = self.glm_stop_early
-        if glm_stop_early_error_fraction is None:
-            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
-        if verbose is None:
-            verbose = self.verbose
         do_predict = 0  # only fit at first
 
         # let fit() check and convert (to numpy) train_x, train_y, valid_x, valid_y, weight
@@ -1029,35 +1017,10 @@ class GLM(object):
             max_iterations=None,
             verbose=None,
     ):
-        if order is not None:
-            assert_is_type(order, str)
-            assert order in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + order
-            self.ord = ord(order)
-        else:
-            assert self.ord in ['r', 'c'], "Order should be set to 'r' or 'c' but got " + self.ord
-
-        # override self if chose to pass this option
-
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
-        if tol is not None:
-            self.tol = tol
-        else:
-            tol = self.tol
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
 
         do_predict = 0  # only fit at first
-        if lambda_stop_early is None:
-            lambda_stop_early = self.lambda_stop_early
-        if glm_stop_early is None:
-            glm_stop_early = self.glm_stop_early
-        if glm_stop_early_error_fraction is None:
-            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
-        if verbose is None:
-            verbose = self.verbose
+
         self.fit_ptr(
             source_dev,
             m_train,
