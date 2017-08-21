@@ -249,7 +249,7 @@ buildjekins: update_submodule cpp c py # r -- not yet
 
 installjenkins: pyinstall # rinstall -- not yet
 
-fullinstalljenkins: cleanjenkins buildjekins alldeps installjekins
+fullinstalljenkins: cleanjenkins buildjekins alldeps installjenkins
 
 .PHONY: mrproper
 mrproper: clean
