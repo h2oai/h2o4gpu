@@ -102,7 +102,7 @@ build: update_submodule cpp c py r
 
 install: pyinstall rinstall
 
-fullinstall: clean build alldeps sync_smalldata install
+fullinstall: clean alldeps build sync_smalldata install
 
 #############################################
 
@@ -190,7 +190,7 @@ buildjekins: update_submodule cpp c py # r -- not yet
 
 installjenkins: pyinstall # rinstall -- not yet
 
-fullinstalljenkins: cleanjenkins buildjekins alldeps installjenkins
+fullinstalljenkins: cleanjenkins alldeps buildjekins installjenkins
 
 .PHONY: mrproper
 mrproper: clean
