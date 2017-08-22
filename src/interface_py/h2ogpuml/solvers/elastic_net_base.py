@@ -191,6 +191,8 @@ class GLM(object):
         elif fail:
             assert False, "Order should be set to 'r' or 'c' or %d or %d but got " % (ord('r'), ord('c')) + order
 
+        order = self.ord
+
         return give_full_path, verbose, order
 
     def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order):
