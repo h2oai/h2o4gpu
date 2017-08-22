@@ -180,7 +180,7 @@ libpy3nvml:
 
 liblightgbm:
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
-	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install && cd ../ && pip install arff tqdm keras runipy --upgrade
+	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile && cd ../ && pip install arff tqdm keras runipy --upgrade
 
 #################### Jenkins specific
 

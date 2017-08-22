@@ -1,37 +1,44 @@
+
 # get path
-PWD=`pwd`
-MOUNT_POINT=$PWD/data
+MYPWD=`pwd`
+echo "PWD is $MYPWD"
+MOUNT_POINT=$MYPWD/data
+echo "MOUNT_POINT is $MOUNT_POINT"
+mkdir -p testsxgboost/results/
 
 # run football
 cd $MOUNT_POINT/football/
 unzip -o soccer.zip
 cd ../../
-cd fast_retraining/experiments # for libs stuff
-ipython ../../testsxgboost/03_football_GPU.py &> football.txt # py from export of ipynb removing inline commands
-
+cd testsxgboost # for libs stuff
+ipython 03_football_GPU.py &> results/football.txt # py from export of ipynb removing inline commands
+cd $MYPWD
 
 # run credit
-cd fast_retraining/experiments # for libs stuff
-ipython ../../testsxgboost/05_FraudDetection_GPU.py &> credit.txt # py from export of ipynb removing inline commands
+cd testsxgboost # for libs stuff
+ipython 05_FraudDetection_GPU.py &> results/credit.txt # py from export of ipynb removing inline commands
+cd $MYPWD
 
 # run airlines
-cd fast_retraining/experiments # for libs stuff
-ipython ../../testsxgboost/01_airline_GPU.py &> airlines.txt # py from export of ipynb removing inline commands
-
+cd testsxgboost # for libs stuff
+ipython 01_airline_GPU.py &> results/airlines.txt # py from export of ipynb removing inline commands
+cd $MYPWD
 
 # run Planet
 cd $MOUNT_POINT/planet/
-7z x train-jpg.tar.7z
+7z x -y train-jpg.tar.7z
 tar xvf train-jpg.tar
-7z x test-jpg.tar.7z
+7z x -y test-jpg.tar.7z
 tar xvf test-jpg.tar
 cd ../../
-cd fast_retraining/experiments # for libs stuff
-ipython ../../testsxgboost/04_PlanetKaggle_GPU.py &> planet.txt # py from export of ipynb removing inline commands
+cd testsxgboost # for libs stuff
+ipython 04_PlanetKaggle_GPU.py &> results/planet.txt # py from export of ipynb removing inline commands
+cd $MYPWD
 
 # run higgs
-cd fast_retraining/experiments # for libs stuff
-ipython ../../testsxgboost/06_higgs_GPU.py &> higgs.txt # py from export of ipynb removing inline commands
+cd testsxgboost # for libs stuff
+ipython 06_higgs_GPU.py &> results/higgs.txt # py from export of ipynb removing inline commands
+cd $MYPWD
 
 
 
