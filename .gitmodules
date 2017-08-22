@@ -1,11 +1,12 @@
 [submodule "cub"]
 	path = cub
-	url = https://github.com/NVlabs/cub.git
+	url = https://github.com/NVlabs/cub
 	shallow = true
-    
 [submodule "xgboost"]
 	path = xgboost
 	url = https://github.com/h2oai/xgboost
+	shallow = true
 [submodule "py3nvml"]
 	path = py3nvml
-	url = https://github.com/fbcotter/py3nvml.git
+	url = https://github.com/h2oai/py3nvml
+	shallow = true
