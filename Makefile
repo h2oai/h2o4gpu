@@ -44,7 +44,6 @@ ifeq ($(shell test -n "$(AWS_ACCESS_KEY_ID)" -a -n "$(AWS_SECRET_ACCESS_KEY)" &&
 endif
 
 
-
 help:
 	@echo "make                 fullinstall"
 	@echo "make fullinstalldev  Clean everything, then compile and install project for development."
@@ -67,7 +66,7 @@ sync_smalldata:
 sync_otherdata:
 	@echo "---- Synchronizing data dir in test/ ----"
 	mkdir -p $(DATA_DIR)
-	$(S3_CMD_LINE) sync --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
+	$(S3_CMD_LINE) sync --recursive --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
 
 default: fullinstall
 
@@ -123,71 +122,9 @@ cleanpy:
 cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
-
-##################
-
-getotherdata:
-	cd ~/h2oai-prototypes/glm-bench/ ; gunzip -f ipums.csv.gz ; Rscript ipums_feather.R ; cd ~/h2ogpuml/testsbig/data/ ; ln -sf ~/h2oai-prototypes/glm-bench/ipums.feather .
-
-##################
-
-dotest:
-	rm -rf ./tmp/
-	rm -rf build/test-reports 2>/dev/null
-	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
-
-dotestbig:
-	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-testbig.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
-
-#####################
-
-dotestperf:
-	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
-	bash showresults.sh
-
-dotestbigperf:
-	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
-	bash showresults.sh
-
-#########################
-
-dotestperfpython:
-	mkdir -p ./tmp/
-	bash getresults.sh $(LOGEXT)
-	bash showresults.sh
-
-dotestbigperfpython:
-	mkdir -p ./tmp/
-	bash getresultsbig.sh $(LOGEXT)
-	bash showresults.sh
-
-###################
-
-test: build sync_data dotest
-
-testbig: build sync_data dotestbig
-
-testquick: dotest
-
-testbigquick: dotestbig
-
-################
-
-testperf: build sync_data dotestperf
-
-testbigperf: build sync_data dotestbigperf
-
-testquickperf: dotestperf
-
-testbigquickperf: dotestbigperf
-
 # uses https://github.com/Azure/fast_retraining
-testlightgdbvsxgb:
-	export MOUNT_POINT=./data/
+testxgboost:
+	sh runtestxgboost.sh
 
 ################
 
@@ -241,6 +178,10 @@ libpy3nvml:
 	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
 
 
+liblightgbm:
+	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
+	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install && cd ../ && pip install arff tqdm keras runipy --upgrade
+
 #################### Jenkins specific
 
 cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
@@ -258,7 +199,63 @@ mrproper: clean
 
 #################### H2O.ai specific
 
-fullinstallprivate: clean build alldeps sync_data sync_smalldata install
+fullinstallprivate: clean build alldeps sync_data install
 
 sync_data: sync_smalldata sync_otherdata
 
+
+##################
+
+dotest:
+	rm -rf ./tmp/
+	rm -rf build/test-reports 2>/dev/null
+	mkdir -p ./tmp/
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
+
+dotestbig:
+	mkdir -p ./tmp/
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-testbig.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+
+#####################
+
+dotestperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	bash showresults.sh
+
+dotestbigperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	bash showresults.sh
+
+#########################
+
+dotestperfpython:
+	mkdir -p ./tmp/
+	bash getresults.sh $(LOGEXT)
+	bash showresults.sh
+
+dotestbigperfpython:
+	mkdir -p ./tmp/
+	bash getresultsbig.sh $(LOGEXT)
+	bash showresults.sh
+
+################### H2O.ai private tests for pass/fail
+
+test: build sync_data dotest
+
+testbig: build sync_data dotestbig
+
+testquick: dotest
+
+testbigquick: dotestbig
+
+################ H2O.ai private tests for performance
+
+testperf: build sync_data dotestperf
+
+testbigperf: build sync_data dotestbigperf
+
+testquickperf: dotestperf
+
+testbigquickperf: dotestbigperf
