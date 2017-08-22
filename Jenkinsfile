@@ -40,7 +40,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                     nvidia-docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
-                    nvidia-docker run --rm --name $BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
+                    nvidia-docker run --rm --name h2ogpuml-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
                     nvidia-docker exec rm -rf data
                     nvidia-docker exec ln -s /data ./data
                     nvidia-docker exec `. /h2oai_env/bin/activate`
@@ -62,7 +62,7 @@ pipeline {
                 script {
                     try {
                         sh """
-                            nvidia-docker run --rm --name $BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
+                            nvidia-docker run --rm --name h2ogpuml-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
                             nvidia-docker exec rm -rf py3nvml
                             nvidia-docker exec rm -rf data
                             nvidia-docker exec ln -s /data ./data
@@ -71,7 +71,7 @@ pipeline {
                             nvidia-docker exec make dotest
                         """
                     } finally {
-                        sh "nvidia-docker rm $BUILD_ID"
+                        sh "nvidia-docker rm h2ogpuml-$BUILD_ID"
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
                         deleteDir()
