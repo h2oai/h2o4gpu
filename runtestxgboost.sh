@@ -37,7 +37,7 @@ cd $MYPWD
 
 # run higgs
 cd testsxgboost # for libs stuff
-ipython 06_higgs_GPU.py &> results/higgs.txt # py from export of ipynb removing inline commands
+ipython 06_HIGGS_GPU.py &> results/higgs.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
 
