@@ -225,10 +225,6 @@ class KMeans(object):
         L = np.mod(y, self._n_clusters)
         self.fit(X, L)
         return self.predict(X)
-        # FIXME TODO: Still need (http://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html#sklearn.cluster.KMeans.fit_predict)
-        # get_params, score, set_params
-        # various parameters like init, algorithm, n_init
-        # need to ensure output as desired
 
     def _fit(self, data, labels):
         data_ord = ord('c' if np.isfortran(data) else 'r')
@@ -370,8 +366,7 @@ class KMeans(object):
         cpu_lib = cpu_lib_getter.get()
 
         if (self.n_gpus == 0) or (gpu_lib is None) or (self.deviceCount == 0):
-            self._print_verbose(0, "\nUsing CPU KMeans solver.\n")
-            return cpu_lib
+            raise NotImplementedError("KMeans for CPU not yet supported.")
         elif (self.n_gpus > 0) or (cpu_lib is None) or (self.deviceCount == 0):
             self._print_verbose(0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
@@ -424,6 +419,3 @@ class KMeans(object):
         assert_satisfies(value, value > 0,
                          "Number of maximum iterations must be non-negative.")
         self._max_iter = value
-
-    # Free up memory functions
-    # TODO check what has to be freed (predictions??).
