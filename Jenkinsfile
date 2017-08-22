@@ -25,11 +25,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                dockerfile {
-                    label "mr-dl11"
-                    filename "Dockerfile-build"
-                    args "-v /home/0xdiag/h2ogpuml/data:/data"
-                }
+                label "mr-dl11"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -43,10 +39,12 @@ pipeline {
 
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
-                    rm -rf data
-                    ln -s /data ./data
-                    . /h2oai_env/bin/activate
-                    make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins
+                    nvidia-docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
+                    nvidia-docker run --rm --name $BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
+                    nvidia-docker exec rm -rf data
+                    nvidia-docker exec ln -s /data ./data
+                    nvidia-docker exec `. /h2oai_env/bin/activate`
+                    nvidia-docker exec make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                     // Archive artifacts
@@ -56,11 +54,7 @@ pipeline {
         }
         stage('Test on Linux') {
             agent {
-                dockerfile {
-                    label "mr-dl11"
-                    filename "Dockerfile-build"
-                    args "-v /home/0xdiag/h2ogpuml/data:/data"
-                }
+                label "mr-dl11"
             }
             steps {
                 unstash 'linux_whl'
@@ -68,13 +62,16 @@ pipeline {
                 script {
                     try {
                         sh """
-                            rm -rf data
-                            ln -s /data ./data
-                            . /h2oai_env/bin/activate
-                            pip install `find src/interface_py/dist -name "*h2ogpuml*.whl"`
-                            make dotest
+                            nvidia-docker run --rm --name $BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2ogpuml-build
+                            nvidia-docker exec rm -rf py3nvml
+                            nvidia-docker exec rm -rf data
+                            nvidia-docker exec ln -s /data ./data
+                            nvidia-docker exec `. /h2oai_env/bin/activate`
+                            nvidia-docker exec pip install `find src/interface_py/dist -name "*h2ogpuml*.whl"`
+                            nvidia-docker exec make dotest
                         """
                     } finally {
+                        sh "nvidia-docker rm $BUILD_ID"
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
                         deleteDir()
