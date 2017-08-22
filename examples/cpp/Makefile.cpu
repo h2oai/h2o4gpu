@@ -4,7 +4,6 @@ include ../../src/config2.mk
 H2OGPUMLROOT=../../src
 
 # Example Files
-EXSRC=./pogs/lasso.cpp ./pogs/lasso_path.cpp  ./pogs/logistic.cpp  ./pogs/lp_eq.cpp  ./pogs/lp_ineq.cpp  ./pogs/nonneg_l2.cpp  ./pogs/svm.cpp
 EXSRC2=elastic_net.cpp
 EXSRC3=elastic_net_ptr_driver.cpp
 EXSRC4=kmeans_driver.cpp
@@ -67,13 +66,10 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: h2ogpuml-glm-cpu-orig h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
+all: h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
 
 default: h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
 
-# CPU
-h2ogpuml-glm-cpu-orig: ./pogs/run_all_orig.cpp examples.h $(EXSRC) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu-orig $(EXSRC) $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
 h2ogpuml-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
 	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu $(EXSRC2)  $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
@@ -85,6 +81,6 @@ h2ogpuml-kmeans-cpu: $(EXSRC4) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu
 	$(CXX) $(CXXFLAGS) -o h2ogpuml-kmeans-cpu $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
 
 clean:
-	rm -f *.o *~ *~ h2ogpuml-glm-cpu-orig h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr
+	rm -f *.o *~ *~ h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr
 	rm -rf *.dSYM
 
