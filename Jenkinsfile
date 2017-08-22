@@ -15,6 +15,7 @@ pipeline {
         timestamps()
         timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
     }
 
     environment {
@@ -79,7 +80,7 @@ pipeline {
         }
 
         // Publish into S3 all snapshots versions
-        /*stage('Publish snapshot to S3') {
+        stage('Publish snapshot to S3') {
             when {
                 branch 'master'
             }
@@ -88,24 +89,15 @@ pipeline {
             }
             steps {
                 unstash 'linux_whl'
-                unstash 'VERSION'
-                sh 'echo "Stashed files:" && ls -l dist'
+                sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 script {
-                    def versionText = utilsLib.getCommandOutput("cat dist/VERSION.txt")
-                    def version = utilsLib.fragmentVersion(versionText)
-                    def _majorVersion = version[0]
-                    def _buildVersion = version[1]
-                    version = null // This is necessary, else version:Tuple will be serialized
                     s3up {
-                        localArtifact = 'dist/*.whl'
+                        localArtifact = 'src/interface_py/dist/*h2ogpuml*.whl'
                         artifactId = "h2ogpuml"
-                        majorVersion = _majorVersion
-                        buildVersion = _buildVersion
-                        keepPrivate = true
                     }
                 }
             }
-        }*/
+        }
 
     }
 }
