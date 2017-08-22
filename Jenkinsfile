@@ -69,7 +69,6 @@ pipeline {
                     } finally {
                         sh """
                             nvidia-docker stop h2ogpuml-$BUILD_ID
-                            nvidia-docker rm h2ogpuml-$BUILD_ID
                         """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
