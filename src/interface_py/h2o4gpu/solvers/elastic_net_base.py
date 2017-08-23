@@ -126,7 +126,7 @@ class GLM(object):
         self._family = ord(family.split()[0][0])
         self.give_full_path = give_full_path
         if lambda_max is None:
-            self.lambda_max = 0.0  # to trigger C code to compute
+            self.lambda_max = -1.0  # to trigger C code to compute
         else:
             self.lambda_max = lambda_max
         self.alpha_min = alpha_min  # as default
@@ -1435,3 +1435,23 @@ class GLM(object):
         self.e = e
         return (a, b, c, d, e)
 
+
+class LogisticRegression(GLM):
+
+    def __init__(self, family="logistic"):
+        super(LogisticRegression, self).__init__(family=family)
+
+class LinearRegression(GLM):
+    #No regularization
+    def __init__(self, family="elasticnet", lambda_max=0.0):
+        super(LinearRegression, self).__init__(family=family, lambda_max=lambda_max)
+
+class Lasso(GLM):
+    #Set alpha to 1.0
+    def __init__(self, alpha_max=1.0,alpha_min=1.0):
+        super(Lasso, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)
+
+class Ridge(GLM):
+    #Set alpha to 0.0
+    def __init__(self, alpha_max=0.0,alpha_min=0.0):
+        super(Ridge, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)

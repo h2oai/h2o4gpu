@@ -54,6 +54,8 @@ class KMeans(object):
         else:
             self.seed = seed
 
+        np.random.seed(seed)
+
     def get_params(self):
         params = {'n_clusters': self._n_clusters, 'n_gpus': self.n_gpus,
                   'max_iter': self._max_iter, 'init': 'random',
