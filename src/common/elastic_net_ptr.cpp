@@ -390,8 +390,13 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	Asource_.Stats(intercept, min, max, mean, var, sd, skew, kurt, lambdamax0);
 	double sdTrainY = (double) sd[0], meanTrainY = (double) mean[0];
 	double sdValidY = (double) sd[1], meanValidY = (double) mean[1];
-	if(lambda_max==0){ // set if user didn't set
+	if(lambda_max==-1.0){ // set if user didn't set
 		lambda_max = (double) lambdamax0;
+	}else if(lambda_max >= 0.0){
+
+	}else{
+		cerr << "Invalid lambda_max " << lambda_max << endl;
+		exit(0);
 	}
 //	fprintf(stderr,"lambda_max=%g lambdamax0=%g\n",lambda_max,lambdamax0); fflush(stderr);
 	if (VERBOSEENET) {
