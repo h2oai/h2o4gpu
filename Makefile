@@ -256,6 +256,6 @@ testperf: build sync_data dotestperf
 
 testbigperf: build sync_data dotestbigperf
 
-testquickperf: dotestperf
+testperfquick: dotestperf
 
-testbigquickperf: dotestbigperf
+testbigperfquick: dotestbigperf
