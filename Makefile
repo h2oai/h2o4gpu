@@ -124,7 +124,7 @@ cleanr:
 
 # uses https://github.com/Azure/fast_retraining
 testxgboost:
-	sh runtestxgboost.sh
+	sh testsxgboost/runtestxgboost.sh
 
 ################
 
@@ -142,7 +142,7 @@ deps_fetch:
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
-	bash gitshallow_submodules.sh
+	bash scripts/gitshallow_submodules.sh
 
 deps_install:
 	@echo "---- Install dependencies ----"
@@ -221,24 +221,24 @@ dotestbig:
 dotestperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
-	bash showresults.sh
+	bash tests/showresults.sh
 
 dotestbigperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
-	bash showresults.sh
+	bash testsbig/showresultsbig.sh
 
 #########################
 
 dotestperfpython:
 	mkdir -p ./tmp/
-	bash getresults.sh $(LOGEXT)
-	bash showresults.sh
+	bash tests/getresults.sh $(LOGEXT)
+	bash tests/showresults.sh
 
 dotestbigperfpython:
 	mkdir -p ./tmp/
-	bash getresultsbig.sh $(LOGEXT)
-	bash showresults.sh
+	bash testsbig/getresultsbig.sh $(LOGEXT)
+	bash testsbig/showresultsbig.sh
 
 ################### H2O.ai private tests for pass/fail
 

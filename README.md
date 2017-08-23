@@ -96,6 +96,12 @@ make liblightgbm # only need to do ever once per environment
 make testxgboost
 ```
 
+- Jupyter Notebooks
+
+examples/py/H2OGPUGLM.ipynb
+examples/py/kmeans_image.ipynb
+examples/py/xgboost_simple_demo.ipynb
+
 - To run gpu C++ version:
 
 ```

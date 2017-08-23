@@ -1,6 +1,6 @@
 [submodule "cub"]
 	path = cub
-	url = https://github.com/NVlabs/cub
+	url = https://github.com/h2oai/cub
 	shallow = true
 [submodule "xgboost"]
 	path = xgboost
