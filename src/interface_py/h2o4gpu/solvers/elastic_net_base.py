@@ -1437,11 +1437,21 @@ class GLM(object):
 
 
 class LogisticRegression(GLM):
-    #No regularization
-    def __init__(self, family="logistic", lambda_max=0.0):
-        super(LogisticRegression, self).__init__(family=family, lambda_max=lambda_max)
+
+    def __init__(self, family="logistic"):
+        super(LogisticRegression, self).__init__(family=family)
 
 class LinearRegression(GLM):
     #No regularization
     def __init__(self, family="elasticnet", lambda_max=0.0):
         super(LinearRegression, self).__init__(family=family, lambda_max=lambda_max)
+
+class Lasso(GLM):
+    #Set alpha to 1.0
+    def __init__(self, alpha_max=1.0,alpha_min=1.0):
+        super(Lasso, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)
+
+class Ridge(GLM):
+    #Set alpha to 0.0
+    def __init__(self, alpha_max=0.0,alpha_min=0.0):
+        super(Ridge, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)
