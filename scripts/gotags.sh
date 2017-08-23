@@ -1,1 +1,1 @@
-find \( -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' -o -name '*.c' -o -name '*.py' -o -name '*.h' \) -exec etags {} +
+find \( -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' -o -name '*.c' -o -name '*.py' -o -name '*.h' -o -name '*.md' -o -name 'Makefile*' -o -name '*.Rd' -o -name '*.mk' -o -name 'NAMESPACE' -o -name '*.sh' -o -name '*.txt' -o -name '*.R' -o -name 'DESCRIPTION' -o -name '*.ipynb' -o -name 'Jenkinsfile' \) -exec etags {} +

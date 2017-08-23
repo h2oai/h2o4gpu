@@ -1,8 +1,8 @@
-[H2OGPUML](https://github.com/h2ogpuml/h2ogpuml)
+[H2O4GPU](https://github.com/h2o4gpu/h2o4gpu)
 
 ---
 
-H2OGPUML is a collection of GPU (and CPU) solvers by H2Oai.
+H2O4GPU is a collection of GPU (and CPU) solvers by H2Oai.
 
 Requirements
 ------
@@ -54,7 +54,7 @@ export VECLIB_MAXIMUM_THREADS=32
 Compiling and Running
 ------
 
-- Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2ogpuml.
+- Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2o4gpu.
 
 ```
 sudo nvidia-smi -pm 1
@@ -70,12 +70,12 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 - To compile everything and install R and python interfaces as user:
 
 ```
-git clone --recursive git@github.com:h2ogpuml/h2ogpuml.git
-cd h2ogpuml
+git clone --recursive git@github.com:h2o4gpu/h2o4gpu.git
+cd h2o4gpu
 make fullinstall
 ```
 
-This installs full h2ogpuml as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2ogpuml-0.0.1-py2.py3-none-any.whl
+This installs full h2o4gpu as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2o4gpu-0.0.1-py2.py3-none-any.whl
 
 - test python package
 
@@ -111,10 +111,10 @@ cd $BASE/examples/cpp && make -j all ; make run
 - Or, to run 16-gpu version on ipums.txt data:
 
 ```
-./h2ogpuml-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
+./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 ```
 
-- Install R package (assume in h2ogpuml base directory to start with)
+- Install R package (assume in h2o4gpu base directory to start with)
 
 ```
 cd $BASE/src/interface_r && make

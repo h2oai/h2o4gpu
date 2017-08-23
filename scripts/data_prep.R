@@ -1,4 +1,4 @@
-#'Prep data for h2ogpuml
+#'Prep data for h2o4gpu
 #'
 #'@param data_path Path to data
 #'@param response Response column as a string

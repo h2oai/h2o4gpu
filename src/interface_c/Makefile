@@ -1,6 +1,6 @@
 include ../config2.mk
 
-H2OGPUMLROOT=../
+H2O4GPUROOT=../
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
@@ -75,34 +75,34 @@ SHARED=so
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2OGPUMLROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
 
-# H2OGPUML static libraries
-H2OGPUMLLIB=\
-	$(H2OGPUMLROOT)/build/cpu/h2ogpumlglm.o \
-	$(H2OGPUMLROOT)/build/cpu/h2ogpumlkmeans.o \
-	$(H2OGPUMLROOT)/build/cpu/matrix/matrix_dense.o \
-	$(H2OGPUMLROOT)/build/cpu/matrix/matrix_sparse.o \
-	$(H2OGPUMLROOT)/build/cpu/projector/projector_direct_dense.o \
-	$(H2OGPUMLROOT)/build/cpu/projector/projector_cgls.o \
-	$(H2OGPUMLROOT)/build/cpu/elastic_net_ptr.o
+# H2O4GPU static libraries
+H2O4GPULIB=\
+	$(H2O4GPUROOT)/build/cpu/h2o4gpuglm.o \
+	$(H2O4GPUROOT)/build/cpu/h2o4gpukmeans.o \
+	$(H2O4GPUROOT)/build/cpu/matrix/matrix_dense.o \
+	$(H2O4GPUROOT)/build/cpu/matrix/matrix_sparse.o \
+	$(H2O4GPUROOT)/build/cpu/projector/projector_direct_dense.o \
+	$(H2O4GPUROOT)/build/cpu/projector/projector_cgls.o \
+	$(H2O4GPUROOT)/build/cpu/elastic_net_ptr.o
 
-CUH2OGPUMLLIB=\
-    $(H2OGPUMLROOT)/build/gpu/h2ogpuml_link.o \
-	$(H2OGPUMLROOT)/build/gpu/h2ogpumlglm.o \
-	$(H2OGPUMLROOT)/build/gpu/h2ogpumlkmeans.o \
-	$(H2OGPUMLROOT)/build/gpu/kmeans_labels.o \
-	$(H2OGPUMLROOT)/build/gpu/warmstart.o \
-	$(H2OGPUMLROOT)/build/gpu/p2pbwcheck.o \
-	$(H2OGPUMLROOT)/build/gpu/bwcheck.o \
-	$(H2OGPUMLROOT)/build/gpu/matrix/matrix_dense.o \
-	$(H2OGPUMLROOT)/build/gpu/matrix/matrix_sparse.o \
-	$(H2OGPUMLROOT)/build/gpu/projector/projector_direct_dense.o \
-	$(H2OGPUMLROOT)/build/gpu/projector/projector_cgls.o \
-	$(H2OGPUMLROOT)/build/gpu/elastic_net_ptr.o
+CUH2O4GPULIB=\
+    $(H2O4GPUROOT)/build/gpu/h2o4gpu_link.o \
+	$(H2O4GPUROOT)/build/gpu/h2o4gpuglm.o \
+	$(H2O4GPUROOT)/build/gpu/h2o4gpukmeans.o \
+	$(H2O4GPUROOT)/build/gpu/kmeans_labels.o \
+	$(H2O4GPUROOT)/build/gpu/warmstart.o \
+	$(H2O4GPUROOT)/build/gpu/p2pbwcheck.o \
+	$(H2O4GPUROOT)/build/gpu/bwcheck.o \
+	$(H2O4GPUROOT)/build/gpu/matrix/matrix_dense.o \
+	$(H2O4GPUROOT)/build/gpu/matrix/matrix_sparse.o \
+	$(H2O4GPUROOT)/build/gpu/projector/projector_direct_dense.o \
+	$(H2O4GPUROOT)/build/gpu/projector/projector_cgls.o \
+	$(H2O4GPUROOT)/build/gpu/elastic_net_ptr.o
 
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so	
@@ -112,28 +112,29 @@ PYCUDART=$(CUDAHOME)/libcudart.so
 
 default: all
 
-all: cpulib gpulib ch2ogpuml_cpu ch2ogpuml_gpu h2ogpuml_c.o
+all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
 
 cpulib:
-	$(MAKE) cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
 gpulib:
-	$(MAKE) gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
-ch2ogpuml_cpu: h2ogpuml_c.o  Makefile
-	touch ch2ogpuml_cpu
-	$(MAKE) cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2OGPUMLLIB) $(LDFLAGS)
+ch2o4gpu_cpu: h2o4gpu_c.o  Makefile
+	touch ch2o4gpu_cpu
+	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2O4GPULIB) $(LDFLAGS)
 
-ch2ogpuml_gpu: h2ogpuml_c.o Makefile
-	touch ch2ogpuml_gpu
-	$(MAKE) gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2OGPUMLLIB) $(PYCUDART) $(CULDFLAGS)
+ch2o4gpu_gpu: h2o4gpu_c.o Makefile
+	touch ch2o4gpu_gpu
+	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2O4GPULIB) $(PYCUDART) $(CULDFLAGS)
 
-h2ogpuml_c.o: h2ogpuml_c.cpp h2ogpuml_c.h Makefile
+h2o4gpu_c.o: h2o4gpu_c.cpp h2o4gpu_c.h Makefile
 	$(CXX) $(CXXFLAGS) $< -c -o $@
 
 clean:
 	rm -fv *.o *.so *.dylib
+	rm -rf ch2o4gpu_cpu ch2o4gpu_gpu
 
 

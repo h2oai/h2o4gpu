@@ -1,5 +1,5 @@
-import h2ogpuml as h2ogpuml
-from h2ogpuml.types import H2OFunctions
+import h2o4gpu as h2o4gpu
+from h2o4gpu.types import H2OFunctions
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
 
@@ -9,7 +9,7 @@ Elastic Net
    minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
 
    for 100 values of \lambda, and alpha in [0,1]
-   See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+   See <h2o4gpu>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 
@@ -25,12 +25,12 @@ def elastic_net(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
     lambda_max = max(abs(A.T.dot(b)))
 
     # f(Ax) = ||Ax - b||_2^2
-    f = h2ogpuml.FunctionVector(m, double_precision=double_precision)
+    f = h2o4gpu.FunctionVector(m, double_precision=double_precision)
     f.b[:] = b[:]
     f.h[:] = H2OFunctions.SQUARE
 
     # g(x) = 0.2*lambda_max*||x||_1
-    g = h2ogpuml.FunctionVector(n, double_precision=double_precision)
+    g = h2o4gpu.FunctionVector(n, double_precision=double_precision)
     g.a[:] = 1
     g.h[:] = H2OFunctions.ABS
 
@@ -42,7 +42,7 @@ def elastic_net(X, y, gpu=True, double_precision=False, nlambda=100, alpha=0.5):
 
     # A = sp.sparse.csr_matrix(A) ##TODO: compare to sparse
     # A = sp.sparse.csc_matrix(A)
-    s = h2ogpuml.Pogs(A) if gpu else h2ogpuml.Pogs(A, n_gpus=0)
+    s = h2o4gpu.Pogs(A) if gpu else h2o4gpu.Pogs(A, n_gpus=0)
 
     for i in list(range(nlambda)):
         _lambda = exp((log(lambda_max) * (nlambda - 1 - i) + 1e-2 * log(lambda_max) * i) / (nlambda - 1))

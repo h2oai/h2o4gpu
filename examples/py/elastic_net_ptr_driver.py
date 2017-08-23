@@ -1,11 +1,11 @@
 import sys
-#sys.path.insert(0, "/home/arno/h2ogpuml/src/interface_py/")
-import h2ogpuml as h2ogpuml
+#sys.path.insert(0, "/home/arno/h2o4gpu/src/interface_py/")
+import h2o4gpu as h2o4gpu
 import numpy as np
 from numpy import abs, exp, float32, float64, log, max, zeros
 
 from ctypes import *
-from h2ogpuml.types import *
+from h2o4gpu.types import *
 
 
 '''
@@ -14,11 +14,11 @@ Elastic Net
    minimize    (1/2) ||Ax - b||_2^2 + \alpha * \lambda ||x||_1 + 0.5 * (1-\alpha) * \lambda ||x||_2
 
    for 100 values of \lambda, and alpha in [0,1]
-   See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+   See <h2o4gpu>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
-  Solver = h2ogpuml.GLM
+  Solver = h2o4gpu.GLM
 
   sharedA = 0
   sourceme = 0

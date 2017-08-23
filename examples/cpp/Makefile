@@ -1,5 +1,5 @@
 # User Vars
-H2OGPUMLROOT=../../src
+H2O4GPUROOT=../../src
 
 ifndef N
 N=1
@@ -7,7 +7,7 @@ endif
 
 #.NOTPARALLEL:
 
-.PHONY: all default clean run runcpu ../../src/build/cpu/h2ogpuml.a ../../src/build/gpu/h2ogpuml.a
+.PHONY: all default clean run runcpu ../../src/build/cpu/h2o4gpu.a ../../src/build/gpu/h2o4gpu.a
 
 all: cpuall gpuall
 
@@ -16,57 +16,57 @@ default: gpuall
 SOURCESALT=elastic_net.cpp run_all.cpp
 SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp
 
-../../src/build/cpu/h2ogpuml.a:
-	$(MAKE)  cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+../../src/build/cpu/h2o4gpu.a:
+	$(MAKE)  cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
-../../src/build/gpu/h2ogpuml.a:
-	$(MAKE)  gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
+../../src/build/gpu/h2o4gpu.a:
+	$(MAKE)  gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
 # CPU
-cpuall: Makefile Makefile.cpu $(SOURCESALT) $(SOURCESPTR) ../../src/build/cpu/h2ogpuml.a
+cpuall: Makefile Makefile.cpu $(SOURCESALT) $(SOURCESPTR) ../../src/build/cpu/h2o4gpu.a
 	touch cpuall
-	$(MAKE)  cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
+	$(MAKE)  cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu h2o4gpu-glm-cpu h2o4gpu-glm-cpu-ptr h2o4gpu-kmeans-cpu
 
-h2ogpuml-glm-cpu: Makefile Makefile.cpu $(SOURCESALT) ../../src/build/cpu/h2ogpuml.a
-	$(MAKE)  cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu h2ogpuml-glm-cpu
+h2o4gpu-glm-cpu: Makefile Makefile.cpu $(SOURCESALT) ../../src/build/cpu/h2o4gpu.a
+	$(MAKE)  cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu h2o4gpu-glm-cpu
 
-h2ogpuml-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2ogpuml.a
-	$(MAKE)  cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu h2ogpuml-glm-cpu-ptr
+h2o4gpu-glm-cpu-ptr: Makefile Makefile.cpu $(SOURCESPTR)  ../../src/build/cpu/h2o4gpu.a
+	$(MAKE)  cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu h2o4gpu-glm-cpu-ptr
 
-h2ogpuml-kmeans-cpu: Makefile Makefile.cpu kmeans_driver.cpp ../../src/build/cpu/h2ogpuml.a
-	$(MAKE)  cpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.cpu h2ogpuml-kmeans-cpu
+h2o4gpu-kmeans-cpu: Makefile Makefile.cpu kmeans_driver.cpp ../../src/build/cpu/h2o4gpu.a
+	$(MAKE)  cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.cpu h2o4gpu-kmeans-cpu
 
 # GPU
-gpuall: Makefile Makefile.gpu $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2ogpuml.a
+gpuall: Makefile Makefile.gpu $(SOURCESALT) $(SOURCESPTR) ../../src/build/gpu/h2o4gpu.a
 	touch gpuall
-	$(MAKE)  gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
+	$(MAKE)  gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu h2o4gpu-glm-gpu h2o4gpu-glm-gpu-ptr h2o4gpu-kmeans-gpu
 
-h2ogpuml-glm-gpu: Makefile Makefile.gpu $(SOURCESALT) ../../src/build/gpu/h2ogpuml.a
-	$(MAKE)  gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2ogpuml-glm-gpu
+h2o4gpu-glm-gpu: Makefile Makefile.gpu $(SOURCESALT) ../../src/build/gpu/h2o4gpu.a
+	$(MAKE)  gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu h2o4gpu-glm-gpu
 
-h2ogpuml-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2ogpuml.a
-	$(MAKE)  gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2ogpuml-glm-gpu-ptr
+h2o4gpu-glm-gpu-ptr: Makefile Makefile.gpu $(SOURCESPTR) ../../src/build/gpu/h2o4gpu.a
+	$(MAKE)  gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu h2o4gpu-glm-gpu-ptr
 
-h2ogpuml-kmeans-gpu: Makefile Makefile.gpu kmeans_driver.cpp ../../src/build/gpu/h2ogpuml.a
-	$(MAKE)  gpulib -C $(H2OGPUMLROOT) IFLAGS=$(IFLAGS)
-	$(MAKE) -f Makefile.gpu h2ogpuml-kmeans-gpu
+h2o4gpu-kmeans-gpu: Makefile Makefile.gpu kmeans_driver.cpp ../../src/build/gpu/h2o4gpu.a
+	$(MAKE)  gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+	$(MAKE) -f Makefile.gpu h2o4gpu-kmeans-gpu
 
-run: h2ogpuml-glm-gpu-ptr
-	./h2ogpuml-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
+run: h2o4gpu-glm-gpu-ptr
+	./h2o4gpu-glm-gpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
 
-runcpu: h2ogpuml-glm-cpu-ptr
-	./h2ogpuml-glm-cpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
+runcpu: h2o4gpu-glm-cpu-ptr
+	./h2o4gpu-glm-cpu-ptr train.txt 0 $(N) $(N) 100 5 8 1 0 0.2
 
 clean:
 	rm -f *.o *~ *~
-	rm -rf h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr
-	rm -rf h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr
+	rm -rf h2o4gpu-glm-cpu h2o4gpu-glm-cpu-ptr h2o4gpu-kmeans-cpu
+	rm -rf h2o4gpu-glm-gpu h2o4gpu-glm-gpu-ptr h2o4gpu-kmeans-gpu
 	rm -rf *.dSYM
 	rm -rf core

@@ -3,7 +3,7 @@ include ../../src/config2.mk
 
 
 # User Vars
-H2OGPUMLROOT=../../src
+H2O4GPUROOT=../../src
 
 # Example Files
 EXSRC2=elastic_net.cpp
@@ -55,7 +55,7 @@ endif
 
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OGPUMLROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2O4GPUROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(CUDFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
@@ -81,26 +81,26 @@ endif
 
 
 
-all: h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
+all: h2o4gpu-glm-gpu h2o4gpu-glm-gpu-ptr h2o4gpu-kmeans-gpu
 
-default: h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr h2ogpuml-kmeans-gpu
+default: h2o4gpu-glm-gpu h2o4gpu-glm-gpu-ptr h2o4gpu-kmeans-gpu
 
 # GPU
 
-h2ogpuml-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu $(EXSRC2)  $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
+h2o4gpu-glm-gpu: run_all.cpp examples.h $(EXSRC2) Makefile.gpu Makefile $(H2O4GPUROOT)/build/gpu/h2o4gpu.a
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-glm-gpu $(EXSRC2)  $<	$(H2O4GPUROOT)/build/gpu/h2o4gpu.a $(CULDFLAGS)
 
-h2ogpuml-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-gpu-ptr $(EXSRC3)  $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
+h2o4gpu-glm-gpu-ptr: run_all.cpp examples.h $(EXSRC3) Makefile.gpu Makefile $(H2O4GPUROOT)/build/gpu/h2o4gpu.a
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-glm-gpu-ptr $(EXSRC3)  $<	$(H2O4GPUROOT)/build/gpu/h2o4gpu.a $(CULDFLAGS)
 
-h2ogpuml-kmeans-gpu: $(EXSRC4) Makefile.gpu Makefile $(H2OGPUMLROOT)/build/gpu/h2ogpuml.a
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-kmeans-gpu $<	$(H2OGPUMLROOT)/build/gpu/h2ogpuml.a $(CULDFLAGS)
+h2o4gpu-kmeans-gpu: $(EXSRC4) Makefile.gpu Makefile $(H2O4GPUROOT)/build/gpu/h2o4gpu.a
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-kmeans-gpu $<	$(H2O4GPUROOT)/build/gpu/h2o4gpu.a $(CULDFLAGS)
 
-run: h2ogpuml-glm-gpu-ptr
-	./h2ogpuml-glm-gpu-ptr 1 100 1 1 0
-	#./h2ogpuml-glm-gpu-ptr 1 100 1 0 0
+run: h2o4gpu-glm-gpu-ptr
+	./h2o4gpu-glm-gpu-ptr 1 100 1 1 0
+	#./h2o4gpu-glm-gpu-ptr 1 100 1 0 0
 
 clean:
-	rm -f *.o *~ *~ h2ogpuml-glm-gpu h2ogpuml-glm-gpu-ptr
+	rm -f *.o *~ *~ h2o4gpu-glm-gpu h2o4gpu-glm-gpu-ptr
 	rm -rf *.dSYM
 

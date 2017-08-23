@@ -3,7 +3,7 @@
 
 #include <memory>
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 template <typename T>
 class Matrix {
@@ -36,7 +36,7 @@ class Matrix {
   bool IsInit() const { return _done_init; }
 };
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
 #endif  // MATRIX_MATRIX_H_
 

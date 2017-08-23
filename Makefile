@@ -55,8 +55,8 @@ help:
 	@echo "make testbig         Run tests for big data."
 	@echo "make testperf        Run performance and accuracy tests."
 	@echo "make testbigperf     Run performance and accuracy tests for big data."
-	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2ogpuml/src/interface_py:/home/jon/h2ogpuml;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
-	@echo "Example Pycharm working directory: /home/jon/h2ogpuml/"
+	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
+	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
 
 sync_smalldata:
 	@echo "---- Synchronizing test data ----"
@@ -107,7 +107,7 @@ fullinstall: clean alldeps build sync_smalldata install
 #############################################
 
 clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
-	rm -rf ./results/
+	rm -rf ./results/ ./tmp/
 
 cleancpp:
 	$(MAKE) -j clean -C src/
@@ -156,12 +156,12 @@ alldeps_install: deps_install libxgboost libpy3nvml
 ###################
 
 wheel_in_docker:
-	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
 
 clean_in_docker:
-	docker build -t opsh2oai/h2ogpuml-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2ogpuml-build -c '. /h2oai_env/bin/activate; make clean'
+	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
 
 ###################
 xgboost_clean:
@@ -210,22 +210,22 @@ dotest:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-testbig.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-testbig.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml testsbig 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 
 #####################
 
 dotestperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml tests 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	bash tests/showresults.sh
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2ogpuml-test.xml testsbig 2> ./tmp/h2ogpuml-test.$(LOGEXT).log
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml testsbig 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	bash testsbig/showresultsbig.sh
 
 #########################

@@ -10,12 +10,12 @@
 #include <random>
 
 #include "matrix/matrix_dense.h"
-#include "h2ogpumlglm.h"
+#include "h2o4gpuglm.h"
 #include "timer.h"
 #include <omp.h>
 #include <cmath>
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 
 /**
@@ -270,7 +270,7 @@ template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+// See <h2o4gpu>/matlab/examples/lasso_path.m for detailed description.
 // m and n are training data size
 
 template<typename T>

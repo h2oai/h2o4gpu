@@ -1,5 +1,5 @@
-import h2ogpuml as h2ogpuml
-from h2ogpuml.types import *
+import h2o4gpu as h2o4gpu
+from h2o4gpu.types import *
 import math
 '''
 Elastic Net
@@ -10,13 +10,13 @@ Elastic Net
 
    for 100 values of \lambda, and alpha in [0,1]
 
-   See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+   See <h2o4gpu>/matlab/examples/lasso_path.m for detailed description.
 '''
 
 
 def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0):
     # choose solver
-    Solver = h2ogpuml.GLM
+    Solver = h2o4gpu.GLM
 
     sharedA = 0
     nThreads = None  # let internal method figure this out

@@ -7,7 +7,7 @@
 #include <random>
 #include "reader.h"
 #include "matrix/matrix_dense.h"
-#include "h2ogpumlglm.h"
+#include "h2o4gpuglm.h"
 #include "timer.h"
 
 #ifdef _OPENMP
@@ -18,7 +18,7 @@
 #include <mkl.h>
 #endif
 
-using namespace h2ogpuml;
+using namespace h2o4gpu;
 using namespace std;
 
 template <typename T>
@@ -46,7 +46,7 @@ T getVar(std::vector<T>& v, T mean) {
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
 // for many values of \lambda and multiple values of \alpha
-// See <h2ogpuml>/matlab/examples/lasso_path.m for detailed description.
+// See <h2o4gpu>/matlab/examples/lasso_path.m for detailed description.
 template <typename T>
 double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vector<T>&w, int sharedA, int nThreads, int nGPUs, int nLambdas, int nFolds, int nAlphas, int intercept, int standardize, double validFraction) {
   int nlambda = nLambdas;
@@ -148,13 +148,13 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 
   // for source, create class objects that creates cuda memory, cpu memory, etc.
   int sourceDev=0;
-  h2ogpuml::MatrixDense<T> Asource_(sharedA, sourceDev, 'r', mTrain, n, trainX.data());
+  h2o4gpu::MatrixDense<T> Asource_(sharedA, sourceDev, 'r', mTrain, n, trainX.data());
   // now can always access A_(sourceDev) to get pointer from within other MatrixDense calls
   
 
 
 
-#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2ogpuml runs normally at high GPU usage.  So these leave the device in a bad state.
+#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2o4gpu runs normally at high GPU usage.  So these leave the device in a bad state.
 #define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
 #define DOBWCHECK 0
 
@@ -226,23 +226,23 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
     fflush(fil);
     // create class objects that creates cuda memory, cpu memory, etc.
 #pragma omp barrier
-    h2ogpuml::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
+    h2o4gpu::MatrixDense<T> A_(sharedA, me, wDev, Asource_); // not setup for nThread!=nGPUs
 #pragma omp barrier // this is the required barrier
-    h2ogpuml::H2OGPUMLDirect<T, h2ogpuml::MatrixDense<T> > h2ogpuml_data(A_);
+    h2o4gpu::H2O4GPUDirect<T, h2o4gpu::MatrixDense<T> > h2o4gpu_data(A_);
 #pragma omp barrier
     double t1 = timer<double>();
     fprintf(fil,"Done moving data to the GPU. Stopping at %21.15g\n", t1);
     fprintf(fil,"Done moving data to the GPU. Took %g secs\n", t1-t0);
     fflush(fil);
 
-    h2ogpuml_data.SetnDev(1); // set how many cuda devices to use internally in h2ogpuml
-//    h2ogpuml_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2ogpuml
-//    h2ogpuml_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in h2ogpuml
-    //h2ogpuml_data.SetAdaptiveRho(false); // trying
-    //h2ogpuml_data.SetEquil(false); // trying
-    //h2ogpuml_data.SetRho(1E-4);
-    //    h2ogpuml_data.SetVerbose(5);
-    //h2ogpuml_data.SetMaxIter(200);
+    h2o4gpu_data.SetnDev(1); // set how many cuda devices to use internally in h2o4gpu
+//    h2o4gpu_data.SetRelTol(1e-4); // set how many cuda devices to use internally in h2o4gpu
+//    h2o4gpu_data.SetAbsTol(1e-4); // set how many cuda devices to use internally in h2o4gpu
+    //h2o4gpu_data.SetAdaptiveRho(false); // trying
+    //h2o4gpu_data.SetEquil(false); // trying
+    //h2o4gpu_data.SetRho(1E-4);
+    //    h2o4gpu_data.SetVerbose(5);
+    //h2o4gpu_data.SetMaxIter(200);
 
     fprintf(fil,"BEGIN SOLVE\n");
     fflush(fil);
@@ -255,7 +255,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
         lambda_max *= 2;
         lambda_min_ratio /= 2;
       }
-      const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like h2ogpuml.R
+      const T lambda_min = lambda_min_ratio * static_cast<T>(lambda_max); // like h2o4gpu.R
       fprintf(fil, "lambda_max: %f\n", lambda_max);
       fprintf(fil, "lambda_min: %f\n", lambda_min);
       fflush(fil);
@@ -266,9 +266,9 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
       f.reserve(mTrain);
       g.reserve(n);
       // minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like h2ogpuml.R
-      T penalty_factor = static_cast<T>(1.0); // like h2ogpuml.R
-      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // h2ogpuml.R
+      T weights = static_cast<T>(1.0/(static_cast<T>(mTrain))); // like h2o4gpu.R
+      T penalty_factor = static_cast<T>(1.0); // like h2o4gpu.R
+      for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights); // h2o4gpu.R
       for (unsigned int j = 0; j < n; ++j) g.emplace_back(kAbs);
 
       fprintf(fil,"alpha%f\n", alpha);
@@ -289,12 +289,12 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
         // Solve
         fprintf(fil, "Starting to solve at %21.15g\n", timer<double>());
         fflush(fil);
-        h2ogpuml_data.Solve(f, g);
+        h2o4gpu_data.Solve(f, g);
 
         size_t dof = 0;
         {
           for (size_t i=0; i<n; ++i) {
-            if (std::abs(h2ogpuml_data.GetX()[i]) > 1e-8) {
+            if (std::abs(h2o4gpu_data.GetX()[i]) > 1e-8) {
               dof++;
             }
           }
@@ -304,7 +304,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
         {
           for (size_t i=0; i<trainY.size(); ++i) {
             for (size_t j=0; j<n; ++j) {
-              trainPreds[i]+=h2ogpuml_data.GetX()[j]*trainX[i*n+j]; //add predictions
+              trainPreds[i]+=h2o4gpu_data.GetX()[j]*trainX[i*n+j]; //add predictions
             }
           }
         }
@@ -319,7 +319,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
             // reverse standardization
             trainPreds[i]*=sdTrainY0; //scale
             trainPreds[i]+=meanTrainY0; //intercept
-            //assert(trainPreds[i] == h2ogpuml_data.GetY()[i]); //FIXME: CHECK
+            //assert(trainPreds[i] == h2o4gpu_data.GetY()[i]); //FIXME: CHECK
           }
         }
           
@@ -328,7 +328,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
           std::vector<T> validPreds(validY.size());
           for (size_t i=0; i<validY.size(); ++i) {
             for (size_t j=0; j<n; ++j) {
-              validPreds[i]+=h2ogpuml_data.GetX()[j]*validX[i*n+j]; //add predictions
+              validPreds[i]+=h2o4gpu_data.GetX()[j]*validX[i*n+j]; //add predictions
             }
           }
           if(standardize) validRMSE = sdTrainY0*getRMSE(&validPreds[0], &validY);

@@ -90,10 +90,10 @@ CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas $(NVCC
 # Load local (e.g. R) specific config
 include config.mk
 
-# H2OGPUML header files.
-H2OGPUML_HDR=\
+# H2O4GPU header files.
+H2O4GPU_HDR=\
 	include/interface_defs.h \
-	include/h2ogpumlglm.h \
+	include/h2o4gpuglm.h \
 	include/prox_lib.h \
 	include/util.h \
 	include/matrix/matrix.h \
@@ -123,9 +123,9 @@ CPU_MTX_OBJ=\
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
-CPU_OBJ=$(OBJDIR)/cpu/h2ogpumlglm.o $(OBJDIR)/cpu/elastic_net_ptr.o $(OBJDIR)/cpu/h2ogpumlkmeans.o
+CPU_OBJ=$(OBJDIR)/cpu/h2o4gpuglm.o $(OBJDIR)/cpu/elastic_net_ptr.o $(OBJDIR)/cpu/h2o4gpukmeans.o
 
-H2OGPUMLKMEANS_HDR=
+H2O4GPUKMEANS_HDR=
 
 
 # GPU Specific headers and object files.
@@ -155,7 +155,7 @@ GPU_PRJ_OBJ=\
 
 GPU_KMEANS_HDR=gpu/include/kmeans_labels.h gpu/include/centroids.h gpu/include/kmeans.h
 
-GPU_OBJ=$(OBJDIR)/gpu/h2ogpumlkmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2ogpumlglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
+GPU_OBJ=$(OBJDIR)/gpu/h2o4gpukmeans.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/kmeans_labels.o $(OBJDIR)/gpu/h2o4gpuglm.o $(OBJDIR)/gpu/warmstart.o  $(OBJDIR)/gpu/p2pbwcheck.o  $(OBJDIR)/gpu/bwcheck.o $(OBJDIR)/gpu/elastic_net_ptr.o
 
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
@@ -169,11 +169,11 @@ default: gpulib
 # Build all
 cpulib: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
 	touch cpulib
-	ar cr $(OBJDIR)/cpu/h2ogpuml.a $^
+	ar cr $(OBJDIR)/cpu/h2o4gpu.a $^
 
-gpulib: $(OBJDIR)/gpu/h2ogpuml_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
+gpulib: $(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
 	touch gpulib
-	ar cr $(OBJDIR)/gpu/h2ogpuml.a $^
+	ar cr $(OBJDIR)/gpu/h2o4gpu.a $^
 
 
 # Directories
@@ -206,11 +206,11 @@ $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 
 
 
-# H2OGPUML CPU objects
-$(OBJDIR)/cpu/h2ogpuml.o: cpu/h2ogpumlglm.cpp $(H2OGPUML_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
+# H2O4GPU CPU objects
+$(OBJDIR)/cpu/h2o4gpu.o: cpu/h2o4gpuglm.cpp $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) -c -o $@ 
 
-$(OBJDIR)/cpu/h2ogpumlkmeans.o: cpu/h2ogpumlkmeans.cpp $(H2OGPUMLKMEANS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
+$(OBJDIR)/cpu/h2o4gpukmeans.o: cpu/h2o4gpukmeans.cpp $(H2O4GPUKMEANS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -I/usr/local/cuda/include -Icpu/include $< $(CXXFLAGS) -c -o $@ 
 
 $(OBJDIR)/cpu/matrix/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/matrix Makefile config2.mk
@@ -222,25 +222,25 @@ $(OBJDIR)/cpu/projector/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/projector Makefile
 $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
-$(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2OGPUML_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
+$(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) -Iinclude -Icommon/include $< $(CXXFLAGS) -c -o $@ 
 
 
-# H2OGPUML GPU objects
-$(OBJDIR)/gpu/h2ogpuml_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR) Makefile config2.mk
+# H2O4GPU GPU objects
+$(OBJDIR)/gpu/h2o4gpu_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR) Makefile config2.mk
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@ 
 
-$(OBJDIR)/gpu/h2ogpuml.o: gpu/h2ogpumlglm.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/h2o4gpu.o: gpu/h2o4gpuglm.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
-$(OBJDIR)/gpu/h2ogpumlkmeans.o: gpu/h2ogpumlkmeans.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/h2o4gpukmeans.o: gpu/h2o4gpukmeans.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
-$(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
-$(OBJDIR)/gpu/p2pbwcheck.o: gpu/p2pbwcheck.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/p2pbwcheck.o: gpu/p2pbwcheck.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
-$(OBJDIR)/gpu/bwcheck.o: gpu/bwcheck.cu $(H2OGPUML_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/bwcheck.o: gpu/bwcheck.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix Makefile config2.mk
@@ -256,12 +256,12 @@ $(OBJDIR)/gpu/kmeans_labels.o: gpu/kmeans_labels.cu $(GPU_KMEANS_HDR)
 	$(CUXX) -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 
-$(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2OGPUML_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
+$(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
 
 
 clean:
-	rm -rf h2ogpuml.a build/ *.dSYM
+	rm -rf h2o4gpu.a build/ *.dSYM
 	find -name "*.so" -delete
 	find -name "*.a" -delete
 	find -name "*.o" -delete

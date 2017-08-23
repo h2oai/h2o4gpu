@@ -1,4 +1,4 @@
-import h2ogpuml as h2ogpuml
+import h2o4gpu as h2o4gpu
 import sys
 import pandas as pd
 import numpy as np
@@ -53,7 +53,7 @@ class TestKmeans(object):
                                np.asarray(random.sample(range(k), many)))
         print(labels.shape)
         n_gpus = 1
-        model = h2ogpuml.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7,
+        model = h2o4gpu.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7,
                                 max_iter=100)
         model.fit(trainencflt, labels)
         return model

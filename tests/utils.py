@@ -2,7 +2,7 @@ import cProfile
 import pstats
 import math
 import pytest
-import h2ogpuml
+import h2o4gpu
 import numpy as np
 import os, sys
 from numba import cuda
@@ -145,7 +145,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     print("Setting up Solver")
     sys.stdout.flush()
 
-    Solver = h2ogpuml.GLM
+    Solver = h2o4gpu.GLM
     enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
                   n_folds=nFolds, n_alphas=nAlphas, verbose=5, give_full_path=give_full_path)
@@ -233,7 +233,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         h2o.init(strict_version_check=False)
 
     # Choose solver
-    Solver = h2ogpuml.GLM
+    Solver = h2o4gpu.GLM
 
     nThreads = None  # let internal method figure this out
     intercept = True
@@ -539,7 +539,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     return myerror_train, myerror_test
 
 # TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?
-# TODO(navdeep): You can mimic my "showresults.sh" process for make testperf and have timers that measure fit and predict performance for h2ogpuml and h2o-3.  I think just showing the ratio of the two is good, showing time for h2ogpuml over h2o-3 (so smaller is better).
+# TODO(navdeep): You can mimic my "showresults.sh" process for make testperf and have timers that measure fit and predict performance for h2o4gpu and h2o-3.  I think just showing the ratio of the two is good, showing time for h2o4gpu over h2o-3 (so smaller is better).
 # TODO(navdeep): Can use timers like:
 #import time
 #start = time.time()

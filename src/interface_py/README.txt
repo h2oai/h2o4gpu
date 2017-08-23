@@ -1,9 +1,9 @@
-[H2OGPUML](https://github.com/h2ogpuml/h2ogpuml)
+[H2O4GPU](https://github.com/h2o4gpu/h2o4gpu)
 
 ```text
 ---
 
-H2OGPUML is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers] (ADMM).
+H2O4GPU is a solver for convex optimization problems in _graph form_ using [Alternating Direction Method of Multipliers] (ADMM).
 
 Requirements
 ------
@@ -22,7 +22,7 @@ export MKL_NUM_THREADS=32
 export VECLIB_MAXIMUM_THREADS=32
 
 
-On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2ogpuml.
+On AWS, upon logging into GPU setup, do at first the below in order to get GPUs to stay warm to avoid delays upon running h2o4gpu.
 ------
 
 sudo nvidia-smi -pm 1
@@ -35,8 +35,8 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 To compile everything and install R and python interfaces as user:
 -----
 
-git clone git@github.com:h2ogpuml/h2ogpuml.git
-cd h2ogpuml
+git clone git@github.com:h2o4gpu/h2o4gpu.git
+cd h2o4gpu
 bash gitshallow_submodules.sh
 make -j allclean
 
@@ -55,10 +55,10 @@ cd $BASE/examples/cpp && make -j all ; make run
 
 Or, to run 16-gpu version on ipums.txt data:
 
-./h2ogpuml-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
+./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 
 
-install R package (assume in h2ogpuml base directory to start with)
+install R package (assume in h2o4gpu base directory to start with)
 ------
 
 cd $BASE/src/interface_r && make
@@ -77,7 +77,7 @@ install python package and make wheel:
 
 make
 
-This installs python h2ogpuml as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2ogpuml-0.0.1-py2.py3-none-any.whl --user
+This installs python h2o4gpu as user and compiles a wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  To install this wheel file do: pip install $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl --user
 
 Issues
 =====================
@@ -90,9 +90,9 @@ Languages / Frameworks
 ======================
 Three different implementations of the solver are either planned or already supported:
 
-  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<h2ogpuml>/src/cpu/`. H2OGPUML must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
-  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<h2ogpuml>/src/gpu/`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
-  3. MATLAB: A MATLAB implementation along with examples can be found in the `<h2ogpuml>/matlab` directory. The code is heavily documented and primarily intended for pedagogical purposes.
+  1. C++/BLAS/OpenMP: A CPU version can be found in the file `<h2o4gpu>/src/cpu/`. H2O4GPU must be linked to a BLAS library (such as the Apple Accelerate Framework or ATLAS).
+  2. C++/cuBLAS/CUDA: A GPU version is located in the file `<h2o4gpu>/src/gpu/`. To use the GPU version, the CUDA SDK must be installed, and the computer must have a CUDA-capable GPU.
+  3. MATLAB: A MATLAB implementation along with examples can be found in the `<h2o4gpu>/matlab` directory. The code is heavily documented and primarily intended for pedagogical purposes.
 
 
 Problem Classes
@@ -107,7 +107,7 @@ Among others, the solver can be used for the following classes of (linearly cons
 
 References
 ==========
-1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][h2ogpuml]
+1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][h2o4gpu]
 2. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
 3. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
 4. [Proximal Algorithms -- N. Parikh and S. Boyd][prox_algs]

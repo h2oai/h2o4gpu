@@ -9,7 +9,7 @@
 #include "matrix/matrix_sparse.h"
 #include "util.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// Helper Functions ////////////////////////////////
@@ -23,11 +23,11 @@ const NormTypes kNormNormalize   = kNormFro;
 template <typename T>
 struct GpuData {
   const T *orig_data;
-  const H2OGPUML_INT *orig_ptr, *orig_ind;
+  const H2O4GPU_INT *orig_ptr, *orig_ind;
   cublasHandle_t d_hdl;
   cusparseHandle_t s_hdl;
   cusparseMatDescr_t descr;
-  GpuData(const T *data, const H2OGPUML_INT *ptr, const H2OGPUML_INT *ind)
+  GpuData(const T *data, const H2O4GPU_INT *ptr, const H2O4GPU_INT *ind)
       : orig_data(data), orig_ptr(ptr), orig_ind(ind) {
     cublasCreate(&d_hdl);
     cusparseCreate(&s_hdl);
@@ -49,9 +49,9 @@ cusparseOperation_t OpToCusparseOp(char trans) {
 }
 
 template <typename T>
-void MultDiag(const T *d, const T *e, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz,
-              typename MatrixSparse<T>::Ord ord, T *data, const H2OGPUML_INT *ind,
-              const H2OGPUML_INT *ptr);
+void MultDiag(const T *d, const T *e, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz,
+              typename MatrixSparse<T>::Ord ord, T *data, const H2O4GPU_INT *ind,
+              const H2O4GPU_INT *ptr);
 
 template <typename T>
 T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixSparse<T>& A);
@@ -62,15 +62,15 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixSparse<T>& A);
 /////////////////////// MatrixDense Implementation /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-MatrixSparse<T>::MatrixSparse(int sharedA, int me, int wDev, char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz,
-                              const T *data, const H2OGPUML_INT *ptr,
-                              const H2OGPUML_INT *ind)
+MatrixSparse<T>::MatrixSparse(int sharedA, int me, int wDev, char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz,
+                              const T *data, const H2O4GPU_INT *ptr,
+                              const H2O4GPU_INT *ind)
   : Matrix<T>(m, n), _wDev(wDev), _data(0), _de(0), _ptr(0), _ind(0), _nnz(nnz) {
   ASSERT(ord == 'r' || ord == 'R' || ord == 'c' || ord == 'C');
   _ord = (ord == 'r' || ord == 'R') ? ROW : COL;
 
   // It should work up to 2^31 == 2B, but let's be sure.
-  DEBUG_EXPECT(nnz < static_cast<H2OGPUML_INT>(1 << 29));
+  DEBUG_EXPECT(nnz < static_cast<H2O4GPU_INT>(1 << 29));
 
   // Set GPU specific data.
   GpuData<T> *info = new GpuData<T>(data, ptr, ind);
@@ -78,15 +78,15 @@ MatrixSparse<T>::MatrixSparse(int sharedA, int me, int wDev, char ord, H2OGPUML_
 }
 
 template <typename T>
-  MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz,
-                              const T *data, const H2OGPUML_INT *ptr,
-                              const H2OGPUML_INT *ind)
+  MatrixSparse<T>::MatrixSparse(int wDev, char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz,
+                              const T *data, const H2O4GPU_INT *ptr,
+                              const H2O4GPU_INT *ind)
     : MatrixSparse<T>(0,0,wDev,ord,m,n,nnz,data,ptr,ind){}
 
 template <typename T>
-  MatrixSparse<T>::MatrixSparse(char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz,
-                              const T *data, const H2OGPUML_INT *ptr,
-                              const H2OGPUML_INT *ind)
+  MatrixSparse<T>::MatrixSparse(char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz,
+                              const T *data, const H2O4GPU_INT *ptr,
+                              const H2O4GPU_INT *ind)
     : MatrixSparse<T>(0,0,0,ord,m,n,nnz,data,ptr,ind){}
 
 
@@ -152,23 +152,23 @@ int MatrixSparse<T>::Init() {
 
   GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
   const T *orig_data = info->orig_data;
-  const H2OGPUML_INT *orig_ptr = info->orig_ptr;
-  const H2OGPUML_INT *orig_ind = info->orig_ind;
+  const H2O4GPU_INT *orig_ptr = info->orig_ptr;
+  const H2O4GPU_INT *orig_ind = info->orig_ind;
 
   // Allocate sparse matrix on gpu.
   cudaMalloc(&_data, static_cast<size_t>(2) * _nnz * sizeof(T));
   cudaMalloc(&_de, (this->_m + this->_n) * sizeof(T)); cudaMemset(_de, 0, (this->_m + this->_n) * sizeof(T));
   // Equil(1); // JONTODO: If make sparse like dense for memory.
-  cudaMalloc(&_ind, static_cast<size_t>(2) * _nnz * sizeof(H2OGPUML_INT));
-  cudaMalloc(&_ptr, (this->_m + this->_n + 2) * sizeof(H2OGPUML_INT));
+  cudaMalloc(&_ind, static_cast<size_t>(2) * _nnz * sizeof(H2O4GPU_INT));
+  cudaMalloc(&_ptr, (this->_m + this->_n + 2) * sizeof(H2O4GPU_INT));
   DEBUG_CUDA_CHECK_ERR();
 
   if (_ord == ROW) {
-    cml::spmat<T, H2OGPUML_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
+    cml::spmat<T, H2O4GPU_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     cml::spmat_memcpy(info->s_hdl, &A, orig_data, orig_ind, orig_ptr);
   } else {
-    cml::spmat<T, H2OGPUML_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
+    cml::spmat<T, H2O4GPU_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     cml::spmat_memcpy(info->s_hdl, &A, orig_data, orig_ind, orig_ptr);
   }
@@ -195,12 +195,12 @@ int MatrixSparse<T>::Mul(char trans, T alpha, const T *x, T beta, T *y) const {
   }
 
   if (_ord == ROW) {
-    cml::spmat<T, H2OGPUML_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
+    cml::spmat<T, H2O4GPU_INT, CblasRowMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
         &A, &x_vec, beta, &y_vec);
   } else {
-    cml::spmat<T, H2OGPUML_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
+    cml::spmat<T, H2O4GPU_INT, CblasColMajor> A(_data, _ind, _ptr, this->_m,
         this->_n, _nnz);
     cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
         &A, &x_vec, beta, &y_vec);
@@ -228,12 +228,12 @@ int MatrixSparse<T>::Mulvalid(char trans, T alpha, const T *x, T beta, T *y) con
   }
 
   if (_ord == ROW) {
-    cml::spmat<T, H2OGPUML_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+    cml::spmat<T, H2O4GPU_INT, CblasRowMajor> A(_vdata, _ind, _ptr, this->_mvalid,
         this->_n, _nnz);
     cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
         &A, &x_vec, beta, &y_vec);
   } else {
-    cml::spmat<T, H2OGPUML_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
+    cml::spmat<T, H2O4GPU_INT, CblasColMajor> A(_vdata, _ind, _ptr, this->_mvalid,
         this->_n, _nnz);
     cml::spblas_gemv(info->s_hdl, OpToCusparseOp(trans), info->descr, alpha,
         &A, &x_vec, beta, &y_vec);
@@ -402,29 +402,29 @@ T NormEst(cublasHandle_t hdl, NormTypes norm_type, const MatrixSparse<T>& A) {
 // Performs D * A * E for A in row major
 template <typename T>
 void __global__ __MultRow(const T *d, const T *e, T *data,
-                          const H2OGPUML_INT *row_ptr, const H2OGPUML_INT *col_ind,
-                          H2OGPUML_INT size) {
-  H2OGPUML_INT tid = blockIdx.x * blockDim.x + threadIdx.x;
-  for (H2OGPUML_INT t = tid; t < size; t += gridDim.x * blockDim.x)
-    for (H2OGPUML_INT i = row_ptr[t]; i < row_ptr[t + 1]; ++i)
+                          const H2O4GPU_INT *row_ptr, const H2O4GPU_INT *col_ind,
+                          H2O4GPU_INT size) {
+  H2O4GPU_INT tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (H2O4GPU_INT t = tid; t < size; t += gridDim.x * blockDim.x)
+    for (H2O4GPU_INT i = row_ptr[t]; i < row_ptr[t + 1]; ++i)
       data[i] *= d[t] * e[col_ind[i]];
 }
 
 // Performs D * A * E for A in col major
 template <typename T>
 void __global__ __MultCol(const T *d, const T *e, T *data,
-                          const H2OGPUML_INT *col_ptr, const H2OGPUML_INT *row_ind,
-                          H2OGPUML_INT size) {
-  H2OGPUML_INT tid = blockIdx.x * blockDim.x + threadIdx.x;
-  for (H2OGPUML_INT t = tid; t < size; t += gridDim.x * blockDim.x)
-    for (H2OGPUML_INT i = col_ptr[t]; i < col_ptr[t + 1]; ++i)
+                          const H2O4GPU_INT *col_ptr, const H2O4GPU_INT *row_ind,
+                          H2O4GPU_INT size) {
+  H2O4GPU_INT tid = blockIdx.x * blockDim.x + threadIdx.x;
+  for (H2O4GPU_INT t = tid; t < size; t += gridDim.x * blockDim.x)
+    for (H2O4GPU_INT i = col_ptr[t]; i < col_ptr[t + 1]; ++i)
       data[i] *= d[row_ind[i]] * e[t];
 }
 
 template <typename T>
-void MultDiag(const T *d, const T *e, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz,
-              typename MatrixSparse<T>::Ord ord, T *data, const H2OGPUML_INT *ind,
-              const H2OGPUML_INT *ptr) {
+void MultDiag(const T *d, const T *e, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz,
+              typename MatrixSparse<T>::Ord ord, T *data, const H2O4GPU_INT *ind,
+              const H2O4GPU_INT *ptr) {
   if (ord == MatrixSparse<T>::ROW) {
     size_t grid_dim_row = cml::calc_grid_dim(m, cml::kBlockSize);
     __MultRow<<<grid_dim_row, cml::kBlockSize>>>(d, e, data, ptr, ind, m);
@@ -442,13 +442,13 @@ void MultDiag(const T *d, const T *e, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_I
 
 }  // namespace
 
-#if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE==1
+#if !defined(H2O4GPU_DOUBLE) || H2O4GPU_DOUBLE==1
 template class MatrixSparse<double>;
 #endif
 
-#if !defined(H2OGPUML_SINGLE) || H2OGPUML_SINGLE==1
+#if !defined(H2O4GPU_SINGLE) || H2O4GPU_SINGLE==1
 template class MatrixSparse<float>;
 #endif
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 

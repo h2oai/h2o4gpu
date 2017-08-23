@@ -41,7 +41,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                     nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                    nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                    nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                     nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
                     nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
                     nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins'
@@ -63,9 +63,9 @@ pipeline {
                 script {
                     try {
                         sh """
-                            nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2ogpuml/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf py3nvml
-                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2ogpuml*.whl"`; make dotest'
+                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
@@ -92,7 +92,7 @@ pipeline {
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 script {
                     s3up {
-                        localArtifact = 'src/interface_py/dist/*h2ogpuml*.whl'
+                        localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
                         artifactId = "h2o4gpu"
                         majorVersion = 0
                         buildVersion = 3

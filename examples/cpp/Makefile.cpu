@@ -1,7 +1,7 @@
 include ../../src/config2.mk
 
 # User Vars
-H2OGPUMLROOT=../../src
+H2O4GPUROOT=../../src
 
 # Example Files
 EXSRC2=elastic_net.cpp
@@ -55,7 +55,7 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 
-CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2OGPUMLROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
+CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2O4GPUROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
@@ -66,21 +66,21 @@ LDFLAGS=-lm -framework Accelerate
 endif
 
 
-all: h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
+all: h2o4gpu-glm-cpu h2o4gpu-glm-cpu-ptr h2o4gpu-kmeans-cpu
 
-default: h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr h2ogpuml-kmeans-cpu
+default: h2o4gpu-glm-cpu h2o4gpu-glm-cpu-ptr h2o4gpu-kmeans-cpu
 
 
-h2ogpuml-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu $(EXSRC2)  $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
+h2o4gpu-glm-cpu: run_all.cpp examples.h $(EXSRC2) $(H2O4GPUROOT)/build/cpu/h2o4gpu.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-glm-cpu $(EXSRC2)  $<	$(H2O4GPUROOT)/build/cpu/h2o4gpu.a $(LINKFLAGS)
 
-h2ogpuml-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-glm-cpu-ptr $(EXSRC3)  $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
+h2o4gpu-glm-cpu-ptr: run_all.cpp examples.h $(EXSRC3) $(H2O4GPUROOT)/build/cpu/h2o4gpu.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-glm-cpu-ptr $(EXSRC3)  $<	$(H2O4GPUROOT)/build/cpu/h2o4gpu.a $(LINKFLAGS)
 
-h2ogpuml-kmeans-cpu: $(EXSRC4) $(H2OGPUMLROOT)/build/cpu/h2ogpuml.a Makefile.cpu Makefile
-	$(CXX) $(CXXFLAGS) -o h2ogpuml-kmeans-cpu $<	$(H2OGPUMLROOT)/build/cpu/h2ogpuml.a $(LINKFLAGS)
+h2o4gpu-kmeans-cpu: $(EXSRC4) $(H2O4GPUROOT)/build/cpu/h2o4gpu.a Makefile.cpu Makefile
+	$(CXX) $(CXXFLAGS) -o h2o4gpu-kmeans-cpu $<	$(H2O4GPUROOT)/build/cpu/h2o4gpu.a $(LINKFLAGS)
 
 clean:
-	rm -f *.o *~ *~ h2ogpuml-glm-cpu h2ogpuml-glm-cpu-ptr
+	rm -f *.o *~ *~ h2o4gpu-glm-cpu h2o4gpu-glm-cpu-ptr
 	rm -rf *.dSYM
 

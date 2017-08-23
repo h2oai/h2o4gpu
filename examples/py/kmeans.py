@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
-import h2ogpuml as h2ogpuml
+import h2o4gpu as h2o4gpu
 from os.path import expanduser
 
 home = expanduser("~")
-train_file = home + "/Dev/code/h2ogpuml-benchmarks/Data/Homesite/train.csv"
-test_file = home + "/Dev/code/h2ogpuml-benchmarks/Data/Homesite/test.csv"
+train_file = home + "/Dev/code/h2o4gpu-benchmarks/Data/Homesite/train.csv"
+test_file = home + "/Dev/code/h2o4gpu-benchmarks/Data/Homesite/test.csv"
 
 train = pd.read_csv(train_file)
 test = pd.read_csv(test_file)
@@ -67,7 +67,7 @@ for x in range(0, num + 1):
 print(labels.shape)
 
 n_gpus = 1
-model = h2ogpuml.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7, max_iter=1000)
+model = h2o4gpu.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7, max_iter=1000)
 centroids = model.fit(trainencflt, labels)
 
 train_labels = model.predict(trainencflt)

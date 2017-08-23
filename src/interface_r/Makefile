@@ -5,7 +5,7 @@ all:
 
 install: all
 	mkdir -p ~/lib/
-	MAKE="make -j" R CMD INSTALL --build h2ogpuml || MAKE="make -j" R CMD INSTALL -l ~/lib/ --build h2ogpuml
+	MAKE="make -j" R CMD INSTALL --build h2o4gpu || MAKE="make -j" R CMD INSTALL -l ~/lib/ --build h2o4gpu
 
 clean:
 	rm -rf *.tar.gz

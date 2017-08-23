@@ -3,9 +3,9 @@
 
 #include "matrix.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
-typedef int H2OGPUML_INT;
+typedef int H2O4GPU_INT;
 
 template <typename T>
 class MatrixSparse : public Matrix<T> {
@@ -27,7 +27,7 @@ class MatrixSparse : public Matrix<T> {
 
  private:
   
-  H2OGPUML_INT *_ptr, *_ind, _nnz;
+  H2O4GPU_INT *_ptr, *_ind, _nnz;
 
   Ord _ord;
 
@@ -35,12 +35,12 @@ class MatrixSparse : public Matrix<T> {
   MatrixSparse<T>& operator=(const MatrixSparse<T>& A);
 
  public:
-  MatrixSparse(int sharedA, int me, int wDev, char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz, const T *data,
-      const H2OGPUML_INT *ptr, const H2OGPUML_INT *ind);
-  MatrixSparse(int wDev, char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz, const T *data,
-      const H2OGPUML_INT *ptr, const H2OGPUML_INT *ind);
-  MatrixSparse(char ord, H2OGPUML_INT m, H2OGPUML_INT n, H2OGPUML_INT nnz, const T *data,
-      const H2OGPUML_INT *ptr, const H2OGPUML_INT *ind);
+  MatrixSparse(int sharedA, int me, int wDev, char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz, const T *data,
+      const H2O4GPU_INT *ptr, const H2O4GPU_INT *ind);
+  MatrixSparse(int wDev, char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz, const T *data,
+      const H2O4GPU_INT *ptr, const H2O4GPU_INT *ind);
+  MatrixSparse(char ord, H2O4GPU_INT m, H2O4GPU_INT n, H2O4GPU_INT nnz, const T *data,
+      const H2O4GPU_INT *ptr, const H2O4GPU_INT *ind);
   MatrixSparse(int sharedA, int me, int wDev, const MatrixSparse<T>& A);
   MatrixSparse(int wDev, const MatrixSparse<T>& A);
   MatrixSparse(const MatrixSparse<T>& A);
@@ -63,9 +63,9 @@ class MatrixSparse : public Matrix<T> {
   const T* vDatay() const { return _vdatay; }
   const T* Weight() const { return _weight; }
   
-  const H2OGPUML_INT* Ptr() const { return _ptr; }
-  const H2OGPUML_INT* Ind() const { return _ind; }
-  H2OGPUML_INT Nnz() const { return _nnz; }
+  const H2O4GPU_INT* Ptr() const { return _ptr; }
+  const H2O4GPU_INT* Ind() const { return _ind; }
+  H2O4GPU_INT Nnz() const { return _nnz; }
   Ord Order() const { return _ord; }
   int GetsharedA() const { return _sharedA; }
   int wDev() const { return _wDev; }
@@ -74,7 +74,7 @@ class MatrixSparse : public Matrix<T> {
   int DoPredict() const { return _dopredict; }
 };
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
 #endif  // MATRIX_MATRIX_SPARSE_H_
 

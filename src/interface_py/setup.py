@@ -7,34 +7,34 @@ from subprocess import call
 from multiprocessing import cpu_count
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
-H2OGPUMLPATH = os.path.join(BASEPATH, '../interface_c/')
+H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
 
 
-class H2OGPUMLBuild(build):
+class H2O4GPUBuild(build):
     def run(self):
         NVCC = os.popen("which nvcc").read() != ""
-        CPULIB = 'ch2ogpuml_cpu'
-        GPULIB = 'ch2ogpuml_gpu'
+        CPULIB = 'ch2o4gpu_cpu'
+        GPULIB = 'ch2o4gpu_gpu'
         EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
         # run original build code
         build.run(self)
 
-        # build H2OGPUML
+        # build H2O4GPU
         cmd = ['make']
 
         targets = [CPULIB, GPULIB] if NVCC else [CPULIB]
         cmd.extend(targets)
 
-        CPU_LIBPATH = os.path.join(H2OGPUMLPATH, CPULIB + EXT)
-        GPU_LIBPATH = os.path.join(H2OGPUMLPATH, GPULIB + EXT)
+        CPU_LIBPATH = os.path.join(H2O4GPUPATH, CPULIB + EXT)
+        GPU_LIBPATH = os.path.join(H2O4GPUPATH, GPULIB + EXT)
 
         target_files = [CPU_LIBPATH, GPU_LIBPATH] if NVCC else [CPU_LIBPATH]
-        message = 'Compiling H2OGPUML---CPU and GPU' if NVCC else 'Compiling H2OGPUML---CPU only'
+        message = 'Compiling H2O4GPU---CPU and GPU' if NVCC else 'Compiling H2O4GPU---CPU only'
 
         def compile():
-            # compile CPU version of H2OGPUML
-            call(cmd, cwd=H2OGPUMLPATH)
+            # compile CPU version of H2O4GPU
+            call(cmd, cwd=H2O4GPUPATH)
 
         self.execute(compile, [], message)
 
@@ -44,7 +44,7 @@ class H2OGPUMLBuild(build):
             self.copy_file(target, self.build_lib)
 
 
-class H2OGPUMLInstall(install):
+class H2O4GPUInstall(install):
     def initialize_options(self):
         install.initialize_options(self)
         self.build_scripts = None
@@ -57,7 +57,7 @@ class H2OGPUMLInstall(install):
         # run original install code
         install.run(self)
 
-        # install H2OGPUML executables
+        # install H2O4GPU executables
         self.copy_tree(self.build_lib, self.install_lib)
 
 from pip.req import parse_requirements
@@ -71,17 +71,17 @@ reqs = [str(ir.req) for ir in install_reqs]
 
         
 setup(
-    name='h2ogpuml',
+    name='h2o4gpu',
     version='0.0.3',
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
-    package_dir={'interface_py': 'h2ogpuml','interface_py': 'xgboost','interface_py': 'py3nvml'},
+    package_dir={'interface_py': 'h2o4gpu','interface_py': 'xgboost','interface_py': 'py3nvml'},
     package_data={'xgboost': ['*']},
-    packages=['h2ogpuml',
-              'h2ogpuml.libs',
-              'h2ogpuml.solvers',
-	          'h2ogpuml.util',
+    packages=['h2o4gpu',
+              'h2o4gpu.libs',
+              'h2o4gpu.solvers',
+	          'h2o4gpu.util',
               'xgboost',
               'py3nvml'
     ],
@@ -89,5 +89,5 @@ setup(
     zip_safe=False,
     description='H2O.ai GPU Edition',
     install_requires=reqs,
-    cmdclass={'build': H2OGPUMLBuild, 'install': H2OGPUMLInstall}
+    cmdclass={'build': H2O4GPUBuild, 'install': H2O4GPUInstall}
 )

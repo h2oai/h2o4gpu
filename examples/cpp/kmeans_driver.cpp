@@ -14,7 +14,7 @@
 //#include "cuda.h"
 #include <cstdlib>
 #include <random>
-#include "h2ogpumlkmeans.h"
+#include "h2o4gpukmeans.h"
 
 typedef float real_t;
 //typedef double real_t;
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 #if 0
   // creates random data inside
   real_t a = 0;
-  h2ogpumlkmeans::H2OGPUMLKMeans<real_t>(&a, k, rows, cols).Solve();
+  h2o4gpukmeans::H2O4GPUKMeans<real_t>(&a, k, rows, cols).Solve();
 #else
   //user-given data
   std::vector<real_t> data(rows*cols);
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
   std::vector<real_t> centroids(1);
   centroids[0] = static_cast<real_t>(drand48());
 
-  h2ogpumlkmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
+  h2o4gpukmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
 
   // report something about centroids that site in res as k*cols data block
 #endif

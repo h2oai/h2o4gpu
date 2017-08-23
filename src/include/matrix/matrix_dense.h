@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 template <typename T>
 class MatrixDense : public Matrix<T> {
@@ -46,7 +46,7 @@ class MatrixDense : public Matrix<T> {
   MatrixDense(int sharedA, int me, int wDev, const MatrixDense<T>& A); // used by examples/cpp/elasticnet*.cpp inside parallel region
   MatrixDense(int me, int wDev, const MatrixDense<T>& A); // not used
   MatrixDense(int wDev, const MatrixDense<T>& A); // not used
-  MatrixDense(const MatrixDense<T>& A); // orig h2ogpuml
+  MatrixDense(const MatrixDense<T>& A); // orig h2o4gpu
 
   ~MatrixDense();
 
@@ -89,7 +89,7 @@ class MatrixDense : public Matrix<T> {
 
  
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
 #endif  // MATRIX_MATRIX_DENSE_H_
 

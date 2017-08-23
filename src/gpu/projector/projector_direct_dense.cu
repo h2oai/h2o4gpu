@@ -14,9 +14,9 @@
 
 extern int checkwDev(int wDev);
 
-#include "h2ogpumlglm.h"
+#include "h2o4gpuglm.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 namespace {
 
@@ -216,11 +216,11 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
           static_cast<T>(1.), &x_vec);
       POP_RANGE("P1r_gemv(r>c)",P1r_gemvrgc,2);
       PUSH_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
-      // Solve LL^T x=b for x (where output for x_vec:= x^{k+1} := (A^T A + I)^{-1} (c + A^t d) in h2ogpuml paper)
+      // Solve LL^T x=b for x (where output for x_vec:= x^{k+1} := (A^T A + I)^{-1} (c + A^t d) in h2o4gpu paper)
       cml::linalg_cholesky_svx(hdl, &L, &x_vec);
       POP_RANGE("P1r_cholesky_svx",P1r_cholesky_svx,2);
       PUSH_RANGE("P1r_gemv2",P1r_gemv2,2);
-      // 1*A*x + 0*y -> y (y^{k+1} := A x^{k+1} in h2ogpuml paper)
+      // 1*A*x + 0*y -> y (y^{k+1} := A x^{k+1} in h2o4gpu paper)
       cml::blas_gemv(hdl, CUBLAS_OP_N, static_cast<T>(1.), &A, &x_vec,
           static_cast<T>(0.), &y_vec);
       POP_RANGE("P1r_gemv2",P1r_gemv2,2);
@@ -316,13 +316,13 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   return 0;
 }
 
-#if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE==1
+#if !defined(H2O4GPU_DOUBLE) || H2O4GPU_DOUBLE==1
 template class ProjectorDirect<double, MatrixDense<double> >;
 #endif
 
-#if !defined(H2OGPUML_SINGLE) || H2OGPUML_SINGLE==1
+#if !defined(H2O4GPU_SINGLE) || H2O4GPU_SINGLE==1
 template class ProjectorDirect<float, MatrixDense<float> >;
 #endif
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 

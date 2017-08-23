@@ -145,7 +145,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   T lambda_min_ratio = 1E-9; //(m<n ? static_cast<T>(0.01) : static_cast<T>(0.0001));
   cout << "lambda_min_ratio " << lambda_min_ratio << endl;
 
-#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2ogpuml runs normally at high GPU usage.  So these leave the device in a bad state.
+#define DOWARMSTART 0 // leads to poor usage of GPUs even on local 4 GPU system (all 4 at about 30-50%).  Really bad on AWS 16 GPU system.  // But, if terminate program, disable these, then h2o4gpu runs normally at high GPU usage.  So these leave the device in a bad state.
 #define DOP2PCHECK 0 // This doesn't seem to lead to any difference in 4 GPU system.  It's not nccl, only cuda.
 #define DOBWCHECK 0
 
@@ -188,7 +188,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   //  extern int makePtr_dense<T>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
   //                           const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,
   //                           void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
-  h2ogpuml::makePtr_dense(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee); // //static_cast<T*>(NULL)
+  h2o4gpu::makePtr_dense(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX.data(), trainY.data(), validX.data(), validY.data(), trainW.data(), &aa, &bb, &cc, &dd, &ee); // //static_cast<T*>(NULL)
 
 
   int datatype = 1;
@@ -208,7 +208,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   double glmstopearlyrmsefraction=1.0;
   int maxiterations=5000;
   int verbose=0;
-  double time = h2ogpuml::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, tol, lambdastopearly, glmstopearly, glmstopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
+  double time = h2o4gpu::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, tol, lambdastopearly, glmstopearly, glmstopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
 
   // print out some things about Xvsalphalambda and Xvsalpha
   printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);

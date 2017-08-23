@@ -10,9 +10,9 @@
 #include "util.h"
 #include "timer.h"
 
-#include "h2ogpumlglm.h"
+#include "h2o4gpuglm.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 namespace {
 
 // Different norm types.
@@ -198,7 +198,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 }
 
 }  // namespace
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
 #endif  // EQUIL_HELPER_CUH_
 

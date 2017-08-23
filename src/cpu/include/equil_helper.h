@@ -10,7 +10,7 @@
 #include "matrix/matrix.h"
 #include "util.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 namespace {
 
 // Different norm types.
@@ -161,7 +161,7 @@ void SinkhornKnopp(const Matrix<T> *A, T *d, T *e, bool equillocal) {
 }
 
 }  // namespace
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
 #endif  // EQUIL_HELPER_H_
 

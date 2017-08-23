@@ -10,7 +10,7 @@
 #include "projector_helper.h"
 #include "util.h"
 
-namespace h2ogpuml {
+namespace h2o4gpu {
 
 namespace {
 
@@ -193,13 +193,13 @@ int ProjectorDirect<T, M>::Project(const T *x0, const T *y0, T s, T *x, T *y,
   return 0;
 }
 
-#if !defined(H2OGPUML_DOUBLE) || H2OGPUML_DOUBLE==1
+#if !defined(H2O4GPU_DOUBLE) || H2O4GPU_DOUBLE==1
 template class ProjectorDirect<double, MatrixDense<double> >;
 #endif
 
-#if !defined(H2OGPUML_SINGLE) || H2OGPUML_SINGLE==1
+#if !defined(H2O4GPU_SINGLE) || H2O4GPU_SINGLE==1
 template class ProjectorDirect<float, MatrixDense<float> >;
 #endif
 
-}  // namespace h2ogpuml
+}  // namespace h2o4gpu
 
