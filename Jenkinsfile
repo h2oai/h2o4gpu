@@ -38,8 +38,8 @@ pipeline {
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
 
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    try {
+                try {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
                             // Generate build information
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
@@ -47,20 +47,18 @@ pipeline {
                             nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
                             nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu-$BUILD_ID make build/VERSION.txt
-                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${
-                                    env.MAKE_OPTS
-                                } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins'
+                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins'
                             nvidia-docker stop h2o4gpu-$BUILD_ID
                         """
                         stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                         stash includes: 'build/VERSION.txt', name: 'version_info'
                         // Archive artifacts
                         arch 'src/interface_py/dist/*.whl'
-                    } finally {
-                        sh """
+                    }
+                } finally {
+                    sh """
                             nvidia-docker stop h2o4gpu-$BUILD_ID
                         """
-                    }
                 }
             }
         }
