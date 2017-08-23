@@ -64,6 +64,8 @@ pipeline {
                     try {
                         sh """
                             nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf py3nvml
                             nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
