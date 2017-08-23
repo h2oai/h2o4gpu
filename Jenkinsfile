@@ -37,10 +37,8 @@ pipeline {
                         extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
-
-                try {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    sh """
                             // Generate build information
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                             nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
@@ -50,15 +48,10 @@ pipeline {
                             nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins'
                             nvidia-docker stop h2o4gpu-$BUILD_ID
                         """
-                        stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
-                        stash includes: 'build/VERSION.txt', name: 'version_info'
-                        // Archive artifacts
-                        arch 'src/interface_py/dist/*.whl'
-                    }
-                } finally {
-                    sh """
-                            nvidia-docker stop h2o4gpu-$BUILD_ID
-                        """
+                    stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
+                    stash includes: 'build/VERSION.txt', name: 'version_info'
+                    // Archive artifacts
+                    arch 'src/interface_py/dist/*.whl'
                 }
             }
         }
