@@ -262,7 +262,10 @@ namespace h2ogpumlkmeans {
                    size_t rows, size_t cols, const char ord,
                    int k, int max_iterations, int init_from_labels,
                    int init_labels, int init_data, T threshold,
-                   const T *srcdata, const int *srclabels, void **preds) {
+                   const T *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels) {
+        if (verbose) {
+            std::cout << " Start makePtr_dense." << std::endl;
+        }
 
         // init random seed if use the C function rand()
         if (seed >= 0) {
@@ -271,6 +274,9 @@ namespace h2ogpumlkmeans {
             srand(unsigned(time(NULL)));
         }
 
+        if (verbose) {
+            std::cout << "Seed: " << seed << std::endl;
+        }
         // no more clusters than rows
         if (k > rows) {
             k = static_cast<int>(rows);
@@ -290,6 +296,17 @@ namespace h2ogpumlkmeans {
         std::signal(SIGINT, my_function_gpu);
         std::signal(SIGTERM, my_function_gpu);
 
+        int printsrcdata = 0;
+        if (printsrcdata) {
+            for (unsigned int ii = 0; ii < n; ii++) {
+                for (unsigned int jj = 0; jj < d; jj++) {
+                    fprintf(stderr, "%2g ", srcdata[ii * d + jj]);
+                }
+                fprintf(stderr, " |  ");
+            }
+            fflush(stderr);
+        }
+
         // no more gpus than visible gpus
         int n_gpuvis;
         cudaGetDeviceCount(&n_gpuvis);
@@ -299,7 +316,12 @@ namespace h2ogpumlkmeans {
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 
-        int gpu_id = gpu_idtry % n_gpuvis;
+        if (verbose) {
+            std::cout << n_gpu << " gpus." << std::endl;
+        }
+
+        int gpu_id;
+        gpu_id = gpu_idtry % n_gpuvis;
 
         // setup GPU list to use
         std::vector<int> dList(n_gpu);
@@ -314,6 +336,12 @@ namespace h2ogpumlkmeans {
         thrust::device_vector <T> *d_centroids[n_gpu];
         thrust::device_vector <T> *distances[n_gpu];
 
+        if (verbose) {
+            fprintf(stderr, "Before allocation");
+            fflush(stderr);
+            //sleep(5);
+        }
+
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             data[q] = new thrust::device_vector<T>(n / n_gpu * d);
@@ -322,6 +350,18 @@ namespace h2ogpumlkmeans {
             distances[q] = new thrust::device_vector<T>(n);
         }
 
+        if (verbose) {
+            std::cout << "Number of points: " << n << std::endl;
+            std::cout << "Number of dimensions: " << d << std::endl;
+            std::cout << "Number of clusters: " << k << std::endl;
+            std::cout << "Max. number of iterations: " << max_iterations << std::endl;
+            std::cout << "Stopping threshold: " << threshold << std::endl;
+            //sleep(5);
+        }
+
+        // setup random sequence for sampling data
+        //      std::random_device rd;
+        //      std::mt19937 g(rd());
         std::vector<int> v(n);
         std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., 99.
 
@@ -333,6 +373,7 @@ namespace h2ogpumlkmeans {
 
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
+            if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
             if (init_labels == 0) { // random
                 random_labels(verbose, *labels[q], n / n_gpu, k);
@@ -364,6 +405,7 @@ namespace h2ogpumlkmeans {
                 if (q == masterq) continue;
 
                 CUDACHECK(cudaSetDevice(dList[q]));
+                std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
 
                 streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
                 cudaStreamCreate(streams[q]);
@@ -383,14 +425,65 @@ namespace h2ogpumlkmeans {
                 if (q == masterq) continue;
                 cudaSetDevice(dList[q]);
                 cudaStreamDestroy(*(streams[q]));
+#if(DEBUGKMEANS)
+                thrust::host_vector<T> h_centroidq=*d_centroids[q];
+                for(int ii=0;ii<k*d;ii++){
+                    fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
+                }
+#endif
             }
         }
 
+        double timetransfer = static_cast<double>(timer<double>() - t0t);
+
+        if (verbose) {
+            fprintf(stderr, "Before kmeans() call\n");
+            fflush(stderr);
+        }
+
+        double t0 = timer<double>();
+
+        int status = kmeans::kmeans<T>(verbose, &flaggpu, n, d, k, data, labels, d_centroids, distances, dList, n_gpu,
+                                       max_iterations, init_from_labels, threshold);
+        if (status) {
+            fprintf(stderr, "KMeans status was %d\n", status);
+            fflush(stderr);
+            return (status);
+        }
+
+        double timefit = static_cast<double>(timer<double>() - t0);
+
+        if (verbose) {
+            std::cout << "  Time fit: " << timefit << " s" << std::endl;
+            fprintf(stderr, "Timetransfer: %g Timefit: %g\n", timetransfer, timefit);
+            fflush(stderr);
+        }
+
         // copy result of centroids (sitting entirely on each device) back to host
-//        thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
+        thrust::host_vector <T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
         // TODO FIXME: When do delete this ctr memory?
         //      cudaMemcpy(ctr->data().get(), centroids[0]->data().get(), sizeof(T)*k*d, cudaMemcpyDeviceToHost);
-//        *preds = ctr->data();
+        *pred_centroids = ctr->data();
+
+        // copy assigned labels
+        thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
+        for (int q = 0; q < n_gpu; q++) {
+            h_labels->insert(h_labels->end(), labels[q]->begin(), labels[q]->end());
+        }
+        *pred_labels = h_labels->data();
+
+        // debug
+        int printcenters = verbose > 2;
+        if (printcenters) {
+            for (unsigned int ii = 0; ii < k; ii++) {
+                fprintf(stderr, "ii=%d of k=%d ", ii, k);
+                for (unsigned int jj = 0; jj < d; jj++) {
+                    fprintf(stderr, "%g ", (*ctr)[d * ii + jj]);
+                }
+                fprintf(stderr, "\n");
+                fflush(stderr);
+            }
+        }
 
         for (int q = 0; q < n_gpu; q++) {
             delete(data[q]);
@@ -406,7 +499,7 @@ namespace h2ogpumlkmeans {
     int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                        size_t rows, size_t cols,
                        const char ord, int k,
-                       const T* srcdata, const T* centroids, void** preds) {
+                       const T* srcdata, const T* centroids, void** pred_labels) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -426,6 +519,8 @@ namespace h2ogpumlkmeans {
 
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
+
+        std::cout << n_gpu << " gpus." << std::endl;
 
         int gpu_id;
         gpu_id = gpu_idtry % n_gpuvis;
@@ -464,6 +559,7 @@ namespace h2ogpumlkmeans {
             cudaMalloc(&d_changes[q], sizeof(int));
 
             // Move centroids from host memory to GPU
+            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
             nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
@@ -483,7 +579,7 @@ namespace h2ogpumlkmeans {
             h_labels->insert(h_labels->end(), d_labels[q]->begin(), d_labels[q]->end());
         }
 
-        *preds = h_labels->data();
+        *pred_labels = h_labels->data();
 
         for (int q = 0; q < n_gpu; q++) {
             safe_cuda(cudaSetDevice(dList[q]));
@@ -527,6 +623,8 @@ namespace h2ogpumlkmeans {
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 
+        std::cout << n_gpu << " gpus." << std::endl;
+
         int gpu_id = gpu_idtry % n_gpuvis;
 
         // setup GPU list to use
@@ -554,6 +652,7 @@ namespace h2ogpumlkmeans {
             d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
 
             // Move centroids from host memory to GPU
+            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
             nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
@@ -590,15 +689,16 @@ namespace h2ogpumlkmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_labels, int init_labels, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, const T *centroids, void **preds) {
+                      T threshold, const T *srcdata, const int *srclabels, const T *centroids,
+                      void **pred_centroids, void **pred_labels) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
                               ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold,
-                              srcdata, srclabels, preds);
+                              srcdata, srclabels, pred_centroids, pred_labels);
         } else {
             return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
                                   ord, k,
-                                  srcdata, centroids, preds);
+                                  srcdata, centroids, pred_labels);
         }
     }
 
@@ -606,35 +706,37 @@ namespace h2ogpumlkmeans {
     makePtr_dense<float>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                          const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                          int init_data, float threshold, const float *srcdata, const int *srclabels,
-                         const float *centroids, void **preds);
+                         const float *centroids, void **pred_centroids, void **pred_labels);
 
     template int
     makePtr_dense<double>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, double threshold, const double *srcdata, const int *srclabels,
-                          const double *centroids, void **preds);
+                          const double *centroids, void **pred_centroids, void **pred_labels);
 
     template int kmeans_fit<float>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                    size_t rows, size_t cols,
                                    const char ord, int k, int max_iterations,
                                    int init_from_labels, int init_labels, int init_data, float threshold,
-                                   const float *srcdata, const int *srclabels, void **centroids);
+                                   const float *srcdata, const int *srclabels,
+                                   void **pred_centroids, void **pred_labels);
 
     template int kmeans_fit<double>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                     size_t rows, size_t cols,
                                     const char ord, int k, int max_iterations,
                                     int init_from_labels, int init_labels, int init_data, double threshold,
-                                    const double *srcdata, const int *srclabels, void **centroid);
+                                    const double *srcdata, const int *srclabels,
+                                    void **pred_centroids, void **pred_labels);
 
     template int kmeans_predict<float>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
                                         const char ord, int k,
-                                        const float* srcdata, const float* centroids, void** preds);
+                                        const float* srcdata, const float* centroids, void **pred_labels);
 
     template int kmeans_predict<double>(int verbose, int gpu_idtry, int n_gputry,
                                         size_t rows, size_t cols,
                                         const char ord, int k,
-                                        const double *srcdata, const double *centroids, void **preds);
+                                        const double *srcdata, const double *centroids, void **pred_labels);
 
     template int kmeans_transform<float>(int verbose,
                                          int gpu_id, int n_gpu,
@@ -673,19 +775,19 @@ extern "C" {
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                           int init_data, float threshold, const float *srcdata, const int *srclabels,
-                          const float *centroids, void **preds) {
+                          const float *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                                srcdata, srclabels, centroids, preds);
+                                                srcdata, srclabels, centroids, pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_labels, int init_labels,
                            int init_data, double threshold, const double *srcdata, const int *srclabels,
-                           const double *centroids, void **preds) {
+                           const double *centroids, void **pred_centroids, void **pred_labels) {
     return h2ogpumlkmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_labels, init_labels, init_data, threshold,
-                                                 srcdata, srclabels, centroids, preds);
+                                                 srcdata, srclabels, centroids, pred_centroids, pred_labels);
 }
 
 // Transform
