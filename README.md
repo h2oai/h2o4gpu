@@ -70,7 +70,7 @@ sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your use
 - To compile everything and install R and python interfaces as user:
 
 ```
-git clone --recursive git@github.com:h2o4gpu/h2o4gpu.git
+git clone --recursive git@github.com:h2oai/h2o4gpu.git (or git clone --recursive https://github.com/h2oai/h2o4gpu)
 cd h2o4gpu
 make fullinstall
 ```
