@@ -5,6 +5,9 @@
 CONFIG=make/config.mk
 include $(CONFIG)
 
+VERSION=make/version.mk
+include $(VERSION)
+
 # Location of local directory with dependencies
 DEPS_DIR = deps
 
@@ -259,3 +262,41 @@ testbigperf: build sync_data dotestbigperf
 testquickperf: dotestperf
 
 testbigquickperf: dotestbigperf
+
+#################### Build info
+
+H2O4GPU_COMMIT := $(shell git rev-parse HEAD)
+
+.PHONY: base_version
+base_version:
+	@echo $(BASE_VERSION)
+
+.buildinfo:
+	@mkdir -p $@
+
+# Generate local build info
+.buildinfo/BUILD_INFO.txt: | .buildinfo
+	@echo "build=\"LOCAL DEV (`git rev-parse --short HEAD` build at `date`)\"" > $@
+	@echo "branch=\"`git rev-parse HEAD | git branch -a --contains | grep -v detached | sed -e 's~remotes/origin/~~g' -e 's~^ *~~' | sort | uniq | tr '*\n' ' '`\"" >> $@
+	@echo "describe=\"`git describe --always --dirty`\"" >> $@
+	@echo "build_os=\"`uname -a`\"" >> $@
+	@echo "build_machine=\"`hostname`\"" >> $@
+	@echo "build_date=\"`date`\"" >> $@
+	@echo "build_user=\"`id -u -n`\"" >> $@
+	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
+	@echo "h2oai_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
+
+h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
+	cp .buildinfo/BUILD_INFO.txt $@
+
+build/VERSION.txt: h2o4gpu/BUILD_INFO.txt
+	@mkdir -p build
+	python src/interface_py/setup.py --version > ./build/VERSION.txt 2>/dev/null
+
+# Refresh the build info only locally, let Jenkins to generate its own
+ifeq ($(CI),)
+.buildinfo/BUILD_INFO.txt: .ALWAYS_REBUILD
+endif
+
+.PHONY: ALWAYS_REBUILD
+.ALWAYS_REBUILD:
