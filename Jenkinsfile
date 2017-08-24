@@ -39,7 +39,6 @@ pipeline {
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
-                            // Generate build information
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                             nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
