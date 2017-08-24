@@ -1,8 +1,50 @@
 #!/usr/bin/env bash
 path="results"
-list=`ls $path | sort`
+
+############## RELATIVE ERRORS
+list=`ls $path/*.error.dat | sort`
 #for fil in $list ; do echo $fil ; done
-rm -rf resultsall.dat
-echo "Run Train CV Valid ..." >> resultsall.dat
-for fil in $list ; do cat $path/$fil >> resultsall.dat ; done
-column -t resultsall.dat
+rm -rf resultsall.error.dat
+echo "RunErrorRel Train CV Valid ..." >> resultsall.error.dat
+for fil in $list ; do cat $fil >> resultsall.error.dat ; done
+column -t resultsall.error.dat
+
+############## H2O ERRORS
+list=`ls $path/*.error.h2o.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf resultsall.error.h2o.dat
+echo "RunErrorH2O Train CV Valid ..." >> resultsall.error.h2o.dat
+for fil in $list ; do cat $fil >> resultsall.error.h2o.dat ; done
+column -t resultsall.error.h2o.dat
+
+############## H2O4GPU ERRORS
+list=`ls $path/*.error.h2o4gpu.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf resultsall.error.h2o4gpu.dat
+echo "RunErrorH2O4GPU Train CV Valid ..." >> resultsall.error.h2o4gpu.dat
+for fil in $list ; do cat $fil >> resultsall.error.h2o4gpu.dat ; done
+column -t resultsall.error.h2o4gpu.dat
+
+############## RELATIVE TIMES
+list=`ls $path/*.time.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf resultsall.time.dat
+echo "RunTimeRatio Train CV Valid ..." >> resultsall.time.dat
+for fil in $list ; do cat $fil >> resultsall.time.dat ; done
+column -t resultsall.time.dat
+
+############## H2O TIMES
+list=`ls $path/*.time.h2o.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf resultsall.time.h2o.dat
+echo "RunTimeH2O Train CV Valid ..." >> resultsall.time.h2o.dat
+for fil in $list ; do cat $fil >> resultsall.time.h2o.dat ; done
+column -t resultsall.time.h2o.dat
+
+############## H2O4GPU TIMES
+list=`ls $path/*.time.h2o4gpu.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf resultsall.time.h2o4gpu.dat
+echo "RunTimeH2O4GPU Train CV Valid ..." >> resultsall.time.h2o4gpu.dat
+for fil in $list ; do cat $fil >> resultsall.time.h2o4gpu.dat ; done
+column -t resultsall.time.h2o4gpu.dat

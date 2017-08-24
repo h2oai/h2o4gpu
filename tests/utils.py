@@ -9,7 +9,6 @@ from numba import cuda
 from numba.cuda.cudadrv import driver
 from time import time
 from ctypes import *
-import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
@@ -156,7 +155,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
         enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, None, a, b, c, d, e)
     else:
         enet.fit(a, b, c, d, e)
-    # t1 = time.time()
+    # t1 = time()
     print("Done Solving\n")
     sys.stdout.flush()
 
@@ -220,28 +219,22 @@ def printallerrors(display, enet, str, give_full_path):
 
 def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
                 print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None):
-    print("Doing %s" % (name))
-    sys.stdout.flush()
-    doassert=0
 
-    # override run_h2o False default if environ exists
-    if os.getenv("H2OGLM_PERFORMANCE") is not None:
-        run_h2o = True
-
-    # Start up h2o
-    if run_h2o:
-        h2o.init(strict_version_check=False)
-
-    # Choose solver
-    Solver = h2o4gpu.GLM
-
-    nThreads = None  # let internal method figure this out
+    # other default parameters for solving glm
     intercept = True
     lambda_min_ratio = 1e-9 # Causes issue for h2o-3 when using 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
     give_full_path = 1
+
+    print("Doing %s" % (name))
+    sys.stdout.flush()
+    doassert=0 # default is not assert
+
+    # override run_h2o False default if environ exists
+    if os.getenv("H2OGLM_PERFORMANCE") is not None:
+        run_h2o = True
 
     # Setup Train/validation Set Split
     morig = X.shape[0]
@@ -260,12 +253,6 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
 
-    if run_h2o:
-        print("Build Training H2OFrames")
-        trainX_h2o = h2o.H2OFrame(trainX)
-        trainY_h2o = h2o.H2OFrame(trainY)
-        train_h2o = trainX_h2o.cbind(trainY_h2o)
-
     validX = None
     validY = None
     if validFraction != 0.0:
@@ -273,12 +260,6 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         validY = np.copy(y[H:morig])
         mvalid = validX.shape[0]
         validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
-
-        if run_h2o:
-            print("Build Validation H2OFrames")
-            validX_h2o = h2o.H2OFrame(validX)
-            validY_h2o = h2o.H2OFrame(validY)
-            valid_h2o = validX_h2o.cbind(validY_h2o)
 
     mTrain = trainX.shape[0]
     if validFraction != 0.0:
@@ -291,10 +272,19 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         n = trainX.shape[1]
         print("New n=%d" % n)
 
-    # Constructor
+    #####################
+    #
+    # Start h2o4gpu
+    #
+    #####################
+    start_h2o4gpu = time()
     print("Setting up solver")
     sys.stdout.flush()
-    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, intercept=intercept,
+
+    # Choose solver
+    Solver = h2o4gpu.GLM
+
+    enet = Solver(n_gpus=nGPUs, intercept=intercept,
                   lambda_min_ratio=lambda_min_ratio,
                   n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family, give_full_path=give_full_path)
 
@@ -394,11 +384,59 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     enet.finish()
     print("Done Reporting")
 
+    duration_h2o4gpu = time() - start_h2o4gpu
+
     if run_h2o:
+        #####################
+        #
+        # Start h2o
+        #
+        #####################
+        import h2o
+        h2o.init(strict_version_check=False)
+
+        print("Build Training H2OFrames")
+        trainX_h2o = h2o.H2OFrame(trainX)
+        trainY_h2o = h2o.H2OFrame(trainY)
+        train_h2o = trainX_h2o.cbind(trainY_h2o)
+
+        if validFraction != 0.0:
+            print("Build Validation H2OFrames")
+            validX_h2o = h2o.H2OFrame(validX)
+            validY_h2o = h2o.H2OFrame(validY)
+            valid_h2o = validX_h2o.cbind(validY_h2o)
+
         path = "./results"
         os.makedirs(path, exist_ok=True)
-        f1 = open(os.path.join(path, name + ".dat"), 'wt+')
+        f1 = open(os.path.join(path, name + ".error.dat"), 'wt+')
         print('%s' % (name), file=f1, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
+        f1a = open(os.path.join(path, name + ".error.h2o.dat"), 'wt+')
+        print('%s' % (name), file=f1a, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
+        f1b = open(os.path.join(path, name + ".error.h2o4gpu.dat"), 'wt+')
+        print('%s' % (name), file=f1b, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
+        f2 = open(os.path.join(path, name + ".time.dat"), 'wt+')
+        print('%s' % (name), file=f2, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
+        f2a = open(os.path.join(path, name + ".time.h2o.dat"), 'wt+')
+        print('%s' % (name), file=f2a, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
+        f2b = open(os.path.join(path, name + ".time.h2o4gpu.dat"), 'wt+')
+        print('%s' % (name), file=f2b, end="")
+
+        start_h2o = time()
 
         alphas_h2o = [item for alphas[0] in alphas for item in alphas[0]]
         for alpha in alphas_h2o:
@@ -488,13 +526,19 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("Train error failure: %g %g" % (error_train[index, j],h2o_train_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O Train Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' OK', file=f1, end="")
+                        print(' %g' % h2o_train_error, file=f1a, end="")
+                        print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 1 and which_errors[j]:  # Compare to average cv error
                     thisrelerror = -(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_cv_error))
                     if error_train[index, j] > h2o_cv_error:
@@ -502,13 +546,19 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("CV error failure: %g %g" % (error_train[index, j],h2o_cv_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O CV Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' OK', file=f1, end="")
+                        print(' %g' % h2o_train_error, file=f1a, end="")
+                        print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 2 and which_errors[j]:  # Compare to validation error
                     thisrelerror = -(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_valid_error))
                     if error_train[index, j] > h2o_valid_error:
@@ -516,21 +566,40 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                             print("Valid error failure: %g %g" % (error_train[index, j],h2o_valid_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % h2o_train_error, file=f1a, end="")
+                            print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O Valid Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' OK', file=f1, end="")
+                        print(' %g' % h2o_train_error, file=f1a, end="")
+                        print(' %g' % error_train[index, j], file=f1b, end="")
                 else:
                     print(' NA', file=f1, end="")
-
-
-                    # TODO(navdeep): output error and performance metrics summary
-                #print(' %g' % thisrelerror, file=f1, end="")
+                    print(' %g' % h2o_train_error, file=f1a, end="")
+                    print(' %g' % error_train[index, j], file=f1b, end="")
 
         print('',file=f1)
+        print('',file=f1a)
+        print('',file=f1b)
+
+        # time entire alpha-lambda path
+        duration_h2o = time() - start_h2o
+
+        ratio_time = duration_h2o4gpu/duration_h2o
+        print(' %g' % ratio_time, file=f2, end="")
+        print('', file=f2)
+
+        print(' %g' % duration_h2o, file=f2a, end="")
+        print('', file=f2a)
+
+        print(' %g' % duration_h2o4gpu, file=f2b, end="")
+        print('', file=f2b)
 
         # for pytest only:
         if os.getenv("H2OGLM_DISABLEPYTEST") is None:
@@ -546,11 +615,4 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     return myerror_train, myerror_test
 
 # TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?
-# TODO(navdeep): You can mimic my "showresults.sh" process for make testperf and have timers that measure fit and predict performance for h2o4gpu and h2o-3.  I think just showing the ratio of the two is good, showing time for h2o4gpu over h2o-3 (so smaller is better).
-# TODO(navdeep): Can use timers like:
-#import time
-#start = time.time()
-#print("hello")
-#end = time.time()
-#print(end - start)
 # TODO(navdeep): So every time we do make testperf, we'll get error and performance info.  For error info, would be cool if markdown or something (instead of text) and bad numbers were highlighted.  Also need h2o-3 results as separate file that's also printed so we can compare and see what went wrong.
