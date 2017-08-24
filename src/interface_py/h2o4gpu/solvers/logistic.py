@@ -1,0 +1,62 @@
+from h2o4gpu.solvers.elastic_net_base import GLM
+"""
+H2O Logistic Regression Solver
+:param int n_threads: Number of threads to use in the gpu. Default is None.
+:param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
+:param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
+:param bool intercept: Include constant term in the model. Default is True.
+:param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
+:param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
+:param int n_folds: Number of cross validation folds. Default is 1.
+:param int n_alphas: Number of alphas to be used in a search. Default is 1.
+:param float tol: tolerance.  Default is 1E-2.
+:param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
+:param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
+:param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
+:param int max_interations: Maximum number of iterations. Default is 5000
+:param int verbose: Print verbose information to the console if set to > 0. Default is 0.
+:param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
+:param alpha_max: Maximum alpha.  Default is 1.0.
+:param alpha_min: Minimum alpha.  Default is 0.0.
+"""
+class LogisticRegression(GLM):
+    def __init__(
+            self,
+            n_threads=None,
+            n_gpus=-1,
+            intercept=True,
+            lambda_min_ratio=1E-7,
+            n_lambdas=100,
+            n_folds=1,
+            n_alphas=1,
+            tol=1E-2,
+            lambda_stop_early=True,
+            glm_stop_early=True,
+            glm_stop_early_error_fraction=1.0,
+            max_iterations=5000,
+            verbose=0,
+            give_full_path=0,
+            lambda_max=None,
+            alpha_max=1.0,
+            alpha_min=0.0,
+    ):
+        super(LogisticRegression, self).__init__(
+            n_threads=n_threads,
+            n_gpus=n_gpus,
+            intercept=intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=n_lambdas,
+            n_folds=n_folds,
+            n_alphas=n_alphas,
+            tol=tol,
+            lambda_stop_early=lambda_stop_early,
+            glm_stop_early=glm_stop_early,
+            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+            max_iterations=max_iterations,
+            verbose=verbose,
+            family='logistic',
+            give_full_path=give_full_path,
+            lambda_max=lambda_max,
+            alpha_max=alpha_max,
+            alpha_min=alpha_min,
+            order=None,)
