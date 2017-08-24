@@ -43,8 +43,7 @@ pipeline {
                             nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
                             nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu-$BUILD_ID make build/VERSION.txt
-                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins'
+                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
                             nvidia-docker stop h2o4gpu-$BUILD_ID
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'

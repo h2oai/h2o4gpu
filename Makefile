@@ -291,7 +291,8 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
 
 build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build
-	python src/interface_py/setup.py --version > ./build/VERSION.txt 2>/dev/null
+	@cd src/interface_py/
+	python setup.py --version > ../../build/VERSION.txt 2>/dev/null
 
 # Refresh the build info only locally, let Jenkins to generate its own
 ifeq ($(CI),)
