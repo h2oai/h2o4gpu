@@ -1445,7 +1445,7 @@ class LinearRegression(GLM):
             tol=1E-2,
             glm_stop_early=True,
             glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
+            max_iter=5000,
             verbose=0,
             give_full_path=0,
     ):
@@ -1461,7 +1461,7 @@ class LinearRegression(GLM):
             lambda_stop_early=False,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iterations=max_iter,
             verbose=verbose,
             family='elasticnet',
             give_full_path=give_full_path,
