@@ -151,8 +151,8 @@ deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
-	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade --no-cache-dir
-	pip install -r requirements.txt --upgrade --no-cache-dir
+	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
+	pip install -r requirements.txt --upgrade
 
 alldeps_install: deps_install libxgboost libpy3nvml
 
