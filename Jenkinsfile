@@ -105,6 +105,7 @@ pipeline {
                         artifactId = "h2o4gpu"
                         majorVersion = _majorVersion
                         buildVersion = _buildVersion
+                        keepPrivate = false
                     }
                 }
             }
