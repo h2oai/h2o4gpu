@@ -4,7 +4,7 @@ H2O Logistic Regression Solver
 :param int n_threads: Number of threads to use in the gpu. Default is None.
 :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
 :param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
-:param bool intercept: Include constant term in the model. Default is True.
+:param bool fit_intercept: Include constant term in the model. Default is True.
 :param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
 :param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
 :param int n_folds: Number of cross validation folds. Default is 1.
@@ -24,7 +24,7 @@ class LogisticRegression(GLM):
             self,
             n_threads=None,
             n_gpus=-1,
-            intercept=True,
+            fit_intercept=True,
             lambda_min_ratio=1E-7,
             n_lambdas=100,
             n_folds=1,
@@ -33,7 +33,7 @@ class LogisticRegression(GLM):
             lambda_stop_early=True,
             glm_stop_early=True,
             glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
+            max_iter=5000,
             verbose=0,
             give_full_path=0,
             lambda_max=None,
@@ -43,7 +43,7 @@ class LogisticRegression(GLM):
         super(LogisticRegression, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
-            intercept=intercept,
+            intercept=fit_intercept,
             lambda_min_ratio=lambda_min_ratio,
             n_lambdas=n_lambdas,
             n_folds=n_folds,
@@ -52,7 +52,7 @@ class LogisticRegression(GLM):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iterations=max_iter,
             verbose=verbose,
             family='logistic',
             give_full_path=give_full_path,
