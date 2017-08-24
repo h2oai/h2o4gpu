@@ -167,7 +167,7 @@ namespace kmeans {
         self_dots<<<GRID_SIZE, MAX_BLOCK_THREADS0, 0, cuda_stream[dev_num]>>>(n, d, thrust::raw_pointer_cast(data.data()),
             thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
         
@@ -219,7 +219,7 @@ namespace kmeans {
               thrust::raw_pointer_cast(centroid_dots.data()),
               thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
       };
@@ -275,7 +275,7 @@ namespace kmeans {
             d_changes,
             thrust::raw_pointer_cast(distances.data()));
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
       }

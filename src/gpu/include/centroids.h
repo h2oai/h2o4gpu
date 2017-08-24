@@ -141,7 +141,7 @@ namespace kmeans {
 #endif
 
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
 #if(DEBUG)
@@ -178,7 +178,7 @@ namespace kmeans {
              thrust::raw_pointer_cast(centroids.data()),
              thrust::raw_pointer_cast(counts.data()));
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
 #if(DEBUG)
@@ -195,7 +195,7 @@ namespace kmeans {
              thrust::raw_pointer_cast(counts.data()),
              thrust::raw_pointer_cast(centroids.data()));
 #if(CHECK)
-        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
 #if(DEBUG)
