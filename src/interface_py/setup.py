@@ -68,14 +68,10 @@ install_reqs = parse_requirements('../../requirements.txt', session='hack')
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
-
-# Read version
-about_info={}
-with open('__about__.py') as f: exec(f.read(), about_info)
         
 setup(
     name='h2o4gpu',
-    version=about_info['__version__'],
+    version='0.0.3',
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',

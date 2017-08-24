@@ -5,9 +5,6 @@
 CONFIG=make/config.mk
 include $(CONFIG)
 
-VERSION=make/version.mk
-include $(VERSION)
-
 # Location of local directory with dependencies
 DEPS_DIR = deps
 
@@ -265,33 +262,7 @@ testbigperfquick: dotestbigperf
 
 #################### Build info
 
-H2O4GPU_COMMIT := $(shell git rev-parse HEAD)
-
-.PHONY: base_version
-base_version:
-	@echo $(BASE_VERSION)
-
-.buildinfo:
-	@rm -rf $@
-	@mkdir -p $@
-
-# Generate local build info
-.buildinfo/BUILD_INFO.txt: | .buildinfo
-	@echo "build=\"LOCAL DEV (`git rev-parse --short HEAD` build at `date`)\"" > $@
-	@echo "branch=\"`git rev-parse HEAD | git branch -a --contains | grep -v detached | sed -e 's~remotes/origin/~~g' -e 's~^ *~~' | sort | uniq | tr '*\n' ' '`\"" >> $@
-	@echo "describe=\"`git describe --always --dirty`\"" >> $@
-	@echo "build_os=\"`uname -a`\"" >> $@
-	@echo "build_machine=\"`hostname`\"" >> $@
-	@echo "build_date=\"`date`\"" >> $@
-	@echo "build_user=\"`id -u -n`\"" >> $@
-	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
-	@echo "h2oai_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
-
-src/interface_py/h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
-	@rm -rf $@
-	cp .buildinfo/BUILD_INFO.txt $@
-
-build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
+build/VERSION.txt:
 	@rm -rf build
 	@mkdir -p build
 	cd src/interface_py/; python setup.py --version > ../../build/VERSION.txt 2>/dev/null
