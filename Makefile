@@ -272,6 +272,7 @@ base_version:
 	@echo $(BASE_VERSION)
 
 .buildinfo:
+    @rm -rf $@
 	@mkdir -p $@
 
 # Generate local build info
@@ -287,9 +288,11 @@ base_version:
 	@echo "h2oai_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
 
 src/interface_py/h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
+	@rm -rf $@
 	cp .buildinfo/BUILD_INFO.txt $@
 
 build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
+	@rm -rf build
 	@mkdir -p build
 	@cd src/interface_py/
 	python setup.py --version > ../../build/VERSION.txt 2>/dev/null

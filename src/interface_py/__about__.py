@@ -5,7 +5,7 @@ __all__ = [ "__version__", "__build_info__" ]
 
 # Build defaults
 build_info = {
-    'suffix'    : '+local',
+    'suffix'    : '',
     'build'     : 'dev',
     'commit'    : '',
     'describe'  : '',
