@@ -286,10 +286,10 @@ base_version:
 	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
 	@echo "h2oai_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
 
-h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
+src/interface_py/h2o4gpu/BUILD_INFO.txt: .buildinfo/BUILD_INFO.txt
 	cp .buildinfo/BUILD_INFO.txt $@
 
-build/VERSION.txt: h2o4gpu/BUILD_INFO.txt
+build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build
 	python src/interface_py/setup.py --version > ./build/VERSION.txt 2>/dev/null
 
