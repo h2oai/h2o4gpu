@@ -1435,13 +1435,12 @@ class GLM(object):
         self.e = e
         return (a, b, c, d, e)
 
-#TODO(navdeep) Move below to their own files
 class LinearRegression(GLM):
     def __init__(
             self,
             n_threads=None,
             n_gpus=-1,
-            intercept=True,
+            fit_intercept=True,
             n_folds=1,
             tol=1E-2,
             glm_stop_early=True,
@@ -1453,7 +1452,7 @@ class LinearRegression(GLM):
         super(LinearRegression, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
-            intercept=intercept,
+            intercept=fit_intercept,
             lambda_min_ratio=0.0,
             n_lambdas=1,
             n_folds=n_folds,
@@ -1472,6 +1471,7 @@ class LinearRegression(GLM):
             order=None,)
 
 
+#TODO(navdeep) Move below to their own files
 class Lasso(GLM):
     #Set alpha to 1.0
     def __init__(self, alpha_max=1.0,alpha_min=1.0):
