@@ -229,7 +229,7 @@ dotestperf:
 dotestbigperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml testsbig 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-	bash testsbig/showresultsbig.sh
+	bash tests/showresults.sh # still just references results directory in base path
 
 #########################
 
@@ -241,7 +241,7 @@ dotestperfpython:
 dotestbigperfpython:
 	mkdir -p ./tmp/
 	bash testsbig/getresultsbig.sh $(LOGEXT)
-	bash testsbig/showresultsbig.sh
+	bash tests/showresults.sh # still just references results directory in base path
 
 ################### H2O.ai private tests for pass/fail
 
