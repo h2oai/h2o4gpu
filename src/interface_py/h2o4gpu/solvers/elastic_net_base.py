@@ -1437,9 +1437,47 @@ class GLM(object):
 
 
 class LogisticRegression(GLM):
-
-    def __init__(self, family="logistic"):
-        super(LogisticRegression, self).__init__(family=family)
+    def __init__(
+            self,
+            n_threads=None,
+            n_gpus=-1,
+            intercept=True,
+            lambda_min_ratio=1E-7,
+            n_lambdas=100,
+            n_folds=1,
+            n_alphas=1,
+            tol=1E-2,
+            lambda_stop_early=True,
+            glm_stop_early=True,
+            glm_stop_early_error_fraction=1.0,
+            max_iterations=5000,
+            verbose=0,
+            give_full_path=0,
+            lambda_max=None,
+            alpha_max=1.0,
+            alpha_min=0.0,
+            order=None,
+    ):
+        super(LogisticRegression, self).__init__(
+            n_threads=n_threads,
+            n_gpus=n_gpus,
+            intercept=intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=n_lambdas,
+            n_folds=n_folds,
+            n_alphas=n_alphas,
+            tol=tol,
+            lambda_stop_early=lambda_stop_early,
+            glm_stop_early=glm_stop_early,
+            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+            max_iterations=max_iterations,
+            verbose=verbose,
+            family='logistic',
+            give_full_path=give_full_path,
+            lambda_max=lambda_max,
+            alpha_max=alpha_max,
+            alpha_min=alpha_min,
+            order=order,)
 
 class LinearRegression(GLM):
     #No regularization
