@@ -1454,7 +1454,6 @@ H2O Logistic Regression Solver
 :param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
 :param alpha_max: Maximum alpha.  Default is 1.0.
 :param alpha_min: Minimum alpha.  Default is 0.0.
-:param order: Order of data.  Default is None, and internally determined whether row 'r' or column 'c' major order.
 """
 class LogisticRegression(GLM):
     def __init__(
@@ -1476,7 +1475,6 @@ class LogisticRegression(GLM):
             lambda_max=None,
             alpha_max=1.0,
             alpha_min=0.0,
-            order=None,
     ):
         super(LogisticRegression, self).__init__(
             n_threads=n_threads,
@@ -1497,12 +1495,43 @@ class LogisticRegression(GLM):
             lambda_max=lambda_max,
             alpha_max=alpha_max,
             alpha_min=alpha_min,
-            order=order,)
+            order=None,)
 
 class LinearRegression(GLM):
-    #No regularization
-    def __init__(self, family="elasticnet", lambda_max=0.0):
-        super(LinearRegression, self).__init__(family=family, lambda_max=lambda_max)
+    def __init__(
+            self,
+            n_threads=None,
+            n_gpus=-1,
+            intercept=True,
+            n_folds=1,
+            tol=1E-2,
+            glm_stop_early=True,
+            glm_stop_early_error_fraction=1.0,
+            max_iterations=5000,
+            verbose=0,
+            give_full_path=0,
+    ):
+        super(LinearRegression, self).__init__(
+            n_threads=n_threads,
+            n_gpus=n_gpus,
+            intercept=intercept,
+            lambda_min_ratio=0.0,
+            n_lambdas=1,
+            n_folds=n_folds,
+            n_alphas=1,
+            tol=tol,
+            lambda_stop_early=False,
+            glm_stop_early=glm_stop_early,
+            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+            max_iterations=max_iterations,
+            verbose=verbose,
+            family='elasticnet',
+            give_full_path=give_full_path,
+            lambda_max=0.0,
+            alpha_max=0.0,
+            alpha_min=0.0,
+            order=None,)
+
 
 class Lasso(GLM):
     #Set alpha to 1.0
