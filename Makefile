@@ -272,7 +272,7 @@ base_version:
 	@echo $(BASE_VERSION)
 
 .buildinfo:
-    @rm -rf $@
+	@rm -rf $@
 	@mkdir -p $@
 
 # Generate local build info
