@@ -31,6 +31,7 @@ install:
 #	python3 setup.py sdist bdist_wheel
 
 clean:
+    @rm h2o4gpu/BUILD_INFO.txt
 	python setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
 #	python3 setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/
 

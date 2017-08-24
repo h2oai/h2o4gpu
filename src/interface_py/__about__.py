@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2017 H2O.ai; Proprietary License;  -*- encoding: utf-8 -*-
+import pathlib
 
 __all__ = [ "__version__", "__build_info__" ]
 
@@ -17,7 +18,7 @@ build_info = {
 }
 
 import pkg_resources
-if pkg_resources.resource_exists('h2o4gpu', 'BUILD_INFO.txt'):
+if pathlib.Path('h2o4gpu/BUILD_INFO.txt').is_file():
     exec(pkg_resources.resource_string('h2o4gpu', 'BUILD_INFO.txt'), build_info)
 
 # Exported properties
