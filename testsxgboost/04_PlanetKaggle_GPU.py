@@ -74,8 +74,8 @@ def train_and_validate_xgboost(params, train_features, train_labels, validation_
     y_val_pred = np.zeros((validation_features.shape[0], n_classes))
     time_results = defaultdict(list)
     for class_i in tqdm(range(n_classes)):
-        dtrain = xgb.DMatrix(data=train_features, label=train_labels[:, class_i])
-        dtest = xgb.DMatrix(data=validation_features)
+        dtrain = xgb.DMatrix(data=train_features, label=train_labels[:, class_i], nthread=-1)
+        dtest = xgb.DMatrix(data=validation_features, nthread=-1)
         with Timer() as t:
             model = xgb.train(params, dtrain, num_boost_round=num_boost_round)
         time_results['train_time'].append(t.interval)
@@ -141,8 +141,7 @@ xgb_params = {'max_depth':2, #'max_depth':6
               'gamma':0.1, 
               'reg_lamda':1, 
               'subsample':1,
-              'tree_method':'exact', 
-              'updater':'grow_gpu',
+              'tree_method':'gpu_exact'
              }
 
 
@@ -174,8 +173,7 @@ results_dict['xgb']={
 # In[12]:
 
 
-xgb_hist_params = {'max_depth':0, 
-                  'max_leaves':2**6, 
+xgb_hist_params = {'max_depth':2, 
                   'objective':'binary:logistic', 
                   'min_child_weight':1, 
                   'learning_rate':0.1, 
@@ -183,9 +181,7 @@ xgb_hist_params = {'max_depth':0,
                   'gamma':0.1, 
                   'reg_lamda':1, 
                   'subsample':1,
-                  'tree_method':'hist', 
-                  'grow_policy':'lossguide',
-                  'updater':'grow_gpu_hist',
+                  'tree_method':'gpu_hist', 
                   'max_bins': 63
                  }
 

@@ -96,6 +96,9 @@ make liblightgbm # only need to do ever once per environment
 make testxgboost
 ```
 
+- show all test errors and timings
+sh tests/showresults.sh
+
 - Jupyter Notebooks
 
 examples/py/H2OGPUGLM.ipynb

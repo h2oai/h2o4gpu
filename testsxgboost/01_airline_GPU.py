@@ -143,7 +143,7 @@ num_rounds = 200
 
 
 def train_xgboost(parameters, X, y, num_rounds=50):
-    ddata = xgb.DMatrix(data=X, label=y)
+    ddata = xgb.DMatrix(data=X, label=y, nthread=-1)
     with Timer() as t:
         clf = xgb.train(parameters, ddata, num_boost_round=num_rounds)
     return clf, t.interval
@@ -153,7 +153,7 @@ def train_xgboost(parameters, X, y, num_rounds=50):
 
 
 def test_xgboost(clf, X, y):
-    ddata = xgb.DMatrix(data=X, label=y)
+    ddata = xgb.DMatrix(data=X, label=y, nthread=-1)
     with Timer() as t:
         y_pred = clf.predict(ddata)
     return y_pred, t.interval
@@ -172,8 +172,7 @@ xgb_params = {'max_depth':8, #'max_depth':2,
               'gamma':0.1, 
               'reg_lamda':1, 
               'subsample':1,
-              'tree_method':'exact', 
-              'updater':'grow_gpu'
+              'tree_method':'gpu_exact'
              }
 
 
@@ -199,8 +198,7 @@ xgb_params = {'max_depth':8, #'max_depth':2,
 # In[19]:
 
 
-xgb_hist_params = {'max_depth':0, 
-                  'max_leaves':2**8, 
+xgb_hist_params = {'max_depth':8, 
                   'objective':'binary:logistic', 
                   'min_child_weight':30, 
                   'eta':0.1, 
@@ -208,9 +206,7 @@ xgb_hist_params = {'max_depth':0,
                   'gamma':0.1, 
                   'reg_lamda':1, 
                   'subsample':1,
-                  'tree_method':'hist', 
-                  'grow_policy':'lossguide', 
-                  'updater':'grow_gpu_hist'
+                  'tree_method':'gpu_hist'
                  }
 
 

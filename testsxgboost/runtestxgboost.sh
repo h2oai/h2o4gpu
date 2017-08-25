@@ -8,7 +8,7 @@ export RESULTS_DIR=$MYPWD/results
 mkdir -p $RESULTS_DIR
 
 # -1 all tests, or choose tests 0-...
-runtests=-1
+runtests=4
 
 if [ $runtests -eq 0 ] || [ $runtests -eq -1 ]
 then

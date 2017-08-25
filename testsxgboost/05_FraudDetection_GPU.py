@@ -67,8 +67,8 @@ print(y_test.shape)
 # In[10]:
 
 
-dtrain = xgb.DMatrix(data=X_train, label=y_train)
-dtest = xgb.DMatrix(data=X_test, label=y_test)
+dtrain = xgb.DMatrix(data=X_train, label=y_train, nthread=-1)
+dtest = xgb.DMatrix(data=X_test, label=y_test, nthread=-1)
 
 
 # In[11]:
@@ -99,8 +99,7 @@ params = {'max_depth':3,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'exact', 
-          'updater':'grow_gpu'
+          'tree_method':'gpu_exact'
           }
 
 
@@ -149,7 +148,7 @@ del xgb_clf_pipeline
 # In[79]:
 
 
-params = {'max_depth':0, 
+params = {'max_depth':3, 
           'objective':'binary:logistic', 
           'min_child_weight':1, 
           'eta':0.1, 
@@ -158,9 +157,7 @@ params = {'max_depth':0,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'hist', 
-          'max_leaves':2**3, 
-          'grow_policy':'lossguide', 
+          'tree_method':'gpu_hist'
          }
 
 

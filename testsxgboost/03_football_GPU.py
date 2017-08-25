@@ -120,8 +120,8 @@ get_ipython().run_cell_magic('time', '', 'X_train, X_test, y_train, y_test = tra
 # In[11]:
 
 
-dtrain = xgb.DMatrix(data=X_train, label=y_train)
-dtest = xgb.DMatrix(data=X_test, label=y_test)
+dtrain = xgb.DMatrix(data=X_train, label=y_train, nthread=-1)
+dtest = xgb.DMatrix(data=X_test, label=y_test, nthread=-1)
 
 
 # In[12]:
@@ -157,8 +157,7 @@ params = {'max_depth':3,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'exact', 
-          'updater':'grow_gpu'
+          'tree_method':'gpu_exact'
           }
 
 
@@ -213,8 +212,7 @@ del xgb_clf_pipeline
 # In[21]:
 
 
-params = {'max_depth':0, 
-          'max_leaves':2**3, 
+params = {'max_depth':3, 
           'objective': 'multi:softprob', 
           'num_class': len(labels),
           'min_child_weight':5, 
@@ -224,8 +222,7 @@ params = {'max_depth':0,
           'gamma':0.1, 
           'reg_lamda':1, 
           'subsample':1,
-          'tree_method':'hist', 
-          'grow_policy':'lossguide', 
+          'tree_method':'gpu_hist'
          }
 
 
