@@ -2,27 +2,49 @@
 # get path
 MYPWD=`pwd`
 echo "PWD is $MYPWD"
-MOUNT_POINT=$MYPWD/data
+export MOUNT_POINT=$MYPWD/data
 echo "MOUNT_POINT is $MOUNT_POINT"
-mkdir -p testsxgboost/results/
+export RESULTS_DIR=$MYPWD/results
+mkdir -p $RESULTS_DIR
+
+# -1 all tests, or choose tests 0-...
+runtests=-1
+
+if [ $runtests -eq 0 ] || [ $runtests -eq -1 ]
+then
 
 # run football
 cd $MOUNT_POINT/football/
 unzip -o soccer.zip
 cd ../../
 cd testsxgboost # for libs stuff
-ipython 03_football_GPU.py &> results/football.txt # py from export of ipynb removing inline commands
+ipython 03_football_GPU.py &> $RESULTS_DIR/football.txt # py from export of ipynb removing inline commands
 cd $MYPWD
+
+fi
+
+if [ $runtests -eq 1 ] || [ $runtests -eq -1 ]
+then
 
 # run credit
 cd testsxgboost # for libs stuff
-ipython 05_FraudDetection_GPU.py &> results/credit.txt # py from export of ipynb removing inline commands
+ipython 05_FraudDetection_GPU.py &> $RESULTS_DIR/credit.txt # py from export of ipynb removing inline commands
 cd $MYPWD
+
+fi
+
+if [ $runtests -eq 2 ] || [ $runtests -eq -1 ]
+then
 
 # run airlines
 cd testsxgboost # for libs stuff
-ipython 01_airline_GPU.py &> results/airlines.txt # py from export of ipynb removing inline commands
+ipython 01_airline_GPU.py &> $RESULTS_DIR/airlines.txt # py from export of ipynb removing inline commands
 cd $MYPWD
+
+fi
+
+if [ $runtests -eq 3 ] || [ $runtests -eq -1 ]
+then
 
 # run Planet
 cd $MOUNT_POINT/planet/
@@ -30,16 +52,27 @@ cd $MOUNT_POINT/planet/
 tar xvf train-jpg.tar
 7z x -y test-jpg.tar.7z
 tar xvf test-jpg.tar
+# get rid of train if no test and visa versa
+numlist=`ls train-jpg test-jpg|sed 's/train_//g' | sed 's/test_//g' | sed 's/test-jpg://g'| sed 's/train-jpg://g' | sed 's/\.jpg//g' | sort|uniq -u`
+for fil in $numlist ; do echo $fil ; rm -rf test-jpg/test_$fil.jpg ; rm -rf train-jpg/train_$fil.jpg ; done
+#mkdir -p validate-jpg
+#cp -a test-jpg/*.jpg validate-jpg/
 cd ../../
 cd testsxgboost # for libs stuff
-ipython 04_PlanetKaggle_GPU.py &> results/planet.txt # py from export of ipynb removing inline commands
+ipython 04_PlanetKaggle_GPU.py &> $RESULTS_DIR/planet.txt # py from export of ipynb removing inline commands
 cd $MYPWD
+
+fi
+
+if [ $runtests -eq 4 ] || [ $runtests -eq -1 ]
+then
 
 # run higgs
 cd testsxgboost # for libs stuff
-ipython 06_HIGGS_GPU.py &> results/higgs.txt # py from export of ipynb removing inline commands
+ipython 06_HIGGS_GPU.py &> $RESULTS_DIR/higgs.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
+fi
 
 
 # OLD TEST CODE:

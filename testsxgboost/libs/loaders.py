@@ -5,7 +5,7 @@ import numpy as np
 from functools import reduce
 import sqlite3
 import logging
-from libs.planet_kaggle import to_multi_label_dict, get_file_count, enrich_with_feature_encoding, featurise_images
+from libs.planet_kaggle import to_multi_label_dict, get_file_count, enrich_with_feature_encoding, featurise_images, generate_validation_files
 import tensorflow as tf
 from keras.applications.resnet50 import ResNet50
 

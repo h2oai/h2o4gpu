@@ -125,6 +125,8 @@ cleanr:
 # uses https://github.com/Azure/fast_retraining
 testxgboost:
 	sh testsxgboost/runtestxgboost.sh
+	sh testsxgboost/extracttestxgboost.sh
+	bash tests/showresults.sh # same for all tests
 
 ################
 
@@ -179,8 +181,10 @@ libpy3nvml:
 
 
 liblightgbm:
+	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
+	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
-	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile && cd ../ && pip install arff tqdm keras runipy --upgrade
+	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
 
 #################### Jenkins specific
 
