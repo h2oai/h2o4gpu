@@ -20,7 +20,7 @@ H2O GLM Solver
 :param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
 :param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
 :param int n_folds: Number of cross validation folds. Default is 1.
-:param int n_alphas: Number of alphas to be used in a search. Default is 1.
+:param int n_alphas: Number of alphas to be used in a search. Default is 5.
 :param float tol: tolerance.  Default is 1E-2.
 :param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
 :param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
@@ -66,8 +66,8 @@ class GLM(object):
             intercept=True,
             lambda_min_ratio=1E-7,
             n_lambdas=100,
-            n_folds=1,
-            n_alphas=1,
+            n_folds=5,
+            n_alphas=5,
             tol=1E-2,
             lambda_stop_early=True,
             glm_stop_early=True,
@@ -1449,6 +1449,7 @@ class GLM(object):
         self.d = d
         self.e = e
         return (a, b, c, d, e)
+
 
 class LinearRegression(GLM):
     def __init__(
