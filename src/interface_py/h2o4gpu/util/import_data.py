@@ -3,6 +3,36 @@ import feather
 import numpy as np
 import pandas as pd
 
+"""
+Import Data for H2O GPU Edition
+
+This function will read in data and prepare it for H2O4GPU's GLM solver
+
+Parameters
+----------
+data_path : str
+             A path to a dataset (The dataset needs to be all numeric)
+use_pandas : bool
+              Indicate if Pandas should be used to parse
+intercept : bool
+              Indicate if intercept term is needed
+valid_fraction : float
+                  Percentage of dataset reserved for a validation set
+classification : bool
+                  Classification problem?
+Returns
+-------
+If valid_fraction > 0 it will return the following:
+    train_x: numpy array of train input variables
+    train_y: numpy array of y variable
+    valid_x: numpy array of valid input variables
+    valid_y: numpy array of valid y variable
+    family : string that would either be "logistic" if classification is set to True, otherwise "elasticnet"
+If valid_fraction == 0 it will return the following:
+    train_x: numpy array of train input variables
+    train_y: numpy array of y variable
+    family : string that would either be "logistic" if classification is set to True, otherwise "elasticnet"
+"""
 def import_data(data_path, use_pandas=False, intercept=True,valid_fraction=0.2,classification=True):
     #Can import data using pandas or feather.
     use_pandas =use_pandas
