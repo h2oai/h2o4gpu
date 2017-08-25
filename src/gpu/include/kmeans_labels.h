@@ -358,4 +358,7 @@ namespace mycub {
     }
   void cub_init();
   void cub_close();
+
+  void cub_init(int dev);
+  void cub_close(int dev);
 }

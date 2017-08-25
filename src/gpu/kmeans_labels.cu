@@ -37,7 +37,7 @@ namespace kmeans {
 
       }
       cublasSetStream(cublas_handle[dev_num], cuda_stream[dev_num]);
-      mycub::cub_init();
+      mycub::cub_init(dev_num);
     }
 
     void labels_close() {
@@ -45,7 +45,7 @@ namespace kmeans {
       safe_cuda(cudaGetDevice(&dev_num));
       safe_cublas(cublasDestroy(cublas_handle[dev_num]));
       safe_cuda(cudaStreamDestroy(cuda_stream[dev_num]));
-      mycub::cub_close();
+      mycub::cub_close(dev_num);
     }
 
     void streamsync(int dev_num) {
@@ -266,6 +266,18 @@ namespace mycub {
     }
     cub_initted = true;
   }
+
+  void cub_init(int dev) {
+    d_key_alt_buf[dev] = NULL;
+    key_alt_buf_bytes[dev] = 0;
+    d_value_alt_buf[dev] = NULL;
+    value_alt_buf_bytes[dev] = 0;
+    d_temp_storage[dev] = NULL;
+    temp_storage_bytes[dev] = 0;
+    d_temp_storage2[dev] = NULL;
+    temp_storage_bytes2[dev] = 0;
+  }
+
   void cub_close() {
     for (int q=0; q<MAX_NGPUS; q++) {
       if(d_key_alt_buf[q]) safe_cuda(cudaFree(d_key_alt_buf[q]));
@@ -277,6 +289,16 @@ namespace mycub {
     }
     cub_initted = false;
   }
+
+  void cub_close(int dev) {
+    if(d_key_alt_buf[dev]) safe_cuda(cudaFree(d_key_alt_buf[dev]));
+    if(d_value_alt_buf[dev]) safe_cuda(cudaFree(d_value_alt_buf[dev]));
+    if(d_temp_storage[dev]) safe_cuda(cudaFree(d_temp_storage[dev]));
+    if(d_temp_storage2[dev]) safe_cuda(cudaFree(d_temp_storage2[dev]));
+    d_temp_storage[dev] = NULL;
+    d_temp_storage2[dev] = NULL;
+  }
+
   void sort_by_key_int(thrust::device_vector<int>& keys, thrust::device_vector<int>& values) {
     int dev_num;
     safe_cuda(cudaGetDevice(&dev_num));

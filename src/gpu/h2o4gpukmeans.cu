@@ -520,7 +520,9 @@ namespace h2o4gpukmeans {
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 
-        std::cout << n_gpu << " gpus." << std::endl;
+        if (verbose) {
+            std::cout << n_gpu << " gpus." << std::endl;
+        }
 
         int gpu_id;
         gpu_id = gpu_idtry % n_gpuvis;
@@ -559,7 +561,9 @@ namespace h2o4gpukmeans {
             cudaMalloc(&d_changes[q], sizeof(int));
 
             // Move centroids from host memory to GPU
-            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            if (verbose) {
+                std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            }
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
             nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
@@ -623,7 +627,9 @@ namespace h2o4gpukmeans {
         // also no more than rows
         n_gpu = std::min(n_gpu, n);
 
-        std::cout << n_gpu << " gpus." << std::endl;
+        if (verbose) {
+            std::cout << n_gpu << " gpus." << std::endl;
+        }
 
         int gpu_id = gpu_idtry % n_gpuvis;
 
@@ -652,7 +658,9 @@ namespace h2o4gpukmeans {
             d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
 
             // Move centroids from host memory to GPU
-            std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            if (verbose) {
+                std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
+            }
             nonrandom_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, m);
 
             nonrandom_data(verbose, ord, *d_data[q], &srcdata[0], q, n, n/n_gpu, m);
