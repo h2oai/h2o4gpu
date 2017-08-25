@@ -14,20 +14,34 @@ Installing
 
 - Add to ~/.bashrc or environment
 
+```
 export CUDA_HOME=/usr/local/cuda
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
+```
 
 - Download Python Wheel
 
+```
 h2o4gpu-0.0.3-py2.py3-none-any.whl
+```
 
 - Install Python Wheel
 
+```
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
+```
 
 ----
-Building
+Plans and RoadMap
 ----
+
+* Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
+
+* ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
+
+------
+Building
+------
 
 Build Environment
 --------
