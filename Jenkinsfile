@@ -106,6 +106,7 @@ pipeline {
                         majorVersion = _majorVersion
                         buildVersion = _buildVersion
                         keepPrivate = false
+                        remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
                     }
                 }
             }
