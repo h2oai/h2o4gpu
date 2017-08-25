@@ -1484,11 +1484,3 @@ class LinearRegression(GLM):
             alpha_max=0.0,
             alpha_min=0.0,
             order=None,)
-
-
-#TODO(navdeep) Move below to their own files
-
-class Ridge(GLM):
-    #Set alpha to 0.0
-    def __init__(self, alpha_max=0.0,alpha_min=0.0):
-        super(Ridge, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)
