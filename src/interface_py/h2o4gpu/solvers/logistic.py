@@ -1,6 +1,7 @@
 from h2o4gpu.solvers.elastic_net_base import GLM
 """
 H2O Logistic Regression Solver
+
 :param int n_threads: Number of threads to use in the gpu. Default is None.
 :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
 :param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).

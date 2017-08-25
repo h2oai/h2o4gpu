@@ -12,6 +12,7 @@ from h2o4gpu.util.typechecks import assert_is_type
 
 """
 H2O GLM Solver
+
 :param int n_threads: Number of threads to use in the gpu. Default is None.
 :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
 :param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
@@ -1486,10 +1487,6 @@ class LinearRegression(GLM):
 
 
 #TODO(navdeep) Move below to their own files
-class Lasso(GLM):
-    #Set alpha to 1.0
-    def __init__(self, alpha_max=1.0,alpha_min=1.0):
-        super(Lasso, self).__init__(alpha_max=alpha_max,alpha_min=alpha_min)
 
 class Ridge(GLM):
     #Set alpha to 0.0
