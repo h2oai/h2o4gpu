@@ -6,7 +6,7 @@ from h2o4gpu.types import H2OConstants, cptr, make_settings, make_solution, make
     Solution, FunctionVector
 from h2o4gpu.libs.cpu import pogsCPU
 from h2o4gpu.libs.gpu import pogsGPU
-from h2o4gpu.solvers.utils import devicecount
+from h2o4gpu.solvers.utils import device_count
 
 
 # TODO: catch Ctrl-C
@@ -23,7 +23,7 @@ class Pogs(object):
                 # print("The value of {} is {}".format(key, value))
                 # sys.stdout.flush()
 
-        n_gpus, deviceCount = devicecount(n_gpus=n_gpus)
+        n_gpus, devices = device_count(n_gpus=n_gpus)
 
         if not pogsCPU:
             print(
@@ -34,7 +34,7 @@ class Pogs(object):
                 '\nWarning: Cannot create a pogs GPU Solver instance without linking Python module to a compiled H2O4GPU GPU library')
             print('> Use CPU or add CUDA libraries to $PATH and re-run setup.py\n\n')
 
-        if ((n_gpus == 0) or (pogsGPU is None) or (deviceCount == 0)):
+        if ((n_gpus == 0) or (pogsGPU is None) or (devices == 0)):
             print("\nUsing CPU GLM solver\n")
             self.solver = BaseSolver(A, pogsCPU)
         else:

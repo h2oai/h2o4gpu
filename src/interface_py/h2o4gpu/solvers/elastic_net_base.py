@@ -6,7 +6,7 @@ import sys
 from h2o4gpu.types import cptr
 from h2o4gpu.libs.elastic_net_cpu import h2o4gpuGLMCPU
 from h2o4gpu.libs.elastic_net_gpu import h2o4gpuGLMGPU
-from h2o4gpu.solvers.utils import devicecount, _get_data, _check_data_size, _convert_to_ptr, _checkEqual
+from h2o4gpu.solvers.utils import device_count, _get_data, _check_data_size, _convert_to_ptr, _check_equal
 from h2o4gpu.util.typechecks import assert_is_type
 import pandas as pd
 from tabulate import tabulate
@@ -45,7 +45,7 @@ class GLM(object):
 
         pass
 
-    # TODO: add gpu_id like kmeans and ensure wraps around deviceCount
+    # TODO: add gpu_id like kmeans and ensure wraps around device_count
     def __init__(
             self,
             n_threads=None,
@@ -140,13 +140,12 @@ class GLM(object):
         self._shared_a = 0
         self._standardize = 0
 
-        (n_gpus, device_count) = devicecount(n_gpus)
-        self.n_gpus = n_gpus
+        (self.n_gpus, devices) = device_count(n_gpus)
 
         if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
 
-            n_threads = (1 if n_gpus == 0 else n_gpus)
+            n_threads = (1 if self.n_gpus == 0 else self.n_gpus)
         self.n_threads = n_threads
 
         if not h2o4gpuGLMGPU:
@@ -160,13 +159,13 @@ class GLM(object):
                 '>CPU library Use GPU or re-run setup.py')
 
         self.lib = None
-        if n_gpus == 0 or h2o4gpuGLMGPU is None or device_count == 0:
+        if self.n_gpus == 0 or h2o4gpuGLMGPU is None or devices == 0:
             if verbose > 0:
-                print('Using CPU GLM solver %d %d' % (n_gpus, device_count))
+                print('Using CPU GLM solver %d %d' % (self.n_gpus, devices))
             self.lib = h2o4gpuGLMCPU
-        elif n_gpus > 0 or h2o4gpuGLMGPU is None or device_count == 0:
+        elif self.n_gpus > 0 or h2o4gpuGLMGPU is None or devices == 0:
             if verbose > 0:
-                print('Using GPU GLM solver with %d GPUs' % n_gpus)
+                print('Using GPU GLM solver with %d GPUs' % self.n_gpus)
             self.lib = h2o4gpuGLMGPU
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
@@ -637,7 +636,7 @@ class GLM(object):
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
-        _checkEqual(fortran_list)
+        _check_equal(fortran_list)
 
         # set order
         if order is None:
@@ -772,7 +771,7 @@ class GLM(object):
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
-        _checkEqual(fortran_list)
+        _check_equal(fortran_list)
 
         # override order
         if fortran1:
