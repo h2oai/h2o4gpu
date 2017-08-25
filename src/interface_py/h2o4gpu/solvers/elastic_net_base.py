@@ -33,19 +33,19 @@ H2O GLM Solver
 :param order: Order of data.  Default is None, and internally determined whether row 'r' or column 'c' major order.
 """
 
-import h2o4gpu
-h2o4gpu.linear_model.LinearRegression = sklearn.linear_model.LinearRegression
+#import h2o4gpu
+#h2o4gpu.linear_model.LinearRegression = sklearn.linear_model.LinearRegression
 
-class linear_model:
-    def __getattr__(self, item):
-        return sklearn.linear_model[item]
-import sklearn
-for name in dir(sklearn):
-    x = sklearn[name]
-    if name not in dir(h2o4gpu):
-        h2o4gpu[name] = sklearn[name]
-    if isinstance(x, type(sklearn)):
-        for name2 in dir(x):
+#class linear_model:
+#    def __getattr__(self, item):
+#        return sklearn.linear_model[item]
+#import sklearn
+#for name in dir(sklearn):
+#    x = sklearn[name]
+#    if name not in dir(h2o4gpu):
+#        h2o4gpu[name] = sklearn[name]
+#    if isinstance(x, type(sklearn)):
+#        for name2 in dir(x):
             
 
 class GLM(object):
