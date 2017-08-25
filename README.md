@@ -31,6 +31,8 @@ h2o4gpu-0.0.3-py2.py3-none-any.whl
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
 ```
 
+- [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
+
 ----
 Plans and RoadMap
 ----
