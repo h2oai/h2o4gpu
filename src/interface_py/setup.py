@@ -68,6 +68,17 @@ install_reqs = parse_requirements('../../requirements.txt', session='hack')
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
+
+
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            paths.append(os.path.join('..', path, filename))
+    return paths
+        
+extra_files = package_files('h2o4gpu')
+                                        
         
 setup(
     name='h2o4gpu',
@@ -76,14 +87,17 @@ setup(
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
     package_dir={'interface_py': 'h2o4gpu','interface_py': 'xgboost','interface_py': 'py3nvml'},
-    package_data={'xgboost': ['*']},
     packages=['h2o4gpu',
-              'h2o4gpu.libs',
-              'h2o4gpu.solvers',
-	          'h2o4gpu.util',
               'xgboost',
               'py3nvml'
     ],
+    package_data={'h2o4gpu': ['*'],
+                  '': extra_files,
+                  'h2o4gpu._build_utils': ['*'],
+                  'h2o4gpu.__check_build': ['*'],
+                  'xgboost': ['*'],
+                  'py3nvml': ['*'],
+    },
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai GPU Edition',

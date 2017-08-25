@@ -103,7 +103,7 @@ import sys
 import tokenize
 from types import BuiltinFunctionType, FunctionType
 
-from h2o4gpu.exceptions import H2O4GPUTypeError, H2O4GPUValueError
+from h2o4gpu.h2o4gpu_exceptions import H2O4GPUTypeError, H2O4GPUValueError
 from h2o4gpu.util.compatibility import *  # NOQA
 from h2o4gpu.util.compatibility import PY2, viewitems
 

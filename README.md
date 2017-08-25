@@ -4,11 +4,32 @@
 
 H2O4GPU is a collection of GPU (and CPU) solvers by H2Oai.
 
-Requirements
+Install/Build Requirements
 ------
 Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
 
-Environment
+----
+Installing
+----
+
+- Add to ~/.bashrc or environment
+
+export CUDA_HOME=/usr/local/cuda
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
+
+- Download Python Wheel
+
+h2o4gpu-0.0.3-py2.py3-none-any.whl
+
+- Install Python Wheel
+
+pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
+
+----
+Building
+----
+
+Build Environment
 --------
 
 - Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
@@ -42,8 +63,8 @@ conda install libgcc
 
 ```
 export CUDA_HOME=/usr/local/cuda
-export PATH=/usr/local/cuda/bin:$PATH
-export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/lib64:$CUDA_HOME/extras/CUPTI/lib64
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 export CUDADIR=/usr/local/cuda/include/
 export OMP_NUM_THREADS=32

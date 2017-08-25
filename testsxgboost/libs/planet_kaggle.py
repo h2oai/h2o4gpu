@@ -66,7 +66,7 @@ def featurise_images(model, filepath, nameformat, num_iter, batch_size=32, desc=
     features = list()
     img_names = list()
     num_list = list(num_iter)
-    num_batches = np.ceil(len(num_list)/batch_size)
+    num_batches = np.floor(len(num_list)/batch_size)
     
     for num_chunk in tqdm(chunks(num_list, batch_size), total=num_batches, desc=desc):
         filenames = [nameformat.format(index) for index in num_chunk]

@@ -172,7 +172,7 @@ xgb_params = {'max_depth':8, #'max_depth':2,
               'gamma':0.1, 
               'reg_lamda':1, 
               'subsample':1,
-              'tree_method':'gpu_exact'
+              'tree_method':'gpu_hist' # exact can't handle airlines, so just use hist for now
              }
 
 

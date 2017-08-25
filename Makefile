@@ -123,7 +123,7 @@ cleanr:
 	$(MAKE) -j clean -C src/interface_r
 
 # uses https://github.com/Azure/fast_retraining
-testxgboost:
+testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
 	sh testsxgboost/runtestxgboost.sh
 	sh testsxgboost/extracttestxgboost.sh
 	bash tests/showresults.sh # same for all tests
@@ -153,7 +153,7 @@ deps_install:
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
 
-alldeps_install: deps_install libxgboost libpy3nvml
+alldeps_install: deps_install apply_xgboost apply_sklearn apply_py3nvml
 
 ###################
 
@@ -170,21 +170,28 @@ xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
 
-libxgboost:
-	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel && cd dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
+libxgboost: # could just get wheel from repo/S3 instead of doing this
+	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+
+apply_xgboost: libxgboost
+	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
 
-libpy3nvml:
+apply_py3nvml:
 	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
 
 
-liblightgbm:
+liblightgbm: # only done if user directly requests, never an explicit dependency
 	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
+
+apply_sklearn:
+	mkdir -p sklearn && cd sklearn && pip install -U sklearn --target=.
+
 
 #################### Jenkins specific
 
