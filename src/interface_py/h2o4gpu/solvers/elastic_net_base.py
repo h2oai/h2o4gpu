@@ -8,7 +8,8 @@ from h2o4gpu.libs.elastic_net_cpu import h2o4gpuGLMCPU
 from h2o4gpu.libs.elastic_net_gpu import h2o4gpuGLMGPU
 from h2o4gpu.solvers.utils import devicecount, _get_data, _check_data_size, _convert_to_ptr, _checkEqual
 from h2o4gpu.util.typechecks import assert_is_type
-
+import pandas as pd
+from tabulate import tabulate
 
 """
 H2O GLM Solver
@@ -124,6 +125,7 @@ class GLM(object):
         self.glm_stop_early_error_fraction = glm_stop_early_error_fraction
         self.max_iterations = max_iterations
         self.verbose = verbose
+        self._family_str = family #Hold string value for family
         self._family = ord(family.split()[0][0])
         self.give_full_path = give_full_path
         if lambda_max is None:
@@ -1085,14 +1087,14 @@ class GLM(object):
 
     @property
     def family(self):
-        return self._family
+        return self._family_str
 
     @family.setter
     def family(self, value):
 
         # add check
 
-        self._family = value
+        self.family = value
 
     @property
     def shared_a(self):
@@ -1436,6 +1438,17 @@ class GLM(object):
         self.e = e
         return (a, b, c, d, e)
 
+    def summary(self):
+        """
+        Obtain train error. Logloss for classification and RMSE(Root Mean Squared Error) for regression.
+        """
+        error_train = pd.DataFrame(self.error_best, index=self.alphas)
+        if self.family == "logistic":
+            print("Logloss per alpha value (-1.00 = missing)\n")
+        else:
+            print("RMSE per alpha value (-1.00 = missing)\n")
+        headers = ["Alphas", "Train", "CV", "Valid"]
+        print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
 class LinearRegression(GLM):
     def __init__(
