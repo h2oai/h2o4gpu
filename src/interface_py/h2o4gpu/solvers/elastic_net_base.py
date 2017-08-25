@@ -1440,7 +1440,9 @@ class GLM(object):
 
     def summary(self):
         """
-        Obtain train error. Logloss for classification and RMSE(Root Mean Squared Error) for regression.
+        Obtain model summary, which is error per alpha across train, cv, and validation
+
+        Error is logloss for classification and RMSE(Root Mean Squared Error) for regression.
         """
         error_train = pd.DataFrame(self.error_best, index=self.alphas)
         if self.family == "logistic":
