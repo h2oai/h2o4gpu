@@ -174,7 +174,9 @@ libxgboost: # could just get wheel from repo/S3 instead of doing this
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
 
 apply_xgboost: libxgboost
-	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --root=.
+	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
+
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
