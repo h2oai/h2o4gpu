@@ -39,9 +39,6 @@ class KMeans(object):
         self.verbose = verbose
         self.do_checks = do_checks
 
-        self.Xnp = None
-        self.ynp = None
-
         self.cluster_centers_ = None
 
         self.labels_ = None
@@ -88,9 +85,6 @@ class KMeans(object):
         ynp = _to_np(y)
 
         _check_data_content(self.do_checks, "X", Xnp)
-
-        # Cached for sklearn fit
-        self.Xnp = Xnp
         rows = np.shape(Xnp)[0]
 
         if ynp is None:
@@ -101,16 +95,13 @@ class KMeans(object):
         ynp = ynp.astype(np.int)
         ynp = np.mod(ynp, self._n_clusters)
 
-        # Cached for sklearn fit
-        self.ynp = ynp
-
         self._fit(Xnp, ynp)
 
         self._did_sklearn_fit = 0
 
         return self
 
-    def sklearn_fit(self):
+    def sklearn_fit(self, X, y=None):
         """Instantiates a scikit-learn model using previously found,
         with fit(), centroids. """
 
@@ -118,12 +109,23 @@ class KMeans(object):
             "Centroids are None. Run fit() first."
 
         if self._did_sklearn_fit == 0:
+            X_np = _to_np(X)
+            _check_data_content(self.do_checks, "X", X_np)
+            rows = np.shape(X_np)[0]
+
+            y_np = _to_np(y)
+            if y_np is None:
+                y_np = np.random.randint(rows, size=rows) % self._n_clusters
+            _check_data_content(self.do_checks, "y", y_np)
+            y_np = y_np.astype(np.int)
+            y_np = np.mod(y_np, self._n_clusters)
+
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
             self.sklearn_model = sk_cluster.KMeans(self._n_clusters, max_iter=1,
                                                    init=self.cluster_centers_,
                                                    n_init=1)
-            self.sklearn_model.fit(self.Xnp, self.ynp)
+            self.sklearn_model.fit(X_np, y_np)
 
     def predict(self, X):
         cols, rows = self._validate_centroids(X)
@@ -164,15 +166,24 @@ class KMeans(object):
         preds = np.reshape(preds, rows)
         return preds
 
-    def sklearn_predict(self, X):
+    def sklearn_predict(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
         found by running fit() and predicts labels using that model.
         This method always runs on CPU, not on GPUs.
         """
-
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit()
+
+        y_np = _to_np(y)
+        rows = np.shape(X)[0]
+        if y_np is None:
+            y_np = np.random.randint(rows, size=rows) % self._n_clusters
+        _check_data_content(self.do_checks, "y", y_np)
+
+        y_np = y_np.astype(np.int)
+        y_np = np.mod(y_np, self._n_clusters)
+
+        self.sklearn_fit(X, y_np)
         return self.sklearn_model.predict(X)
 
     def transform(self, X):
