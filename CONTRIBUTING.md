@@ -30,8 +30,8 @@ First and foremost please read our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Other important documents
 
-* For questions please reach out to us on our [Gitter channel](https://gitter.im/h2oai/h2o4gpu?utm_source=share-link&utm_medium=link&utm_campaign=share-link) or post questions on [StackOverflow](stackoverflow.com) with a `h2o4gpu` tag. Please do not use the issue tracker to ask questions.
-* Roadmap can be found [in the readme file](README.md)
+* For questions please reach out to us on our [Gitter channel](https://gitter.im/h2oai/h2o4gpu?utm_source=share-link&utm_medium=link&utm_campaign=share-link) or post questions on [StackOverflow](https://stackoverflow.com) with a `h2o4gpu` tag. Please do not use the issue tracker to ask questions.
+* Roadmap can be found [in the readme file](README.md#plans-and-roadmap)
 * For build instructions etc. please refer to our [developer](DEVELOPER.md) guide.
 
 ## How to contribute
@@ -42,7 +42,7 @@ There are plenty of ways to contribute, not only by submitting new code! Reporti
 
 * First, please make sure the bug was not already reported by searching on GitHub under [issues](https://github.com/h2oai/h2o4gpu/issues).
 * Only when you are sure the bug has not yet been reported, [open a new issue](https://github.com/h2oai/h2o4gpu/issues/new).
-* Please follow the issue template and provide as many details as possible. A clear, but concise, title, your environment, h2o4gpu version and a [MCVE](https://stackoverflow.com/help/mcve) will make everyone's life easier.
+* Please follow the [issue template](ISSUE_TEMPLATE.md) and provide as many details as possible. A clear, but concise, title, your environment, h2o4gpu version and a [MCVE](https://stackoverflow.com/help/mcve) will make everyone's life easier.
 
 ### Enhancements and Feature requests
 
@@ -66,7 +66,7 @@ Please be sure to comment on an issue should you decide to give it a go so other
 
 Before submitting your PR for a [review](https://github.com/h2oai/h2o4gpu/pulls) please make sure your changes follow the standards described below, are well tested and all the previous tests are passing.
 
-Check our [developer](DEVELOPER.md) guide for build and testing instructions.
+Check our [developer](DEVEL.md) guide for build and testing instructions.
 
 ### Guidelines and standards
 
@@ -121,15 +121,39 @@ Each file has to include a license at the top.
 
 #### C style guidelines
 
-TBA.
+For C/C++/CUDA code please follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+
+On Unix based systems you can use `clang-tidy` to make sure your changes are ok. To install it on Ubuntu 16.04, do:
+
+```
+apt-get install -y clang-tidy
+```
+
+To check a single file, run:
+
+```
+clang-format <my_cc_file> --style=google > /tmp/my_cc_file.cc
+diff <my_cc_file> /tmp/my_cc_file.cc
+```
 
 #### Python style guidelines
 
-TBA.
+For Python code please follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
 
-#### R style guidelines
+You can use `pylint` to make sure your changes are ok. To install it and use H2O4GPU's style definition, run:
 
-TBA.
+```
+pip install pylint
+wget -O /tmp/pylintrc https://raw.githubusercontent.com/h2oai/h2o4gpu/master/tools/pylintrc
+```
+
+The `pylintrc` file can be found in the repository under `tools/pylintrc`.
+
+To check a single file, run:
+
+```
+pylint --rcfile=/tmp/pylintrc <my_python_file>.py
+```
 
 #### Documentation style guidelines
 

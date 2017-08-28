@@ -101,9 +101,10 @@ sh tests/showresults.sh
 
 - Jupyter Notebooks
 ```
-examples/py/H2OGPUGLM.ipynb
-examples/py/kmeans_image.ipynb
-examples/py/xgboost_simple_demo.ipynb
+examples/py/demos/H2O4GPU_GLM.ipynb
+examples/py/demos/H2O4GPU_GBM.ipynb
+examples/py/demos/H2O4GPU_KMeans_Homesite.ipynb
+examples/py/demos/H2O4GPU_KMeans_Images.ipynb
 ```
 
 - To run gpu C++ version:

@@ -203,7 +203,7 @@ mrproper: clean
 
 #################### H2O.ai specific
 
-fullinstallprivate: clean build alldeps sync_data install
+fullinstallprivate: clean alldeps build sync_data install
 
 sync_data: sync_smalldata sync_otherdata
 
