@@ -1,8 +1,8 @@
-[H2O4GPU](https://github.com/h2o4gpu/h2o4gpu)
+[H2O4GPU](https://github.com/h2oai/h2o4gpu)
 
 ---
 
-H2O4GPU is a collection of GPU (and CPU) solvers by H2Oai, as drop-in replacement of sklearn with GPU capabilities.
+**H2O4GPU** is a collection of GPU (and CPU) solvers by H2Oai, as drop-in replacement of sklearn with GPU capabilities.
 
 Install/Build Requirements
 ------
@@ -12,7 +12,7 @@ Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
 Installing
 ----
 
-- Add to ~/.bashrc or environment
+- Add to ~/.bashrc or environment (set appropriate paths for your OS)
 
 ```
 export CUDA_HOME=/usr/local/cuda
@@ -21,154 +21,35 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 
 - Download Python Wheel
 
-```
-h2o4gpu-0.0.3-py2.py3-none-any.whl
-```
-
+  * [Stable](https://h2o-release.s3.amazonaws.com/h2o-release/h2o4gpu/stable/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+  * [Nightly](https://h2o-release.s3.amazonaws.com/h2o-release/h2o4gpu/nightly/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+ 
 - Install Python Wheel
 
 ```
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
 ```
 
-- [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
+- Test your installation
+
+```
+import h2o4gpu
+import numpy as np
+
+X = np.array([[1.,1.], [1.,4.], [1.,0.]])
+model = h2o4gpu.KMeans(n_clusters=2).fit(X)
+model.fit(X).cluster_centers_
+```
+
+- For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
 ----
 Plans and RoadMap
 ----
 
-* Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
+Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
 
-* ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
-
-------
-Building
-------
-
-Build Environment
---------
-
-- Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
-
-````
-pyenv install 3.6.1
-pyenv global 3.6.1
-````
-
-- Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
-
-````
-R
-install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
-quit()
-````
-
-- Install dev environment:
-
-```
-sudo apt-get install libopenblas-dev
-```
-
-If you are using conda, you probably need to do:
-```
-conda install libgcc
-```
-
-
-- Add to .bashrc or your own environment (e.g.):
-
-```
-export CUDA_HOME=/usr/local/cuda
-export PATH=$CUDA_HOME/bin:$PATH
-export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/lib64:$CUDA_HOME/extras/CUPTI/lib64
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
-export CUDADIR=/usr/local/cuda/include/
-export OMP_NUM_THREADS=32
-export MKL_NUM_THREADS=32
-export VECLIB_MAXIMUM_THREADS=32
-```
-
-Compiling and Running
-------
-
-- Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2o4gpu.
-
-```
-sudo nvidia-smi -pm 1
-```
-
-or
-
-```
-sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
-```
-
-
-- To compile everything and install R and python interfaces as user:
-
-```
-git clone --recursive git@github.com:h2oai/h2o4gpu.git (or git clone --recursive https://github.com/h2oai/h2o4gpu)
-cd h2o4gpu
-make fullinstall
-```
-
-This installs full h2o4gpu as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2o4gpu-0.0.1-py2.py3-none-any.whl
-
-- test python package
-
-```
-make test && make testbig
-```
-
-- test performance and accuracy of python package
-
-```
-make testperf && make testbigperf
-```
-
-- test performance and accuracy of python package for xgboost vs. lightgbm
-
-```
-make liblightgbm # only need to do ever once per environment
-make testxgboost
-```
-
-- show all test errors and timings
-sh tests/showresults.sh
-
-- Jupyter Notebooks
-
-examples/py/H2OGPUGLM.ipynb
-examples/py/kmeans_image.ipynb
-examples/py/xgboost_simple_demo.ipynb
-
-- To run gpu C++ version:
-
-```
-cd $BASE/examples/cpp && make -j all ; make run
-```
-
-- Or, to run 16-gpu version on ipums.txt data:
-
-```
-./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
-```
-
-- Install R package (assume in h2o4gpu base directory to start with)
-
-```
-cd $BASE/src/interface_r && make
-
-# Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
-```
-
-- test R package
-
-```
-cd $BASE/examples/R && R CMD BATCH simple.R
-```
-
-
+![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
 
 Solver Classes
 ------
@@ -182,6 +63,11 @@ Planned:
   + GLM: Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
   + SVD, PCA
 
+----
+Contributing
+----
+
+Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVEL.md](DEVEL.md) for instructions on how to build and test the project and how to contribute.
 
 References
 -----
