@@ -1452,6 +1452,19 @@ class GLM(object):
         headers = ["Alphas", "Train", "CV", "Valid"]
         print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
+"""
+H2O Linear Regression Solver
+
+:param int n_threads: Number of threads to use in the gpu. Default is None.
+:param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
+:param bool fit_intercept: Include constant term in the model. Default is True.
+:param int n_folds: Number of cross validation folds. Default is 1.
+:param float tol: tolerance.  Default is 1E-2.
+:param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
+:param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
+:param int max_inter: Maximum number of iterations. Default is 5000
+:param int verbose: Print verbose information to the console if set to > 0. Default is 0.
+"""
 class LinearRegression(GLM):
     def __init__(
             self,
@@ -1464,7 +1477,6 @@ class LinearRegression(GLM):
             glm_stop_early_error_fraction=1.0,
             max_iter=5000,
             verbose=0,
-            give_full_path=0,
     ):
         super(LinearRegression, self).__init__(
             n_threads=n_threads,
@@ -1481,7 +1493,6 @@ class LinearRegression(GLM):
             max_iterations=max_iter,
             verbose=verbose,
             family='elasticnet',
-            give_full_path=give_full_path,
             lambda_max=0.0,
             alpha_max=0.0,
             alpha_min=0.0,
