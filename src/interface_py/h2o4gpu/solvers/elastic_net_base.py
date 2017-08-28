@@ -626,6 +626,12 @@ class GLM(object):
             give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter,
             verbose, order)
 
+        #If fit_intercept is set to True, then append to train_x array and valid_x array(if available)
+        if self.fit_intercept:
+            train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
+            if valid_x is not None:
+                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1), dtype=valid_x.dtype)])
+
         ##############
 
         train_x_np, m_train, n1, fortran1 = _get_data(train_x, verbose=verbose)
