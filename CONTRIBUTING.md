@@ -2,25 +2,27 @@
 
 This document is a set of guidelines for contributors, nothing is set in stone so please just use common sense.
 
-#### Table of contents
+### Table of contents
 
 [Code of conduct](#code-of-conduct)
 
 [Other important resources](#other-important-documents)
 
 [How to contribute](#how-to-contribute)
-    * [Reporting bugs](#reporting-bugs)
-    * [Enhancements/Feature requests](#enhancements-requests)
-    * [Committing code](#committing-code)
+
+* [Reporting bugs](#reporting-bugs)
+* [Enhancements and Feature requests](#enhancements-and-feature-requests)
+* [Committing code](#committing-code)
 
 [Guidelines and standards](#guidelines-and-standards)
-    * [General stuff](#general-stuff)
-    * [Git commit messages](#git-commit-messages)
-    * [License](#license)
-    * [C/C++/CUDA style guidelines](#cpp-style-guidelines)
-    * [Python style guidelines](#python-style-guidelines)
-    * [R style guidelines](#r-style-guidelines)
-    * [Documentation style guidelines](#documentation-style-guidelines)
+
+* [General](#general)
+* [Git commit messages](#git-commit-messages)
+* [License](#license)
+* [C style guidelines](#c-style-guidelines)
+* [Python style guidelines](#python-style-guidelines)
+* [R style guidelines](#r-style-guidelines)
+* [Documentation style guidelines](#documentation-style-guidelines)
 
 ## Code of conduct
 
@@ -42,7 +44,7 @@ There are plenty of ways to contribute, not only by submitting new code! Reporti
 * Only when you are sure the bug has not yet been reported, [open a new issue](https://github.com/h2oai/h2o4gpu/issues/new).
 * Please follow the issue template and provide as many details as possible. A clear, but concise, title, your environment, h2o4gpu version and a [MCVE](https://stackoverflow.com/help/mcve) will make everyone's life easier.
 
-### Enhancements/Feature requests
+### Enhancements and Feature requests
 
 We are open to new enhancements/feature requests!
 
@@ -68,7 +70,7 @@ Check our [developer](DEVELOPER.md) guide for build and testing instructions.
 
 ### Guidelines and standards
 
-#### General stuff
+#### General
 
 * Test your code. Be it a bug fix, enhancement or a new feature please provide a set of tests showing 1) that it actually runs 2) does what it is supposed to be doing 3) does not break existing codebase
 * Keep in mind performance - runtime speed, resource use and accuracy are important to us.
@@ -117,7 +119,7 @@ Each file has to include a license at the top.
 * [R license example](https://github.com/h2oai/h2o4gpu/blob/master/src/interface_r/h2o4gpu/R/h2o4gpuglm.R#L1)
 * [Bash license example](https://github.com/h2oai/h2o4gpu/blob/master/scripts/gitshallow_submodules.sh#L1)
 
-#### C/C++/CUDA style guidelines
+#### C style guidelines
 
 TBA.
 
