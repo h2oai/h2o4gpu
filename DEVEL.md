@@ -26,15 +26,7 @@ pip install setuptools --no-cache-dir
 . .venv/bin/activate
 ```
 
-- Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
-
-````
-R
-install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
-quit()
-````
-
-- Install dev environment:
+- Install OpenBlas dev environment:
 
 ```
 sudo apt-get install libopenblas-dev
@@ -85,57 +77,41 @@ This installs full h2o4gpu as user. It also compiles a python wheel and puts it 
 #### Testing
 
 - test python package
-
 ```
 make test && make testbig
 ```
 
 - test performance and accuracy of python package
-
 ```
 make testperf && make testbigperf
 ```
 
 - test performance and accuracy of python package for xgboost vs. lightgbm
-
 ```
 make liblightgbm # only need to do ever once per environment
 make testxgboost
 ```
 
 - show all test errors and timings
+```
 sh tests/showresults.sh
+```
 
 #### Running examples
 
 - Jupyter Notebooks
-
+```
 examples/py/H2OGPUGLM.ipynb
 examples/py/kmeans_image.ipynb
 examples/py/xgboost_simple_demo.ipynb
+```
 
 - To run gpu C++ version:
-
 ```
 cd $BASE/examples/cpp && make -j all ; make run
 ```
 
 - Or, to run 16-gpu version on ipums.txt data:
-
 ```
 ./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
-```
-
-- Install R package (assume in h2o4gpu base directory to start with)
-
-```
-cd $BASE/src/interface_r && make
-
-# Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
-```
-
-- test R package
-
-```
-cd $BASE/examples/R && R CMD BATCH simple.R
 ```
