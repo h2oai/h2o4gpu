@@ -124,7 +124,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
 
     sourceme = 0
     sourceDev = 0
-    intercept = True # should be passed in from above if user added intercept
+    fit_intercept = True # should be passed in from above if user added fit_intercept
     nThreads = None
     lambda_min_ratio = 1e-9
     give_full_path = 1
@@ -145,7 +145,7 @@ def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, writ
     sys.stdout.flush()
 
     Solver = h2o4gpu.GLM
-    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', intercept=intercept,
+    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', fit_intercept=fit_intercept,
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
                   n_folds=nFolds, n_alphas=nAlphas, verbose=5, give_full_path=give_full_path)
 
@@ -221,7 +221,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                 print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None):
 
     # other default parameters for solving glm
-    intercept = True
+    fit_intercept = True
     lambda_min_ratio = 1e-9 # Causes issue for h2o-3 when using 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
@@ -267,7 +267,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     else:
         print("mTrain=%d" % mTrain)
 
-    if intercept is True:
+    if fit_intercept is True:
         trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
         n = trainX.shape[1]
         print("New n=%d" % n)
@@ -284,7 +284,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # Choose solver
     Solver = h2o4gpu.GLM
 
-    enet = Solver(n_gpus=nGPUs, intercept=intercept,
+    enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                   lambda_min_ratio=lambda_min_ratio,
                   n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family, give_full_path=give_full_path)
 
@@ -446,11 +446,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                 nfoldsh2o = 0
             if family == "logistic":
                 #TODO need to figure out a proper lamba min for h2o-3
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept,
+                h2o_glm = H2OGeneralizedLinearEstimator(fit_intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="binomial", alpha=alpha)
             else:
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=intercept,
+                h2o_glm = H2OGeneralizedLinearEstimator(fit_intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="gaussian", alpha=alpha)
             # Solve

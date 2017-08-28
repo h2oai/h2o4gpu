@@ -17,7 +17,7 @@ H2O GLM Solver
 :param int n_threads: Number of threads to use in the gpu. Default is None.
 :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
 :param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
-:param bool intercept: Include constant term in the model. Default is True.
+:param bool fit_intercept: Include constant term in the model. Default is True.
 :param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
 :param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
 :param int n_folds: Number of cross validation folds. Default is 1.
@@ -26,7 +26,7 @@ H2O GLM Solver
 :param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
 :param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
 :param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
-:param int max_interations: Maximum number of iterations. Default is 5000
+:param int max_iter: Maximum number of iterations. Default is 5000
 :param int verbose: Print verbose information to the console if set to > 0. Default is 0.
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 :param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
@@ -50,7 +50,7 @@ class GLM(object):
             self,
             n_threads=None,
             n_gpus=-1,
-            intercept=True,
+            fit_intercept=True,
             lambda_min_ratio=1E-7,
             n_lambdas=100,
             n_folds=5,
@@ -59,7 +59,7 @@ class GLM(object):
             lambda_stop_early=True,
             glm_stop_early=True,
             glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
+            max_iter=5000,
             verbose=0,
             family='elasticnet',
             give_full_path=0,
@@ -73,7 +73,7 @@ class GLM(object):
 
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
-        assert_is_type(intercept, bool)
+        assert_is_type(fit_intercept, bool)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
@@ -81,7 +81,7 @@ class GLM(object):
         assert_is_type(lambda_stop_early, bool)
         assert_is_type(glm_stop_early, bool)
         assert_is_type(glm_stop_early_error_fraction, float)
-        assert_is_type(max_iterations, int)
+        assert_is_type(max_iter, int)
         assert_is_type(verbose, int)
         assert_is_type(family, str)
         assert family in ['logistic',
@@ -102,10 +102,10 @@ class GLM(object):
         self.m_valid = 0
         self.source_dev = 0  # assume Dev=0 is source of data for _upload_data
         self.source_me = 0  # assume thread=0 is source of data for _upload_data
-        if intercept is True:
-            self.intercept = 1
+        if fit_intercept is True:
+            self.fit_intercept = 1
         else:
-            self.intercept = 0
+            self.fit_intercept = 0
         self.lambda_min_ratio = lambda_min_ratio
         self.n_lambdas = n_lambdas
         self.n_folds = n_folds
@@ -123,7 +123,7 @@ class GLM(object):
         else:
             self.glm_stop_early = 0
         self.glm_stop_early_error_fraction = glm_stop_early_error_fraction
-        self.max_iterations = max_iterations
+        self.max_iter = max_iter
         self.verbose = verbose
         self._family_str = family #Hold string value for family
         self._family = ord(family.split()[0][0])
@@ -198,7 +198,7 @@ class GLM(object):
 
         return give_full_path, verbose, order
 
-    def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order):
+    def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order):
 
         give_full_path, verbose, order = self.none_checks_simple(fail,give_full_path, verbose, order)
 
@@ -214,12 +214,12 @@ class GLM(object):
             glm_stop_early = self.glm_stop_early
         if glm_stop_early_error_fraction is None:
             glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
+        if max_iter is None:
+            max_iter = self.max_iter
         if verbose is None:
             verbose = self.verbose
 
-        return give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order
+        return give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order
 
 
     # TODO Add typechecking
@@ -244,7 +244,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -268,7 +268,7 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None
     ):
 
@@ -285,7 +285,7 @@ class GLM(object):
         self.d = d
         self.e = e
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         # ###########
 
@@ -357,7 +357,7 @@ class GLM(object):
                 c_size_t(m_train),
                 c_size_t(n),
                 c_size_t(m_valid),
-                c_int(self.intercept),
+                c_int(self.fit_intercept),
                 c_int(self._standardize),
                 c_double(self.lambda_max),
                 c_double(self.lambda_min_ratio),
@@ -370,7 +370,7 @@ class GLM(object):
                 c_int(lambda_stop_early),
                 c_int(glm_stop_early),
                 c_double(glm_stop_early_error_fraction),
-                c_int(max_iterations),
+                c_int(max_iter),
                 c_int(verbose),
                 a,
                 b,
@@ -404,7 +404,7 @@ class GLM(object):
                 c_size_t(m_train),
                 c_size_t(n),
                 c_size_t(m_valid),
-                c_int(self.intercept),
+                c_int(self.fit_intercept),
                 c_int(self._standardize),
                 c_double(self.lambda_max),
                 c_double(self.lambda_min_ratio),
@@ -417,7 +417,7 @@ class GLM(object):
                 c_int(lambda_stop_early),
                 c_int(glm_stop_early),
                 c_double(glm_stop_early_error_fraction),
-                c_int(max_iterations),
+                c_int(max_iter),
                 c_int(verbose),
                 a,
                 b,
@@ -600,7 +600,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -618,13 +618,13 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
             order=None,
     ):
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False,
-            give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations,
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(False,
+            give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter,
             verbose, order)
 
         ##############
@@ -735,7 +735,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose
         )
         return self
@@ -900,7 +900,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -918,12 +918,12 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
             order=None
     ):
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(False, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -941,7 +941,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose,
         )
         if valid_x == None:
@@ -990,7 +990,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -1013,10 +1013,10 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
     ):
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -1039,7 +1039,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose,
         )
         if c is None or c is c_void_p(0):
@@ -1072,12 +1072,12 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
     ):
 
         return (self.fit_predict(self, train_x, train_y, valid_x, valid_y, weight, give_full_path, free_input_data,
-                                 tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations,
+                                 tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter,
                                  verbose))
 
     def transform(self):
