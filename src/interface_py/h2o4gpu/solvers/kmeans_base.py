@@ -219,7 +219,7 @@ class KMeans(object):
                                  order='F')
         return transformed
 
-    def sklearn_transform(self, X):
+    def sklearn_transform(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
         found by running fit() and transforms matrix X using that model.
@@ -227,7 +227,7 @@ class KMeans(object):
         """
 
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit()
+        self.sklearn_fit(X, y)
         return self.sklearn_model.transform(X)
 
     def fit_transform(self, X, y):
