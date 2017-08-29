@@ -117,7 +117,7 @@ pipeline {
                             majorVersion = _majorVersion
                             buildVersion = _buildVersion
                             keepPrivate = false
-                            remoteArtifactBucket = "s3://h2o-release/h2o4gpu/stable"
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                         }
                     }
 
@@ -128,7 +128,7 @@ pipeline {
                             majorVersion = _majorVersion
                             buildVersion = _buildVersion
                             keepPrivate = false
-                            remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                         }
                     }
                 }

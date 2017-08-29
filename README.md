@@ -18,9 +18,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 ```
 
 Download the Python wheel file
-
-  * (TBA) [Stable](https://s3.amazonaws.com/h2o-release/h2o4gpu/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
-  * [Bleeding edge](https://s3.amazonaws.com/h2o-release/h2o4gpu/nightly/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
  
 Install the Python wheel file:
 
