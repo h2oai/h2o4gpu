@@ -119,6 +119,7 @@ pipeline {
                             keepPrivate = false
                             remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                         }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
                     }
 
                     if (isBleedingEdge()) {
@@ -130,6 +131,7 @@ pipeline {
                             keepPrivate = false
                             remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                         }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
                     }
                 }
             }
