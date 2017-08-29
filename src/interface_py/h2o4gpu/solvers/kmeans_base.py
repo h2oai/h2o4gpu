@@ -4,13 +4,13 @@ import numpy as np
 import sys
 from h2o4gpu.libs.kmeans_gpu import GPUlib
 from h2o4gpu.libs.kmeans_cpu import CPUlib
-from h2o4gpu.solvers.utils import devicecount, _to_np, _check_data_content, _check_data_size
+from h2o4gpu.solvers.utils import device_count, _to_np, _check_data_content, _check_data_size
 from h2o4gpu.util.typechecks import assert_is_type, assert_satisfies
 
 
 class KMeans(object):
     def __init__(self, n_clusters=10,
-                 max_iter=1000, tol=1E-3, gpu_id=0, n_gpus=1,
+                 max_iter=1000, tol=1E-3, gpu_id=0, n_gpus=-1,
                  init_from_labels=False, init_labels="randomselect",
                  init_data="randomselect",
                  verbose=0, seed=None, do_checks=1):
@@ -29,7 +29,8 @@ class KMeans(object):
 
         self._n_clusters = n_clusters
         self._gpu_id = gpu_id
-        self.n_gpus, self.deviceCount = devicecount(n_gpus=n_gpus)
+        (self.n_gpus, self.devices) = device_count(n_gpus)
+
         self._max_iter = max_iter
         self.init_from_labels = init_from_labels
         self.init_labels = init_labels
@@ -378,9 +379,9 @@ class KMeans(object):
         cpu_lib_getter = CPUlib()
         cpu_lib = cpu_lib_getter.get()
 
-        if (self.n_gpus == 0) or (gpu_lib is None) or (self.deviceCount == 0):
+        if (self.n_gpus == 0) or (gpu_lib is None) or (self.devices == 0):
             raise NotImplementedError("KMeans for CPU not yet supported.")
-        elif (self.n_gpus > 0) or (cpu_lib is None) or (self.deviceCount == 0):
+        elif (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
             self._print_verbose(0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
         else:
