@@ -6,6 +6,15 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
+String SAFE_CHANGE_ID = changeId()
+
+String changeId() {
+    if (env.CHANGE_ID) {
+        return "-${env.CHANGE_ID}".toString()
+    }
+    return "-master"
+}
+
 pipeline {
     agent none
 
@@ -41,11 +50,11 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu-$CHANGE_ID-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
-                            nvidia-docker stop h2o4gpu-$CHANGE_ID-$BUILD_ID
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                     stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -66,15 +75,15 @@ pipeline {
                 script {
                     try {
                         sh """
-                            nvidia-docker run --rm --name h2o4gpu-$CHANGE_ID-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID rm -rf py3nvml
-                            nvidia-docker exec h2o4gpu-$CHANGE_ID-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf py3nvml
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
-                            nvidia-docker stop h2o4gpu-$CHANGE_ID-$BUILD_ID
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
@@ -130,9 +139,9 @@ pipeline {
 }
 
 def isRelease() {
-    return env.CHANGE_ID.startsWith("rel")
+    return env.BRANCH_NAME.startsWith("rel")
 }
 
 def isBleedingEdge() {
-    return env.CHANGE_ID.startsWith("master")
+    return env.BRANCH_NAME.startsWith("master")
 }
