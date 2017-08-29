@@ -32,4 +32,6 @@ install:
 
 clean:
 	python setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
+	cd h2o4gpu && find -L -name *.pyc | xargs rm -rf
+
 

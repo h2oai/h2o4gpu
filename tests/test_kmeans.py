@@ -9,10 +9,10 @@ class TestKmeans(object):
 
     def test_preds_vs_scikit(self):
         trainencflt = self._fetch_data()
-        model = self._train_model(trainencflt)
+        model, labels = self._train_model(trainencflt)
 
         train_labels = model.predict(trainencflt)
-        sklearn_labels = model.sklearn_predict(trainencflt)
+        sklearn_labels = model.sklearn_predict(trainencflt, labels)
 
         diffs = 0
         for tl in zip(train_labels, sklearn_labels):
@@ -23,10 +23,10 @@ class TestKmeans(object):
 
     def test_transform_vs_scikit(self):
         trainencflt = self._fetch_data()
-        model = self._train_model(trainencflt)
+        model, labels = self._train_model(trainencflt)
 
         train_labels = model.transform(trainencflt)
-        sklearn_labels = model.sklearn_transform(trainencflt)
+        sklearn_labels = model.sklearn_transform(trainencflt, labels)
 
         diffs = 0
         for tl in zip(train_labels, sklearn_labels):
@@ -56,7 +56,7 @@ class TestKmeans(object):
         model = h2o4gpu.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7,
                                 max_iter=100)
         model.fit(trainencflt, labels)
-        return model
+        return model, labels
 
     @staticmethod
     def _fetch_data():

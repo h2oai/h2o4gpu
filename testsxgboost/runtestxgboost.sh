@@ -8,7 +8,7 @@ export RESULTS_DIR=$MYPWD/results
 mkdir -p $RESULTS_DIR
 
 # -1 all tests, or choose tests 0-...
-runtests=4
+runtests=-1
 
 if [ $runtests -eq 0 ] || [ $runtests -eq -1 ]
 then
@@ -54,7 +54,11 @@ tar xvf train-jpg.tar
 tar xvf test-jpg.tar
 # get rid of train if no test and visa versa
 numlist=`ls train-jpg test-jpg|sed 's/train_//g' | sed 's/test_//g' | sed 's/test-jpg://g'| sed 's/train-jpg://g' | sed 's/\.jpg//g' | sort|uniq -u`
-for fil in $numlist ; do echo $fil ; rm -rf test-jpg/test_$fil.jpg ; rm -rf train-jpg/train_$fil.jpg ; done
+#for fil in $numlist ; do echo $fil ; rm -rf test-jpg/test_$fil.jpg ; rm -rf train-jpg/train_$fil.jpg ; done
+alias cp='cp'
+for fil in $numlist ; do echo $fil ; cp -a train-jpg/train_$fil.jpg test-jpg/test_$fil.jpg ; done
+for fil in $numlist ; do echo $fil ; cp -a test-jpg/test_$fil.jpg train-jpg/train_$fil.jpg ; done
+rm -rf validate-jpg
 #mkdir -p validate-jpg
 #cp -a test-jpg/*.jpg validate-jpg/
 cd ../../

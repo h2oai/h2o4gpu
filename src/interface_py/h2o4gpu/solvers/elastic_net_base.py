@@ -6,9 +6,10 @@ import sys
 from h2o4gpu.types import cptr
 from h2o4gpu.libs.elastic_net_cpu import h2o4gpuGLMCPU
 from h2o4gpu.libs.elastic_net_gpu import h2o4gpuGLMGPU
-from h2o4gpu.solvers.utils import devicecount, _get_data, _check_data_size, _convert_to_ptr, _checkEqual
+from h2o4gpu.solvers.utils import device_count, _get_data, _check_data_size, _convert_to_ptr, _check_equal
 from h2o4gpu.util.typechecks import assert_is_type
-
+import pandas as pd
+from tabulate import tabulate
 
 """
 H2O GLM Solver
@@ -16,16 +17,16 @@ H2O GLM Solver
 :param int n_threads: Number of threads to use in the gpu. Default is None.
 :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
 :param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
-:param bool intercept: Include constant term in the model. Default is True.
+:param bool fit_intercept: Include constant term in the model. Default is True.
 :param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
 :param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
 :param int n_folds: Number of cross validation folds. Default is 1.
-:param int n_alphas: Number of alphas to be used in a search. Default is 1.
+:param int n_alphas: Number of alphas to be used in a search. Default is 5.
 :param float tol: tolerance.  Default is 1E-2.
 :param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
 :param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
 :param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
-:param int max_interations: Maximum number of iterations. Default is 5000
+:param int max_iter: Maximum number of iterations. Default is 5000
 :param int verbose: Print verbose information to the console if set to > 0. Default is 0.
 :param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 :param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
@@ -34,20 +35,6 @@ H2O GLM Solver
 :param order: Order of data.  Default is None, and internally determined whether row 'r' or column 'c' major order.
 """
 
-#import h2o4gpu
-#h2o4gpu.linear_model.LinearRegression = sklearn.linear_model.LinearRegression
-
-#class linear_model:
-#    def __getattr__(self, item):
-#        return sklearn.linear_model[item]
-#import sklearn
-#for name in dir(sklearn):
-#    x = sklearn[name]
-#    if name not in dir(h2o4gpu):
-#        h2o4gpu[name] = sklearn[name]
-#    if isinstance(x, type(sklearn)):
-#        for name2 in dir(x):
-            
 
 class GLM(object):
     class info:
@@ -58,21 +45,21 @@ class GLM(object):
 
         pass
 
-    # TODO: add gpu_id like kmeans and ensure wraps around deviceCount
+    # TODO: add gpu_id like kmeans and ensure wraps around device_count
     def __init__(
             self,
             n_threads=None,
             n_gpus=-1,
-            intercept=True,
+            fit_intercept=True,
             lambda_min_ratio=1E-7,
             n_lambdas=100,
-            n_folds=1,
-            n_alphas=1,
+            n_folds=5,
+            n_alphas=5,
             tol=1E-2,
             lambda_stop_early=True,
             glm_stop_early=True,
             glm_stop_early_error_fraction=1.0,
-            max_iterations=5000,
+            max_iter=5000,
             verbose=0,
             family='elasticnet',
             give_full_path=0,
@@ -86,7 +73,7 @@ class GLM(object):
 
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
-        assert_is_type(intercept, bool)
+        assert_is_type(fit_intercept, bool)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
@@ -94,7 +81,7 @@ class GLM(object):
         assert_is_type(lambda_stop_early, bool)
         assert_is_type(glm_stop_early, bool)
         assert_is_type(glm_stop_early_error_fraction, float)
-        assert_is_type(max_iterations, int)
+        assert_is_type(max_iter, int)
         assert_is_type(verbose, int)
         assert_is_type(family, str)
         assert family in ['logistic',
@@ -115,10 +102,10 @@ class GLM(object):
         self.m_valid = 0
         self.source_dev = 0  # assume Dev=0 is source of data for _upload_data
         self.source_me = 0  # assume thread=0 is source of data for _upload_data
-        if intercept is True:
-            self.intercept = 1
+        if fit_intercept is True:
+            self.fit_intercept = 1
         else:
-            self.intercept = 0
+            self.fit_intercept = 0
         self.lambda_min_ratio = lambda_min_ratio
         self.n_lambdas = n_lambdas
         self.n_folds = n_folds
@@ -136,8 +123,9 @@ class GLM(object):
         else:
             self.glm_stop_early = 0
         self.glm_stop_early_error_fraction = glm_stop_early_error_fraction
-        self.max_iterations = max_iterations
+        self.max_iter = max_iter
         self.verbose = verbose
+        self._family_str = family #Hold string value for family
         self._family = ord(family.split()[0][0])
         self.give_full_path = give_full_path
         if lambda_max is None:
@@ -152,13 +140,12 @@ class GLM(object):
         self._shared_a = 0
         self._standardize = 0
 
-        (n_gpus, device_count) = devicecount(n_gpus)
-        self.n_gpus = n_gpus
+        (self.n_gpus, devices) = device_count(n_gpus)
 
         if n_threads == None:
             # not required number of threads, but normal.  Bit more optimal to use 2 threads for CPU, but 1 thread per GPU is optimal.
 
-            n_threads = (1 if n_gpus == 0 else n_gpus)
+            n_threads = (1 if self.n_gpus == 0 else self.n_gpus)
         self.n_threads = n_threads
 
         if not h2o4gpuGLMGPU:
@@ -172,13 +159,13 @@ class GLM(object):
                 '>CPU library Use GPU or re-run setup.py')
 
         self.lib = None
-        if n_gpus == 0 or h2o4gpuGLMGPU is None or device_count == 0:
+        if self.n_gpus == 0 or h2o4gpuGLMGPU is None or devices == 0:
             if verbose > 0:
-                print('Using CPU GLM solver %d %d' % (n_gpus, device_count))
+                print('Using CPU GLM solver %d %d' % (self.n_gpus, devices))
             self.lib = h2o4gpuGLMCPU
-        elif n_gpus > 0 or h2o4gpuGLMGPU is None or device_count == 0:
+        elif self.n_gpus > 0 or h2o4gpuGLMGPU is None or devices == 0:
             if verbose > 0:
-                print('Using GPU GLM solver with %d GPUs' % n_gpus)
+                print('Using GPU GLM solver with %d GPUs' % self.n_gpus)
             self.lib = h2o4gpuGLMGPU
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
@@ -210,7 +197,7 @@ class GLM(object):
 
         return give_full_path, verbose, order
 
-    def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order):
+    def none_checks(self, fail, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order):
 
         give_full_path, verbose, order = self.none_checks_simple(fail,give_full_path, verbose, order)
 
@@ -226,12 +213,12 @@ class GLM(object):
             glm_stop_early = self.glm_stop_early
         if glm_stop_early_error_fraction is None:
             glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iterations is None:
-            max_iterations = self.max_iterations
+        if max_iter is None:
+            max_iter = self.max_iter
         if verbose is None:
             verbose = self.verbose
 
-        return give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order
+        return give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order
 
 
     # TODO Add typechecking
@@ -256,7 +243,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -280,7 +267,7 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None
     ):
 
@@ -297,7 +284,7 @@ class GLM(object):
         self.d = d
         self.e = e
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         # ###########
 
@@ -369,7 +356,7 @@ class GLM(object):
                 c_size_t(m_train),
                 c_size_t(n),
                 c_size_t(m_valid),
-                c_int(self.intercept),
+                c_int(self.fit_intercept),
                 c_int(self._standardize),
                 c_double(self.lambda_max),
                 c_double(self.lambda_min_ratio),
@@ -382,7 +369,7 @@ class GLM(object):
                 c_int(lambda_stop_early),
                 c_int(glm_stop_early),
                 c_double(glm_stop_early_error_fraction),
-                c_int(max_iterations),
+                c_int(max_iter),
                 c_int(verbose),
                 a,
                 b,
@@ -416,7 +403,7 @@ class GLM(object):
                 c_size_t(m_train),
                 c_size_t(n),
                 c_size_t(m_valid),
-                c_int(self.intercept),
+                c_int(self.fit_intercept),
                 c_int(self._standardize),
                 c_double(self.lambda_max),
                 c_double(self.lambda_min_ratio),
@@ -429,7 +416,7 @@ class GLM(object):
                 c_int(lambda_stop_early),
                 c_int(glm_stop_early),
                 c_double(glm_stop_early_error_fraction),
-                c_int(max_iterations),
+                c_int(max_iter),
                 c_int(verbose),
                 a,
                 b,
@@ -612,7 +599,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -630,14 +617,21 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
             order=None,
     ):
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False,
-            give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations,
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(False,
+            give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter,
             verbose, order)
+
+        #If fit_intercept is set to True, then append to train_x array and valid_x array(if available)
+        if self.fit_intercept:
+            if train_x is not None:
+                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
+            if valid_x is not None:
+                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1), dtype=valid_x.dtype)])
 
         ##############
 
@@ -649,7 +643,7 @@ class GLM(object):
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
-        _checkEqual(fortran_list)
+        _check_equal(fortran_list)
 
         # set order
         if order is None:
@@ -747,7 +741,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose
         )
         return self
@@ -784,7 +778,7 @@ class GLM(object):
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
-        _checkEqual(fortran_list)
+        _check_equal(fortran_list)
 
         # override order
         if fortran1:
@@ -912,7 +906,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -930,12 +924,12 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
             order=None
     ):
 
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(False, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(False, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -953,7 +947,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose,
         )
         if valid_x == None:
@@ -1002,7 +996,7 @@ class GLM(object):
     :param lambda_stop_early
     :param glm_stop_early
     :param glm_stop_early_error_fraction
-    :param max_iterations
+    :param max_iter
     :param verbose
     """
 
@@ -1025,10 +1019,10 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
     ):
-        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations, verbose, order)
+        give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order = self.none_checks(True, give_full_path, tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -1051,7 +1045,7 @@ class GLM(object):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iterations,
+            max_iter=max_iter,
             verbose=verbose,
         )
         if c is None or c is c_void_p(0):
@@ -1084,12 +1078,12 @@ class GLM(object):
             lambda_stop_early=None,
             glm_stop_early=None,
             glm_stop_early_error_fraction=None,
-            max_iterations=None,
+            max_iter=None,
             verbose=None,
     ):
 
         return (self.fit_predict(self, train_x, train_y, valid_x, valid_y, weight, give_full_path, free_input_data,
-                                 tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iterations,
+                                 tol, lambda_stop_early, glm_stop_early, glm_stop_early_error_fraction, max_iter,
                                  verbose))
 
     def transform(self):
@@ -1099,14 +1093,14 @@ class GLM(object):
 
     @property
     def family(self):
-        return self._family
+        return self._family_str
 
     @family.setter
     def family(self, value):
 
         # add check
 
-        self._family = value
+        self.family = value
 
     @property
     def shared_a(self):
@@ -1450,37 +1444,16 @@ class GLM(object):
         self.e = e
         return (a, b, c, d, e)
 
-class LinearRegression(GLM):
-    def __init__(
-            self,
-            n_threads=None,
-            n_gpus=-1,
-            fit_intercept=True,
-            n_folds=1,
-            tol=1E-2,
-            glm_stop_early=True,
-            glm_stop_early_error_fraction=1.0,
-            max_iter=5000,
-            verbose=0,
-            give_full_path=0,
-    ):
-        super(LinearRegression, self).__init__(
-            n_threads=n_threads,
-            n_gpus=n_gpus,
-            intercept=fit_intercept,
-            lambda_min_ratio=0.0,
-            n_lambdas=1,
-            n_folds=n_folds,
-            n_alphas=1,
-            tol=tol,
-            lambda_stop_early=False,
-            glm_stop_early=glm_stop_early,
-            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iter,
-            verbose=verbose,
-            family='elasticnet',
-            give_full_path=give_full_path,
-            lambda_max=0.0,
-            alpha_max=0.0,
-            alpha_min=0.0,
-            order=None,)
+    def summary(self):
+        """
+        Obtain model summary, which is error per alpha across train, cv, and validation
+
+        Error is logloss for classification and RMSE(Root Mean Squared Error) for regression.
+        """
+        error_train = pd.DataFrame(self.error_best, index=self.alphas)
+        if self.family == "logistic":
+            print("Logloss per alpha value (-1.00 = missing)\n")
+        else:
+            print("RMSE per alpha value (-1.00 = missing)\n")
+        headers = ["Alphas", "Train", "CV", "Valid"]
+        print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))

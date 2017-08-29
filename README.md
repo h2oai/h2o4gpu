@@ -1,140 +1,52 @@
-[H2O4GPU](https://github.com/h2o4gpu/h2o4gpu)
+# H2O4GPU
 
----
+[![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
-H2O4GPU is a collection of GPU (and CPU) solvers by H2Oai.
+**H2O4GPU** is a collection of GPU (and CPU) solvers by H2Oai, as drop-in replacement of sklearn with GPU capabilities.
 
-Requirements
-------
-Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
+## Requirements
 
-Environment
---------
+* Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
 
-- Install Python 3.6. e.g., for pyenv, go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv.  Then run, e.g.,
+## Installation
 
-````
-pyenv install 3.6.1
-pyenv global 3.6.1
-````
-
-- Install [R](https://cran.r-project.org/mirrors.html).  For Ubuntu, see https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-16-04-2, then run:
-
-````
-R
-install.packages(c("data.table", "feather", "glmnet", "MatrixModels"))
-quit()
-````
-
-- Install dev environment:
-
-```
-sudo apt-get install libopenblas-dev
-```
-
-If you are using conda, you probably need to do:
-```
-conda install libgcc
-```
-
-
-- Add to .bashrc or your own environment (e.g.):
+Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 
 ```
 export CUDA_HOME=/usr/local/cuda
-export PATH=/usr/local/cuda/bin:$PATH
-export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
-export CUDADIR=/usr/local/cuda/include/
-export OMP_NUM_THREADS=32
-export MKL_NUM_THREADS=32
-export VECLIB_MAXIMUM_THREADS=32
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
 ```
 
-Compiling and Running
-------
-
-- Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2o4gpu.
-
-```
-sudo nvidia-smi -pm 1
-```
-
-or
+Download the Python wheel file
+  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+ 
+Install the Python wheel file:
 
 ```
-sudo nvidia-persistenced --user foo --persistence-mode # where "foo" is your username
+pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
 ```
 
-
-- To compile everything and install R and python interfaces as user:
-
-```
-git clone --recursive git@github.com:h2oai/h2o4gpu.git (or git clone --recursive https://github.com/h2oai/h2o4gpu)
-cd h2o4gpu
-make fullinstall
-```
-
-This installs full h2o4gpu as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2o4gpu-0.0.1-py2.py3-none-any.whl
-
-- test python package
+Test your installation
 
 ```
-make test && make testbig
+import h2o4gpu
+import numpy as np
+
+X = np.array([[1.,1.], [1.,4.], [1.,0.]])
+model = h2o4gpu.KMeans(n_clusters=2).fit(X)
+model.fit(X).cluster_centers_
 ```
 
-- test performance and accuracy of python package
+For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
-```
-make testperf && make testbigperf
-```
+## Plans and RoadMap
 
-- test performance and accuracy of python package for xgboost vs. lightgbm
+Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
 
-```
-make liblightgbm # only need to do ever once per environment
-make testxgboost
-```
+![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
 
-- show all test errors and timings
-sh tests/showresults.sh
-
-- Jupyter Notebooks
-
-examples/py/H2OGPUGLM.ipynb
-examples/py/kmeans_image.ipynb
-examples/py/xgboost_simple_demo.ipynb
-
-- To run gpu C++ version:
-
-```
-cd $BASE/examples/cpp && make -j all ; make run
-```
-
-- Or, to run 16-gpu version on ipums.txt data:
-
-```
-./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
-```
-
-- Install R package (assume in h2o4gpu base directory to start with)
-
-```
-cd $BASE/src/interface_r && make
-
-# Edit interface_r/src/config2.mk and choose TARGET as cpulib or gpulib (currently defaulted to gpulib).
-```
-
-- test R package
-
-```
-cd $BASE/examples/R && R CMD BATCH simple.R
-```
-
-
-
-Solver Classes
-------
+## Solver Classes
 
 Among others, the solver can be used for the following classes of problems
 
@@ -146,8 +58,18 @@ Planned:
   + SVD, PCA
 
 
-References
------
+## Contributing
+
+Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVEL.md](DEVEL.md) for instructions on how to build and test the project and how to contribute.
+
+GitHub issues are used only for bugs, feature and enhancement discussion/tracking.
+
+## Questions
+
+Please ask all `h2o4gpu` related questions either on [StackOverflow](https://stackoverflow.com/questions/tagged/h2o4gpu) or our [Gitter](https://gitter.im/h2oai/h2o4gpu),
+
+## References
+
 1. [Parameter Selection and Pre-Conditioning for a Graph Form Solver -- C. Fougner and S. Boyd][pogs]
 2. [Block Splitting for Distributed Optimization -- N. Parikh and S. Boyd][block_splitting]
 3. [Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers -- S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein][admm_distr_stats]
@@ -162,8 +84,9 @@ References
 
 [prox_algs]: http://www.stanford.edu/~boyd/papers/prox_algs.html "Proximal Algorithms -- N. Parikh and S. Boyd"
 
-Copyright
------
+## Copyright
+
+```
 Copyright (c) 2017, H2O.ai, Inc., Mountain View, CA
 Apache License Version 2.0 (see LICENSE file)
 
@@ -194,3 +117,4 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```

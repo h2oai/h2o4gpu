@@ -3,49 +3,54 @@ import numpy as np
 from ctypes import *
 from h2o4gpu.types import cptr
 
-def devicecount(n_gpus=0):
 
-    deviceCount, total_mem = getgpuinfo()
+def device_count(n_gpus=0):
+    available_device_count, _ = gpu_info()
 
     if n_gpus < 0:
-        if deviceCount >= 0:
-            n_gpus = deviceCount
+        if available_device_count >= 0:
+            n_gpus = available_device_count
         else:
-            print("Cannot automatically set n_gpus to all GPUs %d %d, trying n_gpus=1" % (n_gpus, deviceCount))
+            print(
+                "Cannot set n_gpus to all GPUs %d %d, trying n_gpus=1"
+                % (n_gpus, available_device_count)
+            )
             n_gpus = 1
 
-    if n_gpus > deviceCount:
-        n_gpus = deviceCount
+    if n_gpus > available_device_count:
+        n_gpus = available_device_count
 
-    return (n_gpus, deviceCount)
+    return n_gpus, available_device_count
+
 
 # get GPU info, but do in sub-process to avoid mixing parent-child cuda contexts
 # https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
-def getgpuinfo():
+def gpu_info():
     from concurrent.futures import ProcessPoolExecutor
-    res=None
     with ProcessPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(getgpuinfo_subprocess)
-        res=future.result()
+        future = executor.submit(gpu_info_subprocess)
+        res = future.result()
     return res
 
-def getgpuinfo_subprocess():
-    total_gpus=0
-    total_mem=0
+
+def gpu_info_subprocess():
+    total_gpus = 0
+    total_mem = 0
     try:
         import py3nvml.py3nvml
         py3nvml.py3nvml.nvmlInit()
         total_gpus = py3nvml.py3nvml.nvmlDeviceGetCount()
 
         total_mem = \
-            min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
+            min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
+                py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
     except Exception as e:
         print("No GPU, setting total_gpus=0")
         print(e)
         sys.stdout.flush()
         pass
-    return (total_gpus, total_mem)
+    return total_gpus, total_mem
 
 
 def _to_np(data):
@@ -54,7 +59,6 @@ def _to_np(data):
 
 
 def _get_data(data, verbose=0):
-
     # default is no data
     datalocal = None
     m = 0
@@ -92,10 +96,7 @@ def _get_data(data, verbose=0):
         if verbose > 0:
             print('no data')
 
-
-
     return datalocal, m, n, fortran
-
 
 
 def _check_data_content(do_check, name, data):
@@ -103,9 +104,9 @@ def _check_data_content(do_check, name, data):
         assert np.isfinite(data).all(), "%s contains Inf" % name
         assert not np.isnan(data).any(), "%s contains NA" % name
 
-def _check_data_size(data, verbose=0):
 
-    double_precision=-1
+def _check_data_size(data, verbose=0):
+    double_precision = -1
     m = 0
     n = -1
 
@@ -159,7 +160,8 @@ def _convert_to_ptr(data, c_ftype=c_float):
 
     return data_ptr
 
-def _checkEqual(iterator):
+
+def _check_equal(iterator):
     iterator = iter(iterator)
     try:
         first = next(iterator)

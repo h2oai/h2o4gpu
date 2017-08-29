@@ -1,6 +1,11 @@
-* POGS paper: "Proximal Graph Solver (POGS) is an open-source (BSD-3 license) implementation of graph projection splitting, written
-in C++."
+* xgboost      : LICENSE.XGBOOST      : https://github.com/dmlc/xgboost/blob/master/LICENSE : Apache 2
+* scikit-learn : LICENSE.SCIKIT-LEARN : https://github.com/scikit-learn/scikit-learn/blob/master/COPYING : BSD-3
+* Pogs         : LICENSE.POGS         : https://github.com/foges/pogs
+                 Also, see POGS paper: "Proximal Graph Solver (POGS) is an open-source (BSD-3 license) implementation of graph projection splitting, written in C++."
+                 I.e. see, Section 5 of https://arxiv.org/pdf/1503.08366.pdf
+                 Also, see license-grant.png that is snapshot from github issues explaining original GPL-3 mark in github was changed to BSD-3.
+                 I.e. see, https://github.com/foges/pogs/issues/23
+* py3nvml      : LICENSE.NVIDIA : https://github.com/fbcotter/py3nvml/blob/master/LICENSE
 
-* Also see license-grant.png that is snapshot from github issues explaining original GPL-3 mark in github was changed to BSD-3.
 
 

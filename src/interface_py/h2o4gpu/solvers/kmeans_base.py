@@ -4,13 +4,13 @@ import numpy as np
 import sys
 from h2o4gpu.libs.kmeans_gpu import GPUlib
 from h2o4gpu.libs.kmeans_cpu import CPUlib
-from h2o4gpu.solvers.utils import devicecount, _to_np, _check_data_content, _check_data_size
+from h2o4gpu.solvers.utils import device_count, _to_np, _check_data_content, _check_data_size
 from h2o4gpu.util.typechecks import assert_is_type, assert_satisfies
 
 
 class KMeans(object):
     def __init__(self, n_clusters=10,
-                 max_iter=1000, tol=1E-3, gpu_id=0, n_gpus=1,
+                 max_iter=1000, tol=1E-3, gpu_id=0, n_gpus=-1,
                  init_from_labels=False, init_labels="randomselect",
                  init_data="randomselect",
                  verbose=0, seed=None, do_checks=1):
@@ -29,7 +29,8 @@ class KMeans(object):
 
         self._n_clusters = n_clusters
         self._gpu_id = gpu_id
-        self.n_gpus, self.deviceCount = devicecount(n_gpus=n_gpus)
+        (self.n_gpus, self.devices) = device_count(n_gpus)
+
         self._max_iter = max_iter
         self.init_from_labels = init_from_labels
         self.init_labels = init_labels
@@ -38,9 +39,6 @@ class KMeans(object):
         self._did_sklearn_fit = 0
         self.verbose = verbose
         self.do_checks = do_checks
-
-        self.Xnp = None
-        self.ynp = None
 
         self.cluster_centers_ = None
 
@@ -88,9 +86,6 @@ class KMeans(object):
         ynp = _to_np(y)
 
         _check_data_content(self.do_checks, "X", Xnp)
-
-        # Cached for sklearn fit
-        self.Xnp = Xnp
         rows = np.shape(Xnp)[0]
 
         if ynp is None:
@@ -101,16 +96,13 @@ class KMeans(object):
         ynp = ynp.astype(np.int)
         ynp = np.mod(ynp, self._n_clusters)
 
-        # Cached for sklearn fit
-        self.ynp = ynp
-
         self._fit(Xnp, ynp)
 
         self._did_sklearn_fit = 0
 
         return self
 
-    def sklearn_fit(self):
+    def sklearn_fit(self, X, y=None):
         """Instantiates a scikit-learn model using previously found,
         with fit(), centroids. """
 
@@ -118,12 +110,23 @@ class KMeans(object):
             "Centroids are None. Run fit() first."
 
         if self._did_sklearn_fit == 0:
+            X_np = _to_np(X)
+            _check_data_content(self.do_checks, "X", X_np)
+            rows = np.shape(X_np)[0]
+
+            y_np = _to_np(y)
+            if y_np is None:
+                y_np = np.random.randint(rows, size=rows) % self._n_clusters
+            _check_data_content(self.do_checks, "y", y_np)
+            y_np = y_np.astype(np.int)
+            y_np = np.mod(y_np, self._n_clusters)
+
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
             self.sklearn_model = sk_cluster.KMeans(self._n_clusters, max_iter=1,
                                                    init=self.cluster_centers_,
                                                    n_init=1)
-            self.sklearn_model.fit(self.Xnp, self.ynp)
+            self.sklearn_model.fit(X_np, y_np)
 
     def predict(self, X):
         cols, rows = self._validate_centroids(X)
@@ -164,15 +167,24 @@ class KMeans(object):
         preds = np.reshape(preds, rows)
         return preds
 
-    def sklearn_predict(self, X):
+    def sklearn_predict(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
         found by running fit() and predicts labels using that model.
         This method always runs on CPU, not on GPUs.
         """
-
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit()
+
+        y_np = _to_np(y)
+        rows = np.shape(X)[0]
+        if y_np is None:
+            y_np = np.random.randint(rows, size=rows) % self._n_clusters
+        _check_data_content(self.do_checks, "y", y_np)
+
+        y_np = y_np.astype(np.int)
+        y_np = np.mod(y_np, self._n_clusters)
+
+        self.sklearn_fit(X, y_np)
         return self.sklearn_model.predict(X)
 
     def transform(self, X):
@@ -208,7 +220,7 @@ class KMeans(object):
                                  order='F')
         return transformed
 
-    def sklearn_transform(self, X):
+    def sklearn_transform(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
         found by running fit() and transforms matrix X using that model.
@@ -216,7 +228,7 @@ class KMeans(object):
         """
 
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit()
+        self.sklearn_fit(X, y)
         return self.sklearn_model.transform(X)
 
     def fit_transform(self, X, y):
@@ -367,9 +379,9 @@ class KMeans(object):
         cpu_lib_getter = CPUlib()
         cpu_lib = cpu_lib_getter.get()
 
-        if (self.n_gpus == 0) or (gpu_lib is None) or (self.deviceCount == 0):
+        if (self.n_gpus == 0) or (gpu_lib is None) or (self.devices == 0):
             raise NotImplementedError("KMeans for CPU not yet supported.")
-        elif (self.n_gpus > 0) or (cpu_lib is None) or (self.deviceCount == 0):
+        elif (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
             self._print_verbose(0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
         else:

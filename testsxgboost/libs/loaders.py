@@ -233,7 +233,9 @@ def load_planet_kaggle():
 
     validation_features, validation_names = featurise_images(model, 
                                                 val_path, 
-                                                'train_{}', 
+                                                #'test_{}',
+                                                'train_{}',
+                                                #range(nb_validation_samples),
                                                 range(nb_train_samples, nb_train_samples+nb_validation_samples),
                                                 desc='Featurising validation images')
 
