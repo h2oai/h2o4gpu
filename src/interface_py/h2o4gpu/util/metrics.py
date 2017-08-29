@@ -1,4 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import numpy as np
+
 
 def ll(actual, predicted):
     """
@@ -18,18 +24,19 @@ def ll(actual, predicted):
     """
     actual = np.array(actual)
     predicted = np.array(predicted)
-    for i in range(0,predicted.shape[0]):
-        predicted[i] = min(max(1e-15,predicted[i]),1-1e-15)
+    for i in range(0, predicted.shape[0]):
+        predicted[i] = min(max(1e-15, predicted[i]), 1 - 1e-15)
     err = np.seterr(all='ignore')
-    score = -(actual*np.log(predicted)+(1-actual)*np.log(1-predicted))
+    score = -(actual * np.log(predicted) + (1 - actual) * np.log(1 - predicted))
     np.seterr(divide=err['divide'], over=err['over'],
               under=err['under'], invalid=err['invalid'])
-    if type(score)==np.ndarray:
+    if isinstance(score, np.ndarray):
         score[np.isnan(score)] = 0
     else:
         if np.isnan(score):
             score = 0
     return score
+
 
 def log_loss(actual, predicted):
     """
@@ -49,6 +56,7 @@ def log_loss(actual, predicted):
     """
     return np.mean(ll(actual, predicted))
 
+
 def se(actual, predicted):
     """
     Computes the squared error.
@@ -65,7 +73,8 @@ def se(actual, predicted):
     score : double or list of doubles
             The squared error between actual and predicted
     """
-    return np.power(np.array(actual)-np.array(predicted), 2)
+    return np.power(np.array(actual) - np.array(predicted), 2)
+
 
 def mse(actual, predicted):
     """
@@ -84,6 +93,7 @@ def mse(actual, predicted):
             The mean squared error between actual and predicted
     """
     return np.mean(se(actual, predicted))
+
 
 def rmse(actual, predicted):
     """

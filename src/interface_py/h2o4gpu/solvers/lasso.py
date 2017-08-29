@@ -1,4 +1,9 @@
-from h2o4gpu.solvers.elastic_net_base import GLM
+# -*- encoding: utf-8 -*-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from h2o4gpu.solvers.elastic_net import GLM
 """
 H2O Lasso Regression Solver
 

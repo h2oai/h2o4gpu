@@ -1,10 +1,27 @@
+# -*- encoding: utf-8 -*-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import sys
+from ctypes import c_float, POINTER
 import numpy as np
-from ctypes import *
 from h2o4gpu.types import cptr
+from py3nvml.py3nvml import NVMLError
+
+#############################
+# Device utils
 
 
 def device_count(n_gpus=0):
+    """Tries to return the number of available GPUs on this machine.
+
+    :param n_gpus: int, optional, default : 0
+        If < 0 then return all available GPUs
+        If >= 0 then return n_gpus or as many as possible
+    :return:
+        Adjusted n_gpus and all available devices
+    """
     available_device_count, _ = gpu_info()
 
     if n_gpus < 0:
@@ -23,17 +40,27 @@ def device_count(n_gpus=0):
     return n_gpus, available_device_count
 
 
-# get GPU info, but do in sub-process to avoid mixing parent-child cuda contexts
-# https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
 def gpu_info():
+    """Gets the GPU info.
+
+    This runs in a sub-process to avoid mixing parent-child CUDA contexts.
+
+    :return:
+        Total number of GPUs and total available memory
+    """
     from concurrent.futures import ProcessPoolExecutor
     with ProcessPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(gpu_info_subprocess)
+        future = executor.submit(_gpu_info_subprocess)
         res = future.result()
     return res
 
 
-def gpu_info_subprocess():
+def _gpu_info_subprocess():
+    """Gets the GPU info.
+
+    :return:
+        Total number of GPUs and total available memory
+    """
     total_gpus = 0
     total_mem = 0
     try:
@@ -45,67 +72,82 @@ def gpu_info_subprocess():
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
-    except Exception as e:
-        print("No GPU, setting total_gpus=0")
+    except NVMLError as e:
+        print("No GPU, setting total_gpus=0 and total_mem=0")
         print(e)
         sys.stdout.flush()
-        pass
     return total_gpus, total_mem
 
 
+#############################
+# Data utils
+
 def _to_np(data):
+    """Convert the input to a numpy array.
+
+    :param data: array_like
+    :return: ndarray
+    """
     import pandas as pd
-    return data.values if isinstance(data, pd.DataFrame) else data
+    if isinstance(data, pd.DataFrame):
+        return data.values
+    elif isinstance(data, np.ndarray):
+        return data
+    else:
+        np.asarray(data)
 
 
-def _get_data(data, verbose=0):
+def _get_data(data):
+    """Transforms data to numpy and gather basic info about it.
+
+    :param data: array_like
+    :return: data as ndarray, rows, cols, continuity
+    """
     # default is no data
-    datalocal = None
+    data_as_np = None
     m = 0
     n = -1
     fortran = None
 
     if data is not None:
-        try:
-            datalocal = _to_np(data)
-            fortran = datalocal.flags.f_contiguous
-            if datalocal.value is not None:
-                # get shapes
-                shape_x = np.shape(datalocal)
-                m = shape_x[0]
-                try:
-                    n = shape_x[1]
-                except:
-                    n = 1
-            else:
-                if verbose > 0:
-                    print('no data')
-                n = -1
-        except:
-            datalocal = _to_np(data)
-            # get shapes
-            shape_x = np.shape(datalocal)
-            m = shape_x[0]
-            try:
-                n = shape_x[1]
-            except:
-                n = 1
+        data_as_np = _to_np(data)
+        fortran = data_as_np.flags.f_contiguous
+        shape_x = np.shape(data_as_np)
+        m = shape_x[0]
+        if len(shape_x) > 1:
+            n = shape_x[1]
+        else:
+            n = 1
 
-
-    else:
-        if verbose > 0:
-            print('no data')
-
-    return datalocal, m, n, fortran
+    return data_as_np, m, n, fortran
 
 
 def _check_data_content(do_check, name, data):
+    """Makes sure the data contains no infinite or NaN values
+
+    :param do_check: int
+        1 perform checks
+        != 1 don't perform checks.
+    :param name: str
+        Name of the object for logging.
+    :param data: array_like
+        Data to be checked
+    :return:
+    """
     if do_check == 1:
         assert np.isfinite(data).all(), "%s contains Inf" % name
         assert not np.isnan(data).any(), "%s contains NA" % name
 
 
-def _check_data_size(data, verbose=0):
+def _data_info(data, verbose=0):
+    """Get info about passed data.
+
+    :param data: array_like
+    :param verbose: int, optional, default : 0
+        Logging level
+    :return:
+        Data precision (0 or 1), rows, cols
+    """
     double_precision = -1
     m = 0
     n = -1
@@ -115,53 +157,49 @@ def _check_data_size(data, verbose=0):
             if data.dtype == np.float64:
                 if verbose > 0:
                     print('Detected np.float64 data')
-                sys.stdout.flush()
+                    sys.stdout.flush()
                 double_precision = 1
             if data.dtype == np.float32:
                 if verbose > 0:
                     print('Detected np.float32 data')
-                sys.stdout.flush()
+                    sys.stdout.flush()
                 double_precision = 0
-        except:
+        except AttributeError:
             double_precision = -1
-        try:
-            if data.value is not None:
-                m = data.shape[0]
-                try:
-                    n = data.shape[1]
-                except:
-                    n = 1
-            else:
-                m = 0
-                n = -1
-        except:
-            m = data.shape[0]
-            try:
-                n = data.shape[1]
-            except:
-                n = 1
+
+        data_shape = np.shape(data)
+        if len(data_shape) == 1:
+            m = data_shape[0]
+        elif len(data_shape) == 2:
+            m = data_shape[0]
+            n = data_shape[1]
 
     return double_precision, m, n
 
 
 def _convert_to_ptr(data, c_ftype=c_float):
-    null_ptr = POINTER(c_ftype)()
+    """Convert data to a form which can be passed to C/C++ code.
+
+    :param data: array_like
+    :param c_ftype:
+    :return:
+    """
+    data_ptr = POINTER(c_ftype)()
 
     if data is not None:
-        try:
-            if data.value is not None:
-                data_ptr = cptr(data, dtype=c_ftype)
-            else:
-                data_ptr = null_ptr
-        except:
-            data_ptr = cptr(data, dtype=c_ftype)
-    else:
-        data_ptr = null_ptr
+        np_data = _to_np(data)
+        data_ptr = cptr(np_data, dtype=c_ftype)
 
     return data_ptr
 
 
 def _check_equal(iterator):
+    """Check if all the values in an iterator are equal.
+
+    :param iterator: iterator
+    :return: bool
+    """
+
     iterator = iter(iterator)
     try:
         first = next(iterator)
