@@ -7,3 +7,6 @@
 [submodule "py3nvml"]
 	path = py3nvml
 	url = https://github.com/h2oai/py3nvml
+[submodule "scikit-learn"]
+	path = scikit-learn
+	url = https://github.com/scikit-learn/scikit-learn.git

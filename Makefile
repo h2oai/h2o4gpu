@@ -88,10 +88,10 @@ py:
 r:
 	$(MAKE) -j all -C src/interface_r
 
-pyinstall: py
+pyinstall:
 	$(MAKE) -j install -C src/interface_py
 
-rinstall: r
+rinstall:
 	$(MAKE) -j install -C src/interface_r
 
 ##############################################
@@ -191,8 +191,13 @@ liblightgbm: # only done if user directly requests, never an explicit dependency
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
 
-apply_sklearn:
-	mkdir -p sklearn && cd sklearn && pip install -U sklearn --target=.
+libsklearn:	# assume already submodule gets sklearn
+	scripts/prepare_sklearn.sh # repeated calls don't hurt
+	mv src/interface_py/h2o4gpu/__init__.py src/interface_py/h2o4gpu/__init__.py.backup
+	mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
+
+apply_sklearn: libsklearn
+	sh ./scripts/apply_sklearn.sh
 
 
 #################### Jenkins specific
