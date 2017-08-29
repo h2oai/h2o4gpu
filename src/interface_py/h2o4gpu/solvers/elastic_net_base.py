@@ -628,7 +628,8 @@ class GLM(object):
 
         #If fit_intercept is set to True, then append to train_x array and valid_x array(if available)
         if self.fit_intercept:
-            train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
+            if train_x is not None:
+                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
             if valid_x is not None:
                 valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1), dtype=valid_x.dtype)])
 
