@@ -122,6 +122,15 @@ pipeline {
                             remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
                         }
                     }
+
+                    s3up {
+                        localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                        artifactId = "h2o4gpu"
+                        majorVersion = _majorVersion
+                        buildVersion = _buildVersion
+                        keepPrivate = false
+                        remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
+                    }
                 }
             }
         }
