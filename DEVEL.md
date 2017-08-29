@@ -1,8 +1,8 @@
-## Developer guide
+# Developer guide
 
-### Building
+## Building
 
-#### Build Environment
+### Build Environment
 
 * Python 3.6.
 
@@ -50,7 +50,7 @@ export MKL_NUM_THREADS=32
 export VECLIB_MAXIMUM_THREADS=32
 ```
 
-#### Compiling and Building
+### Compiling and Building
 
 - Do at first the below in order to get GPUs to stay warm to avoid delays upon running h2o4gpu.
 
@@ -74,7 +74,7 @@ make fullinstall
 
 This installs full h2o4gpu as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2o4gpu-0.0.1-py2.py3-none-any.whl
 
-#### Testing
+## Testing
 
 - test python package
 ```
@@ -97,7 +97,7 @@ make testxgboost
 sh tests/showresults.sh
 ```
 
-#### Running examples
+## Running examples
 
 - Jupyter Notebooks
 ```
