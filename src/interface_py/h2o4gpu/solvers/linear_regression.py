@@ -28,7 +28,7 @@ class LinearRegression(GLM):
         super(LinearRegression, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
-            intercept=fit_intercept,
+            fit_intercept=fit_intercept,
             lambda_min_ratio=0.0,
             n_lambdas=1,
             n_folds=n_folds,
@@ -37,7 +37,7 @@ class LinearRegression(GLM):
             lambda_stop_early=False,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iter,
+            max_iter=max_iter,
             verbose=verbose,
             family='elasticnet',
             lambda_max=0.0,

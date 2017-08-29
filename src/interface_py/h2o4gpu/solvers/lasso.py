@@ -38,7 +38,7 @@ class Lasso(GLM):
         super(Lasso, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
-            intercept=fit_intercept,
+            fit_intercept=fit_intercept,
             lambda_min_ratio=lambda_min_ratio,
             n_lambdas=n_lambdas,
             n_folds=n_folds,
@@ -47,7 +47,7 @@ class Lasso(GLM):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iter,
+            max_iter=max_iter,
             verbose=verbose,
             family=family,
             give_full_path=0,
