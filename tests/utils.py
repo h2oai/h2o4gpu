@@ -259,7 +259,6 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         validX = np.copy(X[H:morig, :])
         validY = np.copy(y[H:morig])
         mvalid = validX.shape[0]
-        validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
 
     mTrain = trainX.shape[0]
     if validFraction != 0.0:
@@ -268,8 +267,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         print("mTrain=%d" % mTrain)
 
     if fit_intercept is True:
-        trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        n = trainX.shape[1]
+        trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
+        n = trainX_intercept.shape[1]
         print("New n=%d" % n)
 
     #####################
@@ -333,7 +332,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     Xvsalphabest=enet.X_best
 
-    testvalidY = np.dot(trainX, Xvsalphabest.T)
+    testvalidY = np.dot(trainX_intercept, Xvsalphabest.T)
     print("testvalidY (newvalidY should be this)")
     if family != "logistic":
         print(testvalidY)
@@ -446,11 +445,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
                 nfoldsh2o = 0
             if family == "logistic":
                 #TODO need to figure out a proper lamba min for h2o-3
-                h2o_glm = H2OGeneralizedLinearEstimator(fit_intercept=fit_intercept,
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="binomial", alpha=alpha)
             else:
-                h2o_glm = H2OGeneralizedLinearEstimator(fit_intercept=fit_intercept,
+                h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="gaussian", alpha=alpha)
             # Solve
