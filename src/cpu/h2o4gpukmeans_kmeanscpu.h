@@ -1,3 +1,8 @@
+/* Copyright 2017 H2O.ai
+
+Apache License Version 2.0 (see LICENSE for details)
+==============================================================================*/
+
 #define MAX_NCPUS 1
 
 namespace kmeans {
@@ -116,7 +121,7 @@ template<typename T>
              std::vector<int> &labels,
              std::vector<T> &centroids,
              int max_iterations,
-             int init_from_labels=0,
+             int init_from_data=0,
              double threshold=1e-3) {
       
 

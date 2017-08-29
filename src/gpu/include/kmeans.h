@@ -44,7 +44,7 @@ namespace kmeans {
     \param distances Distances from points to centroids. This vector has
     size n. It is passed by reference since it is shared with the caller
     and not copied.
-    \param init_from_labels If true, the labels need to be initialized
+    \param init_from_data If true, the labels need to be initialized
     before calling kmeans. If false, the centroids need to be
     initialized before calling kmeans. Defaults to true, which means
     the labels must be initialized.
@@ -68,7 +68,7 @@ namespace kmeans {
         std::vector<int> dList,
         int n_gpu,
         int max_iterations,
-        int init_from_labels=0,
+        int init_from_data=0,
         double threshold=1e-3) {
     
       thrust::device_vector<T> *data_dots[MAX_NGPUS];
@@ -158,7 +158,7 @@ namespace kmeans {
         }
 
         detail::make_self_dots(n/n_gpu, d, *data[q], *data_dots[q]);
-        if (init_from_labels) {
+        if (init_from_data) {
           if(verbose){
         	  fprintf(stderr,"Before find_centroids: gpu: %d\n",q); fflush(stderr);
           }

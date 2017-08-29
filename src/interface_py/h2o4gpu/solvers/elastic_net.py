@@ -1,12 +1,13 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# -*- encoding: utf-8 -*-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from ctypes import *
 import numpy as np
 import sys
-from h2o4gpu.types import cptr
-from h2o4gpu.libs.elastic_net_cpu import h2o4gpuGLMCPU
-from h2o4gpu.libs.elastic_net_gpu import h2o4gpuGLMGPU
-from h2o4gpu.solvers.utils import device_count, _get_data, _check_data_size, _convert_to_ptr, _check_equal
+from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
+from h2o4gpu.solvers.utils import device_count, _get_data, _data_info, _convert_to_ptr, _check_equal
 from h2o4gpu.util.typechecks import assert_is_type
 import pandas as pd
 from tabulate import tabulate
@@ -148,25 +149,28 @@ class GLM(object):
             n_threads = (1 if self.n_gpus == 0 else self.n_gpus)
         self.n_threads = n_threads
 
-        if not h2o4gpuGLMGPU:
+        gpu_lib = GPUlib().get()
+        cpu_lib = CPUlib().get()
+
+        if not gpu_lib:
             print(
                 '\nWarning: Cannot create a H2O4GPU Elastic Net GPU Solver instance without linking Python module to a compiled H2O4GPU GPU library '
                 '>Use CPU or add CUDA libraries to $PATH and re-run setup.py')
 
-        if not h2o4gpuGLMCPU:
+        if not cpu_lib:
             print(
                 '\nWarning: Cannot create a H2O4GPU Elastic Net CPU Solver instance without linking Python module to a compiled H2O4GPU '
                 '>CPU library Use GPU or re-run setup.py')
 
         self.lib = None
-        if self.n_gpus == 0 or h2o4gpuGLMGPU is None or devices == 0:
+        if self.n_gpus == 0 or gpu_lib is None or devices == 0:
             if verbose > 0:
                 print('Using CPU GLM solver %d %d' % (self.n_gpus, devices))
-            self.lib = h2o4gpuGLMCPU
-        elif self.n_gpus > 0 or h2o4gpuGLMGPU is None or devices == 0:
+            self.lib = cpu_lib
+        elif self.n_gpus > 0 or gpu_lib is None or devices == 0:
             if verbose > 0:
                 print('Using GPU GLM solver with %d GPUs' % self.n_gpus)
-            self.lib = h2o4gpuGLMGPU
+            self.lib = gpu_lib
         else:
             raise RuntimeError("Couldn't instantiate GLM Solver")
 
@@ -635,11 +639,11 @@ class GLM(object):
 
         ##############
 
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x, verbose=verbose)
-        train_y_np, m_y, n_y, fortran2 = _get_data(train_y, verbose=verbose)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, verbose=verbose)
-        valid_y_np, m_valid_y, n_valid_y, fortran4 = _get_data(valid_y, verbose=verbose)
-        weight_np, m_weight, n_weight, fortran5 = _get_data(weight, verbose=verbose)
+        train_x_np, m_train, n1, fortran1 = _get_data(train_x)
+        train_y_np, m_y, n_y, fortran2 = _get_data(train_y)
+        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x)
+        valid_y_np, m_valid_y, n_valid_y, fortran4 = _get_data(valid_y)
+        weight_np, m_weight, n_weight, fortran5 = _get_data(weight)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
@@ -772,9 +776,9 @@ class GLM(object):
         # if pass None train_x and train_y, then do predict using valid_x and weight (if given)
         # unlike _upload_data and fit_ptr (and so fit) don't free-up predictions since for single model might request multiple predictions.  User has to call finish themselves to cleanup.
 
-        valid_x_np, n2, m_valid, fortran1 = _get_data(valid_x, verbose=self.verbose)
-        valid_y_np, n_valid_y, m_valid_y, fortran2 = _get_data(valid_y, verbose=self.verbose)
-        weight_np, n_weight, m_weight, fortran3 = _get_data(weight, verbose=self.verbose)
+        valid_x_np, n2, m_valid, fortran1 = _get_data(valid_x)
+        valid_y_np, n_valid_y, m_valid_y, fortran2 = _get_data(valid_y)
+        weight_np, n_weight, m_weight, fortran3 = _get_data(weight)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
@@ -1300,13 +1304,13 @@ class GLM(object):
         #
         # ################
 
-        self.double_precision1, m_train, n1 = _check_data_size(train_x, verbose=self.verbose)
+        self.double_precision1, m_train, n1 = _data_info(train_x, verbose=self.verbose)
         self.m_train = m_train
-        self.double_precision3, m_train2, n_train2 = _check_data_size(train_y, verbose=self.verbose)
-        self.double_precision2, m_valid, n2 = _check_data_size(valid_x, verbose=self.verbose)
+        self.double_precision3, m_train2, n_train2 = _data_info(train_y, verbose=self.verbose)
+        self.double_precision2, m_valid, n2 = _data_info(valid_x, verbose=self.verbose)
         self.m_valid = m_valid
-        self.double_precision4, m_valid2, n_valid2 = _check_data_size(valid_y, verbose=self.verbose)
-        self.double_precision5, m_train3, n_train3 = _check_data_size(weight, verbose=self.verbose)
+        self.double_precision4, m_valid2, n_valid2 = _data_info(valid_y, verbose=self.verbose)
+        self.double_precision5, m_train3, n_train3 = _data_info(weight, verbose=self.verbose)
 
 
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:

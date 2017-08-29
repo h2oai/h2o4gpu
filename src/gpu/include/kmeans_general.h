@@ -1,3 +1,8 @@
+/* Copyright 2017 H2O.ai
+
+Apache License Version 2.0 (see LICENSE for details)
+==============================================================================*/
+
 #ifndef __KMEANS_GENERAL_H
 #define  __KMEANS_GENERAL_H
 #define MAX_NGPUS 16

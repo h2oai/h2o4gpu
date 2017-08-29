@@ -1,11 +1,15 @@
+# -*- encoding: utf-8 -*-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
 from h2o4gpu.types import H2OConstants, cptr, make_settings, make_solution, make_info, change_settings, change_solution, \
     Solution, FunctionVector
-from h2o4gpu.libs.cpu import pogsCPU
-from h2o4gpu.libs.gpu import pogsGPU
+from h2o4gpu.libs.lib_pogs import CPUlib, GPUlib
 from h2o4gpu.solvers.utils import device_count
 
 
@@ -25,21 +29,24 @@ class Pogs(object):
 
         n_gpus, devices = device_count(n_gpus=n_gpus)
 
-        if not pogsCPU:
+        gpu_lib = GPUlib().get()
+        cpu_lib = CPUlib().get()
+
+        if not cpu_lib:
             print(
                 '\nWarning: Cannot create a pogs CPU Solver instance without linking Python module to a compiled H2O4GPU CPU library')
 
-        if not pogsGPU:
+        if not gpu_lib:
             print(
                 '\nWarning: Cannot create a pogs GPU Solver instance without linking Python module to a compiled H2O4GPU GPU library')
             print('> Use CPU or add CUDA libraries to $PATH and re-run setup.py\n\n')
 
-        if ((n_gpus == 0) or (pogsGPU is None) or (devices == 0)):
+        if ((n_gpus == 0) or (gpu_lib is None) or (devices == 0)):
             print("\nUsing CPU GLM solver\n")
-            self.solver = BaseSolver(A, pogsCPU)
+            self.solver = BaseSolver(A, cpu_lib)
         else:
             print("\nUsing GPU GLM solver with %d GPUs\n" % n_gpus)
-            self.solver = BaseSolver(A, pogsGPU)
+            self.solver = BaseSolver(A, gpu_lib)
 
         assert self.solver != None, "Couldn't instantiate Pogs Solver"
 
@@ -68,7 +75,6 @@ class BaseSolver(object):
 
             assert self.dense or self.CSC or self.CSR
             assert A.dtype == c_float or A.dtype == c_double
-            assert lib and (lib == pogsCPU or lib == pogsGPU)
 
             self.m = A.shape[0]
             self.n = A.shape[1]

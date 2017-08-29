@@ -54,8 +54,7 @@ int main(int argc, char **argv) {
   }
   int verbose=1;
   const char ord='r';
-  int init_from_labels=1;//true as set above, otherwise internally will set initial centroids "smartly"
-  int init_labels=1; // randomly select from input
+  int init_from_data=1;//true as set above, otherwise internally will set initial centroids "smartly"
   int init_data=2; // randomly (without replacement) select from input
   int seed=12345;
   int dopredict = 0;
@@ -63,7 +62,7 @@ int main(int argc, char **argv) {
   std::vector<real_t> centroids(1);
   centroids[0] = static_cast<real_t>(drand48());
 
-  h2o4gpukmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_labels, init_labels, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
+  h2o4gpukmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_data, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
 
   // report something about centroids that site in res as k*cols data block
 #endif
