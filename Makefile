@@ -92,6 +92,8 @@ pyinstall: py
 
 alldeps: deps_fetch alldeps_install
 
+alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
+
 build: update_submodule cpp c py
 
 install: pyinstall
@@ -131,18 +133,24 @@ deps_clean:
 
 deps_fetch:
 	@echo "---- Fetch dependencies ---- "
+	bash scripts/gitshallow_submodules.sh
+
+private_deps_fetch:
+    @echo "---- Fetch private dependencies ---- "
 	@mkdir -p "$(DEPS_DIR)"
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
-	bash scripts/gitshallow_submodules.sh
 
 deps_install:
 	@echo "---- Install dependencies ----"
-	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
-	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
+
+private_deps_install:
+	@echo "---- Install private dependencies ----"
+	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
+	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
 alldeps_install: deps_install apply_xgboost apply_sklearn apply_py3nvml
 
@@ -194,7 +202,7 @@ buildjekins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
-fullinstalljenkins: cleanjenkins alldeps buildjekins installjenkins
+fullinstalljenkins: cleanjenkins alldeps_private buildjekins installjenkins
 
 .PHONY: mrproper
 mrproper: clean
@@ -203,7 +211,7 @@ mrproper: clean
 
 #################### H2O.ai specific
 
-fullinstallprivate: clean alldeps build sync_data install
+fullinstallprivate: clean alldeps_private build sync_data install
 
 sync_data: sync_smalldata sync_otherdata
 

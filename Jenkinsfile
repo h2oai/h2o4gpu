@@ -28,6 +28,7 @@ pipeline {
             agent {
                 label "mr-dl11"
             }
+
             steps {
                 dumpInfo 'Linux Build Info'
                 checkout([
@@ -53,10 +54,12 @@ pipeline {
                 }
             }
         }
+
         stage('Test on Linux') {
             agent {
                 label "mr-dl11"
             }
+
             steps {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
@@ -81,14 +84,11 @@ pipeline {
             }
         }
 
-        // Publish into S3 all snapshots versions
-        stage('Publish snapshot to S3') {
-            when {
-                branch 'master'
-            }
+        stage('Publish to S3') {
             agent {
                 label "linux"
             }
+
             steps {
                 unstash 'linux_whl'
                 unstash 'version_info'
@@ -100,17 +100,39 @@ pipeline {
                     def _majorVersion = version[0]
                     def _buildVersion = version[1]
                     version = null // This is necessary, else version:Tuple will be serialized
-                    s3up {
-                        localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
-                        artifactId = "h2o4gpu"
-                        majorVersion = _majorVersion
-                        buildVersion = _buildVersion
-                        keepPrivate = false
-                        //remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
+
+                    if (isRelease()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://h2o-release/h2o4gpu/stable"
+                        }
+                    }
+
+                    if (isBleedingEdge()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
+                        }
                     }
                 }
             }
         }
 
     }
+}
+
+def isRelease() {
+    return env.BRANCH_NAME.startsWith("rel")
+}
+
+def isBleedingEdge() {
+    return env.BRANCH_NAME.startsWith("master")
 }
