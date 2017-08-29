@@ -136,7 +136,7 @@ deps_fetch:
 	bash scripts/gitshallow_submodules.sh
 
 private_deps_fetch:
-    @echo "---- Fetch private dependencies ---- "
+	@echo "---- Fetch private dependencies ---- "
 	@mkdir -p "$(DEPS_DIR)"
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
