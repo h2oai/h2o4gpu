@@ -24,7 +24,7 @@ class GLM(object):
         Must be 'r' (Row major) or 'c' (Column major).
     :param bool fit_intercept: Include constant term in the model.
         Default is True.
-    :param int lambda_min_ratio: Minimum lambda used in lambda search.
+    :param float lambda_min_ratio: Minimum lambda used in lambda search.
         Default is 1e-7.
     :param int n_lambdas: Number of lambdas to be used in a search.
         Default is 100.
@@ -44,10 +44,10 @@ class GLM(object):
     :param str family: "logistic" for classification with logistic regression.
         Defaults to "elasticnet" for regression.
         Must be "logistic" or "elasticnet".
-    :param lambda_max: Maximum Lambda value to use.  Default is None, and then
+    :param int,float lambda_max: Maximum Lambda value to use.  Default is None, and then
         internally compute standard maximum
-    :param alpha_max: Maximum alpha.  Default is 1.0.
-    :param alpha_min: Minimum alpha.  Default is 0.0.
+    :param int,float alpha_max: Maximum alpha.  Default is 1.0.
+    :param int,float alpha_min: Minimum alpha.  Default is 0.0.
     :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
     """
@@ -83,6 +83,7 @@ class GLM(object):
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
         assert_is_type(fit_intercept, bool)
+        assert_is_type(lambda_min_ratio, float)
         assert_is_type(n_lambdas, int)
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
@@ -96,9 +97,9 @@ class GLM(object):
         assert family in ['logistic',
                           'elasticnet'], \
             "family should be 'logistic' or 'elasticnet' but got " + family
-        assert_is_type(lambda_max, float, None)
-        assert_is_type(alpha_max, float, None)
-        assert_is_type(alpha_min, float, None)
+        assert_is_type(lambda_max, float, int, None)
+        assert_is_type(alpha_max, float, int, None)
+        assert_is_type(alpha_min, float, int, None)
 
         if order is not None:
             assert_is_type(order, str)
