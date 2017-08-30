@@ -196,7 +196,7 @@ libsklearn:	# assume already submodule gets sklearn
 	mv src/interface_py/h2o4gpu/__init__.py src/interface_py/h2o4gpu/__init__.py.backup
 	mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
-apply_sklearn: # libsklearn
+apply_sklearn: libsklearn
 	sh ./scripts/apply_sklearn.sh
 
 
