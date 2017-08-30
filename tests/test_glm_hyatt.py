@@ -9,9 +9,9 @@ import logging
 print(sys.path)
 
 try:
-    from utils import find_file, runglm, elastic_net
+    from utils import find_file, run_glm_ptr, run_glm
 except:
-    from tests.utils import find_file, runglm, elastic_net
+    from tests.utils import find_file, run_glm_ptr, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -67,7 +67,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
             wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
 
             t1 = time.time()
-            pred_val, rmse_train, rmse_test = runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
+            pred_val, rmse_train, rmse_test = run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
                                                      write, display, use_gpu, name=name)
         else:
             # should all be explicitly np.float32 or all np.float64
@@ -76,7 +76,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
             yfull = np.loadtxt("./data/yfullhyatt_2k.csv", delimiter=',', dtype=np.float32)
 
             t1 = time.time()
-            rmse_train, rmse_test = elastic_net(xfull, yfull, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
+            rmse_train, rmse_test = run_glm(xfull, yfull, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                                 nalpha=nAlphas,
                                                 validFraction=validFraction, verbose=0, name=name)
         print("Testing GLM")
