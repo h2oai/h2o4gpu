@@ -9,9 +9,9 @@ import feather
 print(sys.path)
 
 try:
-    from utils import find_file, runglm, elastic_net
+    from utils import find_file, runglm, run_glm
 except:
-    from tests.utils import find_file, runglm, elastic_net
+    from tests.utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -42,7 +42,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
 
     t1 = time.time()
-    rmse_train, rmse_test = elastic_net(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
+    rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
                                         validFraction=validFraction, verbose=0, name=name)
 
     # check rmse

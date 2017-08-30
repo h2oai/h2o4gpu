@@ -72,7 +72,7 @@ def skip_if_no_smalldata():
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-def runglm(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None):
+def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None):
 
     if nGPUs > 0:
         use_gpu = True
@@ -217,8 +217,8 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 
-def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
-                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None):
+def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
+                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm"):
 
     # other default parameters for solving glm
     fit_intercept = True
@@ -281,11 +281,31 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     sys.stdout.flush()
 
     # Choose solver
-    Solver = h2o4gpu.GLM
-
-    enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                  lambda_min_ratio=lambda_min_ratio,
-                  n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family, give_full_path=give_full_path)
+    if solver is "glm":
+        Solver = h2o4gpu.GLM
+        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
+                      lambda_min_ratio=lambda_min_ratio,
+                      n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family,
+                      give_full_path=give_full_path)
+    elif solver is "lasso":
+        Solver = h2o4gpu.Lasso
+        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
+                      lambda_min_ratio=lambda_min_ratio,
+                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family)
+    elif solver is "ridge":
+        Solver = h2o4gpu.Ridge
+        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
+                      lambda_min_ratio=lambda_min_ratio,
+                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family)
+    elif solver is "linear_regression":
+        Solver = h2o4gpu.LinearRegression
+        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
+                      n_folds=nFolds, verbose=verbose)
+    elif solver is "logistic":
+        Solver = h2o4gpu.LogisticRegression
+        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
+                      lambda_min_ratio=lambda_min_ratio,
+                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose)
 
     print("trainX")
     print(trainX)
