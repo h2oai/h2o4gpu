@@ -9,4 +9,4 @@
 	url = https://github.com/h2oai/py3nvml
 [submodule "scikit-learn"]
 	path = scikit-learn
-	url = https://github.com/scikit-learn/scikit-learn.git
+	url = https://github.com/h2oai/scikit-learn.git
