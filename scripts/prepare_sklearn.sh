@@ -1,3 +1,4 @@
+#!/bin/bash
 cd scikit-learn
 rm -rf build dist
 

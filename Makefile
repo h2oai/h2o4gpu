@@ -117,8 +117,8 @@ cleanpy:
 
 # uses https://github.com/Azure/fast_retraining
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
-	sh testsxgboost/runtestxgboost.sh
-	sh testsxgboost/extracttestxgboost.sh
+	bash testsxgboost/runtestxgboost.sh
+	bash testsxgboost/extracttestxgboost.sh
 	bash tests/showresults.sh # same for all tests
 
 ################
@@ -195,7 +195,7 @@ libsklearn:	# assume already submodule gets sklearn
 	mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
 apply_sklearn: libsklearn
-	sh ./scripts/apply_sklearn.sh
+	bash ./scripts/apply_sklearn.sh
 
 
 #################### Jenkins specific

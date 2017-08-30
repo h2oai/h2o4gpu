@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd src/interface_py/h2o4gpu/
 # now register any override of existing classes
 # e.g. from grep -R 'from \.' * |grep KMeans

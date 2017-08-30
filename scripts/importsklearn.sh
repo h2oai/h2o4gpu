@@ -1,3 +1,4 @@
+#!/bin/bash
 
 cd src/interface_py/h2o4gpu
 

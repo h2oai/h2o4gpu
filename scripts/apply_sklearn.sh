@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # apply sklearn
 rm -rf sklearn
 cd scikit-learn
