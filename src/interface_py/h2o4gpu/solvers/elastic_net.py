@@ -51,6 +51,11 @@ class GLM(object):
     :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
     """
+    class info:
+        pass
+
+    class solution:
+        pass
 
     # TODO: add gpu_id like kmeans and ensure wraps around device_count
     def __init__(
