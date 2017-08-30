@@ -216,13 +216,12 @@ def printallerrors(display, enet, str, give_full_path):
         print('Best TOls for %s  ' % str, tols_best)
     return error_best
 
-
 def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
-                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm"):
+                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",lambda_min_ratio=1e-9):
 
-    # other default parameters for solving glm
+    # Other default parameters for solving glm
     fit_intercept = True
-    lambda_min_ratio = 1e-9 # Causes issue for h2o-3 when using 1k ipums dataset
+    lambda_min_ratio = lambda_min_ratio # Causes issue for h2o-3 when using 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
@@ -232,7 +231,7 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     sys.stdout.flush()
     doassert=0 # default is not assert
 
-    # override run_h2o False default if environ exists
+    # Override run_h2o False default if environ exists
     if os.getenv("H2OGLM_PERFORMANCE") is not None:
         run_h2o = True
 
