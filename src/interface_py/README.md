@@ -14,7 +14,7 @@ The H2O4GPU c++/CUDA library has the following dependencies:
 
 The Python package h2o4gpu has the following additional dependencies:
 
-	python >= 2.7
+	python 3.6
 	numpy >= 1.8
 	scipy >= 0.13
 
