@@ -43,7 +43,7 @@ do
 
            # append our class
            echo "" >> $skfile
-           command=sed -e 's/^"//' -e 's/"$//' <<< "$command"
+           command=`sed -e 's/^"//' -e 's/"$//' <<< "$command"`
            echo "$command" >> $initfile
     fi
     
