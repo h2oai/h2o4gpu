@@ -4,25 +4,37 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from h2o4gpu.solvers.elastic_net import GLM
-"""
-H2O Ridge Regression Solver
 
-:param int n_threads: Number of threads to use in the gpu. Default is None.
-:param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
-:param bool fit_intercept: Include constant term in the model. Default is True.
-:param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
-:param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
-:param int n_folds: Number of cross validation folds. Default is 1.
-:param float tol: tolerance.  Default is 1E-2.
-:param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
-:param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
-:param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
-:param int max_iter: Maximum number of iterations. Default is 5000
-:param int verbose: Print verbose information to the console if set to > 0. Default is 0.
-:param str family: Use "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
-:param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
-"""
+
 class Ridge(GLM):
+    """H2O Ridge Regression Solver
+
+    :param int n_threads: Number of threads to use in the gpu. Default is None.
+    :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
+    :param bool fit_intercept: Include constant term in the model.
+        Default is True.
+    :param int lambda_min_ratio: Minimum lambda used in lambda search.
+        Default is 1e-7.
+    :param int n_lambdas: Number of lambdas to be used in a search.
+        Default is 100.
+    :param int n_folds: Number of cross validation folds. Default is 1.
+    :param float tol: tolerance.  Default is 1E-2.
+    :param bool lambda_stop_early: Stop early when there is no more relative
+        improvement on train or validation. Default is True.
+    :param bool glm_stop_early: Stop early when there is no more relative
+        improvement in the primary and dual residuals for ADMM.  Default is True
+    :param float glm_stop_early_error_fraction: Relative tolerance for
+        metric-based stopping criterion (stop if relative improvement is not at
+        least this much). Default is 1.0.
+    :param int max_iter: Maximum number of iterations. Default is 5000
+    :param int verbose: Print verbose information to the console if set to > 0.
+        Default is 0.
+    :param str family: Use "logistic" for classification with logistic
+        regression. Defaults to "elasticnet" for regression.
+        Must be "logistic" or "elasticnet".
+    :param lambda_max: Maximum Lambda value to use.
+        Default is None, and then internally compute standard maximum
+    """
     def __init__(
             self,
             n_threads=None,
@@ -59,4 +71,4 @@ class Ridge(GLM):
             lambda_max=lambda_max,
             alpha_max=0.0,
             alpha_min=0.0,
-            order=None,)
+            order=None)

@@ -5,7 +5,6 @@ KMeans clustering solver.
 :copyright: (c) 2017 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-
 import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, POINTER, cast
 import numpy as np
