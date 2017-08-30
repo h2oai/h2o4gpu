@@ -464,7 +464,6 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
             if nfoldsh2o == 1:
                 nfoldsh2o = 0
             if family == "logistic":
-                #TODO need to figure out a proper lamba min for h2o-3
                 h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
                                                         family="binomial", alpha=alpha)
@@ -632,6 +631,3 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
         myerror_test = error_test[-1]
 
     return myerror_train, myerror_test
-
-# TODO(navdeep): Does h2o-3 use validation frame to choose best fit or stop early, when nfolds>1?
-# TODO(navdeep): So every time we do make testperf, we'll get error and performance info.  For error info, would be cool if markdown or something (instead of text) and bad numbers were highlighted.  Also need h2o-3 results as separate file that's also printed so we can compare and see what went wrong.
