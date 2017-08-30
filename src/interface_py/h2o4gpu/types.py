@@ -1,5 +1,10 @@
-from ctypes import POINTER, c_int, c_uint, c_void_p, c_float, c_double, Structure
-from numpy import float32, float64, zeros, ones, inf
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from ctypes import POINTER, c_int, c_uint, c_void_p, c_float, c_double, \
+    Structure
+from numpy import zeros, ones, inf
 
 
 class H2OConstants:
@@ -8,6 +13,9 @@ class H2OConstants:
 
 
 class H2OFunctions:
+    """
+    Constants representing functions used internally in C/C++
+    """
     ABS = c_int(0)
     EXP = c_int(1)
     HUBER = c_int(2)
@@ -27,6 +35,9 @@ class H2OFunctions:
 
 
 class H2OStatus:
+    """
+    Constants representing statuses returned from C/C++
+    """
     SUCCESS = 'H2O4GPU_SUCCESS'
     INFEASIBLE = 'H2O4GPU_INFEASIBLE'
     UNBOUNDED = 'H2O4GPU_UNBOUNDED'
@@ -36,6 +47,9 @@ class H2OStatus:
 
 
 class H2OSolverDefault:
+    """
+    Constants representing defaults used in our solvers
+    """
     RHO = 1.  # rho = 1.0
     ABS_TOL = 1e-4  # abs_tol = 1e-2
     REL_TOL = 1e-4  # rel_tol = 1e-4
@@ -47,6 +61,7 @@ class H2OSolverDefault:
     WARM_START = 0  # warm_start = False
     N_DEV = 1  # number of cuda devices =1
     W_DEV = 0  # which cuda devices (0)
+
 
 # pointers to C types
 c_int_p = POINTER(c_int)
@@ -138,6 +153,12 @@ def cptr(np_arr, dtype=c_float):
 
 
 def change_settings(settings, **kwargs):
+    """ Utility setting values from kwargs
+    :param settings: settings object, should contain attributes
+        which are about to be set
+    :param kwargs: key-value pairs representing the settings
+    :return:
+    """
     # all settings (except warm_start) are persistent and change only if called
     if 'rho' in kwargs: settings.rho = kwargs['rho']
     if 'abs_tol' in kwargs: settings.abs_tol = kwargs['abs_tol']
@@ -158,49 +179,69 @@ def change_settings(settings, **kwargs):
 
 
 def make_settings(double_precision=False, **kwargs):
-    rho = kwargs['rho'] if 'rho' in list(kwargs.keys()) else H2OSolverDefault.RHO
-    relt = kwargs['abs_tol'] if 'abs_tol' in list(kwargs.keys()) else H2OSolverDefault.ABS_TOL
-    abst = kwargs['rel_tol'] if 'rel_tol' in list(kwargs.keys()) else H2OSolverDefault.REL_TOL
-    maxit = kwargs['max_iters'] if 'max_iters' in list(kwargs.keys()) else H2OSolverDefault.MAX_ITERS
-    verb = kwargs['verbose'] if 'verbose' in list(kwargs.keys()) else H2OSolverDefault.VERBOSE
-    adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(kwargs.keys()) else H2OSolverDefault.ADAPTIVE_RHO
-    equil = kwargs['equil'] if 'equil' in list(kwargs.keys()) else H2OSolverDefault.EQUIL
-    gaps = kwargs['gap_stop'] if 'gap_stop' in list(kwargs.keys()) else H2OSolverDefault.GAP_STOP
-    warm = kwargs['warm_start'] if 'warm_start' in list(kwargs.keys()) else H2OSolverDefault.WARM_START
-    ndev = kwargs['nDev'] if 'nDev' in list(kwargs.keys()) else H2OSolverDefault.N_DEV
-    wdev = kwargs['wDev'] if 'wDev' in list(kwargs.keys()) else H2OSolverDefault.W_DEV
+    """Creates a SettingsS objects from key-values
+
+    :param double_precision: boolean, optional, default : False
+    :param kwargs: **kwargs
+    :return: SettingsS object
+    """
+    rho = kwargs['rho'] if 'rho' in list(
+        kwargs.keys()) else H2OSolverDefault.RHO
+    relt = kwargs['abs_tol'] if 'abs_tol' in list(
+        kwargs.keys()) else H2OSolverDefault.ABS_TOL
+    abst = kwargs['rel_tol'] if 'rel_tol' in list(
+        kwargs.keys()) else H2OSolverDefault.REL_TOL
+    maxit = kwargs['max_iters'] if 'max_iters' in list(
+        kwargs.keys()) else H2OSolverDefault.MAX_ITERS
+    verb = kwargs['verbose'] if 'verbose' in list(
+        kwargs.keys()) else H2OSolverDefault.VERBOSE
+    adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(
+        kwargs.keys()) else H2OSolverDefault.ADAPTIVE_RHO
+    equil = kwargs['equil'] if 'equil' in list(
+        kwargs.keys()) else H2OSolverDefault.EQUIL
+    gaps = kwargs['gap_stop'] if 'gap_stop' in list(
+        kwargs.keys()) else H2OSolverDefault.GAP_STOP
+    warm = kwargs['warm_start'] if 'warm_start' in list(
+        kwargs.keys()) else H2OSolverDefault.WARM_START
+    ndev = kwargs['nDev'] if 'nDev' in list(
+        kwargs.keys()) else H2OSolverDefault.N_DEV
+    wdev = kwargs['wDev'] if 'wDev' in list(
+        kwargs.keys()) else H2OSolverDefault.W_DEV
     if double_precision:
-        return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm, ndev, wdev)
-    else:
-        return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm, ndev, wdev)
+        return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm,
+                         ndev, wdev)
+    return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm,
+                     ndev, wdev)
 
 
-def change_solution(pysolution, **kwargs):
+def change_solution(py_solution, **kwargs):
     try:
-        if 'x_init' in kwargs: pysolution.x[:] = kwargs['x_init'][:]
-        if 'nu_init' in kwargs: pysolution.nu[:] = kwargs['nu_init'][:]
+        if 'x_init' in kwargs: py_solution.x[:] = kwargs['x_init'][:]
+        if 'nu_init' in kwargs: py_solution.nu[:] = kwargs['nu_init'][:]
     except:
-        # TODO: message about vector lengths?
-        raise
+        raise RuntimeError("Failed to change solution.")
 
 
-def make_solution(pysolution):
-    if pysolution.double_precision:
-        return SolutionD(cptr(pysolution.x, c_double), cptr(pysolution.y, c_double),
-                         cptr(pysolution.mu, c_double), cptr(pysolution.nu, c_double))
-    else:
-        return SolutionS(cptr(pysolution.x, c_float), cptr(pysolution.y, c_float),
-                         cptr(pysolution.mu, c_float), cptr(pysolution.nu, c_float))
+def make_solution(py_solution):
+    if py_solution.double_precision:
+        return SolutionD(cptr(py_solution.x, c_double),
+                         cptr(py_solution.y, c_double),
+                         cptr(py_solution.mu, c_double),
+                         cptr(py_solution.nu, c_double))
+    return SolutionS(cptr(py_solution.x, c_float),
+                     cptr(py_solution.y, c_float),
+                     cptr(py_solution.mu, c_float),
+                     cptr(py_solution.nu, c_float))
 
 
 def make_info(double_precision):
     if double_precision:
         return InfoD(0, 0, inf, 0, 0)
-    else:
-        return InfoS(0, 0, inf, 0, 0)
+    return InfoS(0, 0, inf, 0, 0)
 
 
 class FunctionVector(object):
+    """Class representing a function"""
     def __init__(self, length, double_precision=False):
         T = c_double if double_precision else c_float
         self.a = ones(length, T)
@@ -214,7 +255,7 @@ class FunctionVector(object):
     def length(self):
         return len(self.a)
 
-    def copyfrom(self, f):
+    def copy_from(self, f):
         self.a[:] = f.a[:]
         self.b[:] = f.b[:]
         self.c[:] = f.c[:]
@@ -222,7 +263,7 @@ class FunctionVector(object):
         self.e[:] = f.e[:]
         self.h[:] = f.h[:]
 
-    def copyto(self, f):
+    def copy_to(self, f):
         f.a[:] = self.a[:]
         f.b[:] = self.b[:]
         f.c[:] = self.c[:]
@@ -233,15 +274,13 @@ class FunctionVector(object):
     def to_double(self):
         if self.double_precision:
             return self
-        else:
-            f = FunctionVector(self.length(), double_precision=True)
-            self.copyto(f)
-            return f
+        f = FunctionVector(self.length(), double_precision=True)
+        self.copy_to(f)
+        return f
 
     def to_float(self):
         if self.double_precision:
             f = FunctionVector(self.length())
-            self.copyto(f)
+            self.copy_to(f)
             return f
-        else:
-            return self
+        return self

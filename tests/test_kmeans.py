@@ -1,12 +1,10 @@
 import h2o4gpu as h2o4gpu
-import sys
 import pandas as pd
 import numpy as np
 import random
 
 
 class TestKmeans(object):
-
     def test_preds_vs_scikit(self):
         trainencflt = self._fetch_data()
         model, labels = self._train_model(trainencflt)
@@ -19,7 +17,7 @@ class TestKmeans(object):
             if tl[0] != tl[1]:
                 diffs = diffs + 1
 
-        assert diffs/trainencflt.shape[0] <= 0.1
+        assert diffs / trainencflt.shape[0] <= 0.1
 
     def test_transform_vs_scikit(self):
         trainencflt = self._fetch_data()
@@ -33,7 +31,7 @@ class TestKmeans(object):
             if np.array_equal(tl[0], tl[1]):
                 diffs = diffs + 1
 
-        assert diffs/trainencflt.shape[0] <= 0.1
+        assert diffs / trainencflt.shape[0] <= 0.1
 
     @staticmethod
     def _train_model(trainencflt):
@@ -54,7 +52,7 @@ class TestKmeans(object):
         print(labels.shape)
         n_gpus = 1
         model = h2o4gpu.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7,
-                                max_iter=100)
+                               max_iter=100)
         model.fit(trainencflt, labels)
         return model, labels
 

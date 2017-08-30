@@ -6,6 +6,15 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
+String SAFE_CHANGE_ID = changeId()
+
+String changeId() {
+    if (env.CHANGE_ID) {
+        return "-${env.CHANGE_ID}".toString()
+    }
+    return "-master"
+}
+
 pipeline {
     agent none
 
@@ -28,6 +37,7 @@ pipeline {
             agent {
                 label "mr-dl11"
             }
+
             steps {
                 dumpInfo 'Linux Build Info'
                 checkout([
@@ -40,11 +50,11 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
-                            nvidia-docker stop h2o4gpu-$BUILD_ID
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                     stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -53,25 +63,27 @@ pipeline {
                 }
             }
         }
+
         stage('Test on Linux') {
             agent {
                 label "mr-dl11"
             }
+
             steps {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 script {
                     try {
                         sh """
-                            nvidia-docker run --rm --name h2o4gpu-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu-$BUILD_ID rm -rf py3nvml
-                            nvidia-docker exec h2o4gpu-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf py3nvml
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
-                            nvidia-docker stop h2o4gpu-$BUILD_ID
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
@@ -81,14 +93,11 @@ pipeline {
             }
         }
 
-        // Publish into S3 all snapshots versions
-        stage('Publish snapshot to S3') {
-            when {
-                branch 'master'
-            }
+        stage('Publish to S3') {
             agent {
                 label "linux"
             }
+
             steps {
                 unstash 'linux_whl'
                 unstash 'version_info'
@@ -100,17 +109,41 @@ pipeline {
                     def _majorVersion = version[0]
                     def _buildVersion = version[1]
                     version = null // This is necessary, else version:Tuple will be serialized
-                    s3up {
-                        localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
-                        artifactId = "h2o4gpu"
-                        majorVersion = _majorVersion
-                        buildVersion = _buildVersion
-                        keepPrivate = false
-                        //remoteArtifactBucket = "s3://h2o-release/h2o4gpu/nightly"
+
+                    if (isRelease()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
+                        }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
+                    }
+
+                    if (isBleedingEdge()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
+                        }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
                     }
                 }
             }
         }
 
     }
+}
+
+def isRelease() {
+    return env.BRANCH_NAME.startsWith("rel")
+}
+
+def isBleedingEdge() {
+    return env.BRANCH_NAME.startsWith("master")
 }

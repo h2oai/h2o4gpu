@@ -85,28 +85,24 @@ c:
 py:
 	$(MAKE) -j all -C src/interface_py
 
-r:
-	$(MAKE) -j all -C src/interface_r
-
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
-
-rinstall:
-	$(MAKE) -j install -C src/interface_r
 
 ##############################################
 
 alldeps: deps_fetch alldeps_install
 
-build: update_submodule cpp c py r
+alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
 
-install: pyinstall rinstall
+build: update_submodule cpp c py
+
+install: pyinstall
 
 fullinstall: clean alldeps build sync_smalldata install
 
 #############################################
 
-clean: cleancpp cleanc cleanpy cleanr deps_clean xgboost_clean py3nvml_clean
+clean: cleancpp cleanc cleanpy deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/ ./tmp/
 
 cleancpp:
@@ -118,9 +114,6 @@ cleanc:
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
-
-cleanr:
-	$(MAKE) -j clean -C src/interface_r
 
 # uses https://github.com/Azure/fast_retraining
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
@@ -140,18 +133,24 @@ deps_clean:
 
 deps_fetch:
 	@echo "---- Fetch dependencies ---- "
+	bash scripts/gitshallow_submodules.sh
+
+private_deps_fetch:
+	@echo "---- Fetch private dependencies ---- "
 	@mkdir -p "$(DEPS_DIR)"
 	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
-	bash scripts/gitshallow_submodules.sh
 
 deps_install:
 	@echo "---- Install dependencies ----"
-	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
-	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 	pip install -r requirements.txt --upgrade
+
+private_deps_install:
+	@echo "---- Install private dependencies ----"
+	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
+	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
 alldeps_install: deps_install apply_xgboost apply_sklearn apply_py3nvml
 
@@ -201,13 +200,13 @@ apply_sklearn: libsklearn
 
 #################### Jenkins specific
 
-cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
+cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjekins: update_submodule cpp c py # r -- not yet
+buildjekins: update_submodule cpp c py
 
-installjenkins: pyinstall # rinstall -- not yet
+installjenkins: pyinstall
 
-fullinstalljenkins: cleanjenkins alldeps buildjekins installjenkins
+fullinstalljenkins: cleanjenkins alldeps_private buildjekins installjenkins
 
 .PHONY: mrproper
 mrproper: clean
@@ -216,7 +215,7 @@ mrproper: clean
 
 #################### H2O.ai specific
 
-fullinstallprivate: clean build alldeps sync_data install
+fullinstallprivate: clean alldeps_private build sync_data install
 
 sync_data: sync_smalldata sync_otherdata
 

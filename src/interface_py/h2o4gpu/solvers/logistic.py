@@ -1,26 +1,41 @@
-from h2o4gpu.solvers.elastic_net_base import GLM
+# -*- encoding: utf-8 -*-
 """
-H2O Logistic Regression Solver
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from h2o4gpu.solvers.elastic_net import GLM
 
-:param int n_threads: Number of threads to use in the gpu. Default is None.
-:param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
-:param str order: Row major or Column major for C/C++ backend. Default is Row major ('r'). Must be "r" (Row major) or "c" (Column major).
-:param bool fit_intercept: Include constant term in the model. Default is True.
-:param int lambda_min_ratio: Minimum lambda used in lambda search. Default is 1e-7.
-:param int n_lambdas: Number of lambdas to be used in a search. Default is 100.
-:param int n_folds: Number of cross validation folds. Default is 1.
-:param int n_alphas: Number of alphas to be used in a search. Default is 1.
-:param float tol: tolerance.  Default is 1E-2.
-:param bool lambda_stop_early: Stop early when there is no more relative improvement on train or validation. Default is True.
-:param bool glm_stop_early: Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.  Default is True
-:param float glm_stop_early_error_fraction: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). Default is 1.0.
-:param int max_interations: Maximum number of iterations. Default is 5000
-:param int verbose: Print verbose information to the console if set to > 0. Default is 0.
-:param lambda_max: Maximum Lambda value to use.  Default is None, and then internally compute standard maximum
-:param alpha_max: Maximum alpha.  Default is 1.0.
-:param alpha_min: Minimum alpha.  Default is 0.0.
-"""
+
 class LogisticRegression(GLM):
+    """H2O Logistic Regression Solver
+
+    :param int n_threads: Number of threads to use in the gpu. Default is None.
+    :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
+    :param bool fit_intercept: Include constant term in the model.
+        Default is True.
+    :param int lambda_min_ratio: Minimum lambda used in lambda search.
+        Default is 1e-7.
+    :param int n_lambdas: Number of lambdas to be used in a search.
+        Default is 100.
+    :param int n_folds: Number of cross validation folds. Default is 1.
+    :param int n_alphas: Number of alphas to be used in a search.
+        Default is 1.
+    :param float tol: tolerance.  Default is 1E-2.
+    :param bool lambda_stop_early: Stop early when there is no more
+        relative improvement on train or validation. Default is True.
+    :param bool glm_stop_early: Stop early when there is no more relative
+        improvement in the primary and dual residuals for ADMM. Default is True
+    :param float glm_stop_early_error_fraction: Relative tolerance for
+        metric-based stopping criterion (stop if relative improvement is not at
+        least this much). Default is 1.0.
+    :param int max_iter: Maximum number of iterations. Default is 5000
+    :param int verbose: Print verbose information to the console if set to > 0.
+        Default is 0.
+    :param lambda_max: Maximum Lambda value to use.  Default is None, and then
+        internally compute standard maximum
+    :param alpha_max: Maximum alpha. Default is 1.0.
+    :param alpha_min: Minimum alpha. Default is 0.0.
+    """
     def __init__(
             self,
             n_threads=None,
@@ -44,7 +59,7 @@ class LogisticRegression(GLM):
         super(LogisticRegression, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
-            intercept=fit_intercept,
+            fit_intercept=fit_intercept,
             lambda_min_ratio=lambda_min_ratio,
             n_lambdas=n_lambdas,
             n_folds=n_folds,
@@ -53,11 +68,11 @@ class LogisticRegression(GLM):
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iterations=max_iter,
+            max_iter=max_iter,
             verbose=verbose,
             family='logistic',
             give_full_path=give_full_path,
             lambda_max=lambda_max,
             alpha_max=alpha_max,
             alpha_min=alpha_min,
-            order=None,)
+            order=None)

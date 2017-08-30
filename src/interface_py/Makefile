@@ -2,6 +2,8 @@ thepwd = "$(shell pwd)"
 
 default: all
 
+pylint: ; @for py in $$(find . -name "*.py"); do pylint --rcfile=../../tools/pylintrc -rn $$py; done
+
 all:
 
 	# for incorporating xgboost and py3nvml builds
