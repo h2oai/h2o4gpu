@@ -1,17 +1,22 @@
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import os
-from sys import platform
+from subprocess import call
+from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.install import install
-from distutils.command.build import build
-from subprocess import call
-from multiprocessing import cpu_count
+from pip.req import parse_requirements
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
 
 
 class H2O4GPUBuild(build):
+    """H2O4GPU library compiler"""
     def run(self):
+        """Run the compilation"""
         NVCC = os.popen("which nvcc").read() != ""
         CPULIB = 'ch2o4gpu_cpu'
         GPULIB = 'ch2o4gpu_gpu'
@@ -30,13 +35,14 @@ class H2O4GPUBuild(build):
         GPU_LIBPATH = os.path.join(H2O4GPUPATH, GPULIB + EXT)
 
         target_files = [CPU_LIBPATH, GPU_LIBPATH] if NVCC else [CPU_LIBPATH]
-        message = 'Compiling H2O4GPU---CPU and GPU' if NVCC else 'Compiling H2O4GPU---CPU only'
+        message = 'Compiling H2O4GPU CPU and GPU' if NVCC \
+            else 'Compiling H2O4GPU CPU only'
 
-        def compile():
-            # compile CPU version of H2O4GPU
+        def compile_cpu():
+            # compile_cpu CPU version of H2O4GPU
             call(cmd, cwd=H2O4GPUPATH)
 
-        self.execute(compile, [], message)
+        self.execute(compile_cpu, [], message)
 
         # copy resulting tool to library build folder
         self.mkpath(self.build_lib)
@@ -60,8 +66,6 @@ class H2O4GPUInstall(install):
         # install H2O4GPU executables
         self.copy_tree(self.build_lib, self.install_lib)
 
-from pip.req import parse_requirements
-
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
 install_reqs = parse_requirements('../../requirements.txt', session='hack')
 
@@ -69,27 +73,16 @@ install_reqs = parse_requirements('../../requirements.txt', session='hack')
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
 
-
-#def package_files(directory):
-#    paths = []
-#    for (path, directories, filenames) in os.walk(directory, followlinks=True):
-#        for filename in filenames:
-#            paths.append(os.path.join(path, filename))
-#    return paths
-#      
-#extra_files = package_files('./')
-#print("extra_files")
-#print(extra_files)
-        
 setup(
     name='h2o4gpu',
     version='0.0.3',
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
-    package_dir={'interface_py': 'h2o4gpu','interface_py': 'xgboost','interface_py': 'py3nvml'},
+    package_dir={'interface_py': 'h2o4gpu', 'interface_py': 'xgboost',
+                 'interface_py': 'py3nvml'},
     # from:
-    # find -L -type d -printf '%d\t%P\n' | sort -r -nk1 | cut -f2-|grep -v pycache
+    # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=['h2o4gpu',
               'xgboost',
               'py3nvml',
@@ -151,7 +144,7 @@ setup(
               'h2o4gpu.cluster',
               'h2o4gpu.__check_build',
               'h2o4gpu._build_utils'
-    ],
+             ],
     package_data={'h2o4gpu': ['*'],
                   'h2o4gpu.xgboost': ['*'],
                   'h2o4gpu.py3nvml': ['*'],
@@ -213,7 +206,7 @@ setup(
                   'h2o4gpu.cluster': ['*'],
                   'h2o4gpu.__check_build': ['*'],
                   'h2o4gpu._build_utils': ['*']
-    },
+                 },
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai GPU Edition',

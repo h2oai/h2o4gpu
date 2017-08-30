@@ -44,8 +44,8 @@ class GLM(object):
     :param str family: "logistic" for classification with logistic regression.
         Defaults to "elasticnet" for regression.
         Must be "logistic" or "elasticnet".
-    :param int,float lambda_max: Maximum Lambda value to use.  Default is None, and then
-        internally compute standard maximum
+    :param int,float lambda_max: Maximum Lambda value to use.
+        Default is None, and then internally compute standard maximum
     :param int,float alpha_max: Maximum alpha.  Default is 1.0.
     :param int,float alpha_min: Minimum alpha.  Default is 0.0.
     :param order: Order of data.  Default is None, and internally determined

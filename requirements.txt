@@ -4,6 +4,7 @@ numpy==1.13.1
 packaging==16.8
 pandas==0.19.2
 psutil==5.2.2
+pylint==1.7.2
 pyparsing==2.1.10
 pytest==3.0.6
 pytest-cov==2.4.0
