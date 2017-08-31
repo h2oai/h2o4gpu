@@ -208,8 +208,8 @@ class GLM(object):
     ):
         """Train a GLM
 
-        :param ndarray train_x : Training features
-        :param ndarray train_ y : Training response
+        :param ndarray train_x : Training features array
+        :param ndarray train_ y : Training response array
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
@@ -465,18 +465,18 @@ class GLM(object):
     ):
         """Train a GLM with pointers to data on the GPU
 
-        :param source_dev
-        :param m_train
-        :param n
-        :param m_valid
-        :param precision
+        :param source_dev GPU ID of device
+        :param m_train Number of rows in the training set
+        :param n Number of columns in the training set
+        :param m_valid Number of rows in the validation set
+        :param precision Floating or double point precision of fit
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
-        :param a
-        :param b
-        :param c
-        :param d
-        :param e
+        :param a Pointer to training features array
+        :param b Pointer to training response array
+        :param c Pointer to validation features
+        :param d Pointer to validation response
+        :param e Pointer to weight column
         :param int give_full_path : Extract full regularization path from glm model
         :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
@@ -893,8 +893,8 @@ class GLM(object):
     ):
         """Train a model using GLM and predict on validation set
 
-        :param ndarray train_x : Training features
-        :param ndarray train_ y : Training response
+        :param ndarray train_x : Training features array
+        :param ndarray train_ y : Training response array
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
@@ -994,18 +994,18 @@ class GLM(object):
         """Train a GLM with pointers to data on the GPU and predict on validation set
         that also has a pointer on the GPU
 
-        :param source_dev
-        :param m_train
-        :param n
-        :param m_valid
-        :param precision
+        :param source_dev GPU ID of device
+        :param m_train Number of rows in the training set
+        :param n Number of columns in the training set
+        :param m_valid Number of rows in the validation set
+        :param precision Float or double point precision of fit
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
-        :param a
-        :param b
-        :param c
-        :param d
-        :param e
+        :param a Pointer to training features array
+        :param b Pointer to training response array
+        :param c Pointer to validation features
+        :param d Pointer to validation response
+        :param e Pointer to weight column
         :param int give_full_path : Extract full regularization path from glm model
         :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
@@ -1088,8 +1088,8 @@ class GLM(object):
     ):
         """Train a model using GLM and predict on validation set
 
-        :param ndarray train_x : Training features
-        :param ndarray train_ y : Training response
+        :param ndarray train_x : Training features array
+        :param ndarray train_ y : Training response array
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
