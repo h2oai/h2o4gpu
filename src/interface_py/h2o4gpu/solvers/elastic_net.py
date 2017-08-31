@@ -18,39 +18,40 @@ from tabulate import tabulate
 class GLM(object):
     """H2O GLM Solver
 
-    :param int n_threads: Number of threads to use in the gpu. Default is None.
-    :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
-    :param str order: Row or Column major for C/C++ backend. Default is 'r'.
+    :param int n_threads : Number of threads to use in the gpu. Default is None.
+    :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
+    :param str order : Row or Column major for C/C++ backend. Default is 'r'.
         Must be 'r' (Row major) or 'c' (Column major).
-    :param bool fit_intercept: Include constant term in the model.
+    :param bool fit_intercept : Include constant term in the model.
         Default is True.
-    :param float lambda_min_ratio: Minimum lambda used in lambda search.
+    :param float lambda_min_ratio : Minimum lambda used in lambda search.
         Default is 1e-7.
-    :param int n_lambdas: Number of lambdas to be used in a search.
+    :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
-    :param int n_folds: Number of cross validation folds. Default is 1.
-    :param int n_alphas: Number of alphas to be used in a search. Default is 5.
-    :param float tol: tolerance.  Default is 1E-2.
-    :param bool lambda_stop_early: Stop early when there is no more relative
+    :param int n_folds : Number of cross validation folds. Default is 1.
+    :param int n_alphas : Number of alphas to be used in a search. Default is 5.
+    :param float tol : tolerance.  Default is 1E-2.
+    :param bool lambda_stop_early : Stop early when there is no more relative
         improvement on train or validation. Default is True.
-    :param bool glm_stop_early: Stop early when there is no more relative
+    :param bool glm_stop_early : Stop early when there is no more relative
         improvement in the primary and dual residuals for ADMM.  Default is True
-    :param float glm_stop_early_error_fraction: Relative tolerance for
+    :param float glm_stop_early_error_fraction : Relative tolerance for
         metric-based stopping criterion (stop if relative improvement is not at
         least this much). Default is 1.0.
-    :param int max_iter: Maximum number of iterations. Default is 5000
-    :param int verbose: Print verbose information to the console if set to > 0.
+    :param int max_iter : Maximum number of iterations. Default is 5000
+    :param int verbose : Print verbose information to the console if set to > 0.
         Default is 0.
-    :param str family: "logistic" for classification with logistic regression.
+    :param str family : "logistic" for classification with logistic regression.
         Defaults to "elasticnet" for regression.
         Must be "logistic" or "elasticnet".
-    :param int,float lambda_max: Maximum Lambda value to use.
+    :param int,float lambda_max : Maximum Lambda value to use.
         Default is None, and then internally compute standard maximum
-    :param int,float alpha_max: Maximum alpha.  Default is 1.0.
-    :param int,float alpha_min: Minimum alpha.  Default is 0.0.
-    :param order: Order of data.  Default is None, and internally determined
+    :param int,float alpha_max : Maximum alpha.  Default is 1.0.
+    :param int,float alpha_min : Minimum alpha.  Default is 0.0.
+    :param order : Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
     """
+
     class info:
         pass
 
@@ -104,7 +105,7 @@ class GLM(object):
         if order is not None:
             assert_is_type(order, str)
             assert order in ['r',
-                             'c'],\
+                             'c'], \
                 "Order should be set to 'r' or 'c' but got " + order
             self.ord = ord(order)
         else:
@@ -186,66 +187,6 @@ class GLM(object):
         self.count_short = None
         self.count_more = None
 
-    def _none_checks_simple(self, fail, give_full_path, verbose, order):
-        """Sets instance members to arguments if they are not None"""
-        # override self if passed parameter is not None
-        if give_full_path is not None:
-            self.give_full_path = give_full_path
-        else:
-            give_full_path = self.give_full_path
-
-        if verbose is None:
-            verbose = self.verbose
-
-        if order in ['r', 'c']:
-            self.ord = ord(order)
-        elif order in [ord('r'), ord('c')]:
-            self.ord = order
-        elif self.ord is not None and fail:
-            assert self.ord in ['r',
-                                'c'],\
-                "Order should be set to 'r' or 'c' but got " + self.ord
-        elif fail:
-            raise AssertionError(
-                "Order should be set to 'r' or 'c' or %d or %d but got " %
-                (ord('r'), ord('c')) + order
-            )
-        order = self.ord
-
-        return give_full_path, verbose, order
-
-    def _none_checks(self, fail, give_full_path, tol, lambda_stop_early,
-                     glm_stop_early, glm_stop_early_error_fraction, max_iter,
-                     verbose, order):
-        """Make sure none of the parameters are None"""
-
-        give_full_path, verbose, order = self._none_checks_simple(
-            fail,
-            give_full_path,
-            verbose,
-            order
-        )
-
-        if tol is not None:
-            self.tol = tol
-        else:
-            tol = self.tol
-
-        # Don't override self if pass option, but use self if option is None
-        if lambda_stop_early is None:
-            lambda_stop_early = self.lambda_stop_early
-        if glm_stop_early is None:
-            glm_stop_early = self.glm_stop_early
-        if glm_stop_early_error_fraction is None:
-            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
-        if max_iter is None:
-            max_iter = self.max_iter
-        if verbose is None:
-            verbose = self.verbose
-
-        return give_full_path, tol, lambda_stop_early, glm_stop_early,\
-            glm_stop_early_error_fraction, max_iter, verbose, order
-
     # TODO Add typechecking
     # source_dev here because generally want to take in any pointer,
     # not just from our test code
@@ -309,7 +250,7 @@ class GLM(object):
         self.e = e
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
-            glm_stop_early_error_fraction, max_iter, verbose, order = \
+        glm_stop_early_error_fraction, max_iter, verbose, order = \
             self._none_checks(
                 True, give_full_path, tol, lambda_stop_early, glm_stop_early,
                 glm_stop_early_error_fraction, max_iter, verbose, order)
@@ -528,12 +469,12 @@ class GLM(object):
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
             self._alphas = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 1:n + num_error + 2
-            ]
+                           :, :, n + num_error + 1:n + num_error + 2
+                           ]
 
             self._tols = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 2:n + num_error + 3
-            ]
+                         :, :, n + num_error + 2:n + num_error + 3
+                         ]
 
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
@@ -566,11 +507,11 @@ class GLM(object):
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[
-                :, n + num_error:n + num_error + 1]
+                             :, n + num_error:n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[
-                :, n + num_error + 1:n + num_error + 2]
+                            :, n + num_error + 1:n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[
-                :, n + num_error + 2:n + num_error + 3]
+                          :, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
@@ -629,31 +570,36 @@ class GLM(object):
             verbose=None,
             order=None,
     ):
-        """Train the model using GLM Solver
+        """Train a Generalized Linear Model(GLM)
 
-        :param train_x
-        :param train_ y
-        :param valid_x
-        :param valid_y
-        :param weight
-        :param give_full_path
-        :param do_predict
-        :param free_input_data
-        :param tol
-        :param lambda_stop_early
-        :param glm_stop_early
-        :param glm_stop_early_error_fraction
-        :param max_iter
-        :param verbose
+        :param ndarray train_x : Training features
+        :param ndarray train_ y : Training response
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
-            glm_stop_early_error_fraction, max_iter, verbose, order = \
+        glm_stop_early_error_fraction, max_iter, verbose, order = \
             self._none_checks(False, give_full_path, tol, lambda_stop_early,
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        # If True, then append to train_x array and valid_x array(if available)
+        # If True, then append intercept term to train_x array and valid_x array(if available)
         if self.fit_intercept:
             if train_x is not None:
                 train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
@@ -783,15 +729,16 @@ class GLM(object):
             verbose=0,
             order=None
     ):
-        """Obtains predictions from fitted GLM Solver
+        """Obtains predictions from fitted GLM
 
-        :param valid_x
-        :param valid_y
-        :param weight
-        :param give_full_path
-        :param free_input_data
-        :param verbose
-        :param order
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param order: Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
         """
         give_full_path, verbose, order = self._none_checks_simple(
             False,
@@ -864,14 +811,15 @@ class GLM(object):
             verbose=0,
             order=None
     ):
-        """Obtains predictions from fitted GLM Solver with data that is on GPU
+        """Obtains predictions from fitted GLM with data that is on GPU
 
-        :param valid_xptr
-        :param valid_yptr
-        :param give_full_path
-        :param free_input_data
-        :param verbose
-        :param order
+        :param ndarray valid_xptr : Pointer to validation features
+        :param ndarray valid_ yptr : Pointer to validation response
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param order: Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
         """
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
@@ -944,26 +892,31 @@ class GLM(object):
             verbose=None,
             order=None
     ):
-        """Train a model using GLM Solver and predict on validation set
+        """Train a model using GLM and predict on validation set
 
-        :param train_x
-        :param train_y
-        :param valid_x
-        :param valid_y
-        :param weight
-        :param give_full_path
-        :param free_input_data
-        :param tol
-        :param lambda_stop_early
-        :param glm_stop_early
-        :param glm_stop_early_error_fraction
-        :param max_iter
-        :param verbose
-        :param order
+        :param ndarray train_x : Training features
+        :param ndarray train_ y : Training response
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
-            glm_stop_early_error_fraction, max_iter, verbose, order = \
+        glm_stop_early_error_fraction, max_iter, verbose, order = \
             self._none_checks(False, give_full_path, tol, lambda_stop_early,
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
@@ -1064,7 +1017,7 @@ class GLM(object):
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
-            glm_stop_early_error_fraction, max_iter, verbose, order = \
+        glm_stop_early_error_fraction, max_iter, verbose, order = \
             self._none_checks(True, give_full_path, tol, lambda_stop_early,
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
@@ -1137,6 +1090,22 @@ class GLM(object):
 
     def transform(self):
         return
+
+    def summary(self):
+        """
+        Obtain model summary, which is error per
+        alpha across train, cv, and validation
+
+        Error is logloss for classification and
+        RMSE (Root Mean Squared Error) for regression.
+        """
+        error_train = pd.DataFrame(self.error_best, index=self.alphas)
+        if self.family == "logistic":
+            print("Logloss per alpha value (-1.00 = missing)\n")
+        else:
+            print("RMSE per alpha value (-1.00 = missing)\n")
+        headers = ["Alphas", "Train", "CV", "Valid"]
+        print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
     # ################### Properties and setters of properties
 
@@ -1323,6 +1292,77 @@ class GLM(object):
     # TODO(jon): add option to pass in min max of alphas and lambdamax.
 
     # Util/Hidden Functions
+    def _none_checks_simple(self,
+                            fail,
+                            give_full_path,
+                            verbose,
+                            order):
+        """Sets instance members to arguments if they are not None"""
+        # override self if passed parameter is not None
+        if give_full_path is not None:
+            self.give_full_path = give_full_path
+        else:
+            give_full_path = self.give_full_path
+
+        if verbose is None:
+            verbose = self.verbose
+
+        if order in ['r', 'c']:
+            self.ord = ord(order)
+        elif order in [ord('r'), ord('c')]:
+            self.ord = order
+        elif self.ord is not None and fail:
+            assert self.ord in ['r',
+                                'c'], \
+                "Order should be set to 'r' or 'c' but got " + self.ord
+        elif fail:
+            raise AssertionError(
+                "Order should be set to 'r' or 'c' or %d or %d but got " %
+                (ord('r'), ord('c')) + order
+            )
+        order = self.ord
+
+        return give_full_path, verbose, order
+
+    def _none_checks(self,
+                     fail,
+                     give_full_path,
+                     tol,
+                     lambda_stop_early,
+                     glm_stop_early,
+                     glm_stop_early_error_fraction,
+                     max_iter,
+                     verbose,
+                     order):
+        """Make sure none of the parameters are None"""
+
+        give_full_path, verbose, order = self._none_checks_simple(
+            fail,
+            give_full_path,
+            verbose,
+            order
+        )
+
+        if tol is not None:
+            self.tol = tol
+        else:
+            tol = self.tol
+
+        # Don't override self if pass option, but use self if option is None
+        if lambda_stop_early is None:
+            lambda_stop_early = self.lambda_stop_early
+        if glm_stop_early is None:
+            glm_stop_early = self.glm_stop_early
+        if glm_stop_early_error_fraction is None:
+            glm_stop_early_error_fraction = self.glm_stop_early_error_fraction
+        if max_iter is None:
+            max_iter = self.max_iter
+        if verbose is None:
+            verbose = self.verbose
+
+        return give_full_path, tol, lambda_stop_early, glm_stop_early, \
+               glm_stop_early_error_fraction, max_iter, verbose, order
+
     def _upload_data(
             self,
             source_dev,
@@ -1484,20 +1524,3 @@ class GLM(object):
         self.d = d
         self.e = e
         return a, b, c, d, e
-
-    def summary(self):
-        """
-        Obtain model summary, which is error per
-        alpha across train, cv, and validation
-
-        Error is logloss for classification and
-        RMSE (Root Mean Squared Error) for regression.
-        """
-        error_train = pd.DataFrame(self.error_best, index=self.alphas)
-        if self.family == "logistic":
-            print("Logloss per alpha value (-1.00 = missing)\n")
-        else:
-            print("RMSE per alpha value (-1.00 = missing)\n")
-        headers = ["Alphas", "Train", "CV", "Valid"]
-        print(tabulate(error_train, headers=headers, tablefmt="pipe",
-                       floatfmt=".2f"))
