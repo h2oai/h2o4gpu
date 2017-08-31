@@ -276,10 +276,6 @@ testperfquick: dotestperf
 
 testbigperfquick: dotestbigperf
 
-#################### Code checks
-
-pylint: ; @for py in `find src/interface_py -name "*.py"`; do if [ -f $$py ]; then pylint --rcfile=tools/pylintrc $$py; fi done
-
 #################### Build info
 
 build/VERSION.txt:

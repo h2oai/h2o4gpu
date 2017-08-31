@@ -79,9 +79,6 @@ setup(
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
-    package_dir={'interface_py': 'h2o4gpu',
-                 'interface_py': 'xgboost',
-                 'interface_py': 'py3nvml'},
     # from:
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=['h2o4gpu',

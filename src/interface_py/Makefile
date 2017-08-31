@@ -4,7 +4,7 @@ default: all
 
 pylint: ; @for py in $$(find h2o4gpu -name "*.py" -type f); do pylint --rcfile=../../tools/pylintrc -rn $$py; done
 
-all:
+all: pylint
 
 	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../xgboost/python-package/xgboost .

@@ -1,3 +1,4 @@
+# pylint: skip-file
 # -*- encoding: utf-8 -*-
 """
 Utilities for checking types and validity of variables.
