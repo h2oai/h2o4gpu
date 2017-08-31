@@ -15,20 +15,17 @@ def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
 
     This function will read in data and prepare it for H2O4GPU's GLM solver.
 
-    Parameters
-    ----------
-    data_path : str
+    :param data_path : str
                  A path to a dataset (The dataset needs to be all numeric)
-    use_pandas : bool
+    :param use_pandas : bool
                   Indicate if Pandas should be used to parse
-    intercept : bool
+    :param intercept : bool
                   Indicate if intercept term is needed
-    valid_fraction : float
+    :param valid_fraction : float
                       Percentage of dataset reserved for a validation set
-    classification : bool
+    :param classification : bool
                       Classification problem?
-    Returns
-    -------
+    :returns
     If valid_fraction > 0 it will return the following:
         train_x: numpy array of train input variables
         train_y: numpy array of y variable
