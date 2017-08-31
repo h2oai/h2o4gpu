@@ -1,1 +1,1 @@
-../../../sklearn/sklearn/naive_bayes.py
+../../../sklearn/h2o4gpu/naive_bayes.py

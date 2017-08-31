@@ -1,1 +1,1 @@
-../../../sklearn/sklearn/learning_curve.py
+../../../sklearn/h2o4gpu/learning_curve.py

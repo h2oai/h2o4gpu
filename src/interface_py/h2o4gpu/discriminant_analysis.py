@@ -1,1 +1,1 @@
-../../../sklearn/sklearn/discriminant_analysis.py
+../../../sklearn/h2o4gpu/discriminant_analysis.py

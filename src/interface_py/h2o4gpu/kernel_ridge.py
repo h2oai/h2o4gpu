@@ -1,1 +1,1 @@
-../../../sklearn/sklearn/kernel_ridge.py
+../../../sklearn/h2o4gpu/kernel_ridge.py

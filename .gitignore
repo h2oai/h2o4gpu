@@ -1,7 +1,7 @@
 # OSX #
 *.DS_STORE
 
-# Ignore artifacts made from make, h2ogpuml
+# Ignore artifacts made from make, h2o4gpu
 src/interface_py/py3nvml
 src/interface_py/xgboost
 deps/
@@ -27,22 +27,22 @@ cmake-build-debug/
 env/
 examples/cpp/cpuall
 examples/cpp/gpuall
-examples/cpp/h2ogpuml-glm-cpu
-examples/cpp/h2ogpuml-glm-cpu-orig
-examples/cpp/h2ogpuml-glm-cpu-ptr
-examples/cpp/h2ogpuml-glm-gpu
-examples/cpp/h2ogpuml-glm-gpu-orig
-examples/cpp/h2ogpuml-glm-gpu-ptr
-examples/cpp/h2ogpuml-kmeans-cpu
-examples/cpp/h2ogpuml-kmeans-gpu
+examples/cpp/h2o4gpu-glm-cpu
+examples/cpp/h2o4gpu-glm-cpu-orig
+examples/cpp/h2o4gpu-glm-cpu-ptr
+examples/cpp/h2o4gpu-glm-gpu
+examples/cpp/h2o4gpu-glm-gpu-orig
+examples/cpp/h2o4gpu-glm-gpu-ptr
+examples/cpp/h2o4gpu-kmeans-cpu
+examples/cpp/h2o4gpu-kmeans-gpu
 examples/py/1
 examples/py/@
 examples/py/Untitled.ipynb
 examples/py/Untitled2.ipynb
 examples/py/alpha
 examples/py/preds
-src/interface_c/ch2ogpuml_cpu
-src/interface_c/ch2ogpuml_gpu
+src/interface_c/ch2o4gpu_cpu
+src/interface_c/ch2o4gpu_gpu
 src/py3nvml/
 tmp/
 
@@ -95,3 +95,32 @@ tmp/
 # Temp space
 ./tmp
 
+## sklearn stuff
+sklearn/
+src/interface_py/h2o4gpu/__check_build/
+src/interface_py/h2o4gpu/__init__.py
+src/interface_py/h2o4gpu/_build_utils/
+src/interface_py/h2o4gpu/cluster/
+src/interface_py/h2o4gpu/covariance/
+src/interface_py/h2o4gpu/cross_decomposition/
+src/interface_py/h2o4gpu/datasets/
+src/interface_py/h2o4gpu/decomposition/
+src/interface_py/h2o4gpu/ensemble/
+src/interface_py/h2o4gpu/externals/
+src/interface_py/h2o4gpu/feature_extraction/
+src/interface_py/h2o4gpu/feature_selection/
+src/interface_py/h2o4gpu/gaussian_process/
+src/interface_py/h2o4gpu/linear_model/
+src/interface_py/h2o4gpu/manifold/
+src/interface_py/h2o4gpu/metrics/
+src/interface_py/h2o4gpu/mixture/
+src/interface_py/h2o4gpu/model_selection/
+src/interface_py/h2o4gpu/neighbors/
+src/interface_py/h2o4gpu/neural_network/
+src/interface_py/h2o4gpu/preprocessing/
+src/interface_py/h2o4gpu/semi_supervised/
+src/interface_py/h2o4gpu/setup.py
+src/interface_py/h2o4gpu/svm/
+src/interface_py/h2o4gpu/tests/
+src/interface_py/h2o4gpu/tree/
+src/interface_py/h2o4gpu/utils/

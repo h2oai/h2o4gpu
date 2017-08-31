@@ -1,1 +1,1 @@
-../../../sklearn/sklearn/dummy.py
+../../../sklearn/h2o4gpu/dummy.py
