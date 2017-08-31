@@ -155,6 +155,20 @@ class KMeans(object):
     def fit(self, X, y=None):
         """Compute cluster centers using KMeans algorithm.
 
+        The memory used by this algorithm depends on:
+        - m - number of rows in X
+        - n - number of dimensions in X
+        - k - number of clusters
+        - type of data in X (float32 or float64)
+
+        and should be approximately:
+
+        For float32 = 4*(m*n + k*n + 3*m + k + m*k) + 2*(4*m + k)
+        For float64 = 8*(m*n + k*n + 3*m + k + m*k) + 2*(4*m + k)
+
+        In case of running on the GPU, a CUDA context size should be
+        also taken into account.
+
         :param X: array-like, shape=(n_samples, n_features)
             Training instances.
         :param y: array-like, optional, shape=(n_samples, 1)
