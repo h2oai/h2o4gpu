@@ -179,16 +179,9 @@ class KMeans(object):
         _check_data_content(self.do_checks, "X", Xnp)
         rows = np.shape(Xnp)[0]
 
-        if y is None:
-            ynp = np.random.randint(rows, size=rows) % self._n_clusters
-        else:
-            ynp = _to_np(y)
-            _check_data_content(self.do_checks, "y", ynp)
+        y_np = self._validate_y(y, rows)
 
-        ynp = ynp.astype(np.int)
-        ynp = np.mod(ynp, self._n_clusters)
-
-        self._fit(Xnp, ynp)
+        self._fit(Xnp, y_np)
 
         self._did_sklearn_fit = 0
 
@@ -206,14 +199,7 @@ class KMeans(object):
             _check_data_content(self.do_checks, "X", X_np)
             rows = np.shape(X_np)[0]
 
-            if y is None:
-                y_np = np.random.randint(rows, size=rows) % self._n_clusters
-            else:
-                y_np = _to_np(y)
-                _check_data_content(self.do_checks, "y", y_np)
-
-            y_np = y_np.astype(np.int)
-            y_np = np.mod(y_np, self._n_clusters)
+            y_np = self._validate_y(y, rows)
 
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
@@ -234,11 +220,11 @@ class KMeans(object):
 
         Xnp = _to_np(X)
         _check_data_content(self.do_checks, "X", Xnp)
-        c_data, _ = self._to_cdata(Xnp)
+        Xnp, c_data, _ = self._to_cdata(Xnp)
         c_init_from_data = 0
         c_init_data = 0
 
-        c_centroids, _ = self._to_cdata(self.cluster_centers_)
+        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -276,14 +262,7 @@ class KMeans(object):
         _check_data_content(self.do_checks, "X", X)
 
         rows = np.shape(X)[0]
-        if y is None:
-            y_np = np.random.randint(rows, size=rows) % self._n_clusters
-        else:
-            y_np = _to_np(y)
-            _check_data_content(self.do_checks, "y", y_np)
-
-        y_np = y_np.astype(np.int)
-        y_np = np.mod(y_np, self._n_clusters)
+        y_np = self._validate_y(y, rows)
 
         self.sklearn_fit(X, y_np)
         return self.sklearn_model.predict(X)
@@ -302,8 +281,8 @@ class KMeans(object):
         cols, rows = self._validate_centroids(X)
 
         Xnp = _to_np(X)
-        c_data, c_data_type = self._to_cdata(Xnp)
-        c_centroids, _ = self._to_cdata(self.cluster_centers_)
+        Xnp, c_data, c_data_type = self._to_cdata(Xnp)
+        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -376,22 +355,7 @@ class KMeans(object):
         """Actual method calling the underlying fitting implementation."""
         data_ord = ord('c' if np.isfortran(data) else 'r')
 
-        if data.dtype == np.float64:
-            self._print_verbose(0, "Detected np.float64 data.")
-            self.double_precision = 1
-            data_ctype = c_double
-            data_dtype = np.float64
-        elif data.dtype == np.float32:
-            self._print_verbose(0, "Detected np.float32 data")
-            self.double_precision = 0
-            data_ctype = c_float
-            data_dtype = np.float32
-        else:
-            print(
-                "Unknown data type, should be either np.float32 or np.float64")
-            print(data.dtype)
-            sys.stdout.flush()
-            return
+        data, c_data_ptr, data_ctype = self._to_cdata(data)
 
         c_init_from_data = 0 if self.init_from_data else 1
 
@@ -413,7 +377,6 @@ class KMeans(object):
 
         pred_centers = c_void_p(0)
         pred_labels = c_void_p(0)
-        c_data = cptr(data, dtype=data_ctype)
         c_labels = cptr(labels, dtype=c_int)
 
         lib = self._load_lib()
@@ -430,7 +393,7 @@ class KMeans(object):
                                                self._max_iter,
                                                c_init_from_data,
                                                c_init_data,
-                                               self.tol, c_data, c_labels,
+                                               self.tol, c_data_ptr, c_labels,
                                                None, pointer(pred_centers),
                                                pointer(pred_labels))
         else:
@@ -442,14 +405,14 @@ class KMeans(object):
                                                 self._max_iter,
                                                 c_init_from_data,
                                                 c_init_data,
-                                                self.tol, c_data, c_labels,
+                                                self.tol, c_data_ptr, c_labels,
                                                 None, pointer(pred_centers),
                                                 pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
         centroids = np.fromiter(cast(pred_centers, POINTER(data_ctype)),
-                                dtype=data_dtype,
+                                dtype=data_ctype,
                                 count=self._n_clusters * cols)
         centroids = np.reshape(centroids, (self._n_clusters, cols))
 
@@ -458,7 +421,7 @@ class KMeans(object):
             self._print_verbose(0,
                                 "Removed %d empty centroids" %
                                 (self._n_clusters - centroids.shape[0])
-                               )
+                                )
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids
@@ -469,8 +432,13 @@ class KMeans(object):
 
         return self.cluster_centers_, self.labels_
 
-    def _to_cdata(self, data):
+    def _to_cdata(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
+        if convert and data.dtype != np.float64 and data.dtype != np.float32:
+            self._print_verbose(1, "Detected numeric data format which is not "
+                                   "supported. Casting to np.float32.")
+            data = np.array(data, copy=False, dtype=np.float32)
+
         if data.dtype == np.float64:
             self._print_verbose(1, "Detected np.float64 data")
             self.double_precision = 1
@@ -484,7 +452,17 @@ class KMeans(object):
                 "Unsupported data type %s, "
                 "should be either np.float32 or np.float64" % data.dtype
             )
-        return cptr(data, dtype=my_ctype), my_ctype
+        return data, cptr(data, dtype=my_ctype), my_ctype
+
+    def _validate_y(self, y, rows):
+        if y is None:
+            ynp = np.random.randint(rows, size=rows) % self._n_clusters
+        else:
+            ynp = _to_np(y)
+            _check_data_content(self.do_checks, "y", ynp)
+
+        ynp = ynp.astype(np.int)
+        return np.mod(ynp, self._n_clusters)
 
     def _print_verbose(self, level, msg):
         if self.verbose > level:
@@ -507,7 +485,6 @@ class KMeans(object):
             return gpu_lib
         else:
             raise RuntimeError("Couldn't instantiate KMeans Solver")
-
 
     def _validate_centroids(self, X):
         assert self.cluster_centers_ is not None, \

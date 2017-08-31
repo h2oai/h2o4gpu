@@ -217,12 +217,11 @@ int kmeans(
                              d,
                              k,
                              *data[q],
-                             *labels[q],
+                             *labels_copy[q],
                              *centroids[q],
                              *range[q],
                              *indices[q],
                              *counts[q]);
-      detail::memcpy(*labels[q], *labels_copy[q]);
       //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
       mycub::sum_reduce(*distances[q], d_distance_sum[q]);
     }
