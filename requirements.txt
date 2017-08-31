@@ -80,3 +80,6 @@ widgetsnbextension==2.0.0
 XlsxWriter==0.9.8
 cmake==0.8.0
 feather-format==0.4.0
+Cython==0.25.2
+
+ 
