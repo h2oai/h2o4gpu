@@ -125,16 +125,37 @@ void nonrandom_data_new(int verbose, std::vector<int> v, const char ord, thrust:
     array = host_array;
 }
 
-void nonrandom_labels(int verbose, thrust::device_vector<int> &labels, const int *srclabels,
+void nonrandom_labels(int verbose, const char ord, thrust::device_vector<int> &labels, const int *srclabels,
                       int q, int n, int npergpu) {
     thrust::host_vector<int> host_labels(npergpu);
     int d = 1; // only 1 dimension
-    if (verbose) {
-        fprintf(stderr, "labels ROW ORDER not changed\n");
-        fflush(stderr);
-    }
-    for (int i = 0; i < npergpu; i++) {
-        host_labels[i] = srclabels[q * npergpu * d + i]; // shift by which gpu
+    if (ord == 'c') {
+        if (verbose) {
+            fprintf(stderr, "labels COL ORDER -> ROW ORDER\n");
+            fflush(stderr);
+        }
+        int indexi, indexj;
+        for (int i = 0; i < npergpu; i++) {
+#if(1)
+            indexi = i % d; // col
+            indexj = i / d + q * npergpu; // row (shifted by which gpu)
+            //      host_labels[i] = srclabels[indexi*n + indexj];
+            host_labels[i] = srclabels[indexi * n + indexj];
+#else
+            indexj = i%d;
+            indexi = i/d;
+            //      host_labels[i] = srclabels[indexi*n + indexj];
+            host_labels[i] = srclabels[indexi*d + indexj];
+#endif
+        }
+    } else {
+        if (verbose) {
+            fprintf(stderr, "labels ROW ORDER not changed\n");
+            fflush(stderr);
+        }
+        for (int i = 0; i < npergpu; i++) {
+            host_labels[i] = srclabels[q * npergpu * d + i]; // shift by which gpu
+        }
     }
     labels = host_labels;
 }
@@ -321,9 +342,9 @@ namespace h2o4gpukmeans {
         for (int q = 0; q < n_gpu; q++) {
             CUDACHECK(cudaSetDevice(dList[q]));
             data[q] = new thrust::device_vector<T>(n / n_gpu * d);
-            labels[q] = new thrust::device_vector<int>(n / n_gpu * d); // TODO should this size really be multiplied by d??
+            labels[q] = new thrust::device_vector<int>(n / n_gpu);
             d_centroids[q] = new thrust::device_vector<T>(k * d);
-            distances[q] = new thrust::device_vector<T>(n);
+            distances[q] = new thrust::device_vector<T>(n / n_gpu);
         }
 
         if (verbose) {
@@ -351,7 +372,7 @@ namespace h2o4gpukmeans {
             CUDACHECK(cudaSetDevice(dList[q]));
             if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
-            nonrandom_labels(verbose, *labels[q], &srclabels[0], q, n, n / n_gpu);
+            nonrandom_labels(verbose, ord, *labels[q], &srclabels[0], q, n, n / n_gpu);
 
             if (init_data == 0) { // random (for testing)
                 random_data<T>(verbose, *data[q], n / n_gpu, d);
@@ -527,7 +548,7 @@ namespace h2o4gpukmeans {
 
             d_centroids[q] = new thrust::device_vector<T>(k * m);
             d_data[q] = new thrust::device_vector<T>(n/n_gpu * m);
-            distances[q] = new thrust::device_vector<T>(n);
+            distances[q] = new thrust::device_vector<T>(n/n_gpu);
             d_labels[q] = new thrust::device_vector<int>(n/n_gpu);
 
             cudaMalloc(&d_changes[q], sizeof(int));
