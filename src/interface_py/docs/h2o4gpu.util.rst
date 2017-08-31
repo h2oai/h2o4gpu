@@ -1,0 +1,46 @@
+h2o4gpu\.util package
+=====================
+
+Submodules
+----------
+
+h2o4gpu\.util\.compatibility module
+-----------------------------------
+
+.. automodule:: h2o4gpu.util.compatibility
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+h2o4gpu\.util\.import\_data module
+----------------------------------
+
+.. automodule:: h2o4gpu.util.import_data
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+h2o4gpu\.util\.metrics module
+-----------------------------
+
+.. automodule:: h2o4gpu.util.metrics
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+h2o4gpu\.util\.typechecks module
+--------------------------------
+
+.. automodule:: h2o4gpu.util.typechecks
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: h2o4gpu.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
