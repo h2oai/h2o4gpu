@@ -15,7 +15,8 @@ def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
 
     This function will read in data and prepare it for H2O4GPU's GLM solver.
 
-    Note, the data is assumed to be all numeric,i.e., categoricals are one hot encoded, etc.
+    Note, the data is assumed to be all numeric,i.e.,
+    categoricals are one hot encoded, etc.
 
     :param data_path : str
                  A path to a dataset (The dataset needs to be all numeric)

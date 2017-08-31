@@ -1,5 +1,7 @@
-__version__ = "0.0.4"
-
+# pylint: skip-file
+# Skip pylint b/c this is automatically concatenated at compile time
+# with other init files
+__version__ = "0.0.3"
 
 from h2o4gpu.types import FunctionVector
 from h2o4gpu.solvers.pogs import Pogs
