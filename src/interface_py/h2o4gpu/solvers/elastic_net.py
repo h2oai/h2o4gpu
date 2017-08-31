@@ -16,7 +16,7 @@ from tabulate import tabulate
 
 
 class GLM(object):
-    """H2O GLM Solver
+    """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu. Default is None.
     :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
@@ -188,6 +188,256 @@ class GLM(object):
         self.count_more = None
 
     # TODO Add typechecking
+    def fit(
+            self,
+            train_x,
+            train_y,
+            valid_x=None,
+            valid_y=None,
+            weight=None,
+            give_full_path=None,
+            do_predict=0,
+            free_input_data=1,
+            tol=None,
+            lambda_stop_early=None,
+            glm_stop_early=None,
+            glm_stop_early_error_fraction=None,
+            max_iter=None,
+            verbose=None,
+            order=None,
+    ):
+        """Train a GLM
+
+        :param ndarray train_x : Training features
+        :param ndarray train_ y : Training response
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        """
+
+        give_full_path, tol, lambda_stop_early, glm_stop_early, \
+        glm_stop_early_error_fraction, max_iter, verbose, order = \
+            self._none_checks(False, give_full_path, tol, lambda_stop_early,
+                              glm_stop_early, glm_stop_early_error_fraction,
+                              max_iter, verbose, order)
+
+        # If True, then append intercept term to train_x array and valid_x array(if available)
+        if self.fit_intercept:
+            if train_x is not None:
+                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
+                                                      dtype=train_x.dtype)])
+            if valid_x is not None:
+                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
+                                                      dtype=valid_x.dtype)])
+
+        train_x_np, m_train, n1, fortran1 = _get_data(train_x)
+        train_y_np, m_y, _, fortran2 = _get_data(train_y)
+        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x)
+        valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
+        weight_np, _, _, fortran5 = _get_data(weight)
+
+        # check that inputs all have same 'c' or 'r' order
+        fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
+        _check_equal(fortran_list)
+
+        # set order
+        if order is None:
+            if fortran1:
+                order = 'c'
+            else:
+                order = 'r'
+            self.ord = ord(order)
+
+        # now can do checks
+
+        # ###############
+        # check do_predict input
+
+        if m_train >= 1 and m_y >= 1 and m_train != m_y:
+            print(
+                'training X and Y must have same number of rows, '
+                'but m_train=%d m_y=%d\n' % (m_train, m_y)
+            )
+
+        if do_predict == 0:
+            if verbose > 0:
+                if n1 >= 0 and m_y >= 0:
+                    print('Correct train inputs')
+                else:
+                    raise ValueError('Incorrect train inputs')
+        if do_predict == 1:
+            if n1 == -1 and n2 >= 0:
+                if verbose > 0:
+                    print('Correct prediction inputs')
+            else:
+                print('Incorrect prediction inputs: %d %d %d %d' %
+                      (n1, n2, m_valid_y, m_y))
+
+        # ################
+
+        if do_predict == 0:
+            if n1 >= 0 and n2 >= 0 and n1 != n2:
+                raise ValueError(
+                    'train_x and valid_x must have same number of columns, '
+                    'but n=%d n2=%d\n' % (n1, n2)
+                )
+            else:
+                n = n1  # either
+        else:
+            n = n2  # pick valid_x
+
+        # #################
+
+        if do_predict == 0:
+            if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
+                raise ValueError(
+                    'valid_x and valid_y must have same number of rows, '
+                    'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y)
+                )
+        # otherwise m_valid is used, and m_valid_y can be there
+        # or not (sets whether do error or not)
+
+        if do_predict == 0:
+            if (m_valid == 0 or m_valid == -1) and n2 > 0 or \
+                                    m_valid > 0 and (n2 == 0 or n2 == -1):
+                # TODO FIXME: Don't need valid_y if just want preds and no
+                # error,but don't return error in fit, so leave for now
+                raise ValueError(
+                    'Must input both valid_x and valid_y or neither.'
+                )
+
+        source_dev = 0  # assume GPU=0 is fine as source
+        (a, b, c, d, e) = self._upload_data(
+            source_dev,
+            train_x_np,
+            train_y_np,
+            valid_x_np,
+            valid_y_np,
+            weight_np,
+        )
+        precision = 0  # won't be used
+        self.fit_ptr(
+            source_dev,
+            m_train,
+            n,
+            m_valid,
+            precision,
+            self.ord,
+            a,
+            b,
+            c,
+            d,
+            e,
+            give_full_path,
+            do_predict=do_predict,
+            free_input_data=free_input_data,
+            tol=tol,
+            lambda_stop_early=lambda_stop_early,
+            glm_stop_early=glm_stop_early,
+            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+            max_iter=max_iter,
+            verbose=verbose
+        )
+        return self
+
+    # TODO Add typechecking
+    def predict(
+            self,
+            valid_x,
+            valid_y=None,
+            weight=None,
+            give_full_path=None,
+            free_input_data=1,
+            verbose=0,
+            order=None
+    ):
+        """Predict on a fitted GLM
+
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param order: Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
+        """
+        give_full_path, verbose, order = self._none_checks_simple(
+            False,
+            give_full_path,
+            verbose,
+            order
+        )
+
+        # if pass None train_x and train_y, then do predict using valid_x
+        # and weight (if given) unlike _upload_data and fit_ptr (and so fit)
+        # don't free-up predictions since for single model might request
+        # multiple predictions.  User has to call finish themselves to cleanup.
+
+        valid_x_np, _, _, fortran1 = _get_data(valid_x)
+        valid_y_np, _, _, fortran2 = _get_data(valid_y)
+        weight_np, _, _, fortran3 = _get_data(weight)
+
+        # check that inputs all have same 'c' or 'r' order
+        fortran_list = [fortran1, fortran2, fortran3]
+        _check_equal(fortran_list)
+
+        # override order
+        if fortran1:
+            order = 'c'
+        else:
+            order = 'r'
+        self.ord = ord(order)
+
+        ################
+        # do checks on inputs
+
+        do_predict = 1
+        if give_full_path == 1:
+            self.prediction_full = self.fit(
+                None,
+                None,
+                valid_x_np,
+                valid_y_np,
+                weight_np,
+                give_full_path,
+                do_predict,
+                free_input_data,
+            ).valid_pred_vs_alpha_lambdapure
+        else:
+            self.prediction_full = None
+        oldgivefullpath = self.give_full_path
+        tempgivefullpath = 0
+        self.prediction = self.fit(
+            None,
+            None,
+            valid_x_np,
+            valid_y_np,
+            weight_np,
+            tempgivefullpath,
+            do_predict,
+            free_input_data,
+        ).valid_pred_vs_alphapure
+        self.give_full_path = oldgivefullpath
+        if give_full_path == 1:
+            return self.prediction_full  # something like valid_y
+        return self.prediction  # something like valid_y
+
+    # TODO Add typechecking
     # source_dev here because generally want to take in any pointer,
     # not just from our test code
     def fit_ptr(
@@ -213,28 +463,34 @@ class GLM(object):
             max_iter=None,
             verbose=None
     ):
-        """Train a model using GLM Solver with pointers to data on GPU
+        """Train a GLM with pointers to data on the GPU
 
         :param source_dev
         :param m_train
         :param n
         :param m_valid
         :param precision
-        :param order
+        :param order: Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
         :param a
         :param b
         :param c
         :param d
         :param e
-        :param give_full_path
-        :param do_predict
-        :param free_input_data
-        :param tol
-        :param lambda_stop_early
-        :param glm_stop_early
-        :param glm_stop_early_error_fraction
-        :param max_iter
-        :param verbose
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
         # store some things for later call to predict_ptr()
 
@@ -468,13 +724,9 @@ class GLM(object):
             self._lambdas = \
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
-            self._alphas = self.x_vs_alpha_lambdanew[
-                           :, :, n + num_error + 1:n + num_error + 2
-                           ]
+            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:n + num_error + 2]
 
-            self._tols = self.x_vs_alpha_lambdanew[
-                         :, :, n + num_error + 2:n + num_error + 3
-                         ]
+            self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
@@ -506,12 +758,9 @@ class GLM(object):
                                             (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
-            self._lambdas2 = self.x_vs_alphanew[
-                             :, n + num_error:n + num_error + 1]
-            self._alphas2 = self.x_vs_alphanew[
-                            :, n + num_error + 1:n + num_error + 2]
-            self._tols2 = self.x_vs_alphanew[
-                          :, n + num_error + 2:n + num_error + 3]
+            self._lambdas2 = self.x_vs_alphanew[:, n + num_error:n + num_error + 1]
+            self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:n + num_error + 2]
+            self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
@@ -552,256 +801,6 @@ class GLM(object):
         return self
 
     # TODO Add typechecking
-    def fit(
-            self,
-            train_x,
-            train_y,
-            valid_x=None,
-            valid_y=None,
-            weight=None,
-            give_full_path=None,
-            do_predict=0,
-            free_input_data=1,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None,
-            order=None,
-    ):
-        """Train a Generalized Linear Model(GLM)
-
-        :param ndarray train_x : Training features
-        :param ndarray train_ y : Training response
-        :param ndarray valid_x : Validation features
-        :param ndarray valid_ y : Validation response
-        :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
-            Default is 0.
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
-            improvement on train or validation. Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
-        """
-
-        give_full_path, tol, lambda_stop_early, glm_stop_early, \
-        glm_stop_early_error_fraction, max_iter, verbose, order = \
-            self._none_checks(False, give_full_path, tol, lambda_stop_early,
-                              glm_stop_early, glm_stop_early_error_fraction,
-                              max_iter, verbose, order)
-
-        # If True, then append intercept term to train_x array and valid_x array(if available)
-        if self.fit_intercept:
-            if train_x is not None:
-                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
-                                                      dtype=train_x.dtype)])
-            if valid_x is not None:
-                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
-                                                      dtype=valid_x.dtype)])
-
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x)
-        train_y_np, m_y, _, fortran2 = _get_data(train_y)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x)
-        valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
-        weight_np, _, _, fortran5 = _get_data(weight)
-
-        # check that inputs all have same 'c' or 'r' order
-        fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
-        _check_equal(fortran_list)
-
-        # set order
-        if order is None:
-            if fortran1:
-                order = 'c'
-            else:
-                order = 'r'
-            self.ord = ord(order)
-
-        # now can do checks
-
-        # ###############
-        # check do_predict input
-
-        if m_train >= 1 and m_y >= 1 and m_train != m_y:
-            print(
-                'training X and Y must have same number of rows, '
-                'but m_train=%d m_y=%d\n' % (m_train, m_y)
-            )
-
-        if do_predict == 0:
-            if verbose > 0:
-                if n1 >= 0 and m_y >= 0:
-                    print('Correct train inputs')
-                else:
-                    raise ValueError('Incorrect train inputs')
-        if do_predict == 1:
-            if n1 == -1 and n2 >= 0:
-                if verbose > 0:
-                    print('Correct prediction inputs')
-            else:
-                print('Incorrect prediction inputs: %d %d %d %d' %
-                      (n1, n2, m_valid_y, m_y))
-
-        # ################
-
-        if do_predict == 0:
-            if n1 >= 0 and n2 >= 0 and n1 != n2:
-                raise ValueError(
-                    'train_x and valid_x must have same number of columns, '
-                    'but n=%d n2=%d\n' % (n1, n2)
-                )
-            else:
-                n = n1  # either
-        else:
-            n = n2  # pick valid_x
-
-        # #################
-
-        if do_predict == 0:
-            if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
-                raise ValueError(
-                    'valid_x and valid_y must have same number of rows, '
-                    'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y)
-                )
-        # otherwise m_valid is used, and m_valid_y can be there
-        # or not (sets whether do error or not)
-
-        if do_predict == 0:
-            if (m_valid == 0 or m_valid == -1) and n2 > 0 or \
-                                    m_valid > 0 and (n2 == 0 or n2 == -1):
-                # TODO FIXME: Don't need valid_y if just want preds and no
-                # error,but don't return error in fit, so leave for now
-                raise ValueError(
-                    'Must input both valid_x and valid_y or neither.'
-                )
-
-        source_dev = 0  # assume GPU=0 is fine as source
-        (a, b, c, d, e) = self._upload_data(
-            source_dev,
-            train_x_np,
-            train_y_np,
-            valid_x_np,
-            valid_y_np,
-            weight_np,
-        )
-        precision = 0  # won't be used
-        self.fit_ptr(
-            source_dev,
-            m_train,
-            n,
-            m_valid,
-            precision,
-            self.ord,
-            a,
-            b,
-            c,
-            d,
-            e,
-            give_full_path,
-            do_predict=do_predict,
-            free_input_data=free_input_data,
-            tol=tol,
-            lambda_stop_early=lambda_stop_early,
-            glm_stop_early=glm_stop_early,
-            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iter=max_iter,
-            verbose=verbose
-        )
-        return self
-
-    # TODO Add typechecking
-    def predict(
-            self,
-            valid_x,
-            valid_y=None,
-            weight=None,
-            give_full_path=None,
-            free_input_data=1,
-            verbose=0,
-            order=None
-    ):
-        """Obtains predictions from fitted GLM
-
-        :param ndarray valid_x : Validation features
-        :param ndarray valid_ y : Validation response
-        :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
-        :param order: Order of data.  Default is None, and internally determined
-        whether row 'r' or column 'c' major order.
-        """
-        give_full_path, verbose, order = self._none_checks_simple(
-            False,
-            give_full_path,
-            verbose,
-            order
-        )
-
-        # if pass None train_x and train_y, then do predict using valid_x
-        # and weight (if given) unlike _upload_data and fit_ptr (and so fit)
-        # don't free-up predictions since for single model might request
-        # multiple predictions.  User has to call finish themselves to cleanup.
-
-        valid_x_np, _, _, fortran1 = _get_data(valid_x)
-        valid_y_np, _, _, fortran2 = _get_data(valid_y)
-        weight_np, _, _, fortran3 = _get_data(weight)
-
-        # check that inputs all have same 'c' or 'r' order
-        fortran_list = [fortran1, fortran2, fortran3]
-        _check_equal(fortran_list)
-
-        # override order
-        if fortran1:
-            order = 'c'
-        else:
-            order = 'r'
-        self.ord = ord(order)
-
-        ################
-        # do checks on inputs
-
-        do_predict = 1
-        if give_full_path == 1:
-            self.prediction_full = self.fit(
-                None,
-                None,
-                valid_x_np,
-                valid_y_np,
-                weight_np,
-                give_full_path,
-                do_predict,
-                free_input_data,
-            ).valid_pred_vs_alpha_lambdapure
-        else:
-            self.prediction_full = None
-        oldgivefullpath = self.give_full_path
-        tempgivefullpath = 0
-        self.prediction = self.fit(
-            None,
-            None,
-            valid_x_np,
-            valid_y_np,
-            weight_np,
-            tempgivefullpath,
-            do_predict,
-            free_input_data,
-        ).valid_pred_vs_alphapure
-        self.give_full_path = oldgivefullpath
-        if give_full_path == 1:
-            return self.prediction_full  # something like valid_y
-        return self.prediction  # something like valid_y
-
-    # TODO Add typechecking
     def predict_ptr(
             self,
             valid_xptr,
@@ -811,7 +810,7 @@ class GLM(object):
             verbose=0,
             order=None
     ):
-        """Obtains predictions from fitted GLM with data that is on GPU
+        """Predict on a fitted GLM with with pointers to data on the GPU
 
         :param ndarray valid_xptr : Pointer to validation features
         :param ndarray valid_ yptr : Pointer to validation response
@@ -992,28 +991,33 @@ class GLM(object):
             max_iter=None,
             verbose=None,
     ):
-        """Train a model using GLM Solver with pointers to data on GPU
-        and predict on validation set that also has a pointer on GPU
+        """Train a GLM with pointers to data on the GPU and predict on validation set
+        that also has a pointer on the GPU
 
         :param source_dev
         :param m_train
-        :parm n
+        :param n
         :param m_valid
         :param precision
-        :param order
+        :param order: Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
         :param a
         :param b
         :param c
         :param d
         :param e
-        :param give_full_path
-        :param free_input_data
-        :param tol
-        :param lambda_stop_early
-        :param glm_stop_early
-        :param glm_stop_early_error_fraction
-        :param max_iter
-        :param verbose
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -1082,6 +1086,28 @@ class GLM(object):
             max_iter=None,
             verbose=None,
     ):
+        """Train a model using GLM and predict on validation set
+
+        :param ndarray train_x : Training features
+        :param ndarray train_ y : Training response
+        :param ndarray valid_x : Validation features
+        :param ndarray valid_ y : Validation response
+        :param ndarray weight : Observation weights
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        """
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
                                 weight, give_full_path, free_input_data,
                                 tol, lambda_stop_early, glm_stop_early,
@@ -1093,8 +1119,7 @@ class GLM(object):
 
     def summary(self):
         """
-        Obtain model summary, which is error per
-        alpha across train, cv, and validation
+        Obtain model summary, which is error per alpha across train, cv, and validation
 
         Error is logloss for classification and
         RMSE (Root Mean Squared Error) for regression.
@@ -1510,12 +1535,6 @@ class GLM(object):
             return a, b, c, d, e
 
         assert status == 0, 'Failure uploading the data'
-
-        # print("a=",hex(a.value))
-        # print("b=",hex(b.value))
-        # print("c=",hex(c.value))
-        # print("d=",hex(d.value))
-        # print("e=",hex(e.value))
 
         self.solution.double_precision = self.double_precision
         self.a = a
