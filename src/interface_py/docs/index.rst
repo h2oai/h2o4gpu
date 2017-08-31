@@ -3,12 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to h2o4gpu's documentation!
+H2O4GPU documentation
 ===================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   
+   h2o4gpu.solvers
 
 
 
