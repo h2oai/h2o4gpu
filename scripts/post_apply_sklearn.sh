@@ -26,22 +26,22 @@ do
        then
            # rename class
            echo "1"
-           sed -i "s/class $classorig(/class $classnew(/g" $skfile
+           sed -i --follow-symlinks "s/class $classorig(/class $classnew(/g" $skfile
            echo "2"
-           sed -i "s/($classorig)/($classnew)/g" $skfile
+           sed -i --follow-symlinks "s/($classorig)/($classnew)/g" $skfile
            echo "3"
-           sed -i "s/sklearn_sklearn/sklearn/g" $skfile
+           sed -i --follow-symlinks "s/sklearn_sklearn/sklearn/g" $skfile
            echo "4"
-           sed -i "s/\ $classorig\([^[a-z]\)/ $classnew\1/g" $skfile
+           sed -i --follow-symlinks "s/\ $classorig\([^[a-z]\)/ $classnew\1/g" $skfile
            echo "5"
-           sed -i "s/sklearn_sklearn/sklearn/g" $skfile
+           sed -i --follow-symlinks "s/sklearn_sklearn/sklearn/g" $skfile
 
            # rename class in init file
-           #sed -i "s/\([^[a-z]\)$classorig\([^[a-z]\)/\1$classnew\2/g" $initfile
+           #sed -i --follow-symlinks "s/\([^[a-z]\)$classorig\([^[a-z]\)/\1$classnew\2/g" $initfile
            echo "6"
-           sed -i "s/\ $classorig\([^[a-z]\)/ $classnew\1/g" $initfile
+           sed -i --follow-symlinks "s/\ $classorig\([^[a-z]\)/ $classnew\1/g" $initfile
            echo "7"
-           sed -i "s/sklearn_sklearn/sklearn/g" $initfile
+           sed -i --follow-symlinks "s/sklearn_sklearn/sklearn/g" $initfile
 
            # append our class
            echo "" >> $skfile
