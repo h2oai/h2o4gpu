@@ -7,7 +7,7 @@ pip install dist/h2o4gpu-0.20.dev0-cp36-cp36m-linux_x86_64.whl --upgrade --targe
 cd ../
 
 # link-up recursively
-sh ./scripts/importsklearn.sh
+bash ./scripts/importsklearn.sh
 
 # handle base __init__.py file appending
 rm -rf src/interface_py/h2o4gpu/__init__.py
@@ -17,4 +17,4 @@ cat src/interface_py/h2o4gpu/__init__.base.py src/interface_py/h2o4gpu/__init__.
 rm -rf src/interface_py/h2o4gpu/__init__.py.2
 
 # register 
-sh ./scripts/post_apply_sklearn.sh
+bash ./scripts/post_apply_sklearn.sh
