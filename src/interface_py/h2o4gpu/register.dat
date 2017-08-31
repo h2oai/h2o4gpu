@@ -1,3 +1,3 @@
 # filename           # initfile             Original Class   Renamed To           appendcommand
-cluster/k_means_.py  cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans_base import KMeans"
-cluster/bicluster.py cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans_base import KMeans"
+cluster/k_means_.py  cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans import KMeans"
+cluster/bicluster.py cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans import KMeans"

@@ -2,7 +2,7 @@ thepwd = "$(shell pwd)"
 
 default: all
 
-pylint: ; @for py in $$(find . -name "*.py"); do pylint --rcfile=../../tools/pylintrc -rn $$py; done
+pylint: ; @for py in $$(find h2o4gpu -name "*.py" -type f); do pylint --rcfile=../../tools/pylintrc -rn $$py; done
 
 all:
 
