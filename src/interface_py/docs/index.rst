@@ -7,7 +7,7 @@ H2O4GPU documentation
 ===================================
 
 .. toctree::
-   
+   intro 
    h2o4gpu
 
 
