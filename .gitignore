@@ -1,6 +1,9 @@
 # OSX #
 *.DS_STORE
 
+#Sphinx docs
+_build
+
 # Ignore artifacts made from make, h2o4gpu
 src/interface_py/py3nvml
 src/interface_py/xgboost
