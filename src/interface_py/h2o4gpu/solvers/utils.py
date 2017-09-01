@@ -113,7 +113,6 @@ def _get_data(data):
         data_as_np = _to_np(data)
         #Ensure dtype is float32, else convert.
         if data.dtype != np.float32:
-            print("Converting data to float32...")
             data_as_np = data_as_np.astype(np.float32)
             print(data_as_np)
             # data_as_np = np.array(data_as_np.reshape(data_as_np.shape), copy=False, dtype=np.float32)
