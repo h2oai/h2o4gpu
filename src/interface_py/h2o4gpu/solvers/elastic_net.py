@@ -240,9 +240,11 @@ class GLM(object):
         # If True, then append intercept term to train_x array and valid_x array(if available)
         if self.fit_intercept:
             if train_x is not None:
+                train_x = train_x[:, np.newaxis]
                 train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
                                                       dtype=train_x.dtype)])
             if valid_x is not None:
+                valid_x = valid_x[:, np.newaxis]
                 valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
                                                       dtype=valid_x.dtype)])
 
