@@ -3,6 +3,8 @@
 
 #Sphinx docs
 _build
+src/interface_py/docs/source
+source
 
 # Ignore artifacts made from make, h2o4gpu
 src/interface_py/py3nvml
@@ -48,7 +50,7 @@ src/interface_c/ch2o4gpu_cpu
 src/interface_c/ch2o4gpu_gpu
 src/py3nvml/
 tmp/
-
+tests/results
 # Visual Studio Code
 *.vscode
 
