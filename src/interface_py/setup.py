@@ -141,7 +141,8 @@ setup(
               'h2o4gpu.covariance',
               'h2o4gpu.cluster',
               'h2o4gpu.__check_build',
-              'h2o4gpu._build_utils'
+              'h2o4gpu._build_utils',
+              'h2o4gpu.typecheck'
              ],
     package_data={'h2o4gpu': ['*'],
                   'h2o4gpu.xgboost': ['*'],
@@ -203,7 +204,8 @@ setup(
                   'h2o4gpu.covariance': ['*'],
                   'h2o4gpu.cluster': ['*'],
                   'h2o4gpu.__check_build': ['*'],
-                  'h2o4gpu._build_utils': ['*']
+                  'h2o4gpu._build_utils': ['*'],
+                  'h2o4gpu.typecheck' : ['*']
                  },
     license='Apache v2.0',
     zip_safe=False,
