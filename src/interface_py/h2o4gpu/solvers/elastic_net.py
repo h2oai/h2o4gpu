@@ -6,13 +6,15 @@
 import sys
 from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
     pointer, cast, addressof
+
 import numpy as np
+import pandas as pd
+from tabulate import tabulate
+
 from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
 from h2o4gpu.solvers.utils import device_count, _get_data, _data_info, \
     _convert_to_ptr, _check_equal
-from h2o4gpu.util.typechecks import assert_is_type
-import pandas as pd
-from tabulate import tabulate
+from h2o4gpu.typecheck.typechecks import assert_is_type
 
 
 class GLM(object):

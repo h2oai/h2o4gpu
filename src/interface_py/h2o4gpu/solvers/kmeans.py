@@ -7,11 +7,13 @@ KMeans clustering solver.
 """
 import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, POINTER, cast
+
 import numpy as np
-from h2o4gpu.types import cptr
+
 from h2o4gpu.libs.lib_kmeans import GPUlib, CPUlib
 from h2o4gpu.solvers.utils import device_count, _to_np, _check_data_content
-from h2o4gpu.util.typechecks import assert_is_type, assert_satisfies
+from h2o4gpu.typecheck.typechecks import assert_is_type, assert_satisfies
+from h2o4gpu.types import cptr
 
 
 class KMeans(object):
