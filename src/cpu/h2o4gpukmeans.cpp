@@ -246,10 +246,9 @@ namespace h2o4gpukmeans {
         std::signal(SIGINT, my_function);
         std::signal(SIGTERM, my_function);
 
-        int printsrcdata = 0;
-        if (printsrcdata) {
-            for (unsigned int ii = 0; ii < n; ii++) {
-                for (unsigned int jj = 0; jj < d; jj++) {
+        if (verbose) {
+            for (int ii = 0; ii < n; ii++) {
+                for (int jj = 0; jj < d; jj++) {
                     fprintf(stderr, "%2g ", srcdata[ii * d + jj]);
                 }
                 fprintf(stderr, " |  ");

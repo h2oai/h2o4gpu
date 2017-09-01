@@ -26,7 +26,8 @@ class GLM(object):
         Must be 'r' (Row major) or 'c' (Column major).
     :param bool fit_intercept : Include constant term in the model
         Default is True.
-    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used in lambda search.
+    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used
+        in lambda search.
         Default is 1e-7.
     :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
@@ -240,21 +241,29 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int free_input_data : Indicate if input data should be freed
+            at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
-            improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more
+            relative improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
+            improvement in the primary and dual residuals for ADMM.
+            Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement
+            is not at least this much).
+            Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
+        :param int verbose : Print verbose information to the console if set
+            to > 0. Default is 0.
+        :param int do_predict : Indicate if prediction should be done on
+            validation set after train.
             Default is 0.
-        :param char or int: order : Order of input data ('c' or 'r' or ord() versions of these). Default is None.
+        :param char or int: order : Order of input data ('c' or 'r' or ord()
+            versions of these).
+            Default is None.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -263,7 +272,8 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        # If True, then append intercept term to train_x array and valid_x array(if available)
+        # If True, then append intercept term to train_x array
+        # and valid_x array(if available)
         if self.fit_intercept:
             if train_x is not None:
                 train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
@@ -398,9 +408,14 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int free_input_data : Indicate if input data should be
+            freed at the end of fit().
+            Default is 1.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -439,12 +454,12 @@ class GLM(object):
             self.prediction_full = self.fit(
                 None,
                 None,
-                valid_x = valid_x_np,
-                valid_y = valid_y_np,
-                weight = weight_np,
-                give_full_path = give_full_path,
-                do_predict = do_predict,
-                free_input_data = free_input_data,
+                valid_x=valid_x_np,
+                valid_y=valid_y_np,
+                weight=weight_np,
+                give_full_path=give_full_path,
+                do_predict=do_predict,
+                free_input_data=free_input_data,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -453,12 +468,12 @@ class GLM(object):
         self.prediction = self.fit(
             None,
             None,
-            valid_x = valid_x_np,
-            valid_y = valid_y_np,
-            weight = weight_np,
-            give_full_path = tempgivefullpath,
-            do_predict = do_predict,
-            free_input_data = free_input_data,
+            valid_x=valid_x_np,
+            valid_y=valid_y_np,
+            weight=weight_np,
+            give_full_path=tempgivefullpath,
+            do_predict=do_predict,
+            free_input_data=free_input_data,
         ).valid_pred_vs_alphapure
         self.give_full_path = oldgivefullpath
         if give_full_path == 1:
@@ -492,8 +507,8 @@ class GLM(object):
             verbose=None
     ):
         """Train a GLM with pointers to data on the GPU
-           (if fit_intercept, then you should have added 1's as last column to trainX)
-
+           (if fit_intercept, then you should have added 1's as
+           last column to trainX)
 
         :param source_dev GPU ID of device
         :param m_train Number of rows in the training set
@@ -507,20 +522,28 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
+        :param int give_full_path : Extract full regularization path f
+            rom glm model
+        :param int do_predict : Indicate if prediction should be done on
+            validation set after train.
             Default is 0.
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int free_input_data : Indicate if input data should be freed at
+            the end of fit().
+            Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
-            improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more
+            relative improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
+            improvement in the primary and dual residuals for ADMM.
+            Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
+            metric-based stopping criterion (stop if relative
+            improvement is not at least this much).
+            Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         """
         # store some things for later call to predict_ptr()
 
@@ -733,9 +756,11 @@ class GLM(object):
             self._lambdas = \
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
-            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:n + num_error + 2]
+            self._alphas = self.x_vs_alpha_lambdanew[
+                :, :, n + num_error + 1:n + num_error + 2]
 
-            self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:n + num_error + 3]
+            self._tols = self.x_vs_alpha_lambdanew[
+                :, :, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
@@ -767,9 +792,12 @@ class GLM(object):
                                             (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
-            self._lambdas2 = self.x_vs_alphanew[:, n + num_error:n + num_error + 1]
-            self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:n + num_error + 2]
-            self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:n + num_error + 3]
+            self._lambdas2 = self.x_vs_alphanew[
+                :, n + num_error:n + num_error + 1]
+            self._alphas2 = self.x_vs_alphanew[
+                :, n + num_error + 1:n + num_error + 2]
+            self._tols2 = self.x_vs_alphanew[
+                :, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
@@ -823,9 +851,13 @@ class GLM(object):
 
         :param ndarray valid_xptr : Pointer to validation features
         :param ndarray valid_ yptr : Pointer to validation response
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int free_input_data : Indicate if input data should be
+            freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -907,20 +939,30 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int do_predict : Indicate if prediction should be done
+            on validation set after train.
             Default is 0.
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
+        :param int free_input_data : Indicate if input data should be freed
+            at the end of fit().
+            Default is 1.
+        :param float tol: tolerance.
+            Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no
+            more relative
             improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
+            improvement in the primary and dual residuals for ADMM.
+            Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement
+            is not at least this much).
+            Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -1001,8 +1043,8 @@ class GLM(object):
             max_iter=None,
             verbose=None,
     ):
-        """Train a GLM with pointers to data on the GPU and predict on validation set
-        that also has a pointer on the GPU
+        """Train a GLM with pointers to data on the GPU and predict on
+        validation set that also has a pointer on the GPU
 
         :param source_dev GPU ID of device
         :param m_train Number of rows in the training set
@@ -1016,18 +1058,24 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int free_input_data : Indicate if input data should be freed
+            at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
-            improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more
+            relative improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
+            improvement in the primary and dual residuals for ADMM.
+                Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
+            metric-based stopping criterion (stop if relative
+            improvement is not at least this much).
+            Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -1103,20 +1151,25 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from glm model
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
-            Default is 0.
-        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int give_full_path : Extract full regularization path
+            from glm model
+        :param int free_input_data : Indicate if input data should be freed
+            at the end of fit().
+            Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more relative
-            improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more
+            relative improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.  Default is True
+            improvement in the primary and dual residuals for ADMM.
+            Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is not at
-            least this much). Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement
+            is not at least this much).
+            Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int verbose : Print verbose information to the console
+            if set to > 0.
+            Default is 0.
         """
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
                                 weight, give_full_path, free_input_data,
@@ -1129,7 +1182,8 @@ class GLM(object):
 
     def summary(self):
         """
-        Obtain model summary, which is error per alpha across train, cv, and validation
+        Obtain model summary, which is error per alpha across train, cv,
+        and validation
 
         Error is logloss for classification and
         RMSE (Root Mean Squared Error) for regression.
@@ -1140,7 +1194,12 @@ class GLM(object):
         else:
             print("RMSE per alpha value (-1.00 = missing)\n")
         headers = ["Alphas", "Train", "CV", "Valid"]
-        print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
+        print(
+            tabulate(error_train,
+                     headers=headers,
+                     tablefmt="pipe",
+                     floatfmt=".2f")
+        )
 
     # ################### Properties and setters of properties
 

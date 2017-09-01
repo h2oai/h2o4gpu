@@ -1,6 +1,4 @@
-#ifndef __ELASTIC_NET_PTR_H__
-#define __ELASTIC_NET_PTR_H__
-
+#pragma once
 #include <stddef.h>
 #include <stdio.h>
 #include <limits>
@@ -364,5 +362,3 @@ int modelfree_float(float *aptr);
 #endif
 
 }
-
-#endif

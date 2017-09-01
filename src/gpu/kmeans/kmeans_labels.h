@@ -1,15 +1,18 @@
+/* Copyright 2017 H2O.ai
+
+Apache License Version 2.0 (see LICENSE for details)
+==============================================================================*/
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <thrust/device_vector.h>
-#include <cub/cub.cuh>
+#include "../include/cub/cub.cuh"
 #include <iostream>
 #include <sstream>
 #include <cublas_v2.h>
 #include <cfloat>
 #include "kmeans_general.h"
 
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
+inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true) {
 	if (code != cudaSuccess) {
 		fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
 		std::stringstream ss;
@@ -68,6 +71,7 @@ static const char *cudaGetErrorEnum(cublasStatus_t error)
     return "<unknown>";
 }
 #endif
+
 inline cublasStatus_t throw_on_cublas_error(cublasStatus_t code, const char *file,
                                        int line) {
 
@@ -170,10 +174,10 @@ namespace kmeans {
         gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
 #endif
-        
+
       }
 
-#define MAX_BLOCK_THREADS 32    
+#define MAX_BLOCK_THREADS 32
     template<typename T>
       __global__ void all_dots(int n, int k, T* data_dots, T* centroid_dots, T* dots) {
         __shared__ T local_data_dots[MAX_BLOCK_THREADS];
@@ -200,7 +204,7 @@ namespace kmeans {
         }
       }
 
-    
+
     template<typename T>
       void make_all_dots(int n, int k, thrust::device_vector<T>& data_dots,
           thrust::device_vector<T>& centroid_dots,
@@ -300,7 +304,7 @@ namespace mycub {
     void sort_by_key(thrust::device_vector<T>& keys, thrust::device_vector<U>& values) {
       int dev_num;
       safe_cuda(cudaGetDevice(&dev_num));
-      cudaStream_t this_stream = cuda_stream[dev_num]; 
+      cudaStream_t this_stream = cuda_stream[dev_num];
       int SIZE = keys.size();
       if (key_alt_buf_bytes[dev_num] < sizeof(T)*SIZE) {
         if (d_key_alt_buf[dev_num]) safe_cuda(cudaFree(d_key_alt_buf[dev_num]));
@@ -322,7 +326,7 @@ namespace mycub {
       //if (temp_storage_bytes[dev_num] == 0) {
       void *d_temp;
       size_t temp_bytes;
-      err = cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_bytes, d_keys, 
+      err = cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_bytes, d_keys,
           d_values, SIZE, 0, sizeof(T)*8, this_stream);
       // Allocate temporary storage for sorting operation
       safe_cuda(cudaMalloc(&d_temp, temp_bytes));
@@ -336,10 +340,10 @@ namespace mycub {
       }
       //}
       // Run sorting operation
-      err = cub::DeviceRadixSort::SortPairs(d_temp, temp_bytes, d_keys, 
+      err = cub::DeviceRadixSort::SortPairs(d_temp, temp_bytes, d_keys,
           d_values, SIZE, 0, sizeof(T)*8, this_stream);
       if (err) std::cout <<"Error in SortPairs 2" << std::endl;
-      //cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys, 
+      //cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys,
       //                                d_values, SIZE, 0, sizeof(T)*8, this_stream);
 
     }
@@ -349,12 +353,12 @@ namespace mycub {
       safe_cuda(cudaGetDevice(&dev_num));
       if (!d_temp_storage2[dev_num]) {
         cub::DeviceReduce::Sum(d_temp_storage2[dev_num], temp_storage_bytes2[dev_num], thrust::raw_pointer_cast(values.data()),
-            sum, values.size(), cuda_stream[dev_num]); 
+            sum, values.size(), cuda_stream[dev_num]);
         // Allocate temporary storage for sorting operation
         safe_cuda(cudaMalloc(&d_temp_storage2[dev_num], temp_storage_bytes2[dev_num]));
       }
       cub::DeviceReduce::Sum(d_temp_storage2[dev_num], temp_storage_bytes2[dev_num], thrust::raw_pointer_cast(values.data()),
-          sum, values.size(), cuda_stream[dev_num]); 
+          sum, values.size(), cuda_stream[dev_num]);
     }
   void cub_init();
   void cub_close();

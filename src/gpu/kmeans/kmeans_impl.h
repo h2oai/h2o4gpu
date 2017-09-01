@@ -1,3 +1,7 @@
+/* Copyright 2017 H2O.ai
+
+Apache License Version 2.0 (see LICENSE for details)
+==============================================================================*/
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <atomic>
@@ -6,7 +10,7 @@
 #include <sstream>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
-#include "centroids.h"
+#include "kmeans_centroids.h"
 #include "kmeans_labels.h"
 #include "kmeans_general.h"
 
@@ -58,7 +62,8 @@ int kmeans(
     int n_gpu,
     int max_iterations,
     int init_from_data = 0,
-    double threshold = 1e-3) {
+    double threshold = 1e-3,
+    bool do_per_iter_check = true) {
 
   thrust::device_vector<T> *data_dots[MAX_NGPUS];
   thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
@@ -68,28 +73,21 @@ int kmeans(
   thrust::device_vector<int> *indices[MAX_NGPUS];
   thrust::device_vector<int> *counts[MAX_NGPUS];
 
-#if(DEBUGKMEANS)
-  // debug
-  thrust::host_vector<T> *h_data_dots[MAX_NGPUS];
-  thrust::host_vector<T> *h_centroid_dots[MAX_NGPUS];
-  thrust::host_vector<T> *h_pairwise_distances[MAX_NGPUS];
-  thrust::host_vector<int> *h_labels_copy[MAX_NGPUS];
-  thrust::host_vector<int> *h_range[MAX_NGPUS];
-  thrust::host_vector<int> *h_indices[MAX_NGPUS];
-  thrust::host_vector<int> *h_counts[MAX_NGPUS];
-#endif
-
   thrust::host_vector<T> h_centroids(k * d);
   thrust::host_vector<T> h_centroids_tmp(k * d);
   int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
   T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
 
-  for (int q = 0; q < n_gpu; q++) {
+#if(DEBUGKMEANS)
+  thrust::host_vector<T> *h_pairwise_distances[MAX_NGPUS];
+#endif
 
+  for (int q = 0; q < n_gpu; q++) {
     if (verbose) {
       fprintf(stderr, "Before kmeans() Allocation: gpu: %d\n", q);
       fflush(stderr);
     }
+
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaMalloc(&d_changes[q], sizeof(int)));
     safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
@@ -104,6 +102,7 @@ int kmeans(
       counts[q] = new thrust::device_vector<int>(k);
       indices[q] = new thrust::device_vector<int>(n / n_gpu);
     }
+
     catch (thrust::system_error &e) {
       // output an error message and exit
       std::stringstream ss;
@@ -123,13 +122,7 @@ int kmeans(
 
 #if(DEBUGKMEANS)
     // debug
-    h_data_dots[q] = new thrust::host_vector <T>(n/n_gpu);
-    h_centroid_dots[q] = new thrust::host_vector<T>(k*d);
     h_pairwise_distances[q] = new thrust::host_vector<T>(n/n_gpu * k);
-    h_labels_copy[q] = new thrust::host_vector<int>(n/n_gpu);
-    h_range[q] = new thrust::host_vector<int>(n/n_gpu);
-    h_counts[q] = new thrust::host_vector<int>(k);
-    h_indices[q] = new thrust::host_vector<int>(n/n_gpu);
 #endif
 
     if (verbose) {
@@ -152,16 +145,10 @@ int kmeans(
         fprintf(stderr, "Before find_centroids: gpu: %d\n", q);
         fflush(stderr);
       }
-      detail::find_centroids(q,
-                             n / n_gpu,
-                             d,
-                             k,
-                             *data[q],
-                             *labels[q],
-                             *centroids[q],
-                             *range[q],
-                             *indices[q],
-                             *counts[q]);
+      detail::find_centroids(q, n / n_gpu, d, k,
+                             *data[q], *labels[q],
+                             *centroids[q], *range[q],
+                             *indices[q], *counts[q]);
     }
   }
 
@@ -169,6 +156,7 @@ int kmeans(
     fprintf(stderr, "Before kmeans() Iterations\n");
     fflush(stderr);
   }
+
   int i = 0;
   bool done = false;
   for (; i < max_iterations; i++) {
@@ -227,8 +215,7 @@ int kmeans(
     }
 
     // whether to perform per iteration check
-    int docheck = 1;
-    if (docheck) {
+    if (do_per_iter_check) {
       double distance_sum = 0.0;
       int moved_points = 0.0;
       for (int q = 0; q < n_gpu; q++) {
@@ -286,4 +273,6 @@ int kmeans(
   }
   return 0;
 }
+
 }
+
