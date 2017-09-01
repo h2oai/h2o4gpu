@@ -23,6 +23,7 @@ This document is a set of guidelines for contributors, nothing is set in stone s
 * [Python style guidelines](#python-style-guidelines)
 * [R style guidelines](#r-style-guidelines)
 * [Documentation style guidelines](#documentation-style-guidelines)
+* [Sklearn Override](#sklearn_override)
 
 ## Code of conduct
 
@@ -158,3 +159,18 @@ pylint --rcfile=/tmp/pylintrc <my_python_file>.py
 #### Documentation style guidelines
 
 TBA.
+
+#### Sklearn Override
+
+In order to override the sklearn API with new (GPU) functions, one
+adds a new row to the src/interface_py/h2o4gpu/register.dat, giving
+the filename to modify, associated init file, original class name,
+what the sklearn class will be renamed to, and the command to append
+in the init file that overrides the original sklearn class with the
+new class.
+
+This exposes the simplest cases of how to override sklearn classes
+with our own, and then how we write our own class in smart way is up
+to us.  One can have a class that inherits the sklearn class, or one
+can ignore the sklearn completely, or one can use the sklearn class as
+a backup when functionality is missing.

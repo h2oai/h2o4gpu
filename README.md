@@ -24,6 +24,7 @@ Download the Python wheel file
 Install the Python wheel file (Requires python 3.6):
 
 ```
+#NOTE: This will overwrite your py3nvml and xgboost installations to use our validated versions
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
 ```
 
@@ -43,6 +44,8 @@ For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2
 ## Plans and RoadMap
 
 Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
+
+This vision is currently accomplished by using the open-source scikit-learn and xgboost and overriding scikit-learn calls with our own GPU versions.
 
 ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
 
