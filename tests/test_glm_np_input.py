@@ -5,11 +5,6 @@ from h2o4gpu.solvers.linear_regression import LinearRegression
 
 print(sys.path)
 
-try:
-    from utils import find_file, runglm, run_glm
-except:
-    from tests.utils import find_file, run_glm
-
 logging.basicConfig(level=logging.DEBUG)
 
 def func():

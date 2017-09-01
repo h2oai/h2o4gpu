@@ -265,10 +265,10 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     else:
         print("mTrain=%d" % mTrain)
 
-    if fit_intercept is True:
-        trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        n = trainX_intercept.shape[1]
-        print("New n=%d" % n)
+    # if fit_intercept is True:
+    #     trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
+    #     n = trainX_intercept.shape[1]
+    #     print("New n=%d" % n)
 
     #####################
     #
@@ -351,20 +351,20 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
 
     Xvsalphabest=enet.X_best
 
-    testvalidY = np.dot(trainX_intercept, Xvsalphabest.T)
-    print("testvalidY (newvalidY should be this)")
-    if family != "logistic":
-        print(testvalidY)
-    else:
-        try:
-            inverse_logit = lambda t: 1 / (1 + math.exp(-t))
-            testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
-            func = np.vectorize(inverse_logit)
-            print(func(testvalidY))
-        except OverflowError:
-            print(testvalidY)
-
-    print(testvalidY)
+    #testvalidY = np.dot(trainX_intercept, Xvsalphabest.T)
+    #print("testvalidY (newvalidY should be this)")
+    #if family != "logistic":
+    #    print(testvalidY)
+    #else:
+    #    try:
+    #         inverse_logit = lambda t: 1 / (1 + math.exp(-t))
+    #         testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
+    #         func = np.vectorize(inverse_logit)
+    #         print(func(testvalidY))
+    #     except OverflowError:
+    #         print(testvalidY)
+    #
+    # print(testvalidY)
 
     print("Predicting, assuming unity weights")
     if validFraction == 0.0:
