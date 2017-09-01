@@ -8,8 +8,8 @@ H2O4GPU documentation
 
 .. toctree::
    intro 
-   h2o4gpu
-
+   h2o4gpu.solvers
+   h2o4gpu.util
 
 Indices and tables
 ==================

@@ -30,6 +30,7 @@ Subpackages
     h2o4gpu.svm
     h2o4gpu.tests
     h2o4gpu.tree
+    h2o4gpu.typecheck
     h2o4gpu.util
     h2o4gpu.utils
 

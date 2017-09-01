@@ -108,8 +108,8 @@ import tokenize
 from types import BuiltinFunctionType, FunctionType
 
 from h2o4gpu.h2o4gpu_exceptions import H2O4GPUTypeError, H2O4GPUValueError
-from h2o4gpu.util.compatibility import *  # NOQA
-from h2o4gpu.util.compatibility import PY2, viewitems
+from h2o4gpu.typecheck.compatibility import *  # NOQA
+from h2o4gpu.typecheck.compatibility import PY2, viewitems
 
 __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric", "Enum",
            "numeric", "pandas_dataframe", "numpy_ndarray", "scipy_sparse",
@@ -355,7 +355,7 @@ class _LazyClass(MagicType):
     therefore should not be exposed to the user code. Instead use "singletons" ``pandas_dataframe``,
     ``numpy_ndarray`` (and perhaps others in future). Usage::
 
-        from h2o4gpu.utils.typechecks import assert_is_type, pandas_dataframe, numpy_ndarray
+        from h2o4gpu.utils.typecheck import assert_is_type, pandas_dataframe, numpy_ndarray
         assert_is_type(fr, pandas_dataframe, numpy_ndarray)
     """
 
