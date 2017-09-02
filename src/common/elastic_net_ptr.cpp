@@ -234,6 +234,20 @@ double ElasticNetptr(
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore) {
 
+	if(0){ // DEBUG
+	if(alphas!=NULL){
+	for(int i=0;i<nAlphas;i++){
+		fprintf(stderr,"alpha[%d]=%g",i,alphas[i]);
+	}
+	}
+	if(lambdas!=NULL){
+	for(int i=0;i<nLambdas;i++){
+		fprintf(stderr,"lambdas[%d]=%g",i,lambdas[i]);
+	}
+	}
+	fflush(stderr);
+	}
+
 	if (dopredict == 0) {
 		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, nGPUs,
 				ord, mTrain, n, mValid, intercept, standardize,

@@ -8,14 +8,14 @@ import logging
 print(sys.path)
 
 try:
-    from utils import find_file, runglm, run_glm
+    from utils import find_file, run_glm
 except:
     from tests.utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
 
-def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
+def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, choosealphalambda=None):
     name = str(sys._getframe().f_code.co_name)
     name = str(sys._getframe(1).f_code.co_name)
     t = time.time()
@@ -38,9 +38,18 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
 
+    if choosealphalambda == 1 or choosealphalambda == 3:
+        alphas = [1E-1, 0.3, 0.5, 1.0]
+    else:
+        alphas = None
+    if choosealphalambda == 2 or choosealphalambda == 3:
+        lambdas = [2, 1E-2, 1E-3, 1E-5]
+    else:
+        lambdas = None
+
     t1 = time.time()
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name)
+                                    validFraction=validFraction, verbose=0, name=name, alphas=alphas, lambdas=lambdas)
 
     # check rmse
     print(rmse_train[0, 0])
@@ -49,9 +58,9 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print(rmse_test[0, 2])
     sys.stdout.flush()
 
-    if validFraction==0.0:
-        if nLambdas>50:
-            if nFolds==1:
+    if validFraction == 0.0:
+        if nLambdas > 50:
+            if nFolds == 1:
                 assert rmse_train[0, 0] < 0.04
                 assert rmse_train[0, 1] < 0.04
                 assert rmse_train[0, 2] < 0.04
@@ -93,8 +102,8 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
                 assert rmse_train[-1, 2] < 0.4
                 assert rmse_test[-1, 2] < 0.4
     else:
-        if nLambdas>50:
-            if nFolds==1:
+        if nLambdas > 50:
+            if nFolds == 1:
                 assert rmse_train[0, 0] < 0.4
                 assert rmse_train[0, 1] < 0.4
                 assert rmse_train[0, 2] < 0.51
@@ -183,6 +192,11 @@ def test_glm_simple_cpu_fold1(): fun(0, 1, 100, 8, validFraction=0.2)
 def test_glm_simple_cpu_fold2(): fun(0, 2, 100, 3, validFraction=0.2)
 
 
+def test_glm_simple_gpu_choosealphalambda1(): fun(1, 1, 5, 3, validFraction=0, choosealphalambda=1)
+def test_glm_simple_gpu_choosealphalambda2(): fun(1, 1, 5, 3, validFraction=0, choosealphalambda=2)
+def test_glm_simple_gpu_choosealphalambda3(): fun(1, 1, 5, 3, validFraction=0, choosealphalambda=3)
+
+
 if __name__ == '__main__':
     test_glm_simple_gpu_fold1_quick_0()
     test_glm_simple_gpu_fold1_0()
@@ -199,3 +213,7 @@ if __name__ == '__main__':
     test_glm_simple_cpu_fold1_quick()
     test_glm_simple_cpu_fold1()
     test_glm_simple_cpu_fold2()
+
+    test_glm_simple_gpu_choosealphalambda1()
+    test_glm_simple_gpu_choosealphalambda2()
+    test_glm_simple_gpu_choosealphalambda3()

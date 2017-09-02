@@ -26,7 +26,7 @@ class GLM(object):
         Must be 'r' (Row major) or 'c' (Column major).
     :param bool fit_intercept : Include constant term in the model
         Default is True.
-    :param float lambda_min_ratio : Minimum lambda used in lambda search.
+    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used in lambda search.
         Default is 1e-7.
     :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
@@ -593,14 +593,14 @@ class GLM(object):
         c_size_t_p = POINTER(c_size_t)
         if which_precision == 1:
             c_elastic_net = self.lib.elastic_net_ptr_double
-            self.mydtype = np.double
+            self.mydtype = np.float64
             self.myctype = c_double
             if verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
-            self.mydtype = np.float
+            self.mydtype = np.float32
             self.myctype = c_float
             if verbose > 0:
                 print('single precision fit')
@@ -608,13 +608,17 @@ class GLM(object):
 
         # precision-independent commands
         if self.alphas_list is not None:
-            c_alphas = self.alphas_list.ctypes.data_as(POINTER(self.myctype))
+            pass_alphas = (self.alphas_list.astype(self.mydtype, copy=False))
+            c_alphas = pass_alphas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_alphas = cast(0, POINTER(self.myctype))
         if self.lambdas_list is not None:
-            c_lambdas = self.lambdas_list.ctypes.data_as(POINTER(self.myctype))
+            pass_lambdas = (self.lambdas_list.astype(self.mydtype, copy=False))
+            c_lambdas = pass_lambdas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_lambdas = cast(0, POINTER(self.myctype))
+
+
 
         # call elastic net in C backend
         c_elastic_net(

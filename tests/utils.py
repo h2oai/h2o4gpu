@@ -72,7 +72,7 @@ def skip_if_no_smalldata():
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None):
+def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None, alphas=None, lambdas=None):
 
     if nGPUs > 0:
         use_gpu = True
@@ -125,7 +125,6 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     sourceme = 0
     sourceDev = 0
     fit_intercept = True # should be passed in from above if user added fit_intercept
-    nThreads = None
     lambda_min_ratio = 1e-9
     give_full_path = 1
     precision = 0
@@ -145,7 +144,7 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     sys.stdout.flush()
 
     Solver = h2o4gpu.GLM
-    enet = Solver(n_threads=nThreads, n_gpus=nGPUs, order='c' if fortran else 'r', fit_intercept=fit_intercept,
+    enet = Solver(n_gpus=nGPUs, order='c' if fortran else 'r', fit_intercept=fit_intercept,
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
                   n_folds=nFolds, n_alphas=nAlphas, verbose=5, give_full_path=give_full_path)
 
@@ -217,7 +216,7 @@ def printallerrors(display, enet, str, give_full_path):
     return error_best
 
 def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
-                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",lambda_min_ratio=1e-9):
+                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",lambda_min_ratio=1e-9, alphas=None, lambdas=None):
 
     # Other default parameters for solving glm
     fit_intercept = True
@@ -269,6 +268,8 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
         trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
         n = trainX_intercept.shape[1]
         print("New n=%d" % n)
+    else:
+        trainX_intercept = np.copy(trainX)
 
     #####################
     #
@@ -285,7 +286,7 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
                       n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family,
-                      give_full_path=give_full_path)
+                      give_full_path=give_full_path, alphas=alphas, lambdas=lambdas)
     elif solver is "lasso":
         Solver = h2o4gpu.Lasso
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
@@ -314,9 +315,9 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     # Solve
     if validFraction == 0.0:
         print("Solving")
-        Xvsalpha = enet.fit(trainX, trainY)
+        enet.fit(trainX, trainY)
     else:
-        Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+        enet.fit(trainX, trainY, validX, validY)
 
     print("Done Solving")
 
@@ -326,9 +327,9 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
 
     # Show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
-    print(Xvsalpha.x_vs_alphapure)
+    print(enet.x_vs_alphapure)
     print("np.shape(Xvsalpha)")
-    print(np.shape(Xvsalpha.x_vs_alphapure))
+    print(np.shape(enet.x_vs_alphapure))
 
     error_train = enet.error_vs_alpha
     if family != "logistic":
@@ -348,6 +349,13 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     print("Best tols")
     tols = enet.tols_best
     print(tols)
+
+    print("All lambdas")
+    lambdas = enet.lambdas
+    print(lambdas)
+
+    assert np.isfinite(enet.X).all() == True
+    assert np.isfinite(enet.X_full).all() == True
 
     Xvsalphabest=enet.X_best
 

@@ -13,7 +13,7 @@ class LogisticRegression(GLM):
     :param int n_gpus: Number of gpu's to use in GLM solver. Default is -1.
     :param bool fit_intercept: Include constant term in the model.
         Default is True.
-    :param int lambda_min_ratio: Minimum lambda used in lambda search.
+    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used in lambda search.
         Default is 1e-7.
     :param int n_lambdas: Number of lambdas to be used in a search.
         Default is 100.
