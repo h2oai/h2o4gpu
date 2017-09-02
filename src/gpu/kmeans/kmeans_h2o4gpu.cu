@@ -438,13 +438,14 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
     if (verbose) {
       std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
     }
+
     copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
 
     copy_data(verbose, ord, *d_data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
-    kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, rows, k,
+    kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
                                         *d_data[q], *d_centroids[q], *data_dots[q],
                                         *centroid_dots[q], *pairwise_distances[q]);
 
