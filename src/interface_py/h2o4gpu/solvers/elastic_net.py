@@ -263,14 +263,6 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        # If True, then append intercept term to train_x array and valid_x array(if available)
-        if self.fit_intercept:
-            if train_x is not None:
-                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
-                                                      dtype=train_x.dtype)])
-            if valid_x is not None:
-                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
-                                                      dtype=valid_x.dtype)])
 
         train_x_np, m_train, n1, fortran1 = _get_data(train_x)
         train_y_np, m_y, _, fortran2 = _get_data(train_y)
@@ -347,6 +339,16 @@ class GLM(object):
                 raise ValueError(
                     'Must input both valid_x and valid_y or neither.'
                 )
+
+        # If True, then append intercept term to train_x array and valid_x array(if available)
+        if self.fit_intercept == 1:
+            n = n+1 #Update n to account for intercept
+            if train_x_np is not None:
+                train_x_np = np.hstack([train_x_np, np.ones((train_x_np.shape[0], 1),
+                                                     dtype=train_x_np.dtype)])
+            if valid_x_np is not None:
+                valid_x_np = np.hstack([valid_x_np, np.ones((valid_x_np.shape[0], 1),
+                                                      dtype=valid_x_np.dtype)])
 
         source_dev = 0  # assume GPU=0 is fine as source
         (a, b, c, d, e) = self._upload_data(

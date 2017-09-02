@@ -111,6 +111,11 @@ def _get_data(data):
 
     if data is not None:
         data_as_np = _to_np(data)
+        if len(np.shape(data_as_np)) == 1:
+            data_as_np = data_as_np.reshape((np.shape(data_as_np)[0], 1))
+        #Ensure dtype is float32, else convert.
+        if data.dtype != np.float32:
+            data_as_np = data_as_np.astype(np.float32)
         fortran = data_as_np.flags.f_contiguous
         shape_x = np.shape(data_as_np)
         m = shape_x[0]
