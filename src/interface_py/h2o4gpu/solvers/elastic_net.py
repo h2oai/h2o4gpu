@@ -316,7 +316,7 @@ class GLM(object):
 
         # If True, then append intercept term to train_x array and valid_x array(if available)
         if self.fit_intercept == 1:
-            n = n+1
+            n = n+1 #Update n to account for intercept
             if train_x_np is not None:
                 train_x_np = np.hstack([train_x_np, np.ones((train_x_np.shape[0], 1),
                                                      dtype=train_x_np.dtype)])

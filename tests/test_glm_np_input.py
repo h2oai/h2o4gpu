@@ -15,16 +15,16 @@ def func():
     lm = LinearRegression(tol=1e-3, glm_stop_early=False)
     lm.fit(X, y)
 
-    print('Linear Regression')
+    # print('Linear Regression')
     test = np.array([15.0]).astype(np.float32) #pass in data that is already float32
-    print('Predicted:', lm.predict(np.array([15])))
+    print('Predicted:', lm.predict(np.array([15.0])))
     print('Predicted:', lm.predict(np.array([15.0])))
     print('Predicted:', lm.predict(test))
     print('Coefficients:', lm.X)
 
     #Assert coefficients are within a reasonable range for various prediction values
-    assert lm.X[0][0] - 1.9999563694 < 1e-4
-    assert lm.X[0][1] - 10.00103283 < 1e-4
+    assert lm.X[0][1] - 2.40731907 < 1e-4
+    assert lm.X[0][0] - 12.7074213 < 1e-4
 
 
 def test_glm_np_input(): func()
