@@ -1,7 +1,7 @@
 # import sys
 # import logging
 # import numpy as np
-# from h2o4gpu.solvers.elastic_net import GLM
+# from h2o4gpu.solvers.linear_regression import LinearRegression
 #
 # print(sys.path)
 #
@@ -12,7 +12,7 @@
 #
 #     y = 2*X + 10
 #
-#     lm = GLM(tol=1e-3, glm_stop_early=True)
+#     lm = LinearRegression(tol=1e-3, glm_stop_early=False)
 #     lm.fit(X, y)
 #
 #     # print('Linear Regression')
