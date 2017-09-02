@@ -198,22 +198,22 @@ def test_glm_simple_gpu_choosealphalambda3(): fun(1, 1, 5, 3, validFraction=0, c
 
 
 if __name__ == '__main__':
-#    test_glm_simple_gpu_fold1_quick_0()
-#    test_glm_simple_gpu_fold1_0()
-#    test_glm_simple_gpu_fold2_0()
+    test_glm_simple_gpu_fold1_quick_0()
+    test_glm_simple_gpu_fold1_0()
+    test_glm_simple_gpu_fold2_0()
 
-#    test_glm_simple_gpu_fold1_quick()
-#    test_glm_simple_gpu_fold1()
-#    test_glm_simple_gpu_fold2()
+    test_glm_simple_gpu_fold1_quick()
+    test_glm_simple_gpu_fold1()
+    test_glm_simple_gpu_fold2()
 
-#    test_glm_simple_gpu2_fold1_quick()
-#    test_glm_simple_gpu2_fold1()
-#    test_glm_simple_gpu2_fold2()
+    test_glm_simple_gpu2_fold1_quick()
+    test_glm_simple_gpu2_fold1()
+    test_glm_simple_gpu2_fold2()
 
-#    test_glm_simple_cpu_fold1_quick()
-#    test_glm_simple_cpu_fold1()
-#    test_glm_simple_cpu_fold2()
+    test_glm_simple_cpu_fold1_quick()
+    test_glm_simple_cpu_fold1()
+    test_glm_simple_cpu_fold2()
 
     test_glm_simple_gpu_choosealphalambda1()
-#    test_glm_simple_gpu_choosealphalambda2()
-#    test_glm_simple_gpu_choosealphalambda3()
+    test_glm_simple_gpu_choosealphalambda2()
+    test_glm_simple_gpu_choosealphalambda3()
