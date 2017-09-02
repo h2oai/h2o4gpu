@@ -12,7 +12,7 @@ do
     path=`dirname $fil | sed 's/\.\.\/\.\.\/\.\.\/sklearn\/h2o4gpu//g' | sed 's/^\///g' | sed 's/^/\.\//g'`
     newfile=${path}/$file
     echo $fil `dirname $fil` $file $path $newfile
-    
+
     echo "mkdir: " $newfile
     mkdir -p $newfile
     #rm -rf $newfile

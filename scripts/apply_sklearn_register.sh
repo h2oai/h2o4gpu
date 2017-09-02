@@ -48,7 +48,7 @@ do
            command=`sed -e 's/^"//' -e 's/"$//' <<< "$command"`
            echo "$command" >> $initfile
     fi
-    
+
 done < $infile
 
 rm -rf $infile

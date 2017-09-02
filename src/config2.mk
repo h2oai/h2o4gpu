@@ -29,8 +29,8 @@ $(warning USENCCL is $(USENCCL))
 
 
 # for R (rest can do both at same time)
-TARGET=gpulib
-$(warning R TARGET is $(TARGET))
+#TARGET=gpulib
+#$(warning R TARGET is $(TARGET))
 
 # >=52 required for kmeans for larger data of size rows/32>2^16
 NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 \
