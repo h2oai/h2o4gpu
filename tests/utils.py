@@ -315,9 +315,9 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     # Solve
     if validFraction == 0.0:
         print("Solving")
-        Xvsalpha = enet.fit(trainX, trainY)
+        enet.fit(trainX, trainY)
     else:
-        Xvsalpha = enet.fit(trainX, trainY, validX, validY)
+        enet.fit(trainX, trainY, validX, validY)
 
     print("Done Solving")
 
@@ -327,9 +327,9 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
 
     # Show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
-    print(Xvsalpha.x_vs_alphapure)
+    print(enet.x_vs_alphapure)
     print("np.shape(Xvsalpha)")
-    print(np.shape(Xvsalpha.x_vs_alphapure))
+    print(np.shape(enet.x_vs_alphapure))
 
     error_train = enet.error_vs_alpha
     if family != "logistic":
@@ -349,6 +349,13 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     print("Best tols")
     tols = enet.tols_best
     print(tols)
+
+    print("All lambdas")
+    lambdas = enet.lambdas
+    print(lambdas)
+
+    assert np.isfinite(enet.X).all() == True
+    assert np.isfinite(enet.X_full).all() == True
 
     Xvsalphabest=enet.X_best
 

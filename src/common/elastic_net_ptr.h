@@ -17,7 +17,6 @@
 
 namespace h2o4gpu {
 
-
 /**
  * Calculate error based on family.
  *
@@ -30,7 +29,7 @@ namespace h2o4gpu {
  */
 template<typename T>
 T getError(size_t len, const T *predicted, const T *actual, const char family) {
-	if(family == 'e'){
+	if (family == 'e') {
 		double rmse = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = predicted[i] - actual[i];
@@ -38,13 +37,15 @@ T getError(size_t len, const T *predicted, const T *actual, const char family) {
 		}
 		rmse /= (double) len;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic
+	} else { //logistic
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(predicted[i] != actual[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
-            		    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x));
+			if (predicted[i] != actual[i]) {
+				double x = std::min(
+						std::max(1e-15, static_cast<double>(predicted[i])),
+						1 - 1e-15);
+				d = -1 * (actual[i] * log(x) + (1 - actual[i]) * log(1 - x));
 			}
 			logloss += d;
 		}
@@ -65,8 +66,9 @@ T getError(size_t len, const T *predicted, const T *actual, const char family) {
  * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
  */
 template<typename T>
-T getError(const T*weights, size_t len, const T *predicted, const T *actual, const char family) {
-	if(family == 'e'){
+T getError(const T*weights, size_t len, const T *predicted, const T *actual,
+		const char family) {
+	if (family == 'e') {
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += weights[i];
@@ -80,7 +82,7 @@ T getError(const T*weights, size_t len, const T *predicted, const T *actual, con
 
 		rmse /= weightsum;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic
+	} else { //logistic
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += weights[i];
@@ -88,9 +90,12 @@ T getError(const T*weights, size_t len, const T *predicted, const T *actual, con
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(predicted[i] != actual[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
-			    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x)) * weights[i];
+			if (predicted[i] != actual[i]) {
+				double x = std::min(
+						std::max(1e-15, static_cast<double>(predicted[i])),
+						1 - 1e-15);
+				d = -1 * (actual[i] * log(x) + (1 - actual[i]) * log(1 - x))
+						* weights[i];
 			}
 			logloss += d;
 		}
@@ -113,8 +118,9 @@ T getError(const T*weights, size_t len, const T *predicted, const T *actual, con
  * @param family Family sent to solver. Default is `elasticnet`. If not, then assume `logistic` and compute `logloss`
  */
 template<typename T>
-T getError(const T offset, const T*weights, size_t len, const T *predicted, const T *actual, const char family) {
-	if(family == 'e'){
+T getError(const T offset, const T*weights, size_t len, const T *predicted,
+		const T *actual, const char family) {
+	if (family == 'e') {
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += offset - weights[i];
@@ -128,7 +134,7 @@ T getError(const T offset, const T*weights, size_t len, const T *predicted, cons
 
 		rmse /= weightsum;
 		return static_cast<T>(std::sqrt(rmse));
-	}else{ //logistic
+	} else { //logistic
 		double weightsum = 0;
 		for (size_t i = 0; i < len; ++i) {
 			weightsum += offset - weights[i];
@@ -136,9 +142,12 @@ T getError(const T offset, const T*weights, size_t len, const T *predicted, cons
 		double logloss = 0;
 		for (size_t i = 0; i < len; ++i) {
 			double d = 0;
-			if(predicted[i] != actual[i]){
-			    double x = std::min(std::max(1e-15, static_cast<double>(predicted[i])), 1-1e-15);
-            		    d = -1 * (actual[i]*log(x) + (1-actual[i])*log(1-x)) * (offset - weights[i]);
+			if (predicted[i] != actual[i]) {
+				double x = std::min(
+						std::max(1e-15, static_cast<double>(predicted[i])),
+						1 - 1e-15);
+				d = -1 * (actual[i] * log(x) + (1 - actual[i]) * log(1 - x))
+						* (offset - weights[i]);
 			}
 			logloss += d;
 		}
@@ -213,7 +222,7 @@ void printArray(T arr[], mysize_t arrid[], mysize_t k) {
 
 template<typename T>
 void topk(int whichmax, T arr[], mysize_t arrid[], mysize_t n, mysize_t k,
-		mysize_t *whichbeta, T *valuebeta) {
+mysize_t *whichbeta, T *valuebeta) {
 	T arr1[k];
 	mysize_t arrid1[k];
 	mysize_t a;
@@ -264,7 +273,7 @@ int topkwrap(int whichmax, mysize_t n, mysize_t k, T arr[], mysize_t *whichbeta,
 template int topkwrap<double>(int whichmax, mysize_t n, mysize_t k,
 		double arr[], mysize_t *whichbeta, double *valuebeta);
 template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],
-		mysize_t *whichbeta, float *valuebeta);
+mysize_t *whichbeta, float *valuebeta);
 
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
@@ -274,44 +283,37 @@ template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],
 // m and n are training data size
 
 template<typename T>
-double ElasticNetptr(
-		const char family, int dopredict, int sourceDev, int datatype, int sharedA,
-		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
-		size_t mValid, int intercept, int standardize,
+double ElasticNetptr(const char family, int dopredict, int sourceDev,
+		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		T *alphas, T *lambdas,
-		double tol,
-		int lambdastopearly, int glmstopearly, double glmstopearlyerrorfraction, int max_iterations, int verbose,
+		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
+		double tol, int lambdastopearly, int glmstopearly,
+		double glmstopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore);
 template<typename T>
-double ElasticNetptr_fit(
-		const char family, int sourceDev, int datatype, int sharedA, int nThreads,
-		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
-		int intercept, int standardize,
+double ElasticNetptr_fit(const char family, int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		T *alphas, T *lambdas,
-		double tol,
-		int lambdastopearly, int glmstopearly, double glmstopearlyerrorfraction,
-		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
-		void *validXptr, void *validYptr, void *weightptr, int givefullpath,
-		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
-		T **validPredsvsalpha, size_t *countfull, size_t *countshort,
-		size_t *countmore);
+		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
+		double tol, int lambdastopearly, int glmstopearly,
+		double glmstopearlyerrorfraction, int max_iterations, int verbose,
+		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
+		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
+		size_t *countshort, size_t *countmore);
 template<typename T>
-double ElasticNetptr_predict(
-		const char family, int sourceDev, int datatype, int sharedA,
-		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
-		size_t mValid, int intercept, int standardize,
+double ElasticNetptr_predict(const char family, int sourceDev, int datatype,
+		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		T *alphas, T *lambdas,
-		double tol,
-		int lambdastopearly, int glmstopearly, double glmstopearlyerrorfraction, int max_iterations, int verbose,
+		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
+		double tol, int lambdastopearly, int glmstopearly,
+		double glmstopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
 		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
@@ -329,32 +331,30 @@ int modelFree2(T *aptr);
 #ifdef __cplusplus
 extern "C" {
 #endif
-double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
-		size_t n, size_t mValid, int intercept, int standardize,
+double elastic_net_ptr_double(const char family, int dopredict, int sourceDev,
+		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		double *alphas, double *lambdas,
-		double tol,
-		int lambdastopearly, int glmstopearly, double glmstopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
-		double **Xvsalphalambda, double **Xvsalpha,
-		double **validPredsvsalphalambda, double **validPredsvsalpha,
-		size_t *countfull, size_t *countshort, size_t *countmore);
-double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
-		size_t n, size_t mValid, int intercept, int standardize,
+		int nAlphas, double alpha_min, double alpha_max, double *alphas,
+		double *lambdas, double tol, int lambdastopearly, int glmstopearly,
+		double glmstopearlyerrorfraction, int max_iterations, int verbose,
+		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
+		void *weightptr, int givefullpath, double **Xvsalphalambda,
+		double **Xvsalpha, double **validPredsvsalphalambda,
+		double **validPredsvsalpha, size_t *countfull, size_t *countshort,
+		size_t *countmore);
+double elastic_net_ptr_float(const char family, int dopredict, int sourceDev,
+		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		float *alphas, float *lambdas,
-		double tol,
-		int lambdastopearly, int glmstopearly, double glmstopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
-		float **Xvsalphalambda, float **Xvsalpha,
-		float **validPredsvsalphalambda, float **validPredsvsalpha,
-		size_t *countfull, size_t *countshort, size_t *countmore);
+		int nAlphas, double alpha_min, double alpha_max, float *alphas,
+		float *lambdas, double tol, int lambdastopearly, int glmstopearly,
+		double glmstopearlyerrorfraction, int max_iterations, int verbose,
+		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
+		void *weightptr, int givefullpath, float **Xvsalphalambda,
+		float **Xvsalpha, float **validPredsvsalphalambda,
+		float **validPredsvsalpha, size_t *countfull, size_t *countshort,
+		size_t *countmore);
 
 int modelfree_double(double *aptr);
 int modelfree_float(float *aptr);

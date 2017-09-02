@@ -8,7 +8,7 @@ import logging
 print(sys.path)
 
 try:
-    from utils import find_file, runglm, run_glm
+    from utils import find_file, run_glm
 except:
     from tests.utils import find_file, run_glm
 
@@ -39,11 +39,11 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, choosealp
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
 
     if choosealphalambda == 1 or choosealphalambda == 3:
-        alphas = [0, 0.3, 0.5, 1.0]
+        alphas = [1E-1, 0.3, 0.5, 1.0]
     else:
         alphas = None
     if choosealphalambda == 2 or choosealphalambda == 3:
-        lambdas = [1E-3, 1, 10]
+        lambdas = [2, 1E-2, 1E-3, 1E-5]
     else:
         lambdas = None
 
@@ -198,22 +198,22 @@ def test_glm_simple_gpu_choosealphalambda3(): fun(1, 1, 5, 3, validFraction=0, c
 
 
 if __name__ == '__main__':
-    test_glm_simple_gpu_fold1_quick_0()
-    test_glm_simple_gpu_fold1_0()
-    test_glm_simple_gpu_fold2_0()
+#    test_glm_simple_gpu_fold1_quick_0()
+#    test_glm_simple_gpu_fold1_0()
+#    test_glm_simple_gpu_fold2_0()
 
-    test_glm_simple_gpu_fold1_quick()
-    test_glm_simple_gpu_fold1()
-    test_glm_simple_gpu_fold2()
+#    test_glm_simple_gpu_fold1_quick()
+#    test_glm_simple_gpu_fold1()
+#    test_glm_simple_gpu_fold2()
 
-    test_glm_simple_gpu2_fold1_quick()
-    test_glm_simple_gpu2_fold1()
-    test_glm_simple_gpu2_fold2()
+#    test_glm_simple_gpu2_fold1_quick()
+#    test_glm_simple_gpu2_fold1()
+#    test_glm_simple_gpu2_fold2()
 
-    test_glm_simple_cpu_fold1_quick()
-    test_glm_simple_cpu_fold1()
-    test_glm_simple_cpu_fold2()
+#    test_glm_simple_cpu_fold1_quick()
+#    test_glm_simple_cpu_fold1()
+#    test_glm_simple_cpu_fold2()
 
     test_glm_simple_gpu_choosealphalambda1()
-    test_glm_simple_gpu_choosealphalambda2()
-    test_glm_simple_gpu_choosealphalambda3()
+#    test_glm_simple_gpu_choosealphalambda2()
+#    test_glm_simple_gpu_choosealphalambda3()
