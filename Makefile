@@ -82,7 +82,7 @@ cpp:
 c:
 	$(MAKE) -j all -C src/interface_c
 
-py:
+py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
 pyinstall:
@@ -94,7 +94,11 @@ alldeps: deps_fetch alldeps_install
 
 alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
 
-build: update_submodule cpp c py
+build: update_submodule cleanbuild cpp c py
+
+buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
+
+buildquick: cpp c py
 
 install: pyinstall
 
@@ -102,8 +106,10 @@ fullinstall: clean alldeps build sync_smalldata install
 
 #############################################
 
-clean: cleancpp cleanc cleanpy deps_clean xgboost_clean py3nvml_clean
+clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/ ./tmp/
+
+cleanbuild: cleancpp cleanc cleanpy
 
 cleancpp:
 	$(MAKE) -j clean -C src/
@@ -152,7 +158,7 @@ private_deps_install:
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
-alldeps_install: deps_install apply_xgboost apply_sklearn apply_py3nvml
+alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 ###################
 
@@ -194,9 +200,30 @@ libsklearn:	# assume already submodule gets sklearn
 	scripts/prepare_sklearn.sh # repeated calls don't hurt
 	mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
-apply_sklearn: libsklearn
-	bash ./scripts/apply_sklearn.sh
+apply_sklearn: libsklearn apply_sklearn_simple
 
+apply_sklearn_simple: 
+    #	bash ./scripts/apply_sklearn.sh
+    ## apply sklearn
+	bash ./scripts/apply_sklearn_pipinstall.sh
+    ## link-up recursively
+	bash ./scripts/apply_sklearn_link.sh
+    # handle base __init__.py file appending
+	bash ./scripts/apply_sklearn_initmerge.sh
+    # register
+	bash ./scripts/apply_sklearn_register.sh
+
+apply_sklearn_pipinstall:
+	bash ./scripts/apply_sklearn_pipinstall.sh
+
+apply_sklearn_link:
+	bash ./scripts/apply_sklearn_link.sh
+
+apply_sklearn_initmerge:
+	bash ./scripts/apply_sklearn_initmerge.sh
+
+apply_sklearn_register:
+	bash ./scripts/apply_sklearn_register.sh
 
 #################### Jenkins specific
 
@@ -257,7 +284,6 @@ dotestbigperfpython:
 	bash tests/showresults.sh # still just references results directory in base path
 
 ################### H2O.ai private tests for pass/fail
-
 test: build sync_data dotest
 
 testbig: build sync_data dotestbig

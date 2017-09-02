@@ -226,6 +226,7 @@ double ElasticNetptr(
 		size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		T *alphas, T *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
@@ -238,6 +239,7 @@ double ElasticNetptr(
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_max, lambda_min_ratio, nLambdas, nFolds,
 				nAlphas, alpha_min, alpha_max,
+				alphas, lambdas,
 				tol,
 				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 				trainYptr, validXptr, validYptr, weightptr, givefullpath,
@@ -248,6 +250,7 @@ double ElasticNetptr(
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_max, lambda_min_ratio, nLambdas, nFolds,
 				nAlphas, alpha_min, alpha_max,
+				alphas, lambdas,
 				tol,
 				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 				trainYptr, validXptr, validYptr, weightptr, givefullpath,
@@ -269,6 +272,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		T *alphas, T *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction,
 		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
@@ -641,7 +645,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 			size_t nlambdalocal;
 
 			// Set Lambda
-			std::vector<T> lambdas(nlambda);
+			std::vector<T> lambdaslocal(nlambda);
 			if (lambdatype == LAMBDATYPEPATH) {
 				nlambdalocal = nlambda;
 				const T lambda_min = lambda_min_ratio
@@ -652,14 +656,21 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 				DEBUG_FPRINTF(fil, "lambda_max: %f\n", lambda_max_use);
 				DEBUG_FPRINTF(fil, "lambda_min: %f\n", lambda_min);
 				// Regularization path: geometric series from lambda_max_use to lambda_min
-				if (nlambdalocal > 1) {
-					double dec = std::pow(lambda_min_ratio,
-							1.0 / (nlambdalocal - 1.));
-					lambdas[0] = lambda_max_use;
-					for (int i = 1; i < nlambdalocal; ++i)
-						lambdas[i] = lambdas[i - 1] * dec;
-				} else { // use minimum, so user can control the value of lambda used
-					lambdas[0] = lambda_min_ratio * lambda_max_use;
+				if(lambdas==NULL){
+					if (nlambdalocal > 1) {
+						double dec = std::pow(lambda_min_ratio,
+								1.0 / (nlambdalocal - 1.));
+						lambdaslocal[0] = lambda_max_use;
+						for (int i = 1; i < nlambdalocal; ++i)
+							lambdaslocal[i] = lambdaslocal[i - 1] * dec;
+					} else { // use minimum, so user can control the value of lambda used
+						lambdaslocal[0] = lambda_min_ratio * lambda_max_use;
+					}
+				}
+				else{
+					for (int i = 1; i < nlambdalocal; ++i){
+						lambdaslocal[i] = lambdas[i];
+					}
 				}
 			} else {
 				nlambdalocal = 1;
@@ -677,16 +688,21 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 					////////////
 					// SETUP ALPHA
 					T alpha;
-					if(nAlphas<=1){
-						alpha = (alpha_min + alpha_max)*0.5;
+					if(alphas==NULL){
+						if(nAlphas<=1){
+							alpha = (alpha_min + alpha_max)*0.5;
+						}
+						else{
+							alpha = alpha_min + (alpha_max - alpha_min) * static_cast<T>(a) / static_cast<T>(nAlphas - 1);
+						}
 					}
 					else{
-						alpha = alpha_min + (alpha_max - alpha_min) * static_cast<T>(a) / static_cast<T>(nAlphas - 1);
+						alpha = alphas[a];
 					}
-
-					// Setup Lambda
-					if (lambdatype == LAMBDATYPEONE)
-						lambdas[0] = lambdaarrayofa[a];
+					// Setup Lambda in case not doing lambda path
+					if (lambdatype == LAMBDATYPEONE){
+						lambdaslocal[0] = lambdaarrayofa[a];
+					}
 
 					/////////////
 					//
@@ -761,6 +777,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 					ErrorLOOP(ri)
 						tbesterror[ri] = std::numeric_limits<double>::max();
 
+
+					////////////////////////////////
 					// LOOP over lambda
 					for (i = 0; i < nlambdalocal; ++i) {
 						if (flag) {
@@ -768,7 +786,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						}
 
 						// Set Lambda
-						lambda = lambdas[i];
+						lambda = lambdaslocal[i];
 						DEBUG_FPRINTF(fil, "lambda %d = %f\n", i, lambda);
 
 						//////////////
@@ -799,7 +817,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							// To check total iteration count, e.g., : grep -a "Iter  :" output.txt|sort -nk 3|awk '{print $3}' | paste -sd+ | bc
 							double jumpuse = DBL_MAX;
 							//h2o4gpu_data.SetRho(maxweight); // can't trust warm start for rho, because if adaptive rho is working hard to get primary or dual residuals below eps, can drive rho out of control even though residuals and objective don't change in error, but then wouldn't be good to start with that rho and won't find solution for any other latter lambda or alpha.  Use maxweight to scale rho, because weight and lambda should scale the same way.
-							tolnew = tol; //*lambda/lambdas[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
+							tolnew = tol; //*lambda/lambdaslocal[0]; // as lambda gets smaller, so must attempt at relative tolerance, in order to capture affect of lambda regularization on primary term (that is otherwise order unity unless weights are not unity).
 							h2o4gpu_data.SetRelTol(tolnew);
 							h2o4gpu_data.SetAbsTol(
 									1.0 * std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
@@ -810,8 +828,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 								if (ratio > 0.0) {
 									double factor = 0.05; // rate factor (USER parameter)
-									double tollow = 1E-1 * tol; //*lambda/lambdas[0]; //lowest allowed tolerance (USER parameter)
-									tolnew = tol * pow(2.0, -ratio / factor); //*lambda/lambdas[0]
+									double tollow = 1E-1 * tol; //*lambda/lambdaslocal[0]; //lowest allowed tolerance (USER parameter)
+									tolnew = tol * pow(2.0, -ratio / factor); //*lambda/lambdaslocal[0]
 									if (tolnew < tollow)
 										tolnew = tollow;
 
@@ -1107,7 +1125,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 						if (lambdatype == LAMBDATYPEPATH) {
 							if (fi == 0 && givefullpath) { // only store first fold for user
-								//#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nLambdas)
+								//#define MAPXALL(i,a,which) (which + a*(n+NUMError+NUMOTHER) + i*(n+NUMError+NUMOTHER)*nlambdas)
 								//#define MAPXBEST(a,which) (which + a*(n+NUMError+NUMOTHER))
 								//#define NUMOTHER 3 // for lambda, alpha, tolnew
 								// Save solution to return to user
@@ -1179,7 +1197,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 									i++;
 									if (i >= nlambdalocal)
 										break; // don't skip beyond existing lambda
-									lambda = lambdas[i];
+									lambda = lambdaslocal[i];
 									if (VERBOSEENET)
 										Printmescore(fil);
 #pragma omp critical
@@ -1351,6 +1369,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		T *alphas, T *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
 		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
@@ -1668,6 +1687,7 @@ template double ElasticNetptr<double>(
 		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		double *alphas, double *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1681,6 +1701,7 @@ template double ElasticNetptr<float>(const char family, int dopredict, int sourc
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		float *alphas, float *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1694,6 +1715,7 @@ template double ElasticNetptr_fit<double>(const char family, int sourceDev, int 
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		double *alphas, double *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1707,6 +1729,7 @@ template double ElasticNetptr_fit<float>(const char family, int sourceDev, int d
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		float *alphas, float *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1720,6 +1743,7 @@ template double ElasticNetptr_predict<double>(const char family, int sourceDev, 
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		double *alphas, double *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1733,6 +1757,7 @@ template double ElasticNetptr_predict<float>(const char family, int sourceDev, i
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		float *alphas, float *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1759,6 +1784,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		double *alphas, double *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1770,6 +1796,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
 			nAlphas, alpha_min, alpha_max,
+			alphas, lambdas,
 			tol,
 			lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 			trainYptr, validXptr, validYptr, weightptr, givefullpath,
@@ -1781,6 +1808,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
+		float *alphas, float *lambdas,
 		double tol,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
@@ -1792,6 +1820,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
 			nAlphas, alpha_min, alpha_max,
+			alphas, lambdas,
 			tol,
 			lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
 			trainYptr, validXptr, validYptr, weightptr, givefullpath,

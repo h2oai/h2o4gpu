@@ -1,20 +1,13 @@
 #!/bin/bash
 
 # apply sklearn
-rm -rf sklearn
-cd scikit-learn
-pip install dist/h2o4gpu-0.20.dev0-cp36-cp36m-linux_x86_64.whl --upgrade --target ../sklearn/
-cd ../
+bash ./scripts/apply_sklearn_pipinstall.sh
 
 # link-up recursively
-bash ./scripts/importsklearn.sh
+bash ./scripts/appkly_sklearn_link.sh
 
 # handle base __init__.py file appending
-rm -rf src/interface_py/h2o4gpu/__init__.py
-cat sklearn/h2o4gpu/__init__.py | sed 's/__version__.*//g' >> src/interface_py/h2o4gpu/__init__.py.2
-
-cat src/interface_py/h2o4gpu/__init__.base.py src/interface_py/h2o4gpu/__init__.py.2 > src/interface_py/h2o4gpu/__init__.py
-rm -rf src/interface_py/h2o4gpu/__init__.py.2
+bash ./scripts/apply_sklearn_initmerge.sh
 
 # register 
-bash ./scripts/post_apply_sklearn.sh
+bash ./scripts/apply_sklearn_register.sh

@@ -24,7 +24,7 @@ class GLM(object):
     :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
     :param str order : Row or Column major for C/C++ backend. Default is 'r'.
         Must be 'r' (Row major) or 'c' (Column major).
-    :param bool fit_intercept : Include constant term in the model.
+    :param bool fit_intercept : Include constant term in the model
         Default is True.
     :param float lambda_min_ratio : Minimum lambda used in lambda search.
         Default is 1e-7.
@@ -50,6 +50,10 @@ class GLM(object):
         Default is None, and then internally compute standard maximum
     :param int,float alpha_max : Maximum alpha.  Default is 1.0.
     :param int,float alpha_min : Minimum alpha.  Default is 0.0.
+    :param int,float alphas: list, tuple, array, or numpy 1D array of alphas,
+        overrides n_alphas, alpha_min, and alpha_max. Default is None.
+    :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
+        overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
     :param order : Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
     """
@@ -81,8 +85,12 @@ class GLM(object):
             lambda_max=None,
             alpha_max=1.0,
             alpha_min=0.0,
+            alphas=None,
+            lambdas=None,
             order=None
     ):
+        ##############################
+        # asserts
         assert_is_type(n_threads, int, None)
         assert_is_type(n_gpus, int)
         assert_is_type(fit_intercept, bool)
@@ -113,6 +121,19 @@ class GLM(object):
         else:
             self.ord = None
 
+        ##############################
+        # overrides of input parameters
+        # override these if pass alphas or lambdas
+        if alphas is not None:
+            alphas = np.ascontiguousarray(np.asarray(alphas))
+            n_alphas = np.shape(alphas)[0]
+        if lambdas is not None:
+            lambdas = np.ascontiguousarray(np.asarray(lambdas))
+            n_lambdas = np.shape(lambdas)[0]
+
+
+        ##############################
+        # self assignments
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
@@ -150,6 +171,9 @@ class GLM(object):
             self.lambda_max = lambda_max
         self.alpha_min = alpha_min  # as default
         self.alpha_max = alpha_max
+
+        self.alphas_list = alphas
+        self.lambdas_list = lambdas
 
         # Experimental features
         # TODO _shared_a and _standardize do not work currently.
@@ -198,7 +222,6 @@ class GLM(object):
             valid_y=None,
             weight=None,
             give_full_path=None,
-            do_predict=0,
             free_input_data=1,
             tol=None,
             lambda_stop_early=None,
@@ -206,6 +229,8 @@ class GLM(object):
             glm_stop_early_error_fraction=None,
             max_iter=None,
             verbose=None,
+            # below should be private
+            do_predict=0,
             order=None,
     ):
         """Train a GLM
@@ -216,8 +241,6 @@ class GLM(object):
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
         :param int give_full_path : Extract full regularization path from glm model
-        :param int do_predict : Indicate if prediction should be done on validation set after train.
-            Default is 0.
         :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
         :param bool lambda_stop_early : Stop early when there is no more relative
@@ -229,6 +252,9 @@ class GLM(object):
             least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
         :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
+            Default is 0.
+        :param char or int: order : Order of input data ('c' or 'r' or ord() versions of these). Default is None.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -413,12 +439,12 @@ class GLM(object):
             self.prediction_full = self.fit(
                 None,
                 None,
-                valid_x_np,
-                valid_y_np,
-                weight_np,
-                give_full_path,
-                do_predict,
-                free_input_data,
+                valid_x = valid_x_np,
+                valid_y = valid_y_np,
+                weight = weight_np,
+                give_full_path = give_full_path,
+                do_predict = do_predict,
+                free_input_data = free_input_data,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -427,12 +453,12 @@ class GLM(object):
         self.prediction = self.fit(
             None,
             None,
-            valid_x_np,
-            valid_y_np,
-            weight_np,
-            tempgivefullpath,
-            do_predict,
-            free_input_data,
+            valid_x = valid_x_np,
+            valid_y = valid_y_np,
+            weight = weight_np,
+            give_full_path = tempgivefullpath,
+            do_predict = do_predict,
+            free_input_data = free_input_data,
         ).valid_pred_vs_alphapure
         self.give_full_path = oldgivefullpath
         if give_full_path == 1:
@@ -466,6 +492,8 @@ class GLM(object):
             verbose=None
     ):
         """Train a GLM with pointers to data on the GPU
+           (if fit_intercept, then you should have added 1's as last column to trainX)
+
 
         :param source_dev GPU ID of device
         :param m_train Number of rows in the training set
@@ -564,99 +592,74 @@ class GLM(object):
 
         c_size_t_p = POINTER(c_size_t)
         if which_precision == 1:
+            c_elastic_net = self.lib.elastic_net_ptr_double
             self.mydtype = np.double
             self.myctype = c_double
             if verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
-            self.lib.elastic_net_ptr_double(
-                c_int(self._family),
-                c_int(do_predict),
-                c_int(source_dev),
-                c_int(1),
-                c_int(self._shared_a),
-                c_int(self.n_threads),
-                c_int(self.n_gpus),
-                c_int(self.ord),
-                c_size_t(m_train),
-                c_size_t(n),
-                c_size_t(m_valid),
-                c_int(self.fit_intercept),
-                c_int(self._standardize),
-                c_double(self.lambda_max),
-                c_double(self.lambda_min_ratio),
-                c_int(self.n_lambdas),
-                c_int(self.n_folds),
-                c_int(self.n_alphas),
-                c_double(self.alpha_min),
-                c_double(self.alpha_max),
-                c_double(self.tol),
-                c_int(lambda_stop_early),
-                c_int(glm_stop_early),
-                c_double(glm_stop_early_error_fraction),
-                c_int(max_iter),
-                c_int(verbose),
-                a,
-                b,
-                c,
-                d,
-                e,
-                give_full_path,
-                pointer(x_vs_alpha_lambda),
-                pointer(x_vs_alpha),
-                pointer(valid_pred_vs_alpha_lambda),
-                pointer(valid_pred_vs_alpha),
-                cast(addressof(count_full), c_size_t_p),
-                cast(addressof(count_short), c_size_t_p),
-                cast(addressof(count_more), c_size_t_p),
-            )
         else:
+            c_elastic_net = self.lib.elastic_net_ptr_float
             self.mydtype = np.float
             self.myctype = c_float
             if verbose > 0:
                 print('single precision fit')
                 sys.stdout.flush()
-            self.lib.elastic_net_ptr_float(
-                c_int(self._family),
-                c_int(do_predict),
-                c_int(source_dev),
-                c_int(1),
-                c_int(self._shared_a),
-                c_int(self.n_threads),
-                c_int(self.n_gpus),
-                c_int(self.ord),
-                c_size_t(m_train),
-                c_size_t(n),
-                c_size_t(m_valid),
-                c_int(self.fit_intercept),
-                c_int(self._standardize),
-                c_double(self.lambda_max),
-                c_double(self.lambda_min_ratio),
-                c_int(self.n_lambdas),
-                c_int(self.n_folds),
-                c_int(self.n_alphas),
-                c_double(self.alpha_min),
-                c_double(self.alpha_max),
-                c_double(self.tol),
-                c_int(lambda_stop_early),
-                c_int(glm_stop_early),
-                c_double(glm_stop_early_error_fraction),
-                c_int(max_iter),
-                c_int(verbose),
-                a,
-                b,
-                c,
-                d,
-                e,
-                give_full_path,
-                pointer(x_vs_alpha_lambda),
-                pointer(x_vs_alpha),
-                pointer(valid_pred_vs_alpha_lambda),
-                pointer(valid_pred_vs_alpha),
-                cast(addressof(count_full), c_size_t_p),
-                cast(addressof(count_short), c_size_t_p),
-                cast(addressof(count_more), c_size_t_p),
-            )
+
+        # precision-independent commands
+        if self.alphas_list is not None:
+            c_alphas = self.alphas_list.ctypes.data_as(POINTER(self.myctype))
+        else:
+            c_alphas = cast(0, POINTER(self.myctype))
+        if self.lambdas_list is not None:
+            c_lambdas = self.lambdas_list.ctypes.data_as(POINTER(self.myctype))
+        else:
+            c_lambdas = cast(0, POINTER(self.myctype))
+
+        # call elastic net in C backend
+        c_elastic_net(
+            c_int(self._family),
+            c_int(do_predict),
+            c_int(source_dev),
+            c_int(1),
+            c_int(self._shared_a),
+            c_int(self.n_threads),
+            c_int(self.n_gpus),
+            c_int(self.ord),
+            c_size_t(m_train),
+            c_size_t(n),
+            c_size_t(m_valid),
+            c_int(self.fit_intercept),
+            c_int(self._standardize),
+            c_double(self.lambda_max),
+            c_double(self.lambda_min_ratio),
+            c_int(self.n_lambdas),
+            c_int(self.n_folds),
+            c_int(self.n_alphas),
+            c_double(self.alpha_min),
+            c_double(self.alpha_max),
+            c_alphas,
+            c_lambdas,
+            c_double(self.tol),
+            c_int(lambda_stop_early),
+            c_int(glm_stop_early),
+            c_double(glm_stop_early_error_fraction),
+            c_int(max_iter),
+            c_int(verbose),
+            a,
+            b,
+            c,
+            d,
+            e,
+            give_full_path,
+            pointer(x_vs_alpha_lambda),
+            pointer(x_vs_alpha),
+            pointer(valid_pred_vs_alpha_lambda),
+            pointer(valid_pred_vs_alpha),
+            cast(addressof(count_full), c_size_t_p),
+            cast(addressof(count_short), c_size_t_p),
+            cast(addressof(count_more), c_size_t_p),
+        )
         # if should or user wanted to save or free data,
         # do that now that we are done using a,b,c,d,e
         # This means have to _upload_data() again before fit_ptr
@@ -933,7 +936,6 @@ class GLM(object):
             valid_y,
             weight,
             give_full_path,
-            do_predict,
             free_input_data=0,
             tol=tol,
             lambda_stop_early=lambda_stop_early,
@@ -941,6 +943,8 @@ class GLM(object):
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
             max_iter=max_iter,
             verbose=verbose,
+            do_predict=do_predict,
+            order=None
         )
         if valid_x is None:
             if give_full_path == 1:
