@@ -65,7 +65,7 @@ ifeq ($(USENVTX),1)
 CUDFLAGS+=-I/usr/local/cuda/include
 endif
 
-CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -w -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -Wall -std=c++11 -fPIC $(LINKFLAGS) $(RINCLUDEHOME) $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include
 endif
@@ -122,7 +122,7 @@ CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
 CPU_OBJ=$(OBJDIR)/cpu/h2o4gpuglm.o $(OBJDIR)/cpu/elastic_net_ptr.o $(OBJDIR)/cpu/h2o4gpukmeans.o
 
-kmeans_h2o4gpu_HDR=
+H2O4GPUKMEANS_HDR=
 
 
 # GPU Specific headers and object files.
@@ -216,7 +216,7 @@ $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 $(OBJDIR)/cpu/h2o4gpu.o: cpu/h2o4gpuglm.cpp $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) -c -o $@ 
 
-$(OBJDIR)/cpu/h2o4gpukmeans.o: cpu/h2o4gpukmeans.cpp $(kmeans_h2o4gpu_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
+$(OBJDIR)/cpu/h2o4gpukmeans.o: cpu/h2o4gpukmeans.cpp $(H2O4GPUKMEANS_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -I/usr/local/cuda/include -Icpu/include $< $(CXXFLAGS) -c -o $@ 
 
 $(OBJDIR)/cpu/matrix/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/matrix Makefile config2.mk
@@ -262,10 +262,10 @@ $(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o: gpu/kmeans/kmeans_h2o4gpu.cu $(GPU_KMEANS
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_ptr.h $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/common Makefile config2.mk
-	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@ 
+	$(CXX) $(CXXFLAGS) $(CUDFLAGS)  -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -Iinclude -Icommon/include $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@
 
 $(OBJDIR)/common/logger.o: common/logger.cpp common/logger.h | $(OBJDIR)/common Makefile config2.mk
-	$(CXX) $(CXXFLAGS) -Iinclude $< $(CXXFLAGS) $(CUDFLAGS) -c -o $@
+	$(CXX) $(CXXFLAGS) $< -c $(CXXFLAGS) -o $@
 
 
 clean:
