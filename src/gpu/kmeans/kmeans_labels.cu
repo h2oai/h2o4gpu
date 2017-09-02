@@ -94,7 +94,11 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
     std::cout << "Invalid Dgemm" << std::endl;
     exit(1);
   }
-
+    
+#if(CHECK)
+  gpuErrchk( cudaGetLastError() );
+  gpuErrchk( cudaDeviceSynchronize() );
+#endif
 }
 
 template<>
