@@ -51,8 +51,12 @@ src/interface_c/ch2o4gpu_gpu
 src/py3nvml/
 tmp/
 tests/results
+examples/py/sourced.png
+testsxgboost/fifa_data.pk
+
 # Visual Studio Code
 *.vscode
+
 
 # Idea #
 *.idea/
@@ -129,3 +133,4 @@ src/interface_py/h2o4gpu/svm/
 src/interface_py/h2o4gpu/tests/
 src/interface_py/h2o4gpu/tree/
 src/interface_py/h2o4gpu/utils/
+
