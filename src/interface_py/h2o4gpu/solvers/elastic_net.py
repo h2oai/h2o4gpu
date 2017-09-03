@@ -137,8 +137,8 @@ class GLM(object):
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
-        self.source_dev = 0  # assume Dev=0 is source of data for _upload_data
-        self.source_me = 0  # assume thread=0 is source of data for _upload_data
+        self.source_dev = 0  # assume Dev=0 is source of data for upload_data
+        self.source_me = 0  # assume thread=0 is source of data for upload_data
         if fit_intercept is True:
             self.fit_intercept = 1
         else:
@@ -263,18 +263,9 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        # If True, then append intercept term to train_x array and valid_x array(if available)
-        if self.fit_intercept:
-            if train_x is not None:
-                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
-                                                      dtype=train_x.dtype)])
-            if valid_x is not None:
-                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
-                                                      dtype=valid_x.dtype)])
-
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x)
+        train_x_np, m_train, n1, fortran1 = _get_data(train_x, fit_intercept = self.fit_intercept)
         train_y_np, m_y, _, fortran2 = _get_data(train_y)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x)
+        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, fit_intercept = self.fit_intercept)
         valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
         weight_np, _, _, fortran5 = _get_data(weight)
 
@@ -339,17 +330,8 @@ class GLM(object):
         # otherwise m_valid is used, and m_valid_y can be there
         # or not (sets whether do error or not)
 
-        if do_predict == 0:
-            if (m_valid == 0 or m_valid == -1) and n2 > 0 or \
-                                    m_valid > 0 and (n2 == 0 or n2 == -1):
-                # TODO FIXME: Don't need valid_y if just want preds and no
-                # error,but don't return error in fit, so leave for now
-                raise ValueError(
-                    'Must input both valid_x and valid_y or neither.'
-                )
-
         source_dev = 0  # assume GPU=0 is fine as source
-        (a, b, c, d, e) = self._upload_data(
+        (a, b, c, d, e) = self.upload_data(
             source_dev,
             train_x_np,
             train_y_np,
@@ -412,7 +394,7 @@ class GLM(object):
         )
 
         # if pass None train_x and train_y, then do predict using valid_x
-        # and weight (if given) unlike _upload_data and fit_ptr (and so fit)
+        # and weight (if given) unlike upload_data and fit_ptr (and so fit)
         # don't free-up predictions since for single model might request
         # multiple predictions.  User has to call finish themselves to cleanup.
 
@@ -666,7 +648,7 @@ class GLM(object):
         )
         # if should or user wanted to save or free data,
         # do that now that we are done using a,b,c,d,e
-        # This means have to _upload_data() again before fit_ptr
+        # This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
         if free_input_data == 1:
@@ -853,10 +835,10 @@ class GLM(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            0,
-            do_predict,
-            free_input_data,
-            verbose,
+            give_full_path = 0,
+            do_predict = do_predict,
+            free_input_data = free_input_data,
+            verbose = verbose,
         ).valid_pred_vs_alphapure
         if give_full_path == 1:  # then need to run twice
             self.prediction_full = self.fit_ptr(
@@ -871,10 +853,10 @@ class GLM(object):
                 valid_xptr,
                 valid_yptr,
                 self.e,
-                give_full_path,
-                do_predict,
-                free_input_data,
-                verbose,
+                give_full_path = give_full_path,
+                do_predict = do_predict,
+                free_input_data = free_input_data,
+                verbose = verbose,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -1342,20 +1324,21 @@ class GLM(object):
         if verbose is None:
             verbose = self.verbose
 
+        # get order as numerical for self.ord
         if order in ['r', 'c']:
             self.ord = ord(order)
+            order = self.ord
         elif order in [ord('r'), ord('c')]:
             self.ord = order
-        elif self.ord is not None and fail:
-            assert self.ord in ['r',
-                                'c'], \
-                "Order should be set to 'r' or 'c' but got " + self.ord
+        elif self.ord in [ord('r'), ord('c')]:
+            order = self.ord
+        elif self.ord in ['r', 'c']:
+            order = ord(self.ord)
         elif fail:
             raise AssertionError(
                 "Order should be set to 'r' or 'c' or %d or %d but got " %
                 (ord('r'), ord('c')) + order
             )
-        order = self.ord
 
         return give_full_path, verbose, order
 
@@ -1398,14 +1381,14 @@ class GLM(object):
         return give_full_path, tol, lambda_stop_early, glm_stop_early, \
                glm_stop_early_error_fraction, max_iter, verbose, order
 
-    def _upload_data(
+    def upload_data(
             self,
             source_dev,
             train_x,
             train_y,
             valid_x=None,
             valid_y=None,
-            weight=None,
+            weight=None
     ):
         """Upload the data through the backend library"""
         if self.uploaded_data == 1:

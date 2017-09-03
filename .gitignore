@@ -52,7 +52,10 @@ src/py3nvml/
 tmp/
 tests/results
 examples/py/sourced.png
+
+# temp data generated
 testsxgboost/fifa_data.pk
+examples/py/ipums_feather
 
 # Visual Studio Code
 *.vscode

@@ -71,7 +71,7 @@ def skip_if_no_smalldata():
 
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
-
+# assumes has intercept at last column already in xtrain and xtest
 def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None, alphas=None, lambdas=None):
 
     if nGPUs > 0:
@@ -239,9 +239,6 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     norig = X.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
     sys.stdout.flush()
-    fortran = X.flags.f_contiguous
-    print("fortran=%d" % fortran)
-    sys.stdout.flush()
 
 
     mvalid = 0
@@ -284,13 +281,6 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
         else:
             validFraction = (1.0*mvalid)/(1.0*mTrain)
     print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid, validFraction))
-
-    if fit_intercept is True:
-        trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        n = trainX_intercept.shape[1]
-        print("New n=%d" % n)
-    else:
-        trainX_intercept = np.copy(trainX)
 
     #####################
     #
@@ -382,20 +372,33 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
     Xvsalphabest=enet.X_best
 
-    testvalidY = np.dot(trainX_intercept, Xvsalphabest.T)
-    print("testvalidY (newvalidY should be this)")
-    if family != "logistic":
-        print(testvalidY)
+    ############## consistency check
+    if fit_intercept:
+        if trainX is not None:
+            trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1),
+                                                        dtype=trainX.dtype)])
+        if validX is not None:
+            validX_intercept = np.hstack([validX, np.ones((validX.shape[0], 1),
+                                                        dtype=validX.dtype)])
     else:
-        try:
-            inverse_logit = lambda t: 1 / (1 + math.exp(-t))
-            testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
-            func = np.vectorize(inverse_logit)
-            print(func(testvalidY))
-        except OverflowError:
-            print(testvalidY)
+        trainX_intercept = trainX
+        validX_intercept = validX
 
-    print(testvalidY)
+    if validX is not None:
+        testvalidY = np.dot(validX_intercept, Xvsalphabest.T)
+        print("testvalidY (newvalidY should be this)")
+        if family != "logistic":
+            print(testvalidY)
+        else:
+            try:
+                inverse_logit = lambda t: 1 / (1 + math.exp(-t))
+                testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
+                func = np.vectorize(inverse_logit)
+                print(func(testvalidY))
+            except OverflowError:
+                print(testvalidY)
+
+        print(testvalidY)
 
 
     #######################

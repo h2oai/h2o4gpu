@@ -18,18 +18,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     # choose solver
     Solver = h2o4gpu.GLM
 
-    sharedA = 0
-    nThreads = None  # let internal method figure this out
-    intercept = 1
-    standardize = 0
+    fit_intercept = True
     lambda_min_ratio = 1e-9
-    nFolds = nfolds
-    nLambdas = nlambda
-    nAlphas = nalpha
-
-    if standardize:
-        print("implement standardization transformer")
-        exit()
 
     # Setup Train/validation Set Split
     morig = X.shape[0]
@@ -44,21 +34,15 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("Size of Train rows=%d valid rows=%d" % (H, HO))
     trainX = np.copy(X[0:H, :])
     trainY = np.copy(y[0:H])
-    validX = np.copy(X[H:-1, :])
-    validY = np.copy(y[H:-1])	
+    validX = np.copy(X[H:morig, :])
+    validY = np.copy(y[H:morig])
     mTrain = trainX.shape[0]
     mvalid = validX.shape[0]
     print("mTrain=%d mvalid=%d" % (mTrain, mvalid))
 
-    if intercept == 1:
-        trainX = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        validX = np.hstack([validX, np.ones((validX.shape[0], 1), dtype=validX.dtype)])
-        n = trainX.shape[1]
-        print("New n=%d" % n)
-
     ## Constructor
     print("Setting up solver")
-    enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas, verbose=verbose,family=family)
+    enet = Solver(fit_intercept=fit_intercept, lambda_min_ratio=lambda_min_ratio, n_gpus = nGPUs, n_lambdas = nlambda, n_folds = nfolds, n_alphas = nalpha, verbose=verbose, family=family)
 
     print("trainX")
     print(trainX)
@@ -67,21 +51,20 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Solve
     print("Solving")
-    # Xvsalpha = enet.fit(trainX, trainY)
-    Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY)
-    # Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW)
-    # Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, 0)
-    # givefullpath=1
-    #  Xvsalphalambda, Xvsalpha = enet.fit(trainX, trainY, validX, validY, trainW, givefullpath)
+    # enet.fit(trainX, trainY)
+    enet.fit(trainX, trainY, validX, validY)
+    # enet.fit(trainX, trainY, validX, validY, trainW)
+    # enet.fit(trainX, trainY, validX, validY, trainW, 0)
+    #  enet.fit(trainX, trainY, validX, validY, trainW, givefullpath)
     print("Done Solving")
 
     # show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
-    print(Xvsalpha)
+    print(enet.X)
     print("np.shape(Xvsalpha)")
-    print(np.shape(Xvsalpha))
+    print(np.shape(enet.X))
 
-    error = enet.get_error
+    error = enet.error
     if family == 'logistic':
         print("logloss")
     else:
@@ -89,20 +72,33 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(error)
 
     print("lambdas")
-    lambdas = enet.get_lambdas
+    lambdas = enet.lambdas
     print(lambdas)
 
     print("alphas")
-    alphas = enet.get_alphas
+    alphas = enet.alphas
     print(alphas)
 
     print("tols")
-    tols = enet.get_tols
+    tols = enet.tols
     print(tols)
     
-    print(Xvsalpha)
-    print(len(Xvsalpha)) 
-    testvalidY = np.dot(validX, Xvsalpha[0].T)
+    print(enet.X)
+    print(len(enet.X))
+
+    ############## consistency check
+    if fit_intercept:
+        if trainX is not None:
+            trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1),
+                                                          dtype=trainX.dtype)])
+        if validX is not None:
+            validX_intercept = np.hstack([validX, np.ones((validX.shape[0], 1),
+                                                          dtype=validX.dtype)])
+    else:
+        trainX_intercept = trainX
+        validX_intercept = validX
+    if validX is not None:
+        testvalidY = np.dot(validX_intercept, enet.X.T)
 
     print("testvalidY (newvalidY should be this)")
     inverse_logit = lambda t: 1/(1 + math.exp(-t))
@@ -119,11 +115,11 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("newvalidY")
     print(newvalidY)
     print("newvalidY Predictions")
-    print((newvalidY[1][1]))
+    print((newvalidY))
     print("Predictions max")
-    print(newvalidY[1][1].max())
+    print(newvalidY.max())
     print("Predictions min")
-    print(newvalidY[1][1].min())
+    print(newvalidY.min())
     print("Done Reporting")
     return enet
 
@@ -141,14 +137,14 @@ if __name__ == "__main__":
 
     # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
     #df = feather.read_dataframe("../../../h2oai-prototypes/gtc-demo/ipums.feather")
-    df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
+    #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
     # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
-    #df = pd.read_csv("../cpp/simple.txt", sep=" ", header=None)
+    df = pd.read_csv("../../data/simple.txt", sep=" ", header=None)
     #df = pd.read_csv("Hyatt_Subset.csv")
     #df = pd.read_csv("Hyatt_Subset.nohead.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     # elastic_net(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="logistic",verbose=0)
+    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="elasticnet",verbose=0)
     # elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)

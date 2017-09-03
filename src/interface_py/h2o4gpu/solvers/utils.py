@@ -90,14 +90,23 @@ def _to_np(data):
     """
     import pandas as pd
     if isinstance(data, pd.DataFrame):
-        return data.values
+        outdata = data.values
     elif isinstance(data, np.ndarray):
-        return data
+        outdata = data
     else:
-        np.asarray(data)
+        outdata = np.asarray(data)
 
+    return outdata
 
-def _get_data(data):
+def munge(data_as_np, fit_intercept = False):
+    # If True, then append intercept term to train_x array and valid_x array(if available)
+    # Not this is really munging as adds to columns and changes expected size of outputted solution
+    if (fit_intercept or fit_intercept == 1) and len(data_as_np.shape) == 2:
+        data_as_np = np.hstack([data_as_np, np.ones((data_as_np.shape[0], 1),
+                                              dtype=data_as_np.dtype)])
+    return data_as_np
+
+def _get_data(data, fit_intercept = False):
     """Transforms data to numpy and gather basic info about it.
 
     :param data: array_like
@@ -111,6 +120,7 @@ def _get_data(data):
 
     if data is not None:
         data_as_np = _to_np(data)
+        data_as_np = munge(data_as_np, fit_intercept = fit_intercept)
         fortran = data_as_np.flags.f_contiguous
         shape_x = np.shape(data_as_np)
         m = shape_x[0]

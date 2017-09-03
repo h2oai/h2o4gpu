@@ -20,20 +20,13 @@ Elastic Net
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
   Solver = h2o4gpu.GLM
 
-  sharedA = 0
   sourceme = 0
   sourceDev = 0
-  nThreads = None
-  intercept = 1
-  standardize = 0
+  intercept = True
   lambda_min_ratio = 1e-9
   nFolds = nfolds
   nLambdas = nlambda
   nAlphas = nalpha
-
-  if standardize:
-    print ("implement standardization transformer")
-    exit()
 
   # Setup Train/validation Set Split
   morig = X.shape[0]
@@ -49,8 +42,8 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Size of Train rows=%d valid rows=%d" % (H,HO))
   trainX = np.copy(X[0:H,:])
   trainY = np.copy(y[0:H])
-  validX = np.copy(X[H:-1,:])
-  validY = np.copy(y[H:-1])
+  validX = np.copy(X[H:norig,:])
+  validY = np.copy(y[H:norig])
   trainW = np.copy(trainY)*0.0 + 1.0 # constant unity weight
 
   mTrain = trainX.shape[0]
@@ -65,7 +58,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   ## Constructor
   print("Setting up solver")
-  enet = Solver(sharedA, nThreads, nGPUs, 'c' if fortran else 'r', intercept, standardize, lambda_min_ratio, nLambdas, nFolds, nAlphas)
+  enet = Solver(order = 'c' if fortran else 'r', n_gpus = nGPUs,  fit_intercept = intercept, lambda_min_ratio = lambda_min_ratio, n_lambdas = nLambdas, n_folds = nFolds, n_alphas = nAlphas)
 
   ## First, get backend pointers
   print("Uploading")
@@ -82,38 +75,38 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   givefullpath=0
   precision=0 # float
   if givefullpath==1:
-      Xvsalphalambda,Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, precision, a, b, c, d, e, givefullpath)
+      enet.fit_ptr(sourceDev, mTrain, n, mvalid, precision, None, a, b, c, d, e, givefullpath)
   else:
-      Xvsalpha = enet.fitptr(sourceDev, mTrain, n, mvalid, precision, a, b, c, d, e, givefullpath)
+      enet.fit_ptr(sourceDev, mTrain, n, mvalid, precision, None, a, b, c, d, e, givefullpath)
   print("Done Solving")
 
   # show something about Xvsalphalambda and Xvsalpha
   print("Xvsalpha")
-  print(Xvsalpha)
+  print(enet.X)
 
-  rmse=enet.getrmse()
+  rmse=enet.error
   print("rmse")
   print(rmse)
 
   print("lambdas")
-  lambdas=enet.getlambdas()
+  lambdas=enet.lambdas
   print(lambdas)
 
   print("alphas")
-  alphas=enet.getalphas()
+  alphas=enet.alphas
   print(alphas)
 
   print("tols")
-  tols=enet.gettols()
+  tols=enet.tols
   print(tols)
                     
 
   print("Predicting")
   if 1==1:
       if givefullpath==1:
-          validPredsvsalphalambdapure, validPredsvsalphapure = enet.predictptr(c, d, givefullpath)
+          validPredsvsalphalambdapure, validPredsvsalphapure = enet.predict_ptr(c, d, givefullpath)
       else:
-          validPredsvsalphapure = enet.predictptr(c, d, givefullpath)
+          validPredsvsalphapure = enet.predict_ptr(c, d, givefullpath)
   else:
       if givefullpath==1:
           validPredsvsalphalambdapure, validPredsvsalphapure = enet.predict(validX, validY)
@@ -139,10 +132,10 @@ if __name__ == "__main__":
 #  b=A.dot(x_true)+0.5*randn(m)
   import pandas as pd
   import feather
-  df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  #df = pd.read_csv("../cpp/ipums.txt", sep=" ", header=None)
+  # df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
+  df = pd.read_csv("../../data/simple.txt", sep=" ", header=None)
   print(df.shape)
   X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
   y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
   #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-  ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=2, nalpha=1, validFraction=0.2)
+  ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2)
