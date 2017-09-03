@@ -423,7 +423,7 @@ class KMeans(object):
             self._print_verbose(0,
                                 "Removed %d empty centroids" %
                                 (self._n_clusters - centroids.shape[0])
-                                )
+                               )
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids

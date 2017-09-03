@@ -63,8 +63,6 @@ template<typename T>
       }
     double alpha = -2.0;
     double beta = 1.0;
-    char transa = 'N';
-    char transb = 'N';
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, k,
                 dim, alpha, &data_in[0], dim, &centroids_in[0], dim,
                 beta, &pairwise_distances[0], k);
@@ -83,8 +81,6 @@ template<typename T>
       }
     float alpha = -2.0;
     float beta = 1.0;
-    char transa = 'N';
-    char transb = 'N';
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, k,
                 dim, alpha, &data_in[0], dim, &centroids_in[0], dim,
                 beta, &pairwise_distances[0], k);
