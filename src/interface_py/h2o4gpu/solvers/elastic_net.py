@@ -263,9 +263,9 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x, fit_intercept = self.fit_intercept)
+        train_x_np, m_train, n1, fortran1 = _get_data(train_x, ismatrix = True, fit_intercept = self.fit_intercept)
         train_y_np, m_y, _, fortran2 = _get_data(train_y)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, fit_intercept = self.fit_intercept)
+        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, ismatrix = True, fit_intercept = self.fit_intercept)
         valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
         weight_np, _, _, fortran5 = _get_data(weight)
 
@@ -398,7 +398,7 @@ class GLM(object):
         # don't free-up predictions since for single model might request
         # multiple predictions.  User has to call finish themselves to cleanup.
 
-        valid_x_np, _, _, fortran1 = _get_data(valid_x)
+        valid_x_np, _, _, fortran1 = _get_data(valid_x, ismatrix = True) # intercept created when get to fit()
         valid_y_np, _, _, fortran2 = _get_data(valid_y)
         weight_np, _, _, fortran3 = _get_data(weight)
 
