@@ -51,8 +51,12 @@ src/interface_c/ch2o4gpu_gpu
 src/py3nvml/
 tmp/
 tests/results
+examples/py/sourced.png
+testsxgboost/fifa_data.pk
+
 # Visual Studio Code
 *.vscode
+
 
 # Idea #
 *.idea/

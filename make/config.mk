@@ -20,7 +20,7 @@ DATA_DIR = ./
 #
 # PyDataTable
 #
-PYDATATABLE_VERSION = 0.1.0+master.97
+#PYDATATABLE_VERSION = 0.1.0+master.97
 
 
 #

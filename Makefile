@@ -143,10 +143,10 @@ deps_fetch:
 
 private_deps_fetch:
 	@echo "---- Fetch private dependencies ---- "
-	@mkdir -p "$(DEPS_DIR)"
-	$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
-	@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
-	@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
+	#@mkdir -p "$(DEPS_DIR)"
+	#$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
+	#@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
+	#@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 
 deps_install:
 	@echo "---- Install dependencies ----"
@@ -156,7 +156,7 @@ deps_install:
 private_deps_install:
 	@echo "---- Install private dependencies ----"
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
-	pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
+	#pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
 alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
@@ -253,7 +253,12 @@ dotest:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+
+dotestsklearn:
+	rm -rf ./tmp/
+	mkdir -p ./tmp/
+	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml tests_sklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
@@ -264,6 +269,11 @@ dotestbig:
 dotestperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	bash tests/showresults.sh
+
+dotestsklearnperf:
+	mkdir -p ./tmp/
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml testssklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
 	bash tests/showresults.sh
 
 dotestbigperf:
@@ -282,6 +292,13 @@ dotestbigperfpython:
 	mkdir -p ./tmp/
 	bash testsbig/getresultsbig.sh $(LOGEXT)
 	bash tests/showresults.sh # still just references results directory in base path
+
+################### H2O.ai public tests for pass/fail
+testsklearn: build sync_data dotestsklearn
+
+################ H2O.ai public tests for performance
+
+testsklearnperf: build sync_data dotestsklearnperf
 
 ################### H2O.ai private tests for pass/fail
 test: build sync_data dotest

@@ -215,7 +215,7 @@ def printallerrors(display, enet, str, give_full_path):
         print('Best TOls for %s  ' % str, tols_best)
     return error_best
 
-def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
+def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
                 print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",lambda_min_ratio=1e-9, alphas=None, lambdas=None):
 
     # Other default parameters for solving glm
@@ -243,26 +243,47 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     print("fortran=%d" % fortran)
     sys.stdout.flush()
 
-    # Do train/valid split
-    HO = int(validFraction * morig)
-    H = morig - HO
-    print("Size of Train rows=%d valid rows=%d" % (H, HO))
-    sys.stdout.flush()
-    trainX = np.copy(X[0:H, :])
-    trainY = np.copy(y[0:H])
 
+    mvalid = 0
     validX = None
     validY = None
-    if validFraction != 0.0:
-        validX = np.copy(X[H:morig, :])
-        validY = np.copy(y[H:morig])
-        mvalid = validX.shape[0]
+    if Xtest is None and ytest is None:
+        # Do train/valid split
+        HO = int(validFraction * morig)
+        H = morig - HO
+        print("Size of Train rows=%d valid rows=%d" % (H, HO))
+        sys.stdout.flush()
+        trainX = np.copy(X[0:H, :])
+        trainY = np.copy(y[0:H])
 
-    mTrain = trainX.shape[0]
-    if validFraction != 0.0:
-        print("mTrain=%d mvalid=%d" % (mTrain, mvalid))
+        if validFraction != 0.0:
+            validX = np.copy(X[H:morig, :])
+            validY = np.copy(y[H:morig])
+            mvalid = validX.shape[0]
+        if mvalid == 0:
+            validX = None
+            validY = None
+            validFraction = 0.0
+
+        mTrain = trainX.shape[0]
+        if validFraction != 0.0:
+            print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid, validFraction))
+        else:
+            print("mTrain=%d" % mTrain)
     else:
-        print("mTrain=%d" % mTrain)
+        trainX = X
+        trainY = y
+        validX = Xtest
+        validY = ytest
+        mvalid = validX.shape[0]
+        mTrain = trainX.shape[0]
+        if mvalid == 0:
+            validX = None
+            validY = None
+            validFraction = 0.0
+        else:
+            validFraction = (1.0*mvalid)/(1.0*mTrain)
+    print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid, validFraction))
 
     if fit_intercept is True:
         trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
@@ -280,6 +301,7 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     print("Setting up solver")
     sys.stdout.flush()
 
+    #######################
     # Choose solver
     if solver is "glm":
         Solver = h2o4gpu.GLM
@@ -312,7 +334,8 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
     print("trainY")
     print(trainY)
 
-    # Solve
+    #######################
+    #  Fit
     if validFraction == 0.0:
         print("Solving")
         enet.fit(trainX, trainY)
@@ -374,6 +397,8 @@ def run_glm(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, f
 
     print(testvalidY)
 
+
+    #######################
     print("Predicting, assuming unity weights")
     if validFraction == 0.0:
         print("Using trainX for validX")
