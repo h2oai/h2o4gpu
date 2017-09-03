@@ -9,9 +9,9 @@ import logging
 print(sys.path)
 
 try:
-    from utils import find_file, runglm, elastic_net
+    from utils import find_file, run_glm, elastic_net
 except:
-    from tests.utils import find_file, runglm, elastic_net
+    from tests.utils import find_file, run_glm, elastic_net
 
 logging.basicConfig(level=logging.DEBUG)
 
