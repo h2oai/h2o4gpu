@@ -724,6 +724,11 @@ class GLM(object):
             self.info.lambdas = self._lambdas
             self.info.alphas = self._alphas
             self.info.tols = self._tols
+            if self.fit_intercept == 1:
+                self.intercept_ = self.x_vs_alpha_lambdapure[:,:,-1]
+            else:
+                self.intercept_ = None
+
 
         if give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + num_all_other)
@@ -752,6 +757,11 @@ class GLM(object):
             self._lambdas2 = self.x_vs_alphanew[:, n + num_error:n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:n + num_error + 3]
+
+            if self.fit_intercept == 1:
+                self.intercept2_ = self.x_vs_alphapure[:,-1]
+            else:
+                self.intercept2_ = None
 
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
@@ -1182,6 +1192,24 @@ class GLM(object):
     @property
     def validPreds_best(self):
         return self.valid_pred_vs_alphapure
+
+    @property
+    def intercept_(self):
+        if self.give_full_path == 1:
+            return self.intercept_
+        return self.intercept2_
+
+    @intercept_.setter
+    def intercept_(self, value):
+        self._intercept_ = value
+
+    @property
+    def intercept_full(self):
+        return self.intercept_
+
+    @property
+    def intercept_best(self):
+        return self.intercept2_
 
     @property
     def error(self):

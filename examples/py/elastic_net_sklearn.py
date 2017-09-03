@@ -86,6 +86,10 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print(enet.X)
     print(len(enet.X))
 
+    print("intercept")
+    print(enet.intercept_)
+
+
     ############## consistency check
     if fit_intercept:
         if trainX is not None:
