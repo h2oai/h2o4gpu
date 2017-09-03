@@ -82,12 +82,14 @@ def _gpu_info_subprocess():
 #############################
 # Data utils
 
-def _to_np(data, ismatrix = False):
+def _to_np(data, ismatrix = False, dtype = np.float32, order = ord('r')):
     """Convert the input to a numpy array.
 
     :param data: array_like
     :return: ndarray
     """
+
+    # handle pandas input TODO: Need to store pandas names at least and attach back to X/coef for output
     import pandas as pd
     if isinstance(data, pd.DataFrame):
         outdata = data.values
@@ -96,10 +98,22 @@ def _to_np(data, ismatrix = False):
     else:
         outdata = np.asarray(data)
 
+    # deal with degenerate matrices
     if ismatrix and len(outdata.shape)==1:
         nrows = outdata.shape[0]
         ncols = 1
         outdata = outdata.reshape((nrows,ncols))
+
+    # convert to correct precision if necessary
+    if order == ord('r'):
+        nporder = 'C'
+    elif order == ord('c'):
+        nporder = 'F'
+    else:
+        nporder = 'C'
+        ValueError("No such order")
+
+    outdata = outdata.astype(dtype, copy=False, order = nporder)
 
     return outdata
 
@@ -111,7 +125,7 @@ def munge(data_as_np, fit_intercept = False):
                                               dtype=data_as_np.dtype)])
     return data_as_np
 
-def _get_data(data, ismatrix = False, fit_intercept = False):
+def _get_data(data, ismatrix = False, fit_intercept = False, dtype = np.float32, order = ord('r')):
     """Transforms data to numpy and gather basic info about it.
 
     :param data: array_like
@@ -124,7 +138,7 @@ def _get_data(data, ismatrix = False, fit_intercept = False):
     fortran = None
 
     if data is not None:
-        data_as_np = _to_np(data, ismatrix = ismatrix)
+        data_as_np = _to_np(data, ismatrix = ismatrix, dtype = dtype, order = order)
         data_as_np = munge(data_as_np, fit_intercept = fit_intercept)
         fortran = data_as_np.flags.f_contiguous
         shape_x = np.shape(data_as_np)

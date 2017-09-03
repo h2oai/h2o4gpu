@@ -398,20 +398,29 @@ class GLM(object):
         # don't free-up predictions since for single model might request
         # multiple predictions.  User has to call finish themselves to cleanup.
 
-        valid_x_np, _, _, fortran1 = _get_data(valid_x, ismatrix = True) # intercept created when get to fit()
-        valid_y_np, _, _, fortran2 = _get_data(valid_y)
-        weight_np, _, _, fortran3 = _get_data(weight)
+        # make these types consistent
+        if self.double_precision == 1: # double
+            mydtype = np.float64
+        elif self.double_precision == 0: # float
+            mydtype = np.float32
+        else:
+            ValueError("self.double_precision not defined")
+
+        valid_x_np, _, _, fortran1 = _get_data(valid_x, ismatrix = True, dtype = mydtype, order = self.ord) # intercept created when get to fit()
+        valid_y_np, _, _, fortran2 = _get_data(valid_y, dtype = mydtype, order = self.ord)
+        weight_np, _, _, fortran3 = _get_data(weight, dtype = mydtype, order = self.ord)
+
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
         _check_equal(fortran_list)
 
-        # override order
-        if fortran1:
-            order = 'c'
-        else:
-            order = 'r'
-        self.ord = ord(order)
+        # override order (NO: Must use same order as during fit())
+        #if fortran1:
+        #    order = 'c'
+        #else:
+        #    order = 'r'
+        #self.ord = ord(order)
 
         ################
         # do checks on inputs
@@ -1099,12 +1108,12 @@ class GLM(object):
         :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
         :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
+        :param float, None tol: tolerance.  Default is 1E-2.
         :param bool lambda_stop_early : Stop early when there is no more relative
             improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
             improvement in the primary and dual residuals for ADMM.  Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
+        :param float, None glm_stop_early_error_fraction : Relative tolerance for
             metric-based stopping criterion (stop if relative improvement is not at
             least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
