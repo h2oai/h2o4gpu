@@ -4,7 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import sys
-from ctypes import c_float, c_double, POINTER
+from ctypes import c_float, c_double
 import numpy as np
 from h2o4gpu.types import cptr
 from py3nvml.py3nvml import NVMLError
@@ -84,6 +84,8 @@ def _gpu_info_subprocess():
 # Data utils
 
 def _get_order(data, fortran, order):
+    """ Return the Unicode code point representing the
+    order of this data set. """
     if data is not None:
         if order is None:
             if fortran:
@@ -98,6 +100,7 @@ def _get_order(data, fortran, order):
             ValueError("Bad order")
     return order
 
+
 def _to_np(data, ismatrix=False, dtype=None, order=None):
     """Convert the input to a numpy array.
 
@@ -105,7 +108,8 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
     :return: ndarray
     """
 
-    # handle pandas input TODO: Need to store pandas names at least and attach back to X/coef for output
+    # handle pandas input
+    # TODO: Store pandas names at least and attach back to X/coef for output
     import pandas as pd
     if isinstance(data, pd.DataFrame):
         outdata = data.values
@@ -130,7 +134,8 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
             nporder = 'C'
             ValueError("No such order")
     else:
-        if outdata.flags.c_contiguous: # in case both (i.e. 1D array), then default to C order
+        # in case both (i.e. 1D array), then default to C order
+        if outdata.flags.c_contiguous:
             nporder = 'C'
         else:
             nporder = 'F'
@@ -138,40 +143,50 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
         dtype = outdata.dtype
 
     # force precision as 32-bit if not required types
-    if dtype != np.float32 and dtype !=np.float64:
+    if dtype != np.float32 and dtype != np.float64:
         dtype = np.float32
 
     outdata = outdata.astype(dtype, copy=False, order=nporder)
 
-    selford = _get_order(outdata, fortran = not outdata.flags.c_contiguous, order=order)
+    selford = _get_order(outdata, fortran=not outdata.flags.c_contiguous,
+                         order=order)
 
     return outdata, selford, dtype
 
 
 def munge(data_as_np, fit_intercept=False):
-    # If True, then append intercept term to train_x array and valid_x array(if available)
-    # Not this is really munging as adds to columns and changes expected size of outputted solution
+    # If True, then append intercept term to
+    # train_x array and valid_x array(if available)
+    #
+    # Not this is really munging as adds to columns
+    # and changes expected size of outputted solution
     if (fit_intercept or fit_intercept == 1) and len(data_as_np.shape) == 2:
         data_as_np = np.hstack([data_as_np, np.ones((data_as_np.shape[0], 1),
                                                     dtype=data_as_np.dtype)])
     return data_as_np
 
 
-def _get_data(data, ismatrix=False, fit_intercept=False, order=None, dtype=None):
+def _get_data(data, ismatrix=False, fit_intercept=False,
+              order=None, dtype=None):
     """Transforms data to numpy and gather basic info about it.
 
     :param data: array_like
     :return: data as ndarray, rows, cols, continuity
     """
     # default is no data
-    data_as_np = None # specific to this data
-    m = 0 # specific to this data
-    n = -1 # specific to this data
-    fortran = None # specific to this data
+    data_as_np = None  # specific to this data
+    m = 0  # specific to this data
+    n = -1  # specific to this data
+    fortran = None  # specific to this data
     # dtype and order not specific to this data, can be just input
 
     if data is not None:
-        data_as_np, order, dtype = _to_np(data, ismatrix=ismatrix, dtype=dtype, order=order)
+        data_as_np, order, dtype = _to_np(
+            data,
+            ismatrix=ismatrix,
+            dtype=dtype,
+            order=order
+        )
         data_as_np = munge(data_as_np, fit_intercept=fit_intercept)
         fortran = not data_as_np.flags.c_contiguous
         shape_x = np.shape(data_as_np)
@@ -247,7 +262,7 @@ def _convert_to_ptr(data):
     """
 
     if data is not None:
-        np_data, selford, dtype = _to_np(data)
+        np_data, _, dtype = _to_np(data)
         if dtype == np.float32:
             c_ftype = c_float
         elif dtype == np.float64:

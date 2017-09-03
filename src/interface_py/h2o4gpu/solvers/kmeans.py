@@ -434,7 +434,8 @@ class KMeans(object):
 
         return self.cluster_centers_, self.labels_
 
-    def _to_cdata(self, data, convert=True): # FIXME: This function duplicates others in solvers/utils.py as used in GLM
+    # FIXME: This function duplicates others in solvers/utils.py as used in GLM
+    def _to_cdata(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(1, "Detected numeric data format which is not "
