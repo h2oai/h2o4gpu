@@ -253,12 +253,14 @@ dotest:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+    # can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 
 dotestsklearn:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n auto --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml tests_sklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
+    # can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml tests_sklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/

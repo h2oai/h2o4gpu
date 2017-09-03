@@ -37,10 +37,10 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     #
     df = pd.read_csv("./data/ipums_1k.csv")
     print(df.shape)
-    #X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
-    #y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
-    X = df.iloc[:, :df.shape[1] - 1]
-    y = df.iloc[:, df.shape[1] - 1]
+    X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    #X = df.iloc[:, :df.shape[1] - 1]
+    #y = df.iloc[:, df.shape[1] - 1]
 
     t1 = time.time()
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
