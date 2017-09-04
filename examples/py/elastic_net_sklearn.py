@@ -1,6 +1,7 @@
 import h2o4gpu as h2o4gpu
 from h2o4gpu.types import *
 import math
+
 '''
 Elastic Net
 
@@ -42,7 +43,8 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
     ## Constructor
     print("Setting up solver")
-    enet = Solver(fit_intercept=fit_intercept, lambda_min_ratio=lambda_min_ratio, n_gpus = nGPUs, n_lambdas = nlambda, n_folds = nfolds, n_alphas = nalpha, verbose=verbose, family=family)
+    enet = Solver(fit_intercept=fit_intercept, lambda_min_ratio=lambda_min_ratio, n_gpus=nGPUs, n_lambdas=nlambda,
+                  n_folds=nfolds, n_alphas=nalpha, verbose=verbose, family=family)
 
     print("trainX")
     print(trainX)
@@ -82,13 +84,12 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     print("tols")
     tols = enet.tols
     print(tols)
-    
+
     print(enet.X)
     print(len(enet.X))
 
     print("intercept")
     print(enet.intercept_)
-
 
     ############## consistency check
     if fit_intercept:
@@ -105,7 +106,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
         testvalidY = np.dot(validX_intercept, enet.X.T)
 
     print("testvalidY (newvalidY should be this)")
-    inverse_logit = lambda t: 1/(1 + math.exp(-t))
+    inverse_logit = lambda t: 1 / (1 + math.exp(-t))
     func = np.vectorize(inverse_logit)
     print(func(testvalidY))
 
@@ -130,7 +131,7 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
 
 if __name__ == "__main__":
     import numpy as np
-    #from numpy.random import randn
+    # from numpy.random import randn
     #  m=1000
     #  n=100
     #  A=randn(m,n)
@@ -140,15 +141,15 @@ if __name__ == "__main__":
     import feather
 
     # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
-    #df = feather.read_dataframe("../../../h2oai-prototypes/gtc-demo/ipums.feather")
-    #df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
+    # df = feather.read_dataframe("../../../h2oai-prototypes/gtc-demo/ipums.feather")
+    # df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
     # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
     df = pd.read_csv("../../data/simple.txt", sep=" ", header=None)
-    #df = pd.read_csv("Hyatt_Subset.csv")
-    #df = pd.read_csv("Hyatt_Subset.nohead.csv")
+    # df = pd.read_csv("Hyatt_Subset.csv")
+    # df = pd.read_csv("Hyatt_Subset.nohead.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     # elastic_net(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="elasticnet",verbose=0)
+    elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="elasticnet", verbose=0)
     # elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)

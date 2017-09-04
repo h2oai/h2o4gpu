@@ -4,10 +4,11 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import sys
-from ctypes import c_float, POINTER
+from ctypes import c_float, c_double, POINTER
 import numpy as np
 from h2o4gpu.types import cptr
 from py3nvml.py3nvml import NVMLError
+
 
 #############################
 # Device utils
@@ -82,7 +83,22 @@ def _gpu_info_subprocess():
 #############################
 # Data utils
 
-def _to_np(data, ismatrix = False, dtype = np.float32, order = ord('r')):
+def _get_order(data, fortran, order):
+    if data is not None:
+        if order is None:
+            if fortran:
+                order = ord('c')
+            else:
+                order = ord('r')
+        elif order in ['c', 'r']:
+            order = ord(order)
+        elif order in [ord('c'), ord('r')]:
+            order = order
+        else:
+            ValueError("Bad order")
+    return order
+
+def _to_np(data, ismatrix=False, dtype=None, order=None):
     """Convert the input to a numpy array.
 
     :param data: array_like
@@ -99,48 +115,65 @@ def _to_np(data, ismatrix = False, dtype = np.float32, order = ord('r')):
         outdata = np.asarray(data)
 
     # deal with degenerate matrices
-    if ismatrix and len(outdata.shape)==1:
+    if ismatrix and len(outdata.shape) == 1:
         nrows = outdata.shape[0]
         ncols = 1
-        outdata = outdata.reshape((nrows,ncols))
+        outdata = outdata.reshape((nrows, ncols))
 
     # convert to correct precision if necessary
-    if order == ord('r'):
-        nporder = 'C'
-    elif order == ord('c'):
-        nporder = 'F'
+    if order is not None:
+        if order == ord('r'):
+            nporder = 'C'
+        elif order == ord('c'):
+            nporder = 'F'
+        else:
+            nporder = 'C'
+            ValueError("No such order")
     else:
-        nporder = 'C'
-        ValueError("No such order")
+        if outdata.flags.c_contiguous: # in case both (i.e. 1D array), then default to C order
+            nporder = 'C'
+        else:
+            nporder = 'F'
+    if dtype is None:
+        dtype = outdata.dtype
 
-    outdata = outdata.astype(dtype, copy=False, order = nporder)
+    # force precision as 32-bit if not required types
+    if dtype != np.float32 and dtype !=np.float64:
+        dtype = np.float32
 
-    return outdata
+    outdata = outdata.astype(dtype, copy=False, order=nporder)
 
-def munge(data_as_np, fit_intercept = False):
+    selford = _get_order(outdata, fortran = not outdata.flags.c_contiguous, order=order)
+
+    return outdata, selford, dtype
+
+
+def munge(data_as_np, fit_intercept=False):
     # If True, then append intercept term to train_x array and valid_x array(if available)
     # Not this is really munging as adds to columns and changes expected size of outputted solution
     if (fit_intercept or fit_intercept == 1) and len(data_as_np.shape) == 2:
         data_as_np = np.hstack([data_as_np, np.ones((data_as_np.shape[0], 1),
-                                              dtype=data_as_np.dtype)])
+                                                    dtype=data_as_np.dtype)])
     return data_as_np
 
-def _get_data(data, ismatrix = False, fit_intercept = False, dtype = np.float32, order = ord('r')):
+
+def _get_data(data, ismatrix=False, fit_intercept=False, order=None, dtype=None):
     """Transforms data to numpy and gather basic info about it.
 
     :param data: array_like
     :return: data as ndarray, rows, cols, continuity
     """
     # default is no data
-    data_as_np = None
-    m = 0
-    n = -1
-    fortran = None
+    data_as_np = None # specific to this data
+    m = 0 # specific to this data
+    n = -1 # specific to this data
+    fortran = None # specific to this data
+    # dtype and order not specific to this data, can be just input
 
     if data is not None:
-        data_as_np = _to_np(data, ismatrix = ismatrix, dtype = dtype, order = order)
-        data_as_np = munge(data_as_np, fit_intercept = fit_intercept)
-        fortran = data_as_np.flags.f_contiguous
+        data_as_np, order, dtype = _to_np(data, ismatrix=ismatrix, dtype=dtype, order=order)
+        data_as_np = munge(data_as_np, fit_intercept=fit_intercept)
+        fortran = not data_as_np.flags.c_contiguous
         shape_x = np.shape(data_as_np)
         m = shape_x[0]
         if len(shape_x) > 1:
@@ -148,7 +181,7 @@ def _get_data(data, ismatrix = False, fit_intercept = False, dtype = np.float32,
         else:
             n = 1
 
-    return data_as_np, m, n, fortran
+    return data_as_np, m, n, fortran, order, dtype
 
 
 def _check_data_content(do_check, name, data):
@@ -206,18 +239,24 @@ def _data_info(data, verbose=0):
     return double_precision, m, n
 
 
-def _convert_to_ptr(data, c_ftype=c_float):
+def _convert_to_ptr(data):
     """Convert data to a form which can be passed to C/C++ code.
 
     :param data: array_like
-    :param c_ftype:
     :return:
     """
-    data_ptr = POINTER(c_ftype)()
 
     if data is not None:
-        np_data = _to_np(data)
+        np_data, selford, dtype = _to_np(data)
+        if dtype == np.float32:
+            c_ftype = c_float
+        elif dtype == np.float64:
+            c_ftype = c_double
+        else:
+            ValueError("No such dtype")
         data_ptr = cptr(np_data, dtype=c_ftype)
+    else:
+        data_ptr = None
 
     return data_ptr
 

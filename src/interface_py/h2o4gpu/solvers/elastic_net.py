@@ -120,6 +120,7 @@ class GLM(object):
             self.ord = ord(order)
         else:
             self.ord = None
+        self.dtype = None
 
         ##############################
         # overrides of input parameters
@@ -130,7 +131,6 @@ class GLM(object):
         if lambdas is not None:
             lambdas = np.ascontiguousarray(np.asarray(lambdas))
             n_lambdas = np.shape(lambdas)[0]
-
 
         ##############################
         # self assignments
@@ -263,23 +263,19 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x, ismatrix = True, fit_intercept = self.fit_intercept)
-        train_y_np, m_y, _, fortran2 = _get_data(train_y)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x, ismatrix = True, fit_intercept = self.fit_intercept)
-        valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
-        weight_np, _, _, fortran5 = _get_data(weight)
+        train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(train_x, ismatrix=True,
+                                                                            fit_intercept=self.fit_intercept, order=self.ord,
+                                                                            dtype=self.dtype)
+        train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(train_y, order=self.ord, dtype=self.dtype)
+        valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(valid_x, ismatrix=True,
+                                                                            fit_intercept=self.fit_intercept, order=self.ord,
+                                                                            dtype=self.dtype)
+        valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = _get_data(valid_y, order=self.ord, dtype=self.dtype)
+        weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(weight, order=self.ord, dtype=self.dtype)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
         _check_equal(fortran_list)
-
-        # set order
-        if order is None:
-            if fortran1:
-                order = 'c'
-            else:
-                order = 'r'
-            self.ord = ord(order)
 
         # now can do checks
 
@@ -398,29 +394,22 @@ class GLM(object):
         # don't free-up predictions since for single model might request
         # multiple predictions.  User has to call finish themselves to cleanup.
 
-        # make these types consistent
-        if self.double_precision == 1: # double
-            mydtype = np.float64
-        elif self.double_precision == 0: # float
-            mydtype = np.float32
-        else:
-            ValueError("self.double_precision not defined")
 
-        valid_x_np, _, _, fortran1 = _get_data(valid_x, ismatrix = True, dtype = mydtype, order = self.ord) # intercept created when get to fit()
-        valid_y_np, _, _, fortran2 = _get_data(valid_y, dtype = mydtype, order = self.ord)
-        weight_np, _, _, fortran3 = _get_data(weight, dtype = mydtype, order = self.ord)
-
+        valid_x_np, _, _, fortran1, self.ord, self.dtype  = _get_data(valid_x, ismatrix=True,
+                                               order=self.ord, dtype=self.dtype)  # intercept created when get to fit()
+        valid_y_np, _, _, fortran2, self.ord, self.dtype  = _get_data(valid_y, order=self.ord, dtype=self.dtype)
+        weight_np, _, _, fortran3, self.ord, self.dtype  = _get_data(weight, order=self.ord, dtype=self.dtype)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
         _check_equal(fortran_list)
 
         # override order (NO: Must use same order as during fit())
-        #if fortran1:
+        # if fortran1:
         #    order = 'c'
-        #else:
+        # else:
         #    order = 'r'
-        #self.ord = ord(order)
+        # self.ord = ord(order)
 
         ################
         # do checks on inputs
@@ -430,12 +419,12 @@ class GLM(object):
             self.prediction_full = self.fit(
                 None,
                 None,
-                valid_x = valid_x_np,
-                valid_y = valid_y_np,
-                weight = weight_np,
-                give_full_path = give_full_path,
-                do_predict = do_predict,
-                free_input_data = free_input_data,
+                valid_x=valid_x_np,
+                valid_y=valid_y_np,
+                weight=weight_np,
+                give_full_path=give_full_path,
+                do_predict=do_predict,
+                free_input_data=free_input_data,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -444,12 +433,12 @@ class GLM(object):
         self.prediction = self.fit(
             None,
             None,
-            valid_x = valid_x_np,
-            valid_y = valid_y_np,
-            weight = weight_np,
-            give_full_path = tempgivefullpath,
-            do_predict = do_predict,
-            free_input_data = free_input_data,
+            valid_x=valid_x_np,
+            valid_y=valid_y_np,
+            weight=weight_np,
+            give_full_path=tempgivefullpath,
+            do_predict=do_predict,
+            free_input_data=free_input_data,
         ).valid_pred_vs_alphapure
         self.give_full_path = oldgivefullpath
         if give_full_path == 1:
@@ -584,14 +573,14 @@ class GLM(object):
         c_size_t_p = POINTER(c_size_t)
         if which_precision == 1:
             c_elastic_net = self.lib.elastic_net_ptr_double
-            self.mydtype = np.float64
+            self.dtype = np.float64
             self.myctype = c_double
             if verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
-            self.mydtype = np.float32
+            self.dtype = np.float32
             self.myctype = c_float
             if verbose > 0:
                 print('single precision fit')
@@ -599,17 +588,15 @@ class GLM(object):
 
         # precision-independent commands
         if self.alphas_list is not None:
-            pass_alphas = (self.alphas_list.astype(self.mydtype, copy=False))
+            pass_alphas = (self.alphas_list.astype(self.dtype, copy=False))
             c_alphas = pass_alphas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_alphas = cast(0, POINTER(self.myctype))
         if self.lambdas_list is not None:
-            pass_lambdas = (self.lambdas_list.astype(self.mydtype, copy=False))
+            pass_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
             c_lambdas = pass_lambdas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_lambdas = cast(0, POINTER(self.myctype))
-
-
 
         # call elastic net in C backend
         c_elastic_net(
@@ -708,7 +695,7 @@ class GLM(object):
 
             self.x_vs_alpha_lambdanew = \
                 np.fromiter(cast(x_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=count_full_value)
 
             self.x_vs_alpha_lambdanew = \
@@ -734,17 +721,16 @@ class GLM(object):
             self.info.alphas = self._alphas
             self.info.tols = self._tols
             if self.fit_intercept == 1:
-                self.intercept_ = self.x_vs_alpha_lambdapure[:,:,-1]
+                self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
             else:
                 self.intercept_ = None
-
 
         if give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + num_all_other)
                            * m_valid)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.fromiter(cast(valid_pred_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.reshape(self.valid_pred_vs_alpha_lambdanew,
@@ -757,7 +743,7 @@ class GLM(object):
 
             self.x_vs_alphanew = np.fromiter(cast(x_vs_alpha,
                                                   POINTER(self.myctype)),
-                                             dtype=self.mydtype,
+                                             dtype=self.dtype,
                                              count=count_short_value)
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
                                             (self.n_alphas, num_all))
@@ -768,7 +754,7 @@ class GLM(object):
             self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:n + num_error + 3]
 
             if self.fit_intercept == 1:
-                self.intercept2_ = self.x_vs_alphapure[:,-1]
+                self.intercept2_ = self.x_vs_alphapure[:, -1]
             else:
                 self.intercept2_ = None
 
@@ -800,7 +786,7 @@ class GLM(object):
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
                 np.fromiter(cast(valid_pred_vs_alpha,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alphanew = \
                 np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas,
@@ -854,10 +840,10 @@ class GLM(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            give_full_path = 0,
-            do_predict = do_predict,
-            free_input_data = free_input_data,
-            verbose = verbose,
+            give_full_path=0,
+            do_predict=do_predict,
+            free_input_data=free_input_data,
+            verbose=verbose,
         ).valid_pred_vs_alphapure
         if give_full_path == 1:  # then need to run twice
             self.prediction_full = self.fit_ptr(
@@ -872,10 +858,10 @@ class GLM(object):
                 valid_xptr,
                 valid_yptr,
                 self.e,
-                give_full_path = give_full_path,
-                do_predict = do_predict,
-                free_input_data = free_input_data,
-                verbose = verbose,
+                give_full_path=give_full_path,
+                do_predict=do_predict,
+                free_input_data=free_input_data,
+                verbose=verbose,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -1500,23 +1486,24 @@ class GLM(object):
         d = c_void_p(0)
         e = c_void_p(0)
         if self.double_precision == 1:
-            c_ftype = c_double
+            self.dtype = np.float64
 
             if self.verbose > 0:
                 print('Detected np.float64')
                 sys.stdout.flush()
         else:
-            c_ftype = c_float
+            self.dtype = np.float32
 
             if self.verbose > 0:
                 print('Detected np.float32')
                 sys.stdout.flush()
 
-        A = _convert_to_ptr(train_x, c_ftype)
-        B = _convert_to_ptr(train_y, c_ftype)
-        C = _convert_to_ptr(valid_x, c_ftype)
-        D = _convert_to_ptr(valid_y, c_ftype)
-        E = _convert_to_ptr(weight, c_ftype)
+        # make these types consistent
+        A = _convert_to_ptr(train_x)
+        B = _convert_to_ptr(train_y)
+        C = _convert_to_ptr(valid_x)
+        D = _convert_to_ptr(valid_y)
+        E = _convert_to_ptr(weight)
 
         if self.double_precision == 1:
             status = self.lib.make_ptr_double(

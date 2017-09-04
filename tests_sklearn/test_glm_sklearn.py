@@ -24,7 +24,9 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
 
     print("Getting Data")
-    from h2o4gpu.datasets import fetch_20newsgroups,    fetch_20newsgroups_vectorized,    fetch_california_housing,    fetch_covtype,    fetch_kddcup99,    fetch_lfw_pairs,    fetch_lfw_people,    fetch_mldata,    fetch_olivetti_faces,    fetch_rcv1,    fetch_species_distributions
+    from h2o4gpu.datasets import fetch_20newsgroups, fetch_20newsgroups_vectorized, fetch_california_housing, \
+        fetch_covtype, fetch_kddcup99, fetch_lfw_pairs, fetch_lfw_people, fetch_mldata, fetch_olivetti_faces, \
+        fetch_rcv1, fetch_species_distributions
     from h2o4gpu.model_selection import train_test_split
 
     # Fetch dataset
@@ -64,14 +66,14 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     # Create 0.8/0.2 train/test split
     print("Split Data")
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8,
-                                        random_state=42)
+                                                        random_state=42)
 
     print("Encode Data")
-    #from h2o4gpu.preprocessing import Imputer
-    #imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
-    #imp.fit(X, y)
-    #Xencoded = imp.transform(X)
-    #yencoded = imp.transform(y)
+    # from h2o4gpu.preprocessing import Imputer
+    # imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
+    # imp.fit(X, y)
+    # Xencoded = imp.transform(X)
+    # yencoded = imp.transform(y)
 
     import pandas as pd
     X_test_pd = pd.DataFrame(X_test)
@@ -79,16 +81,16 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
 
     # Importing LabelEncoder and initializing it
     from h2o4gpu.preprocessing import LabelEncoder
-    le=LabelEncoder()
+    le = LabelEncoder()
     # Iterating over all the common columns in train and test
     for col in X_test_pd.columns.values:
         # Encoding only categorical variables
-        if X_test_pd[col].dtypes=='object' or X_test_pd[col].dtypes=='bool':
+        if X_test_pd[col].dtypes == 'object' or X_test_pd[col].dtypes == 'bool':
             # Using whole data to form an exhaustive list of levels
-            data=X_train_pd[col].append(X_test_pd[col])
+            data = X_train_pd[col].append(X_test_pd[col])
             le.fit(data.values)
-            X_train_pd[col]=le.transform(X_train_pd[col])
-            X_test_pd[col]=le.transform(X_test_pd[col])
+            X_train_pd[col] = le.transform(X_train_pd[col])
+            X_test_pd[col] = le.transform(X_test_pd[col])
 
     # get back numpy
     X_test = X_test_pd.values
@@ -98,8 +100,9 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
 
     t1 = time.time()
     print("Start GLM")
-    rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name)
+    rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
+                                    nalpha=nAlphas,
+                                    validFraction=validFraction, verbose=0, name=name)
     print("End GLM")
 
     # check rmse
@@ -119,20 +122,44 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     print("DONE.")
     sys.stdout.flush()
 
-def test_glm_sklearn_gpu_data0(): fun(whichdata=0)
-def test_glm_sklearn_gpu_data1(): fun(whichdata=1)
-def test_glm_sklearn_gpu_data2(): fun(whichdata=2)
-def test_glm_sklearn_gpu_data3(): fun(whichdata=3)
-def test_glm_sklearn_gpu_data4(): fun(whichdata=4)
-def test_glm_sklearn_gpu_data5(): fun(whichdata=5)
-def test_glm_sklearn_gpu_data6(): fun(whichdata=6)
-def test_glm_sklearn_gpu_data7(): fun(whichdata=7)
-def test_glm_sklearn_gpu_data8(): fun(whichdata=8)
-def test_glm_sklearn_gpu_data9(): fun(whichdata=9)
-def test_glm_sklearn_gpu_data10(): fun(whichdata=10)
-def test_glm_sklearn_gpu_data11(): fun(whichdata=11)
-def test_glm_sklearn_gpu_data12(): fun(whichdata=12)
 
+def test_glm_sklearn_gpu_data0(): fun(whichdata=0)
+
+
+def test_glm_sklearn_gpu_data1(): fun(whichdata=1)
+
+
+def test_glm_sklearn_gpu_data2(): fun(whichdata=2)
+
+
+def test_glm_sklearn_gpu_data3(): fun(whichdata=3)
+
+
+def test_glm_sklearn_gpu_data4(): fun(whichdata=4)
+
+
+def test_glm_sklearn_gpu_data5(): fun(whichdata=5)
+
+
+def test_glm_sklearn_gpu_data6(): fun(whichdata=6)
+
+
+def test_glm_sklearn_gpu_data7(): fun(whichdata=7)
+
+
+def test_glm_sklearn_gpu_data8(): fun(whichdata=8)
+
+
+def test_glm_sklearn_gpu_data9(): fun(whichdata=9)
+
+
+def test_glm_sklearn_gpu_data10(): fun(whichdata=10)
+
+
+def test_glm_sklearn_gpu_data11(): fun(whichdata=11)
+
+
+def test_glm_sklearn_gpu_data12(): fun(whichdata=12)
 
 
 if __name__ == '__main__':
