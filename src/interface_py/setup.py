@@ -145,8 +145,8 @@ setup(
               'h2o4gpu.typecheck'
              ],
     package_data={'h2o4gpu': ['*'],
-                  'h2o4gpu.xgboost': ['*'],
-                  'h2o4gpu.py3nvml': ['*'],
+                  'xgboost': ['*'],
+                  'py3nvml': ['*'],
                   'h2o4gpu.utils/sparsetools/tests': ['*'],
                   'h2o4gpu.metrics/cluster/tests': ['*'],
                   'h2o4gpu.datasets/tests/data': ['*'],

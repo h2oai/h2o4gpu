@@ -35,7 +35,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   fortran = X.flags.f_contiguous
   print("fortran=%d" % (fortran))
 
-  
+
   # Do train/valid split
   HO=int(validFraction*morig)
   H=morig-HO
@@ -49,7 +49,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   mTrain = trainX.shape[0]
   mvalid = validX.shape[0]
   print("mTrain=%d mvalid=%d" % (mTrain,mvalid))
-  
+
   if intercept==1:
     trainX = np.hstack([trainX, np.ones((trainX.shape[0],1),dtype=trainX.dtype)])
     validX = np.hstack([validX, np.ones((validX.shape[0],1),dtype=validX.dtype)])
@@ -99,7 +99,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("tols")
   tols=enet.tols
   print(tols)
-                    
+
 
   print("Predicting")
   if 1==1:
@@ -115,27 +115,29 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   print("validPredsvsalphapure")
   print(validPredsvsalphapure)
-          
+
   print("Done Predicting")
 
   # show something about validPredsvsalphalambdapure, validPredsvsalphapure
 
   return enet
 
+def test_elastic_net_ptr_driver():
+    import numpy as np
+    from numpy.random import randn
+    #  m=1000
+    #  n=100
+    #  A=randn(m,n)
+    #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
+    #  b=A.dot(x_true)+0.5*randn(m)
+    import pandas as pd
+    import feather
+    df = pd.read_csv("./data/simple.txt", sep=" ", header=None)
+    print(df.shape)
+    X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
+    #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+    ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2)
+
 if __name__ == "__main__":
-  import numpy as np
-  from numpy.random import randn
-#  m=1000
-#  n=100
-#  A=randn(m,n)
-#  x_true=(randn(n)/n)*float64(randn(n)<0.8)
-#  b=A.dot(x_true)+0.5*randn(m)
-  import pandas as pd
-  import feather
-  # df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/ipums.feather")
-  df = pd.read_csv("../../data/simple.txt", sep=" ", header=None)
-  print(df.shape)
-  X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
-  y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-  #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-  ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2)
+    test_elastic_net_ptr_driver()
