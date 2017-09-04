@@ -1,6 +1,6 @@
 import h2o4gpu as h2o4gpu
-from h2o4gpu.types import *
 import math
+import numpy as np
 
 '''
 Elastic Net
@@ -129,27 +129,16 @@ def elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.
     return enet
 
 
-if __name__ == "__main__":
+def test_elastic_net_sklearn():
     import numpy as np
-    # from numpy.random import randn
-    #  m=1000
-    #  n=100
-    #  A=randn(m,n)
-    #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
-    #  b=A.dot(x_true)+0.5*randn(m)
     import pandas as pd
-    import feather
 
-    # NOTE: cd ~/h2oai-prototypes/glm-bench/ ; gunzip ipums.csv.gz ; Rscript h2oai-prototypes/glm-bench/ipums.R to produce ipums.feather
-    # df = feather.read_dataframe("../../../h2oai-prototypes/gtc-demo/ipums.feather")
-    # df = feather.read_dataframe("../../../h2oai-prototypes/glm-bench/credit.feather")
-    # df = pd.read_csv("../cpp/train.txt", sep=" ", header=None)
-    df = pd.read_csv("../../data/simple.txt", sep=" ", header=None)
-    # df = pd.read_csv("Hyatt_Subset.csv")
-    # df = pd.read_csv("Hyatt_Subset.nohead.csv")
+
+    df = pd.read_csv("./data/simple.txt", sep=" ", header=None)
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
-    # elastic_net(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
     elastic_net(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2, family="elasticnet", verbose=0)
-    # elastic_net(X, y, nGPUs=0, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
+
+if __name__ == "__main__":
+    test_elastic_net_sklearn()

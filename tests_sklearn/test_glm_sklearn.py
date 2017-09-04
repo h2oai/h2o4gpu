@@ -30,12 +30,12 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     from h2o4gpu.model_selection import train_test_split
 
     # Fetch dataset
-    if whichdata == 0:
+    if whichdata == 0: # runs
         data = fetch_20newsgroups()
     elif whichdata == 1:
         data = fetch_20newsgroups_vectorized()
     elif whichdata == 2:
-        data = fetch_california_housing()
+        data = fetch_california_housing() # runs
     elif whichdata == 3:
         data = fetch_covtype()
     elif whichdata == 4:
@@ -47,11 +47,11 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     elif whichdata == 7:
         data = fetch_mldata('iris')
     elif whichdata == 8:
-        data = fetch_mldata('leukemia')
+        data = fetch_mldata('leukemia') # runs
     elif whichdata == 9:
         data = fetch_mldata('Whistler Daily Snowfall')
     elif whichdata == 10:
-        data = fetch_olivetti_faces()
+        data = fetch_olivetti_faces() # runs
     elif whichdata == 11:
         data = fetch_rcv1()
     elif whichdata == 12:
