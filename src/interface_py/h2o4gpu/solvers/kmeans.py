@@ -11,7 +11,7 @@ from ctypes import c_int, c_float, c_double, c_void_p, pointer, POINTER, cast
 import numpy as np
 
 from h2o4gpu.libs.lib_kmeans import GPUlib, CPUlib
-from h2o4gpu.solvers.utils import device_count, _to_np, _check_data_content
+from h2o4gpu.solvers.utils import device_count, _check_data_content, _get_data
 from h2o4gpu.typecheck.typechecks import assert_is_type, assert_satisfies
 from h2o4gpu.types import cptr
 
@@ -176,14 +176,14 @@ class KMeans(object):
         :param y: array-like, optional, shape=(n_samples, 1)
             Initial labels for training.
         """
-        Xnp = _to_np(X)
+        X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
-        _check_data_content(self.do_checks, "X", Xnp)
-        rows = np.shape(Xnp)[0]
+        _check_data_content(self.do_checks, "X", X_np)
+        rows = np.shape(X_np)[0]
 
         y_np = self._validate_y(y, rows)
 
-        self._fit(Xnp, y_np)
+        self._fit(X_np, y_np)
 
         self._did_sklearn_fit = 0
 
@@ -197,7 +197,7 @@ class KMeans(object):
             "Centroids are None. Run fit() first."
 
         if self._did_sklearn_fit == 0:
-            X_np = _to_np(X)
+            X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
             _check_data_content(self.do_checks, "X", X_np)
             rows = np.shape(X_np)[0]
 
@@ -220,9 +220,9 @@ class KMeans(object):
         """
         cols, rows = self._validate_centroids(X)
 
-        Xnp = _to_np(X)
-        _check_data_content(self.do_checks, "X", Xnp)
-        Xnp, c_data, _ = self._to_cdata(Xnp)
+        X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
+        _check_data_content(self.do_checks, "X", X_np)
+        X_np, c_data, _ = self._to_cdata(X_np)
         c_init_from_data = 0
         c_init_data = 0
 
@@ -231,7 +231,7 @@ class KMeans(object):
 
         lib = self._load_lib()
 
-        data_ord = ord('c' if np.isfortran(Xnp) else 'r')
+        data_ord = ord('c' if np.isfortran(X_np) else 'r')
 
         if self.double_precision == 0:
             lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self._gpu_id,
@@ -282,14 +282,14 @@ class KMeans(object):
         """
         cols, rows = self._validate_centroids(X)
 
-        Xnp = _to_np(X)
-        Xnp, c_data, c_data_type = self._to_cdata(Xnp)
+        X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
+        X_np, c_data, c_data_type = self._to_cdata(X_np)
         _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
 
-        data_ord = ord('c' if np.isfortran(Xnp) else 'r')
+        data_ord = ord('c' if np.isfortran(X_np) else 'r')
 
         if self.double_precision == 0:
             lib.kmeans_transform_float(self.verbose,
@@ -460,7 +460,7 @@ class KMeans(object):
         if y is None:
             ynp = np.random.randint(rows, size=rows) % self._n_clusters
         else:
-            ynp = _to_np(y)
+            ynp, _, _, _, _, _ = _get_data(y)
             _check_data_content(self.do_checks, "y", ynp)
 
         ynp = ynp.astype(np.int)
