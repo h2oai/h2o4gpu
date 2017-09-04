@@ -72,13 +72,13 @@ def skip_if_no_smalldata():
 need_small_data = pytest.mark.skipif(skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None, alphas=None, lambdas=None):
-
+# assumes has intercept at last column already in xtrain and xtest
+def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain, write, display, nGPUs=1, name=None,
+                alphas=None, lambdas=None):
     if nGPUs > 0:
         use_gpu = True
     else:
         use_gpu = False
-    
 
     if use_gpu == 1:
 
@@ -103,7 +103,7 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
         import subprocess
         maxNGPUS = int(subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
         print("Maximum Number of GPUS:", maxNGPUS)
-        #nGPUs = maxNGPUS  # choose all GPUs
+        # nGPUs = maxNGPUS  # choose all GPUs
         # nGPUs = 1
 
         n = train_data_mat.shape[1]
@@ -111,7 +111,7 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
         mValid = test_data_mat.shape[0]
 
     else:
-        #nGPUs = 0
+        # nGPUs = 0
         n = xtrain.shape[1]
         mTrain = xtrain.shape[0]
         mValid = xtest.shape[0]
@@ -124,7 +124,7 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
 
     sourceme = 0
     sourceDev = 0
-    fit_intercept = True # should be passed in from above if user added fit_intercept
+    fit_intercept = True  # should be passed in from above if user added fit_intercept
     lambda_min_ratio = 1e-9
     give_full_path = 1
     precision = 0
@@ -215,12 +215,14 @@ def printallerrors(display, enet, str, give_full_path):
         print('Best TOls for %s  ' % str, tols_best)
     return error_best
 
-def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2, family="elasticnet", verbose=0,
-                print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",lambda_min_ratio=1e-9, alphas=None, lambdas=None):
 
+def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2,
+            family="elasticnet", verbose=0,
+            print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",
+            lambda_min_ratio=1e-9, alphas=None, lambdas=None):
     # Other default parameters for solving glm
     fit_intercept = True
-    lambda_min_ratio = lambda_min_ratio # Causes issue for h2o-3 when using 1k ipums dataset
+    lambda_min_ratio = lambda_min_ratio  # Causes issue for h2o-3 when using 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
@@ -228,7 +230,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
     print("Doing %s" % (name))
     sys.stdout.flush()
-    doassert=0 # default is not assert
+    doassert = 0  # default is not assert
 
     # Override run_h2o False default if environ exists
     if os.getenv("H2OGLM_PERFORMANCE") is not None:
@@ -239,10 +241,6 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     norig = X.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
     sys.stdout.flush()
-    fortran = X.flags.f_contiguous
-    print("fortran=%d" % fortran)
-    sys.stdout.flush()
-
 
     mvalid = 0
     validX = None
@@ -282,15 +280,8 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
             validY = None
             validFraction = 0.0
         else:
-            validFraction = (1.0*mvalid)/(1.0*mTrain)
+            validFraction = (1.0 * mvalid) / (1.0 * mTrain)
     print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid, validFraction))
-
-    if fit_intercept is True:
-        trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1), dtype=trainX.dtype)])
-        n = trainX_intercept.shape[1]
-        print("New n=%d" % n)
-    else:
-        trainX_intercept = np.copy(trainX)
 
     #####################
     #
@@ -380,23 +371,35 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     assert np.isfinite(enet.X).all() == True
     assert np.isfinite(enet.X_full).all() == True
 
-    Xvsalphabest=enet.X_best
+    Xvsalphabest = enet.X_best
 
-    testvalidY = np.dot(trainX_intercept, Xvsalphabest.T)
-    print("testvalidY (newvalidY should be this)")
-    if family != "logistic":
-        print(testvalidY)
+    ############## consistency check
+    if fit_intercept:
+        if trainX is not None:
+            trainX_intercept = np.hstack([trainX, np.ones((trainX.shape[0], 1),
+                                                          dtype=trainX.dtype)])
+        if validX is not None:
+            validX_intercept = np.hstack([validX, np.ones((validX.shape[0], 1),
+                                                          dtype=validX.dtype)])
     else:
-        try:
-            inverse_logit = lambda t: 1 / (1 + math.exp(-t))
-            testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
-            func = np.vectorize(inverse_logit)
-            print(func(testvalidY))
-        except OverflowError:
+        trainX_intercept = trainX
+        validX_intercept = validX
+
+    if validX is not None:
+        testvalidY = np.dot(validX_intercept, Xvsalphabest.T)
+        print("testvalidY (newvalidY should be this)")
+        if family != "logistic":
             print(testvalidY)
+        else:
+            try:
+                inverse_logit = lambda t: 1 / (1 + math.exp(-t))
+                testvalidY = np.round(testvalidY, 1)  # Round to avoid math OverFlow error
+                func = np.vectorize(inverse_logit)
+                print(func(testvalidY))
+            except OverflowError:
+                print(testvalidY)
 
-    print(testvalidY)
-
+        print(testvalidY)
 
     #######################
     print("Predicting, assuming unity weights")
@@ -537,7 +540,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
             if nFolds > 1:
                 if family == "logistic":
                     print("\nCross Validation Logloss")
-                    print( h2o_glm.model_performance(xval=True).logloss())
+                    print(h2o_glm.model_performance(xval=True).logloss())
                     print("\n")
                     h2o_cv_error = h2o_glm.model_performance(xval=True).logloss()
 
@@ -550,30 +553,30 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
             # Tolerance for h2o glm - gpu glm logloss
             tolerance = tolerance
 
-            NUM_ERRORS=3
-            which_errors=[False]*NUM_ERRORS
+            NUM_ERRORS = 3
+            which_errors = [False] * NUM_ERRORS
             # Train and nfolds
             if validFraction == 0.0 and nfolds > 1:
-                which_errors[0]=True
-                which_errors[1]=True
+                which_errors[0] = True
+                which_errors[1] = True
             # Train, valid, and nfolds
             elif validFraction > 0.0 and nfolds > 1:
-                which_errors[0]=True
-                which_errors[1]=True
-                which_errors[2]=True
+                which_errors[0] = True
+                which_errors[1] = True
+                which_errors[2] = True
             # Train set only
             else:
-                which_errors[0]=True
-
+                which_errors[0] = True
 
             # Compare to H2O
             index = alphas_h2o.index(alpha)
-            for j in range(0,NUM_ERRORS):
+            for j in range(0, NUM_ERRORS):
                 if j == 0 and which_errors[j]:  # Compare to train error
-                    thisrelerror = -(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_train_error))
+                    thisrelerror = -(error_train[index, j] - h2o_train_error) / (
+                    abs(error_train[index, j]) + abs(h2o_train_error))
                     if error_train[index, j] > h2o_train_error:
                         if abs(error_train[index, j] - h2o_train_error) > tolerance:
-                            print("Train error failure: %g %g" % (error_train[index, j],h2o_train_error))
+                            print("Train error failure: %g %g" % (error_train[index, j], h2o_train_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
@@ -590,10 +593,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
                         print(' %g' % h2o_train_error, file=f1a, end="")
                         print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 1 and which_errors[j]:  # Compare to average cv error
-                    thisrelerror = -(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_cv_error))
+                    thisrelerror = -(error_train[index, j] - h2o_train_error) / (
+                    abs(error_train[index, j]) + abs(h2o_cv_error))
                     if error_train[index, j] > h2o_cv_error:
                         if abs(error_train[index, j] - h2o_cv_error) > tolerance:
-                            print("CV error failure: %g %g" % (error_train[index, j],h2o_cv_error))
+                            print("CV error failure: %g %g" % (error_train[index, j], h2o_cv_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
@@ -610,10 +614,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
                         print(' %g' % h2o_train_error, file=f1a, end="")
                         print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 2 and which_errors[j]:  # Compare to validation error
-                    thisrelerror = -(error_train[index, j] - h2o_train_error)/(abs(error_train[index, j]) + abs(h2o_valid_error))
+                    thisrelerror = -(error_train[index, j] - h2o_train_error) / (
+                    abs(error_train[index, j]) + abs(h2o_valid_error))
                     if error_train[index, j] > h2o_valid_error:
                         if abs(error_train[index, j] - h2o_valid_error) > tolerance:
-                            print("Valid error failure: %g %g" % (error_train[index, j],h2o_valid_error))
+                            print("Valid error failure: %g %g" % (error_train[index, j], h2o_valid_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
@@ -634,14 +639,14 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
                     print(' %g' % h2o_train_error, file=f1a, end="")
                     print(' %g' % error_train[index, j], file=f1b, end="")
 
-        print('',file=f1)
-        print('',file=f1a)
-        print('',file=f1b)
+        print('', file=f1)
+        print('', file=f1a)
+        print('', file=f1b)
 
         # time entire alpha-lambda path
         duration_h2o = time() - start_h2o
 
-        ratio_time = duration_h2o4gpu/duration_h2o
+        ratio_time = duration_h2o4gpu / duration_h2o
         print(' %g' % ratio_time, file=f2, end="")
         print('', file=f2)
 
@@ -653,11 +658,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
         # for pytest only:
         if os.getenv("H2OGLM_DISABLEPYTEST") is None:
-            assert doassert==0
+            assert doassert == 0
 
     if len(np.shape(error_train)) == 2:
-       myerror_train = error_train
-       myerror_test = error_test
+        myerror_train = error_train
+        myerror_test = error_test
     if len(np.shape(error_train)) == 3:
         myerror_train = error_train[-1]
         myerror_test = error_test[-1]

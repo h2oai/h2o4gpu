@@ -26,8 +26,7 @@ class GLM(object):
         Must be 'r' (Row major) or 'c' (Column major).
     :param bool fit_intercept : Include constant term in the model
         Default is True.
-    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used
-        in lambda search.
+    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used in lambda search.
         Default is 1e-7.
     :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
@@ -121,6 +120,7 @@ class GLM(object):
             self.ord = ord(order)
         else:
             self.ord = None
+        self.dtype = None
 
         ##############################
         # overrides of input parameters
@@ -132,14 +132,13 @@ class GLM(object):
             lambdas = np.ascontiguousarray(np.asarray(lambdas))
             n_lambdas = np.shape(lambdas)[0]
 
-
         ##############################
         # self assignments
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
-        self.source_dev = 0  # assume Dev=0 is source of data for _upload_data
-        self.source_me = 0  # assume thread=0 is source of data for _upload_data
+        self.source_dev = 0  # assume Dev=0 is source of data for upload_data
+        self.source_me = 0  # assume thread=0 is source of data for upload_data
         if fit_intercept is True:
             self.fit_intercept = 1
         else:
@@ -241,29 +240,21 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int free_input_data : Indicate if input data should be freed
-            at the end of fit(). Default is 1.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more
-            relative improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
+            improvement in the primary and dual residuals for ADMM.  Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console if set
-            to > 0. Default is 0.
-        :param int do_predict : Indicate if prediction should be done on
-            validation set after train.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
-        :param char or int: order : Order of input data ('c' or 'r' or ord()
-            versions of these).
-            Default is None.
+        :param char or int: order : Order of input data ('c' or 'r' or ord() versions of these). Default is None.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -272,33 +263,19 @@ class GLM(object):
                               glm_stop_early, glm_stop_early_error_fraction,
                               max_iter, verbose, order)
 
-        # If True, then append intercept term to train_x array
-        # and valid_x array(if available)
-        if self.fit_intercept:
-            if train_x is not None:
-                train_x = np.hstack([train_x, np.ones((train_x.shape[0], 1),
-                                                      dtype=train_x.dtype)])
-            if valid_x is not None:
-                valid_x = np.hstack([valid_x, np.ones((valid_x.shape[0], 1),
-                                                      dtype=valid_x.dtype)])
-
-        train_x_np, m_train, n1, fortran1 = _get_data(train_x)
-        train_y_np, m_y, _, fortran2 = _get_data(train_y)
-        valid_x_np, m_valid, n2, fortran3 = _get_data(valid_x)
-        valid_y_np, m_valid_y, _, fortran4 = _get_data(valid_y)
-        weight_np, _, _, fortran5 = _get_data(weight)
+        train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(train_x, ismatrix=True,
+                                                                            fit_intercept=self.fit_intercept, order=self.ord,
+                                                                            dtype=self.dtype)
+        train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(train_y, order=self.ord, dtype=self.dtype)
+        valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(valid_x, ismatrix=True,
+                                                                            fit_intercept=self.fit_intercept, order=self.ord,
+                                                                            dtype=self.dtype)
+        valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = _get_data(valid_y, order=self.ord, dtype=self.dtype)
+        weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(weight, order=self.ord, dtype=self.dtype)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
         _check_equal(fortran_list)
-
-        # set order
-        if order is None:
-            if fortran1:
-                order = 'c'
-            else:
-                order = 'r'
-            self.ord = ord(order)
 
         # now can do checks
 
@@ -349,17 +326,8 @@ class GLM(object):
         # otherwise m_valid is used, and m_valid_y can be there
         # or not (sets whether do error or not)
 
-        if do_predict == 0:
-            if (m_valid == 0 or m_valid == -1) and n2 > 0 or \
-                                    m_valid > 0 and (n2 == 0 or n2 == -1):
-                # TODO FIXME: Don't need valid_y if just want preds and no
-                # error,but don't return error in fit, so leave for now
-                raise ValueError(
-                    'Must input both valid_x and valid_y or neither.'
-                )
-
         source_dev = 0  # assume GPU=0 is fine as source
-        (a, b, c, d, e) = self._upload_data(
+        (a, b, c, d, e) = self.upload_data(
             source_dev,
             train_x_np,
             train_y_np,
@@ -408,14 +376,9 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int free_input_data : Indicate if input data should be
-            freed at the end of fit().
-            Default is 1.
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -427,24 +390,26 @@ class GLM(object):
         )
 
         # if pass None train_x and train_y, then do predict using valid_x
-        # and weight (if given) unlike _upload_data and fit_ptr (and so fit)
+        # and weight (if given) unlike upload_data and fit_ptr (and so fit)
         # don't free-up predictions since for single model might request
         # multiple predictions.  User has to call finish themselves to cleanup.
 
-        valid_x_np, _, _, fortran1 = _get_data(valid_x)
-        valid_y_np, _, _, fortran2 = _get_data(valid_y)
-        weight_np, _, _, fortran3 = _get_data(weight)
+
+        valid_x_np, _, _, fortran1, self.ord, self.dtype  = _get_data(valid_x, ismatrix=True,
+                                               order=self.ord, dtype=self.dtype)  # intercept created when get to fit()
+        valid_y_np, _, _, fortran2, self.ord, self.dtype  = _get_data(valid_y, order=self.ord, dtype=self.dtype)
+        weight_np, _, _, fortran3, self.ord, self.dtype  = _get_data(weight, order=self.ord, dtype=self.dtype)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
         _check_equal(fortran_list)
 
-        # override order
-        if fortran1:
-            order = 'c'
-        else:
-            order = 'r'
-        self.ord = ord(order)
+        # override order (NO: Must use same order as during fit())
+        # if fortran1:
+        #    order = 'c'
+        # else:
+        #    order = 'r'
+        # self.ord = ord(order)
 
         ################
         # do checks on inputs
@@ -507,8 +472,8 @@ class GLM(object):
             verbose=None
     ):
         """Train a GLM with pointers to data on the GPU
-           (if fit_intercept, then you should have added 1's as
-           last column to trainX)
+           (if fit_intercept, then you should have added 1's as last column to trainX)
+
 
         :param source_dev GPU ID of device
         :param m_train Number of rows in the training set
@@ -522,28 +487,20 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path f
-            rom glm model
-        :param int do_predict : Indicate if prediction should be done on
-            validation set after train.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
-        :param int free_input_data : Indicate if input data should be freed at
-            the end of fit().
-            Default is 1.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more
-            relative improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
+            improvement in the primary and dual residuals for ADMM.  Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative
-            improvement is not at least this much).
-            Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
         # store some things for later call to predict_ptr()
 
@@ -616,14 +573,14 @@ class GLM(object):
         c_size_t_p = POINTER(c_size_t)
         if which_precision == 1:
             c_elastic_net = self.lib.elastic_net_ptr_double
-            self.mydtype = np.float64
+            self.dtype = np.float64
             self.myctype = c_double
             if verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
-            self.mydtype = np.float32
+            self.dtype = np.float32
             self.myctype = c_float
             if verbose > 0:
                 print('single precision fit')
@@ -631,17 +588,15 @@ class GLM(object):
 
         # precision-independent commands
         if self.alphas_list is not None:
-            pass_alphas = (self.alphas_list.astype(self.mydtype, copy=False))
+            pass_alphas = (self.alphas_list.astype(self.dtype, copy=False))
             c_alphas = pass_alphas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_alphas = cast(0, POINTER(self.myctype))
         if self.lambdas_list is not None:
-            pass_lambdas = (self.lambdas_list.astype(self.mydtype, copy=False))
+            pass_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
             c_lambdas = pass_lambdas.ctypes.data_as(POINTER(self.myctype))
         else:
             c_lambdas = cast(0, POINTER(self.myctype))
-
-
 
         # call elastic net in C backend
         c_elastic_net(
@@ -689,7 +644,7 @@ class GLM(object):
         )
         # if should or user wanted to save or free data,
         # do that now that we are done using a,b,c,d,e
-        # This means have to _upload_data() again before fit_ptr
+        # This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
         if free_input_data == 1:
@@ -740,7 +695,7 @@ class GLM(object):
 
             self.x_vs_alpha_lambdanew = \
                 np.fromiter(cast(x_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=count_full_value)
 
             self.x_vs_alpha_lambdanew = \
@@ -756,24 +711,26 @@ class GLM(object):
             self._lambdas = \
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
-            self._alphas = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 1:n + num_error + 2]
+            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:n + num_error + 2]
 
-            self._tols = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 2:n + num_error + 3]
+            self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:n + num_error + 3]
 
             self.solution.x_vs_alpha_lambdapure = self.x_vs_alpha_lambdapure
             self.info.error_vs_alpha_lambda = self.error_vs_alpha_lambda
             self.info.lambdas = self._lambdas
             self.info.alphas = self._alphas
             self.info.tols = self._tols
+            if self.fit_intercept == 1:
+                self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
+            else:
+                self.intercept_ = None
 
         if give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + num_all_other)
                            * m_valid)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.fromiter(cast(valid_pred_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.reshape(self.valid_pred_vs_alpha_lambdanew,
@@ -786,18 +743,20 @@ class GLM(object):
 
             self.x_vs_alphanew = np.fromiter(cast(x_vs_alpha,
                                                   POINTER(self.myctype)),
-                                             dtype=self.mydtype,
+                                             dtype=self.dtype,
                                              count=count_short_value)
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
                                             (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
-            self._lambdas2 = self.x_vs_alphanew[
-                :, n + num_error:n + num_error + 1]
-            self._alphas2 = self.x_vs_alphanew[
-                :, n + num_error + 1:n + num_error + 2]
-            self._tols2 = self.x_vs_alphanew[
-                :, n + num_error + 2:n + num_error + 3]
+            self._lambdas2 = self.x_vs_alphanew[:, n + num_error:n + num_error + 1]
+            self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:n + num_error + 2]
+            self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:n + num_error + 3]
+
+            if self.fit_intercept == 1:
+                self.intercept2_ = self.x_vs_alphapure[:, -1]
+            else:
+                self.intercept2_ = None
 
             self.solution.x_vs_alphapure = self.x_vs_alphapure
             self.info.error_vs_alpha = self.error_vs_alpha
@@ -827,7 +786,7 @@ class GLM(object):
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
                 np.fromiter(cast(valid_pred_vs_alpha,
-                                 POINTER(self.myctype)), dtype=self.mydtype,
+                                 POINTER(self.myctype)), dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alphanew = \
                 np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas,
@@ -851,13 +810,9 @@ class GLM(object):
 
         :param ndarray valid_xptr : Pointer to validation features
         :param ndarray valid_ yptr : Pointer to validation response
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int free_input_data : Indicate if input data should be
-            freed at the end of fit(). Default is 1.
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -885,10 +840,10 @@ class GLM(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            0,
-            do_predict,
-            free_input_data,
-            verbose,
+            give_full_path=0,
+            do_predict=do_predict,
+            free_input_data=free_input_data,
+            verbose=verbose,
         ).valid_pred_vs_alphapure
         if give_full_path == 1:  # then need to run twice
             self.prediction_full = self.fit_ptr(
@@ -903,10 +858,10 @@ class GLM(object):
                 valid_xptr,
                 valid_yptr,
                 self.e,
-                give_full_path,
-                do_predict,
-                free_input_data,
-                verbose,
+                give_full_path=give_full_path,
+                do_predict=do_predict,
+                free_input_data=free_input_data,
+                verbose=verbose,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
@@ -939,30 +894,20 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int do_predict : Indicate if prediction should be done
-            on validation set after train.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
-        :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
-        :param float tol: tolerance.
-            Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
             improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
+            improvement in the primary and dual residuals for ADMM.  Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -1043,8 +988,8 @@ class GLM(object):
             max_iter=None,
             verbose=None,
     ):
-        """Train a GLM with pointers to data on the GPU and predict on
-        validation set that also has a pointer on the GPU
+        """Train a GLM with pointers to data on the GPU and predict on validation set
+        that also has a pointer on the GPU
 
         :param source_dev GPU ID of device
         :param m_train Number of rows in the training set
@@ -1058,24 +1003,18 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int free_input_data : Indicate if input data should be freed
-            at the end of fit(). Default is 1.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
         :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more
-            relative improvement on train or validation. Default is True.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
         :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-                Default is True
+            improvement in the primary and dual residuals for ADMM.  Default is True
         :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative
-            improvement is not at least this much).
-            Default is 1.0.
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
         :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
 
         give_full_path, tol, lambda_stop_early, glm_stop_early, \
@@ -1151,25 +1090,20 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
-        :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no more
-            relative improvement on train or validation. Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
+        :param int give_full_path : Extract full regularization path from glm model
+        :param int do_predict : Indicate if prediction should be done on validation set after train.
             Default is 0.
+        :param int free_input_data : Indicate if input data should be freed at the end of fit(). Default is 1.
+        :param float, None tol: tolerance.  Default is 1E-2.
+        :param bool lambda_stop_early : Stop early when there is no more relative
+            improvement on train or validation. Default is True.
+        :param bool glm_stop_early : Stop early when there is no more relative
+            improvement in the primary and dual residuals for ADMM.  Default is True
+        :param float, None glm_stop_early_error_fraction : Relative tolerance for
+            metric-based stopping criterion (stop if relative improvement is not at
+            least this much). Default is 1.0.
+        :param int max_iter : Maximum number of iterations. Default is 5000
+        :param int verbose : Print verbose information to the console if set to > 0. Default is 0.
         """
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
                                 weight, give_full_path, free_input_data,
@@ -1182,8 +1116,7 @@ class GLM(object):
 
     def summary(self):
         """
-        Obtain model summary, which is error per alpha across train, cv,
-        and validation
+        Obtain model summary, which is error per alpha across train, cv, and validation
 
         Error is logloss for classification and
         RMSE (Root Mean Squared Error) for regression.
@@ -1194,12 +1127,7 @@ class GLM(object):
         else:
             print("RMSE per alpha value (-1.00 = missing)\n")
         headers = ["Alphas", "Train", "CV", "Valid"]
-        print(
-            tabulate(error_train,
-                     headers=headers,
-                     tablefmt="pipe",
-                     floatfmt=".2f")
-        )
+        print(tabulate(error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
     # ################### Properties and setters of properties
 
@@ -1259,6 +1187,24 @@ class GLM(object):
     @property
     def validPreds_best(self):
         return self.valid_pred_vs_alphapure
+
+    @property
+    def intercept_(self):
+        if self.give_full_path == 1:
+            return self.intercept_
+        return self.intercept2_
+
+    @intercept_.setter
+    def intercept_(self, value):
+        self._intercept_ = value
+
+    @property
+    def intercept_full(self):
+        return self.intercept_
+
+    @property
+    def intercept_best(self):
+        return self.intercept2_
 
     @property
     def error(self):
@@ -1401,20 +1347,21 @@ class GLM(object):
         if verbose is None:
             verbose = self.verbose
 
+        # get order as numerical for self.ord
         if order in ['r', 'c']:
             self.ord = ord(order)
+            order = self.ord
         elif order in [ord('r'), ord('c')]:
             self.ord = order
-        elif self.ord is not None and fail:
-            assert self.ord in ['r',
-                                'c'], \
-                "Order should be set to 'r' or 'c' but got " + self.ord
+        elif self.ord in [ord('r'), ord('c')]:
+            order = self.ord
+        elif self.ord in ['r', 'c']:
+            order = ord(self.ord)
         elif fail:
             raise AssertionError(
                 "Order should be set to 'r' or 'c' or %d or %d but got " %
                 (ord('r'), ord('c')) + order
             )
-        order = self.ord
 
         return give_full_path, verbose, order
 
@@ -1457,14 +1404,14 @@ class GLM(object):
         return give_full_path, tol, lambda_stop_early, glm_stop_early, \
                glm_stop_early_error_fraction, max_iter, verbose, order
 
-    def _upload_data(
+    def upload_data(
             self,
             source_dev,
             train_x,
             train_y,
             valid_x=None,
             valid_y=None,
-            weight=None,
+            weight=None
     ):
         """Upload the data through the backend library"""
         if self.uploaded_data == 1:
@@ -1539,23 +1486,24 @@ class GLM(object):
         d = c_void_p(0)
         e = c_void_p(0)
         if self.double_precision == 1:
-            c_ftype = c_double
+            self.dtype = np.float64
 
             if self.verbose > 0:
                 print('Detected np.float64')
                 sys.stdout.flush()
         else:
-            c_ftype = c_float
+            self.dtype = np.float32
 
             if self.verbose > 0:
                 print('Detected np.float32')
                 sys.stdout.flush()
 
-        A = _convert_to_ptr(train_x, c_ftype)
-        B = _convert_to_ptr(train_y, c_ftype)
-        C = _convert_to_ptr(valid_x, c_ftype)
-        D = _convert_to_ptr(valid_y, c_ftype)
-        E = _convert_to_ptr(weight, c_ftype)
+        # make these types consistent
+        A = _convert_to_ptr(train_x)
+        B = _convert_to_ptr(train_y)
+        C = _convert_to_ptr(valid_x)
+        D = _convert_to_ptr(valid_y)
+        E = _convert_to_ptr(weight)
 
         if self.double_precision == 1:
             status = self.lib.make_ptr_double(
