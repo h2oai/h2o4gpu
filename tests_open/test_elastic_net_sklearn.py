@@ -1,3 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+GLM solver tests using Kaggle datasets.
+
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import h2o4gpu as h2o4gpu
 import math
 import numpy as np

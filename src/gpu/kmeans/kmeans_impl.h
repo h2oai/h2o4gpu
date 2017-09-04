@@ -78,10 +78,6 @@ int kmeans(
   int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
   T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
 
-#if(DEBUGKMEANS)
-  thrust::host_vector<T> *h_pairwise_distances[MAX_NGPUS];
-#endif
-
   for (int q = 0; q < n_gpu; q++) {
     if (verbose) {
       fprintf(stderr, "Before kmeans() Allocation: gpu: %d\n", q);
@@ -120,11 +116,6 @@ int kmeans(
       //throw std::runtime_error(ss.str());
     }
 
-#if(DEBUGKMEANS)
-    // debug
-    h_pairwise_distances[q] = new thrust::host_vector<T>(n/n_gpu * k);
-#endif
-
     if (verbose) {
       fprintf(stderr, "Before Create and save range for initializing labels: gpu: %d\n", q);
       fflush(stderr);
@@ -161,42 +152,13 @@ int kmeans(
   bool done = false;
   for (; i < max_iterations; i++) {
     if (*flag) continue;
-    //Average the centroids from each device (same as averaging centroid updates)
-    if (n_gpu > 1) {
-      for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
-      for (int q = 0; q < n_gpu; q++) {
-        safe_cuda(cudaSetDevice(dList[q]));
-        detail::memcpy(h_centroids_tmp, *centroids[q]);
-        detail::streamsync(dList[q]);
-        for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
-      }
-      for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
-      //Copy the averaged centroids to each device
-      for (int q = 0; q < n_gpu; q++) {
-        safe_cuda(cudaSetDevice(dList[q]));
-        detail::memcpy(*centroids[q], h_centroids);
-      }
-    }
+
     for (int q = 0; q < n_gpu; q++) {
       safe_cuda(cudaSetDevice(dList[q]));
-#if(DEBUGKMEANS)
-      fprintf(stderr,"q=%d\n",q); fflush(stderr);
-#endif
+
       detail::calculate_distances(verbose, q, n / n_gpu, d, k,
                                   *data[q], *centroids[q], *data_dots[q],
                                   *centroid_dots[q], *pairwise_distances[q]);
-
-#if(DEBUGKMEANS)
-      *h_pairwise_distances[0] = *pairwise_distances[0];
-      size_t countpos=0;
-      size_t countneg=0;
-      for(int ll=0;ll<(*h_pairwise_distances[0]).size();ll++){
-        T result=(*h_pairwise_distances[0])[ll];
-        if(result>0) countpos++;
-        if(result<0) countneg++;
-      }
-      fprintf(stderr,"countpos=%zu countneg=%zu\n",countpos,countneg); fflush(stderr);
-#endif
 
       detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
       detail::memcpy(*labels_copy[q], *labels[q]);
@@ -246,14 +208,45 @@ int kmeans(
         }
       }
     }
+
+    //Average the centroids from each device (same as averaging centroid updates)
+    if (n_gpu > 1) {
+      for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
+      for (int q = 0; q < n_gpu; q++) {
+        safe_cuda(cudaSetDevice(dList[q]));
+        detail::memcpy(h_centroids_tmp, *centroids[q]);
+        detail::streamsync(dList[q]);
+        for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
+      }
+      for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
+      //Copy the averaged centroids to each device
+      for (int q = 0; q < n_gpu; q++) {
+        safe_cuda(cudaSetDevice(dList[q]));
+        detail::memcpy(*centroids[q], h_centroids);
+      }
+    }
+
     if (*flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n");
       fflush(stderr);
       *flag = 0; // set flag
       done = true;
     }
+
     if (done) break;
   }
+
+  // Final relabeling - uses final centroids
+  for (int q = 0; q < n_gpu; q++) {
+    safe_cuda(cudaSetDevice(dList[q]));
+
+    detail::calculate_distances(verbose, q, n / n_gpu, d, k,
+                                *data[q], *centroids[q], *data_dots[q],
+                                *centroid_dots[q], *pairwise_distances[q]);
+
+    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+  }
+
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaFree(d_changes[q]));
