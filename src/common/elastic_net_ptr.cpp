@@ -1,6 +1,7 @@
 #include "elastic_net_ptr.h"
 #include <float.h>
 #include "../include/util.h"
+#include <sys/stat.h>
 
 #if(USEMKL==1)
 #include <mkl.h>
@@ -92,20 +93,19 @@ const std::string HARDWARE = SOCKETS + "x" + CPUTYPE;
 #define Printmescore_predictnovalid(thefile)
 #endif
 
-#if(VERBOSEANIM)
+//#if(VERBOSEANIM)
 #define Printmescoresimple(thefile)   fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, fi, a, i, alpha, lambda, trainError, ivalidError, validError); fflush(thefile);
 #define Printmescoresimple_predict(thefile)   fprintf(thefile,"%21.15g %d %d %21.15g\n", timer<double>(), a, i, validError); fflush(thefile);
 #define Printmescoresimple_predictnovalid(thefile)   fprintf(thefile,"%21.15g %d %d\n", timer<double>(), a, i); fflush(thefile);
 #define NUMBETA 10 // number of beta to report
 #define Printmescoresimple2(thefile)  fprintf(thefile,"%21.15g %d %d %d %d %21.15g %21.15g %zu ", timer<double>(), lambdatype, fi, a, i, alpha, lambda, dof); for(int lll=0;lll<NUMBETA;lll++) fprintf(thefile,"%d %21.15g ",whichbeta[lll],valuebeta[lll]); fprintf(thefile,"\n"); fflush(thefile);
-#else
-#define Printmescoresimple(thefile)
-#define Printmescoresimple_predict(thefile)
-#define Printmescoresimple_predictnovalid(thefile)
-#define NUMBETA 10 // number of beta to report
-#define Printmescoresimple2(thefile)
-
-#endif
+//#else
+//#define Printmescoresimple(thefile)
+//#define Printmescoresimple_predict(thefile)
+//#define Printmescoresimple_predictnovalid(thefile)
+//#define NUMBETA 10 // number of beta to report
+//#define Printmescoresimple2(thefile)
+//#endif
 
 #if(VERBOSEENET)
 #define PrintmescoresimpleCV(thefile,lambdatype,bestalpha,bestlambda,besterror1,besterror2,besterror3)  fprintf(thefile,"BEST: %21.15g %d %21.15g %21.15g %21.15g %21.15g %21.15g\n", timer<double>(), lambdatype, bestalpha, bestlambda, besterror1,besterror2,besterror3 ); fflush(thefile);
@@ -206,6 +206,24 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 	}
 }
 
+
+// Function: fileExists
+/**
+    Check if a file exists
+@param[in] filename - the name of the file to check
+
+@return    true if the file exists, else false
+
+*/
+bool fileExists(const std::string& filename)
+{
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+        return true;
+    }
+    return false;
+}
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
 //
@@ -529,23 +547,27 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	double t = timer<double>();
 	double t1me0;
 
+	int verboseanimtriggered=0;
 	FILE *filerror = NULL;
 	FILE *filvarimp = NULL;
-	if(VERBOSEANIM){
+
 	// critical files for all threads
 	char filename0[100];
 	sprintf(filename0, "error.txt");
-	filerror = fopen(filename0, "wt");
-	if (filerror == NULL) {
-		cerr << "Cannot open filename0=" << filename0 << endl;
-		exit(0);
-	}
-	sprintf(filename0, "varimp.txt");
-	filvarimp = fopen(filename0, "wt");
-	if (filvarimp == NULL) {
-		cerr << "Cannot open filename0=" << filename0 << endl;
-		exit(0);
-	}
+	if(fileExists(filename0)){ // if at least 0 size file, then assume created for animation purposes
+		fprintf(stderr,"Doing Animation Output\n"); fflush(stderr);
+		verboseanimtriggered=1;
+		filerror = fopen(filename0, "wt");
+		if (filerror == NULL) {
+			cerr << "Cannot open filename0=" << filename0 << endl;
+			exit(0);
+		}
+		sprintf(filename0, "varimp.txt");
+		filvarimp = fopen(filename0, "wt");
+		if (filvarimp == NULL) {
+			cerr << "Cannot open filename0=" << filename0 << endl;
+			exit(0);
+		}
 	}
 
 	////////////////////////////////
@@ -1116,7 +1138,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						{
 							if (VERBOSEENET)
 								Printmescore(stdout);
-							if (VERBOSEANIM){
+							if (VERBOSEANIM || verboseanimtriggered==1){
 								Printmescoresimple(filerror);
 								Printmescoresimple2(filvarimp);
 							}
@@ -1218,7 +1240,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 									{
 										if (VERBOSEENET)
 											Printmescore(stdout);
-										if (VERBOSEANIM){
+										if (VERBOSEANIM || verboseanimtriggered==1){
 											Printmescoresimple(filerror);
 											Printmescoresimple2(filvarimp);
 										}
