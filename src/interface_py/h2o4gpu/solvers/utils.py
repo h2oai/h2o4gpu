@@ -83,15 +83,16 @@ def _gpu_info_subprocess():
 #############################
 # Data utils
 
+def _unicode_order(fortran):
+    return ord('c') if fortran else ord('r')
+
+
 def _get_order(data, fortran, order):
     """ Return the Unicode code point representing the
     order of this data set. """
     if data is not None:
         if order is None:
-            if fortran:
-                order = ord('c')
-            else:
-                order = ord('r')
+            order = _unicode_order(fortran)
         elif order in ['c', 'r']:
             order = ord(order)
         elif order in [ord('c'), ord('r')]:

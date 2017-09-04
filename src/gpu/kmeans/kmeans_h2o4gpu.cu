@@ -58,7 +58,7 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, con
                int q, int n, int npergpu, int d) {
   thrust::host_vector<T> host_array(npergpu * d);
   if (ord == 'c') {
-    log_debug(verbose, "COL ORDER -> ROW ORDER");
+    log_debug(verbose, "Copy data COL ORDER -> ROW ORDER");
 
     int indexi, indexj;
     for (int i = 0; i < npergpu * d; i++) {
@@ -67,7 +67,7 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, con
       host_array[i] = srcdata[indexi * n + indexj];
     }
   } else {
-    log_debug(verbose, "Nonrandom data ROW ORDER not changed");
+    log_debug(verbose, "Copy data ROW ORDER not changed");
 
     for (int i = 0; i < npergpu * d; i++) {
       host_array[i] = srcdata[q * npergpu * d + i]; // shift by which gpu
@@ -99,7 +99,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
                         const T *srcdata, int q, int n, int npergpu, int d) {
   thrust::host_vector<T> host_array(npergpu * d);
   if (ord == 'c') {
-    log_debug(verbose, "Nonrandom data new COL ORDER -> ROW ORDER");
+    log_debug(verbose, "Copy data shuffle COL ORDER -> ROW ORDER");
 
     for (int i = 0; i < npergpu; i++) {
       for (int j = 0; j < d; j++) {
@@ -107,7 +107,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
       }
     }
   } else {
-    log_debug(verbose, "Nonrandom data new ROW ORDER not changed");
+    log_debug(verbose, "Copy data shuffle ROW ORDER not changed");
 
     for (int i = 0; i < npergpu; i++) {
       for (int j = 0; j < d; j++) {
@@ -407,6 +407,17 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                    size_t rows, size_t cols,
                    const char ord, int k,
                    const T *srcdata, const T *centroids, void **pred_labels) {
+  // Print centroids
+  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+    std::cout << std::endl;
+    for(int i = 0; i < cols * k; i++) {
+      std::cout << centroids[i] << " ";
+      if(i % cols == 1) {
+        std::cout << std::endl;
+      }
+    }
+  }
+
   int n_gpu;
   std::vector<int> dList = kmeans_init(verbose, &n_gpu, n_gputry, gpu_idtry, rows);
 
@@ -420,6 +431,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
   int *d_changes[n_gpu];
 
   for (int q = 0; q < n_gpu; q++) {
+    // TODO everything from here till "distances[q]" is exactly the same as in transform
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
 
@@ -429,17 +441,9 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
 
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
-    d_labels[q] = new thrust::device_vector<int>(rows / n_gpu);
 
-    cudaMalloc(&d_changes[q], sizeof(int));
-
-    // Move centroids from host memory to GPU
-    if (verbose) {
-      std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
-    }
-
-    copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
+    // TODO should this always be 'r' order?
+    copy_data(verbose, ord, *d_centroids[q], &centroids[0], 0, k, k, cols);
 
     copy_data(verbose, ord, *d_data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
@@ -448,6 +452,10 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
     kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
                                         *d_data[q], *d_centroids[q], *data_dots[q],
                                         *centroid_dots[q], *pairwise_distances[q]);
+
+    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
+    d_labels[q] = new thrust::device_vector<int>(rows / n_gpu);
+    cudaMalloc(&d_changes[q], sizeof(int));
 
     kmeans::detail::relabel(rows / n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
   }
@@ -482,6 +490,17 @@ int kmeans_transform(int verbose,
                      size_t rows, size_t cols, const char ord, int k,
                      const T *srcdata, const T *centroids,
                      void **preds) {
+  // Print centroids
+  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+    std::cout << std::endl;
+    for(int i = 0; i < cols * k; i++) {
+      std::cout << centroids[i] << " ";
+      if(i % cols == 1) {
+        std::cout << std::endl;
+      }
+    }
+  }
+
   int n_gpu;
   std::vector<int> dList = kmeans_init(verbose, &n_gpu, n_gputry, gpu_idtry, rows);
 
@@ -502,11 +521,8 @@ int kmeans_transform(int verbose,
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
 
-    // Move centroids from host memory to GPU
-    if (verbose) {
-      std::cout << "Copying centroids and data to device: " << dList[q] << std::endl;
-    }
-    copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
+    // TODO should this be always 'r' order?
+    copy_data(verbose, ord, *d_centroids[q], &centroids[0], 0, k, k, cols);
 
     copy_data(verbose, ord, *d_data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
@@ -525,6 +541,17 @@ int kmeans_transform(int verbose,
                                  d_pairwise_distances[q]->end());
   }
   *preds = h_pairwise_distances->data();
+
+  // Print centroids
+  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+    std::cout << std::endl;
+    for(int i = 0; i < rows * cols; i++) {
+      std::cout << h_pairwise_distances->data()[i] << " ";
+      if(i % cols == 1) {
+        std::cout << std::endl;
+      }
+    }
+  }
 
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));

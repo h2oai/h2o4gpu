@@ -2,8 +2,8 @@
 :copyright: (c) 2017 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from ctypes import POINTER, c_int, c_uint, c_void_p, c_float, c_double, \
-    Structure
+from ctypes import POINTER, c_int, c_int32, c_uint, c_void_p, c_float, \
+    c_double, Structure
 from numpy import zeros, ones, inf
 
 
@@ -65,6 +65,7 @@ class H2OSolverDefault:
 
 # pointers to C types
 c_int_p = POINTER(c_int)
+c_int32_p = POINTER(c_int32)
 c_float_p = POINTER(c_float)
 c_void_pp = POINTER(c_void_p)
 c_double_p = POINTER(c_double)

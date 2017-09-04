@@ -6,12 +6,14 @@ KMeans clustering solver.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import sys
-from ctypes import c_int, c_float, c_double, c_void_p, pointer, POINTER, cast
+from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
+    POINTER, cast
 
 import numpy as np
 
 from h2o4gpu.libs.lib_kmeans import GPUlib, CPUlib
-from h2o4gpu.solvers.utils import device_count, _check_data_content, _get_data
+from h2o4gpu.solvers.utils import device_count, _check_data_content, \
+    _get_data, _unicode_order
 from h2o4gpu.typecheck.typechecks import assert_is_type, assert_satisfies
 from h2o4gpu.types import cptr
 
@@ -74,7 +76,7 @@ class KMeans(object):
     """
 
     def __init__(self, n_clusters=8,
-                 max_iter=1000, tol=1e-4, gpu_id=0, n_gpus=-1,
+                 max_iter=300, tol=1e-4, gpu_id=0, n_gpus=-1,
                  init_from_data=False,
                  init_data="randomselect",
                  verbose=0, seed=None, do_checks=1):
@@ -109,8 +111,6 @@ class KMeans(object):
             self.seed = random.randint(0, 32000)
         else:
             self.seed = seed
-
-        np.random.seed(seed)
 
         self.cluster_centers_ = None
 
@@ -209,6 +209,10 @@ class KMeans(object):
                                                    init=self.cluster_centers_,
                                                    n_init=1)
             self.sklearn_model.fit(X_np, y_np)
+            # The code above initializes the SKlearn KMeans model,
+            # but due to validations we need to run 1 extra iteration,
+            # which might alter the cluster centers so we override them
+            self.sklearn_model.cluster_centers_ = self.cluster_centers_
 
     def predict(self, X):
         """ Assign the each record in X to the closest cluster.
@@ -307,6 +311,7 @@ class KMeans(object):
         transformed = np.fromiter(cast(c_res, POINTER(c_data_type)),
                                   dtype=c_data_type,
                                   count=rows * self._n_clusters)
+        # TODO don't set order if X is 'F'
         transformed = np.reshape(transformed,
                                  (rows, self._n_clusters),
                                  order='F')
@@ -423,7 +428,7 @@ class KMeans(object):
             self._print_verbose(0,
                                 "Removed %d empty centroids" %
                                 (self._n_clusters - centroids.shape[0])
-                               )
+                                )
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids
@@ -459,12 +464,14 @@ class KMeans(object):
 
     def _validate_y(self, y, rows):
         if y is None:
-            ynp = np.random.randint(rows, size=rows) % self._n_clusters
+            from numpy.random import RandomState
+            ynp = RandomState(self.seed).randint(rows, size=rows) % \
+                self._n_clusters
         else:
             ynp, _, _, _, _, _ = _get_data(y)
             _check_data_content(self.do_checks, "y", ynp)
 
-        ynp = ynp.astype(np.int)
+        ynp = ynp.astype(np.int32)
         return np.mod(ynp, self._n_clusters)
 
     def _print_verbose(self, level, msg):

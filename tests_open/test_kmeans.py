@@ -1,3 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+KMeans solver tests using Kaggle datasets.
+
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import h2o4gpu as h2o4gpu
 import pandas as pd
 import numpy as np
@@ -6,32 +13,38 @@ import random
 
 class TestKmeans(object):
     def test_preds_vs_scikit(self):
-        trainencflt = self._fetch_data()
-        model, labels = self._train_model(trainencflt)
+        X = self._fetch_data()
+        model, labels = self._train_model(X)
 
-        train_labels = model.predict(trainencflt)
-        sklearn_labels = model.sklearn_predict(trainencflt, labels)
+        train_labels = model.predict(X)
+        sklearn_labels = model.sklearn_predict(X, labels)
 
         diffs = 0
         for tl in zip(train_labels, sklearn_labels):
             if tl[0] != tl[1]:
                 diffs = diffs + 1
 
-        assert diffs / trainencflt.shape[0] <= 0.1
+        assert diffs / X.shape[0] <= 0.1
 
     def test_transform_vs_scikit(self):
-        trainencflt = self._fetch_data()
-        model, labels = self._train_model(trainencflt)
+        X = self._fetch_data()
+        model, labels = self._train_model(X)
 
-        train_labels = model.transform(trainencflt)
-        sklearn_labels = model.sklearn_transform(trainencflt, labels)
+        h2o_labels = \
+            list(map(lambda x: np.argmin(x), model.transform(X)))
+
+        sklearn_labels = \
+            list(
+                map(lambda x: np.argmin(x),
+                    model.sklearn_transform(X, labels))
+            )
 
         diffs = 0
-        for tl in zip(train_labels, sklearn_labels):
-            if np.array_equal(tl[0], tl[1]):
+        for tl in zip(h2o_labels, sklearn_labels):
+            if not np.array_equal(tl[0], tl[1]):
                 diffs = diffs + 1
 
-        assert diffs / trainencflt.shape[0] <= 0.1
+        assert diffs / X.shape[0] <= 0.1
 
     @staticmethod
     def _train_model(trainencflt):

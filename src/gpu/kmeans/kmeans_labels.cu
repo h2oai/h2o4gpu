@@ -144,93 +144,45 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
   safe_cuda(cudaGetDevice(&dev_num));
   // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6
   cublasStatus_t stat;
-  if (0) {
-    int M = n;
-    int N = k;
-    int K = d;
-    int lda = K;
-    int ldb = N;
-    int ldc = M;
-    fprintf(stderr, "%d x %d : data size=%zu\n", lda, M, data.size());
-    fflush(stderr);
-    fprintf(stderr, "%d x %d : centroids size=%zu\n", ldb, K, centroids.size());
-    fflush(stderr);
-    fprintf(stderr, "%d x %d : pairwise_distances size=%zu\n", ldc, N, pairwise_distances.size());
-    fflush(stderr);
-    stat =
-    safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
-                            CUBLAS_OP_T, CUBLAS_OP_T,
-                            M, N, K, &alpha,
-                            thrust::raw_pointer_cast(data.data()), // <type> array of dimensions lda x k with lda>=max(1,m) if transa == CUBLAS_OP_N and lda x m with lda>=max(1,k) otherwise.
-                            lda,
-                            thrust::raw_pointer_cast(centroids.data()), // <type> array of dimension ldb x n with ldb>=max(1,k) if transa == CUBLAS_OP_N and ldb x k with ldb>=max(1,n) otherwise.
-                            ldb,
-                            &beta,
-                            thrust::raw_pointer_cast(pairwise_distances.data()), // <type> array of dimensions ldc x n with ldc>=max(1,m).
-                            ldc));
-  } else if (0) {
-    int M = n;
-    int N = k;
-    int K = d;
-    int lda = M;
-    int ldb = K;
-    int ldc = M;
-    fprintf(stderr, "A2 %d x %d : data size=%zu\n", lda, K, data.size());
-    fflush(stderr);
-    fprintf(stderr, "B2 %d x %d : centroids size=%zu\n", ldb, N, centroids.size());
-    fflush(stderr);
-    fprintf(stderr, "C2 %d x %d : pairwise_distances size=%zu\n", ldc, N, pairwise_distances.size());
-    fflush(stderr);
-    stat =
-    safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
-                            CUBLAS_OP_N, CUBLAS_OP_N,
-                            M, N, K, &alpha,
-                            thrust::raw_pointer_cast(data.data()), // <type> array of dimensions lda x k with lda>=max(1,m) if transa == CUBLAS_OP_N and lda x m with lda>=max(1,k) otherwise.
-                            lda,
-                            thrust::raw_pointer_cast(centroids.data()), // <type> array of dimension ldb x n with ldb>=max(1,k) if transa == CUBLAS_OP_N and ldb x k with ldb>=max(1,n) otherwise.
-                            ldb,
-                            &beta,
-                            thrust::raw_pointer_cast(pairwise_distances.data()), // <type> array of dimensions ldc x n with ldc>=max(1,m).
-                            ldc));
-  } else {
-    int M = n; // rows in op(A) and C
-    int N = k; // cols in op(B) and C
-    int K = d; // cols in op(A) and op(B)
-    int lda = K;
-    int ldb =
-        K; // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6 has mistake, transa should have been transb
-    //see http://www.netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_gafe51bacb54592ff5de056acabd83c260.html#gafe51bacb54592ff5de056acabd83c260
-    int ldc = M;
-    if (verbose >= 2) {
-      fprintf(stderr, "A3 %d x %d -> %d x %d : data size=%zu\n", K, M, M, K, data.size());
-      fflush(stderr);
-      fprintf(stderr, "B3 %d x %d -> %d x %d : centroids size=%zu\n", K, N, K, N, centroids.size());
-      fflush(stderr);
-      fprintf(stderr, "C3 %d x %d : pairwise_distances size=%zu\n", M, N, pairwise_distances.size());
-      fflush(stderr);
-      fflush(stderr);
-      //sleep(5);
-    }
-    stat =
-    safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
-                            CUBLAS_OP_T, CUBLAS_OP_N,
-                            M, N, K, &alpha,
-                            thrust::raw_pointer_cast(data.data()),
-                            lda,//Has to be n or d
-                            thrust::raw_pointer_cast(centroids.data()),
-                            ldb,//Has to be k or d
-                            &beta,
-                            thrust::raw_pointer_cast(pairwise_distances.data()),
-                            ldc)); //Has to be n or k
-    if (verbose >= 2) {
-      fprintf(stderr, "After cublasSgemm\n");
-      fflush(stderr);
-      //sleep(5);
-    }
 
-    thrust::for_each(pairwise_distances.begin(),
-                     pairwise_distances.end(),
-                     absolute_value<float>()); // in-place transformation to ensure all distances are positive indefinite
+  int M = n; // rows in op(A) and C
+  int N = k; // cols in op(B) and C
+  int K = d; // cols in op(A) and op(B)
+  int lda = K;
+  int ldb =
+      K; // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6 has mistake, transa should have been transb
+  //see http://www.netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_gafe51bacb54592ff5de056acabd83c260.html#gafe51bacb54592ff5de056acabd83c260
+  int ldc = M;
+  if (verbose >= 2) {
+    fprintf(stderr, "A3 %d x %d -> %d x %d : data size=%zu\n", K, M, M, K, data.size());
+    fflush(stderr);
+    fprintf(stderr, "B3 %d x %d -> %d x %d : centroids size=%zu\n", K, N, K, N, centroids.size());
+    fflush(stderr);
+    fprintf(stderr, "C3 %d x %d : pairwise_distances size=%zu\n", M, N, pairwise_distances.size());
+    fflush(stderr);
+    fflush(stderr);
+    //sleep(5);
+  }
+  stat =
+  safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
+                          CUBLAS_OP_T, CUBLAS_OP_N,
+                          M, N, K, &alpha,
+                          thrust::raw_pointer_cast(data.data()),
+                          lda,//Has to be n or d
+                          thrust::raw_pointer_cast(centroids.data()),
+                          ldb,//Has to be k or d
+                          &beta,
+                          thrust::raw_pointer_cast(pairwise_distances.data()),
+                          ldc)); //Has to be n or k
+  if (verbose >= 2) {
+    fprintf(stderr, "After cublasSgemm\n");
+    fflush(stderr);
+    //sleep(5);
+  }
+
+  thrust::for_each(pairwise_distances.begin(),
+                   pairwise_distances.end(),
+                   absolute_value<float>()); // in-place transformation to ensure all distances are positive indefinite
 #if(DEBUGKMEANS)
     thrust::host_vector<float> h_data = data;
     thrust::host_vector<float> h_centroids = centroids;
@@ -251,7 +203,7 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
     }
 #endif
 
-  }
+
   if (stat != CUBLAS_STATUS_SUCCESS) {
     std::cout << "Invalid Sgemm" << std::endl;
     exit(1);
