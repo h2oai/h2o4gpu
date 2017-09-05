@@ -331,7 +331,7 @@ class GLM(object):
             c,
             d,
             e,
-            self.give_full_path,
+            give_full_path=self.give_full_path,
             do_predict=do_predict,
             free_input_data=free_input_data,
             tol=self.tol,
@@ -402,6 +402,7 @@ class GLM(object):
         else:
             self.prediction_full = None
         oldgivefullpath = self.give_full_path
+        self.give_full_path = 0
         self.prediction = self.fit(
             train_x=None,
             train_y=None,
