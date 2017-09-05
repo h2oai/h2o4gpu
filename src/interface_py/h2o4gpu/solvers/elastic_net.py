@@ -222,17 +222,9 @@ class GLM(object):
             valid_x=None,
             valid_y=None,
             weight=None,
-            give_full_path=None,
             free_input_data=1,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None,
             # below should be private
-            do_predict=0,
-            order=None
+            do_predict=0
     ):
         """Train a GLM
 
@@ -241,39 +233,12 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization
-            path from glm model
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative improvement on train or validation.
-            Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations.
-            Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
         :param int do_predict : Indicate if prediction should be done on
             validation set after train.
             Default is 0.
-        :param char or int: order : Order of input data ('c' or 'r' or ord()
-            versions of these).
-            Default is None.
         """
-
-        give_full_path, tol, lambda_stop_early, glm_stop_early, \
-        glm_stop_early_error_fraction, max_iter, verbose, order = \
-            self._none_checks(False, give_full_path, tol, lambda_stop_early,
-                              glm_stop_early, glm_stop_early_error_fraction,
-                              max_iter, verbose, order)
 
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
             train_x, ismatrix=True,
@@ -307,14 +272,14 @@ class GLM(object):
             )
 
         if do_predict == 0:
-            if verbose > 0:
+            if self.verbose > 0:
                 if n1 >= 0 and m_y >= 0:
                     print('Correct train inputs')
                 else:
                     raise ValueError('Incorrect train inputs')
         if do_predict == 1:
             if n1 == -1 and n2 >= 0:
-                if verbose > 0:
+                if self.verbose > 0:
                     print('Correct prediction inputs')
             else:
                 print('Incorrect prediction inputs: %d %d %d %d' %
@@ -366,15 +331,15 @@ class GLM(object):
             c,
             d,
             e,
-            give_full_path,
+            self.give_full_path,
             do_predict=do_predict,
             free_input_data=free_input_data,
-            tol=tol,
-            lambda_stop_early=lambda_stop_early,
-            glm_stop_early=glm_stop_early,
-            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iter=max_iter,
-            verbose=verbose
+            tol=self.tol,
+            lambda_stop_early=self.lambda_stop_early,
+            glm_stop_early=self.glm_stop_early,
+            glm_stop_early_error_fraction=self.glm_stop_early_error_fraction,
+            max_iter=self.max_iter,
+            verbose=self.verbose
         )
         return self
 
@@ -384,18 +349,13 @@ class GLM(object):
             valid_x,
             valid_y=None,
             weight=None,
-            give_full_path=None,
-            free_input_data=1,
-            verbose=0,
-            order=None
+            free_input_data=1
     ):
         """Predict on a fitted GLM
 
         :param ndarray valid_x : Validation features
         :param ndarray valid_y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit().
             Default is 1.
@@ -405,12 +365,6 @@ class GLM(object):
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
-        give_full_path, verbose, order = self._none_checks_simple(
-            False,
-            give_full_path,
-            verbose,
-            order
-        )
 
         # if pass None train_x and train_y, then do predict using valid_x
         # and weight (if given) unlike upload_data and fit_ptr (and so fit)
@@ -440,14 +394,13 @@ class GLM(object):
         # do checks on inputs
 
         do_predict = 1
-        if give_full_path == 1:
+        if self.give_full_path == 1:
             self.prediction_full = self.fit(
-                None,
-                None,
+                train_x=None,
+                train_y=None,
                 valid_x=valid_x_np,
                 valid_y=valid_y_np,
                 weight=weight_np,
-                give_full_path=give_full_path,
                 do_predict=do_predict,
                 free_input_data=free_input_data,
             ).valid_pred_vs_alpha_lambdapure
@@ -456,17 +409,16 @@ class GLM(object):
         oldgivefullpath = self.give_full_path
         tempgivefullpath = 0
         self.prediction = self.fit(
-            None,
-            None,
+            train_x=None,
+            train_y=None,
             valid_x=valid_x_np,
             valid_y=valid_y_np,
             weight=weight_np,
-            give_full_path=tempgivefullpath,
             do_predict=do_predict,
-            free_input_data=free_input_data,
+            free_input_data=free_input_data
         ).valid_pred_vs_alphapure
         self.give_full_path = oldgivefullpath
-        if give_full_path == 1:
+        if self.give_full_path == 1:
             return self.prediction_full  # something like valid_y
         return self.prediction  # something like valid_y
 
@@ -977,41 +929,29 @@ class GLM(object):
             valid_x,
             valid_y,
             weight,
-            give_full_path,
             free_input_data=0,
-            tol=tol,
-            lambda_stop_early=lambda_stop_early,
-            glm_stop_early=glm_stop_early,
-            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iter=max_iter,
-            verbose=verbose,
-            do_predict=do_predict,
-            order=None
+            do_predict=do_predict
         )
         if valid_x is None:
             if give_full_path == 1:
                 self.prediction_full = self.predict(
-                    train_x, train_y,
+                    valid_x=train_x, valid_y=train_y,
                     weight=weight,
-                    give_full_path=give_full_path,
                     free_input_data=free_input_data)
             else:
                 self.prediction_full = None
-            self.prediction = self.predict(train_x, train_y,
-                                           weight=weight, give_full_path=0,
-                                           free_input_data=free_input_data)
+            self.prediction = self.predict(valid_x=train_x, valid_y=train_y,
+                                           weight=weight, free_input_data=free_input_data)
         else:
             if give_full_path == 1:
                 self.prediction_full = self.predict(
-                    valid_x, valid_y,
+                    valid_x=valid_x, valid_y=valid_y,
                     weight=weight,
-                    give_full_path=give_full_path,
                     free_input_data=free_input_data)
             else:
                 self.prediction_full = None
-            self.prediction = self.predict(valid_x, valid_y,
-                                           weight=weight, give_full_path=0,
-                                           free_input_data=free_input_data)
+            self.prediction = self.predict(valid_x=valid_x, valid_y=valid_y,
+                                           weight=weight,free_input_data=free_input_data)
         if give_full_path:
             return self.prediction_full  # something like valid_y
         return self.prediction  # something like valid_y
