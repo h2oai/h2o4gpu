@@ -27,7 +27,10 @@ RUN \
   wget http://launchpadlibrarian.net/326935544/s3cmd_2.0.0-1_all.deb && \
   dpkg -i s3cmd_2.0.0-1_all.deb && \
   add-apt-repository ppa:fkrull/deadsnakes  && \
+  add-apt-repository -y ppa:webupd8team/java && \
   apt-get update -yqq && \
+  echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
+  echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections && \
   curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   # Install H2o dependencies
   apt-get -y --no-install-recommends  install \
@@ -37,6 +40,10 @@ RUN \
     python3-pip && \
   update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
   python -m pip install --upgrade pip && \
+  # Install Oracle Java 8
+  apt-get install -y oracle-java8-installer && \
+  apt-get clean && \
+  rm -rf /var/cache/apt/* /var/cache/oracle-jdk8-installer
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
   apt-get install -y libopenblas-dev
