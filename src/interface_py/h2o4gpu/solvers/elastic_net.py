@@ -330,15 +330,8 @@ class GLM(object):
             c,
             d,
             e,
-            give_full_path=self.give_full_path,
             do_predict=do_predict,
-            free_input_data=free_input_data,
-            tol=self.tol,
-            lambda_stop_early=self.lambda_stop_early,
-            glm_stop_early=self.glm_stop_early,
-            glm_stop_early_error_fraction=self.glm_stop_early_error_fraction,
-            max_iter=self.max_iter,
-            verbose=self.verbose
+            free_input_data=free_input_data
         )
         return self
 
@@ -431,15 +424,8 @@ class GLM(object):
             c,  # validX_ptr
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
-            give_full_path=None,
             do_predict=0,
-            free_input_data=0,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None
+            free_input_data=0
     ):
         """Train a GLM with pointers to data on the GPU
            (if fit_intercept, then you should have added 1's as
@@ -458,29 +444,11 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path
-            from glm model
         :param int do_predict : Indicate if prediction should be done on
             validation set after train.
             Default is 0.
         :param int free_input_data : Indicate if input data should be freed at
-            the end of fit().
-            Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative improvement on train or validation.
-            Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+            the end of fit(). Default is 1.
         """
         # store some things for later call to predict_ptr()
 
@@ -494,12 +462,6 @@ class GLM(object):
         self.c = c
         self.d = d
         self.e = e
-
-        give_full_path, tol, lambda_stop_early, glm_stop_early, \
-        glm_stop_early_error_fraction, max_iter, verbose, order = \
-            self._none_checks(
-                True, give_full_path, tol, lambda_stop_early, glm_stop_early,
-                glm_stop_early_error_fraction, max_iter, verbose, order)
 
         # ###########
 
@@ -555,14 +517,14 @@ class GLM(object):
             c_elastic_net = self.lib.elastic_net_ptr_double
             self.dtype = np.float64
             self.myctype = c_double
-            if verbose > 0:
+            if self.verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
             self.dtype = np.float32
             self.myctype = c_float
-            if verbose > 0:
+            if self.verbose > 0:
                 print('single precision fit')
                 sys.stdout.flush()
 
@@ -603,17 +565,17 @@ class GLM(object):
             c_alphas,
             c_lambdas,
             c_double(self.tol),
-            c_int(lambda_stop_early),
-            c_int(glm_stop_early),
-            c_double(glm_stop_early_error_fraction),
-            c_int(max_iter),
-            c_int(verbose),
+            c_int(self.lambda_stop_early),
+            c_int(self.glm_stop_early),
+            c_double(self.glm_stop_early_error_fraction),
+            c_int(self.max_iter),
+            c_int(self.verbose),
             a,
             b,
             c,
             d,
             e,
-            give_full_path,
+            self.give_full_path,
             pointer(x_vs_alpha_lambda),
             pointer(x_vs_alpha),
             pointer(valid_pred_vs_alpha_lambda),
@@ -646,7 +608,7 @@ class GLM(object):
         count_short_value = count_short.value
         count_more_value = count_more.value
 
-        if give_full_path == 1:
+        if self.give_full_path == 1:
             num_all = int(count_full_value / (self.n_alphas
                                               * self.n_lambdas))
         else:
@@ -669,7 +631,7 @@ class GLM(object):
             # TODO raise an exception instead
             exit(0)
 
-        if give_full_path == 1 and do_predict == 0:
+        if self.give_full_path == 1 and do_predict == 0:
             # x_vs_alpha_lambda contains solution (and other data)
             # for all lambda and alpha
 
@@ -707,7 +669,7 @@ class GLM(object):
             else:
                 self.intercept_ = None
 
-        if give_full_path == 1 and do_predict == 1:
+        if self.give_full_path == 1 and do_predict == 1:
             thecount = int(count_full_value / (n + num_all_other)
                            * m_valid)
             self.valid_pred_vs_alpha_lambdanew = \
@@ -750,10 +712,10 @@ class GLM(object):
             self.info.tols2 = self._tols2
 
         # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
-        if give_full_path == 0 and do_predict == 1:
+        if self.give_full_path == 0 and do_predict == 1:
             thecount = int(count_short_value / (n + num_all_other)
                            * m_valid)
-            if verbose > 0:
+            if self.verbose > 0:
                 print(
                     'thecount=%d '
                     'count_full_value=%d '
@@ -786,9 +748,7 @@ class GLM(object):
             self,
             valid_xptr,
             valid_yptr=None,
-            give_full_path=None,
             free_input_data=0,
-            verbose=0,
             order=None
     ):
         """Predict on a fitted GLM with with pointers to data on the GPU
@@ -809,13 +769,6 @@ class GLM(object):
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
 
-        give_full_path, verbose, order = self._none_checks_simple(
-            True,
-            give_full_path,
-            verbose,
-            order
-        )
-
         do_predict = 1
 
         self.prediction = self.fit_ptr(
@@ -830,12 +783,9 @@ class GLM(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            give_full_path=0,
             do_predict=do_predict,
-            free_input_data=free_input_data,
-            verbose=verbose,
         ).valid_pred_vs_alphapure
-        if give_full_path == 1:  # then need to run twice
+        if self.give_full_path == 1:  # then need to run twice
             self.prediction_full = self.fit_ptr(
                 self.source_dev,
                 self.m_train,
@@ -848,14 +798,12 @@ class GLM(object):
                 valid_xptr,
                 valid_yptr,
                 self.e,
-                give_full_path=give_full_path,
                 do_predict=do_predict,
                 free_input_data=free_input_data,
-                verbose=verbose,
             ).valid_pred_vs_alpha_lambdapure
         else:
             self.prediction_full = None
-        if give_full_path == 1:
+        if self.give_full_path == 1:
             return self.prediction_full  # something like valid_y
         return self.prediction  # something like valid_y
 
@@ -867,14 +815,7 @@ class GLM(object):
             valid_x=None,
             valid_y=None,
             weight=None,
-            give_full_path=None,
             free_input_data=1,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None,
             order=None
     ):
         """Train a model using GLM and predict on validation set
@@ -884,33 +825,11 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path from
-            glm model
         :param int free_input_data : Indicate if input data should be freed at
-            the end of fit().
-            Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative improvement on train or validation.
-            Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement
-            is not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+            the end of fit(). Default is 1.
+        :param order: Order of data.  Default is None, and internally determined
+            whether row 'r' or column 'c' major order.
         """
-
-        give_full_path, tol, lambda_stop_early, glm_stop_early, \
-        glm_stop_early_error_fraction, max_iter, verbose, order = \
-            self._none_checks(False, give_full_path, tol, lambda_stop_early,
-                              glm_stop_early, glm_stop_early_error_fraction,
-                              max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -926,7 +845,7 @@ class GLM(object):
             do_predict=do_predict
         )
         if valid_x is None:
-            if give_full_path == 1:
+            if self.give_full_path == 1:
                 self.prediction_full = self.predict(
                     valid_x=train_x, valid_y=train_y,
                     weight=weight,
@@ -936,7 +855,7 @@ class GLM(object):
             self.prediction = self.predict(valid_x=train_x, valid_y=train_y,
                                            weight=weight, free_input_data=free_input_data)
         else:
-            if give_full_path == 1:
+            if self.give_full_path == 1:
                 self.prediction_full = self.predict(
                     valid_x=valid_x, valid_y=valid_y,
                     weight=weight,
@@ -945,7 +864,7 @@ class GLM(object):
                 self.prediction_full = None
             self.prediction = self.predict(valid_x=valid_x, valid_y=valid_y,
                                            weight=weight,free_input_data=free_input_data)
-        if give_full_path:
+        if self.give_full_path:
             return self.prediction_full  # something like valid_y
         return self.prediction  # something like valid_y
 
@@ -963,14 +882,7 @@ class GLM(object):
             c,
             d,
             e,
-            give_full_path=None,
             free_input_data=0,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None,
     ):
         """Train a GLM with pointers to data on the GPU and predict
         on validation set that also has a pointer on the GPU
@@ -987,33 +899,10 @@ class GLM(object):
         :param c Pointer to validation features
         :param d Pointer to validation response
         :param e Pointer to weight column
-        :param int give_full_path : Extract full regularization path
-            from glm model.
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit().
             Default is 1.
-        :param float tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative improvement on train or validation.
-            Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float glm_stop_early_error_fraction : Relative tolerance for
-            metric-based stopping criterion (stop if relative improvement is
-            not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
         """
-
-        give_full_path, tol, lambda_stop_early, glm_stop_early, \
-        glm_stop_early_error_fraction, max_iter, verbose, order = \
-            self._none_checks(True, give_full_path, tol, lambda_stop_early,
-                              glm_stop_early, glm_stop_early_error_fraction,
-                              max_iter, verbose, order)
 
         do_predict = 0  # only fit at first
 
@@ -1029,33 +918,18 @@ class GLM(object):
             c,
             d,
             e,
-            give_full_path,
             do_predict,
-            free_input_data=0,
-            tol=tol,
-            lambda_stop_early=lambda_stop_early,
-            glm_stop_early=glm_stop_early,
-            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
-            max_iter=max_iter,
-            verbose=verbose,
+            free_input_data=0
         )
         if c is None or c is c_void_p(0):
-            self.prediction = self.predict_ptr(a, b, 0,
-                                               free_input_data=free_input_data)
-            if give_full_path == 1:
-                self.prediction_full = self.predict_ptr(
-                    a, b,
-                    give_full_path,
-                    free_input_data=free_input_data)
+            self.prediction = self.predict_ptr(valid_xptr=a, valid_yptr=b, free_input_data=free_input_data)
+            if self.give_full_path == 1:
+                self.prediction_full = self.predict_ptr(a, b,free_input_data=free_input_data)
         else:
-            self.prediction = self.predict_ptr(c, d, 0,
-                                               free_input_data=free_input_data)
-            if give_full_path == 1:
-                self.prediction_full = self.predict_ptr(
-                    c, d,
-                    give_full_path,
-                    free_input_data=free_input_data)
-        if give_full_path:
+            self.prediction = self.predict_ptr(c, d, free_input_data=free_input_data)
+            if self.give_full_path == 1:
+                self.prediction_full = self.predict_ptr(c, d, free_input_data=free_input_data)
+        if self.give_full_path:
             return self.prediction_full  # something like valid_y
         return self.prediction  # something like valid_y
 
@@ -1066,14 +940,7 @@ class GLM(object):
             valid_x=None,
             valid_y=None,
             weight=None,
-            give_full_path=None,
-            free_input_data=1,
-            tol=None,
-            lambda_stop_early=None,
-            glm_stop_early=None,
-            glm_stop_early_error_fraction=None,
-            max_iter=None,
-            verbose=None,
+            free_input_data=1
     ):
         """Train a model using GLM and predict on validation set
 
@@ -1082,31 +949,11 @@ class GLM(object):
         :param ndarray valid_x : Validation features
         :param ndarray valid_ y : Validation response
         :param ndarray weight : Observation weights
-        :param int give_full_path : Extract full regularization path
-            from glm model
         :param int free_input_data : Indicate if input data should be freed at
-            the end of fit().
-            Default is 1.
-        :param float, None tol: tolerance.  Default is 1E-2.
-        :param bool lambda_stop_early : Stop early when there is no
-            more relative improvement on train or validation. Default is True.
-        :param bool glm_stop_early : Stop early when there is no more relative
-            improvement in the primary and dual residuals for ADMM.
-            Default is True
-        :param float, None glm_stop_early_error_fraction : Relative
-            tolerance for metric-based stopping criterion (stop if relative
-            improvement is not at least this much).
-            Default is 1.0.
-        :param int max_iter : Maximum number of iterations. Default is 5000
-        :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+            the end of fit(). Default is 1.
         """
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
-                                weight, give_full_path, free_input_data,
-                                tol, lambda_stop_early, glm_stop_early,
-                                glm_stop_early_error_fraction, max_iter,
-                                verbose)
+                                weight, free_input_data)
 
     def transform(self):
         return
