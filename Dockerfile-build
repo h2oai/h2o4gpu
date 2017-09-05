@@ -43,7 +43,7 @@ RUN \
   # Install Oracle Java 8
   apt-get install -y oracle-java8-installer && \
   apt-get clean && \
-  rm -rf /var/cache/apt/* /var/cache/oracle-jdk8-installer
+  rm -rf /var/cache/apt/* /var/cache/oracle-jdk8-installer && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
   apt-get install -y libopenblas-dev
