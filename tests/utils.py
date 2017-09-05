@@ -369,7 +369,8 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     print(lambdas)
 
     assert np.isfinite(enet.X).all() == True
-    assert np.isfinite(enet.X_full).all() == True
+    if give_full_path != 0:
+        assert np.isfinite(enet.X_full).all() == True
 
     Xvsalphabest = enet.X_best
 
