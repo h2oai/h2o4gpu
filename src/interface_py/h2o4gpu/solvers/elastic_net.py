@@ -236,8 +236,7 @@ class GLM(object):
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
         :param int do_predict : Indicate if prediction should be done on
-            validation set after train.
-            Default is 0.
+            validation set after train. Default is 0.
         """
 
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
@@ -357,8 +356,7 @@ class GLM(object):
         :param ndarray valid_y : Validation response
         :param ndarray weight : Observation weights
         :param int free_input_data : Indicate if input data should be freed at
-            the end of fit().
-            Default is 1.
+            the end of fit(). Default is 1.
         """
 
         # if pass None train_x and train_y, then do predict using valid_x
