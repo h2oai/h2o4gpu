@@ -359,11 +359,6 @@ class GLM(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit().
             Default is 1.
-        :param int verbose : Print verbose information to the console if
-            set to > 0.
-            Default is 0.
-        :param order: Order of data.  Default is None, and internally determined
-        whether row 'r' or column 'c' major order.
         """
 
         # if pass None train_x and train_y, then do predict using valid_x
@@ -407,7 +402,6 @@ class GLM(object):
         else:
             self.prediction_full = None
         oldgivefullpath = self.give_full_path
-        tempgivefullpath = 0
         self.prediction = self.fit(
             train_x=None,
             train_y=None,
