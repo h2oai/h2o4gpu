@@ -180,7 +180,7 @@ pipeline {
             }
         }
 
-        /*stage('Publish to S3') {
+        stage('Publish to S3') {
             agent {
                 label "linux"
             }
@@ -222,7 +222,7 @@ pipeline {
                     }
                 }
             }
-        }*/
+        }
 
     }
 }
