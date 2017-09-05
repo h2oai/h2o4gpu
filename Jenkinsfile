@@ -79,7 +79,7 @@ pipeline {
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf py3nvml
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c 'export HOME=`pwd`; . /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
