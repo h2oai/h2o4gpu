@@ -11,7 +11,7 @@ pylint:
 	done; \
 	exit $$status
 
-all: pylint
+all:
 
 	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../xgboost/python-package/xgboost .

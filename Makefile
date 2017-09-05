@@ -85,6 +85,9 @@ c:
 py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
+fullpy: apply_sklearn_simple
+	$(MAKE) -j pylint all -C src/interface_py
+
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
 
@@ -229,7 +232,7 @@ apply_sklearn_register:
 
 cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjekins: update_submodule cpp c py
+buildjekins: update_submodule cpp c fullpy
 
 installjenkins: pyinstall
 
