@@ -138,6 +138,28 @@ pipeline {
         }
 
     }
+    post {
+        failure {
+            node('mr-dl11') {
+                script {
+                    // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
+                    def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
+                    emailext(
+                            to: "mateusz@h2o.ai, ${email}",
+                            subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                            body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                            recipientProviders: [
+                                    [$class: 'CulpritsRecipientProvider'],
+                                    [$class: 'DevelopersRecipientProvider'],
+                                    [$class: 'FailingTestSuspectsRecipientProvider'],
+                                    [$class: 'FirstFailingBuildSuspectsRecipientProvider'],
+                                    [$class: 'RequesterRecipientProvider']
+                            ]
+                    )
+                }
+            }
+        }
+    }
 }
 
 def isRelease() {
