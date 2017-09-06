@@ -17,7 +17,7 @@ from tabulate import tabulate
 from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
 from h2o4gpu.solvers.utils import device_count, _get_data, _data_info, \
     _convert_to_ptr, _check_equal
-from h2o4gpu.typecheck.typechecks import assert_is_type
+from h2o4gpu.typecheck.typechecks import (assert_is_type,numpy_ndarray,pandas_dataframe)
 
 
 class GLM(object):
@@ -242,6 +242,14 @@ class GLM(object):
             validation set after train. Default is 0.
         """
 
+        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(free_input_data, int)
+        assert_is_type(do_predict, int)
+
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
             train_x, ismatrix=True,
             fit_intercept=self.fit_intercept, order=self.ord,
@@ -355,6 +363,11 @@ class GLM(object):
             the end of fit(). Default is 1.
         """
 
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(free_input_data, int)
+
         # if pass None train_x and train_y, then do predict using valid_x
         # and weight (if given) unlike upload_data and fit_ptr (and so fit)
         # don't free-up predictions since for single model might request
@@ -453,6 +466,20 @@ class GLM(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
+
+        assert_is_type(source_dev, int)
+        assert_is_type(m_train, int)
+        assert_is_type(n, int)
+        assert_is_type(precision, float)
+        assert_is_type(order, int)
+        assert_is_type(a, int)
+        assert_is_type(b, int)
+        assert_is_type(c, int)
+        assert_is_type(d, int)
+        assert_is_type(e, int)
+        assert_is_type(do_predict, int)
+        assert_is_type(free_input_data, int)
+
         # store some things for later call to predict_ptr()
 
         self.source_dev = source_dev
@@ -769,6 +796,12 @@ class GLM(object):
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
+
+        assert_is_type(valid_xptr, int)
+        assert_is_type(valid_yptr, int)
+        assert_is_type(order, int)
+        assert_is_type(free_input_data, int)
+
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
 
@@ -833,6 +866,14 @@ class GLM(object):
         :param order: Order of data.  Default is None, and internally determined
             whether row 'r' or column 'c' major order.
         """
+
+        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(free_input_data, int)
+        assert_is_type(order, int)
 
         do_predict = 0  # only fit at first
 
@@ -907,6 +948,19 @@ class GLM(object):
             Default is 1.
         """
 
+        assert_is_type(source_dev, int)
+        assert_is_type(m_train, int)
+        assert_is_type(n, int)
+        assert_is_type(m_valid, int)
+        assert_is_type(precision, float)
+        assert_is_type(order, int)
+        assert_is_type(a, int)
+        assert_is_type(b, int)
+        assert_is_type(c, int)
+        assert_is_type(d, int)
+        assert_is_type(e, int)
+        assert_is_type(free_input_data, int)
+
         do_predict = 0  # only fit at first
 
         self.fit_ptr(
@@ -955,6 +1009,13 @@ class GLM(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
+        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(free_input_data, int)
+
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
                                 weight, free_input_data)
 
