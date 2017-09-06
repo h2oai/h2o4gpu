@@ -304,12 +304,14 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
         Solver = h2o4gpu.Lasso
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family)
+                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family,
+                      give_full_path=give_full_path, lambdas=lambdas)
     elif solver is "ridge":
         Solver = h2o4gpu.Ridge
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family)
+                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family,
+                      give_full_path=give_full_path, lambdas=lambdas)
     elif solver is "linear_regression":
         Solver = h2o4gpu.LinearRegression
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
