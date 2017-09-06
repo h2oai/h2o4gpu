@@ -148,6 +148,8 @@ pipeline {
                             to: "mateusz@h2o.ai, ${email}",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                            attachLog: true,
+                            compressLog: true,
                             recipientProviders: [
                                     [$class: 'CulpritsRecipientProvider'],
                                     [$class: 'DevelopersRecipientProvider'],
