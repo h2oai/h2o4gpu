@@ -19,6 +19,8 @@ class TestKmeans(object):
 
         assert diffs / trainencflt.shape[0] <= 0.1
 
+        assert False
+
     def test_transform_vs_scikit(self):
         trainencflt = self._fetch_data()
         model, labels = self._train_model(trainencflt)
@@ -32,6 +34,7 @@ class TestKmeans(object):
                 diffs = diffs + 1
 
         assert diffs / trainencflt.shape[0] <= 0.1
+        assert False
 
     @staticmethod
     def _train_model(trainencflt):

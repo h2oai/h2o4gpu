@@ -138,6 +138,11 @@ pipeline {
         }
 
     }
+    post {
+        failure {
+            sendNotifications('BUILD FAILED')
+        }
+    }
 }
 
 def isRelease() {
