@@ -62,6 +62,8 @@ class GLM(object):
     :param str family : "logistic" for classification with logistic regression.
         Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 
+    :param int give_full_path : Extract full regularization path from glm model
+
     :param int,float lambda_max : Maximum Lambda value to use.
         Default is None, and then internally compute standard maximum
 
