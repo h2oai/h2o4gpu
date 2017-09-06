@@ -24,40 +24,57 @@ class GLM(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu. Default is None.
+
     :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
+
     :param str order : Row or Column major for C/C++ backend. Default is 'r'.
         Must be 'r' (Row major) or 'c' (Column major).
-    :param bool fit_intercept : Include constant term in the model
-        Default is True.
+
+    :param bool fit_intercept : Include constant term in the model. Default is True.
+
     :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used
-        in lambda search.
-        Default is 1e-7.
+        in lambda search. Default is 1e-7.
+
     :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
+
     :param int n_folds : Number of cross validation folds. Default is 1.
+
     :param int n_alphas : Number of alphas to be used in a search. Default is 5.
+
     :param float tol : tolerance.  Default is 1E-2.
+
     :param bool lambda_stop_early : Stop early when there is no more relative
         improvement on train or validation. Default is True.
+
     :param bool glm_stop_early : Stop early when there is no more relative
         improvement in the primary and dual residuals for ADMM.  Default is True
+
     :param float glm_stop_early_error_fraction : Relative tolerance for
         metric-based stopping criterion (stop if relative improvement is not at
         least this much). Default is 1.0.
+
     :param int max_iter : Maximum number of iterations. Default is 5000
+
     :param int verbose : Print verbose information to the console if set to > 0.
         Default is 0.
+
     :param str family : "logistic" for classification with logistic regression.
-        Defaults to "elasticnet" for regression.
-        Must be "logistic" or "elasticnet".
+        Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+
     :param int,float lambda_max : Maximum Lambda value to use.
         Default is None, and then internally compute standard maximum
+
     :param int,float alpha_max : Maximum alpha.  Default is 1.0.
+
     :param int,float alpha_min : Minimum alpha.  Default is 0.0.
+
     :param int,float alphas: list, tuple, array, or numpy 1D array of alphas,
         overrides n_alphas, alpha_min, and alpha_max. Default is None.
+
     :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
         overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
+
     :param order : Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
     """
@@ -232,12 +249,18 @@ class GLM(object):
         """Train a GLM
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
+
         :param int do_predict : Indicate if prediction should be done on
             validation set after train. Default is 0.
         """
@@ -357,8 +380,11 @@ class GLM(object):
         """Predict on a fitted GLM
 
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
@@ -449,20 +475,32 @@ class GLM(object):
 
 
         :param source_dev GPU ID of device
+
         :param m_train Number of rows in the training set
+
         :param n Number of columns in the training set
+
         :param m_valid Number of rows in the validation set
+
         :param precision Floating or double point precision of fit
+
         :param order: Order of data.  Default is None, and internally determined
+
         whether row 'r' or column 'c' major order.
+
         :param a Pointer to training features array
+
         :param b Pointer to training response array
+
         :param c Pointer to validation features
+
         :param d Pointer to validation response
+
         :param e Pointer to weight column
+
         :param int do_predict : Indicate if prediction should be done on
-            validation set after train.
-            Default is 0.
+            validation set after train. Default is 0.
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
@@ -784,15 +822,18 @@ class GLM(object):
         """Predict on a fitted GLM with with pointers to data on the GPU
 
         :param ndarray valid_xptr : Pointer to validation features
+
         :param ndarray valid_ yptr : Pointer to validation response
+
         :param int give_full_path : Extract full regularization path
             from glm model
+
         :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
+            at the end of fit(). Default is 1.
+
         :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+            if set to > 0. Default is 0.
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -857,12 +898,18 @@ class GLM(object):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
+
         :param order: Order of data.  Default is None, and internally determined
             whether row 'r' or column 'c' major order.
         """
@@ -932,20 +979,30 @@ class GLM(object):
         on validation set that also has a pointer on the GPU
 
         :param source_dev GPU ID of device
+
         :param m_train Number of rows in the training set
+
         :param n Number of columns in the training set
+
         :param m_valid Number of rows in the validation set
+
         :param precision Float or double point precision of fit
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
+
         :param a Pointer to training features array
+
         :param b Pointer to training response array
+
         :param c Pointer to validation features
+
         :param d Pointer to validation response
+
         :param e Pointer to weight column
+
         :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
+            at the end of fit(). Default is 1.
         """
 
         assert_is_type(source_dev, int, None)
@@ -1002,10 +1059,15 @@ class GLM(object):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
