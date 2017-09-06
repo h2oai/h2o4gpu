@@ -17,48 +17,63 @@ from tabulate import tabulate
 from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
 from h2o4gpu.solvers.utils import device_count, _get_data, _data_info, \
     _convert_to_ptr, _check_equal
-from h2o4gpu.typecheck.typechecks import (assert_is_type,numpy_ndarray,pandas_dataframe)
+from h2o4gpu.typecheck.typechecks import (assert_is_type, numpy_ndarray, pandas_dataframe)
 
 
 class GLM(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu. Default is None.
+
     :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
+
     :param str order : Row or Column major for C/C++ backend. Default is 'r'.
         Must be 'r' (Row major) or 'c' (Column major).
-    :param bool fit_intercept : Include constant term in the model
-        Default is True.
+
+    :param bool fit_intercept : Include constant term in the model. Default is True.
+
     :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used
-        in lambda search.
-        Default is 1e-7.
+        in lambda search. Default is 1e-7.
+
     :param int n_lambdas : Number of lambdas to be used in a search.
         Default is 100.
+
     :param int n_folds : Number of cross validation folds. Default is 1.
+
     :param int n_alphas : Number of alphas to be used in a search. Default is 5.
+
     :param float tol : tolerance.  Default is 1E-2.
+
     :param bool lambda_stop_early : Stop early when there is no more relative
         improvement on train or validation. Default is True.
+
     :param bool glm_stop_early : Stop early when there is no more relative
         improvement in the primary and dual residuals for ADMM.  Default is True
+
     :param float glm_stop_early_error_fraction : Relative tolerance for
         metric-based stopping criterion (stop if relative improvement is not at
         least this much). Default is 1.0.
+
     :param int max_iter : Maximum number of iterations. Default is 5000
+
     :param int verbose : Print verbose information to the console if set to > 0.
         Default is 0.
+
     :param str family : "logistic" for classification with logistic regression.
-        Defaults to "elasticnet" for regression.
-        Must be "logistic" or "elasticnet".
+        Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
     :param int store_full_path: Whether to store full solution for all alphas
         and lambdas.  If 1, then during predict will compute best and full predictions.
         Default is 0.
     :param int,float lambda_max : Maximum Lambda value to use.
         Default is None, and then internally compute standard maximum
+
     :param int,float alpha_max : Maximum alpha.  Default is 1.0.
+
     :param int,float alpha_min : Minimum alpha.  Default is 0.0.
+
     :param int,float alphas: list, tuple, array, or numpy 1D array of alphas,
         overrides n_alphas, alpha_min, and alpha_max. Default is None.
+
     :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
         overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
     :param int double_precision: float32 (0) and float64 (1).  Default is None, internally set unless using _ptr methods
@@ -237,10 +252,15 @@ class GLM(object):
         """Train a GLM
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
         """
@@ -350,8 +370,11 @@ class GLM(object):
         """Predict on a fitted GLM
 
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
@@ -367,14 +390,11 @@ class GLM(object):
         # multiple predictions.  User has to call finish themselves to cleanup.
 
         valid_x_np, m_valid, n, fortran1, self.ord, self.dtype = \
-            _get_data(valid_x, ismatrix=True, fit_intercept = self.fit_intercept, order=self.ord, dtype=self.dtype)
+            _get_data(valid_x, ismatrix=True, fit_intercept=self.fit_intercept, order=self.ord, dtype=self.dtype)
         valid_y_np, _, _, fortran2, self.ord, self.dtype = \
-            _get_data(valid_y, fit_intercept = self.fit_intercept, order=self.ord, dtype=self.dtype)
+            _get_data(valid_y, fit_intercept=self.fit_intercept, order=self.ord, dtype=self.dtype)
         weight_np, _, _, fortran3, self.ord, self.dtype = \
-            _get_data(weight, fit_intercept = self.fit_intercept, order=self.ord, dtype=self.dtype)
-
-
-
+            _get_data(weight, fit_intercept=self.fit_intercept, order=self.ord, dtype=self.dtype)
 
         # check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3]
@@ -396,11 +416,13 @@ class GLM(object):
         oldstorefullpath = self.store_full_path
 
         if self.store_full_path == 1:
-            self.store_full_path=1
-            self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid, self.double_precision, self.ord, a, b, c, d, e, do_predict=1, free_input_data=free_input_data)
+            self.store_full_path = 1
+            self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid, self.double_precision, self.ord, a, b, c, d, e,
+                                   do_predict=1, free_input_data=free_input_data)
 
-        self.store_full_path=0
-        self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid, self.double_precision, self.ord, a, b, c, d, e, do_predict=1, free_input_data=free_input_data)
+        self.store_full_path = 0
+        self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid, self.double_precision, self.ord, a, b, c, d, e,
+                               do_predict=1, free_input_data=free_input_data)
 
         # restore variable
         self.store_full_path = oldstorefullpath
@@ -410,19 +432,19 @@ class GLM(object):
         # not just from our test code
 
     def fit_ptr(
-                self,
-                source_dev,
-                m_train,
-                n,
-                m_valid,
-                double_precision,
-                order,
-                a,  # trainX_ptr or train_xptr
-                b,  # trainY_ptr
-                c,  # validX_ptr
-                d,  # validY_ptr or valid_xptr  # keep consistent with later uses
-                e,  # weight_ptr
-                free_input_data=0
+            self,
+            source_dev,
+            m_train,
+            n,
+            m_valid,
+            double_precision,
+            order,
+            a,  # trainX_ptr or train_xptr
+            b,  # trainY_ptr
+            c,  # validX_ptr
+            d,  # validY_ptr or valid_xptr  # keep consistent with later uses
+            e,  # weight_ptr
+            free_input_data=0
     ):
         """Train a GLM with pointers to data on the GPU
            (if fit_intercept, then you should have added 1's as
@@ -430,25 +452,37 @@ class GLM(object):
 
 
         :param source_dev GPU ID of device
+
         :param m_train Number of rows in the training set
+
         :param n Number of columns in the training set
+
         :param m_valid Number of rows in the validation set
+
         :param double_precision float32 (0) or double point precision (1) of fit. No Default.
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
+
         :param a Pointer to training features array
+
         :param b Pointer to training response array
+
         :param c Pointer to validation features
+
         :param d Pointer to validation response
+
         :param e Pointer to weight column
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
 
         self._fitorpredict_ptr(source_dev, m_train, n, m_valid, double_precision, order, a, b, c, d, e, do_predict=0,
-            free_input_data=free_input_data)
+                               free_input_data=free_input_data)
 
         # TODO Add type checking
+
     # source_dev here because generally want to take in any pointer,
     # not just from our test code
     def _fitorpredict_ptr(
@@ -473,20 +507,31 @@ class GLM(object):
 
 
         :param source_dev GPU ID of device
+
         :param m_train Number of rows in the training set
+
         :param n Number of columns in the training set
+
         :param m_valid Number of rows in the validation set
+
         :param double_precision float32 (0) or double point precision (1) of fit. No Default.
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
+
         :param a Pointer to training features array
+
         :param b Pointer to training response array
+
         :param c Pointer to validation features
+
         :param d Pointer to validation response
+
         :param e Pointer to weight column
+
         :param int do_predict : Indicate if prediction should be done on
-            validation set after train.
-            Default is 0.
+            validation set after train. Default is 0.
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
@@ -707,10 +752,10 @@ class GLM(object):
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
             self._alphas = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 1:n + num_error + 2]
+                           :, :, n + num_error + 1:n + num_error + 2]
 
             self._tols = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 2:n + num_error + 3]
+                         :, :, n + num_error + 2:n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
@@ -742,11 +787,11 @@ class GLM(object):
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[
-                :, n + num_error:n + num_error + 1]
+                             :, n + num_error:n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[
-                :, n + num_error + 1:n + num_error + 2]
+                            :, n + num_error + 1:n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[
-                :, n + num_error + 2:n + num_error + 3]
+                          :, n + num_error + 2:n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept2_ = self.x_vs_alphapure[:, -1]
@@ -796,15 +841,18 @@ class GLM(object):
         """Predict on a fitted GLM with with pointers to data on the GPU
 
         :param ndarray valid_xptr : Pointer to validation features
+
         :param ndarray valid_ yptr : Pointer to validation response
-        :param int store_full_path : Extract full regularization path
+
+        :param int store_full_path : Store full regularization path
             from glm model
+
         :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
+            at the end of fit(). Default is 1.
+
         :param int verbose : Print verbose information to the console
-            if set to > 0.
-            Default is 0.
+            if set to > 0. Default is 0.
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
@@ -816,7 +864,7 @@ class GLM(object):
 
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
-        oldstorefullpath =self.store_full_path
+        oldstorefullpath = self.store_full_path
         if self.store_full_path == 1:  # then need to run twice
             self.store_full_path = 1
             self._fitorpredict_ptr(
@@ -868,12 +916,18 @@ class GLM(object):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
+
         :param order: Order of data.  Default is None, and internally determined
             whether row 'r' or column 'c' major order.
         """
@@ -901,7 +955,7 @@ class GLM(object):
                                            weight=weight, free_input_data=free_input_data)
         else:
             self.prediction = self.predict(valid_x=valid_x, valid_y=valid_y,
-                                           weight=weight,free_input_data=free_input_data)
+                                           weight=weight, free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
     # TODO Add type checking
@@ -924,20 +978,30 @@ class GLM(object):
         on validation set that also has a pointer on the GPU
 
         :param source_dev GPU ID of device
+
         :param m_train Number of rows in the training set
+
         :param n Number of columns in the training set
+
         :param m_valid Number of rows in the validation set
+
         :param double_precision float32 (0) or double precision (1) of fit.  Default None.
+
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
+
         :param a Pointer to training features array
+
         :param b Pointer to training response array
+
         :param c Pointer to validation features
+
         :param d Pointer to validation response
+
         :param e Pointer to weight column
+
         :param int free_input_data : Indicate if input data should be freed
-            at the end of fit().
-            Default is 1.
+            at the end of fit(). Default is 1.
         """
 
         assert_is_type(source_dev, int, None)
@@ -988,10 +1052,15 @@ class GLM(object):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
+
         :param ndarray train_ y : Training response array
+
         :param ndarray valid_x : Validation features
+
         :param ndarray valid_ y : Validation response
+
         :param ndarray weight : Observation weights
+
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
@@ -1114,13 +1183,7 @@ class GLM(object):
     def lambdas(self, value):
 
         # add check
-
         self._lambdas = value
-
-    # @lambdas2.setter
-    # def lambdas2(self, value):
-    #    # add check
-    #    self._lambdas2 = value
 
     @property
     def alphas(self):
@@ -1378,7 +1441,7 @@ class GLM(object):
             self.prediction = self.predict(valid_x=X, valid_y=y,
                                            weight=sample_weight)
             # otherwise score makes no sense, need both X and y, else just return existing error
-        return self.error # TODO: Should return R^2 and redo predict if X and y are passed
+        return self.error  # TODO: Should return R^2 and redo predict if X and y are passed
 
     @classmethod
     def _get_param_names(cls):
