@@ -318,7 +318,8 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
         Solver = h2o4gpu.LogisticRegression
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose)
+                      n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose,
+                      give_full_path=give_full_path)
 
     print("trainX")
     print(trainX)
