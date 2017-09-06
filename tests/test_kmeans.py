@@ -34,6 +34,7 @@ class TestKmeans(object):
                 diffs = diffs + 1
 
         assert diffs / trainencflt.shape[0] <= 0.1
+        assert False
 
     @staticmethod
     def _train_model(trainencflt):
