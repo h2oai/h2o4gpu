@@ -242,11 +242,11 @@ class GLM(object):
             validation set after train. Default is 0.
         """
 
-        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(train_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(train_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
         assert_is_type(do_predict, int)
 
@@ -363,9 +363,9 @@ class GLM(object):
             the end of fit(). Default is 1.
         """
 
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
         # if pass None train_x and train_y, then do predict using valid_x
@@ -470,13 +470,13 @@ class GLM(object):
         assert_is_type(source_dev, int)
         assert_is_type(m_train, int)
         assert_is_type(n, int)
-        assert_is_type(precision, float)
+        assert_is_type(precision, float, int)
         assert_is_type(order, int)
-        assert_is_type(a, int)
-        assert_is_type(b, int)
-        assert_is_type(c, int)
-        assert_is_type(d, int)
-        assert_is_type(e, int)
+        assert_is_type(a, c_void_p)
+        assert_is_type(b, c_void_p)
+        assert_is_type(c, c_void_p)
+        assert_is_type(d, c_void_p)
+        assert_is_type(e, c_void_p)
         assert_is_type(do_predict, int)
         assert_is_type(free_input_data, int)
 
@@ -798,9 +798,9 @@ class GLM(object):
         """
 
         assert_is_type(valid_xptr, int)
-        assert_is_type(valid_yptr, int)
-        assert_is_type(order, int)
+        assert_is_type(valid_yptr, int, None)
         assert_is_type(free_input_data, int)
+        assert_is_type(order, int, None)
 
         # assume self.ord already set by fit_ptr() at least
         # override self if chose to pass this option
@@ -867,13 +867,13 @@ class GLM(object):
             whether row 'r' or column 'c' major order.
         """
 
-        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(train_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(train_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
-        assert_is_type(order, int)
+        assert_is_type(order, int, None)
 
         do_predict = 0  # only fit at first
 
@@ -954,11 +954,11 @@ class GLM(object):
         assert_is_type(m_valid, int)
         assert_is_type(precision, float)
         assert_is_type(order, int)
-        assert_is_type(a, int)
-        assert_is_type(b, int)
-        assert_is_type(c, int)
-        assert_is_type(d, int)
-        assert_is_type(e, int)
+        assert_is_type(a, c_void_p)
+        assert_is_type(b, c_void_p)
+        assert_is_type(c, c_void_p)
+        assert_is_type(d, c_void_p)
+        assert_is_type(e, c_void_p)
         assert_is_type(free_input_data, int)
 
         do_predict = 0  # only fit at first
@@ -1011,9 +1011,9 @@ class GLM(object):
         """
         assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
         assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe)
+        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
