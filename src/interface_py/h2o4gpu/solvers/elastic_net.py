@@ -467,17 +467,17 @@ class GLM(object):
             the end of fit(). Default is 1.
         """
 
-        assert_is_type(source_dev, int)
-        assert_is_type(m_train, int)
-        assert_is_type(n, int)
-        assert_is_type(precision, float, int)
+        assert_is_type(source_dev, int, None)
+        assert_is_type(m_train, int, None)
+        assert_is_type(n, int, None)
+        assert_is_type(precision, float, int, None)
         assert_is_type(order, int, None)
-        assert_is_type(a, c_void_p)
-        assert_is_type(b, c_void_p)
-        assert_is_type(c, c_void_p)
-        assert_is_type(d, c_void_p)
-        assert_is_type(e, c_void_p)
-        assert_is_type(do_predict, int)
+        assert_is_type(a, c_void_p, None)
+        assert_is_type(b, c_void_p, None)
+        assert_is_type(c, c_void_p, None)
+        assert_is_type(d, c_void_p, None)
+        assert_is_type(e, c_void_p, None)
+        assert_is_type(do_predict, int, None)
         assert_is_type(free_input_data, int)
 
         # store some things for later call to predict_ptr()
@@ -948,18 +948,18 @@ class GLM(object):
             Default is 1.
         """
 
-        assert_is_type(source_dev, int)
-        assert_is_type(m_train, int)
-        assert_is_type(n, int)
-        assert_is_type(m_valid, int)
-        assert_is_type(precision, float)
+        assert_is_type(source_dev, int, None)
+        assert_is_type(m_train, int, None)
+        assert_is_type(n, int, None)
+        assert_is_type(m_valid, int, None)
+        assert_is_type(precision, float, None)
         assert_is_type(order, int, None)
-        assert_is_type(a, c_void_p)
-        assert_is_type(b, c_void_p)
-        assert_is_type(c, c_void_p)
-        assert_is_type(d, c_void_p)
-        assert_is_type(e, c_void_p)
-        assert_is_type(free_input_data, int)
+        assert_is_type(a, c_void_p, None)
+        assert_is_type(b, c_void_p, None)
+        assert_is_type(c, c_void_p, None)
+        assert_is_type(d, c_void_p, None)
+        assert_is_type(e, c_void_p, None)
+        assert_is_type(free_input_data, int, None)
 
         do_predict = 0  # only fit at first
 
