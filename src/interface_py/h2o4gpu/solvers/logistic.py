@@ -36,6 +36,12 @@ class LogisticRegression(GLM):
         internally compute standard maximum
     :param alpha_max: Maximum alpha. Default is 1.0.
     :param alpha_min: Minimum alpha. Default is 0.0.
+    :param int,float alphas: list, tuple, array, or numpy 1D array of alphas,
+        overrides n_alphas, alpha_min, and alpha_max. Default is None.
+    :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
+        overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
+    :param order : Order of data.  Default is None, and internally determined
+        whether row 'r' or column 'c' major order.
     """
     def __init__(
             self,
@@ -56,6 +62,9 @@ class LogisticRegression(GLM):
             lambda_max=None,
             alpha_max=1.0,
             alpha_min=0.0,
+            alphas=None,
+            lambdas=None,
+            order=None
     ):
         super(LogisticRegression, self).__init__(
             n_threads=n_threads,
@@ -76,4 +85,6 @@ class LogisticRegression(GLM):
             lambda_max=lambda_max,
             alpha_max=alpha_max,
             alpha_min=alpha_min,
-            order=None)
+            alphas=alphas,
+            lambdas=lambdas,
+            order=order)
