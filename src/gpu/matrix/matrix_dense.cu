@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

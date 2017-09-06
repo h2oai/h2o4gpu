@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef _CUDA_UTILS_H
 #define _CUDA_UTILS_H
 

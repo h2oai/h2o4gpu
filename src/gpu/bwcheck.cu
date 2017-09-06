@@ -7,8 +7,8 @@
  * this software and related documentation outside the terms of the EULA
  * is strictly prohibited.
  *
+ * Modifications copyright (C) 2017 H2O.ai
  */
-
 /*
  * This is a simple test program to measure the memcopy bandwidth of the GPU.
  * It can measure device to device copy bandwidth, host to device copy bandwidth

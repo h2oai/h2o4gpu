@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef MATRIX_MATRIX_DENSE_H_
 #define MATRIX_MATRIX_DENSE_H_
 

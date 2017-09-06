@@ -1,4 +1,7 @@
-#ifndef PROJECTOR_PROJECTOR_DIRECT_H_ 
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
+#ifndef PROJECTOR_PROJECTOR_DIRECT_H_
 #define PROJECTOR_PROJECTOR_DIRECT_H_ 
 
 #include "projector/projector.h"

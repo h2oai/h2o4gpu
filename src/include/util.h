@@ -1,6 +1,7 @@
-#ifndef UTIL_H_
-#define UTIL_H_
-
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
+#pragma once
 #include <stdio.h>
 
 #include <iostream>
@@ -501,6 +502,4 @@
   } while (0)
 
 #endif
-
-#endif  // UTIL_H_
 

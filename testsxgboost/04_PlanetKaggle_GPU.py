@@ -1,6 +1,8 @@
-
 # coding: utf-8
-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # # Experiment 04: Amazon Planet (GPU version)
 # 
 # This experiment uses the data from the Kaggle competition [Planet: Understanding the Amazon from Space](https://www.kaggle.com/c/planet-understanding-the-amazon-from-space/leaderboard). Here we use a pretrained ResNet50 model to generate the features from the dataset.

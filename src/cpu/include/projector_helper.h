@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef PROJECTOR_HELPER_H_
 #define PROJECTOR_HELPER_H_
 

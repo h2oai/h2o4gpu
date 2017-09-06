@@ -1,6 +1,8 @@
-
 # coding: utf-8
-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # # Experiment 3: Football match prediction (GPU version)
 # 
 # In this experiment we are going to use the [Kaggle football dataset](https://www.kaggle.com/hugomathien/soccer). The dataset has information from +25,000 matches, +10,000 players from 11 European Countries with their lead championship during seasons 2008 to 2016. It also contains players attributes sourced from EA Sports' FIFA video game series. The problem we address is to try to predict if a match is going to end as win, draw or defeat. 

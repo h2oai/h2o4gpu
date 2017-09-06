@@ -1,6 +1,8 @@
-
 # coding: utf-8
-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # # Experiment 05: Credit card Fraud (GPU version)
 # 
 # This experiment uses the data from the Kaggle dataset [Credit Card Fraud Detection](https://www.kaggle.com/dalpozz/creditcardfraud). The dataset is made up of a number of variables which are a result of PCA transformation.

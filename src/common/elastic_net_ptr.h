@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2017 H2O.ai
+ * License   Apache License Version 2.0 (see LICENSE for details)
+ */
 #pragma once
 #include <stddef.h>
 #include <stdio.h>

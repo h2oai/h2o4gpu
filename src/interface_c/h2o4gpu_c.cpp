@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #include "matrix/matrix_dense.h"
 #include "matrix/matrix_sparse.h"
 #include "h2o4gpuglm.h"

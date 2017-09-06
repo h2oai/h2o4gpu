@@ -7,6 +7,8 @@
  * this software and related documentation outside the terms of the EULA
  * is strictly prohibited.
  *
+ * Modifications copyright (C) 2017 H2O.ai
+ *
  */
 
 // Helper functions for CUDA Driver API error handling (make sure that CUDA_H is included in your projects)

@@ -1,3 +1,7 @@
+/*!
+ * Copyright (c) 2017 H2O.ai
+ * License   Apache License Version 2.0 (see LICENSE for details)
+ */
 #include "elastic_net_ptr.h"
 #include <float.h>
 #include "../include/util.h"

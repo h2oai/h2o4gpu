@@ -1,6 +1,8 @@
-
 # coding: utf-8
-
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # # Experiment 06: HIGGS boson (GPU version)
 # 
 # This experiment uses the data from the [HIGGS dataset](https://archive.ics.uci.edu/ml/datasets/HIGGS) to predict the appearance of the Higgs boson. The dataset consists of 11 million of observations. More information about the data can be found in [loaders.py](libs/loaders.py).  

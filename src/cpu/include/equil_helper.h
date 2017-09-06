@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef EQUIL_HELPER_H_
 #define EQUIL_HELPER_H_
 

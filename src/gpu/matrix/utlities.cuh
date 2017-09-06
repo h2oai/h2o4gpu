@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef UTILITIES_CUH
 #define UTILITIES_CUH
 

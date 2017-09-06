@@ -1,4 +1,8 @@
 # pylint: skip-file
+"""
+:copyright: (c) 2017 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # Skip pylint b/c this is automatically concatenated at compile time
 # with other init files
 __version__ = "0.0.3"

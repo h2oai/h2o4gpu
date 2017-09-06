@@ -1,3 +1,6 @@
+/*!
+ * Modifications copyright (C) 2017 H2O.ai
+ */
 #ifndef INTERFACE_DEFS_H_
 #define INTERFACE_DEFS_H_
 
