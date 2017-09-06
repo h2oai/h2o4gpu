@@ -797,8 +797,8 @@ class GLM(object):
         whether row 'r' or column 'c' major order.
         """
 
-        assert_is_type(valid_xptr, int)
-        assert_is_type(valid_yptr, int, None)
+        assert_is_type(valid_xptr, c_void_p)
+        assert_is_type(valid_yptr, c_void_p, None)
         assert_is_type(free_input_data, int)
         assert_is_type(order, int, None)
 
