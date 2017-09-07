@@ -17,6 +17,12 @@ DATA_BUCKET = s3://h2o-datasets/h2o4gpu/data
 # Location of local directory with data
 DATA_DIR = ./
 
+# Location of open data
+OPEN_DATA_BUCKET = s3://h2o-public-test-data/h2o4gpu
+
+# Location of local directory with open data
+OPEN_DATA_DIR = ./open_data
+
 #
 # PyDataTable
 #
