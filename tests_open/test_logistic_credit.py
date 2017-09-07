@@ -22,7 +22,7 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
     sys.stdout.flush()
 
     print("Reading Data")
-    df = pd.read_csv("./data/creditcard.csv")
+    df = pd.read_csv("./open_data/creditcard.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
