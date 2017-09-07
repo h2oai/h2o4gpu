@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 path="results"
 
-############## RELATIVE ERRORS
+############## RELATIVE ERRORS with masks
 list=`ls $path/*.error.dat | sort`
 #for fil in $list ; do echo $fil ; done
 rm -rf $path/results.error.all.dat
 echo "RunErrorRel Train CV Valid ..." >> $path/results.error.all.dat
 for fil in $list ; do cat $fil >> $path/results.error.all.dat ; done
 column -t $path/results.error.all.dat
+
+echo "" 
+
+############## RELATIVE ERRORS
+list=`ls $path/*.error.quick.dat | sort`
+#for fil in $list ; do echo $fil ; done
+rm -rf $path/results.error.quick.all.dat
+echo "RunErrorRel Train CV Valid ..." >> $path/results.error.quick.all.dat
+for fil in $list ; do cat $fil >> $path/results.error.quick.all.dat ; done
+column -t $path/results.error.quick.all.dat
 
 echo "" 
 

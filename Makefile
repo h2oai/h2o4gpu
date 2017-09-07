@@ -68,6 +68,11 @@ sync_otherdata:
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --recursive --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
 
+sync_open_data:
+	@echo "---- Synchronizing sklearn and other open data in home directory ----"
+    # TODO: can get from S3 instead of where sklearn's fetch() comes from
+
+
 default: fullinstall
 
 #########################################
@@ -105,7 +110,7 @@ buildquick: cpp c py
 
 install: pyinstall
 
-fullinstall: clean alldeps build sync_smalldata install
+fullinstall: clean alldeps build install
 
 #############################################
 
@@ -247,46 +252,45 @@ mrproper: clean
 
 fullinstallprivate: clean alldeps_private build sync_data install
 
-sync_data: sync_smalldata sync_otherdata
-
+sync_data: sync_otherdata # sync_smalldata  # not currently using smalldata
 
 ##################
 
 dotest:
 	rm -rf ./tmp/
+	mkdir -p ./tmp/
+    # can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+
+dotestsmall:
+	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-
-dotestsklearn:
-	rm -rf ./tmp/
-	mkdir -p ./tmp/
-    # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml tests_sklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests_small 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml testsbig 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests_big 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 
 #####################
 
 dotestperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	bash tests/showresults.sh
 
-dotestsklearnperf:
+dotestsmallperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsklearn.xml testssklearn 2> ./tmp/h2o4gpu-testsklearn.$(LOGEXT).log
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
 	bash tests/showresults.sh
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml testsbig 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 	bash tests/showresults.sh # still just references results directory in base path
 
-#########################
+######################### use python instead of pytest (required in some cases if pytest leads to hang)
 
 dotestperfpython:
 	mkdir -p ./tmp/
@@ -299,28 +303,32 @@ dotestbigperfpython:
 	bash tests/showresults.sh # still just references results directory in base path
 
 ################### H2O.ai public tests for pass/fail
-testsklearn: build sync_data dotestsklearn
+
+test: build dotest # faster if also run sync_open_data before doing this test, but can't always assume user has s3 creds setup (even needed for public repo on S3)
+
+testquick: dotest
 
 ################ H2O.ai public tests for performance
 
-testsklearnperf: build sync_data dotestsklearnperf
+testperf: build dotestperf # faster if also run sync_open_data before doing this test
 
 ################### H2O.ai private tests for pass/fail
-test: build sync_data dotest
+
+testsmall: build sync_data dotestsmall
+
+testsmallquick: dotestsmall
 
 testbig: build sync_data dotestbig
-
-testquick: dotest
 
 testbigquick: dotestbig
 
 ################ H2O.ai private tests for performance
 
-testperf: build sync_data dotestperf
+testsmallperf: build sync_data dotestsmallperf
 
 testbigperf: build sync_data dotestbigperf
 
-testperfquick: dotestperf
+testsmallperfquick: dotestsmallperf
 
 testbigperfquick: dotestbigperf
 

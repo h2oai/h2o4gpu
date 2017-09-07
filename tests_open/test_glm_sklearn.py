@@ -5,10 +5,7 @@ import logging
 
 print(sys.path)
 
-try:
-    from utils import find_file, run_glm
-except:
-    from tests.utils import find_file, run_glm
+from h2o4gpu.util.testing_utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
