@@ -133,7 +133,7 @@ cleanpy:
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
 	bash testsxgboost/runtestxgboost.sh
 	bash testsxgboost/extracttestxgboost.sh
-	bash tests/showresults.sh # same for all tests
+	bash tests_open/showresults.sh # same for all tests
 
 ################
 
@@ -278,29 +278,29 @@ dotestbig:
 dotestperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-	bash tests/showresults.sh
+	bash tests_open/showresults.sh
 
 dotestsmallperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
-	bash tests/showresults.sh
+	bash tests_open/showresults.sh
 
 dotestbigperf:
 	mkdir -p ./tmp/
 	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
-	bash tests/showresults.sh # still just references results directory in base path
+	bash tests_open/showresults.sh # still just references results directory in base path
 
 ######################### use python instead of pytest (required in some cases if pytest leads to hang)
 
 dotestperfpython:
 	mkdir -p ./tmp/
-	bash tests/getresults.sh $(LOGEXT)
-	bash tests/showresults.sh
+	bash tests_open/getresults.sh $(LOGEXT)
+	bash tests_open/showresults.sh
 
 dotestbigperfpython:
 	mkdir -p ./tmp/
 	bash testsbig/getresultsbig.sh $(LOGEXT)
-	bash tests/showresults.sh # still just references results directory in base path
+	bash tests_open/showresults.sh # still just references results directory in base path
 
 ################### H2O.ai public tests for pass/fail
 

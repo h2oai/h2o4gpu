@@ -56,8 +56,10 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     else:
         ValueError("No such whichdata")
 
-    X = data.data
-    y = data.target
+    sizetokeep=1000 # 1k rows for now
+    sizetokeep = min(sizetokeep,len(data.data[:,0]))
+    X = data.data[0:sizetokeep,:]
+    y = data.target[0:sizetokeep]
     print("Got Data")
 
     # Create 0.8/0.2 train/test split

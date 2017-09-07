@@ -8,7 +8,7 @@ import logging
 
 print(sys.path)
 
-from h2o4gpu.util.testing_utils import find_file, run_glm
+from h2o4gpu.util.testing_utils import find_file, run_glm, run_glm_ptr
 
 logging.basicConfig(level=logging.DEBUG)
 

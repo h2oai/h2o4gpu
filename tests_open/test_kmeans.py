@@ -58,12 +58,37 @@ class TestKmeans(object):
 
     @staticmethod
     def _fetch_data():
-        train_file = "./data/kmeans_homesite_train.csv"
-        test_file = "./data/kmeans_homesite_test.csv"
+        import pandas as pd
+        if 1==1:
+            from h2o4gpu.datasets import fetch_20newsgroups, fetch_20newsgroups_vectorized, fetch_california_housing, \
+                fetch_covtype, fetch_kddcup99, fetch_lfw_pairs, fetch_lfw_people, fetch_mldata, fetch_olivetti_faces, \
+                fetch_rcv1, fetch_species_distributions
+            from h2o4gpu.model_selection import train_test_split
+            data = fetch_covtype()
+            sizetokeep = 1000  # 1k rows for now
+            sizetokeep = min(sizetokeep, len(data.data[:, 0]))
+            X = data.data[0:sizetokeep, :]
+            y = data.target[0:sizetokeep]
+            print("Got Data")
 
-        train = pd.read_csv(train_file)
-        test = pd.read_csv(test_file)
-        train.drop(['QuoteConversion_Flag'], axis=1, inplace=True)
+            # Create 0.8/0.2 train/test split
+            print("Split Data")
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8,
+                                                                random_state=42)
+
+            test= pd.DataFrame(X_test)
+            train = pd.DataFrame(X_train)
+
+        # https://github.com/caesar0301/awesome-public-datasets
+        else:
+            # TODO: FIXME
+            train_file = "./data/???_train.csv"
+            test_file = "./data/???_test.csv"
+
+            train = pd.read_csv(train_file)
+            test = pd.read_csv(test_file)
+            train.drop(['QuoteConversion_Flag'], axis=1, inplace=True)
+
         dataset = pd.concat([train, test], ignore_index=True)
         tmp = dataset.dtypes.reset_index().rename(
             columns={0: "type"})  # ["index"]
