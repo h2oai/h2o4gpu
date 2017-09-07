@@ -466,7 +466,7 @@ class KMeans(object):
         if y is None:
             from numpy.random import RandomState
             ynp = RandomState(self.seed).randint(rows, size=rows) % \
-                self._n_clusters
+                  self._n_clusters
         else:
             ynp, _, _, _, _, _ = _get_data(y)
             _check_data_content(self.do_checks, "y", ynp)

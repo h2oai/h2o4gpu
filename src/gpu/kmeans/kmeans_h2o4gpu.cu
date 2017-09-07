@@ -118,6 +118,12 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
   array = host_array;
 }
 
+void copy_labels_shuffled(int verbose, std::vector<int> v, const char ord, thrust::device_vector<int> &labels,
+                          const int *srclabels, int q, int n, int npergpu) {
+  copy_data_shuffled(verbose, v, ord, labels, srclabels, q, n, npergpu, 1);
+}
+
+
 template<typename T>
 void copy_centroids_shuffled(int verbose, std::vector<int> v, const char ord, thrust::device_vector<T> &array,
                              const T *srcdata, int n, int k, int d) {
@@ -278,7 +284,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   }
 
   std::vector<int> v(rows);
-  std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., 99.
+  std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., rows.
 
   if (seed >= 0) {
     std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
@@ -290,7 +296,12 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
-    copy_labels(verbose, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
+
+    if (init_data == 1) { // shard by row
+      copy_labels(verbose, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
+    } else { // shard by randomly (without replacement) selected by row
+      copy_labels_shuffled(verbose, v, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
+    }
 
     if (init_data == 0) { // random (for testing)
       random_data<T>(verbose, *data[q], rows / n_gpu, cols);
@@ -378,6 +389,24 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   for (int q = 0; q < n_gpu; q++) {
     h_labels->insert(h_labels->end(), labels[q]->begin(), labels[q]->end());
   }
+
+  // The initial dataset was shuffled, we need to reshuffle the labels accordingly
+  // This also reshuffles the initial permutation scheme v
+  if(init_data > 1) {
+    for (int i = 0; i < rows; i++) {
+      while (v[i] != i) {
+        int tmpIdx = v[v[i]];
+        int tmpLabel = h_labels->data()[v[i]];
+
+        h_labels->data()[v[i]] = h_labels->data()[i];
+        v[v[i]] = v[i];
+
+        v[i] = tmpIdx;
+        h_labels->data()[i] = tmpLabel;
+      }
+    }
+  }
+
   *pred_labels = h_labels->data();
 
   // debug
@@ -442,8 +471,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
 
-    // TODO should this always be 'r' order?
-    copy_data(verbose, ord, *d_centroids[q], &centroids[0], 0, k, k, cols);
+    copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
 
     copy_data(verbose, ord, *d_data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
@@ -521,8 +549,7 @@ int kmeans_transform(int verbose,
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
 
-    // TODO should this be always 'r' order?
-    copy_data(verbose, ord, *d_centroids[q], &centroids[0], 0, k, k, cols);
+    copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
 
     copy_data(verbose, ord, *d_data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
