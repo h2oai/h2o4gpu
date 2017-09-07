@@ -4,14 +4,10 @@ import os
 import numpy as np
 import pandas as pd
 import logging
-import feather
 
 print(sys.path)
 
-try:
-    from utils import find_file, run_glm
-except:
-    from tests.utils import find_file, run_glm
+from h2o4gpu.util.testing_utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -43,8 +39,9 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     #y = df.iloc[:, df.shape[1] - 1]
 
     t1 = time.time()
+    # by default, tol=1E-2 for h2o4gpu and don't try to be strictly as accurate as h2o-3, so use tolernace that represents how well we expect to do with default tol for glm algo.
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name)
+                                        validFraction=validFraction, verbose=0, name=name, tolerance = 0.34)
 
     # check rmse
     print(rmse_train[0, 0])

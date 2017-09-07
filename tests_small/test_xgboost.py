@@ -5,11 +5,6 @@ import logging
 
 print(sys.path)
 
-try:
-    from utils import find_file
-except:
-    from tests.utils import find_file
-
 logging.basicConfig(level=logging.DEBUG)
 
 def fun():
