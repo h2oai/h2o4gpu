@@ -122,12 +122,11 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     fortran = 1
     print("fortran=%d" % (fortran))
 
-    sourceme = 0
     sourceDev = 0
     fit_intercept = True  # should be passed in from above if user added fit_intercept
     lambda_min_ratio = 1e-9
-    give_full_path = 1
-    precision = 0
+    store_full_path = 1
+    double_precision = 0
     # variables
     if use_gpu == 1:
         a, b = c_void_p(train_data_mat_ptr.value), c_void_p(train_result_mat_ptr.value)
@@ -146,19 +145,19 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     Solver = h2o4gpu.GLM
     enet = Solver(n_gpus=nGPUs, order='c' if fortran else 'r', fit_intercept=fit_intercept,
                   lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
-                  n_folds=nFolds, n_alphas=nAlphas, verbose=5, give_full_path=give_full_path)
+                  n_folds=nFolds, n_alphas=nAlphas, verbose=5, store_full_path=store_full_path)
 
     print("Solving")
     sys.stdout.flush()
     if use_gpu == 1:
-        enet.fit_ptr(sourceDev, mTrain, n, mValid, precision, None, a, b, c, d, e)
+        enet.fit_ptr(sourceDev, mTrain, n, mValid, double_precision, None, a, b, c, d, e)
     else:
         enet.fit(a, b, c, d, e)
     # t1 = time()
     print("Done Solving\n")
     sys.stdout.flush()
 
-    error_train = printallerrors(display, enet, "Train", give_full_path)
+    error_train = printallerrors(display, enet, "Train", store_full_path)
 
     print('Predicting')
     sys.stdout.flush()
@@ -170,7 +169,7 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     sys.stdout.flush()
     print('predicted values:\n', pred_val)
 
-    error_test = printallerrors(display, enet, "Test", give_full_path)
+    error_test = printallerrors(display, enet, "Test", store_full_path)
 
     if write == 0:
         os.system('rm -f error.txt; rm -f pred*.txt; rm -f varimp.txt; rm -f me*.txt; rm -f stats.txt')
@@ -179,12 +178,12 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     return pred_val, error_train, error_test
 
 
-def printallerrors(display, enet, str, give_full_path):
+def printallerrors(display, enet, str, store_full_path):
     error = enet.error
     alphas = enet.alphas
     lambdas = enet.lambdas
     tols = enet.tols
-    if give_full_path == 1:
+    if store_full_path == 1:
         error_full = enet.error_full
         alphas_full = enet.alphas_full
         lambdas_full = enet.lambdas_full
@@ -204,7 +203,7 @@ def printallerrors(display, enet, str, give_full_path):
         print('ALPHAS for %s  ' % str, alphas)
         print('LAMBDAS for %s  ' % str, lambdas)
         print('TOLS for %s  ' % str, tols)
-        if give_full_path == 1:
+        if store_full_path == 1:
             print('full path : ', (str, loss, error_full))
             print('ALPHAS full path : ', (str, alphas_full))
             print('LAMBDAS full path : ', (str, lambdas_full))
@@ -226,7 +225,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
-    give_full_path = 1
+    store_full_path = 1
 
     print("Doing %s" % (name))
     sys.stdout.flush()
@@ -299,19 +298,19 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
                       n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose, family=family,
-                      give_full_path=give_full_path, alphas=alphas, lambdas=lambdas)
+                      store_full_path=store_full_path, alphas=alphas, lambdas=lambdas)
     elif solver is "lasso":
         Solver = h2o4gpu.Lasso
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
                       n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family,
-                      give_full_path=give_full_path, lambdas=lambdas)
+                      store_full_path=store_full_path, lambdas=lambdas)
     elif solver is "ridge":
         Solver = h2o4gpu.Ridge
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
                       n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose, family=family,
-                      give_full_path=give_full_path, lambdas=lambdas)
+                      store_full_path=store_full_path, lambdas=lambdas)
     elif solver is "linear_regression":
         Solver = h2o4gpu.LinearRegression
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
@@ -321,7 +320,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
         enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
                       lambda_min_ratio=lambda_min_ratio,
                       n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas, verbose=verbose,
-                      give_full_path=give_full_path)
+                      store_full_path=store_full_path)
 
     print("trainX")
     print(trainX)
@@ -368,11 +367,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     print(tols)
 
     print("All lambdas")
-    lambdas = enet.lambdas
+    lambdas = enet.lambdas_full
     print(lambdas)
 
     assert np.isfinite(enet.X).all() == True
-    if give_full_path != 0:
+    if store_full_path != 0:
         assert np.isfinite(enet.X_full).all() == True
 
     Xvsalphabest = enet.X_best
@@ -437,7 +436,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
     if print_all_errors:
         print("PRINT ALL ERRORS")
-        print(printallerrors(display=1, enet=enet, str="Train", give_full_path=give_full_path))
+        print(printallerrors(display=1, enet=enet, str="Train", store_full_path=store_full_path))
 
     enet.finish()
     print("Done Reporting")

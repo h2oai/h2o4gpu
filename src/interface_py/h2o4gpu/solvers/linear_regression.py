@@ -32,7 +32,7 @@ class LinearRegression(GLM):
     :param int verbose: Print verbose information to the console if set to > 0.
         Default is 0.
 
-    :param int give_full_path : Extract full regularization path from glm model
+    :param int store_full_path : Extract full regularization path from glm model
     """
     def __init__(
             self,
@@ -45,7 +45,7 @@ class LinearRegression(GLM):
             glm_stop_early_error_fraction=1.0,
             max_iter=5000,
             verbose=0,
-            give_full_path=0
+            store_full_path=0
     ):
         super(LinearRegression, self).__init__(
             n_threads=n_threads,
@@ -65,5 +65,5 @@ class LinearRegression(GLM):
             lambda_max=0.0,
             alpha_max=0.0,
             alpha_min=0.0,
-            give_full_path=give_full_path,
+            store_full_path=store_full_path,
             order=None)
