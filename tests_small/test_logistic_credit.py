@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 import logging
-import feather
+import pandas as pd
 
 print(sys.path)
 
@@ -22,7 +22,7 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
     sys.stdout.flush()
 
     print("Reading Data")
-    df = feather.read_dataframe("./data/credit.feather")
+    df = pd.read_csv("./data/creditcard.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
