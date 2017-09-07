@@ -2,6 +2,8 @@ import time
 import sys
 import os
 import logging
+import pytest
+import numpy as np
 
 print(sys.path)
 
@@ -27,16 +29,16 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
     from h2o4gpu.model_selection import train_test_split
 
     # Fetch dataset
-    if whichdata == 0: # runs
-        data = fetch_20newsgroups()
+    if whichdata == 0:
+        data = fetch_20newsgroups() # runs
     elif whichdata == 1:
-        data = fetch_20newsgroups_vectorized()
+        data = fetch_20newsgroups_vectorized() # sparse
     elif whichdata == 2:
         data = fetch_california_housing() # runs
     elif whichdata == 3:
         data = fetch_covtype()
     elif whichdata == 4:
-        data = fetch_kddcup99()
+        data = fetch_kddcup99() # strings -> numeric
     elif whichdata == 5:
         data = fetch_lfw_pairs()
     elif whichdata == 6:
@@ -51,14 +53,19 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
         data = fetch_olivetti_faces() # runs
     elif whichdata == 11:
         data = fetch_rcv1()
+        #data = data.todense() # FIXME: glm and kmeans h2o4gpu currently only supports dense matrices
     elif whichdata == 12:
         data = fetch_species_distributions()
     else:
         ValueError("No such whichdata")
 
     sizetokeep=1000 # 1k rows for now
-    sizetokeep = min(sizetokeep,len(data.data[:,0]))
-    X = data.data[0:sizetokeep,:]
+    try:
+        sizetokeep = min(sizetokeep,len(data.data[:,0]))
+        X = data.data[0:sizetokeep, :]
+    except:
+        sizetokeep = min(sizetokeep, len(data.data[:]))
+        X = data.data[0:sizetokeep]
     y = data.target[0:sizetokeep]
     print("Got Data")
 
@@ -91,9 +98,18 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
             X_train_pd[col] = le.transform(X_train_pd[col])
             X_test_pd[col] = le.transform(X_test_pd[col])
 
+    X_train_pd = pd.get_dummies(X_train_pd).fillna(0.0)
+    X_test_pd = pd.get_dummies(X_test_pd).fillna(0.0)
+    y_train_pd = pd.Series(y_train).fillna(0.0)
+    y_test_pd = pd.Series(y_test).fillna(0.0)
+
     # get back numpy
     X_test = X_test_pd.values
     X_train = X_train_pd.values
+    y_test = y_test_pd.values
+    y_train = y_train_pd.values
+
+
 
     # TODO: Should write this to file and avoid doing encoding if already exists
 
@@ -125,15 +141,16 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata
 def test_glm_sklearn_gpu_data0(): fun(whichdata=0)
 
 
+@pytest.mark.skip("No direct handling of compressed data yet (can convert, but want to add this feature later)")
 def test_glm_sklearn_gpu_data1(): fun(whichdata=1)
 
 
 def test_glm_sklearn_gpu_data2(): fun(whichdata=2)
 
-
+@pytest.mark.skip("Unknown")
 def test_glm_sklearn_gpu_data3(): fun(whichdata=3)
 
-
+@pytest.mark.skip("No multi-class yet")
 def test_glm_sklearn_gpu_data4(): fun(whichdata=4)
 
 
@@ -148,16 +165,17 @@ def test_glm_sklearn_gpu_data7(): fun(whichdata=7)
 
 def test_glm_sklearn_gpu_data8(): fun(whichdata=8)
 
-
+@pytest.mark.skip("Unknown")
 def test_glm_sklearn_gpu_data9(): fun(whichdata=9)
 
 
 def test_glm_sklearn_gpu_data10(): fun(whichdata=10)
 
 
+@pytest.mark.skip("No direct handling of compressed data yet (can convert, but want to add this feature later)")
 def test_glm_sklearn_gpu_data11(): fun(whichdata=11)
 
-
+@pytest.mark.skip("Unknown")
 def test_glm_sklearn_gpu_data12(): fun(whichdata=12)
 
 
