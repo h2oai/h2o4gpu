@@ -61,9 +61,11 @@ class GLM(object):
 
     :param str family : "logistic" for classification with logistic regression.
         Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+
     :param int store_full_path: Whether to store full solution for all alphas
         and lambdas.  If 1, then during predict will compute best and full predictions.
         Default is 0.
+
     :param int,float lambda_max : Maximum Lambda value to use.
         Default is None, and then internally compute standard maximum
 
@@ -76,7 +78,9 @@ class GLM(object):
 
     :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
         overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
+
     :param int double_precision: float32 (0) and float64 (1).  Default is None, internally set unless using _ptr methods
+    
     :param order : Order of data.  Default is None, and internally determined (unless using _ptr methods)
         whether row 'r' or column 'c' major order.
     """
