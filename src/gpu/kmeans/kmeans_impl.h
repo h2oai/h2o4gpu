@@ -97,17 +97,14 @@ int kmeans(
       range[q] = new thrust::device_vector<int>(n / n_gpu);
       counts[q] = new thrust::device_vector<int>(k);
       indices[q] = new thrust::device_vector<int>(n / n_gpu);
-    }
-
-    catch (thrust::system_error &e) {
+    } catch (thrust::system_error &e) {
       // output an error message and exit
       std::stringstream ss;
       ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
          << " error: " << e.what() << std::endl;
       return (-1);
       // throw std::runtime_error(ss.str());
-    }
-    catch (std::bad_alloc &e) {
+    } catch (std::bad_alloc &e) {
       // output an error message and exit
       std::stringstream ss;
       ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
@@ -131,6 +128,7 @@ int kmeans(
     }
 
     detail::make_self_dots(n / n_gpu, d, *data[q], *data_dots[q]);
+
     if (init_from_data) {
       if (verbose) {
         fprintf(stderr, "Before find_centroids: gpu: %d\n", q);
@@ -172,6 +170,7 @@ int kmeans(
                              *range[q],
                              *indices[q],
                              *counts[q]);
+
       //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
       mycub::sum_reduce(*distances[q], d_distance_sum[q]);
     }

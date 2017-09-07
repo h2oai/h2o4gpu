@@ -8,16 +8,17 @@ KMeans solver tests using Kaggle datasets.
 import h2o4gpu as h2o4gpu
 import pandas as pd
 import numpy as np
-import random
 
 
 class TestKmeans(object):
     def test_preds_vs_scikit(self):
         X = self._fetch_data()
-        model, labels = self._train_model(X)
+        model = self._train_model(X)
 
         train_labels = model.predict(X)
-        sklearn_labels = model.sklearn_predict(X, labels)
+        print(train_labels)
+        sklearn_labels = model.sklearn_predict(X)
+        print(sklearn_labels)
 
         diffs = 0
         for tl in zip(train_labels, sklearn_labels):
@@ -28,7 +29,7 @@ class TestKmeans(object):
 
     def test_transform_vs_scikit(self):
         X = self._fetch_data()
-        model, labels = self._train_model(X)
+        model = self._train_model(X)
 
         h2o_labels = \
             list(map(lambda x: np.argmin(x), model.transform(X)))
@@ -36,38 +37,21 @@ class TestKmeans(object):
         sklearn_labels = \
             list(
                 map(lambda x: np.argmin(x),
-                    model.sklearn_transform(X, labels))
+                    model.sklearn_transform(X))
             )
 
         diffs = 0
         for tl in zip(h2o_labels, sklearn_labels):
-            if not np.array_equal(tl[0], tl[1]):
+            if tl[0] != tl[1]:
                 diffs = diffs + 1
 
         assert diffs / X.shape[0] <= 0.1
 
     @staticmethod
     def _train_model(trainencflt):
-        k = 10
-        rows = np.shape(trainencflt)[0]
-        print(rows)
-        np.random.seed(1234)
-        # labels = np.random.randint(rows, size=rows) % k
-        labels = np.asarray([])
-        num = int(rows / k)
-        for x in range(0, num + 1):
-            if x < num:
-                many = k
-            else:
-                many = rows % k
-            labels = np.append(labels,
-                               np.asarray(random.sample(range(k), many)))
-        print(labels.shape)
-        n_gpus = 1
-        model = h2o4gpu.KMeans(n_gpus=n_gpus, n_clusters=k, tol=1e-7,
-                               max_iter=100)
-        model.fit(trainencflt, labels)
-        return model, labels
+        model = h2o4gpu.KMeans(n_gpus=1, n_clusters=10, tol=1e-7,
+                               max_iter=100, init_data='selectstrat')
+        return model.fit(trainencflt)
 
     @staticmethod
     def _fetch_data():
