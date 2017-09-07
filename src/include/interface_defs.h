@@ -1,5 +1,5 @@
 /*!
- * Modifications copyright (C) 2017 H2O.ai
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 #ifndef INTERFACE_DEFS_H_
 #define INTERFACE_DEFS_H_

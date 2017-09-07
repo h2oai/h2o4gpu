@@ -7,7 +7,7 @@
 * this software and related documentation outside the terms of the EULA
 * is strictly prohibited.
 *
-* Modifications copyright (C) 2017 H2O.ai
+* Modifications Copyright 2017 H2O.ai, Inc.
 *
 */
 

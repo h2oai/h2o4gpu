@@ -1,5 +1,5 @@
 /*!
- * Modifications copyright (C) 2017 H2O.ai
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 #ifndef TIMER_H_
 #define TIMER_H_

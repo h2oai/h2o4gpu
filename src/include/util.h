@@ -1,5 +1,5 @@
 /*!
- * Modifications copyright (C) 2017 H2O.ai
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 #ifndef UTIL_H_
 #define UTIL_H_

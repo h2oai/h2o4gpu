@@ -1,5 +1,5 @@
 /*!
- * Modifications copyright (C) 2017 H2O.ai
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 //  CGLS Conjugate Gradient Least Squares
 //  Attempts to solve the least squares problem

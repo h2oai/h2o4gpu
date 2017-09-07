@@ -1,5 +1,5 @@
 /*!
- * Modifications copyright (C) 2017 H2O.ai
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #include "kmeans_labels.h"
