@@ -1,0 +1,11 @@
+Package: h2o4gpu
+Type: Package
+Title: H2O GPU Edition
+Version: 0.0.1
+Date: 2017-09-06
+Author: H2O.ai
+Maintainer: Erin LeDell <erin@h2o.ai>
+Description: This package contains a GPU enabled version of glmnet() and will contain more machine learning algorithms in the future.  Also included is GPU solver for convex optimization problems in the form f(Ax) + g(x).  This is a GPU enabled version of POGS (Proximal Operator Graph Solver).
+License: BSD 3
+Depends:
+    Matrix
