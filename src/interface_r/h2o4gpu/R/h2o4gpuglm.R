@@ -26,22 +26,22 @@
 #' lambda = 5
 #' f = list(h = kSquare(), b = b)
 #' g = list(h = kAbs(), c = lambda)
-#' h2o4gpu(A, f, g)
+#' pogs(A, f, g)
 #' @useDynLib h2o4gpu
 #' @import Matrix
 #' @export  
-h2o4gpu <- function(A, f, g, params=list()) {
+pogs <- function(A, f, g, params=list()) {
   # Make sure A is numeric matrix.
   if (!is.numeric(A)) {
-    stop("h2o4gpu(): input A must be numeric!")
+    stop("pogs(): input A must be numeric!")
   }
   if (!is.matrix(A)) {
-    stop("h2o4gpu(): input A must be a matrix!")
+    stop("pogs(): input A must be a matrix!")
   }
 
   # Make sure f and g are lists.
   if (!is.list(f) || !is.list(g) || !is.list(params)) {
-    stop("h2o4gpu(): inputs f, g and params must be lists!")
+    stop("pogs(): inputs f, g and params must be lists!")
   }
 
   # Make f and g into lists if they are not already
@@ -64,22 +64,22 @@ h2o4gpu <- function(A, f, g, params=list()) {
       stop("f must be a named list (elements h, a, b, c, d, e)")
     }
     if (!any(names(fi) == "h")) {
-      stop("h2o4gpu(): field f$h is required!")
+      stop("pogs(): field f$h is required!")
     }
     for (name in names(fi)) {
       if (!any(name == c("a", "b", "c", "d", "e", "h"))) {
-        stop(cat("h2o4gpu(): field f$", name, " unknown!", sep=""))
+        stop(cat("pogs(): field f$", name, " unknown!", sep=""))
       }
       if (!is.numeric(fi[[name]])) {
-        stop(cat("h2o4gpu(): field f$", name, " must be numeric!", sep=""))
+        stop(cat("pogs(): field f$", name, " must be numeric!", sep=""))
       }
       # Convert to double (in case it's a matrix).
       fi[[name]] = as.double(fi[[name]])
       if (!is.vector(fi[[name]])) {
-        stop(cat("h2o4gpu(): field f$", name, " must be a vector!", sep=""))
+        stop(cat("pogs(): field f$", name, " must be a vector!", sep=""))
       }
       if (length(fi[[name]]) != nrow(A) && length(fi[[name]]) != 1) {
-        stop(cat("h2o4gpu(): field f$", name, " must must have length nrow(A) or 1!", sep=""))
+        stop(cat("pogs(): field f$", name, " must must have length nrow(A) or 1!", sep=""))
       }
     }
   }
@@ -91,22 +91,22 @@ h2o4gpu <- function(A, f, g, params=list()) {
       stop("g must be a named list (elements h, a, b, c, d, e)")
     }
     if (!any(names(gi) == "h")) {
-      stop("h2o4gpu(): field g$h is required!")
+      stop("pogs(): field g$h is required!")
     }
     for (name in names(gi)) {
       if (!any(name == c("a", "b", "c", "d", "e", "h"))) {
-        stop(cat("h2o4gpu(): field g$", name, " unknown!", sep=""))
+        stop(cat("pogs(): field g$", name, " unknown!", sep=""))
       }
       if (!is.numeric(gi[[name]])) {
-        stop(cat("h2o4gpu(): field g$", name, " must be numeric!", sep=""))
+        stop(cat("pogs(): field g$", name, " must be numeric!", sep=""))
       }
       # Convert to double (in case it's a matrix).
       gi[[name]] = as.double(gi[[name]])
       if (!is.vector(gi[[name]])) {
-        stop(cat("h2o4gpu(): field g$", name, " must be a vector!", sep=""))
+        stop(cat("pogs(): field g$", name, " must be a vector!", sep=""))
       }
       if (length(gi[[name]]) != ncol(A) && length(gi[[name]]) != 1) {
-        stop(cat("h2o4gpu(): field g$", name, " must must have length ncol(A) or 1!", sep=""))
+        stop(cat("pogs(): field g$", name, " must must have length ncol(A) or 1!", sep=""))
       }
     }
   }
@@ -117,16 +117,16 @@ h2o4gpu <- function(A, f, g, params=list()) {
   }
   for (name in names(params)) {
     if (!any(name == c("rel_tol", "abs_tol", "rho", "max_iter", "verbose", "adaptive_rho", "equil", "gap_stop", "nDev", "wDev"))) {
-      stop(cat("h2o4gpu(): field params$", name, " unknown!", sep=""))
+      stop(cat("pogs(): field params$", name, " unknown!", sep=""))
     }
     if (!is.numeric(params[[name]]) && name != "adaptive_rho" && name != "equil" && name != "gap_stop") {
-      stop(cat("h2o4gpu(): field params$", name, " must be numeric!", sep=""))
+      stop(cat("pogs(): field params$", name, " must be numeric!", sep=""))
     }
     if (!is.logical(params[[name]]) && (name == "adaptive_rho" || name == "equil" || name == "gap_stop")) {
-      stop(cat("h2o4gpu(): field params$", name, " must be logical!", sep=""))
+      stop(cat("pogs(): field params$", name, " must be logical!", sep=""))
     }
     if (length(params[[name]]) != 1) {
-      stop(cat("h2o4gpu(): field params$", name, " must must have length 1!", sep=""))
+      stop(cat("pogs(): field params$", name, " must must have length 1!", sep=""))
     }
     if (name == "verbose") {
       params[[name]] = as.integer(params[[name]])
@@ -390,7 +390,7 @@ h2o4gpunet <- function(x, y, family=c("gaussian", "binomial"),
   }
   
   # Solve
-  soln = h2o4gpu(x, f, g, params) 
+  soln = pogs(x, f, g, params) 
   
   # Extract Output
   fit = list(beta = matrix(rep(0, (nvars + 1) * nlambda), nvars + 1, nlambda),
