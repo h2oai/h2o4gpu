@@ -78,7 +78,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
             t1 = time.time()
             rmse_train, rmse_test = run_glm(xfull, yfull, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                                 nalpha=nAlphas,
-                                                validFraction=validFraction, verbose=0, name=name)
+                                                validFraction=validFraction, verbose=0, name=name, skip_perf=True)
         print("Testing GLM")
 
     # check rmse
