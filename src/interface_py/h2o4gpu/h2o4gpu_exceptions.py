@@ -4,7 +4,7 @@
 
 All H2O4GPU exceptions derive from :class:`H2O4GPUError`.
 
-:copyright: (c) 2017 H2O.ai
+:copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, \
