@@ -85,11 +85,17 @@ c:
 py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
+r:
+	$(MAKE) -j all -C src/interface_r
+
 fullpy: apply_sklearn_simple
 	$(MAKE) -j pylint all -C src/interface_py
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
+
+rinstall: r
+	$(MAKE) -j install -C src/interface_r
 
 ##############################################
 
@@ -97,13 +103,13 @@ alldeps: deps_fetch alldeps_install
 
 alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
 
-build: update_submodule cleanbuild cpp c py
+build: update_submodule cleanbuild cpp c py r
 
-buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
+buildnocpp: update_submodule cleanc cleanpy c py r # avoid cpp
 
-buildquick: cpp c py
+buildquick: cpp c py r
 
-install: pyinstall
+install: pyinstall rinstall
 
 fullinstall: clean alldeps build sync_smalldata install
 
@@ -112,7 +118,7 @@ fullinstall: clean alldeps build sync_smalldata install
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	rm -rf ./results/ ./tmp/
 
-cleanbuild: cleancpp cleanc cleanpy
+cleanbuild: cleancpp cleanc cleanpy cleanr
 
 cleancpp:
 	$(MAKE) -j clean -C src/
@@ -123,6 +129,9 @@ cleanc:
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
+
+cleanr:
+	$(MAKE) -j clean -C src/interface_r
 
 # uses https://github.com/Azure/fast_retraining
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
@@ -230,11 +239,11 @@ apply_sklearn_register:
 
 #################### Jenkins specific
 
-cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
+cleanjenkins: cleancpp cleanc cleanpy cleanr xgboost_clean py3nvml_clean
 
-buildjekins: update_submodule cpp c fullpy
+buildjekins: update_submodule cpp c fullpy  # r -- not yet
 
-installjenkins: pyinstall
+installjenkins: pyinstall  # rinstall -- not yet
 
 fullinstalljenkins: cleanjenkins alldeps_private buildjekins installjenkins
 
