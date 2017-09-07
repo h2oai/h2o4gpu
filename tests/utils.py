@@ -218,7 +218,7 @@ def printallerrors(display, enet, str, store_full_path):
 def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2,
             family="elasticnet", verbose=0,
             print_all_errors=False, get_preds=False, run_h2o=False, tolerance=.01, name=None, solver="glm",
-            lambda_min_ratio=1e-9, alphas=None, lambdas=None):
+            lambda_min_ratio=1e-9, alphas=None, lambdas=None, skip_perf=False):
     # Other default parameters for solving glm
     fit_intercept = True
     lambda_min_ratio = lambda_min_ratio  # Causes issue for h2o-3 when using 1k ipums dataset
@@ -232,7 +232,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
     doassert = 0  # default is not assert
 
     # Override run_h2o False default if environ exists
-    if os.getenv("H2OGLM_PERFORMANCE") is not None:
+    if os.getenv("H2OGLM_PERFORMANCE") is not None and skip_perf == False:
         run_h2o = True
 
     # Setup Train/validation Set Split
