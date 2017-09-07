@@ -93,6 +93,35 @@ pipeline {
             }
         }
 
+        stage('Test Perf on Linux') {
+            agent {
+                label "mr-dl11"
+            }
+
+            steps {
+                unstash 'linux_whl'
+                dumpInfo 'Linux Test Info'
+                script {
+                    try {
+                        sh """
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf py3nvml
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotestperf'
+                        """
+                    } finally {
+                        sh """
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
+                        """
+                        arch 'tmp/*.log'
+                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+                        deleteDir()
+                    }
+                }
+            }
+        }
+
         stage('Publish to S3') {
             agent {
                 label "linux"
