@@ -42,7 +42,7 @@ class Lasso(GLM):
     :param int verbose: Print verbose information to the console if set to > 0.
         Default is 0.
 
-    :param int give_full_path : Extract full regularization path from glm model
+    :param int store_full_path : Extract full regularization path from glm model
 
     :param str family: Use "logistic" for classification with logistic
         regression. Defaults to "elasticnet" for regression.
@@ -69,7 +69,7 @@ class Lasso(GLM):
             max_iter=5000,
             verbose=0,
             family="elasticnet",
-            give_full_path=0,
+            store_full_path=0,
             lambda_max=None,
             lambdas=None
     ):
@@ -88,7 +88,7 @@ class Lasso(GLM):
             max_iter=max_iter,
             verbose=verbose,
             family=family,
-            give_full_path=give_full_path,
+            store_full_path=store_full_path,
             lambda_max=lambda_max,
             alpha_max=1.0,
             alpha_min=1.0,

@@ -44,7 +44,7 @@ class LogisticRegression(GLM):
     :param int verbose: Print verbose information to the console if set to > 0.
         Default is 0.
 
-    :param int give_full_path : Extract full regularization path from glm model
+    :param int store_full_path : Extract full regularization path from glm model
 
     :param lambda_max: Maximum Lambda value to use.  Default is None, and then
         internally compute standard maximum.
@@ -77,7 +77,7 @@ class LogisticRegression(GLM):
             glm_stop_early_error_fraction=1.0,
             max_iter=5000,
             verbose=0,
-            give_full_path=0,
+            store_full_path=0,
             lambda_max=None,
             alpha_max=1.0,
             alpha_min=0.0,
@@ -99,7 +99,7 @@ class LogisticRegression(GLM):
             max_iter=max_iter,
             verbose=verbose,
             family='logistic',
-            give_full_path=give_full_path,
+            store_full_path=store_full_path,
             lambda_max=lambda_max,
             alpha_max=alpha_max,
             alpha_min=alpha_min,
