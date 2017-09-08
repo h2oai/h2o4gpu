@@ -1,4 +1,7 @@
+# -*- encoding: utf-8 -*-
 """
+XGBoost solver tests using Kaggle datasets.
+
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -8,11 +11,6 @@ import os
 import logging
 
 print(sys.path)
-
-try:
-    from utils import find_file
-except:
-    from tests.utils import find_file
 
 logging.basicConfig(level=logging.DEBUG)
 

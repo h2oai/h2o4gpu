@@ -1,4 +1,7 @@
+# -*- encoding: utf-8 -*-
 """
+Test utils
+
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -474,6 +477,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
         path = "./results"
         os.makedirs(path, exist_ok=True)
+        f1q = open(os.path.join(path, name + ".error.quick.dat"), 'wt+')
+        print('%s' % (name), file=f1q, end="")
+
+        path = "./results"
+        os.makedirs(path, exist_ok=True)
         f1a = open(os.path.join(path, name + ".error.h2o.dat"), 'wt+')
         print('%s' % (name), file=f1a, end="")
 
@@ -501,6 +509,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
 
         alphas_h2o = [item for alphas[0] in alphas for item in alphas[0]]
         for alpha in alphas_h2o:
+            alpha_h2o = alpha.item() # H2O only takes in python native numeric for alpha
             print("Setting up H2O Solver with alpha = %s" % alpha)
             nfoldsh2o = nfolds
             if nfoldsh2o == 1:
@@ -508,11 +517,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
             if family == "logistic":
                 h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
-                                                        family="binomial", alpha=alpha)
+                                                        family="binomial", alpha=alpha_h2o)
             else:
                 h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
                                                         lambda_search=True, nlambdas=nLambdas, nfolds=nfoldsh2o,
-                                                        family="gaussian", alpha=alpha)
+                                                        family="gaussian", alpha=alpha_h2o)
             # Solve
             if validFraction == 0.0:
                 print("Solving using H2O")
@@ -557,9 +566,6 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
                     print("\n")
                     h2o_cv_error = h2o_glm.model_performance(xval=True).rmse()
 
-            # Tolerance for h2o glm - gpu glm logloss
-            tolerance = tolerance
-
             NUM_ERRORS = 3
             which_errors = [False] * NUM_ERRORS
             # Train and nfolds
@@ -582,86 +588,99 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5, nalpha
                     thisrelerror = -(error_train[index, j] - h2o_train_error) / (
                     abs(error_train[index, j]) + abs(h2o_train_error))
                     if error_train[index, j] > h2o_train_error:
-                        if abs(error_train[index, j] - h2o_train_error) > tolerance:
+                        if abs(thisrelerror) > tolerance:
                             print("Train error failure: %g %g" % (error_train[index, j], h2o_train_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O Train Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
-                        print(' OK', file=f1, end="")
+                        print(' GOOD', file=f1, end="")
+                        print(' %g' % thisrelerror, file=f1q, end="")
                         print(' %g' % h2o_train_error, file=f1a, end="")
                         print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 1 and which_errors[j]:  # Compare to average cv error
                     thisrelerror = -(error_train[index, j] - h2o_train_error) / (
                     abs(error_train[index, j]) + abs(h2o_cv_error))
                     if error_train[index, j] > h2o_cv_error:
-                        if abs(error_train[index, j] - h2o_cv_error) > tolerance:
+                        if abs(thisrelerror) > tolerance:
                             print("CV error failure: %g %g" % (error_train[index, j], h2o_cv_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O CV Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
-                        print(' OK', file=f1, end="")
+                        print(' GOOD', file=f1, end="")
+                        print(' %g' % thisrelerror, file=f1q, end="")
                         print(' %g' % h2o_train_error, file=f1a, end="")
                         print(' %g' % error_train[index, j], file=f1b, end="")
                 elif j == 2 and which_errors[j]:  # Compare to validation error
                     thisrelerror = -(error_train[index, j] - h2o_train_error) / (
                     abs(error_train[index, j]) + abs(h2o_valid_error))
                     if error_train[index, j] > h2o_valid_error:
-                        if abs(error_train[index, j] - h2o_valid_error) > tolerance:
+                        if abs(thisrelerror) > tolerance:
                             print("Valid error failure: %g %g" % (error_train[index, j], h2o_valid_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
+                            print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
                             print(' %g' % error_train[index, j], file=f1b, end="")
                     else:
                         print("H2O Valid Error is larger than GPU GLM with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
-                        print(' OK', file=f1, end="")
+                        print(' GOOD', file=f1, end="")
+                        print(' %g' % thisrelerror, file=f1q, end="")
                         print(' %g' % h2o_train_error, file=f1a, end="")
                         print(' %g' % error_train[index, j], file=f1b, end="")
                 else:
                     print(' NA', file=f1, end="")
+                    print(' %g' % thisrelerror, file=f1q, end="")
                     print(' %g' % h2o_train_error, file=f1a, end="")
                     print(' %g' % error_train[index, j], file=f1b, end="")
 
-        print('', file=f1)
-        print('', file=f1a)
-        print('', file=f1b)
+        print('', file=f1) ; f1.flush()
+        print('', file=f1q) ; f1q.flush()
+        print('', file=f1a) ; f1a.flush()
+        print('', file=f1b) ; f1b.flush()
 
         # time entire alpha-lambda path
         duration_h2o = time() - start_h2o
 
         ratio_time = duration_h2o4gpu / duration_h2o
         print(' %g' % ratio_time, file=f2, end="")
-        print('', file=f2)
+        print('', file=f2) ; f2.flush()
 
         print(' %g' % duration_h2o, file=f2a, end="")
-        print('', file=f2a)
+        print('', file=f2a) ; f2a.flush()
 
         print(' %g' % duration_h2o4gpu, file=f2b, end="")
-        print('', file=f2b)
+        print('', file=f2b) ; f2b.flush()
+
+        # include asserts for timing
 
         # for pytest only:
         if os.getenv("H2OGLM_DISABLEPYTEST") is None:

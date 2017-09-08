@@ -8,10 +8,7 @@ import feather
 
 print(sys.path)
 
-try:
-    from utils import find_file, run_glm
-except:
-    from tests.utils import find_file, run_glm
+from h2o4gpu.util.testing_utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -26,14 +23,14 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     print("Reading Data")
     #
-    df = pd.read_csv("./data/ipums_1k.csv")
+    df = pd.read_csv("./data/simple.txt",delim_whitespace=True)
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
 
     t1 = time.time()
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name, solver="ridge")
+                                        validFraction=validFraction, verbose=0, name=name, solver="lasso")
 
     # check rmse
     print(rmse_train[0, 0])
@@ -69,38 +66,42 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print("DONE.")
     sys.stdout.flush()
 
-def test_glm_ipums_gpu_fold1_quick_0(): fun(nGPUs=1, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0)
+def test_glmlasso_ipums_gpu_fold1_quick_0(): fun(nGPUs=1, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold1_0(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0)
+def test_glmlasso_ipums_gpu_fold1_0(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold5_0(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0)
+def test_glmlasso_ipums_gpu_fold5_0(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0)
 
 
-def test_glm_ipums_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nAlphas=3, validFraction=0.2)
+def test_glmlasso_ipums_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
+def test_glmlasso_ipums_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
+def test_glmlasso_ipums_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu2_fold1_quick(): fun(nGPUs=2, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0.2)
+def test_glmlasso_ipums_gpu2_fold1_quick(): fun(nGPUs=2, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0.2)
 
 
-def test_glm_ipums_gpu2_fold1(): fun(nGPUs=2, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
+def test_glmlasso_ipums_gpu2_fold1(): fun(nGPUs=2, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
+
+
+def test_glmlasso_ipums_gpu2_fold5(): fun(nGPUs=3, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
 if __name__ == '__main__':
-    test_glm_ipums_gpu_fold1_quick_0()
-    test_glm_ipums_gpu_fold1_0()
-    test_glm_ipums_gpu_fold5_0()
+    test_glmlasso_ipums_gpu_fold1_quick_0()
+    test_glmlasso_ipums_gpu_fold1_0()
+    test_glmlasso_ipums_gpu_fold5_0()
 
-    test_glm_ipums_gpu_fold1_quick()
-    test_glm_ipums_gpu_fold1()
-    test_glm_ipums_gpu_fold5()
+    test_glmlasso_ipums_gpu_fold1_quick()
+    test_glmlasso_ipums_gpu_fold1()
+    test_glmlasso_ipums_gpu_fold5()
 
-    test_glm_ipums_gpu2_fold1_quick()
-    test_glm_ipums_gpu2_fold1()
+    test_glmlasso_ipums_gpu2_fold1_quick()
+    test_glmlasso_ipums_gpu2_fold1()
+    test_glmlasso_ipums_gpu2_fold5()

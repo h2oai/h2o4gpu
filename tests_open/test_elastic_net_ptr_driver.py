@@ -1,12 +1,12 @@
+# -*- encoding: utf-8 -*-
 """
+GLM solver tests using Kaggle datasets.
+
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import sys
-#sys.path.insert(0, "/home/arno/h2o4gpu/src/interface_py/")
 import h2o4gpu as h2o4gpu
 import numpy as np
-from numpy import abs, exp, float32, float64, log, max, zeros
 
 from ctypes import *
 from h2o4gpu.types import *

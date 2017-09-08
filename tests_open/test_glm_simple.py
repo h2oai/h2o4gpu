@@ -1,4 +1,7 @@
+# -*- encoding: utf-8 -*-
 """
+GLM solver tests using Kaggle datasets.
+
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -11,10 +14,7 @@ import logging
 
 print(sys.path)
 
-try:
-    from utils import find_file, run_glm
-except:
-    from tests.utils import find_file, run_glm
+from h2o4gpu.util.testing_utils import find_file, run_glm
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -53,7 +53,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, choosealp
 
     t1 = time.time()
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                    validFraction=validFraction, verbose=0, name=name, alphas=alphas, lambdas=lambdas)
+                                    validFraction=validFraction, verbose=0, name=name, alphas=alphas, lambdas=lambdas, tolerance=0.1)
 
     # check rmse
     print(rmse_train[0, 0])
