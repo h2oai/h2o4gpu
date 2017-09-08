@@ -1,6 +1,8 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #ifndef UTIL_H_
 #define UTIL_H_
-
 #include <stdio.h>
 
 #include <iostream>
@@ -503,4 +505,3 @@
 #endif
 
 #endif  // UTIL_H_
-

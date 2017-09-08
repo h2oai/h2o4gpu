@@ -2,9 +2,9 @@
  * Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
  *
  * See LICENCE.txt for license information
+ *
+ * Modifications Copyright 2017 H2O.ai, Inc.
  ************************************************************************/
-
-
 #ifndef SRC_TEST_UTILITIES_H_
 #define SRC_TEST_UTILITIES_H_
 

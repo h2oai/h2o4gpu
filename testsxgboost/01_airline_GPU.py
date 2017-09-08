@@ -1,6 +1,8 @@
-
 # coding: utf-8
-
+"""
+:copyright: 2017 H2O.ai, Inc.
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 # # Experiment 01: Airline dataset (GPU version)
 # 
 # In this experiment we use [the airline dataset](http://kt.ijs.si/elena_ikonomovska/data.html) to predict arrival delay. The dataset consists of a large amount of records, containing flight arrival and departure details for all the commercial flights within the USA, from October 1987 to April 2008. Its size is around 116 million records and 5.76 GB of memory.

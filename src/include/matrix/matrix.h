@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #ifndef MATRIX_MATRIX_H_
 #define MATRIX_MATRIX_H_
 

@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #ifdef __JETBRAINS_IDE__
 #define __host__
 #define __device__

@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #include "gsl/gsl_spblas.h"
 #include "gsl/gsl_spmat.h"
 #include "gsl/gsl_vector.h"

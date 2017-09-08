@@ -7,6 +7,8 @@
  * this software and related documentation outside the terms of the EULA
  * is strictly prohibited.
  *
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ *
  */
 
 // These are helper functions for the SDK samples (string parsing, timers, image helpers, etc)

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-:copyright: (c) 2017 H2O.ai
+:copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from h2o4gpu.solvers.elastic_net import GLM

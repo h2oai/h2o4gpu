@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #ifndef H2O4GPU_C_H
 #define H2O4GPU_C_H
 

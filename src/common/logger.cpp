@@ -1,8 +1,7 @@
-/* Copyright 2017 H2O.ai
-
-Apache License Version 2.0 (see LICENSE for details)
-==============================================================================*/
-
+/*!
+ * Copyright 2017 H2O.ai, Inc.
+ * License   Apache License Version 2.0 (see LICENSE for details)
+ */
 #include "logger.h"
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,7 +1,8 @@
 /*
  * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
+ *
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
-
 #if 1
 
 #include <cstdio>

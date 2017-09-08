@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #include <iostream>
 #include <chrono>
 #include <vector>

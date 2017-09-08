@@ -1,8 +1,6 @@
-/* Copyright 2017 H2O.ai
-
-Apache License Version 2.0 (see LICENSE for details)
-==============================================================================*/
-
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #define MAX_NCPUS 1
 
 namespace kmeans {

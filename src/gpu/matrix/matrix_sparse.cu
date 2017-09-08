@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #include <cublas_v2.h>
 #include <cusparse.h>
 

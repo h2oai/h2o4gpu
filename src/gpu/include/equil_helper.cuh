@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #ifndef EQUIL_HELPER_CUH_
 #define EQUIL_HELPER_CUH_
 

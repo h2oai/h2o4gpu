@@ -1,5 +1,8 @@
-#ifndef TIMER_H_ 
-#define TIMER_H_ 
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
+#ifndef TIMER_H_
+#define TIMER_H_
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -12,5 +15,4 @@ T timer() {
       static_cast<T>(tv.tv_usec) * static_cast<T>(1e-6);
 }
 
-#endif  // TIMER_H_
-
+#endif  // UTIL_H_

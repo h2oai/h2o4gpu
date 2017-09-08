@@ -1,4 +1,7 @@
-#ifndef PROJECTOR_PROJECTOR_H_ 
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
+#ifndef PROJECTOR_PROJECTOR_H_
 #define PROJECTOR_PROJECTOR_H_ 
 
 namespace h2o4gpu {

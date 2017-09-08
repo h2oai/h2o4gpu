@@ -1,3 +1,6 @@
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 

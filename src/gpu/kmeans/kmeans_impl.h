@@ -1,7 +1,6 @@
-/* Copyright 2017 H2O.ai
-
-Apache License Version 2.0 (see LICENSE for details)
-==============================================================================*/
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <atomic>

@@ -7,6 +7,7 @@
  * this software and related documentation outside the terms of the EULA
  * is strictly prohibited.
  *
+ * Modifications Copyright 2017 H2O.ai, Inc.
  */
 
 // Helper Timing Functions

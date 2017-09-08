@@ -1,8 +1,6 @@
-/* Copyright 2017 H2O.ai
-
-Apache License Version 2.0 (see LICENSE for details)
-==============================================================================*/
-
+/*!
+ * Modifications Copyright 2017 H2O.ai, Inc.
+ */
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
 #include <iostream>
