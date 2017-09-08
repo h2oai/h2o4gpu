@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 KMeans clustering solver.
 
@@ -75,11 +75,17 @@ class KMeans(object):
         >>> kmeans.cluster_centers_
     """
 
-    def __init__(self, n_clusters=8,
-                 max_iter=300, tol=1e-4, gpu_id=0, n_gpus=-1,
+    def __init__(self,
+                 n_clusters=8,
+                 max_iter=300,
+                 tol=1e-4,
+                 gpu_id=0,
+                 n_gpus=-1,
                  init_from_data=False,
                  init_data="randomselect",
-                 verbose=0, seed=None, do_checks=1):
+                 verbose=0,
+                 seed=None,
+                 do_checks=1):
 
         assert_is_type(n_clusters, int)
         assert_is_type(max_iter, int)
@@ -124,16 +130,28 @@ class KMeans(object):
         :return:
             Mapping of string (parameter name) to its value.
         """
-        params = {'n_clusters': self._n_clusters, 'n_gpus': self.n_gpus,
-                  'max_iter': self._max_iter, 'init': 'random',
-                  'algorithm': 'auto', 'precompute_distances': True,
-                  'tol': self.tol, 'n_jobs': -1,
-                  'random_state': self.seed, 'verbose': self.verbose,
-                  'copy_x': True}
+        params = {
+            'n_clusters': self._n_clusters,
+            'n_gpus': self.n_gpus,
+            'max_iter': self._max_iter,
+            'init': 'random',
+            'algorithm': 'auto',
+            'precompute_distances': True,
+            'tol': self.tol,
+            'n_jobs': -1,
+            'random_state': self.seed,
+            'verbose': self.verbose,
+            'copy_x': True
+        }
         return params
 
-    def set_params(self, n_clusters=None, n_gpus=None, max_iter=None, tol=None,
-                   random_state=None, verbose=None):
+    def set_params(self,
+                   n_clusters=None,
+                   n_gpus=None,
+                   max_iter=None,
+                   tol=None,
+                   random_state=None,
+                   verbose=None):
         """Set the parameters of this solver.
 
         :return: self
@@ -205,13 +223,15 @@ class KMeans(object):
 
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
-            self.sklearn_model = sk_cluster.KMeans(self._n_clusters, max_iter=1,
-                                                   init=self.cluster_centers_,
-                                                   n_init=1)
+            self.sklearn_model = sk_cluster.KMeans(
+                self._n_clusters,
+                max_iter=1,
+                init=self.cluster_centers_,
+                n_init=1)
             self.sklearn_model.fit(X_np, y_np)
-            # The code above initializes the SKlearn KMeans model,
-            # but due to validations we need to run 1 extra iteration,
-            # which might alter the cluster centers so we override them
+            #The code above initializes the SKlearn KMeans model,
+            #but due to validations we need to run 1 extra iteration,
+            #which might alter the cluster centers so we override them
             self.sklearn_model.cluster_centers_ = self.cluster_centers_
 
     def predict(self, X):
@@ -239,23 +259,21 @@ class KMeans(object):
 
         if self.double_precision == 0:
             lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self._gpu_id,
-                                      self.n_gpus, rows, cols, c_int(data_ord),
-                                      self._n_clusters,
+                                      self.n_gpus, rows, cols,
+                                      c_int(data_ord), self._n_clusters,
                                       self._max_iter, c_init_from_data,
-                                      c_init_data,
-                                      self.tol, c_data, None, c_centroids,
-                                      None, pointer(c_res))
+                                      c_init_data, self.tol, c_data, None,
+                                      c_centroids, None, pointer(c_res))
         else:
             lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self._gpu_id,
                                        self.n_gpus, rows, cols,
                                        c_int(data_ord), self._n_clusters,
                                        self._max_iter, c_init_from_data,
-                                       c_init_data,
-                                       self.tol, c_data, None, c_centroids,
-                                       None, pointer(c_res))
+                                       c_init_data, self.tol, c_data, None,
+                                       c_centroids, None, pointer(c_res))
 
-        preds = np.fromiter(cast(c_res, POINTER(c_int)), dtype=np.int32,
-                            count=rows)
+        preds = np.fromiter(
+            cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
         preds = np.reshape(preds, rows)
         return preds
 
@@ -296,25 +314,23 @@ class KMeans(object):
         data_ord = ord('c' if np.isfortran(X_np) else 'r')
 
         if self.double_precision == 0:
-            lib.kmeans_transform_float(self.verbose,
-                                       self._gpu_id, self.n_gpus,
-                                       rows, cols, c_int(data_ord),
-                                       self._n_clusters, c_data, c_centroids,
-                                       pointer(c_res))
+            lib.kmeans_transform_float(
+                self.verbose, self._gpu_id, self.n_gpus, rows, cols,
+                c_int(data_ord), self._n_clusters, c_data, c_centroids,
+                pointer(c_res))
         else:
-            lib.kmeans_transform_double(self.verbose,
-                                        self._gpu_id, self.n_gpus,
-                                        rows, cols, c_int(data_ord),
-                                        self._n_clusters, c_data, c_centroids,
-                                        pointer(c_res))
+            lib.kmeans_transform_double(
+                self.verbose, self._gpu_id, self.n_gpus, rows, cols,
+                c_int(data_ord), self._n_clusters, c_data, c_centroids,
+                pointer(c_res))
 
-        transformed = np.fromiter(cast(c_res, POINTER(c_data_type)),
-                                  dtype=c_data_type,
-                                  count=rows * self._n_clusters)
-        # TODO don't set order if X is 'F'
-        transformed = np.reshape(transformed,
-                                 (rows, self._n_clusters),
-                                 order='F')
+        transformed = np.fromiter(
+            cast(c_res, POINTER(c_data_type)),
+            dtype=c_data_type,
+            count=rows * self._n_clusters)
+        #TODO don 't set order if X is ' F'
+        transformed = np.reshape(
+            transformed, (rows, self._n_clusters), order='F')
         return transformed
 
     def sklearn_transform(self, X, y=None):
@@ -373,12 +389,10 @@ class KMeans(object):
         elif self.init_data == "randomselect":
             c_init_data = 2
         else:
-            print(
-                """
+            print("""
                 Unknown init_data "%s", should be
                 "random", "selectstrat" or "randomselect".
-                """ % self.init_data
-            )
+                """ % self.init_data)
             sys.stdout.flush()
             return
 
@@ -392,58 +406,49 @@ class KMeans(object):
         cols = np.shape(data)[1]
 
         if self.double_precision == 0:
-            status = lib.make_ptr_float_kmeans(0, self.verbose, self.seed,
-                                               self._gpu_id, self.n_gpus,
-                                               rows, cols,
-                                               c_int(data_ord),
-                                               self._n_clusters,
-                                               self._max_iter,
-                                               c_init_from_data,
-                                               c_init_data,
-                                               self.tol, c_data_ptr, c_labels,
-                                               None, pointer(pred_centers),
-                                               pointer(pred_labels))
+            status = lib.make_ptr_float_kmeans(
+                0, self.verbose, self.seed, self._gpu_id, self.n_gpus, rows,
+                cols,
+                c_int(data_ord), self._n_clusters, self._max_iter,
+                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                None, pointer(pred_centers), pointer(pred_labels))
         else:
-            status = lib.make_ptr_double_kmeans(0, self.verbose, self.seed,
-                                                self._gpu_id, self.n_gpus,
-                                                rows, cols,
-                                                c_int(data_ord),
-                                                self._n_clusters,
-                                                self._max_iter,
-                                                c_init_from_data,
-                                                c_init_data,
-                                                self.tol, c_data_ptr, c_labels,
-                                                None, pointer(pred_centers),
-                                                pointer(pred_labels))
+            status = lib.make_ptr_double_kmeans(
+                0, self.verbose, self.seed, self._gpu_id, self.n_gpus, rows,
+                cols,
+                c_int(data_ord), self._n_clusters, self._max_iter,
+                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                None, pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
-        centroids = np.fromiter(cast(pred_centers, POINTER(data_ctype)),
-                                dtype=data_ctype,
-                                count=self._n_clusters * cols)
+        centroids = np.fromiter(
+            cast(pred_centers, POINTER(data_ctype)),
+            dtype=data_ctype,
+            count=self._n_clusters * cols)
         centroids = np.reshape(centroids, (self._n_clusters, cols))
 
         if np.isnan(centroids).any():
             centroids = centroids[~np.isnan(centroids).any(axis=1)]
-            self._print_verbose(0,
-                                "Removed %d empty centroids" %
+            self._print_verbose(0, "Removed %d empty centroids" %
                                 (self._n_clusters - centroids.shape[0]))
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids
 
-        labels = np.fromiter(cast(pred_labels, POINTER(c_int)),
-                             dtype=np.int32, count=rows)
+        labels = np.fromiter(
+            cast(pred_labels, POINTER(c_int)), dtype=np.int32, count=rows)
         self.labels_ = np.reshape(labels, rows)
 
         return self.cluster_centers_, self.labels_
 
-    # FIXME: This function duplicates others in solvers/utils.py as used in GLM
+#FIXME : This function duplicates others in solvers / utils.py as used in GLM
+
     def _to_cdata(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(1, "Detected numeric data format which is not "
-                                   "supported. Casting to np.float32.")
+                                "supported. Casting to np.float32.")
             data = np.array(data, copy=False, dtype=np.float32)
 
         if data.dtype == np.float64:
@@ -457,8 +462,7 @@ class KMeans(object):
         else:
             raise ValueError(
                 "Unsupported data type %s, "
-                "should be either np.float32 or np.float64" % data.dtype
-            )
+                "should be either np.float32 or np.float64" % data.dtype)
         return data, cptr(data, dtype=my_ctype), my_ctype
 
     def _validate_y(self, y, rows):
@@ -494,8 +498,8 @@ class KMeans(object):
         if (self.n_gpus == 0) or (gpu_lib is None) or (self.devices == 0):
             raise NotImplementedError("KMeans for CPU not yet supported.")
         elif (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
-            self._print_verbose(0, "\nUsing GPU KMeans solver with %d GPUs.\n" %
-                                self.n_gpus)
+            self._print_verbose(
+                0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
         else:
             raise RuntimeError("Couldn't instantiate KMeans Solver")
@@ -511,7 +515,7 @@ class KMeans(object):
             (cols, centroids_dim)
         return cols, rows
 
-    # Properties and setters of properties
+#Properties and setters of properties
 
     @property
     def n_clusters(self):
@@ -531,8 +535,7 @@ class KMeans(object):
     @gpu_id.setter
     def gpu_id(self, value):
         assert_is_type(value, int)
-        assert_satisfies(value, value >= 0,
-                         "GPU ID must be non-negative.")
+        assert_satisfies(value, value >= 0, "GPU ID must be non-negative.")
         self._gpu_id = value
 
     @property

@@ -13,11 +13,12 @@ from h2o4gpu.types import H2OConstants, cptr, make_settings, \
 from h2o4gpu.libs.lib_pogs import CPUlib, GPUlib
 from h2o4gpu.solvers.utils import device_count
 
-
 # TODO: catch Ctrl-C
+
 
 class Pogs(object):
     """POGS solver"""
+
     def __init__(self, A, **kwargs):
 
         # Try to use all GPUs by default
@@ -61,6 +62,7 @@ class Pogs(object):
 
 class BaseSolver(object):
     """Solver class calling underlying POGS implementation"""
+
     def __init__(self, A, lib, **kwargs):
         try:
             self.dense = isinstance(A, ndarray) and len(A.shape) == 2
@@ -85,52 +87,32 @@ class BaseSolver(object):
                 else H2OConstants.COL_MAJ
 
             if self.dense and not self.double_precision:
-                self.work = self.lib.h2o4gpu_init_dense_single(self.wDev,
-                                                               self.order,
-                                                               self.m, self.n,
-                                                               cptr(A, c_float))
+                self.work = self.lib.h2o4gpu_init_dense_single(
+                    self.wDev, self.order, self.m, self.n, cptr(A, c_float))
             elif self.dense:
-                self.work = self.lib.h2o4gpu_init_dense_double(self.wDev,
-                                                               self.order,
-                                                               self.m, self.n,
-                                                               cptr(A,
-                                                                    c_double))
+                self.work = self.lib.h2o4gpu_init_dense_double(
+                    self.wDev, self.order, self.m, self.n, cptr(A, c_double))
             elif not self.double_precision:
-                self.work = self.lib.h2o4gpu_init_sparse_single(self.wDev,
-                                                                self.order,
-                                                                self.m, self.n,
-                                                                A.nnz,
-                                                                cptr(A.data,
-                                                                     c_float),
-                                                                cptr(A.indices,
-                                                                     c_int),
-                                                                cptr(A.indptr,
-                                                                     c_int))
+                self.work = self.lib.h2o4gpu_init_sparse_single(
+                    self.wDev, self.order, self.m, self.n, A.nnz,
+                    cptr(A.data, c_float),
+                    cptr(A.indices, c_int), cptr(A.indptr, c_int))
             else:
-                self.work = self.lib.h2o4gpu_init_sparse_double(self.wDev,
-                                                                self.order,
-                                                                self.m, self.n,
-                                                                A.nnz,
-                                                                cptr(A.data,
-                                                                     c_double),
-                                                                cptr(A.indices,
-                                                                     c_int),
-                                                                cptr(A.indptr,
-                                                                     c_int))
+                self.work = self.lib.h2o4gpu_init_sparse_double(
+                    self.wDev, self.order, self.m, self.n, A.nnz,
+                    cptr(A.data, c_double),
+                    cptr(A.indices, c_int), cptr(A.indptr, c_int))
 
         except AssertionError:
-            print(
-                "Data must be a (m x n) numpy ndarray or scipy csc_matrix "
-                "containing float32 or float64 values"
-            )
+            print("Data must be a (m x n) numpy ndarray or scipy csc_matrix "
+                  "containing float32 or float64 values")
 
     def init(self, A, lib, **kwargs):
         if not self.work:
             self.__init__(A, lib, **kwargs)
         else:
-            print(
-                "H2O4GPU_work data structure already intialized,"
-                "cannot re-initialize without calling finish()")
+            print("H2O4GPU_work data structure already intialized,"
+                  "cannot re-initialize without calling finish()")
 
     def fit(self, f, g, **kwargs):
         try:
@@ -151,12 +133,12 @@ class BaseSolver(object):
             change_solution(self.pysolution, **kwargs)
 
             if not self.work:
-                print(
-                    "No viable H2O4GPU_work pointer to call solve()."
-                    "Call Solver.init( args... ) first")
+                print("No viable H2O4GPU_work pointer to call solve()."
+                      "Call Solver.init( args... ) first")
                 return
             elif not self.double_precision:
-                self.lib.h2o4gpu_solve_single(self.work, pointer(self.settings),
+                self.lib.h2o4gpu_solve_single(self.work,
+                                              pointer(self.settings),
                                               pointer(self.solution),
                                               pointer(self.info),
                                               cptr(f.a, c_float),
@@ -172,7 +154,8 @@ class BaseSolver(object):
                                               cptr(g.e, c_float),
                                               cptr(g.h, c_int))
             else:
-                self.lib.h2o4gpu_solve_double(self.work, pointer(self.settings),
+                self.lib.h2o4gpu_solve_double(self.work,
+                                              pointer(self.settings),
                                               pointer(self.solution),
                                               pointer(self.info),
                                               cptr(f.a, c_double),
@@ -196,9 +179,8 @@ class BaseSolver(object):
     def finish(self):
         """Finish all work the solver was performing."""
         if not self.work:
-            print(
-                "No viable H2O4GPU_work pointer to call finish()."
-                "Call Solver.init( args... ) first")
+            print("No viable H2O4GPU_work pointer to call finish()."
+                  "Call Solver.init( args... ) first")
         elif not self.double_precision:
             self.lib.h2o4gpu_finish_single(self.work)
             self.work = None

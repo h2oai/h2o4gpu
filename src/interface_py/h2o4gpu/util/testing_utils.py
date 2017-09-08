@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 Test utils
 
@@ -18,8 +18,10 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
 def find_file(file):
-    prefs = ["../../tests/data", "../tests/data", "tests/data", "tests", "data",
-             "..", "."]
+    prefs = [
+        "../../tests/data", "../tests/data", "tests/data", "tests", "data",
+        "..", "."
+    ]
     for pre in prefs:
         file2 = os.path.abspath(os.path.join(pre, file))
         if os.path.isfile(file2):
@@ -29,8 +31,10 @@ def find_file(file):
 
 
 def find_dir(directory):
-    prefs = ["../../tests/data", "../tests/data", "tests/data", "tests", "data",
-             "..", "."]
+    prefs = [
+        "../../tests/data", "../tests/data", "tests/data", "tests", "data",
+        "..", "."
+    ]
     for pre in prefs:
         dir2 = os.path.abspath(os.path.join(pre, directory))
         if os.path.isdir(dir2):
@@ -47,19 +51,28 @@ def skip_if_no_smalldata():
     return False
 
 
-need_small_data = pytest.mark.skipif(skip_if_no_smalldata(),
-                                     reason="smalldata folder not found")
+need_small_data = pytest.mark.skipif(
+    skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
-# assumes has intercept at last column already in xtrain and xtest
-def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
-                write, display, nGPUs=1):
+#assumes has intercept at last column already in xtrain and xtest
+def run_glm_ptr(nFolds,
+                nAlphas,
+                nLambdas,
+                xtrain,
+                ytrain,
+                xtest,
+                ytest,
+                wtrain,
+                write,
+                display,
+                nGPUs=1):
     """Runs GLM test"""
     use_gpu = nGPUs > 0
 
     if use_gpu == 1:
 
-        # nFolds, nAlphas, nLambdas = arg
+        #nFolds, nAlphas, nLambdas = arg
         train_data_mat = cuda.to_device(xtrain)
         train_result_mat = cuda.to_device(ytrain)
         test_data_mat = cuda.to_device(xtest)
@@ -81,31 +94,32 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
         maxNGPUS = int(
             subprocess.check_output("nvidia-smi -L | wc -l", shell=True))
         print("Maximum Number of GPUS:", maxNGPUS)
-        # nGPUs = maxNGPUS  # choose all GPUs
-        # nGPUs = 1
+        #nGPUs = maxNGPUS #choose all GPUs
+        #nGPUs = 1
 
         n = train_data_mat.shape[1]
         mTrain = train_data_mat.shape[0]
         mValid = test_data_mat.shape[0]
 
     else:
-        # nGPUs = 0
+        #nGPUs = 0
         n = xtrain.shape[1]
         mTrain = xtrain.shape[0]
         mValid = xtest.shape[0]
 
     print("No. of Features=%d mTrain=%d mValid=%d" % (n, mTrain, mValid))
 
-    # Order of data
+    #Order of data
     fortran = 1
     print("fortran=%d" % (fortran))
 
     sourceDev = 0
-    fit_intercept = True # should be passed from above if user set fit_intercept
+    # should be passed from above if user set fit_intercept
+    fit_intercept = True
     lambda_min_ratio = 1e-9
     store_full_path = 1
     double_precision = 0
-    # variables
+    #variables
     if use_gpu == 1:
         a, b = c_void_p(train_data_mat_ptr.value), c_void_p(
             train_result_mat_ptr.value)
@@ -123,11 +137,16 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     sys.stdout.flush()
 
     Solver = h2o4gpu.GLM
-    enet = Solver(n_gpus=nGPUs, order='c' if fortran else 'r',
-                  fit_intercept=fit_intercept,
-                  lambda_min_ratio=lambda_min_ratio, n_lambdas=nLambdas,
-                  n_folds=nFolds, n_alphas=nAlphas, verbose=5,
-                  store_full_path=store_full_path)
+    enet = Solver(
+        n_gpus=nGPUs,
+        order='c' if fortran else 'r',
+        fit_intercept=fit_intercept,
+        lambda_min_ratio=lambda_min_ratio,
+        n_lambdas=nLambdas,
+        n_folds=nFolds,
+        n_alphas=nAlphas,
+        verbose=5,
+        store_full_path=store_full_path)
 
     print("Solving")
     sys.stdout.flush()
@@ -136,7 +155,8 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
                      c, d, e)
     else:
         enet.fit(a, b, c, d, e)
-    # t1 = time()
+
+#t1 = time()
     print("Done Solving\n")
     sys.stdout.flush()
 
@@ -155,13 +175,11 @@ def run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
     error_test = printallerrors(display, enet, "Test", store_full_path)
 
     if write == 0:
-        os.system(
-            'rm -f error.txt; '
-            'rm -f pred*.txt; '
-            'rm -f varimp.txt; '
-            'rm -f me*.txt; '
-            'rm -f stats.txt'
-        )
+        os.system('rm -f error.txt; '
+                  'rm -f pred*.txt; '
+                  'rm -f varimp.txt; '
+                  'rm -f me*.txt; '
+                  'rm -f stats.txt')
     enet.finish()
 
     return pred_val, error_train, error_test
@@ -188,7 +206,7 @@ def printallerrors(display, enet, string, store_full_path):
     if enet.family == "logistic":
         loss = "LOGLOSS"
     if display == 1:
-        # Display most important metrics
+        #Display most important metrics
         print('%s for %s  ' % (loss, string), error)
         print('ALPHAS for %s  ' % string, alphas)
         print('LAMBDAS for %s  ' % string, lambdas)
@@ -205,16 +223,30 @@ def printallerrors(display, enet, string, store_full_path):
     return error_best
 
 
-def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
-            nalpha=5, validFraction=0.2,
-            family="elasticnet", verbose=0,
-            print_all_errors=False, get_preds=False, run_h2o=False,
-            tolerance=.01, name=None, solver="glm",
-            lambda_min_ratio=1e-9, alphas=None, lambdas=None):
+def run_glm(X,
+            y,
+            Xtest=None,
+            ytest=None,
+            nGPUs=0,
+            nlambda=100,
+            nfolds=5,
+            nalpha=5,
+            validFraction=0.2,
+            family="elasticnet",
+            verbose=0,
+            print_all_errors=False,
+            get_preds=False,
+            run_h2o=False,
+            tolerance=.01,
+            name=None,
+            solver="glm",
+            lambda_min_ratio=1e-9,
+            alphas=None,
+            lambdas=None):
     """Runs GLM test"""
-    # Other default parameters for solving glm
+    #Other default parameters for solving glm
     fit_intercept = True
-    lambda_min_ratio = lambda_min_ratio # Issues for h2o3 with 1k ipums dataset
+    lambda_min_ratio = lambda_min_ratio  # Issues for h2o3 with 1k ipums dataset
     nFolds = nfolds
     nLambdas = nlambda
     nAlphas = nalpha
@@ -224,11 +256,11 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     sys.stdout.flush()
     doassert = 0  # default is not assert
 
-    # Override run_h2o False default if environ exists
+    #Override run_h2o False default if environ exists
     if os.getenv("H2OGLM_PERFORMANCE") is not None:
         run_h2o = True
 
-    # Setup Train/validation Set Split
+#Setup Train / validation Set Split
     morig = X.shape[0]
     norig = X.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
@@ -238,7 +270,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     validX = None
     validY = None
     if Xtest is None and ytest is None:
-        # Do train/valid split
+        #Do train / valid split
         HO = int(validFraction * morig)
         H = morig - HO
         print("Size of Train rows=%d valid rows=%d" % (H, HO))
@@ -257,8 +289,8 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
 
         mTrain = trainX.shape[0]
         if validFraction != 0.0:
-            print("mTrain=%d mvalid=%d validFraction=%g" % (
-                mTrain, mvalid, validFraction))
+            print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid,
+                                                            validFraction))
         else:
             print("mTrain=%d" % mTrain)
     else:
@@ -274,12 +306,12 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
             validFraction = 0.0
         else:
             validFraction = (1.0 * mvalid) / (1.0 * mTrain)
-    print("mTrain=%d mvalid=%d validFraction=%g" % (
-        mTrain, mvalid, validFraction))
+    print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid,
+                                                    validFraction))
 
     #####################
     #
-    # Start h2o4gpu
+    #Start h2o4gpu
     #
     #####################
     start_h2o4gpu = time()
@@ -287,40 +319,63 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     sys.stdout.flush()
 
     #######################
-    # Choose solver
+    #Choose solver
     if solver == "glm":
         Solver = h2o4gpu.GLM
-        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                      lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas,
-                      verbose=verbose, family=family,
-                      store_full_path=store_full_path, alphas=alphas,
-                      lambdas=lambdas)
+        enet = Solver(
+            n_gpus=nGPUs,
+            fit_intercept=fit_intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=nLambdas,
+            n_folds=nFolds,
+            n_alphas=nAlphas,
+            verbose=verbose,
+            family=family,
+            store_full_path=store_full_path,
+            alphas=alphas,
+            lambdas=lambdas)
     elif solver == "lasso":
         Solver = h2o4gpu.Lasso
-        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                      lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose,
-                      family=family,
-                      store_full_path=store_full_path, lambdas=lambdas)
+        enet = Solver(
+            n_gpus=nGPUs,
+            fit_intercept=fit_intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=nLambdas,
+            n_folds=nFolds,
+            verbose=verbose,
+            family=family,
+            store_full_path=store_full_path,
+            lambdas=lambdas)
     elif solver == "ridge":
         Solver = h2o4gpu.Ridge
-        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                      lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, verbose=verbose,
-                      family=family,
-                      store_full_path=store_full_path, lambdas=lambdas)
+        enet = Solver(
+            n_gpus=nGPUs,
+            fit_intercept=fit_intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=nLambdas,
+            n_folds=nFolds,
+            verbose=verbose,
+            family=family,
+            store_full_path=store_full_path,
+            lambdas=lambdas)
     elif solver == "linear_regression":
         Solver = h2o4gpu.LinearRegression
-        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                      n_folds=nFolds, verbose=verbose)
+        enet = Solver(
+            n_gpus=nGPUs,
+            fit_intercept=fit_intercept,
+            n_folds=nFolds,
+            verbose=verbose)
     elif solver == "logistic":
         Solver = h2o4gpu.LogisticRegression
-        enet = Solver(n_gpus=nGPUs, fit_intercept=fit_intercept,
-                      lambda_min_ratio=lambda_min_ratio,
-                      n_lambdas=nLambdas, n_folds=nFolds, n_alphas=nAlphas,
-                      verbose=verbose,
-                      store_full_path=store_full_path)
+        enet = Solver(
+            n_gpus=nGPUs,
+            fit_intercept=fit_intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=nLambdas,
+            n_folds=nFolds,
+            n_alphas=nAlphas,
+            verbose=verbose,
+            store_full_path=store_full_path)
 
     print("trainX")
     print(trainX)
@@ -328,7 +383,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     print(trainY)
 
     #######################
-    #  Fit
+    #Fit
     if validFraction == 0.0:
         print("Solving")
         enet.fit(trainX, trainY)
@@ -341,7 +396,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     print("X")
     print(X)
 
-    # Show something about Xvsalphalambda or Xvsalpha
+    #Show something about Xvsalphalambda or Xvsalpha
     print("Xvsalpha")
     print(enet.x_vs_alphapure)
     print("np.shape(Xvsalpha)")
@@ -379,8 +434,9 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     ############## consistency check
     if fit_intercept:
         if validX is not None:
-            validX_intercept = np.hstack([validX, np.ones((validX.shape[0], 1),
-                                                          dtype=validX.dtype)])
+            validX_intercept = np.hstack(
+                [validX,
+                 np.ones((validX.shape[0], 1), dtype=validX.dtype)])
     else:
         validX_intercept = validX
 
@@ -433,8 +489,12 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
 
     if print_all_errors:
         print("PRINT ALL ERRORS")
-        print(printallerrors(display=1, enet=enet, string="Train",
-                             store_full_path=store_full_path))
+        print(
+            printallerrors(
+                display=1,
+                enet=enet,
+                string="Train",
+                store_full_path=store_full_path))
 
     enet.finish()
     print("Done Reporting")
@@ -444,7 +504,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
     if run_h2o:
         #####################
         #
-        # Start h2o
+        #Start h2o
         #
         #####################
         import h2o
@@ -506,29 +566,35 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
             if nfoldsh2o == 1:
                 nfoldsh2o = 0
             if family == "logistic":
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
-                                                        lambda_search=True,
-                                                        nlambdas=nLambdas,
-                                                        nfolds=nfoldsh2o,
-                                                        family="binomial",
-                                                        alpha=alpha_h2o)
+                h2o_glm = H2OGeneralizedLinearEstimator(
+                    intercept=fit_intercept,
+                    lambda_search=True,
+                    nlambdas=nLambdas,
+                    nfolds=nfoldsh2o,
+                    family="binomial",
+                    alpha=alpha_h2o)
             else:
-                h2o_glm = H2OGeneralizedLinearEstimator(intercept=fit_intercept,
-                                                        lambda_search=True,
-                                                        nlambdas=nLambdas,
-                                                        nfolds=nfoldsh2o,
-                                                        family="gaussian",
-                                                        alpha=alpha_h2o)
-            # Solve
+                h2o_glm = H2OGeneralizedLinearEstimator(
+                    intercept=fit_intercept,
+                    lambda_search=True,
+                    nlambdas=nLambdas,
+                    nfolds=nfoldsh2o,
+                    family="gaussian",
+                    alpha=alpha_h2o)
+#Solve
             if validFraction == 0.0:
                 print("Solving using H2O")
-                h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1],
-                              training_frame=train_h2o)
+                h2o_glm.train(
+                    x=train_h2o.columns[:-1],
+                    y=train_h2o.columns[-1],
+                    training_frame=train_h2o)
             else:
                 print("Solving using H2O")
-                h2o_glm.train(x=train_h2o.columns[:-1], y=train_h2o.columns[-1],
-                              training_frame=train_h2o,
-                              validation_frame=valid_h2o)
+                h2o_glm.train(
+                    x=train_h2o.columns[:-1],
+                    y=train_h2o.columns[-1],
+                    training_frame=train_h2o,
+                    validation_frame=valid_h2o)
             print("\nComparing results to H2O")
             print("\nH2O GLM Summary")
             print(h2o_glm)
@@ -568,47 +634,45 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
 
             NUM_ERRORS = 3
             which_errors = [False] * NUM_ERRORS
-            # Train and nfolds
+            #Train and nfolds
             if validFraction == 0.0 and nfolds > 1:
                 which_errors[0] = True
                 which_errors[1] = True
-            # Train, valid, and nfolds
+#Train, valid, and nfolds
             elif validFraction > 0.0 and nfolds > 1:
                 which_errors[0] = True
                 which_errors[1] = True
                 which_errors[2] = True
-            # Train set only
+#Train set only
             else:
                 which_errors[0] = True
 
-            # Compare to H2O
+#Compare to H2O
             index = alphas_h2o.index(alpha)
             for j in range(0, NUM_ERRORS):
                 if j == 0 and which_errors[j]:  # Compare to train error
                     thisrelerror = -(
                         error_train[index, j] - h2o_train_error) / (
-                            abs(error_train[index, j]) + abs(
-                                h2o_train_error))
+                            abs(error_train[index, j]) + abs(h2o_train_error))
                     if error_train[index, j] > h2o_train_error:
                         if abs(thisrelerror) > tolerance:
-                            print("Train error failure: %g %g" % (
-                                error_train[index, j], h2o_train_error))
+                            print("Train error failure: %g %g" %
+                                  (error_train[index, j], h2o_train_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print(
-                            "H2O Train Error is larger than GPU GLM "
-                            "with alpha = %s" % alpha)
+                        print("H2O Train Error is larger than GPU GLM "
+                              "with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' GOOD', file=f1, end="")
@@ -618,28 +682,26 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
                 elif j == 1 and which_errors[j]:  # Compare to average cv error
                     thisrelerror = -(
                         error_train[index, j] - h2o_train_error) / (
-                            abs(error_train[index, j]) + abs(
-                                h2o_cv_error))
+                            abs(error_train[index, j]) + abs(h2o_cv_error))
                     if error_train[index, j] > h2o_cv_error:
                         if abs(thisrelerror) > tolerance:
-                            print("CV error failure: %g %g" % (
-                                error_train[index, j], h2o_cv_error))
+                            print("CV error failure: %g %g" %
+                                  (error_train[index, j], h2o_cv_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print(
-                            "H2O CV Error is larger than GPU GLM "
-                            "with alpha = %s" % alpha)
+                        print("H2O CV Error is larger than GPU GLM "
+                              "with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' GOOD', file=f1, end="")
@@ -649,29 +711,26 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
                 elif j == 2 and which_errors[j]:  # Compare to validation error
                     thisrelerror = -(
                         error_train[index, j] - h2o_train_error) / (
-                            abs(error_train[index, j]) + abs(
-                                h2o_valid_error))
+                            abs(error_train[index, j]) + abs(h2o_valid_error))
                     if error_train[index, j] > h2o_valid_error:
                         if abs(thisrelerror) > tolerance:
-                            print("Valid error failure: %g %g" % (
-                                error_train[index, j], h2o_valid_error))
+                            print("Valid error failure: %g %g" %
+                                  (error_train[index, j], h2o_valid_error))
                             doassert = 1
                             print(' %g' % thisrelerror, file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                         else:
                             print(' OK', file=f1, end="")
                             print(' %g' % thisrelerror, file=f1q, end="")
                             print(' %g' % h2o_train_error, file=f1a, end="")
-                            print(' %g' % error_train[index, j], file=f1b,
-                                  end="")
+                            print(
+                                ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print(
-                            "H2O Valid Error is larger than GPU GLM "
-                            "with alpha = %s" % alpha
-                        )
+                        print("H2O Valid Error is larger than GPU GLM "
+                              "with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' GOOD', file=f1, end="")
@@ -693,7 +752,7 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
         print('', file=f1b)
         f1b.flush()
 
-        # time entire alpha-lambda path
+        #time entire alpha - lambda path
         duration_h2o = time() - start_h2o
 
         ratio_time = duration_h2o4gpu / duration_h2o
@@ -709,9 +768,9 @@ def run_glm(X, y, Xtest=None, ytest=None, nGPUs=0, nlambda=100, nfolds=5,
         print('', file=f2b)
         f2b.flush()
 
-        # include asserts for timing
+        #include asserts for timing
 
-        # for pytest only:
+        #for pytest only:
         if os.getenv("H2OGLM_DISABLEPYTEST") is None:
             assert doassert == 0
 

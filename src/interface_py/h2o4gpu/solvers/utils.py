@@ -9,7 +9,6 @@ import numpy as np
 from h2o4gpu.types import cptr
 from py3nvml.py3nvml import NVMLError
 
-
 #############################
 # Device utils
 
@@ -29,10 +28,8 @@ def device_count(n_gpus=0):
         if available_device_count >= 0:
             n_gpus = available_device_count
         else:
-            print(
-                "Cannot set n_gpus to all GPUs %d %d, trying n_gpus=1"
-                % (n_gpus, available_device_count)
-            )
+            print("Cannot set n_gpus to all GPUs %d %d, trying n_gpus=1" %
+                  (n_gpus, available_device_count))
             n_gpus = 1
 
     if n_gpus > available_device_count:
@@ -82,6 +79,7 @@ def _gpu_info_subprocess():
 
 #############################
 # Data utils
+
 
 def _unicode_order(fortran):
     return ord('c') if fortran else ord('r')
@@ -149,8 +147,8 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
 
     outdata = outdata.astype(dtype, copy=False, order=nporder)
 
-    selford = _get_order(outdata, fortran=not outdata.flags.c_contiguous,
-                         order=order)
+    selford = _get_order(
+        outdata, fortran=not outdata.flags.c_contiguous, order=order)
 
     return outdata, selford, dtype
 
@@ -162,13 +160,15 @@ def munge(data_as_np, fit_intercept=False):
     # Not this is really munging as adds to columns
     # and changes expected size of outputted solution
     if (fit_intercept or fit_intercept == 1) and len(data_as_np.shape) == 2:
-        data_as_np = np.hstack([data_as_np, np.ones((data_as_np.shape[0], 1),
-                                                    dtype=data_as_np.dtype)])
+        data_as_np = np.hstack([
+            data_as_np,
+            np.ones((data_as_np.shape[0], 1), dtype=data_as_np.dtype)
+        ])
     return data_as_np
 
 
-def _get_data(data, ismatrix=False, fit_intercept=False,
-              order=None, dtype=None):
+def _get_data(data, ismatrix=False, fit_intercept=False, order=None,
+              dtype=None):
     """Transforms data to numpy and gather basic info about it.
 
     :param data: array_like
@@ -183,11 +183,7 @@ def _get_data(data, ismatrix=False, fit_intercept=False,
 
     if data is not None:
         data_as_np, order, dtype = _to_np(
-            data,
-            ismatrix=ismatrix,
-            dtype=dtype,
-            order=order
-        )
+            data, ismatrix=ismatrix, dtype=dtype, order=order)
         data_as_np = munge(data_as_np, fit_intercept=fit_intercept)
         fortran = not data_as_np.flags.c_contiguous
         shape_x = np.shape(data_as_np)

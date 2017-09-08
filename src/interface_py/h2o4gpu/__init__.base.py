@@ -3,8 +3,8 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-# Skip pylint b/c this is automatically concatenated at compile time
-# with other init files
+#Skip pylint b / c this is automatically concatenated at compile time
+#with other init files
 __version__ = "0.0.3"
 
 from h2o4gpu.types import FunctionVector

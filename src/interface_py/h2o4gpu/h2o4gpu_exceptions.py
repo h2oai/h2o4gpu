@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 :mod:`h2o.exceptions` -- all exceptions classes in h2o module.
 
@@ -21,9 +21,10 @@ class H2O4GPUSoftError(H2O4GPUError):
     """Base class for exceptions that trigger "soft" exception handling hook."""
 
 
-# ------------------------------------------------------------------------------
-# H2O4GPUValueError
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- --
+#H2O4GPUValueError
+#-- -- -- -- -- --
+
 
 class H2O4GPUValueError(H2O4GPUSoftError, ValueError):
     """Error indicating that wrong parameter value was passed to a function."""
@@ -35,9 +36,10 @@ class H2O4GPUValueError(H2O4GPUSoftError, ValueError):
         self.skip_frames = skip_frames
 
 
-# ------------------------------------------------------------------------------
-# H2O4GPUTypeError
-# ------------------------------------------------------------------------------
+#-- -- -- -- -- --
+#H2O4GPUTypeError
+#-- -- -- -- -- --
+
 
 class H2O4GPUTypeError(H2O4GPUSoftError, TypeError):
     """
@@ -47,8 +49,12 @@ class H2O4GPUTypeError(H2O4GPUSoftError, TypeError):
     stack trace will be much more compact than usual.
     """
 
-    def __init__(self, var_name=None, var_value=None, var_type_name=None,
-                 exp_type_name=None, message=None,
+    def __init__(self,
+                 var_name=None,
+                 var_value=None,
+                 var_type_name=None,
+                 exp_type_name=None,
+                 message=None,
                  skip_frames=0):
         """
         Create an H2O4GPUTypeError exception object.
@@ -81,7 +87,8 @@ class H2O4GPUTypeError(H2O4GPUSoftError, TypeError):
         """Used when printing out the exception message."""
         if self._message:
             return self._message
-        # Otherwise construct the message
+
+#Otherwise construct the message
         var = self._var_name
         val = self._var_value
         atn = self._var_type_name

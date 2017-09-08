@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -100,35 +100,34 @@ class GLM(object):
     class solution:
         pass
 
-    # TODO: add gpu_id like kmeans and ensure wraps around device_count
-    def __init__(
-            self,
-            n_threads=None,
-            gpu_id=0,
-            n_gpus=-1,
-            fit_intercept=True,
-            lambda_min_ratio=1E-7,
-            n_lambdas=100,
-            n_folds=5,
-            n_alphas=5,
-            tol=1E-2,
-            lambda_stop_early=True,
-            glm_stop_early=True,
-            glm_stop_early_error_fraction=1.0,
-            max_iter=5000,
-            verbose=0,
-            family='elasticnet',
-            store_full_path=0,
-            lambda_max=None,
-            alpha_max=1.0,
-            alpha_min=0.0,
-            alphas=None,
-            lambdas=None,
-            double_precision=None,
-            order=None
-    ):
+#TODO : add gpu_id like kmeans and ensure wraps around device_count
+
+    def __init__(self,
+                 n_threads=None,
+                 gpu_id=0,
+                 n_gpus=-1,
+                 fit_intercept=True,
+                 lambda_min_ratio=1E-7,
+                 n_lambdas=100,
+                 n_folds=5,
+                 n_alphas=5,
+                 tol=1E-2,
+                 lambda_stop_early=True,
+                 glm_stop_early=True,
+                 glm_stop_early_error_fraction=1.0,
+                 max_iter=5000,
+                 verbose=0,
+                 family='elasticnet',
+                 store_full_path=0,
+                 lambda_max=None,
+                 alpha_max=1.0,
+                 alpha_min=0.0,
+                 alphas=None,
+                 lambdas=None,
+                 double_precision=None,
+                 order=None):
         ##############################
-        # asserts
+        #asserts
         assert_is_type(n_threads, int, None)
         assert_is_type(gpu_id, int)
         assert_is_type(n_gpus, int)
@@ -153,7 +152,6 @@ class GLM(object):
 
         self.double_precision = double_precision
 
-
         if order is not None:
             assert_is_type(order, str)
             assert order in ['r',
@@ -165,8 +163,8 @@ class GLM(object):
         self.dtype = None
 
         ##############################
-        # overrides of input parameters
-        # override these if pass alphas or lambdas
+        #overrides of input parameters
+        #override these if pass alphas or lambdas
         if alphas is not None:
             alphas = np.ascontiguousarray(np.asarray(alphas))
             n_alphas = np.shape(alphas)[0]
@@ -175,7 +173,7 @@ class GLM(object):
             n_lambdas = np.shape(lambdas)[0]
 
         ##############################
-        # self assignments
+        #self assignments
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
@@ -217,9 +215,9 @@ class GLM(object):
         self.alphas_list = alphas
         self.lambdas_list = lambdas
 
-        # Experimental features
-        # TODO _shared_a and _standardize do not work currently.
-        # TODO Always need to set to 0.
+        #Experimental features
+        #TODO _shared_a and _standardize do not work currently.
+        #TODO Always need to set to 0.
         self._shared_a = 0
         self._standardize = 0
 
@@ -228,11 +226,10 @@ class GLM(object):
         self._gpu_id = gpu_id
         self._total_n_gpus = devices
 
-
         if n_threads is None:
-            # Not required number of threads, but normal.
-            # Bit more optimal to use 2 threads for CPU,
-            # but 1 thread per GPU is optimal.
+            #Not required number of threads, but normal.
+            #Bit more optimal to use 2 threads for CPU,
+            #but 1 thread per GPU is optimal.
             n_threads = (1 if self.n_gpus == 0 else self.n_gpus)
 
         self.n_threads = n_threads
@@ -259,16 +256,15 @@ class GLM(object):
         self.count_short = None
         self.count_more = None
 
-    # TODO Add typechecking
-    def fit(
-            self,
+#TODO Add typechecking
+
+    def fit(self,
             train_x=None,
             train_y=None,
             valid_x=None,
             valid_y=None,
             sample_weight=None,
-            free_input_data=1
-    ):
+            free_input_data=1):
         """Train a GLM
 
         :param ndarray train_x : Training features array
@@ -292,20 +288,20 @@ class GLM(object):
         assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
-
         source_dev = 0
-        if not (train_x is None
-            and train_y is None
-            and valid_x is None
-            and valid_y is None
-            and sample_weight is None):
+        if not (train_x is None and train_y is None and valid_x is None and
+                valid_y is None and sample_weight is None):
 
-            self.prepare_and_upload_data(train_x=train_x, train_y=train_y, valid_x=valid_x, valid_y=valid_y,
-                                sample_weight=sample_weight, source_dev = source_dev)
+            self.prepare_and_upload_data(
+                train_x=train_x,
+                valid_x=valid_x,
+                valid_y=valid_y,
+                sample_weight=sample_weight,
+                source_dev=source_dev)
 
         else:
-            # if all None, just assume fitting with new parameters
-            # and all else uses self.
+            #if all None, just assume fitting with new parameters
+            #and all else uses self.
             pass
 
         self.fit_ptr(
@@ -320,53 +316,51 @@ class GLM(object):
             self.d,
             self.e,
             free_input_data=free_input_data,
-            source_dev = source_dev
-        )
+            source_dev=source_dev)
         return self
 
-
-    def prepare_and_upload_data(
-            self,
-            train_x=None,
-            train_y=None,
-            valid_x=None,
-            valid_y=None,
-            sample_weight=None,
-            source_dev = 0
-    ):
-        """ Prepare data and then upload data (TODO: Merge do_predict 0 and 1 -- maybe already would work)
+    def prepare_and_upload_data(self,
+                                train_x=None,
+                                train_y=None,
+                                valid_x=None,
+                                valid_y=None,
+                                sample_weight=None,
+                                source_dev=0):
+        """ Prepare data and then upload data
+         (TODO: Merge do_predict 0 and 1 -- maybe already would work)
         """
 
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
-            train_x, ismatrix=True,
-            fit_intercept=self.fit_intercept, order=self.ord,
+            train_x,
+            ismatrix=True,
+            fit_intercept=self.fit_intercept,
+            order=self.ord,
             dtype=self.dtype)
         train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(
             train_y, order=self.ord, dtype=self.dtype)
         valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(
-            valid_x, ismatrix=True,
-            fit_intercept=self.fit_intercept, order=self.ord,
+            valid_x,
+            ismatrix=True,
+            fit_intercept=self.fit_intercept,
+            order=self.ord,
             dtype=self.dtype)
         valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = \
             _get_data(valid_y, order=self.ord, dtype=self.dtype)
         weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(
-            sample_weight, order=self.ord, dtype=self.dtype
-        )
+            sample_weight, order=self.ord, dtype=self.dtype)
 
-        # check that inputs all have same 'c' or 'r' order
+        #check that inputs all have same 'c' or 'r' order
         fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
         _check_equal(fortran_list)
 
-        # now can do checks
+        #now can do checks
 
-        # ###############
-        # check do_predict input
+        # ############## #
+        #check do_predict input
 
         if m_train >= 1 and m_y >= 1 and m_train != m_y:
-            print(
-                'training X and Y must have same number of rows, '
-                'but m_train=%d m_y=%d\n' % (m_train, m_y)
-            )
+            print('training X and Y must have same number of rows, '
+                  'but m_train=%d m_y=%d\n' % (m_train, m_y))
 
         if self.verbose > 0:
             if n1 >= 0 and m_y >= 0:
@@ -374,32 +368,24 @@ class GLM(object):
             else:
                 raise ValueError('Incorrect train inputs')
 
-        # ################
+# ################
 
         if n1 >= 0 and n2 >= 0 and n1 != n2:
             raise ValueError(
                 'train_x and valid_x must have same number of columns, '
-                'but n=%d n2=%d\n' % (n1, n2)
-            )
+                'but n=%d n2=%d\n' % (n1, n2))
 
-        # #################
+# ################ #
 
         if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
             raise ValueError(
                 'valid_x and valid_y must have same number of rows, '
-                'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y)
-            )
-        # otherwise m_valid is used, and m_valid_y can be there
-        # or not (sets whether do error or not)
+                'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
+#otherwise m_valid is used, and m_valid_y can be there
+# or not(sets whether do error or not)
 
-        (a, b, c, d, e) = self.upload_data(
-            train_x_np,
-            train_y_np,
-            valid_x_np,
-            valid_y_np,
-            weight_np,
-            source_dev
-        )
+        (a, b, c, d, e) = self.upload_data(train_x_np, train_y_np, valid_x_np,
+                                           valid_y_np, weight_np, source_dev)
 
         self.a = a
         self.b = b
@@ -408,15 +394,13 @@ class GLM(object):
         self.e = e
         return a, b, c, d, e
 
+#TODO Add typechecking
 
-    # TODO Add typechecking
-    def predict(
-            self,
-            valid_x=None,
-            valid_y=None,
-            sample_weight=None,
-            free_input_data=1
-    ):
+    def predict(self,
+                valid_x=None,
+                valid_y=None,
+                sample_weight=None,
+                free_input_data=1):
         """Predict on a fitted GLM
 
         :param ndarray valid_x : Validation features
@@ -435,38 +419,60 @@ class GLM(object):
         assert_is_type(free_input_data, int)
 
         source_dev = 0
-        if not (valid_x is None
-            and valid_y is None
-            and sample_weight is None):
+        if not (valid_x is None and valid_y is None and sample_weight is None):
 
-            self.prepare_and_upload_data(train_x=None, train_y=None, valid_x=valid_x, valid_y=valid_y,
-                                sample_weight=sample_weight, source_dev = source_dev)
+            self.prepare_and_upload_data(
+                train_x=None,
+                train_y=None,
+                valid_x=valid_x,
+                valid_y=valid_y,
+                sample_weight=sample_weight,
+                source_dev=source_dev)
         else:
             pass
 
-
-        # save global variable
+#save global variable
         oldstorefullpath = self.store_full_path
 
         if self.store_full_path == 1:
             self.store_full_path = 1
-            self._fitorpredict_ptr(source_dev, self.m_train, self.n, self.m_valid,
-                                   self.double_precision, self.ord,
-                                   self.a, self.b, self.c, self.d, self.e,
-                                   do_predict=1, free_input_data=free_input_data)
+            self._fitorpredict_ptr(
+                source_dev,
+                self.m_train,
+                self.n,
+                self.m_valid,
+                self.double_precision,
+                self.ord,
+                self.a,
+                self.b,
+                self.c,
+                self.d,
+                self.e,
+                do_predict=1,
+                free_input_data=free_input_data)
 
         self.store_full_path = 0
-        self._fitorpredict_ptr(source_dev, self.m_train, self.n, self.m_valid,
-                               self.double_precision, self.ord,
-                               self.a, self.b, self.c, self.d, self.e,
-                               do_predict=1, free_input_data=free_input_data)
+        self._fitorpredict_ptr(
+            source_dev,
+            self.m_train,
+            self.n,
+            self.m_valid,
+            self.double_precision,
+            self.ord,
+            self.a,
+            self.b,
+            self.c,
+            self.d,
+            self.e,
+            do_predict=1,
+            free_input_data=free_input_data)
 
-        # restore variable
+        #restore variable
         self.store_full_path = oldstorefullpath
         return self.valid_pred_vs_alphapure  # something like valid_y
-        # TODO Add type checking
-        # source_dev here because generally want to take in any pointer,
-        # not just from our test code
+#TODO Add type checking
+#source_dev here because generally want to take in any pointer,
+#not just from our test code
 
     def fit_ptr(
             self,
@@ -481,8 +487,7 @@ class GLM(object):
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
             free_input_data=0,
-            source_dev=0
-    ):
+            source_dev=0):
         """Train a GLM with pointers to data on the GPU
            (if fit_intercept, then you should have added 1's as
            last column to m_train)
@@ -497,8 +502,9 @@ class GLM(object):
         :param double_precision float32 (0) or double point precision (1) of fit
             No Default.
 
-        :param order: Order of data.  Default is None, and assumed set by constructor or upload_data
-        whether row 'r' or column 'c' major order.
+        :param order: Order of data.
+            Default is None, and assumed set by constructor or upload_data
+            whether row 'r' or column 'c' major order.
 
         :param a Pointer to training features array
 
@@ -516,15 +522,26 @@ class GLM(object):
         :param source_dev GPU ID of device
         """
 
-        self._fitorpredict_ptr(source_dev, m_train, n, m_valid,
-                               double_precision, order, a, b, c, d, e,
-                               do_predict=0,
-                               free_input_data=free_input_data)
+        self._fitorpredict_ptr(
+            source_dev,
+            m_train,
+            n,
+            m_valid,
+            double_precision,
+            order,
+            a,
+            b,
+            c,
+            d,
+            e,
+            do_predict=0,
+            free_input_data=free_input_data)
 
-        # TODO Add type checking
+#TODO Add type checking
 
-    # source_dev here because generally want to take in any pointer,
-    # not just from our test code
+#source_dev here because generally want to take in any pointer,
+#not just from our test code
+
     def _fitorpredict_ptr(
             self,
             source_dev,
@@ -539,8 +556,7 @@ class GLM(object):
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
             do_predict=0,
-            free_input_data=0
-    ):
+            free_input_data=0):
         """Train a GLM with pointers to data on the GPU
            (if fit_intercept, then you should have added 1's as
            last column to m_train)
@@ -590,7 +606,7 @@ class GLM(object):
         assert_is_type(do_predict, int, None)
         assert_is_type(free_input_data, int)
 
-        # store some things for later call to predict_ptr()
+        #store some things for later call to predict_ptr()
 
         self.source_dev = source_dev
         self.m_train = m_train
@@ -602,24 +618,23 @@ class GLM(object):
         self.d = d
         self.e = e
 
-        # ###########
+        # ########## #
 
-
-        # if fitted earlier clear
-        # otherwise don't clear solution, just use it
+        #if fitted earlier clear
+        #otherwise don't clear solution, just use it
         if do_predict == 0 and self.did_fit_ptr == 1:
             self.free_sols()
 
-        # ###############
+# ############## #
 
         self.did_fit_ptr = 1
 
         # ##############
-        # not calling with self.source_dev because want option to never use
-        # default but instead input pointers from foreign code's pointers
+        #not calling with self.source_dev because want option to never use
+        #default but instead input pointers from foreign code's pointers
 
-        if order is not None: # set order if not already set
-            if order in ['r','c']:
+        if order is not None:  # set order if not already set
+            if order in ['r', 'c']:
                 self.ord = ord(order)
             else:
                 self.ord = order
@@ -631,11 +646,11 @@ class GLM(object):
             which_precision = double_precision
             self.double_precision = double_precision
 
-        # #############
+# ############ #
 
         if do_predict == 0:
 
-            # initialize if doing fit
+            #initialize if doing fit
 
             x_vs_alpha_lambda = c_void_p(0)
             x_vs_alpha = c_void_p(0)
@@ -646,7 +661,7 @@ class GLM(object):
             count_more = c_size_t(0)
         else:
 
-            # restore if predict
+            #restore if predict
 
             x_vs_alpha_lambda = self.x_vs_alpha_lambda
             x_vs_alpha = self.x_vs_alpha
@@ -656,8 +671,8 @@ class GLM(object):
             count_short = self.count_short
             count_more = self.count_more
 
-        # ###############
-        #
+# ############## #
+#
 
         c_size_t_p = POINTER(c_size_t)
         if which_precision == 1:
@@ -675,7 +690,7 @@ class GLM(object):
                 print('single precision fit')
                 sys.stdout.flush()
 
-        # precision-independent commands
+#precision - independent commands
         if self.alphas_list is not None:
             pass_alphas = (self.alphas_list.astype(self.dtype, copy=False))
             c_alphas = pass_alphas.ctypes.data_as(POINTER(self.myctype))
@@ -687,7 +702,7 @@ class GLM(object):
         else:
             c_lambdas = cast(0, POINTER(self.myctype))
 
-        # call elastic net in C backend
+#call elastic net in C backend
         c_elastic_net(
             c_int(self._family),
             c_int(do_predict),
@@ -731,19 +746,18 @@ class GLM(object):
             pointer(valid_pred_vs_alpha),
             cast(addressof(count_full), c_size_t_p),
             cast(addressof(count_short), c_size_t_p),
-            cast(addressof(count_more), c_size_t_p),
-        )
-        # if should or user wanted to save or free data,
-        # do that now that we are done using a,b,c,d,e
-        # This means have to upload_data() again before fit_ptr
+            cast(addressof(count_more), c_size_t_p),)
+        #if should or user wanted to save or free data,
+        #do that now that we are done using a, b, c, d, e
+        #This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
         if free_input_data == 1:
             self.free_data()
 
-        # ####################################
-        # PROCESS OUTPUT
-        # save pointers
+# ####################################
+#PROCESS OUTPUT
+#save pointers
 
         self.x_vs_alpha_lambda = x_vs_alpha_lambda
         self.x_vs_alpha = x_vs_alpha
@@ -758,8 +772,7 @@ class GLM(object):
         count_more_value = count_more.value
 
         if self.store_full_path == 1:
-            num_all = int(count_full_value / (self.n_alphas
-                                              * self.n_lambdas))
+            num_all = int(count_full_value / (self.n_alphas * self.n_lambdas))
         else:
             num_all = int(count_short_value / self.n_alphas)
 
@@ -768,21 +781,19 @@ class GLM(object):
         num_other = num_all_other - num_error
         if num_other != 3:
             print('num_other=%d but expected 3' % num_other)
-            print(
-                'count_full_value=%d '
-                'count_short_value=%d '
-                'count_more_value=%d '
-                'num_all=%d num_all_other=%d' %
-                (int(count_full_value), int(count_short_value),
-                 int(count_more_value), int(num_all),
-                 int(num_all_other)))
+            print('count_full_value=%d '
+                  'count_short_value=%d '
+                  'count_more_value=%d '
+                  'num_all=%d num_all_other=%d' %
+                  (int(count_full_value), int(count_short_value),
+                   int(count_more_value), int(num_all), int(num_all_other)))
             sys.stdout.flush()
-            # TODO raise an exception instead
+            #TODO raise an exception instead
             exit(0)
 
         if self.store_full_path == 1 and do_predict == 0:
-            # x_vs_alpha_lambda contains solution (and other data)
-            # for all lambda and alpha
+            #x_vs_alpha_lambda contains solution(and other data)
+            #for all lambda and alpha
 
             self.x_vs_alpha_lambdanew = \
                 np.fromiter(cast(x_vs_alpha_lambda,
@@ -802,11 +813,11 @@ class GLM(object):
             self._lambdas = \
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
-            self._alphas = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 1:n + num_error + 2]
+            self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:
+                                                     n + num_error + 2]
 
-            self._tols = self.x_vs_alpha_lambdanew[
-                :, :, n + num_error + 2:n + num_error + 3]
+            self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:
+                                                   n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
@@ -814,8 +825,7 @@ class GLM(object):
                 self.intercept_ = None
 
         if self.store_full_path == 1 and do_predict == 1:
-            thecount = int(count_full_value / (n + num_all_other)
-                           * m_valid)
+            thecount = int(count_full_value / (n + num_all_other) * m_valid)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.fromiter(cast(valid_pred_vs_alpha_lambda,
                                  POINTER(self.myctype)), dtype=self.dtype,
@@ -827,47 +837,43 @@ class GLM(object):
                 self.valid_pred_vs_alpha_lambdanew[:, :, 0:m_valid]
 
         if do_predict == 0:  # store_full_path==0 or 1
-            # x_vs_alpha contains only best of all lambda for each alpha
+            #x_vs_alpha contains only best of all lambda for each alpha
 
-            self.x_vs_alphanew = np.fromiter(cast(x_vs_alpha,
-                                                  POINTER(self.myctype)),
-                                             dtype=self.dtype,
-                                             count=count_short_value)
-            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
-                                            (self.n_alphas, num_all))
+            self.x_vs_alphanew = np.fromiter(
+                cast(x_vs_alpha, POINTER(self.myctype)),
+                dtype=self.dtype,
+                count=count_short_value)
+            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas,
+                                                                 num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
-            self._lambdas2 = self.x_vs_alphanew[
-                :, n + num_error:n + num_error + 1]
-            self._alphas2 = self.x_vs_alphanew[
-                :, n + num_error + 1:n + num_error + 2]
-            self._tols2 = self.x_vs_alphanew[
-                :, n + num_error + 2:n + num_error + 3]
+            self._lambdas2 = self.x_vs_alphanew[:, n + num_error:
+                                                n + num_error + 1]
+            self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:
+                                               n + num_error + 2]
+            self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:
+                                             n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept2_ = self.x_vs_alphapure[:, -1]
             else:
                 self.intercept2_ = None
 
-        # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+#preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
         if self.store_full_path == 0 and do_predict == 1:
-            thecount = int(count_short_value / (n + num_all_other)
-                           * m_valid)
+            thecount = int(count_short_value / (n + num_all_other) * m_valid)
             if self.verbose > 0:
-                print(
-                    'thecount=%d '
-                    'count_full_value=%d '
-                    'count_short_value=%d '
-                    'n=%d num_all_other=%d '
-                    'm_valid=%d'
-                    % (
-                        thecount,
-                        count_full_value,
-                        count_short_value,
-                        n,
-                        num_all_other,
-                        m_valid,
-                    ))
+                print('thecount=%d '
+                      'count_full_value=%d '
+                      'count_short_value=%d '
+                      'n=%d num_all_other=%d '
+                      'm_valid=%d' % (
+                          thecount,
+                          count_full_value,
+                          count_short_value,
+                          n,
+                          num_all_other,
+                          m_valid,))
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
                 np.fromiter(cast(valid_pred_vs_alpha,
@@ -881,14 +887,13 @@ class GLM(object):
 
         return self
 
-    # TODO Add typechecking
-    def predict_ptr(
-            self,
-            valid_xptr=None,
-            valid_yptr=None,
-            free_input_data=0,
-            order=None
-    ):
+#TODO Add typechecking
+
+    def predict_ptr(self,
+                    valid_xptr=None,
+                    valid_yptr=None,
+                    free_input_data=0,
+                    order=None):
         """Predict on a fitted GLM with with pointers to data on the GPU
 
         :param ndarray valid_xptr : Pointer to validation features
@@ -913,8 +918,8 @@ class GLM(object):
         assert_is_type(free_input_data, int)
         assert_is_type(order, int, None)
 
-        # assume self.ord already set by fit_ptr() at least
-        # override self if chose to pass this option
+        #assume self.ord already set by fit_ptr() at least
+        #override self if chose to pass this option
         oldstorefullpath = self.store_full_path
         if self.store_full_path == 1:  # then need to run twice
             self.store_full_path = 1
@@ -931,8 +936,7 @@ class GLM(object):
                 valid_yptr,
                 self.e,
                 do_predict=1,
-                free_input_data=free_input_data,
-            )
+                free_input_data=free_input_data,)
         self.store_full_path = 0
         self._fitorpredict_ptr(
             self.source_dev,
@@ -946,24 +950,22 @@ class GLM(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            do_predict=1,
-        )
-        # restore global variable
+            do_predict=1,)
+        #restore global variable
         self.store_full_path = oldstorefullpath
 
         return self.valid_pred_vs_alphapure  # something like valid_y
 
-    # TODO Add type checking
-    def fit_predict(
-            self,
-            train_x,
-            train_y,
-            valid_x=None,
-            valid_y=None,
-            sample_weight=None,
-            free_input_data=1,
-            order=None
-    ):
+#TODO Add type checking
+
+    def fit_predict(self,
+                    train_x,
+                    train_y,
+                    valid_x=None,
+                    valid_y=None,
+                    sample_weight=None,
+                    free_input_data=1,
+                    order=None):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
@@ -991,42 +993,44 @@ class GLM(object):
         assert_is_type(free_input_data, int)
         assert_is_type(order, int, None)
 
-        # let fit() check and convert (to numpy)
-        # train_x, train_y, valid_x, valid_y, weight
+        #let fit() check and convert(to numpy)
+        #train_x, train_y, valid_x, valid_y, weight
         self.fit(
             train_x,
             train_y,
             valid_x,
             valid_y,
             sample_weight,
-            free_input_data=0,
-        )
+            free_input_data=0,)
         if valid_x is None:
-            self.prediction = self.predict(valid_x=train_x, valid_y=train_y,
-                                           sample_weight=sample_weight,
-                                           free_input_data=free_input_data)
+            self.prediction = self.predict(
+                valid_x=train_x,
+                valid_y=train_y,
+                sample_weight=sample_weight,
+                free_input_data=free_input_data)
         else:
-            self.prediction = self.predict(valid_x=valid_x, valid_y=valid_y,
-                                           sample_weight=sample_weight,
-                                           free_input_data=free_input_data)
+            self.prediction = self.predict(
+                valid_x=valid_x,
+                valid_y=valid_y,
+                sample_weight=sample_weight,
+                free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
-    # TODO Add type checking
-    def fit_predict_ptr(
-            self,
-            m_train,
-            n,
-            m_valid,
-            double_precision,
-            order,
-            a,
-            b,
-            c,
-            d,
-            e,
-            free_input_data=0,
-            source_dev=0
-    ):
+#TODO Add type checking
+
+    def fit_predict_ptr(self,
+                        m_train,
+                        n,
+                        m_valid,
+                        double_precision,
+                        order,
+                        a,
+                        b,
+                        c,
+                        d,
+                        e,
+                        free_input_data=0,
+                        source_dev=0):
         """Train a GLM with pointers to data on the GPU and predict
         on validation set that also has a pointer on the GPU
 
@@ -1087,25 +1091,22 @@ class GLM(object):
             d,
             e,
             do_predict,
-            free_input_data=0
-        )
+            free_input_data=0)
         if c is None or c is c_void_p(0):
-            self.prediction = self.predict_ptr(valid_xptr=a, valid_yptr=b,
-                                               free_input_data=free_input_data)
+            self.prediction = self.predict_ptr(
+                valid_xptr=a, valid_yptr=b, free_input_data=free_input_data)
         else:
-            self.prediction = self.predict_ptr(valid_xptr=c, valid_yptr=d,
-                                               free_input_data=free_input_data)
+            self.prediction = self.predict_ptr(
+                valid_xptr=c, valid_yptr=d, free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
-    def fit_transform(
-            self,
-            train_x,
-            train_y,
-            valid_x=None,
-            valid_y=None,
-            sample_weight=None,
-            free_input_data=1
-    ):
+    def fit_transform(self,
+                      train_x,
+                      train_y,
+                      valid_x=None,
+                      valid_y=None,
+                      sample_weight=None,
+                      free_input_data=1):
         """Train a model using GLM and predict on validation set
 
         :param ndarray train_x : Training features array
@@ -1148,13 +1149,11 @@ class GLM(object):
         else:
             print("RMSE per alpha value (-1.00 = missing)\n")
         headers = ["Alphas", "Train", "CV", "Valid"]
-        print(tabulate(
-            error_train,
-            headers=headers,
-            tablefmt="pipe",
-            floatfmt=".2f"))
+        print(
+            tabulate(
+                error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
-    # ################### Properties and setters of properties
+# ################## #Properties and setters of properties
 
     @property
     def total_n_gpus(self):
@@ -1176,7 +1175,7 @@ class GLM(object):
 
     @family.setter
     def family(self, value):
-        # add check
+        #add check
         self.family = value
 
     @property
@@ -1185,7 +1184,7 @@ class GLM(object):
 
     @shared_a.setter
     def shared_a(self, value):
-        # add check
+        #add check
         self.__shared_a = value
 
     @property
@@ -1195,7 +1194,7 @@ class GLM(object):
     @standardize.setter
     def standardize(self, value):
 
-        # add check
+        #add check
         self._standardize = value
 
     @property
@@ -1253,7 +1252,7 @@ class GLM(object):
     @lambdas.setter
     def lambdas(self, value):
 
-        # add check
+        #add check
         self._lambdas = value
 
     @property
@@ -1304,12 +1303,12 @@ class GLM(object):
     def tols_best(self):
         return self._tols2
 
-    # ################### Free up memory functions
+# ################## #Free up memory functions
 
     def free_data(self):
 
-        # NOTE: For now, these are automatically freed
-        # when done with fit -- ok, since not used again
+        #NOTE : For now, these are automatically freed
+        #when done with fit-- ok, since not used again
 
         if self.uploaded_data == 1:
             self.uploaded_data = 0
@@ -1351,16 +1350,13 @@ class GLM(object):
         self.free_sols()
         self.free_preds()
 
-    def upload_data(
-            self,
-            train_x,
-            train_y,
-            valid_x=None,
-            valid_y=None,
-            weight=None,
-            source_dev=0
-
-    ):
+    def upload_data(self,
+                    train_x,
+                    train_y,
+                    valid_x=None,
+                    valid_y=None,
+                    weight=None,
+                    source_dev=0):
         """Upload the data through the backend library"""
         if self.uploaded_data == 1:
             self.free_data()
@@ -1369,12 +1365,10 @@ class GLM(object):
         #
         # ################
 
-        self.double_precision1, m_train, n1 = _data_info(train_x,
-                                                         self.verbose)
+        self.double_precision1, m_train, n1 = _data_info(train_x, self.verbose)
         self.m_train = m_train
         self.double_precision3, _, _ = _data_info(train_y, self.verbose)
-        self.double_precision2, m_valid, n2 = _data_info(valid_x,
-                                                         self.verbose)
+        self.double_precision2, m_valid, n2 = _data_info(valid_x, self.verbose)
         self.m_valid = m_valid
         self.double_precision4, _, _ = _data_info(valid_y, self.verbose)
         self.double_precision5, _, _ = _data_info(weight, self.verbose)
@@ -1390,28 +1384,28 @@ class GLM(object):
         elif self.double_precision2 >= 0:
             self.double_precision = self.double_precision2
 
-        # ##############
+# ##############
 
         if self.double_precision1 >= 0 and self.double_precision3 >= 0:
             if self.double_precision1 != self.double_precision3:
                 print('train_x and train_y must be same precision')
                 exit(0)
 
-        # ##############
+# ##############
 
         if self.double_precision2 >= 0 and self.double_precision4 >= 0:
             if self.double_precision2 != self.double_precision4:
                 print('valid_x and valid_y must be same precision')
                 exit(0)
 
-        # ##############
+# ##############
 
         if self.double_precision3 >= 0 and self.double_precision5 >= 0:
             if self.double_precision3 != self.double_precision5:
                 print('train_y and weight must be same precision')
                 exit(0)
 
-        # ##############
+# ##############
 
         n = -1
         if n1 >= 0 and n2 >= 0:
@@ -1426,7 +1420,7 @@ class GLM(object):
             n = n2
         self.n = n
 
-        # ###############
+        # ############## #
 
         a = c_void_p(0)
         b = c_void_p(0)
@@ -1446,7 +1440,7 @@ class GLM(object):
                 print('Detected np.float32')
                 sys.stdout.flush()
 
-        # make these types consistent
+#make these types consistent
         A = _convert_to_ptr(train_x)
         B = _convert_to_ptr(train_y)
         C = _convert_to_ptr(valid_x)
@@ -1471,8 +1465,7 @@ class GLM(object):
                 pointer(b),
                 pointer(c),
                 pointer(d),
-                pointer(e),
-            )
+                pointer(e),)
         elif self.double_precision == 0:
             status = self.lib.make_ptr_float(
                 c_int(self._shared_a),
@@ -1491,8 +1484,7 @@ class GLM(object):
                 pointer(b),
                 pointer(c),
                 pointer(d),
-                pointer(e),
-            )
+                pointer(e),)
         else:
             print('Unknown numpy type detected')
             print(train_x.dtype)
@@ -1510,38 +1502,40 @@ class GLM(object):
 
     def score(self, X=None, y=None, sample_weight=None):
         if X is not None and y is not None:
-            self.prediction = self.predict(valid_x=X, valid_y=y,
-                                           weight=sample_weight)
-            # otherwise score makes no sense, need both X and y,
-            # else just return existing error
-        # TODO: Should return R^2 and redo predict if X and y are passed
+            self.prediction = self.predict(
+                valid_x=X, valid_y=y, sample_weight=sample_weight)
+#otherwise score makes no sense, need both X and y,
+#else just return existing error
+#TODO : Should return R ^ 2 and redo predict if X and y are passed
         return self.error
 
     @classmethod
     def _get_param_names(cls):
         """Get parameter names for the estimator"""
-        # fetch the constructor or the original constructor before
-        # deprecation wrapping if any
+        #fetch the constructor or the original constructor before
+        #deprecation wrapping if any
         init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
         if init is object.__init__:
-            # No explicit constructor to introspect
+            #No explicit constructor to introspect
             return []
 
-        # introspect the constructor arguments to find the model parameters
-        # to represent
+#introspect the constructor arguments to find the model parameters
+#to represent
         init_signature = signature(init)
-        # Consider the constructor parameters excluding 'self'
-        parameters = [p for p in init_signature.parameters.values()
-                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        #Consider the constructor parameters excluding 'self'
+        parameters = [
+            p for p in init_signature.parameters.values()
+            if p.name != 'self' and p.kind != p.VAR_KEYWORD
+        ]
         for p in parameters:
             if p.kind == p.VAR_POSITIONAL:
                 raise RuntimeError("h2o4gpu GLM estimator should always "
                                    "specify their parameters in the signature"
                                    " of their __init__ (no varargs)."
                                    " %s with constructor %s doesn't "
-                                   " follow this convention."
-                                   % (cls, init_signature))
-        # Extract and sort argument names excluding 'self'
+                                   " follow this convention." %
+                                   (cls, init_signature))
+#Extract and sort argument names excluding 'self'
         return sorted([p.name for p in parameters])
 
     def get_params(self, deep=True):
@@ -1554,21 +1548,21 @@ class GLM(object):
         """
         out = dict()
         for key in self._get_param_names():
-            # We need deprecation warnings to always be on in order to
-            # catch deprecated param values.
-            # This is set in utils/__init__.py but it gets overwritten
-            # when running under python3 somehow.
+            #We need deprecation warnings to always be on in order to
+            #catch deprecated param values.
+            #This is set in utils / __init__.py but it gets overwritten
+            #when running under python3 somehow.
             warnings.simplefilter("always", DeprecationWarning)
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
                 if w and w[0].category == DeprecationWarning:
-                    # if the parameter is deprecated, don't show it
+                    #if the parameter is deprecated, don't show it
                     continue
             finally:
                 warnings.filters.pop(0)
 
-            # XXX: should we rather test if instance of estimator?
+#XXX : should we rather test if instance of estimator ?
             if deep and hasattr(value, 'get_params'):
                 deep_items = value.get_params().items()
                 out.update((key + '__' + k, val) for k, val in deep_items)
@@ -1578,13 +1572,13 @@ class GLM(object):
     def set_params(self, **params):
         """Set the parameters of this estimator."""
         if not params:
-            # Simple optimization to gain speed (inspect is slow)
+            #Simple optimization to gain speed(inspect is slow)
             return self
         valid_params = self.get_params(deep=True)
         for key, value in six.iteritems(params):
             split = key.split('__', 1)
             if len(split) > 1:
-                # nested objects case
+                #nested objects case
                 name, sub_name = split
                 if name not in valid_params:
                     raise ValueError('Invalid parameter %s for estimator %s. '
@@ -1594,7 +1588,7 @@ class GLM(object):
                 sub_object = valid_params[name]
                 sub_object.set_params(**{sub_name: value})
             else:
-                # simple objects case
+                #simple objects case
                 if key not in valid_params:
                     raise ValueError('Invalid parameter %s for estimator %s. '
                                      'Check the list of available parameters '

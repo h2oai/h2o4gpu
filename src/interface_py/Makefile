@@ -5,11 +5,25 @@ default: all
 pylint:
 	@status=0; \
 	for py in $$(find h2o4gpu -name "*.py" -type f); do \
-		pylint --rcfile=../../tools/pylintrc -rn $$py; \
+		if [ "$$py" == "h2o4gpu/__init__.py" ]; \
+		then echo "Skip $$py"; \
+		else echo $$py; \
+		pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
 		tmp=$$?; \
 		if [ $$tmp -ne 0 ]; then status=$$tmp; fi; \
+		fi; \
 	done; \
 	exit $$status
+
+pyformat:
+	@status=0; \
+	for py in $$(find h2o4gpu -name "*.py" -type f); do \
+		if [ "$$py" == "h2o4gpu/__init__.py" ]; \
+		then echo "Skip $$py"; \
+		else echo $$py; \
+		yapf -p -i --style google $$py; \
+		fi; \
+	done; \
 
 all:
 

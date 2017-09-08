@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -9,7 +9,10 @@ import numpy as np
 import pandas as pd
 
 
-def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
+def import_data(data_path,
+                use_pandas=False,
+                intercept=True,
+                valid_fraction=0.2,
                 classification=True):
     """Import Data for H2O GPU Edition
 
@@ -42,7 +45,7 @@ def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
         family : string that would either be "logistic" if classification is set
             to True, otherwise "elasticnet"
     """
-    # Can import data using pandas or feather.
+    #Can import data using pandas or feather.
     use_pandas = use_pandas
 
     data_file = data_path  # If importing using pandas
@@ -54,19 +57,19 @@ def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
         print("Reading Data with Feather")
         data = feather.read_dataframe(data_file)
     print(data.shape)
-    data_x = np.array(data.iloc[:, :data.shape[1] - 1], dtype='float32',
-                      order='C')
-    data_y = np.array(data.iloc[:, data.shape[1] - 1], dtype='float32',
-                      order='C')
+    data_x = np.array(
+        data.iloc[:, :data.shape[1] - 1], dtype='float32', order='C')
+    data_y = np.array(
+        data.iloc[:, data.shape[1] - 1], dtype='float32', order='C')
 
-    # Setup train/validation set split
-    # (assuming form of mxn where m=row count and n=col count)
+    #Setup train / validation set split
+    #(assuming form of mxn where m = row count and n = col count)
     morig = data_x.shape[0]
     norig = data_x.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
     sys.stdout.flush()
 
-    # Do train/valid split
+    #Do train / valid split
     if valid_fraction > 0:
         valid_fraction = valid_fraction
         HO = int(valid_fraction * morig)
@@ -77,25 +80,26 @@ def import_data(data_path, use_pandas=False, intercept=True, valid_fraction=0.2,
         train_y = np.copy(data_y[0:H])
         valid_x = np.copy(data_x[H:morig, :])
         valid_y = np.copy(data_y[H:morig])
-        print("Size of Train cols=%d valid cols=%d" %
-              (train_x.shape[1], valid_x.shape[1]))
+        print("Size of Train cols=%d valid cols=%d" % (train_x.shape[1],
+                                                       valid_x.shape[1]))
     else:
         train_x = data_x
         train_y = data_y
 
-    # Using intercept
+#Using intercept
     if intercept:
         train_x = np.hstack(
-            [train_x, np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
+            [train_x,
+             np.ones((train_x.shape[0], 1), dtype=train_x.dtype)])
         if valid_fraction > 0:
             valid_x = np.hstack(
-                [valid_x, np.ones((valid_x.shape[0], 1), dtype=valid_x.dtype)])
-            print(
-                "Size of Train cols=%d & valid cols=%d after adding "
-                "intercept column" % (train_x.shape[1], valid_x.shape[1]))
+                [valid_x,
+                 np.ones((valid_x.shape[0], 1), dtype=valid_x.dtype)])
+            print("Size of Train cols=%d & valid cols=%d after adding "
+                  "intercept column" % (train_x.shape[1], valid_x.shape[1]))
         else:
-            print("Size of Train cols=%d after adding intercept column" % (
-                train_x.shape[1]))
+            print("Size of Train cols=%d after adding intercept column" %
+                  (train_x.shape[1]))
 
     if classification:
         family = "logistic"
