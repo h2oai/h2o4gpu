@@ -40,35 +40,47 @@ class TestGlmSklearn(object):
         # Fetch dataset
         if whichdata == 0:
             data = fetch_20newsgroups() # runs
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 1:
             data = fetch_20newsgroups_vectorized() # sparse
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 2:
             data = fetch_california_housing() # runs
+            sizetokeep = 300
         elif whichdata == 3:
             data = fetch_covtype()
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 4:
             data = fetch_kddcup99() # strings -> numeric
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 5:
             data = fetch_lfw_pairs()
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 6:
             data = fetch_lfw_people()
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 7:
             data = fetch_mldata('iris')
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 8:
             data = fetch_mldata('leukemia') # runs
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 9:
             data = fetch_mldata('Whistler Daily Snowfall')
+            sizetokeep = 1000  # 1k rows for now
         elif whichdata == 10:
             data = fetch_olivetti_faces() # runs
+            sizetokeep = 500
         elif whichdata == 11:
             data = fetch_rcv1()
+            sizetokeep = 1000  # 1k rows for now
             #data = data.todense() # FIXME: glm and kmeans h2o4gpu currently only supports dense matrices
         elif whichdata == 12:
             data = fetch_species_distributions()
+            sizetokeep = 1000  # 1k rows for now
         else:
             ValueError("No such whichdata")
     
-        sizetokeep=1000 # 1k rows for now
         try:
             sizetokeep = min(sizetokeep,len(data.data[:,0]))
             X = data.data[0:sizetokeep, :]
