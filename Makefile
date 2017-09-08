@@ -252,6 +252,13 @@ sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using
 
 ##################
 
+dotestdemos:
+	rm -rf ./tmp/
+	mkdir -p ./tmp/
+	bash scripts/convert_ipynb2py.sh
+    # can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml examples/py 2> ./tmp/h2o4gpu-examplespy.$(LOGEXT).log
+
 dotest:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
@@ -299,6 +306,8 @@ dotestbigperfpython:
 	bash tests_open/showresults.sh # still just references results directory in base path
 
 ################### H2O.ai public tests for pass/fail
+
+testdemos: dotestdemos
 
 test: build dotest # faster if also run sync_open_data before doing this test, but can't always assume user has s3 creds setup (even needed for public repo on S3)
 

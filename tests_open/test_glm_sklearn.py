@@ -46,7 +46,7 @@ class TestGlmSklearn(object):
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 2:
             data = fetch_california_housing() # runs
-            sizetokeep = 300
+            sizetokeep = 1000
         elif whichdata == 3:
             data = fetch_covtype()
             sizetokeep = 1000  # 1k rows for now
@@ -70,7 +70,7 @@ class TestGlmSklearn(object):
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 10:
             data = fetch_olivetti_faces() # runs
-            sizetokeep = 500
+            sizetokeep = 100
         elif whichdata == 11:
             data = fetch_rcv1()
             sizetokeep = 1000  # 1k rows for now
