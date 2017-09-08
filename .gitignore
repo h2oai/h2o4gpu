@@ -11,6 +11,7 @@ src/interface_py/py3nvml
 src/interface_py/xgboost
 deps/
 data/
+open_data/
 smalldata/
 tests/smalldata
 tests/data
