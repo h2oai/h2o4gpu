@@ -91,7 +91,7 @@ py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
 fullpy: apply_sklearn_simple
-	$(MAKE) -j pylint all -C src/interface_py
+	$(MAKE) pylint all -C src/interface_py
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
