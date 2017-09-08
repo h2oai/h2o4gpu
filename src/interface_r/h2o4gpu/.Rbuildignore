@@ -1,0 +1,4 @@
+src/build/cpu/*.o
+src/build/cpu/*.so
+src/build/gpu/*.o
+src/build/gpu/*.so

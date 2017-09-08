@@ -20,6 +20,8 @@ cv.h2o4gpunet(x, y, weights, lambda = NULL, nfolds = 10, foldid = NULL,
 
 \item{foldid}{Optional vector of values between 1 and nfolds, assigning}
 
+\item{noweight}{Observation weights removed}
+
 \item{cutoff}{Discard values of lambda for which beta remains unchanged (estimated on the full dataset)
 datapoint to cv-fold.}
 

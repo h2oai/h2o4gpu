@@ -295,6 +295,8 @@ h2o4gpunet <- function(x, y, family=c("gaussian", "binomial"),
                     penalty.factor=rep(1, nvars), intercept=TRUE, noweight=FALSE, params=list(),
                     cutoff=TRUE) {
 
+  # TO DO: Remove noweight	
+
   # Check Family
   family = match.arg(family)
   
@@ -550,15 +552,16 @@ getmin <- function(lambda, cvm, cvsd) {
 #' @param lambda List of lambda values for which CV should be performed.
 #' @param nfolds Number of folds.
 #' @param foldid Optional vector of values between 1 and nfolds, assigning
+#' @param noweight Observation weights removed
 #' @param cutoff Discard values of lambda for which beta remains unchanged (estimated on the full dataset)
 #' datapoint to cv-fold.
 #' @param params Other parameters to h2o4gpunet
 #' @param ... Other parameters to h2o4gpunet.
 #' @export
 cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, noweight=FALSE, cutoff=TRUE, params=list(), ...) {
-  library(foreach)
-  library(doMC)
-  registerDoMC(2) ## FIXME: as many as there are GPUs
+  
+  # TO DO: remove noweight
+  doMC::registerDoMC(2) ## FIXME: as many as there are GPUs
 
   # Check input data
   if(!is.null(lambda) && length(lambda) < 2) {
@@ -573,7 +576,7 @@ cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, no
     weights = as.double(weights)
   }
   if(noweight) {
-    weights=rep(1,nobs)
+    weights=rep(1,N)
   }
 
   if(is.null(foldid)) {
@@ -597,7 +600,10 @@ cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, no
   nlams = double(nfolds)
 
   # Begin CV
-  foreach(i=1:nfolds) %dopar% {
+  `%dopar%` <- foreach::`%dopar%`  #https://stackoverflow.com/questions/30216613/how-to-use-dopar-when-only-import-foreach-in-description-of-a-package
+  i <- NULL #to avoid CRAN check warning
+  foreach::foreach(i=1:nfolds) %dopar% {
+
     params[["wDev"]] = i%%2L
     which = (foldid == i)
     if(is.matrix(y)) {
@@ -625,6 +631,8 @@ cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, no
 }
 
 # Copy from glmnet
+#' @importFrom graphics abline axis matplot points segments
+#' @importFrom stats approx predict weighted.mean
 error.bars <- function(x, upper, lower, width=0.02, ...) {
   xlim <- range(x)
   barw <- diff(xlim) * width
