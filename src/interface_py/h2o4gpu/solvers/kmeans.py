@@ -13,7 +13,7 @@ import numpy as np
 
 from h2o4gpu.libs.lib_kmeans import GPUlib, CPUlib
 from h2o4gpu.solvers.utils import device_count, _check_data_content, \
-    _get_data, _unicode_order
+    _get_data
 from h2o4gpu.typecheck.typechecks import assert_is_type, assert_satisfies
 from h2o4gpu.types import cptr
 
@@ -427,8 +427,7 @@ class KMeans(object):
             centroids = centroids[~np.isnan(centroids).any(axis=1)]
             self._print_verbose(0,
                                 "Removed %d empty centroids" %
-                                (self._n_clusters - centroids.shape[0])
-                                )
+                                (self._n_clusters - centroids.shape[0]))
             self._n_clusters = centroids.shape[0]
 
         self.cluster_centers_ = centroids
@@ -463,6 +462,11 @@ class KMeans(object):
         return data, cptr(data, dtype=my_ctype), my_ctype
 
     def _validate_y(self, y, rows):
+        """Validate contents of y
+
+        If y is None then generates random values.
+        If y is not None then checks the data content.
+        """
         if y is None:
             from numpy.random import RandomState
             ynp = RandomState(self.seed).randint(rows, size=rows) % \

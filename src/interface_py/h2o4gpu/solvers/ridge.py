@@ -30,7 +30,8 @@ class Ridge(GLM):
         improvement on train or validation. Default is True.
 
     :param bool glm_stop_early: Stop early when there is no more relative
-        improvement in the primary and dual residuals for ADMM.  Default is True.
+        improvement in the primary and dual residuals for ADMM.
+        Default is True.
 
     :param float glm_stop_early_error_fraction: Relative tolerance for
         metric-based stopping criterion (stop if relative improvement is not at

@@ -72,7 +72,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
 
             t1 = time.time()
             pred_val, rmse_train, rmse_test = run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
-                                                     write, display, use_gpu, name=name)
+                                                     write, display, use_gpu)
         else:
             # should all be explicitly np.float32 or all np.float64
             xfull = np.loadtxt("./data/xfullhyatt_2k.csv", delimiter=',', dtype=np.float32)

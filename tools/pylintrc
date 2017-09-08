@@ -168,6 +168,10 @@ no-docstring-rgx=(__.*__|main)
 # ones are exempt.
 docstring-min-length=10
 
+[ELIF]
+
+# Maximum number of nested blocks for function / method body
+max-nested-blocks=6
 
 [FORMAT]
 
