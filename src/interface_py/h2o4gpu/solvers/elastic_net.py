@@ -294,6 +294,7 @@ class GLM(object):
 
             self.prepare_and_upload_data(
                 train_x=train_x,
+                train_y=train_y,
                 valid_x=valid_x,
                 valid_y=valid_y,
                 sample_weight=sample_weight,
@@ -327,7 +328,6 @@ class GLM(object):
                                 sample_weight=None,
                                 source_dev=0):
         """ Prepare data and then upload data
-         (TODO: Merge do_predict 0 and 1 -- maybe already would work)
         """
 
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
@@ -361,12 +361,6 @@ class GLM(object):
         if m_train >= 1 and m_y >= 1 and m_train != m_y:
             print('training X and Y must have same number of rows, '
                   'but m_train=%d m_y=%d\n' % (m_train, m_y))
-
-        if self.verbose > 0:
-            if n1 >= 0 and m_y >= 0:
-                print('Correct train inputs')
-            else:
-                raise ValueError('Incorrect train inputs')
 
 # ################
 
@@ -1355,7 +1349,7 @@ class GLM(object):
                     train_y,
                     valid_x=None,
                     valid_y=None,
-                    weight=None,
+                    sample_weight=None,
                     source_dev=0):
         """Upload the data through the backend library"""
         if self.uploaded_data == 1:
@@ -1371,7 +1365,7 @@ class GLM(object):
         self.double_precision2, m_valid, n2 = _data_info(valid_x, self.verbose)
         self.m_valid = m_valid
         self.double_precision4, _, _ = _data_info(valid_y, self.verbose)
-        self.double_precision5, _, _ = _data_info(weight, self.verbose)
+        self.double_precision5, _, _ = _data_info(sample_weight, self.verbose)
 
         if self.double_precision1 >= 0 and self.double_precision2 >= 0:
             if self.double_precision1 != self.double_precision2:
@@ -1445,7 +1439,7 @@ class GLM(object):
         B = _convert_to_ptr(train_y)
         C = _convert_to_ptr(valid_x)
         D = _convert_to_ptr(valid_y)
-        E = _convert_to_ptr(weight)
+        E = _convert_to_ptr(sample_weight)
 
         if self.double_precision == 1:
             status = self.lib.make_ptr_double(
