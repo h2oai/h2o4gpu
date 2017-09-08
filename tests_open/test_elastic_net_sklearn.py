@@ -141,7 +141,7 @@ def test_elastic_net_sklearn():
     import pandas as pd
 
 
-    df = pd.read_csv("./data/simple.txt", sep=" ", header=None)
+    df = pd.read_csv("./open_data/simple.txt", sep=" ", header=None)
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')

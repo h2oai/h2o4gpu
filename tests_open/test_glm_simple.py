@@ -37,7 +37,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, choosealp
     #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
     #  b=A.dot(x_true)+0.5*randn(m)
 
-    df = pd.read_csv("./data/simple.txt", sep=" ", header=None)
+    df = pd.read_csv("./open_data/simple.txt", sep=" ", header=None)
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
