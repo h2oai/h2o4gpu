@@ -176,7 +176,7 @@ def _get_data(data, ismatrix=False, fit_intercept=False,
     """
     # default is no data
     data_as_np = None  # specific to this data
-    m = 0  # specific to this data
+    m = -1  # specific to this data
     n = -1  # specific to this data
     fortran = None  # specific to this data
     # dtype and order not specific to this data, can be just input
@@ -220,7 +220,7 @@ def _check_data_content(do_check, name, data):
 def _data_info(data, verbose=0):
     """Get info about passed data.
 
-    :param data: array_like
+    :param data: numpy-only array
     :param verbose: int, optional, default : 0
         Logging level
     :return:

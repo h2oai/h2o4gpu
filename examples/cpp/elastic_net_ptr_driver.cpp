@@ -210,7 +210,9 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   int verbose=0;
   T *alphas = NULL;
   T *lambdas = NULL;
-  double time = h2o4gpu::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, alphas, lambdas, tol, lambdastopearly, glmstopearly, glmstopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
+  int gpu_id = 0;
+  int totalnGPUs = nGPUs; // not really right TODO: Should have elasticNetptr figure out total number of GPUs
+  double time = h2o4gpu::ElasticNetptr<T>(family, dopredict, sourceDev, datatype, sharedA, nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize, lambda_max, lambda_min_ratio, nLambdas, nFolds, nAlphas, alpha_min, alpha_max, alphas, lambdas, tol, lambdastopearly, glmstopearly, glmstopearlyrmsefraction, maxiterations, verbose, aa, bb, cc, dd, ee, givefullpath, &Xvsalphalambda, &Xvsalpha, &validPredsvsalphalambda, &validPredsvsalpha, &countfull, &countshort, &countmore);
 
   // print out some things about Xvsalphalambda and Xvsalpha
   printf("countfull=%d countshort=%d countmore=%d\n",countfull,countshort,countmore); fflush(stdout);

@@ -26,6 +26,9 @@ class GLM(object):
 
     :param int n_threads : Number of threads to use in the gpu. Default is None.
 
+    :param gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run.
+
     :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
 
     :param str order : Row or Column major for C/C++ backend. Default is 'r'.
@@ -101,6 +104,7 @@ class GLM(object):
     def __init__(
             self,
             n_threads=None,
+            gpu_id=0,
             n_gpus=-1,
             fit_intercept=True,
             lambda_min_ratio=1E-7,
@@ -126,6 +130,7 @@ class GLM(object):
         ##############################
         # asserts
         assert_is_type(n_threads, int, None)
+        assert_is_type(gpu_id, int)
         assert_is_type(n_gpus, int)
         assert_is_type(fit_intercept, bool)
         assert_is_type(lambda_min_ratio, float)
@@ -147,6 +152,7 @@ class GLM(object):
         assert_is_type(alpha_min, float, int, None)
 
         self.double_precision = double_precision
+
 
         if order is not None:
             assert_is_type(order, str)
@@ -218,6 +224,10 @@ class GLM(object):
         self._standardize = 0
 
         (self.n_gpus, devices) = device_count(n_gpus)
+        gpu_id = gpu_id % devices
+        self._gpu_id = gpu_id
+        self._total_n_gpus = devices
+
 
         if n_threads is None:
             # Not required number of threads, but normal.
@@ -282,82 +292,23 @@ class GLM(object):
         assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
-        source_dev = 0  # assume GPU=0 is fine as source
+
+        source_dev = 0
         if not (train_x is None
-                and train_y is None
-                and valid_x is None
-                and valid_y is None
-                and sample_weight is None):
+            and train_y is None
+            and valid_x is None
+            and valid_y is None
+            and sample_weight is None):
 
-            train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
-                train_x, ismatrix=True,
-                fit_intercept=self.fit_intercept, order=self.ord,
-                dtype=self.dtype)
-            train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(
-                train_y, order=self.ord, dtype=self.dtype)
-            valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(
-                valid_x, ismatrix=True,
-                fit_intercept=self.fit_intercept, order=self.ord,
-                dtype=self.dtype)
-            valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = \
-                _get_data(valid_y, order=self.ord, dtype=self.dtype)
-            weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(
-                sample_weight, order=self.ord, dtype=self.dtype
-            )
+            self.prepare_and_upload_data(train_x=train_x, train_y=train_y, valid_x=valid_x, valid_y=valid_y,
+                                sample_weight=sample_weight, source_dev = source_dev)
 
-            # check that inputs all have same 'c' or 'r' order
-            fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
-            _check_equal(fortran_list)
-
-            # now can do checks
-
-            # ###############
-            # check do_predict input
-
-            if m_train >= 1 and m_y >= 1 and m_train != m_y:
-                print(
-                    'training X and Y must have same number of rows, '
-                    'but m_train=%d m_y=%d\n' % (m_train, m_y)
-                )
-
-            if self.verbose > 0:
-                if n1 >= 0 and m_y >= 0:
-                    print('Correct train inputs')
-                else:
-                    raise ValueError('Incorrect train inputs')
-
-            # ################
-
-            if n1 >= 0 and n2 >= 0 and n1 != n2:
-                raise ValueError(
-                    'train_x and valid_x must have same number of columns, '
-                    'but n=%d n2=%d\n' % (n1, n2)
-                )
-
-            # #################
-
-            if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
-                raise ValueError(
-                    'valid_x and valid_y must have same number of rows, '
-                    'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y)
-                )
-            # otherwise m_valid is used, and m_valid_y can be there
-            # or not (sets whether do error or not)
-
-            (_, _, _, _, _) = self.upload_data(
-                source_dev,
-                train_x_np,
-                train_y_np,
-                valid_x_np,
-                valid_y_np,
-                weight_np,
-            )
         else:
             # if all None, just assume fitting with new parameters
             # and all else uses self.
             pass
+
         self.fit_ptr(
-            source_dev,
             self.m_train,
             self.n,
             self.m_valid,
@@ -368,16 +319,102 @@ class GLM(object):
             self.c,
             self.d,
             self.e,
-            free_input_data=free_input_data
+            free_input_data=free_input_data,
+            source_dev = source_dev
         )
         return self
+
+
+    def prepare_and_upload_data(
+            self,
+            train_x=None,
+            train_y=None,
+            valid_x=None,
+            valid_y=None,
+            sample_weight=None,
+            source_dev = 0
+    ):
+        """ Prepare data and then upload data (TODO: Merge do_predict 0 and 1 -- maybe already would work)
+        """
+
+        train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
+            train_x, ismatrix=True,
+            fit_intercept=self.fit_intercept, order=self.ord,
+            dtype=self.dtype)
+        train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(
+            train_y, order=self.ord, dtype=self.dtype)
+        valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(
+            valid_x, ismatrix=True,
+            fit_intercept=self.fit_intercept, order=self.ord,
+            dtype=self.dtype)
+        valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = \
+            _get_data(valid_y, order=self.ord, dtype=self.dtype)
+        weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(
+            sample_weight, order=self.ord, dtype=self.dtype
+        )
+
+        # check that inputs all have same 'c' or 'r' order
+        fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
+        _check_equal(fortran_list)
+
+        # now can do checks
+
+        # ###############
+        # check do_predict input
+
+        if m_train >= 1 and m_y >= 1 and m_train != m_y:
+            print(
+                'training X and Y must have same number of rows, '
+                'but m_train=%d m_y=%d\n' % (m_train, m_y)
+            )
+
+        if self.verbose > 0:
+            if n1 >= 0 and m_y >= 0:
+                print('Correct train inputs')
+            else:
+                raise ValueError('Incorrect train inputs')
+
+        # ################
+
+        if n1 >= 0 and n2 >= 0 and n1 != n2:
+            raise ValueError(
+                'train_x and valid_x must have same number of columns, '
+                'but n=%d n2=%d\n' % (n1, n2)
+            )
+
+        # #################
+
+        if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
+            raise ValueError(
+                'valid_x and valid_y must have same number of rows, '
+                'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y)
+            )
+        # otherwise m_valid is used, and m_valid_y can be there
+        # or not (sets whether do error or not)
+
+        (a, b, c, d, e) = self.upload_data(
+            train_x_np,
+            train_y_np,
+            valid_x_np,
+            valid_y_np,
+            weight_np,
+            source_dev
+        )
+
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.e = e
+        return a, b, c, d, e
+
 
     # TODO Add typechecking
     def predict(
             self,
             valid_x=None,
             valid_y=None,
-            weight=None,
+            sample_weight=None,
             free_input_data=1
     ):
         """Predict on a fitted GLM
@@ -394,54 +431,34 @@ class GLM(object):
 
         assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
-        # if pass None train_x and train_y, then do predict using valid_x
-        # and weight (if given) unlike upload_data and fit_ptr (and so fit)
-        # don't free-up predictions since for single model might request
-        # multiple predictions.  User has to call finish themselves to cleanup.
+        source_dev = 0
+        if not (valid_x is None
+            and valid_y is None
+            and sample_weight is None):
 
-        valid_x_np, m_valid, n, fortran1, self.ord, self.dtype = \
-            _get_data(valid_x, ismatrix=True, fit_intercept=self.fit_intercept,
-                      order=self.ord, dtype=self.dtype)
-        valid_y_np, _, _, fortran2, self.ord, self.dtype = \
-            _get_data(valid_y, fit_intercept=self.fit_intercept, order=self.ord,
-                      dtype=self.dtype)
-        weight_np, _, _, fortran3, self.ord, self.dtype = \
-            _get_data(weight, fit_intercept=self.fit_intercept, order=self.ord,
-                      dtype=self.dtype)
+            self.prepare_and_upload_data(train_x=None, train_y=None, valid_x=valid_x, valid_y=valid_y,
+                                sample_weight=sample_weight, source_dev = source_dev)
+        else:
+            pass
 
-        # check that inputs all have same 'c' or 'r' order
-        fortran_list = [fortran1, fortran2, fortran3]
-        _check_equal(fortran_list)
-
-        # now can do checks
-
-        source_dev = 0  # assume GPU=0 is fine as source
-        (a, b, c, d, e) = self.upload_data(
-            source_dev,
-            None,
-            None,
-            valid_x_np,
-            valid_y_np,
-            weight_np,
-        )
 
         # save global variable
         oldstorefullpath = self.store_full_path
 
         if self.store_full_path == 1:
             self.store_full_path = 1
-            self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid,
-                                   self.double_precision, self.ord, a, b, c, d,
-                                   e,
-                                   do_predict=1,
-                                   free_input_data=free_input_data)
+            self._fitorpredict_ptr(source_dev, self.m_train, self.n, self.m_valid,
+                                   self.double_precision, self.ord,
+                                   self.a, self.b, self.c, self.d, self.e,
+                                   do_predict=1, free_input_data=free_input_data)
 
         self.store_full_path = 0
-        self._fitorpredict_ptr(source_dev, self.m_train, n, m_valid,
-                               self.double_precision, self.ord, a, b, c, d, e,
+        self._fitorpredict_ptr(source_dev, self.m_train, self.n, self.m_valid,
+                               self.double_precision, self.ord,
+                               self.a, self.b, self.c, self.d, self.e,
                                do_predict=1, free_input_data=free_input_data)
 
         # restore variable
@@ -453,7 +470,6 @@ class GLM(object):
 
     def fit_ptr(
             self,
-            source_dev,
             m_train,
             n,
             m_valid,
@@ -464,14 +480,13 @@ class GLM(object):
             c,  # validX_ptr
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
-            free_input_data=0
+            free_input_data=0,
+            source_dev=0
     ):
         """Train a GLM with pointers to data on the GPU
            (if fit_intercept, then you should have added 1's as
            last column to m_train)
 
-
-        :param source_dev GPU ID of device
 
         :param m_train Number of rows in the training set
 
@@ -482,7 +497,7 @@ class GLM(object):
         :param double_precision float32 (0) or double point precision (1) of fit
             No Default.
 
-        :param order: Order of data.  Default is None, and internally determined
+        :param order: Order of data.  Default is None, and assumed set by constructor or upload_data
         whether row 'r' or column 'c' major order.
 
         :param a Pointer to training features array
@@ -497,6 +512,8 @@ class GLM(object):
 
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
+
+        :param source_dev GPU ID of device
         """
 
         self._fitorpredict_ptr(source_dev, m_train, n, m_valid,
@@ -540,8 +557,8 @@ class GLM(object):
         :param double_precision float32 (0) or double point precision (1) of fit
             No Default.
 
-        :param order: Order of data.  Default is None, and internally determined
-        whether row 'r' or column 'c' major order.
+        :param order: Order of data.  Default is None and set elsewhere
+            whether row 'r' or column 'c' major order.
 
         :param a Pointer to training features array
 
@@ -564,7 +581,7 @@ class GLM(object):
         assert_is_type(m_train, int, None)
         assert_is_type(n, int, None)
         assert_is_type(double_precision, float, int, None)
-        assert_is_type(order, int, None)
+        assert_is_type(order, int, str, None)
         assert_is_type(a, c_void_p, None)
         assert_is_type(b, c_void_p, None)
         assert_is_type(c, c_void_p, None)
@@ -587,6 +604,7 @@ class GLM(object):
 
         # ###########
 
+
         # if fitted earlier clear
         # otherwise don't clear solution, just use it
         if do_predict == 0 and self.did_fit_ptr == 1:
@@ -599,6 +617,12 @@ class GLM(object):
         # ##############
         # not calling with self.source_dev because want option to never use
         # default but instead input pointers from foreign code's pointers
+
+        if order is not None: # set order if not already set
+            if order in ['r','c']:
+                self.ord = ord(order)
+            else:
+                self.ord = order
 
         if hasattr(self,
                    'double_precision') and self.double_precision is not None:
@@ -671,7 +695,9 @@ class GLM(object):
             c_int(1),
             c_int(self._shared_a),
             c_int(self.n_threads),
+            c_int(self._gpu_id),
             c_int(self.n_gpus),
+            c_int(self._total_n_gpus),
             c_int(self.ord),
             c_size_t(m_train),
             c_size_t(n),
@@ -858,7 +884,7 @@ class GLM(object):
     # TODO Add typechecking
     def predict_ptr(
             self,
-            valid_xptr,
+            valid_xptr=None,
             valid_yptr=None,
             free_input_data=0,
             order=None
@@ -934,7 +960,7 @@ class GLM(object):
             train_y,
             valid_x=None,
             valid_y=None,
-            weight=None,
+            sample_weight=None,
             free_input_data=1,
             order=None
     ):
@@ -961,7 +987,7 @@ class GLM(object):
         assert_is_type(train_y, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
         assert_is_type(order, int, None)
 
@@ -972,23 +998,22 @@ class GLM(object):
             train_y,
             valid_x,
             valid_y,
-            weight,
+            sample_weight,
             free_input_data=0,
         )
         if valid_x is None:
             self.prediction = self.predict(valid_x=train_x, valid_y=train_y,
-                                           weight=weight,
+                                           sample_weight=sample_weight,
                                            free_input_data=free_input_data)
         else:
             self.prediction = self.predict(valid_x=valid_x, valid_y=valid_y,
-                                           weight=weight,
+                                           sample_weight=sample_weight,
                                            free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
     # TODO Add type checking
     def fit_predict_ptr(
             self,
-            source_dev,
             m_train,
             n,
             m_valid,
@@ -1000,11 +1025,10 @@ class GLM(object):
             d,
             e,
             free_input_data=0,
+            source_dev=0
     ):
         """Train a GLM with pointers to data on the GPU and predict
         on validation set that also has a pointer on the GPU
-
-        :param source_dev GPU ID of device
 
         :param m_train Number of rows in the training set
 
@@ -1030,6 +1054,9 @@ class GLM(object):
 
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
+
+        :param source_dev GPU ID of device
+
         """
 
         assert_is_type(source_dev, int, None)
@@ -1076,7 +1103,7 @@ class GLM(object):
             train_y,
             valid_x=None,
             valid_y=None,
-            weight=None,
+            sample_weight=None,
             free_input_data=1
     ):
         """Train a model using GLM and predict on validation set
@@ -1098,11 +1125,11 @@ class GLM(object):
         assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
         assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(weight, numpy_ndarray, pandas_dataframe, None)
+        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
         assert_is_type(free_input_data, int)
 
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
-                                weight, free_input_data)
+                                sample_weight, free_input_data)
 
     def transform(self):
         return self
@@ -1128,6 +1155,20 @@ class GLM(object):
             floatfmt=".2f"))
 
     # ################### Properties and setters of properties
+
+    @property
+    def total_n_gpus(self):
+        return self._total_n_gpus
+
+    @property
+    def gpu_id(self):
+        return self._gpu_id
+
+    @gpu_id.setter
+    def gpu_id(self, value):
+        assert_is_type(value, int)
+        assert value >= 0, "GPU ID must be non-negative."
+        self._gpu_id = value
 
     @property
     def family(self):
@@ -1312,12 +1353,13 @@ class GLM(object):
 
     def upload_data(
             self,
-            source_dev,
             train_x,
             train_y,
             valid_x=None,
             valid_y=None,
-            weight=None
+            weight=None,
+            source_dev=0
+
     ):
         """Upload the data through the backend library"""
         if self.uploaded_data == 1:

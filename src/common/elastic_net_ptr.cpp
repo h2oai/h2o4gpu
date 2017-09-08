@@ -244,7 +244,7 @@ bool fileExists(const std::string& filename)
 template<typename T>
 double ElasticNetptr(
 		const char family, int dopredict, int sourceDev, int datatype, int sharedA,
-		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
+		int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -271,7 +271,7 @@ double ElasticNetptr(
 	}
 
 	if (dopredict == 0) {
-		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, nGPUs,
+		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, gpu_id, nGPUs, totalnGPUs,
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_max, lambda_min_ratio, nLambdas, nFolds,
 				nAlphas, alpha_min, alpha_max,
@@ -282,7 +282,7 @@ double ElasticNetptr(
 				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 				validPredsvsalpha, countfull, countshort, countmore);
 	} else {
-		return ElasticNetptr_predict(family, sourceDev, datatype, sharedA, nThreads, nGPUs,
+		return ElasticNetptr_predict(family, sourceDev, datatype, sharedA, nThreads, gpu_id, nGPUs, totalnGPUs,
 				ord, mTrain, n, mValid, intercept, standardize,
 				lambda_max, lambda_min_ratio, nLambdas, nFolds,
 				nAlphas, alpha_min, alpha_max,
@@ -304,7 +304,7 @@ double ElasticNetptr(
 
 template<typename T>
 double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
-		int nGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
+		int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
 		int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -601,7 +601,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 #endif
 
 		// choose GPU device ID for each thread
-		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
+		int wDev = gpu_id + (nGPUs > 0 ? me % nGPUs : 0);
+		wDev = wDev % totalnGPUs;
 
 		FILE *fil = NULL;
 		if(VERBOSEANIM){
@@ -1405,7 +1406,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 template<typename T>
 double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int sharedA,
-		int nThreads, int nGPUs, const char ord, size_t mTrain, size_t n,
+		int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n,
 		size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1532,7 +1533,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 #endif
 
 		// choose GPU device ID for each thread
-		int wDev = (nGPUs > 0 ? me % nGPUs : 0);
+		int wDev = gpu_id + (nGPUs > 0 ? me % nGPUs : 0);
+		wDev = wDev % totalnGPUs;
 
 		FILE *fil=NULL;
 		if(VERBOSEANIM){
@@ -1723,7 +1725,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 template double ElasticNetptr<double>(
 		const char family, int dopredict, int sourceDev,
-		int datatype, int sharedA, int nThreads, int nGPUs, const char ord,
+		int datatype, int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord,
 		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1737,7 +1739,7 @@ template double ElasticNetptr<double>(
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template double ElasticNetptr<float>(const char family, int dopredict, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1751,7 +1753,7 @@ template double ElasticNetptr<float>(const char family, int dopredict, int sourc
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template double ElasticNetptr_fit<double>(const char family, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1765,7 +1767,7 @@ template double ElasticNetptr_fit<double>(const char family, int sourceDev, int 
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template double ElasticNetptr_fit<float>(const char family, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1779,7 +1781,7 @@ template double ElasticNetptr_fit<float>(const char family, int sourceDev, int d
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template double ElasticNetptr_predict<double>(const char family, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1793,7 +1795,7 @@ template double ElasticNetptr_predict<double>(const char family, int sourceDev, 
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template double ElasticNetptr_predict<float>(const char family, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1820,7 +1822,7 @@ extern "C" {
 #endif
 
 double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1833,7 +1835,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
 	return ElasticNetptr<double>(family, dopredict, sourceDev, datatype, sharedA,
-			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
+			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
 			nAlphas, alpha_min, alpha_max,
 			alphas, lambdas,
@@ -1844,7 +1846,7 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 			validPredsvsalpha, countfull, countshort, countmore);
 }
 double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, int datatype,
-		int sharedA, int nThreads, int nGPUs, const char ord, size_t mTrain,
+		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
 		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
 		int nAlphas, double alpha_min, double alpha_max,
@@ -1857,7 +1859,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
 	return ElasticNetptr<float>(family, dopredict, sourceDev, datatype, sharedA,
-			nThreads, nGPUs, ord, mTrain, n, mValid, intercept, standardize,
+			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
 			nAlphas, alpha_min, alpha_max,
 			alphas, lambdas,
