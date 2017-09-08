@@ -70,8 +70,8 @@ sync_otherdata:
 
 sync_open_data:
 	@echo "---- Synchronizing sklearn and other open data in home directory ----"
-    # TODO: can get from S3 instead of where sklearn's fetch() comes from
-
+	mkdir -p $(OPEN_DATA_DIR)
+	$(S3_CMD_LINE) sync --no-preserve "$(OPEN_DATA_BUCKET)" "$(OPEN_DATA_DIR)"
 
 default: fullinstall
 
@@ -252,7 +252,7 @@ mrproper: clean
 
 fullinstallprivate: clean alldeps_private build sync_data install
 
-sync_data: sync_otherdata # sync_smalldata  # not currently using smalldata
+sync_data: sync_otherdata  sync_open_data # sync_smalldata  # not currently using smalldata
 
 ##################
 

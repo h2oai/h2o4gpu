@@ -136,7 +136,7 @@ def test_elastic_net_ptr_driver():
     #  b=A.dot(x_true)+0.5*randn(m)
     import pandas as pd
     import feather
-    df = pd.read_csv("./data/simple.txt", sep=" ", header=None)
+    df = pd.read_csv("./open_data/simple.txt", sep=" ", header=None)
     print(df.shape)
     X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
