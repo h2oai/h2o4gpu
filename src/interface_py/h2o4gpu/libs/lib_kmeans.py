@@ -7,6 +7,7 @@ from h2o4gpu.types import c_int_p, c_float_p, c_void_pp, c_double_p
 
 
 class CPUlib:
+
     def __init__(self):
         pass
 
@@ -18,6 +19,7 @@ class CPUlib:
 
 
 class GPUlib:
+
     def __init__(self):
         pass
 
@@ -37,7 +39,7 @@ def _load_kmeans_lib(lib_path):
     try:
         h2o4gpu_kmeans_lib = cdll.LoadLibrary(lib_path)
 
-        # Fit and Predict
+        #Fit and Predict
         h2o4gpu_kmeans_lib.make_ptr_float_kmeans.argtypes = [
             c_int,
             c_int,  # verbose
@@ -82,7 +84,7 @@ def _load_kmeans_lib(lib_path):
         ]
         h2o4gpu_kmeans_lib.make_ptr_double_kmeans.restype = c_int
 
-        # Transform
+        #Transform
         h2o4gpu_kmeans_lib.kmeans_transform_float.argtypes = [
             c_int,  # verbose
             c_int,  # gpu_id
@@ -90,10 +92,11 @@ def _load_kmeans_lib(lib_path):
             c_size_t,  # rows
             c_size_t,  # cols
             c_int,  # data_ord
-            c_int, # k
+            c_int,  # k
             c_float_p,  # data
             c_float_p,  # centroids
-            c_void_pp]  # result
+            c_void_pp
+        ]  # result
         h2o4gpu_kmeans_lib.kmeans_transform_float.restype = c_int
 
         h2o4gpu_kmeans_lib.kmeans_transform_double.argtypes = [
@@ -103,17 +106,17 @@ def _load_kmeans_lib(lib_path):
             c_size_t,  # rows
             c_size_t,  # cols
             c_int,  # data_ord
-            c_int, # k
+            c_int,  # k
             c_double_p,  # data
             c_double_p,  # centroids
-            c_void_pp]  # result
+            c_void_pp
+        ]  # result
         h2o4gpu_kmeans_lib.kmeans_transform_double.restype = c_int
 
     except OSError:
         print(
             '\nWarning: h2o4gpu_kmeans_lib shared object (dynamic library) %s '
-            'failed to load. '
-            % lib_path)
+            'failed to load. ' % lib_path)
         h2o4gpu_kmeans_lib = None
 
     return h2o4gpu_kmeans_lib

@@ -111,10 +111,10 @@ from h2o4gpu.h2o4gpu_exceptions import H2O4GPUTypeError, H2O4GPUValueError
 from h2o4gpu.typecheck.compatibility import *  # NOQA
 from h2o4gpu.typecheck.compatibility import PY2, viewitems
 
-__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric", "Enum",
-           "numeric", "pandas_dataframe", "numpy_ndarray", "scipy_sparse",
-           "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
-
+__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt",
+           "BoundNumeric", "Enum", "numeric", "pandas_dataframe",
+           "numpy_ndarray", "scipy_sparse", "assert_is_type", "assert_matches",
+           "assert_satisfies", "is_type")
 
 if PY2:
     # noinspection PyProtectedMember
@@ -130,8 +130,6 @@ else:
     _primitive_type = (str, int, float, bool, bytes)
 
 
-
-
 def is_type(var, *args):
     """
     Return True if the variable is of the specified type(s) and False otherwise.
@@ -145,6 +143,7 @@ def is_type(var, *args):
 #-----------------------------------------------------------------------------------------------------------------------
 # Special types
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 class MagicType(object):
     """Abstract "special" type."""
@@ -229,7 +228,8 @@ class NOT(MagicType):
     def name(self, src=None):
         """Return string representing the name of this type."""
         if len(self._types) > 1:
-            return "!(%s)" % str("|".join(_get_type_name(tt, src) for tt in self._types))
+            return "!(%s)" % str(
+                "|".join(_get_type_name(tt, src) for tt in self._types))
         else:
             return "!" + _get_type_name(self._types[0], src)
 
@@ -244,7 +244,8 @@ class Tuple(MagicType):
 
     def check(self, var):
         """Return True if the variable matches this type, and False otherwise."""
-        return isinstance(var, tuple) and all(_check_type(t, self._element_type) for t in var)
+        return isinstance(var, tuple) and all(
+            _check_type(t, self._element_type) for t in var)
 
     def name(self, src=None):
         """Return string representing the name of this type."""
@@ -340,7 +341,8 @@ class BoundNumeric(MagicType):
 
     def name(self, src=None):
         """Return string representing the name of this type."""
-        if self._upper_bound is None and self._lower_bound is None: return "numeric"
+        if self._upper_bound is None and self._lower_bound is None:
+            return "numeric"
         if self._upper_bound is None: return "numeric≥%d" % self._lower_bound
         if self._lower_bound is None: return "numeric≤%d" % self._upper_bound
         return "numeric[%d…%d]" % (self._lower_bound, self._upper_bound)
@@ -364,7 +366,8 @@ class _LazyClass(MagicType):
         self._module = module
         self._symbol = symbol
         self._checker = checker or (lambda value, t: isinstance(value, t))
-        self._name = symbol if module.startswith("h2o") else module + "." + symbol
+        self._name = symbol if module.startswith(
+            "h2o") else module + "." + symbol
         # Initially this is None, but will contain the class object once the class is loaded. If the class cannot be
         # loaded, this will be set to False.
         self._class = None
@@ -387,8 +390,11 @@ class _LazyClass(MagicType):
 
 
 _enum_mangle_pattern = re.compile(r"[^a-z]+")
+
+
 def _enum_mangle(var):
     return _enum_mangle_pattern.sub("", var.lower())
+
 
 class Enum(MagicType):
     """
@@ -409,7 +415,6 @@ class Enum(MagicType):
         return "Enum[%s]" % ", ".join('"%s"' % c for c in self._consts)
 
 
-
 numeric = U(int, float)
 """Number, either integer or real."""
 pandas_dataframe = _LazyClass("pandas", "DataFrame")
@@ -418,10 +423,10 @@ numpy_ndarray = _LazyClass("numpy", "ndarray")
 numpy_datetime = _LazyClass("numpy", "datetime64")
 scipy_sparse = _LazyClass("scipy.sparse", "issparse", lambda value, t: t(value))
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 # Asserts
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 def assert_is_type(var, *types, **kwargs):
     """
@@ -443,16 +448,21 @@ def assert_is_type(var, *types, **kwargs):
     if _check_type(var, expected_type): return
 
     # Type check failed => Create a nice error message
-    assert set(kwargs).issubset({"message", "skip_frames"}), "Unexpected keyword arguments: %r" % kwargs
+    assert set(kwargs).issubset(
+        {"message", "skip_frames"}), "Unexpected keyword arguments: %r" % kwargs
     message = kwargs.get("message", None)
     skip_frames = kwargs.get("skip_frames", 1)
     args = _retrieve_assert_arguments()
     vname = args[0]
     etn = _get_type_name(expected_type, dump=", ".join(args[1:]))
     vtn = _get_type_name(type(var))
-    raise H2O4GPUTypeError(var_name=vname, var_value=var, var_type_name=vtn, exp_type_name=etn, message=message,
-                       skip_frames=skip_frames)
-
+    raise H2O4GPUTypeError(
+        var_name=vname,
+        var_value=var,
+        var_type_name=vtn,
+        exp_type_name=etn,
+        message=message,
+        skip_frames=skip_frames)
 
 
 def assert_matches(v, regex):
@@ -465,7 +475,8 @@ def assert_matches(v, regex):
     m = re.match(regex, v)
     if m is None:
         vn = _retrieve_assert_arguments()[0]
-        message = "Argument `{var}` (= {val!r}) did not match /{regex}/".format(var=vn, regex=regex, val=v)
+        message = "Argument `{var}` (= {val!r}) did not match /{regex}/".format(
+            var=vn, regex=regex, val=v)
         raise H2O4GPUValueError(message, var_name=vn, skip_frames=1)
     return m
 
@@ -486,10 +497,10 @@ def assert_satisfies(v, cond, message=None):
         raise H2O4GPUValueError(message=message, var_name=vname, skip_frames=1)
 
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 # Implementation details
 #-----------------------------------------------------------------------------------------------------------------------
+
 
 def _retrieve_assert_arguments():
     """
@@ -526,7 +537,8 @@ def _retrieve_assert_arguments():
         try:
             with io.open(fr.f_code.co_filename, "r", encoding="utf-8") as f:
                 # Skip initial lines that are irrelevant
-                for i in range(fr.f_lineno - 1): next(f)
+                for i in range(fr.f_lineno - 1):
+                    next(f)
                 # Create tokenizer
                 g = tokenize.generate_tokens(f.readline)
                 step = 0
@@ -547,11 +559,16 @@ def _retrieve_assert_arguments():
                         elif level == 0 and ttt[0] == tokenize.OP and ttt[1] == ")":
                             break
                         else:
-                            if ttt[0] == tokenize.OP and ttt[1] in "([{": level += 1
-                            if ttt[0] == tokenize.OP and ttt[1] in ")]}": level -= 1
+                            if ttt[0] == tokenize.OP and ttt[1] in "([{":
+                                level += 1
+                            if ttt[0] == tokenize.OP and ttt[1] in ")]}":
+                                level -= 1
                             assert level >= 0, "Parse error: parentheses level became negative"
                             args_tokens[-1].append(ttt)
-                args = [tokenize.untokenize(at).strip().replace("\n", " ") for at in args_tokens]
+                args = [
+                    tokenize.untokenize(at).strip().replace("\n", " ")
+                    for at in args_tokens
+                ]
                 return args
         except IOError:
             return "arg",
@@ -582,11 +599,13 @@ def _check_type(var, vtype):
     if isinstance(vtype, list):
         # ``vtype`` is a list literal
         elem_type = U(*vtype)
-        return isinstance(var, list) and all(_check_type(item, elem_type) for item in var)
+        return isinstance(var, list) and all(
+            _check_type(item, elem_type) for item in var)
     if isinstance(vtype, set):
         # ``vtype`` is a set literal
         elem_type = U(*vtype)
-        return isinstance(var, set) and all(_check_type(item, elem_type) for item in var)
+        return isinstance(var, set) and all(
+            _check_type(item, elem_type) for item in var)
     if isinstance(vtype, tuple):
         # ``vtype`` is a tuple literal
         return (isinstance(var, tuple) and len(vtype) == len(var) and
@@ -594,7 +613,8 @@ def _check_type(var, vtype):
     if isinstance(vtype, dict):
         # ``vtype`` is a dict literal
         ttkv = U(*viewitems(vtype))
-        return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in viewitems(var))
+        return isinstance(var, dict) and all(
+            _check_type(kv, ttkv) for kv in viewitems(var))
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         return vtype(var)
     raise RuntimeError("Ivalid type %r in _check_type()" % vtype)
@@ -634,7 +654,8 @@ def _get_type_name(vtype, dump=None):
     if isinstance(vtype, tuple):
         return "(%s)" % ", ".join(_get_type_name(item, dump) for item in vtype)
     if isinstance(vtype, dict):
-        return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk, dump), _get_type_name(tv, dump))
+        return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk, dump),
+                                                  _get_type_name(tv, dump))
                                       for tk, tv in viewitems(vtype))
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
         if vtype.__name__ == "<lambda>":
@@ -646,14 +667,17 @@ def _get_type_name(vtype, dump=None):
 
 def _get_lambda_source_code(lambda_fn, src):
     """Attempt to find the source code of the ``lambda_fn`` within the string ``src``."""
+
     def gen_lambdas():
+
         def gen():
             yield src + "\n"
 
         g = gen()
         step = 0
         tokens = []
-        for tok in tokenize.generate_tokens(getattr(g, "next", getattr(g, "__next__", None))):
+        for tok in tokenize.generate_tokens(
+                getattr(g, "next", getattr(g, "__next__", None))):
             if step == 0:
                 if tok[0] == tokenize.NAME and tok[1] == "lambda":
                     step = 1
@@ -672,7 +696,8 @@ def _get_lambda_source_code(lambda_fn, src):
                 else:
                     step = 0
             elif step == 3:
-                if level == 0 and (tok[0] == tokenize.OP and tok[1] in ",)" or tok[0] == tokenize.ENDMARKER):
+                if level == 0 and (tok[0] == tokenize.OP and tok[1] in ",)" or
+                                   tok[0] == tokenize.ENDMARKER):
                     yield tokenize.untokenize(tokens).strip()
                     step = 0
                 else:

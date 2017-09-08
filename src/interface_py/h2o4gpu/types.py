@@ -63,7 +63,7 @@ class H2OSolverDefault:
     W_DEV = 0  # which cuda devices (0)
 
 
-# pointers to C types
+#pointers to C types
 c_int_p = POINTER(c_int)
 c_int32_p = POINTER(c_int32)
 c_float_p = POINTER(c_float)
@@ -71,52 +71,33 @@ c_void_pp = POINTER(c_void_p)
 c_double_p = POINTER(c_double)
 
 
-# H2O4GPU types
+#H2O4GPU types
 class SettingsS(Structure):
-    _fields_ = [('rho', c_float),
-                ('abs_tol', c_float),
-                ('rel_tol', c_float),
-                ('max_iters', c_uint),
-                ('verbose', c_uint),
-                ('adaptive_rho', c_int),
-                ('equil', c_int),
-                ('gap_stop', c_int),
-                ('warm_start', c_int),
-                ('nDev', c_int),
-                ('wDev', c_int)]
+    _fields_ = [('rho', c_float), ('abs_tol', c_float), ('rel_tol', c_float),
+                ('max_iters', c_uint), ('verbose', c_uint),
+                ('adaptive_rho', c_int), ('equil', c_int), ('gap_stop', c_int),
+                ('warm_start', c_int), ('nDev', c_int), ('wDev', c_int)]
 
 
 class SettingsD(Structure):
-    _fields_ = [('rho', c_double),
-                ('abs_tol', c_double),
-                ('rel_tol', c_double),
-                ('max_iters', c_uint),
-                ('verbose', c_uint),
-                ('adaptive_rho', c_int),
-                ('equil', c_int),
-                ('gap_stop', c_int),
-                ('warm_start', c_int),
-                ('nDev', c_int),
-                ('wDev', c_int)]
+    _fields_ = [('rho', c_double), ('abs_tol', c_double), ('rel_tol', c_double),
+                ('max_iters', c_uint), ('verbose', c_uint),
+                ('adaptive_rho', c_int), ('equil', c_int), ('gap_stop', c_int),
+                ('warm_start', c_int), ('nDev', c_int), ('wDev', c_int)]
 
 
 class InfoS(Structure):
-    _fields_ = [('iter', c_uint),
-                ('status', c_int),
-                ('obj', c_float),
-                ('rho', c_float),
-                ('solvetime', c_float)]
+    _fields_ = [('iter', c_uint), ('status', c_int), ('obj', c_float),
+                ('rho', c_float), ('solvetime', c_float)]
 
 
 class InfoD(Structure):
-    _fields_ = [('iter', c_uint),
-                ('status', c_int),
-                ('obj', c_double),
-                ('rho', c_double),
-                ('solvetime', c_float)]
+    _fields_ = [('iter', c_uint), ('status', c_int), ('obj', c_double),
+                ('rho', c_double), ('solvetime', c_float)]
 
 
 class Solution(object):
+
     def __init__(self, double_precision, m, n):
         T = c_double if double_precision else c_float
         self.double_precision = double_precision
@@ -127,20 +108,16 @@ class Solution(object):
 
 
 class SolutionS(Structure):
-    _fields_ = [('x', c_float_p),
-                ('y', c_float_p),
-                ('mu', c_float_p),
+    _fields_ = [('x', c_float_p), ('y', c_float_p), ('mu', c_float_p),
                 ('nu', c_float_p)]
 
 
 class SolutionD(Structure):
-    _fields_ = [('x', c_double_p),
-                ('y', c_double_p),
-                ('mu', c_double_p),
+    _fields_ = [('x', c_double_p), ('y', c_double_p), ('mu', c_double_p),
                 ('nu', c_double_p)]
 
 
-# pointers to H2O4GPU types
+#pointers to H2O4GPU types
 settings_s_p = POINTER(SettingsS)
 settings_d_p = POINTER(SettingsD)
 info_s_p = POINTER(InfoS)
@@ -160,7 +137,7 @@ def change_settings(settings, **kwargs):
     :param kwargs: key-value pairs representing the settings
     :return:
     """
-    # all settings (except warm_start) are persistent and change only if called
+    #all settings(except warm_start) are persistent and change only if called
     if 'rho' in kwargs: settings.rho = kwargs['rho']
     if 'abs_tol' in kwargs: settings.abs_tol = kwargs['abs_tol']
     if 'rel_tol' in kwargs: settings.rel_tol = kwargs['rel_tol']
@@ -170,7 +147,7 @@ def change_settings(settings, **kwargs):
     if 'equil' in kwargs: settings.equil = kwargs['equil']
     if 'gap_stop' in kwargs: settings.gap_stop = kwargs['gap_stop']
 
-    # warm_start must be specified each time it is desired
+    #warm_start must be specified each time it is desired
     if 'warm_start' in kwargs:
         settings.warm_start = kwargs['warm_start']
     else:
@@ -225,14 +202,14 @@ def change_solution(py_solution, **kwargs):
 
 def make_solution(py_solution):
     if py_solution.double_precision:
-        return SolutionD(cptr(py_solution.x, c_double),
-                         cptr(py_solution.y, c_double),
-                         cptr(py_solution.mu, c_double),
-                         cptr(py_solution.nu, c_double))
-    return SolutionS(cptr(py_solution.x, c_float),
-                     cptr(py_solution.y, c_float),
-                     cptr(py_solution.mu, c_float),
-                     cptr(py_solution.nu, c_float))
+        return SolutionD(
+            cptr(py_solution.x, c_double),
+            cptr(py_solution.y, c_double),
+            cptr(py_solution.mu, c_double), cptr(py_solution.nu, c_double))
+    return SolutionS(
+        cptr(py_solution.x, c_float),
+        cptr(py_solution.y, c_float),
+        cptr(py_solution.mu, c_float), cptr(py_solution.nu, c_float))
 
 
 def make_info(double_precision):
@@ -243,6 +220,7 @@ def make_info(double_precision):
 
 class FunctionVector(object):
     """Class representing a function"""
+
     def __init__(self, length, double_precision=False):
         T = c_double if double_precision else c_float
         self.a = ones(length, T)

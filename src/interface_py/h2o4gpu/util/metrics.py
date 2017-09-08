@@ -1,9 +1,10 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
+
 
 def ll(actual, predicted):
     """
@@ -26,14 +27,18 @@ def ll(actual, predicted):
         predicted[i] = min(max(1e-15, predicted[i]), 1 - 1e-15)
     err = np.seterr(all='ignore')
     score = -(actual * np.log(predicted) + (1 - actual) * np.log(1 - predicted))
-    np.seterr(divide=err['divide'], over=err['over'],
-              under=err['under'], invalid=err['invalid'])
+    np.seterr(
+        divide=err['divide'],
+        over=err['over'],
+        under=err['under'],
+        invalid=err['invalid'])
     if isinstance(score, np.ndarray):
         score[np.isnan(score)] = 0
     else:
         if np.isnan(score):
             score = 0
     return score
+
 
 def log_loss(actual, predicted):
     """
@@ -52,6 +57,7 @@ def log_loss(actual, predicted):
     """
     return np.mean(ll(actual, predicted))
 
+
 def se(actual, predicted):
     """
     Computes the squared error.
@@ -68,6 +74,7 @@ def se(actual, predicted):
             The squared error between actual and predicted
     """
     return np.power(np.array(actual) - np.array(predicted), 2)
+
 
 def mse(actual, predicted):
     """
@@ -86,6 +93,7 @@ def mse(actual, predicted):
     """
     return np.mean(se(actual, predicted))
 
+
 def rmse(actual, predicted):
     """
     Computes the root mean squared error.
@@ -103,6 +111,7 @@ def rmse(actual, predicted):
     """
     return np.sqrt(mse(actual, predicted))
 
+
 def ce(actual, predicted):
     """
     Computes the classification error.
@@ -117,8 +126,9 @@ def ce(actual, predicted):
     :returns double
             The classification error between actual and predicted
     """
-    return (sum([1.0 for x, y in zip(actual, predicted) if x != y]) /
-            len(actual))
+    return (sum([1.0 for x, y in zip(actual, predicted)
+                 if x != y]) / len(actual))
+
 
 def ae(actual, predicted):
     """
@@ -135,7 +145,8 @@ def ae(actual, predicted):
     :returns double or list of doubles
             The absolute error between actual and predicted
     """
-    return np.abs(np.array(actual)-np.array(predicted))
+    return np.abs(np.array(actual) - np.array(predicted))
+
 
 def mae(actual, predicted):
     """
@@ -154,6 +165,7 @@ def mae(actual, predicted):
     """
     return np.mean(ae(actual, predicted))
 
+
 def sle(actual, predicted):
     """
     Computes the squared log error.
@@ -169,8 +181,9 @@ def sle(actual, predicted):
     :returns double or list of doubles
              The squared log error between actual and predicted
     """
-    return (np.power(np.log(np.array(actual)+1) -
-                     np.log(np.array(predicted)+1), 2))
+    return (np.power(
+        np.log(np.array(actual) + 1) - np.log(np.array(predicted) + 1), 2))
+
 
 def msle(actual, predicted):
     """
@@ -189,6 +202,7 @@ def msle(actual, predicted):
     """
     return np.mean(sle(actual, predicted))
 
+
 def rmsle(actual, predicted):
     """
     Computes the root mean squared log error.
@@ -205,6 +219,7 @@ def rmsle(actual, predicted):
             The root mean squared log error between actual and predicted
     """
     return np.sqrt(msle(actual, predicted))
+
 
 def tied_rank(x):
     """
@@ -225,12 +240,13 @@ def tied_rank(x):
         if cur_val != e[0]:
             cur_val = e[0]
             for j in range(last_rank, i):
-                r[sorted_x[j][1]] = float(last_rank+1+i)/2.0
+                r[sorted_x[j][1]] = float(last_rank + 1 + i) / 2.0
             last_rank = i
-        if i == len(sorted_x)-1:
-            for j in range(last_rank, i+1):
-                r[e[1]] = float(last_rank+i+2)/2.0
+        if i == len(sorted_x) - 1:
+            for j in range(last_rank, i + 1):
+                r[e[1]] = float(last_rank + i + 2) / 2.0
     return r
+
 
 def auc(actual, posterior):
     """
@@ -250,8 +266,9 @@ def auc(actual, posterior):
     """
     r = tied_rank(posterior)
     num_positive = len([0 for x in actual if x == 1])
-    num_negative = len(actual)-num_positive
+    num_negative = len(actual) - num_positive
     sum_positive = sum([r[i] for i in range(len(r)) if actual[i] == 1])
-    area_under_curve = ((sum_positive - num_positive*(num_positive+1)/2.0) /
-                        (num_negative*num_positive))
+    area_under_curve = ((sum_positive - num_positive *
+                         (num_positive + 1) / 2.0) /
+                        (num_negative * num_positive))
     return area_under_curve

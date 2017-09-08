@@ -7,6 +7,7 @@ from h2o4gpu.types import c_int_p, c_float_p, c_double_p
 
 
 class CPUlib:
+
     def __init__(self):
         pass
 
@@ -18,6 +19,7 @@ class CPUlib:
 
 
 class GPUlib:
+
     def __init__(self):
         pass
 
@@ -37,81 +39,35 @@ def _load_pogs_lib(lib_path):
     try:
         h2o4gpu_pogs_lib = cdll.LoadLibrary(lib_path)
 
-        # argument types
+        #argument types
         h2o4gpu_pogs_lib.h2o4gpu_init_dense_single.argtypes = [
-            c_int,
-            c_int,
-            c_size_t,
-            c_size_t,
-            c_float_p
+            c_int, c_int, c_size_t, c_size_t, c_float_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_init_dense_double.argtypes = [
-            c_int,
-            c_int,
-            c_size_t,
-            c_size_t,
-            c_double_p
+            c_int, c_int, c_size_t, c_size_t, c_double_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_init_sparse_single.argtypes = [
-            c_int,
-            c_int,
-            c_size_t,
-            c_size_t,
-            c_size_t,
-            c_float_p,
-            c_int_p,
+            c_int, c_int, c_size_t, c_size_t, c_size_t, c_float_p, c_int_p,
             c_int_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_init_sparse_double.argtypes = [
-            c_int,
-            c_int,
-            c_size_t,
-            c_size_t,
-            c_size_t,
-            c_double_p,
-            c_int_p,
+            c_int, c_int, c_size_t, c_size_t, c_size_t, c_double_p, c_int_p,
             c_int_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_solve_single.argtypes = [
-            c_void_p,
-            settings_s_p,
-            solution_s_p,
-            info_s_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_int_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_float_p,
-            c_int_p
+            c_void_p, settings_s_p, solution_s_p, info_s_p, c_float_p,
+            c_float_p, c_float_p, c_float_p, c_float_p, c_int_p, c_float_p,
+            c_float_p, c_float_p, c_float_p, c_float_p, c_int_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_solve_double.argtypes = [
-            c_void_p,
-            settings_d_p,
-            solution_d_p,
-            info_d_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_int_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_double_p,
-            c_int_p
+            c_void_p, settings_d_p, solution_d_p, info_d_p, c_double_p,
+            c_double_p, c_double_p, c_double_p, c_double_p, c_int_p, c_double_p,
+            c_double_p, c_double_p, c_double_p, c_double_p, c_int_p
         ]
         h2o4gpu_pogs_lib.h2o4gpu_finish_single.argtypes = [c_void_p]
         h2o4gpu_pogs_lib.h2o4gpu_finish_double.argtypes = [c_void_p]
 
-        # return types
+        #return types
         h2o4gpu_pogs_lib.h2o4gpu_init_dense_single.restype = c_void_p
         h2o4gpu_pogs_lib.h2o4gpu_init_dense_double.restype = c_void_p
         h2o4gpu_pogs_lib.h2o4gpu_init_sparse_single.restype = c_void_p
@@ -122,10 +78,8 @@ def _load_pogs_lib(lib_path):
         h2o4gpu_pogs_lib.h2o4gpu_finish_double.restype = None
 
     except OSError:
-        print(
-            '\nWarning: h2o4gpu_pogs_lib shared object (dynamic library) %s '
-            'failed to load. '
-            % lib_path)
+        print('\nWarning: h2o4gpu_pogs_lib shared object (dynamic library) %s '
+              'failed to load. ' % lib_path)
         h2o4gpu_pogs_lib = None
 
     return h2o4gpu_pogs_lib

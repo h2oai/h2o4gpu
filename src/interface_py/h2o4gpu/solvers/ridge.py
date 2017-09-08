@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+#- * - encoding : utf - 8 - * -
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -54,25 +54,24 @@ class Ridge(GLM):
     :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
         overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
     """
-    def __init__(
-            self,
-            n_threads=None,
-            n_gpus=-1,
-            fit_intercept=True,
-            lambda_min_ratio=1E-7,
-            n_lambdas=100,
-            n_folds=1,
-            tol=1E-2,
-            lambda_stop_early=True,
-            glm_stop_early=True,
-            glm_stop_early_error_fraction=1.0,
-            max_iter=5000,
-            verbose=0,
-            family="elasticnet",
-            store_full_path=0,
-            lambda_max=None,
-            lambdas=None
-    ):
+
+    def __init__(self,
+                 n_threads=None,
+                 n_gpus=-1,
+                 fit_intercept=True,
+                 lambda_min_ratio=1E-7,
+                 n_lambdas=100,
+                 n_folds=1,
+                 tol=1E-2,
+                 lambda_stop_early=True,
+                 glm_stop_early=True,
+                 glm_stop_early_error_fraction=1.0,
+                 max_iter=5000,
+                 verbose=0,
+                 family="elasticnet",
+                 store_full_path=0,
+                 lambda_max=None,
+                 lambdas=None):
         super(Ridge, self).__init__(
             n_threads=n_threads,
             n_gpus=n_gpus,
