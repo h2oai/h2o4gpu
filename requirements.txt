@@ -84,4 +84,4 @@ cmake==0.8.0
 feather-format==0.4.0
 Cython==0.25.2
 pillow==4.2.1
- 
+awscli==1.11.148

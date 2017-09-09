@@ -38,11 +38,7 @@ DOCKER_VERSION_TAG ?= "latest"
 #
 # Setup S3 access credentials
 #
-S3_CMD_LINE := s3cmd --skip-existing
-ifeq ($(shell test -n "$(AWS_ACCESS_KEY_ID)" -a -n "$(AWS_SECRET_ACCESS_KEY)" && printf "true"), true)
-		S3_CMD_LINE += --access_key=$(AWS_ACCESS_KEY_ID) --secret_key=$(AWS_SECRET_ACCESS_KEY)
-endif
-
+S3_CMD_LINE := aws s3
 
 help:
 	@echo "make                 fullinstall"
@@ -61,17 +57,17 @@ help:
 sync_smalldata:
 	@echo "---- Synchronizing test data ----"
 	mkdir -p $(DATA_DIR)
-	$(S3_CMD_LINE) sync --no-preserve "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
+	$(S3_CMD_LINE) sync --no-sign-request "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
 sync_otherdata:
 	@echo "---- Synchronizing data dir in test/ ----"
 	mkdir -p $(DATA_DIR)
-	$(S3_CMD_LINE) sync --recursive --no-preserve "$(DATA_BUCKET)" "$(DATA_DIR)"
+	$(S3_CMD_LINE) sync --recursive "$(DATA_BUCKET)" "$(DATA_DIR)"
 
 sync_open_data:
 	@echo "---- Synchronizing sklearn and other open data in home directory ----"
 	mkdir -p $(OPEN_DATA_DIR)
-	$(S3_CMD_LINE) sync --no-preserve "$(OPEN_DATA_BUCKET)" "$(OPEN_DATA_DIR)"
+	$(S3_CMD_LINE) sync --no-sign-request "$(OPEN_DATA_BUCKET)" "$(OPEN_DATA_DIR)"
 
 default: fullinstall
 
@@ -110,7 +106,7 @@ buildquick: cpp c py
 
 install: pyinstall
 
-fullinstall: clean alldeps build install
+fullinstall: clean alldeps sync_open_data build install
 
 #############################################
 
@@ -137,7 +133,7 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 
 ################
 
-deps_clean: 
+deps_clean:
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
@@ -210,7 +206,7 @@ libsklearn:	# assume already submodule gets sklearn
 
 apply_sklearn: libsklearn apply_sklearn_simple
 
-apply_sklearn_simple: 
+apply_sklearn_simple:
     #	bash ./scripts/apply_sklearn.sh
     ## apply sklearn
 	bash ./scripts/apply_sklearn_pipinstall.sh
@@ -252,7 +248,7 @@ mrproper: clean
 
 fullinstallprivate: clean alldeps_private build sync_data install
 
-sync_data: sync_otherdata  sync_open_data # sync_smalldata  # not currently using smalldata
+sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using smalldata
 
 ##################
 

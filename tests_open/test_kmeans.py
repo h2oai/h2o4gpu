@@ -5,12 +5,17 @@ KMeans solver tests using SKLearn datasets.
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+import os
 from h2o4gpu import KMeans
 from h2o4gpu.datasets import load_iris
 import numpy as np
 
 
 class TestKmeans(object):
+    @classmethod
+    def setup_class(cls):
+        os.environ['SCIKIT_LEARN_DATA'] = "open_data"
+
     def test_fit_iris(self):
         X = load_iris().data
         clusters = 4
