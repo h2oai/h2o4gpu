@@ -28,6 +28,17 @@ Install the Python wheel file (Requires python 3.6):
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
 ```
 
+Good idea to check if duplicate python packages installed
+```
+pip freeze
+
+```
+# and pip uninstall any prior version you had and pip install the version we tried to install.  E.g. on conda you might need to do:
+```
+pip uninstall numpy
+pip install numpy==1.13.1 # or whatever version was attempted to be installed by the wheel
+```
+
 Test your installation
 
 ```
