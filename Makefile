@@ -257,7 +257,9 @@ dotestdemos:
 	mkdir -p ./tmp/
 	bash scripts/convert_ipynb2py.sh
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml examples/py 2> ./tmp/h2o4gpu-examplespy.$(LOGEXT).log
+	#pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml examples/py 2> ./tmp/h2o4gpu-examplespy.$(LOGEXT).log
+	py.test -v -s examples/py 2> ./tmp/h2o4gpu-examplespy.$(LOGEXT).log
+
 
 dotest:
 	rm -rf ./tmp/

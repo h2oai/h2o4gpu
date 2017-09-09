@@ -9,5 +9,6 @@ do
     echo $fil $base $dir $name
     jupyter nbconvert --to script $fil
     mv $dir/$name.py $dir/test_$name.py
+    cp $dir/$name.ipynb $dir/test_$name.ipynb
 
 done

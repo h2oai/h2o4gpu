@@ -52,5 +52,5 @@ RUN \
     . h2oai_env/bin/activate && \
     pip install -r requirements.txt && \
     chmod -R 777 h2oai_env && \
-    chmod 777 && \
+    chmod 777 / && \
     chmod 777 /home/jenkins/

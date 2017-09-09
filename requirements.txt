@@ -86,3 +86,4 @@ Cython==0.25.2
 pillow==4.2.1
 awscli==1.11.148
 yapf==0.17.0
+pytest-ipynb==1.1.0
