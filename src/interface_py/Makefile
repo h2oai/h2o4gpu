@@ -1,3 +1,4 @@
+SHELL := /bin/bash # force avoidance of dash as shell
 thepwd = "$(shell pwd)"
 
 default: all

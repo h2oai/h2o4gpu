@@ -1,3 +1,4 @@
+SHELL := /bin/bash # force avoidance of dash as shell
 include config2.mk
 
 ifndef CUDA_HOME
