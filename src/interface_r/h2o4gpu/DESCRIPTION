@@ -3,10 +3,9 @@ Type: Package
 Title: H2O GPU Edition
 Version: 0.0.1
 Date: 2017-09-06
-Author: H2O.ai
+Author: Chris Fougner, Erin LeDell
 Maintainer: Erin LeDell <erin@h2o.ai>
-Description: H2O GPU Edition (aka "h2o4gpu") is a collection of machine learning algorithms that can run on NVIDIA GPUs.  Currently the R API contains a GPU enabled version of the glmnet() function and will contain more machine learning algorithms in the future.  Also included is GPU solver for convex optimization problems in the form f(Ax) + g(x).  This is a GPU enabled version of POGS (Proximal Operator Graph Solver).
+Description: H2O GPU Edition (aka "h2o4gpu") is a collection of machine learning algorithms that can run on NVIDIA GPUs.  Currently the R API contains a GPU enabled version of the glmnet() function and will contain more machine learning algorithms in the future.  Also included is GPU & CPU Proximal Operator Graph Solver (POGS) for convex optimization problems in the form f(Ax) + g(x).
 License: Apache License (== 2.0)
 Depends: Matrix
-Suggests: doMC, foreach
 RoxygenNote: 6.0.1

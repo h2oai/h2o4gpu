@@ -16,7 +16,7 @@
 #' optional and each field which is specified must be a vector of length 1 or nrow(A).
 #' @param g List with fields a, b, c, d, e, and h. All fields except h are
 #' optional and each field which is specified must be a vector of length 1 or ncol(A).
-#' @param params List of parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
+#' @param params List of POGS related parameters (rel_tol=1e-3, abs_tol=1e-4, rho=1.0,
 #' max_iter=1000, quiet=FALSE, adaptive_rho=TRUE, equil=TRUE, nDev=1, wDev=0).
 #' All parameters are optional and take on a default value if not specified.
 #' @examples
@@ -271,7 +271,7 @@ kZero <- function(m=1) {
 ############################################################################################ 
 ##################################### H2O4GPUNET FUNCTION #####################################
 ############################################################################################
-#' @title Fit a GLM with lasso or elasticnet regularization using H2O4GPU
+#' @title Fit a GLM with lasso or elasticnet regularization using H2O4GPU POGS
 #' @description Fit a generalized linear model via penalized maximum likelihood.
 #' See glmnet package for more detail.
 #' @param x Input matrix.
@@ -283,19 +283,39 @@ kZero <- function(m=1) {
 #' @param nlambda The number of \code{lambda} values.
 #' @param lambda.min.ratio Smallest value for \code{lambda} as fraction of \code{lambda.max}.
 #' @param lambda A user supplied \eqn{lambda} sequence.
-#' @param penalty.factor Separate penalty factors can be applied to each coefficient.
 #' @param intercept Should intercept be fitted.
-#' @param noweight Observation weights removed
-#' @param params Pass list of parameters to solver
+#' @param penalty.factor Separate penalty factors can be applied to each coefficient.
+#' @param pogs_params A list of parameters for the POGS solver.
 #' @param cutoff Discard values of lambda for which beta remains unchanged.
+#' @param ... Unimplemented glmnet parameters.
 #' @export
-h2o4gpunet <- function(x, y, family=c("gaussian", "binomial"),
-                    weights, alpha=1, nlambda=100,
-                    lambda.min.ratio=ifelse(nobs < nvars, 0.01, 0.0001), lambda=NULL,
-                    penalty.factor=rep(1, nvars), intercept=TRUE, noweight=FALSE, params=list(),
-                    cutoff=TRUE) {
+glmnet <- function(x, y, family = c("gaussian", "binomial"),
+                   weights, alpha = 1, nlambda = 100,
+                   lambda.min.ratio = ifelse(nobs < nvars, 0.01, 0.0001), lambda = NULL,
+                   intercept = TRUE,
+                   penalty.factor = rep(1, nvars), 
+                   #noweight = FALSE, 
+                   pogs_params = list(),
+                   cutoff = TRUE, ...) {
 
-  # TO DO: Remove noweight	
+  # (X) TO DO: Remove noweight
+  noweight <- FALSE	
+  # TO DO: Remove pogs_params()
+  # TO DO: Remove cutoff
+
+  # Unimplementet glmnet parameters:
+  # missing: "binomial","poisson","multinomial","cox","mgaussian" from family
+  # missing: offset = NULL, 
+  # missing: standardize = TRUE
+  # missing: dfmax = nvars + 1
+  # missing: pmax = min(dfmax * 2+20, nvars)
+  # missing: exclude (None)
+  # missing the rest: 
+  # lower.limits=-Inf, upper.limits=Inf, maxit=100000,
+  #  type.gaussian=ifelse(nvars<500,"covariance","naive"),
+  #  type.logistic=c("Newton","modified.Newton"),
+  #  standardize.response=FALSE, type.multinomial=c("ungrouped","grouped")
+
 
   # Check Family
   family = match.arg(family)
@@ -392,7 +412,7 @@ h2o4gpunet <- function(x, y, family=c("gaussian", "binomial"),
   }
   
   # Solve
-  soln = pogs(x, f, g, params) 
+  soln = pogs(x, f, g, pogs_params) 
   
   # Extract Output
   fit = list(beta = matrix(rep(0, (nvars + 1) * nlambda), nvars + 1, nlambda),
@@ -418,7 +438,7 @@ h2o4gpunet <- function(x, y, family=c("gaussian", "binomial"),
   fit$lambda = lambda[1:last]
   fit$call = match.call()
   fit$dev.ratio = fit$dev.ratio[1:last]
-  class(fit) = c("h2o4gpunet", family)
+  class(fit) = c("glmnet_h2o4gpu", family)
   fit
 }
 
@@ -444,15 +464,17 @@ lambda.interp <- function(lambda, s){
   list(left=left, right=right, frac=sfrac)
 }
 
-#' @title H2O4GPUnet prediction
+#' @title H2O4GPU GLMNET prediction
 #' @description Predict response for new value input
-#' @param object Value returned by h2o4gpunet(..).
+#' @param object Value returned by h2o4gpu::glmnet(..).
 #' @param newx New value of x for which prediction should be done.
 #' @param s Values of lambda for which coefficient should be returned.
 #' @param type Predict response or class.
 #' @param ... Not used. Other arguments to predict.
 #' @export
-predict.h2o4gpunet <- function(object, newx, s=NULL, type=c("link", "response", "class"), ...) {
+predict.glmnet_h2o4gpu <- function(object, newx, s = NULL, type = c("link", "response", "class"), ...) {
+
+  # TO DO: Missing some types, exact = FALSE and offset
   type = match.arg(type)
   if (is.null(s)) {
     beta = object$beta
@@ -475,13 +497,13 @@ predict.h2o4gpunet <- function(object, newx, s=NULL, type=c("link", "response", 
   fitted
 }
 
-#' @title h2o4gpunet coefficients.
-#' @description Returns coeficients of h2o4gpunet fit.
-#' @param object Value returned by h2o4gpunet(..).
+#' @title glmnet_h2o4gpu coefficients.
+#' @description Returns coeficients of glmnet_h2o4gpu fit.
+#' @param object Value returned by h2o4gpu::glmnet(..).
 #' @param s Values of lambda for which coefficient should be returned.
 #' @param ... Not used. Other arguments to predict.
 #' @export
-coef.h2o4gpunet <- function(object, s=NULL, ...) {
+coef.glmnet_h2o4gpu <- function(object, s = NULL, ...) {
   if (is.null(s)) {
     coefs = object$beta
   } else {
@@ -493,13 +515,13 @@ coef.h2o4gpunet <- function(object, s=NULL, ...) {
   coefs
 }
 
-#' @title h2o4gpunet coefficient plot.
+#' @title glmnet_h2o4gpu coefficient plot.
 #' @description Plots coefficients
-#' @param x h2o4gpunet object.
+#' @param x Value returned by h2o4gpu::glmnet(..).
 #' @param xvar x-variable to plot coefficient against.
 #' @param ... Extra parameters for matplot.
 #' @export
-plot.h2o4gpunet <- function(x, xvar=c("norm","lambda","dev"), ...) {
+plot.glmnet_h2o4gpu <- function(x, xvar = c("norm","lambda","dev"), ...) {
   xvar = match.arg(xvar)
   if (xvar == "norm") {
     index = apply(abs(x$beta[-1,]), 2, sum)
@@ -520,18 +542,19 @@ plot.h2o4gpunet <- function(x, xvar=c("norm","lambda","dev"), ...) {
   axis(3, at=atdf, labels=prettydf, tcl=NA)
 }
 
-#' @title Prints h2o4gpunet summary
-#' @description Prings h2o4gpunet summary
-#' @param x h2o4gpunet object
-#' @param digits Number of digits to display
+#' @title Prints glmnet_h2o4gpu summary
+#' @description Prints glmnet_h2o4gpu summary
+#' @param x Value returned by h2o4gpu::glmnet(..).
+#' @param digits Number of digits to display.
 #' @param ... Not used.
-#' @usage \method{print}{h2o4gpunet}(x, digits = max(3, getOption("digits") - 3), ...)
+#' @usage \method{print}{glmnet_h2o4gpu}(x, digits = max(3, getOption("digits") - 3), ...)
 #' @export
-print.h2o4gpunet <- function(x, digits = max(3, getOption("digits") - 3), ...){
+print.glmnet_h2o4gpu <- function(x, digits = max(3, getOption("digits") - 3), ...){
   cat("\nCall: ", deparse(x$call), "\n\n")
   print(cbind(Df=x$df, "%Dev"=signif(x$dev.ratio, digits), Lambda=signif(x$lambda, digits)))
 }
 
+# TO DO: Do we need this?
 # Copy from glmnet
 getmin <- function(lambda, cvm, cvsd) {
   cvmin = min(cvm, na.rm=TRUE)
@@ -552,20 +575,20 @@ getmin <- function(lambda, cvm, cvsd) {
 #' @param lambda List of lambda values for which CV should be performed.
 #' @param nfolds Number of folds.
 #' @param foldid Optional vector of values between 1 and nfolds, assigning
-#' @param noweight Observation weights removed
 #' @param cutoff Discard values of lambda for which beta remains unchanged (estimated on the full dataset)
 #' datapoint to cv-fold.
-#' @param params Other parameters to h2o4gpunet
-#' @param ... Other parameters to h2o4gpunet.
+#' @param pogs_params POGS parameters to pass through to h2o4gpu::glmnet().
+#' @param ... Other parameters to h2o4gpu::glmnet().
 #' @export
-cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, noweight=FALSE, cutoff=TRUE, params=list(), ...) {
+cv.glmnet <- function(x, y, weights, lambda = NULL, nfolds = 10, foldid = NULL, cutoff = TRUE, pogs_params = list(), ...) {
   
   # TO DO: remove noweight
-  doMC::registerDoMC(2) ## FIXME: as many as there are GPUs
+  noweight <- FALSE  #override up here for now
+  #doMC::registerDoMC(2) ## FIXME: as many as there are GPUs
 
   # Check input data
   if(!is.null(lambda) && length(lambda) < 2) {
-    stop("Need more than one value of lambda for cv.h2o4gpunet")
+    stop("Need more than one value of lambda for cv.glmnet")
   }
   N = nrow(x)
   y = drop(y)
@@ -588,32 +611,33 @@ cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, no
     stop("nfolds must be bigger than 3; nfolds=10 recommended")
   }
   
-  # Create initial h2o4gpunet call (mostly for sequence of lambdas)
-  h2o4gpunet.call = match.call(expand.dots=TRUE)
-  h2o4gpunet.call[[1]] = as.name("h2o4gpunet") 
-  h2o4gpunet.object = h2o4gpunet(x, y, weights=weights, lambda=lambda, cutoff=cutoff, params=params, ...)
-  h2o4gpunet.object$call = h2o4gpunet.call
-  lambda = h2o4gpunet.object$lambda
+  # Create initial h2o4gpu::glmnet call (mostly for sequence of lambdas)
+  glmnet.call = match.call(expand.dots=TRUE)
+  glmnet.call[[1]] = as.name("glmnet") 
+  glmnet.object = glmnet(x, y, weights = weights, lambda = lambda, cutoff = cutoff, pogs_params = pogs_params, ...)
+  glmnet.object$call = glmnet.call
+  lambda = glmnet.object$lambda
 
   # Containers for prediction result
   predmat = matrix(NA, length(y), length(lambda))
   nlams = double(nfolds)
 
   # Begin CV
-  `%dopar%` <- foreach::`%dopar%`  #https://stackoverflow.com/questions/30216613/how-to-use-dopar-when-only-import-foreach-in-description-of-a-package
+  # Disable parallel CV for now, it's not working properly with GPUs
+  #`%dopar%` <- foreach::`%dopar%`  #https://stackoverflow.com/questions/30216613/how-to-use-dopar-when-only-import-foreach-in-description-of-a-package
   i <- NULL #to avoid CRAN check warning
-  foreach::foreach(i=1:nfolds) %dopar% {
-
-    params[["wDev"]] = i%%2L
+  #foreach::foreach(i=1:nfolds) %dopar% {
+  for (i in 1:nfolds) {
+    pogs_params[["wDev"]] = i%%2L
     which = (foldid == i)
     if(is.matrix(y)) {
       y_sub = y[!which,] 
     } else {
       y_sub = y[!which]
     }
-    h2o4gpunet.fit = h2o4gpunet(x[!which, , drop=FALSE], y_sub, lambda=lambda, weights=weights[!which], cutoff=FALSE, params=params, ...)
-    nlami = length(h2o4gpunet.fit$lambda)
-    predmat[which, seq(nlami)] = predict(h2o4gpunet.fit, x[which, , drop=FALSE], type="response")
+    glmnet.fit = glmnet(x[!which, , drop=FALSE], y_sub, lambda = lambda, weights = weights[!which], cutoff = FALSE, pogs_params = pogs_params, ...)
+    nlami = length(glmnet.fit$lambda)
+    predmat[which, seq(nlami)] = predict(glmnet.fit, x[which, , drop=FALSE], type="response")
   }
   N = length(y) - apply(is.na(predmat), 2, sum)
   
@@ -624,16 +648,16 @@ cv.h2o4gpunet <- function(x, y, weights, lambda=NULL, nfolds=10, foldid=NULL, no
   
   # Prepare output
   out = list(lambda=lambda, cvm=cvm, cvsd=cvsd, cvup=cvm + cvsd, cvlo=cvm - cvsd,
-            nzero=h2o4gpunet.object$df, name="Mean-Squared Error", h2o4gpunet.fit=h2o4gpunet.object)
+            nzero=glmnet.object$df, name="Mean-Squared Error", glmnet.fit=glmnet.object)
   obj = c(out,as.list(getmin(lambda, cvm, cvsd)))
-  class(obj) = "cv.h2o4gpunet"
+  class(obj) = "cv.glmnet_h2o4gpu"
   obj
 }
 
 # Copy from glmnet
 #' @importFrom graphics abline axis matplot points segments
 #' @importFrom stats approx predict weighted.mean
-error.bars <- function(x, upper, lower, width=0.02, ...) {
+error.bars <- function(x, upper, lower, width = 0.02, ...) {
   xlim <- range(x)
   barw <- diff(xlim) * width
   segments(x, upper, x, lower, ...)
@@ -642,14 +666,14 @@ error.bars <- function(x, upper, lower, width=0.02, ...) {
   range(upper, lower)
 }
 
-#' @title Plot h2o4gpunet CV 
-#' @description Plots results of h2o4gpunet CV
-#' @param x h2o4gpunet.cv object
+#' @title Plot H2O4GPU GLMNET CV 
+#' @description Plots results of glmnet CV
+#' @param x cv.glmnet_h2o4gpu object
 #' @param sign.lambda Either plot against log(lambda) (default) or its negative if sign.lambda=-1.
 #' @param ... Other graphical parameters to plot.
-#' @usage \method{plot}{cv.h2o4gpunet}(x, sign.lambda, ...)
+#' @usage \method{plot}{cv.glmnet_h2o4gpu}(x, sign.lambda, ...)
 #' @export
-plot.cv.h2o4gpunet <- function(x, sign.lambda=1, ...) {
+plot.cv.glmnet_h2o4gpu <- function(x, sign.lambda = 1, ...) {
   # Set up plotting arguments
   cvobj = x
   xlab = "log(Lambda)"
