@@ -2,7 +2,9 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
-**H2O4GPU** is a collection of GPU (and CPU) solvers by H2Oai, as drop-in replacement of sklearn with GPU capabilities.
+**H2O4GPU** is a collection of GPU (and CPU) solvers by H2Oai.  It can
+be used as a drop-in replacement for sklearn (i.e. import h2o4gpu as sklearn)
+with support for GPUs on selected (and ever-growing) algorithms.
 
 ## Requirements
 
@@ -54,7 +56,7 @@ For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2
 
 ## Plans and RoadMap
 
-Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.
+Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.  The CPU side initially will be sklearn, but gradually some of those may be replaced by faster open-source codes like those in Intel DAAL.
 
 This vision is currently accomplished by using the open-source scikit-learn and xgboost and overriding scikit-learn calls with our own GPU versions.
 
