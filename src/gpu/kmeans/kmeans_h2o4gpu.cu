@@ -295,24 +295,19 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
-
-    if (init_data == 1) { // shard by row
-      copy_labels(verbose, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
-    } else { // shard by randomly (without replacement) selected by row
-      copy_labels_shuffled(verbose, v, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
-    }
-
     if (init_data == 0) { // random (for testing)
       random_data<T>(verbose, *data[q], rows / n_gpu, cols);
     } else if (init_data == 1) { // shard by row
       copy_data(verbose, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
+      copy_labels(verbose, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
     } else { // shard by randomly (without replacement) selected by row
       copy_data_shuffled(verbose, v, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
+      copy_labels_shuffled(verbose, v, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
     }
   }
 
   // get non-random centroids on 1 gpu, then share with rest.
-  if (init_from_data == 0) {
+  if (init_from_data == 1) {
     int masterq = 0;
     CUDACHECK(cudaSetDevice(dList[masterq]));
     copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);

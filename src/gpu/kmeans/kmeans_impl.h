@@ -128,7 +128,7 @@ int kmeans(
 
     detail::make_self_dots(n / n_gpu, d, *data[q], *data_dots[q]);
 
-    if (init_from_data) {
+    if (init_from_data == 0) {
       if (verbose) {
         fprintf(stderr, "Before find_centroids: gpu: %d\n", q);
         fflush(stderr);
@@ -137,6 +137,7 @@ int kmeans(
                              *data[q], *labels[q],
                              *centroids[q], *range[q],
                              *indices[q], *counts[q]);
+      // TODO set same centroids on all devices after this
     }
   }
 
@@ -158,6 +159,7 @@ int kmeans(
                                   *centroid_dots[q], *pairwise_distances[q]);
 
       detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+
       detail::memcpy(*labels_copy[q], *labels[q]);
       detail::find_centroids(q,
                              n / n_gpu,

@@ -26,6 +26,7 @@ class KMeans(object):
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
      implementation of the K-Means clustering algorithm.
+
     Approximate GPU Memory Use:
      n_clusters*rows + rows*cols + cols*n_clusters
 
@@ -34,19 +35,21 @@ class KMeans(object):
         centroids to generate.
 
     :param init : {'k-means++', 'random' or an ndarray}
-        Method for initialization, defaults to 'k-means++':
+        Method for initialization, defaults to 'random':
         'k-means++' : selects initial cluster centers for k-mean
-        clustering in a smart way to speed up convergence. See section
-        Notes in k_init for more details.
+        clustering in a smart way to speed up convergence.
+        *Not supported yet* - if chosen we will use SKLearn's methods.
         'random': choose k observations (rows) at random from data for
         the initial centroids.
         If an ndarray is passed, it should be of shape (n_clusters, n_features)
         and gives the initial centers.
+        *Not supported yet* - if chosen we will use SKLearn's methods.
 
     :param n_init : int, default: 1
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
+        *Not supported yet* - always runs 1.
 
     :param max_iter : int, optional, default: 1000
         Maximum number of iterations of the algorithm.
@@ -61,6 +64,7 @@ class KMeans(object):
         double precision.
         True : always precompute distances
         False : never precompute distances
+        *Not supported yet* - always uses auto if running h2o4gpu version.
 
     :param verbose : int, optional, default 0
         Logger verbosity level.
@@ -75,6 +79,7 @@ class KMeans(object):
         modified.  If False, the original data is modified, and put back before
         the function returns, but small numerical differences may be introduced
         by subtracting and then adding the data mean.
+        *Not supported yet* - always uses True if running h2o4gpu version.
 
     :param n_jobs : int
         The number of jobs to use for the computation. This works by computing
@@ -83,12 +88,14 @@ class KMeans(object):
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
+        *Not supported yet* - CPU backend not yet implemented.
 
     :param algorithm : "auto", "full" or "elkan", default="auto"
         K-means algorithm to use. The classical EM-style algorithm is "full".
         The "elkan" variation is more efficient by using the triangle
         inequality, but currently doesn't support sparse data. "auto" chooses
         "elkan" for dense data and "full" for sparse data.
+        *Not supported yet* - always uses full if running h2o4gpu version.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
@@ -100,6 +107,9 @@ class KMeans(object):
 
     :param init_data : "random", "selectstrat" or
                 "randomselect", optional, default: "randomselect"
+                "Random": runs the algorithm on a completely random data set
+                "Selectstrat": uses data in given order
+                "Randomselect": first shuffles the data before using it
 
     :param do_checks : int, optional, default: 1
         If set to 0 GPU error check will not be performed.
@@ -176,7 +186,7 @@ class KMeans(object):
                 self.do_sklearn = True
         if n_init != 1:
             print("WARNING: n_init not supported currently."
-                  "  Still using h2o4gpu.")
+                  "  Still using h2o4gpu with n_init = 1.")
         if precompute_distances != "auto":
             print("WARNING: precompute_distances not used."
                   "  Still using h2o4gpu.")

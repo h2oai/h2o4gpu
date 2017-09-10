@@ -116,20 +116,12 @@ void find_centroids(int q, int n, int d, int k,
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
 #endif
-#if(DEBUG)
-  thrust::host_vector<int> h_labels = labels;
-  thrust::host_vector<int> h_indices = indices;
-  for(int i=0;i<n;i++){
-    fprintf(stderr,"after q=%d labels[%d]=%d indices[%d]=%d\n",q,i,h_labels[i],i,h_indices[i]);
-  }
-  fflush(stderr);
-#endif
 
-  if (0) { // no, if centroid has no members, then this will leave centroid at (arbitrarily) zero position for all dimensions.  Rather keep original position in case no members, so can gracefully add or remove members toward convergence.
-    // Required for ngpu>1 where average centroids.  I.e., if gpu_id=1 has a centroid that lost members, then the blind average drives the average centroid position toward zero.  This likely reduces its members, leading to run away case of centroids heading to zero.
-    //Initialize centroids to all zeros
-    memzero(centroids);
-  }
+  // If centroid has no members, then this will leave centroid at (arbitrarily) zero position for all dimensions.
+  // Rather keep original position in case no members, so can gracefully add or remove members toward convergence.
+  // Required for ngpu>1 where average centroids.  I.e., if gpu_id=1 has a centroid that lost members, then the blind average drives the average centroid position toward zero.  This likely reduces its members, leading to run away case of centroids heading to zero.
+  //Initialize centroids to all zeros
+  memzero(centroids);
 
   //Initialize counts to all zeros
   memzero(counts);
@@ -147,16 +139,10 @@ void find_centroids(int q, int n, int d, int k,
           thrust::raw_pointer_cast(indices.data()),
           thrust::raw_pointer_cast(centroids.data()),
           thrust::raw_pointer_cast(counts.data()));
+
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
-#endif
-#if(DEBUG)
-  thrust::host_vector<T> h_centroids = centroids;
-  for(int i=0;i<k*d;i++){
-    fprintf(stderr,"after q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
-  }
-  fflush(stderr);
 #endif
   //Scale centroids
   scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
@@ -167,13 +153,6 @@ void find_centroids(int q, int n, int d, int k,
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
-#endif
-#if(DEBUG)
-  h_centroids = centroids;
-  for(int i=0;i<k*d;i++){
-    fprintf(stderr,"afters q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
-  }
-  fflush(stderr);
 #endif
 }
 
