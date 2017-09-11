@@ -151,8 +151,18 @@ def run_glm_ptr(nFolds,
     print("Solving")
     sys.stdout.flush()
     if use_gpu == 1:
-        enet.fit_ptr(mTrain, n, mValid, double_precision, None, a, b,
-                     c, d, e, source_dev=sourceDev)
+        enet.fit_ptr(
+            mTrain,
+            n,
+            mValid,
+            double_precision,
+            None,
+            a,
+            b,
+            c,
+            d,
+            e,
+            source_dev=sourceDev)
     else:
         enet.fit(a, b, c, d, e)
 
