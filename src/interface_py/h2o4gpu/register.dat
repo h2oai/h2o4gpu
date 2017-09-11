@@ -1,8 +1,8 @@
-# filename           # initfile             Original Class   Renamed To           appendcommand
-cluster/k_means_.py  cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans import KMeans"
-cluster/bicluster.py cluster/__init__.py    KMeans           KMeans_sklearn       "from ..solvers.kmeans import KMeans"
-linear_model/ridge.py linear_model/__init__.py Ridge         Ridge_sklearn        "from ..solvers.ridge import Ridge"
-linear_model/coordinate_descent.py linear_model/__init__.py Lasso Lasso_sklearn   "from ..solvers.lasso import Lasso"
-linear_model/logistic.py linear_model/__init__.py LogisticRegression LogisticRegression_sklearn   "from ..solvers.logistic import LogisticRegression"
-linear_model/base.py linear_model/__init__.py LinearRegression LinearRegression_sklearn   "from ..solvers.linear_regression import LinearRegression"
-linear_model/coordinate_descent.py linear_model/__init__.py ElasticNet ElasticNet_sklearn   "from ..solvers.elastic_net import GLM"
+# filename           # initfile                             Original Class      Renamed To                   appendcommand
+cluster/k_means_.py  cluster/__init__.py                    KMeans              AKMeans_sklearn               "from ..solvers.kmeans import KMeans"
+cluster/bicluster.py cluster/__init__.py                    KMeans              AKMeans_sklearn               "from ..solvers.kmeans import KMeans"
+linear_model/ridge.py linear_model/__init__.py              Ridge               ARidge_sklearn                "from ..solvers.ridge import Ridge"
+linear_model/coordinate_descent.py linear_model/__init__.py Lasso               ALasso_sklearn                "from ..solvers.lasso import Lasso"
+linear_model/logistic.py linear_model/__init__.py           LogisticRegression  ALogisticRegression_sklearn   "from ..solvers.logistic import LogisticRegression"
+linear_model/base.py linear_model/__init__.py               LinearRegression    ALinearRegression_sklearn     "from ..solvers.linear_regression import LinearRegression"
+linear_model/coordinate_descent.py linear_model/__init__.py ElasticNet          AElasticNet_sklearn           "from ..solvers.elastic_net import GLM"

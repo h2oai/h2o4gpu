@@ -169,10 +169,11 @@ class KMeans(object):
         # setup backup to sklearn class
         # (can remove if fully implement sklearn functionality)
         self.do_sklearn = False
-        if type(init, np.ndarray):
+        example = np.array([1, 2, 3])
+        if type(init) == type(example):
             print("init as ndarray of centers not yet supported")
             self.do_sklearn = True
-        if init != "k-means++":
+        if init == "k-means++":
             print("init as k-means++ not yet supported")
             self.do_sklearn = True
 
@@ -183,7 +184,8 @@ class KMeans(object):
                 verbose, random_state, copy_x, n_jobs, algorithm)
         else:
             # fix-up tol in case input was numpy
-            if type(tol, (np.ndarray, np.generic)):
+            example = np.fabs(1.0)
+            if type(tol) == type(example):
                 tol = tol.item()
             # sklearn option overrides detailed option
             if init == 'random':
