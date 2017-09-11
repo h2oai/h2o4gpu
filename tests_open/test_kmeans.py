@@ -6,6 +6,7 @@ KMeans solver tests using SKLearn datasets.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
+import h2o4gpu
 from h2o4gpu import KMeans
 from h2o4gpu.datasets import load_iris
 import numpy as np

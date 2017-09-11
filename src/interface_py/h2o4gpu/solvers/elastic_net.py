@@ -10,8 +10,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from sklearn.externals import six
-from sklearn.utils.fixes import signature
+from h2o4gpu.externals import six
+from h2o4gpu.utils.fixes import signature
 from tabulate import tabulate
 
 from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
