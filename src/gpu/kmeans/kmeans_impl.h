@@ -137,7 +137,23 @@ int kmeans(
                              *data[q], *labels[q],
                              *centroids[q], *range[q],
                              *indices[q], *counts[q]);
-      // TODO set same centroids on all devices after this
+    }
+  }
+
+  if (init_from_data == 0) {
+    // TODO move this and the averaging done at the end of each iteration to a method
+    for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
+    for (int q = 0; q < n_gpu; q++) {
+      safe_cuda(cudaSetDevice(dList[q]));
+      detail::memcpy(h_centroids_tmp, *centroids[q]);
+      detail::streamsync(dList[q]);
+      for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
+    }
+    for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
+    //Copy the averaged centroids to each device
+    for (int q = 0; q < n_gpu; q++) {
+      safe_cuda(cudaSetDevice(dList[q]));
+      detail::memcpy(*centroids[q], h_centroids);
     }
   }
 

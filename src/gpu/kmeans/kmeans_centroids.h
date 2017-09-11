@@ -110,6 +110,7 @@ void find_centroids(int q, int n, int d, int k,
   cudaGetDevice(&dev_num);
   memcpy(indices, range);
   //Bring all labels with the same value together
+  // TODO is this actually sorting anything?? Write unit tests!!!
   mycub::sort_by_key_int(labels, indices);
 
 #if(CHECK)
