@@ -24,8 +24,10 @@ from ..types import cptr
 class KMeans(object):
     """K-Means clustering
 
-    Wrapper class calling an underlying (e.g. GPU or CPU) implementation of the
-    K-Means clustering algorithm.
+    Wrapper class calling an underlying (e.g. GPU or CPU)
+     implementation of the K-Means clustering algorithm.
+    Approximate GPU Memory Use:
+     n_clusters*rows + rows*cols + cols*n_clusters
 
     :param n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of
