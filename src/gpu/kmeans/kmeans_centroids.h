@@ -4,6 +4,7 @@
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <thrust/device_vector.h>
+#include <thrust/sort.h>
 #include "kmeans_labels.h"
 
 __device__ double my_atomic_add(double *address, double val) {
@@ -110,8 +111,11 @@ void find_centroids(int q, int n, int d, int k,
   cudaGetDevice(&dev_num);
   memcpy(indices, range);
   //Bring all labels with the same value together
-  // TODO is this actually sorting anything?? Write unit tests!!!
-  mycub::sort_by_key_int(labels, indices);
+  thrust::sort_by_key(labels.begin(),
+                      labels.end(),
+                      indices.begin());
+  // TODO cub is faster but sort_by_key_int isn't sorting :-(
+  //  mycub::sort_by_key_int(labels, indices);
 
 #if(CHECK)
   gpuErrchk(cudaGetLastError());

@@ -28,7 +28,10 @@ endif
 GTEST_DIR = googletest/googletest
 H2O4GPU_DIR = ..
 
-TESTS = test_kmeans_centroids
+H2O4GPU_OBJECTS = kmeans_labels
+
+TESTS = test_kmeans_centroids \
+        test_kmeans_labels
 
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
@@ -76,15 +79,20 @@ gtest_main.a : gtest-all.o gtest_main.o
 # test.o: ../src/gpu/kmeans/test.cu ../src/gpu/kmeans/test.cuh $(GPU_KMEANS_HDR)
 #	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
 
-test_kmeans_centroids.o: gpu/kmeans/test_kmeans_centroids.cu $(GPU_KMEANS_HDR)
+kmeans_labels.o: ../src/gpu/kmeans/kmeans_labels.cu ../src/gpu/kmeans/kmeans_labels.h
 	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
 
-# Example for when .cuh/.h/.hpp and .cu/.cpp/.cc files are separated
-# test_h2o4gpu: $(TESTS:=.o) test.o gtest_main.a
+test_kmeans_labels.o: gpu/kmeans/test_kmeans_labels.cu ../src/gpu/kmeans/kmeans_labels.h
+	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
 
-test_h2o4gpu: $(TESTS:=.o) gtest_main.a
+test_kmeans_centroids.o: gpu/kmeans/test_kmeans_centroids.cu ../src/gpu/kmeans/kmeans_centroids.h
+	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+
+test_main.o: test_main.cu
+	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+
+test_h2o4gpu: test_main.o $(H2O4GPU_OBJECTS:=.o) $(TESTS:=.o) gtest_main.a
 	$(CXX) $^ -lpthread -lcublas -lcudart -lcudadevrt -lcuda $(LIB_FLAGS) -o $@
-
 ############### Run tests
 
 run_tests: test_h2o4gpu

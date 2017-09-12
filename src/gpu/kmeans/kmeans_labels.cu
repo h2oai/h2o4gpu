@@ -295,10 +295,11 @@ void sort_by_key_int(thrust::device_vector<int> &keys, thrust::device_vector<int
     safe_cuda(cudaMalloc(&d_temp_storage[dev_num], temp_storage_bytes[dev_num]));
   }
   // Run sorting operation
-  cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num], d_keys,
-                                  d_values, SIZE, 0, sizeof(int) * 8, this_stream);
+  cub::DeviceRadixSort::SortPairs(d_temp_storage[dev_num], temp_storage_bytes[dev_num],
+                                  d_keys, d_values, SIZE, 0, sizeof(int) * 8, this_stream);
   // Sorted keys and values are referenced by d_keys.Current() and d_values.Current()
 
-
+  keys.data() = thrust::device_pointer_cast(d_keys.Current());
+  values.data() = thrust::device_pointer_cast(d_values.Current());
 }
 }
