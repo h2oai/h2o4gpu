@@ -4,7 +4,9 @@
 
 ## Troubleshooting
 
-#### Good idea to check if duplicate python packages installed ###
+#### Problems with numpy version mismatch ###
+
+Good idea to check if duplicate python packages installed
 
 ```
 pip freeze
@@ -19,6 +21,8 @@ pip uninstall numpy
 pip install numpy==1.13.1 # or whatever version was attempted to be installed by the wheel
 ```
 
-### After pip installing the wheel, make sure you use a fresh bash
-  environment to ensure the python cache is not used. ###
+### h2o4gpu not found ###
+
+After pip installing the wheel, make sure you use a fresh bash
+environment to ensure the python cache is not used.
 
