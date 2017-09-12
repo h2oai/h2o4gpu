@@ -8,7 +8,9 @@ with support for GPUs on selected (and ever-growing) algorithms.
 
 ## Requirements
 
+* PC with Ubuntu 16.04+
 * Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
+* Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
 
 ## Installation
 
@@ -19,26 +21,22 @@ export CUDA_HOME=/usr/local/cuda
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
 ```
 
-Download the Python wheel file
+Download the Python wheel file for python 3.6:
   * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
-  * [Bleeding edge for py3.6](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
+
+Download the Python wheel file for python 3.5:
+  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py3.5.whl)
+  * (TBA) [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py3.5.whl)
  
-Install the Python wheel file (Requires python 3.6):
+Start a fresh pyenv or virtualenv session.
+
+Install the Python wheel file (Requires python 3.6). NOTE: This will
+overwrite your py3nvml and xgboost installations to use our validated
+versions
 
 ```
-#NOTE: This will overwrite your py3nvml and xgboost installations to use our validated versions
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
-```
-
-Good idea to check if duplicate python packages installed
-```
-pip freeze
-
-```
-# and pip uninstall any prior version you had and pip install the version we tried to install.  E.g. on conda you might need to do:
-```
-pip uninstall numpy
-pip install numpy==1.13.1 # or whatever version was attempted to be installed by the wheel
 ```
 
 Test your installation
@@ -56,11 +54,26 @@ For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2
 
 ## Plans and RoadMap
 
-Vision is to have a drop-in replacement for scikit-learn that has the full functionality of sklearn, but gradually modules or classes are replaced by GPU-enabled algorithms.  The CPU side initially will be sklearn, but gradually some of those may be replaced by faster open-source codes like those in Intel DAAL.
+Vision is to develop fast GPU algorithms to complement the CPU
+algorithms in scikit-learn while keeping full scikit-learn API
+compatibility and scikit-learn CPU algorithm capability. The python
+module is to be used as a drop-in-replacement for scikit-learn that
+has the full functionality of sklearn's CPU algorithms.  Functions and
+classes will be gradually overriden by GPU-enabled algorithms (unless
+n_gpu=0 is set and we have no CPU algorithm except scikit-learn's).
+The CPU algorithms and code initially will be sklearn, but gradually
+those may be replaced by faster open-source codes like those in Intel
+DAAL.
 
-This vision is currently accomplished by using the open-source scikit-learn and xgboost and overriding scikit-learn calls with our own GPU versions.
+This vision is currently accomplished by using the open-source
+scikit-learn and xgboost and overriding scikit-learn calls with our
+own GPU versions.  In cases when our GPU class is currently
+incapable of an important scikit-learn feature, we revert to the
+scikit-learn class.
 
-![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg "ROADMAP.")
+
+![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg
+ "ROADMAP.")
 
 ## Solver Classes
 
@@ -83,6 +96,11 @@ GitHub issues are used only for bugs, feature and enhancement discussion/trackin
 ## Questions
 
 Please ask all `h2o4gpu` related questions either on [StackOverflow](https://stackoverflow.com/questions/tagged/h2o4gpu) or our [Gitter](https://gitter.im/h2oai/h2o4gpu),
+
+[Troubleshooting](https://github.com/h2oai/h2o4gpu/tree/master/TROUBLESHOOTING.md).
+
+[FAQ](https://github.com/h2oai/h2o4gpu/tree/master/FAQ.md).
+
 
 ## References
 
