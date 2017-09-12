@@ -164,15 +164,19 @@ class KMeans(object):
         example = np.array([1, 2, 3])
         # pylint: disable=unidiomatic-typecheck
         if type(init) == type(example):
-            print("WARNING: init as ndarray of centers not yet supported.  Using sklearn.")
+            print("WARNING: init as ndarray of centers not yet supported."
+                  "  Using sklearn.")
             self.do_sklearn = True
         if init == "k-means++":
-            print("WARNING: init as k-means++ not yet supported.  Using sklearn.")
+            print("WARNING: init as k-means++ not yet supported."
+                  "  Using sklearn.")
             self.do_sklearn = True
         if n_init != 1:
-            print("WARNING: n_init not supported currently.  Still using h2o4gpu.")
-        if precompute_distances!="auto":
-            print("WARNING: precompute_distances not used.  Still using h2o4gpu.")
+            print("WARNING: n_init not supported currently."
+                  "  Still using h2o4gpu.")
+        if precompute_distances != "auto":
+            print("WARNING: precompute_distances not used."
+                  "  Still using h2o4gpu.")
 
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
