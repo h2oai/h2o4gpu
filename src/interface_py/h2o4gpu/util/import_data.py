@@ -58,9 +58,9 @@ def import_data(data_path,
         data = feather.read_dataframe(data_file)
     print(data.shape)
     data_x = np.array(
-        data.iloc[:, :data.shape[1] - 1], dtype='float32', order='C')
+        data.iloc[:, :data.shape[1] - 1], dtype='float32', order='C', copy=False)
     data_y = np.array(
-        data.iloc[:, data.shape[1] - 1], dtype='float32', order='C')
+        data.iloc[:, data.shape[1] - 1], dtype='float32', order='C', copy=False)
 
     #Setup train / validation set split
     #(assuming form of mxn where m = row count and n = col count)
@@ -76,10 +76,10 @@ def import_data(data_path,
         H = morig - HO
         print("Size of Train rows=%d & valid rows=%d" % (H, HO))
         sys.stdout.flush()
-        train_x = np.copy(data_x[0:H, :])
-        train_y = np.copy(data_y[0:H])
-        valid_x = np.copy(data_x[H:morig, :])
-        valid_y = np.copy(data_y[H:morig])
+        train_x = data_x[0:H, :]
+        train_y = data_y[0:H]
+        valid_x = data_x[H:morig, :]
+        valid_y = data_y[H:morig]
         print("Size of Train cols=%d valid cols=%d" % (train_x.shape[1],
                                                        valid_x.shape[1]))
     else:
