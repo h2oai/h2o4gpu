@@ -1,33 +1,25 @@
 #!/bin/bash
+rm -rf scikit-learn
+git submodule init
+git submodule update
 cd scikit-learn
-rm -rf build dist
 
-########## DIRECTORIES
-paths=`find -type d | grep -v pycache | awk '{ print length($0) " " $0; }' | sort  -n | cut -d ' ' -f 2-`
+########## DIRECTORIES and FILENAMES
+echo "Renaming paths and files"
+find ./ -execdir rename -v 's/sklearn/h2o4gpu/' '{}' \+
+find ./ -execdir rename -v 's/scikit-learn/h2o4gpu/' '{}' \+
 
-for fil in $paths
-do
-    echo $fil
-    if [[ "$fil" == *".git"* ]]
-    then
-        echo "avoid .git"
-    else
-        newpath=`echo $fil | sed 's/sklearn/h2o4gpu/g' | sed 's/scikit-learn/h2o4gpu/g'`
-        echo $fil "->" $newpath
-        mv $fil $newpath
-    fi
-done
-
-########## FILES
+########## FILE contents
 #files=`find -type f | grep -v pycache`
 files=`find -type f | grep -v pycache | awk '{ print length($0) " " $0; }' | sort  -n | cut -d ' ' -f 2-`
 
 for fil in $files
 do
-    echo $fil
+    echo "Edit contents of $fil"
     if [[ "$fil" == *".git"* ]]
     then
-        echo "avoid .git"
+        #echo "skip .git"
+        true
     else
         sed -i 's/sklearn/h2o4gpu/g' $fil
         sed -i 's/scikit-learn/h2o4gpu/g' $fil
@@ -40,4 +32,3 @@ do
         sed -i 's/sklearn_sklearn/sklearn/g' $fil
     fi
 done
-
