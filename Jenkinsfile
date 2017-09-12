@@ -44,7 +44,7 @@ pipeline {
                         $class                           : 'GitSCM',
                         branches                         : scm.branches,
                         doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: true, reference: '', trackingSubmodules: false]],
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -55,7 +55,7 @@ pipeline {
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins; make build/VERSION.txt'
                             nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'

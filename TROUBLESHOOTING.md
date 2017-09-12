@@ -26,3 +26,20 @@ pip install numpy==1.13.1 # or whatever version was attempted to be installed by
 After pip installing the wheel, make sure you use a fresh bash
 environment to ensure the python cache is not used.
 
+### can't properly load ch2o4gpu_gpu.so ###
+
+This usually means some other library is missing.  One can run:
+
+```
+cd <your python environment path>/site-packages/
+e.g. for pyenv: /home/$USER/.pyenv/versions/3.6.1/lib/python3.6/site-packages/
+ldd ch2o4gpu_gpu.so
+```
+
+And check if any missing dependencies
+
+If compiled with icc (default if present) and have conda, need to do:
+
+```
+conda install --no-dep -c intel icc_rt
+```

@@ -67,11 +67,19 @@ class H2O4GPUInstall(install):
         self.copy_tree(self.build_lib, self.install_lib)
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
-install_reqs = parse_requirements('../../requirements.txt', session='hack')
+install_reqs = parse_requirements('../../requirements_runtime.txt', session='hack')
 
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
+
+import os
+from setuptools import setup
+from setuptools.dist import Distribution
+
+class BinaryDistribution(Distribution):
+    def is_pure(self):
+        return False
 
 setup(
     name='h2o4gpu',
@@ -79,6 +87,7 @@ setup(
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
+    distclass=BinaryDistribution,
     # from:
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=['h2o4gpu',

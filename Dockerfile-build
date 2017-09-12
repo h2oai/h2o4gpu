@@ -48,9 +48,11 @@ RUN \
     virtualenv --python=/usr/bin/python3.6 h2oai_env && \
     pip install setuptools --no-cache-dir
 
-COPY requirements.txt requirements.txt
+COPY requirements_buildonly.txt requirements_buildonly.txt
+COPY requirements_runtime.txt requirements_runtime.txt
 RUN \
     . h2oai_env/bin/activate && \
-    pip install -r requirements.txt && \
+    pip install -r requirements_buildonly.txt && \
+    pip install -r requirements_runtime.txt && \
     chmod -R 777 h2oai_env && \
     chmod 777 /

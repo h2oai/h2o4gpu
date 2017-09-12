@@ -169,10 +169,11 @@ class KMeans(object):
             print("WARNING: init as ndarray of centers not yet supported."
                   "  Using sklearn.")
             self.do_sklearn = True
-        if init == "k-means++":
-            print("WARNING: init as k-means++ not yet supported."
-                  "  Using sklearn.")
-            self.do_sklearn = True
+        else:
+            if init == "k-means++":
+                print("WARNING: init as k-means++ not yet supported."
+                      "  Using sklearn.")
+                self.do_sklearn = True
         if n_init != 1:
             print("WARNING: n_init not supported currently."
                   "  Still using h2o4gpu.")
@@ -193,8 +194,13 @@ class KMeans(object):
 
         # Things to do if not using sklearn
         # sklearn option overrides detailed option
-        if init == 'random':
-            init_data = "randomselect"
+        example = np.array([1, 2, 3])
+        # pylint: disable=unidiomatic-typecheck
+        if type(init) == type(example):
+            pass
+        else:
+            if init == 'random':
+                init_data = "randomselect"
 
         self.init = init
         self._n_clusters = n_clusters

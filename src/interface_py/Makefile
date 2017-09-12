@@ -26,7 +26,14 @@ pyformat:
 		fi; \
 	done; \
 
-all:
+prep:
+	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python-tag=.*/python-tag=py'$$PYVER'/g' setup.cfg
+	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'` && sed -i 's/python_version==.*/python_version=='$$PYVER'/g' setup.cfg
+
+all: prep
+
+	#cat ../../requirements_buildonly.txt ../../requirements_runtime.txt > requirements.txt
+	#cat ../../requirements_runtime.txt > requirements.txt
 
 	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../xgboost/python-package/xgboost .
