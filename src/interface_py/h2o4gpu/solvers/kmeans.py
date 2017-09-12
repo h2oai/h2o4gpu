@@ -190,6 +190,7 @@ class KMeans(object):
         if init == 'random':
             init_data = "randomselect"
 
+        self.init = init
         self._n_clusters = n_clusters
         self._gpu_id = gpu_id
         (self.n_gpus, self.devices) = device_count(n_gpus)
