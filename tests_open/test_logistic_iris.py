@@ -40,15 +40,19 @@ def func():
     classification = True
 
     logreg = h2o4gpu.LogisticRegression(alpha_max = 1.0, alpha_min = 1.0)
+    lr = h2o4gpu.GLM(family = 'logistic', alpha_max = 1.0, alpha_min = 1.0, n_folds = 1, n_alphas = 1)
+    
     model = logreg.fit(X, y)
+    mm = lr.fit(X, y)
 
     y_pred = model.predict(X_test)
+    y_p = mm.predict(X_test)
     print(y_pred, np.round(y_pred))
 
     # TO-DO: change the assertion once the logic to convert probabilities 
     # to classes is implemented
     assert (y_test == np.round(y_pred)).all() == True
-
+    assert (y_pred == y_p).all() == True
 
 def test_logistic_iris(): func()
 
