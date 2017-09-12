@@ -13,7 +13,6 @@ from ctypes import c_void_p
 import pytest
 import h2o4gpu
 import numpy as np
-from numba import cuda
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
@@ -72,6 +71,7 @@ def run_glm_ptr(nFolds,
 
     if use_gpu == 1:
 
+        from numba import cuda
         #nFolds, nAlphas, nLambdas = arg
         train_data_mat = cuda.to_device(xtrain)
         train_result_mat = cuda.to_device(ytrain)
