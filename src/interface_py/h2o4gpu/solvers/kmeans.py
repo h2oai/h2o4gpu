@@ -41,7 +41,7 @@ class KMeans(object):
         If an ndarray is passed, it should be of shape (n_clusters, n_features)
         and gives the initial centers.
 
-    :param n_init : int, default: 10
+    :param n_init : int, default: 1
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
@@ -96,12 +96,6 @@ class KMeans(object):
         < 0 means all possible GPUs on the machine.
         0 means no GPUs, run on CPU.
 
-    :param init_from_data : boolean, optional, default: False
-        If set to True, cluster centers will be initialized
-        using random training data points.
-        If set to False, cluster centers will be generated
-        completely randomly.
-
     :param init_data : "random", "selectstrat" or
                 "randomselect", optional, default: "randomselect"
 
@@ -143,7 +137,6 @@ class KMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_from_data=False,
             init_data="randomselect",
             do_checks=1):
 
@@ -162,7 +155,6 @@ class KMeans(object):
 
         assert_is_type(gpu_id, int)
         assert_is_type(n_gpus, int)
-        assert_is_type(init_from_data, bool)
         assert_is_type(init_data, str)
         assert_is_type(do_checks, int)
 
@@ -172,53 +164,58 @@ class KMeans(object):
         example = np.array([1, 2, 3])
         # pylint: disable=unidiomatic-typecheck
         if type(init) == type(example):
-            print("init as ndarray of centers not yet supported")
+            print("WARNING: init as ndarray of centers not yet supported.  Using sklearn.")
             self.do_sklearn = True
         if init == "k-means++":
-            print("init as k-means++ not yet supported")
+            print("WARNING: init as k-means++ not yet supported.  Using sklearn.")
             self.do_sklearn = True
+        if n_init != 1:
+            print("WARNING: n_init not supported currently.  Still using h2o4gpu.")
+        if precompute_distances!="auto":
+            print("WARNING: precompute_distances not used.  Still using h2o4gpu.")
+
+        # fix-up tol in case input was numpy
+        example = np.fabs(1.0)
+        if type(tol) == type(example):
+            tol = tol.item()
 
         if self.do_sklearn:
             from h2o4gpu.cluster import KMeans_sklearn
             self.modelsklearn = KMeans_sklearn(
                 n_clusters, init, n_init, max_iter, tol, precompute_distances,
                 verbose, random_state, copy_x, n_jobs, algorithm)
+
+        # Things to do if not using sklearn
+        # sklearn option overrides detailed option
+        if init == 'random':
+            init_data = "randomselect"
+
+        self._n_clusters = n_clusters
+        self._gpu_id = gpu_id
+        (self.n_gpus, self.devices) = device_count(n_gpus)
+
+        self._max_iter = max_iter
+        self.init_data = init_data
+        self.tol = tol
+        self._did_sklearn_fit = 0
+        self.verbose = verbose
+        self.do_checks = do_checks
+
+        self.lib = self._load_lib()
+
+        if random_state is None:
+            import random
+            self.random_state = random.randint(0, 32000)
         else:
-            # fix-up tol in case input was numpy
-            example = np.fabs(1.0)
-            if type(tol) == type(example):
-                tol = tol.item()
-            # sklearn option overrides detailed option
-            if init == 'random':
-                init_data = "randomselect"
+            self.random_state = random_state
 
-            self._n_clusters = n_clusters
-            self._gpu_id = gpu_id
-            (self.n_gpus, self.devices) = device_count(n_gpus)
+        self.cluster_centers_ = None
 
-            self._max_iter = max_iter
-            self.init_from_data = init_from_data
-            self.init_data = init_data
-            self.tol = tol
-            self._did_sklearn_fit = 0
-            self.verbose = verbose
-            self.do_checks = do_checks
+        self.labels_ = None
 
-            self.lib = self._load_lib()
+        self.inertia_ = None  # TODO: Not set yet
 
-            if random_state is None:
-                import random
-                self.random_state = random.randint(0, 32000)
-            else:
-                self.random_state = random_state
-
-            self.cluster_centers_ = None
-
-            self.labels_ = None
-
-            self.inertia_ = None  # TODO: Not set yet
-
-            self.sklearn_model = None
+        self.sklearn_model = None
 
     @classmethod
     def _get_param_names(cls):
@@ -399,7 +396,7 @@ class KMeans(object):
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         _check_data_content(self.do_checks, "X", X_np)
         X_np, c_data, _ = self._to_cdata(X_np)
-        c_init_from_data = 0
+        c_init = 0
         c_init_data = 0
 
         _, c_centroids, _ = self._to_cdata(
@@ -414,7 +411,7 @@ class KMeans(object):
             lib.make_ptr_float_kmeans(1, self.verbose, self.random_state,
                                       self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
-                                      self._max_iter, c_init_from_data,
+                                      self._max_iter, c_init,
                                       c_init_data, self.tol, c_data, None,
                                       c_centroids, None, pointer(c_res))
         else:
@@ -422,7 +419,7 @@ class KMeans(object):
                 1, self.verbose, self.random_state, self._gpu_id,
                 self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init_from_data, c_init_data, self.tol, c_data, None,
+                c_init, c_init_data, self.tol, c_data, None,
                 c_centroids, None, pointer(c_res))
 
         preds = np.fromiter(
@@ -548,7 +545,10 @@ class KMeans(object):
 
         data, c_data_ptr, data_ctype = self._to_cdata(data)
 
-        c_init_from_data = 0 if self.init_from_data else 1
+        if self.init == "random" or self.init == "k-means++":
+            c_init = 1
+        else:
+            c_init = 0
 
         if self.init_data == "random":
             c_init_data = 0
@@ -578,14 +578,14 @@ class KMeans(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
                 None, pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
                 None, pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
