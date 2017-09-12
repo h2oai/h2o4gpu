@@ -72,8 +72,11 @@ int kmeans(
   thrust::device_vector<int> *indices[MAX_NGPUS];
   thrust::device_vector<int> *counts[MAX_NGPUS];
 
+  thrust::host_vector<int> h_counts(k);
+  thrust::host_vector<int> h_counts_tmp(k);
   thrust::host_vector<T> h_centroids(k * d);
   thrust::host_vector<T> h_centroids_tmp(k * d);
+
   int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
   T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
 
@@ -137,23 +140,7 @@ int kmeans(
                              *data[q], *labels[q],
                              *centroids[q], *range[q],
                              *indices[q], *counts[q]);
-    }
-  }
-
-  if (init_from_data == 0) {
-    // TODO move this and the averaging done at the end of each iteration to a method
-    for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
-    for (int q = 0; q < n_gpu; q++) {
-      safe_cuda(cudaSetDevice(dList[q]));
-      detail::memcpy(h_centroids_tmp, *centroids[q]);
-      detail::streamsync(dList[q]);
-      for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
-    }
-    for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
-    //Copy the averaged centroids to each device
-    for (int q = 0; q < n_gpu; q++) {
-      safe_cuda(cudaSetDevice(dList[q]));
-      detail::memcpy(*centroids[q], h_centroids);
+      // TODO average all the centroids and spread around
     }
   }
 
@@ -176,6 +163,8 @@ int kmeans(
 
       detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
 
+      mycub::sum_reduce(*distances[q], d_distance_sum[q]);
+
       detail::memcpy(*labels_copy[q], *labels[q]);
       detail::find_centroids(q,
                              n / n_gpu,
@@ -187,9 +176,28 @@ int kmeans(
                              *range[q],
                              *indices[q],
                              *counts[q]);
+    }
 
-      //T d_distance_sum[q] = thrust::reduce(distances[q].begin(), distances[q].end())
-      mycub::sum_reduce(*distances[q], d_distance_sum[q]);
+    //Average the centroids from each device
+    for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
+    for (int p = 0; p < k; p++) h_counts[p] = 0.0;
+    for (int q = 0; q < n_gpu; q++) {
+      safe_cuda(cudaSetDevice(dList[q]));
+      detail::memcpy(h_centroids_tmp, *centroids[q]);
+      detail::memcpy(h_counts_tmp, *counts[q]);
+      detail::streamsync(dList[q]);
+      for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
+      for (int p = 0; p < k; p++) h_counts[p] += h_counts_tmp[p];
+    }
+    for (int p = 0; p < k; p++) {
+      for (int r = 0; r < d; r++) {
+        h_centroids[p * d + r] /= h_counts[p];
+      }
+    }
+    //Copy the averaged centroids to each device
+    for (int q = 0; q < n_gpu; q++) {
+      safe_cuda(cudaSetDevice(dList[q]));
+      detail::memcpy(*centroids[q], h_centroids);
     }
 
     // whether to perform per iteration check
@@ -225,23 +233,6 @@ int kmeans(
       }
     }
 
-    //Average the centroids from each device (same as averaging centroid updates)
-    if (n_gpu > 1) {
-      for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
-      for (int q = 0; q < n_gpu; q++) {
-        safe_cuda(cudaSetDevice(dList[q]));
-        detail::memcpy(h_centroids_tmp, *centroids[q]);
-        detail::streamsync(dList[q]);
-        for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
-      }
-      for (int p = 0; p < k * d; p++) h_centroids[p] /= n_gpu;
-      //Copy the averaged centroids to each device
-      for (int q = 0; q < n_gpu; q++) {
-        safe_cuda(cudaSetDevice(dList[q]));
-        detail::memcpy(*centroids[q], h_centroids);
-      }
-    }
-
     if (*flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n");
       fflush(stderr);
@@ -252,18 +243,26 @@ int kmeans(
     if (done) break;
   }
 
-  // Final relabeling - uses final centroids
-  for (int q = 0; q < n_gpu; q++) {
+// Final relabeling - uses final centroids
+  for (
+      int q = 0;
+      q < n_gpu;
+      q++) {
     safe_cuda(cudaSetDevice(dList[q]));
 
-    detail::calculate_distances(verbose, q, n / n_gpu, d, k,
+    detail::calculate_distances(verbose, q, n
+                                    / n_gpu, d, k,
                                 *data[q], *centroids[q], *data_dots[q],
                                 *centroid_dots[q], *pairwise_distances[q]);
 
-    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+    detail::relabel(n
+                        / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
   }
 
-  for (int q = 0; q < n_gpu; q++) {
+  for (
+      int q = 0;
+      q < n_gpu;
+      q++) {
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaFree(d_changes[q]));
     detail::labels_close();
@@ -277,7 +276,8 @@ int kmeans(
   }
 
   if (verbose) {
-    fprintf(stderr, "Iterations: %d\n", i);
+    fprintf(stderr,
+            "Iterations: %d\n", i);
     fflush(stderr);
   }
   return 0;

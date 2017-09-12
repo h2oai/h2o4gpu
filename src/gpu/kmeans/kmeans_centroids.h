@@ -83,23 +83,6 @@ __global__ void calculate_centroids(int n, int d, int k,
 }
 
 template<typename T>
-__global__ void scale_centroids(int d, int k, int *counts, T *centroids) {
-  int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
-  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
-  if ((global_id_x < d) && (global_id_y < k)) {
-    int count = counts[global_id_y];
-    //To avoid introducing divide by zero errors
-    //If a centroid has no weight, we'll do no normalization
-    //This will keep its coordinates defined.
-    if (count < 1) {
-      count = 1;
-    }
-    T scale = 1.0 / T(count);
-    centroids[global_id_x + d * global_id_y] *= scale;
-  }
-}
-
-template<typename T>
 void find_centroids(int q, int n, int d, int k,
                     thrust::device_vector<T> &data,
                     thrust::device_vector<int> &labels,
@@ -111,10 +94,11 @@ void find_centroids(int q, int n, int d, int k,
   cudaGetDevice(&dev_num);
   memcpy(indices, range);
   //Bring all labels with the same value together
+  // TODO calculate_centroids doesn't really require ordered labels/data I think
   thrust::sort_by_key(labels.begin(),
                       labels.end(),
                       indices.begin());
-  // TODO cub is faster but sort_by_key_int isn't sorting :-(
+  // TODO cub is faster but sort_by_key_int isn't sorting, possibly a bug
   //  mycub::sort_by_key_int(labels, indices);
 
 #if(CHECK)
@@ -122,6 +106,7 @@ void find_centroids(int q, int n, int d, int k,
   gpuErrchk(cudaDeviceSynchronize());
 #endif
 
+  // TODO should we really zero all of them?
   // If centroid has no members, then this will leave centroid at (arbitrarily) zero position for all dimensions.
   // Rather keep original position in case no members, so can gracefully add or remove members toward convergence.
   // Required for ngpu>1 where average centroids.  I.e., if gpu_id=1 has a centroid that lost members, then the blind average drives the average centroid position toward zero.  This likely reduces its members, leading to run away case of centroids heading to zero.
@@ -145,16 +130,6 @@ void find_centroids(int q, int n, int d, int k,
           thrust::raw_pointer_cast(centroids.data()),
           thrust::raw_pointer_cast(counts.data()));
 
-#if(CHECK)
-  gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
-#endif
-  //Scale centroids
-  scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
-      0, cuda_stream[dev_num] >> >
-      (d, k,
-          thrust::raw_pointer_cast(counts.data()),
-          thrust::raw_pointer_cast(centroids.data()));
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
