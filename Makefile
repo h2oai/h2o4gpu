@@ -138,9 +138,10 @@ deps_clean:
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
+	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	sed 's/==.*//g' requirements.txt > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
-	rm -rf requirements_plain.txt
+	rm -rf requirements_plain.txt requirements.txt
 
 deps_fetch:
 	@echo "---- Fetch dependencies ---- "
@@ -156,7 +157,9 @@ private_deps_fetch:
 deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
+	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
+	rm -rf requirements.txt
 
 private_deps_install:
 	@echo "---- Install private dependencies ----"
