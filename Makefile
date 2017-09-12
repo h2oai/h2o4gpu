@@ -202,8 +202,8 @@ liblightgbm: # only done if user directly requests, never an explicit dependency
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
 
 libsklearn:	# assume already submodule gets sklearn
-	scripts/prepare_sklearn.sh # repeated calls don't hurt
-	mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
+	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
+	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
 apply_sklearn: libsklearn apply_sklearn_simple
 
