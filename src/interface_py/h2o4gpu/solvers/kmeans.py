@@ -170,6 +170,7 @@ class KMeans(object):
         # (can remove if fully implement sklearn functionality)
         self.do_sklearn = False
         example = np.array([1, 2, 3])
+        # pylint: disable=unidiomatic-typecheck
         if type(init) == type(example):
             print("init as ndarray of centers not yet supported")
             self.do_sklearn = True
