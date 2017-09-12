@@ -6,7 +6,7 @@
 
 ### Should I expect identical answers to sklearn? ###
 
-One should expect answerss similar to within the requested tolerance.
+One should expect answers similar to within the requested tolerance.
 
 For example, for GLM, a pure L2 problem will converge to similar
 answers to within the tolerance, but L1 could select different columns
@@ -49,12 +49,9 @@ Not yet.
 Currently there is no automatic fallback to the CPU algorithm in the
 event of memory filling up.
 
-### How do we handle missing values? Categoricals? Is one hot encoding
-  needed for categoricals? Missing levels for categoricals?How do we
-  handle missing values? Categoricals? Is one hot encoding needed for
-  categoricals? Missing levels for categoricals? ###
+### How do we handle missing values? Categoricals? Is one hot encoding needed for categoricals? Missing levels for categoricals?How do we handle missing values? Categoricals? Is one hot encoding needed for categoricals? Missing levels for categoricals? ###
 
-The input data must be pandas or numpy and completely numerical.  No
+Array inputs must be pandas or numpy and completely numerical.  No
 missings or categoricals are currently allowed.  So all munging must
 be done using other algorithms, such as those included in sklearn
 itself (that h2o4gpu inherits).
