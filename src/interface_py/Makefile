@@ -28,6 +28,8 @@ pyformat:
 
 all:
 
+	cat ../../requirements_buildonly.txt ../../requirements_runtime.txt > requirements.txt
+
 	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../xgboost/python-package/xgboost .
 	ln -sf ../../py3nvml/py3nvml .
