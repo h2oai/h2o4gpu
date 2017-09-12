@@ -31,9 +31,9 @@ Download the Python wheel file for python 3.5:
  
 Start a fresh pyenv or virtualenv session.
 
-Install the Python wheel file (Requires python 3.6). NOTE: This will
+Install the Python wheel file. NOTE: If you don't use a fresh environment, this will
 overwrite your py3nvml and xgboost installations to use our validated
-versions
+versions.
 
 ```
 pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
@@ -81,9 +81,10 @@ Among others, the solver can be used for the following classes of problems
 
   + GLM: Lasso, Ridge Regression, Logistic Regression, Elastic Net Regulariation,
   + KMeans
+  + Gradient Boosting Machine (GBM)
 
 Planned:
-  + GLM: Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
+  + GLM: Linear SVM, Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
   + SVD, PCA
 
 
