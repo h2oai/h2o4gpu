@@ -56,3 +56,11 @@ missings or categoricals are currently allowed.  So all munging must
 be done using other algorithms, such as those included in sklearn
 itself (that h2o4gpu inherits).
 
+### How to install python virtual environment ###
+
+For pyenv, you can follow instructions at: [pyenv](https://github.com/pyenv/pyenv/).
+
+Instead of default way to install, do instead the below to get the shared python libraries needed by numba:
+
+PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
+
