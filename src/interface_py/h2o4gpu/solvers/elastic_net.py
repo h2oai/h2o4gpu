@@ -10,15 +10,13 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from sklearn.externals import six
-from sklearn.utils.fixes import signature
 from tabulate import tabulate
 
-from h2o4gpu.libs.lib_elastic_net import GPUlib, CPUlib
-from h2o4gpu.solvers.utils import device_count, _get_data, _data_info, \
+from ..libs.lib_elastic_net import GPUlib, CPUlib
+from ..solvers.utils import device_count, _get_data, _data_info, \
     _convert_to_ptr, _check_equal
-from h2o4gpu.typecheck.typechecks import (assert_is_type, numpy_ndarray,
-                                          pandas_dataframe)
+from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
+                                    pandas_dataframe)
 
 
 class GLM(object):
@@ -1515,6 +1513,7 @@ class GLM(object):
 
 #introspect the constructor arguments to find the model parameters
 #to represent
+        from ..utils.fixes import signature
         init_signature = signature(init)
         #Consider the constructor parameters excluding 'self'
         parameters = [
@@ -1569,6 +1568,7 @@ class GLM(object):
             #Simple optimization to gain speed(inspect is slow)
             return self
         valid_params = self.get_params(deep=True)
+        from ..externals import six
         for key, value in six.iteritems(params):
             split = key.split('__', 1)
             if len(split) > 1:

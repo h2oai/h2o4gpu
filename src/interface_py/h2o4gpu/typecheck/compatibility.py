@@ -111,10 +111,8 @@ def _disabled_function(name):
     #noinspection PyUnusedLocal
     def disabled(*args, **kwargs):
         """Disabled function, DO NOT USE."""
-        raise NameError(
-            "Function %s is not available in Python 3,"
-            " and was disabled in Python 2 as well."
-            % name)
+        raise NameError("Function %s is not available in Python 3,"
+                        " and was disabled in Python 2 as well." % name)
 
     return disabled
 

@@ -43,7 +43,8 @@ RUN \
 
 RUN \
     rm -rf h2oai_env && \
-    mkdir h2oai_env && \
+    mkdir -p h2oai_env && \
+    mkdir -p .pylint.d && \
     virtualenv --python=/usr/bin/python3.6 h2oai_env && \
     pip install setuptools --no-cache-dir
 

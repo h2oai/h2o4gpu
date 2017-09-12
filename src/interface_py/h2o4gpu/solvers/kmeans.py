@@ -9,13 +9,16 @@ import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
     POINTER, cast
 
+import warnings
+
 import numpy as np
 
-from h2o4gpu.libs.lib_kmeans import GPUlib, CPUlib
-from h2o4gpu.solvers.utils import device_count, _check_data_content, \
+from ..libs.lib_kmeans import GPUlib, CPUlib
+from ..solvers.utils import device_count, _check_data_content, \
     _get_data
-from h2o4gpu.typecheck.typechecks import assert_is_type, assert_satisfies
-from h2o4gpu.types import cptr
+from ..typecheck.typechecks import assert_is_type, assert_satisfies
+from ..types import cptr
+
 
 
 class KMeans(object):
@@ -28,11 +31,62 @@ class KMeans(object):
         The number of clusters to form as well as the number of
         centroids to generate.
 
+    :param init : {'k-means++', 'random' or an ndarray}
+        Method for initialization, defaults to 'k-means++':
+        'k-means++' : selects initial cluster centers for k-mean
+        clustering in a smart way to speed up convergence. See section
+        Notes in k_init for more details.
+        'random': choose k observations (rows) at random from data for
+        the initial centroids.
+        If an ndarray is passed, it should be of shape (n_clusters, n_features)
+        and gives the initial centers.
+
+    :param n_init : int, default: 1
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+
     :param max_iter : int, optional, default: 1000
         Maximum number of iterations of the algorithm.
 
     :param tol : int, optional, default: 1e-4
         Relative tolerance to declare convergence.
+
+    :param precompute_distances : {'auto', True, False}
+        Precompute distances (faster but takes more memory).
+        'auto' : do not precompute distances if n_samples * n_clusters > 12
+        million. This corresponds to about 100MB overhead per job using
+        double precision.
+        True : always precompute distances
+        False : never precompute distances
+
+    :param verbose : int, optional, default 0
+        Logger verbosity level.
+
+    :param random_state : int or array_like, optional, default: None
+        random_state for RandomState.
+        Must be convertible to 32 bit unsigned integers.
+
+    :param copy_x : boolean, default True
+        When pre-computing distances it is more numerically accurate to center
+        the data first.  If copy_x is True, then the original data is not
+        modified.  If False, the original data is modified, and put back before
+        the function returns, but small numerical differences may be introduced
+        by subtracting and then adding the data mean.
+
+    :param n_jobs : int
+        The number of jobs to use for the computation. This works by computing
+        each of the n_init runs in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
+    :param algorithm : "auto", "full" or "elkan", default="auto"
+        K-means algorithm to use. The classical EM-style algorithm is "full".
+        The "elkan" variation is more efficient by using the triangle
+        inequality, but currently doesn't support sparse data. "auto" chooses
+        "elkan" for dense data and "full" for sparse data.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
@@ -42,27 +96,18 @@ class KMeans(object):
         < 0 means all possible GPUs on the machine.
         0 means no GPUs, run on CPU.
 
-    :param init_from_data : boolean, optional, default: False
-        If set to True, cluster centers will be initialized
-        using random training data points.
-        If set to False, cluster centers will be generated
-        completely randomly.
-
     :param init_data : "random", "selectstrat" or
                 "randomselect", optional, default: "randomselect"
-
-    :param verbose : int, optional, default 0
-        Logger verbosity level.
-
-    :param seed : int or array_like, optional, default: None
-        Seed for RandomState. Must be convertible to 32 bit unsigned integers.
 
     :param do_checks : int, optional, default: 1
         If set to 0 GPU error check will not be performed.
 
     Attributes:
         cluster_centers_ : array, [n_clusters, n_features], Cluster centers
-        labels_ : array, [n_rows,], Labels assigned to each row during fitting.
+        labels_ : array, [n_rows,],
+            Labels assigned to each row during fitting.
+        inertia_ : float Sum of distances of samples
+            to their closest cluster center.
 
     Example:
         >>> from h2o4gpu import KMeans
@@ -75,35 +120,86 @@ class KMeans(object):
         >>> kmeans.cluster_centers_
     """
 
-    def __init__(self,
-                 n_clusters=8,
-                 max_iter=300,
-                 tol=1e-4,
-                 gpu_id=0,
-                 n_gpus=-1,
-                 init_from_data=False,
-                 init_data="randomselect",
-                 verbose=0,
-                 seed=None,
-                 do_checks=1):
+    def __init__(
+            self,
+            # sklearn API (but with possibly different choices for defaults)
+            n_clusters=8,
+            init='random',
+            n_init=1,
+            max_iter=300,
+            tol=1e-4,
+            precompute_distances='auto',
+            verbose=0,
+            random_state=None,
+            copy_x=True,
+            n_jobs=1,
+            algorithm='auto',
+            # Beyond sklearn (with optimal defaults)
+            gpu_id=0,
+            n_gpus=-1,
+            init_data="randomselect",
+            do_checks=1):
 
         assert_is_type(n_clusters, int)
+        assert_is_type(init, str, np.ndarray)
+        assert_is_type(n_init, int)
         assert_is_type(max_iter, int)
-        assert_is_type(tol, float)
+        assert_is_type(tol, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(precompute_distances, str, bool)
+        assert_is_type(verbose, int)
+        assert_is_type(random_state, int, None)
+        assert_is_type(copy_x, bool)
+        assert_is_type(n_jobs, int)
+        assert_is_type(algorithm, str)
+
         assert_is_type(gpu_id, int)
         assert_is_type(n_gpus, int)
-        assert_is_type(init_from_data, bool)
         assert_is_type(init_data, str)
-        assert_is_type(verbose, int)
-        assert_is_type(seed, int, None)
         assert_is_type(do_checks, int)
 
+        # setup backup to sklearn class
+        # (can remove if fully implement sklearn functionality)
+        self.do_sklearn = False
+        example = np.array([1, 2, 3])
+        # pylint: disable=unidiomatic-typecheck
+        if type(init) == type(example):
+            print("WARNING: init as ndarray of centers not yet supported."
+                  "  Using sklearn.")
+            self.do_sklearn = True
+        if init == "k-means++":
+            print("WARNING: init as k-means++ not yet supported."
+                  "  Using sklearn.")
+            self.do_sklearn = True
+        if n_init != 1:
+            print("WARNING: n_init not supported currently."
+                  "  Still using h2o4gpu.")
+        if precompute_distances != "auto":
+            print("WARNING: precompute_distances not used."
+                  "  Still using h2o4gpu.")
+
+        # fix-up tol in case input was numpy
+        example = np.fabs(1.0)
+        if type(tol) == type(example):
+            tol = tol.item()
+
+        if self.do_sklearn:
+            from h2o4gpu.cluster import KMeans_sklearn
+            self.modelsklearn = KMeans_sklearn(
+                n_clusters, init, n_init, max_iter, tol, precompute_distances,
+                verbose, random_state, copy_x, n_jobs, algorithm)
+
+        # Things to do if not using sklearn
+        # sklearn option overrides detailed option
+        if init == 'random':
+            init_data = "randomselect"
+
+        self.init = init
         self._n_clusters = n_clusters
         self._gpu_id = gpu_id
         (self.n_gpus, self.devices) = device_count(n_gpus)
 
         self._max_iter = max_iter
-        self.init_from_data = init_from_data
         self.init_data = init_data
         self.tol = tol
         self._did_sklearn_fit = 0
@@ -112,65 +208,119 @@ class KMeans(object):
 
         self.lib = self._load_lib()
 
-        if seed is None:
+        if random_state is None:
             import random
-            self.seed = random.randint(0, 32000)
+            self.random_state = random.randint(0, 32000)
         else:
-            self.seed = seed
+            self.random_state = random_state
 
         self.cluster_centers_ = None
 
         self.labels_ = None
 
+        self.inertia_ = None  # TODO: Not set yet
+
         self.sklearn_model = None
 
-    def get_params(self):
-        """Get parameters for this solver as a key-value dictionary.
+    @classmethod
+    def _get_param_names(cls):
+        """Get parameter names for the estimator"""
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
+        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
+        if init is object.__init__:
+            # No explicit constructor to introspect
+            return []
 
-        :return:
-            Mapping of string (parameter name) to its value.
+            # introspect the constructor arguments to find the model parameters
+            # to represent
+        from ..utils.fixes import signature
+        init_signature = signature(init)
+        # Consider the constructor parameters excluding 'self'
+        parameters = [
+            p for p in init_signature.parameters.values()
+            if p.name != 'self' and p.kind != p.VAR_KEYWORD
+        ]
+        for p in parameters:
+            if p.kind == p.VAR_POSITIONAL:
+                raise RuntimeError("h2o4gpu GLM estimator should always "
+                                   "specify their parameters in the signature"
+                                   " of their __init__ (no varargs)."
+                                   " %s with constructor %s doesn't "
+                                   " follow this convention." %
+                                   (cls, init_signature))
+                # Extract and sort argument names excluding 'self'
+        return sorted([p.name for p in parameters])
+
+    def get_params(self, deep=True):
+        """Get parameters for this estimator.
+
+        :param bool deep : If True, will return the parameters for this
+            estimator and contained subobjects that are estimators.
+
+        :returns dict params : Parameter names mapped to their values.
         """
-        params = {
-            'n_clusters': self._n_clusters,
-            'n_gpus': self.n_gpus,
-            'max_iter': self._max_iter,
-            'init': 'random',
-            'algorithm': 'auto',
-            'precompute_distances': True,
-            'tol': self.tol,
-            'n_jobs': -1,
-            'random_state': self.seed,
-            'verbose': self.verbose,
-            'copy_x': True
-        }
-        return params
+        if self.do_sklearn:
+            return self.modelsklearn.get_params(deep=deep)
 
-    def set_params(self,
-                   n_clusters=None,
-                   n_gpus=None,
-                   max_iter=None,
-                   tol=None,
-                   random_state=None,
-                   verbose=None):
+        out = dict()
+        for key in self._get_param_names():
+            # We need deprecation warnings to always be on in order to
+            # catch deprecated param values.
+            # This is set in utils / __init__.py but it gets overwritten
+            # when running under python3 somehow.
+            warnings.simplefilter("always", DeprecationWarning)
+            try:
+                with warnings.catch_warnings(record=True) as w:
+                    value = getattr(self, key, None)
+                if w and w[0].category == DeprecationWarning:
+                    # if the parameter is deprecated, don't show it
+                    continue
+            finally:
+                warnings.filters.pop(0)
+
+                # XXX : should we rather test if instance of estimator ?
+            if deep and hasattr(value, 'get_params'):
+                deep_items = value.get_params().items()
+                out.update((key + '__' + k, val) for k, val in deep_items)
+            out[key] = value
+        return out
+
+    def set_params(self, **params):
         """Set the parameters of this solver.
 
         :return: self
         """
-        if n_clusters is not None:
-            self._print_set("n_clusters", self._n_clusters, n_clusters)
-            self._n_clusters = n_clusters
-        if n_gpus is not None:
-            self._print_set("n_gpus", self.n_gpus, n_gpus)
-            self.n_gpus = n_gpus
-        if max_iter is not None:
-            self._print_set("max_iter", self._max_iter, max_iter)
-            self._max_iter = max_iter
-        if random_state is not None:
-            self.seed = random_state
-        if verbose is not None:
-            self.verbose = verbose
-        if tol is not None:
-            self.tol = tol
+        if self.do_sklearn:
+            return self.modelsklearn.set_params(params)
+        if not params:
+            # Simple optimization to gain speed(inspect is slow)
+            return self
+        valid_params = self.get_params(deep=True)
+        from ..externals import six
+        for key, value in six.iteritems(params):
+            split = key.split('__', 1)
+            if len(split) > 1:
+                # nested objects case
+                name, sub_name = split
+                if name not in valid_params:
+                    raise ValueError(
+                        'Invalid parameter %s for estimator %s. '
+                        'Check the list of available parameters '
+                        'with `estimator.get_params().keys()`.' % (name,
+                                                                   self))
+                sub_object = valid_params[name]
+                sub_object.set_params(**{sub_name: value})
+            else:
+                # simple objects case
+                if key not in valid_params:
+                    raise ValueError(
+                        'Invalid parameter %s for estimator %s. '
+                        'Check the list of available parameters '
+                        'with `estimator.get_params().keys()`.' %
+                        (key, self.__class__.__name__))
+                setattr(self, key, value)
+        return self
 
     def fit(self, X, y=None):
         """Compute cluster centers using KMeans algorithm.
@@ -194,6 +344,8 @@ class KMeans(object):
         :param y: array-like, optional, shape=(n_samples, 1)
             Initial labels for training.
         """
+        if self.do_sklearn:
+            return self.modelsklearn.fit(X=X, y=y)
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
         _check_data_content(self.do_checks, "X", X_np)
@@ -242,15 +394,18 @@ class KMeans(object):
         :return: array of shape [n_samples,]
                 A cluster index for each record
         """
+        if self.do_sklearn:
+            return self.modelsklearn.predict(X=X)
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         _check_data_content(self.do_checks, "X", X_np)
         X_np, c_data, _ = self._to_cdata(X_np)
-        c_init_from_data = 0
+        c_init = 0
         c_init_data = 0
 
-        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
+        _, c_centroids, _ = self._to_cdata(
+            self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -258,19 +413,19 @@ class KMeans(object):
         data_ord = ord('c' if np.isfortran(X_np) else 'r')
 
         if self.double_precision == 0:
-            lib.make_ptr_float_kmeans(1, self.verbose, self.seed, self._gpu_id,
-                                      self.n_gpus, rows, cols,
+            lib.make_ptr_float_kmeans(1, self.verbose, self.random_state,
+                                      self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
-                                      self._max_iter, c_init_from_data,
+                                      self._max_iter, c_init,
                                       c_init_data, self.tol, c_data, None,
                                       c_centroids, None, pointer(c_res))
         else:
-            lib.make_ptr_double_kmeans(1, self.verbose, self.seed, self._gpu_id,
-                                       self.n_gpus, rows, cols,
-                                       c_int(data_ord), self._n_clusters,
-                                       self._max_iter, c_init_from_data,
-                                       c_init_data, self.tol, c_data, None,
-                                       c_centroids, None, pointer(c_res))
+            lib.make_ptr_double_kmeans(
+                1, self.verbose, self.random_state, self._gpu_id,
+                self.n_gpus, rows, cols,
+                c_int(data_ord), self._n_clusters, self._max_iter,
+                c_init, c_init_data, self.tol, c_data, None,
+                c_centroids, None, pointer(c_res))
 
         preds = np.fromiter(
             cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
@@ -302,11 +457,14 @@ class KMeans(object):
         :return: array, shape [n_samples, k]
             Distances to each cluster for each row.
         """
+        if self.do_sklearn:
+            return self.modelsklearn.transform(X=X)
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         X_np, c_data, c_data_type = self._to_cdata(X_np)
-        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
+        _, c_centroids, _ = self._to_cdata(
+            self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -357,6 +515,8 @@ class KMeans(object):
         :return: array, shape [n_samples, k]
             Distances to each cluster for each row.
         """
+        if self.do_sklearn:
+            return self.modelsklearn.fit_transform(X=X, y=y)
         return self.fit(X, y).transform(X)
 
     def fit_predict(self, X, y=None):
@@ -372,7 +532,17 @@ class KMeans(object):
         :return: array of shape [n_samples,]
             A cluster index for each record
         """
+        if self.do_sklearn:
+            return self.modelsklearn.fit_predict(X=X, y=y)
         return self.fit(X, y).labels_
+
+    def score(self, X, y=None):
+        # TODO: No such scheme for our class yet,
+        # So force use of sklearn version
+        if self.do_sklearn or 1 == 1:
+            return self.modelsklearn.score(X=X, y=y)
+        else:
+            pass
 
     def _fit(self, data, labels):
         """Actual method calling the underlying fitting implementation."""
@@ -380,7 +550,10 @@ class KMeans(object):
 
         data, c_data_ptr, data_ctype = self._to_cdata(data)
 
-        c_init_from_data = 0 if self.init_from_data else 1
+        if self.init == "random" or self.init == "k-means++":
+            c_init = 1
+        else:
+            c_init = 0
 
         if self.init_data == "random":
             c_init_data = 0
@@ -407,17 +580,17 @@ class KMeans(object):
 
         if self.double_precision == 0:
             status = lib.make_ptr_float_kmeans(
-                0, self.verbose, self.seed, self._gpu_id, self.n_gpus, rows,
-                cols,
+                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
                 None, pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
-                0, self.verbose, self.seed, self._gpu_id, self.n_gpus, rows,
-                cols,
+                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init_from_data, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
                 None, pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
@@ -473,7 +646,7 @@ class KMeans(object):
         """
         if y is None:
             from numpy.random import RandomState
-            ynp = RandomState(self.seed).randint(rows, size=rows) % \
+            ynp = RandomState(self.random_state).randint(rows, size=rows) % \
                   self._n_clusters
         else:
             ynp, _, _, _, _, _ = _get_data(y)
