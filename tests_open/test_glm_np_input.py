@@ -84,6 +84,22 @@ def func2():
     assert np.fabs(result3 - 40) < 2.0*tol
 
 
+# test for higher precision linear fit (exact values)
+# No early stopping and low tolerance
+def func3():
+    X = np.array([1,2,3,4,5,6,7,8,9,10])    
+    X = X.astype(np.float32)
+    
+    a = 2
+    b = 10
+    y = a * X + b
+
+    lm = LinearRegression(glm_stop_early=False, tol=1e-6)
+    lm.fit(X, y)
+
+    assert lm.predict(np.array([15.0])) == 40.
+    assert lm.predict(np.array([16.0])) == 42.
+
 #
 #
 def test_glm_np_input(): func()
@@ -91,9 +107,11 @@ def test_glm_np_input(): func()
 
 def test_glm_np_input_integer(): func2()
 
+def test_glm_np_exact(): func3()
 
 #
 #
 if __name__ == '__main__':
     test_glm_np_input()
     test_glm_np_input_integer()
+    test_glm_np_exact()

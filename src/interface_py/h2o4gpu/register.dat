@@ -1,4 +1,5 @@
 # filename           # initfile                             Original Class      Renamed To                   appendcommand
+<<<<<<< HEAD
 cluster/k_means_.py  cluster/__init__.py                    AKMeans              AKMeans_sklearn               "from ..solvers.kmeans import KMeans"
 cluster/bicluster.py cluster/__init__.py                    AKMeans              AKMeans_sklearn               "from ..solvers.kmeans import KMeans"
 linear_model/ridge.py linear_model/__init__.py              ARidge               ARidge_sklearn                "from ..solvers.ridge import Ridge"
