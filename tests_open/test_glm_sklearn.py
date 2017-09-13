@@ -21,7 +21,7 @@ class TestGlmSklearn(object):
         os.environ['SCIKIT_LEARN_DATA'] = "open_data"
 
     @staticmethod
-    def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata=0):
+    def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata=0, double_precision=False):
         name = str(sys._getframe().f_code.co_name)
         t = time.time()
     
@@ -89,7 +89,9 @@ class TestGlmSklearn(object):
             X = data.data[0:sizetokeep]
         y = data.target[0:sizetokeep]
         print("Got Data")
-    
+
+        import numpy as np
+
         # Create 0.8/0.2 train/test split
         print("Split Data")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8,
@@ -130,15 +132,22 @@ class TestGlmSklearn(object):
         y_test = y_test_pd.values
         y_train = y_train_pd.values
     
-    
-    
+        if double_precision:
+            mynptype = np.float64
+        else:
+            mynptype = np.float32
+        X_test = X_test.astype(mynptype)
+        X_train = X_train.astype(np.float64)
+        y_test = y_test.astype(np.float64)
+        y_train = y_train.astype(np.float64)
+
         # TODO: Should write this to file and avoid doing encoding if already exists
     
         t1 = time.time()
         print("Start GLM")
         rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                         nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name, tolerance=0.2)
+                                        validFraction=validFraction, verbose=10, name=name, tolerance=0.2, tol=1E-2, tol_seek_factor=1.0)
         print("End GLM")
     
         # check rmse
@@ -163,6 +172,8 @@ class TestGlmSklearn(object):
     @pytest.mark.skip("No direct handling of compressed data yet (can convert, but want to add this feature later)")
     def test_glm_sklearn_gpu_data1(self): TestGlmSklearn. fun(whichdata=1)
 
+    # data2 test takes excessive iterations per glm model (i.e. per alpha/lambda).
+    # Perhaps adapative rho improvements will help.
     def test_glm_sklearn_gpu_data2(self): TestGlmSklearn. fun(whichdata=2)
 
     @pytest.mark.skip("Unknown")

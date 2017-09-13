@@ -26,6 +26,10 @@ class Ridge(GLM):
 
     :param float tol: tolerance.  Default is 1E-2.
 
+    :param float tol_seek_factor : factor of tolerance to seek
+        once below null model accuracy.  Default is 1E-1, so seeks tolerance
+        of 1E-3 once below null model accuracy for tol=1E-2.
+
     :param bool lambda_stop_early: Stop early when there is no more relative
         improvement on train or validation. Default is True.
 
@@ -63,6 +67,7 @@ class Ridge(GLM):
                  n_lambdas=100,
                  n_folds=1,
                  tol=1E-2,
+                 tol_seek_factor=1E-1,
                  lambda_stop_early=True,
                  glm_stop_early=True,
                  glm_stop_early_error_fraction=1.0,
@@ -81,6 +86,7 @@ class Ridge(GLM):
             n_folds=n_folds,
             n_alphas=1,
             tol=tol,
+            tol_seek_factor=tol_seek_factor,
             lambda_stop_early=lambda_stop_early,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,
