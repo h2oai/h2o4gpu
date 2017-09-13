@@ -72,7 +72,9 @@ incapable of an important scikit-learn feature, we revert to the
 scikit-learn class.
 
 Another primary goal is to support all operations the GPU
-via the [GOAI initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).
+via the [GOAI initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).  This involves
+ensuring the GPU algorithms can take and return GPU pointers to data instead of going back to the host.  In scikit-learn API language
+these are called fit_ptr, predict_ptr, transform_ptr, etc., where ptr stands for memory pointer.
 
 
 ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg
