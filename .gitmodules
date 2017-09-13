@@ -10,3 +10,6 @@
 [submodule "scikit-learn"]
 	path = scikit-learn
 	url = https://github.com/h2oai/scikit-learn.git
+[submodule "tests/googletest"]
+	path = tests/googletest
+	url = https://github.com/google/googletest.git
