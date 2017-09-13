@@ -35,7 +35,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "gpu && nvidia-docker"
+                label "gpu && nvidia-docker && !mr-dl16"
             }
 
             steps {
@@ -99,7 +99,7 @@ pipeline {
 
         stage('Publish to S3') {
             agent {
-                label "linux"
+                label "linux && !mr-dl16"
             }
 
             steps {
@@ -144,7 +144,7 @@ pipeline {
     }
     post {
         failure {
-            node('mr-dl11') {
+            node('linux && !mr-dl16') {
                 script {
                     // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
                     def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
