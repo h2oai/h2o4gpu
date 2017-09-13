@@ -48,10 +48,6 @@ int main(int argc, char **argv) {
       data[i * cols + j] = static_cast<real_t>(drand48());
     }
   }
-  std::vector<int> labels(rows);
-  for (unsigned int i=0;i<rows;i++) {
-    labels[i] = static_cast<int>(rand() % k);
-  }
   int verbose=1;
   const char ord='r';
   int init_from_data=1;//true as set above, otherwise internally will set initial centroids "smartly"
@@ -62,7 +58,7 @@ int main(int argc, char **argv) {
   std::vector<real_t> centroids(1);
   centroids[0] = static_cast<real_t>(drand48());
 
-  h2o4gpukmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_data, init_data, threshold, &data[0], &labels[0], &centroids[0], &preds, &pred_labels);
+  h2o4gpukmeans::makePtr_dense<real_t>(dopredict, verbose, seed, gpu_id, n_gpu, rows, cols, ord, k, max_iterations, init_from_data, init_data, threshold, &data[0], &centroids[0], &preds, &pred_labels);
 
   // report something about centroids that site in res as k*cols data block
 #endif

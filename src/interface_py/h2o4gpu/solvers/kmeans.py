@@ -224,8 +224,6 @@ class KMeans(object):
         self.verbose = verbose
         self.do_checks = do_checks
 
-        self.lib = self._load_lib()
-
         if random_state is None:
             import random
             self.random_state = random.randint(0, 32000)
@@ -359,19 +357,14 @@ class KMeans(object):
 
         :param X: array-like, shape=(n_samples, n_features)
             Training instances.
-        :param y: array-like, optional, shape=(n_samples, 1)
-            Initial labels for training.
         """
         if self.do_sklearn:
             return self.modelsklearn.fit(X=X, y=y)
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
         _check_data_content(self.do_checks, "X", X_np)
-        rows = np.shape(X_np)[0]
 
-        y_np = self._validate_y(y, rows)
-
-        self._fit(X_np, y_np)
+        self._fit(X_np)
 
         self._did_sklearn_fit = 0
 
@@ -387,9 +380,6 @@ class KMeans(object):
         if self._did_sklearn_fit == 0:
             X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
             _check_data_content(self.do_checks, "X", X_np)
-            rows = np.shape(X_np)[0]
-
-            y_np = self._validate_y(y, rows)
 
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
@@ -398,10 +388,10 @@ class KMeans(object):
                 max_iter=1,
                 init=self.cluster_centers_,
                 n_init=1)
-            self.sklearn_model.fit(X_np, y_np)
-            #The code above initializes the SKlearn KMeans model,
-            #but due to validations we need to run 1 extra iteration,
-            #which might alter the cluster centers so we override them
+            self.sklearn_model.fit(X_np)
+            # The code above initializes the SKlearn KMeans model,
+            # but due to validations we need to run 1 extra iteration,
+            # which might alter the cluster centers so we override them
             self.sklearn_model.cluster_centers_ = self.cluster_centers_
 
     def predict(self, X):
@@ -458,13 +448,10 @@ class KMeans(object):
         """
         _check_data_content(self.do_checks, "X", X)
 
-        rows = np.shape(X)[0]
-        y_np = self._validate_y(y, rows)
-
-        self.sklearn_fit(X, y_np)
+        self.sklearn_fit(X)
         return self.sklearn_model.predict(X)
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         """Transform X to a cluster-distance space.
 
         Each dimension is the distance to a cluster center.
@@ -476,7 +463,7 @@ class KMeans(object):
             Distances to each cluster for each row.
         """
         if self.do_sklearn:
-            return self.modelsklearn.transform(X=X)
+            return self.modelsklearn.transform(X=X, y=y)
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
@@ -517,8 +504,8 @@ class KMeans(object):
         """
 
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit(X, y)
-        return self.sklearn_model.transform(X)
+        self.sklearn_fit(X)
+        return self.sklearn_model.transform(X, y)
 
     def fit_transform(self, X, y=None):
         """Perform fitting and transform X.
@@ -535,7 +522,7 @@ class KMeans(object):
         """
         if self.do_sklearn:
             return self.modelsklearn.fit_transform(X=X, y=y)
-        return self.fit(X, y).transform(X)
+        return self.fit(X).transform(X)
 
     def fit_predict(self, X, y=None):
         """Perform fitting and prediction on X.
@@ -557,12 +544,12 @@ class KMeans(object):
     def score(self, X, y=None):
         # TODO: No such scheme for our class yet,
         # So force use of sklearn version
-        if self.do_sklearn or 1 == 1:
+        if self.do_sklearn:
             return self.modelsklearn.score(X=X, y=y)
         else:
             pass
 
-    def _fit(self, data, labels):
+    def _fit(self, data):
         """Actual method calling the underlying fitting implementation."""
         data_ord = ord('c' if np.isfortran(data) else 'r')
 
@@ -589,7 +576,6 @@ class KMeans(object):
 
         pred_centers = c_void_p(0)
         pred_labels = c_void_p(0)
-        c_labels = cptr(labels, dtype=c_int)
 
         lib = self._load_lib()
 
@@ -601,14 +587,14 @@ class KMeans(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr,
                 None, pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
+                c_init, c_init_data, self.tol, c_data_ptr,
                 None, pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
@@ -655,23 +641,6 @@ class KMeans(object):
                 "Unsupported data type %s, "
                 "should be either np.float32 or np.float64" % data.dtype)
         return data, cptr(data, dtype=my_ctype), my_ctype
-
-    def _validate_y(self, y, rows):
-        """Validate contents of y
-
-        If y is None then generates random values.
-        If y is not None then checks the data content.
-        """
-        if y is None:
-            from numpy.random import RandomState
-            ynp = RandomState(self.random_state).randint(rows, size=rows) % \
-                  self._n_clusters
-        else:
-            ynp, _, _, _, _, _ = _get_data(y)
-            _check_data_content(self.do_checks, "y", ynp)
-
-        ynp = ynp.astype(np.int32)
-        return np.mod(ynp, self._n_clusters)
 
     def _print_verbose(self, level, msg):
         if self.verbose > level:
