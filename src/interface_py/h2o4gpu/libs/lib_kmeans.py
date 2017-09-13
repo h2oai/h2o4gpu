@@ -3,7 +3,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from ctypes import c_int, c_size_t, c_float, c_double, cdll
-from h2o4gpu.types import c_int_p, c_float_p, c_void_pp, c_double_p
+from h2o4gpu.types import c_float_p, c_void_pp, c_double_p
 
 
 class CPUlib:

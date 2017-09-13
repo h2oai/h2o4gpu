@@ -197,7 +197,7 @@ class KMeans(object):
             tol = tol.item()
 
         if self.do_sklearn:
-            from h2o4gpu.cluster import KMeans_sklearn
+            from sklearn.cluster import KMeans as KMeans_sklearn
             self.modelsklearn = KMeans_sklearn(
                 n_clusters, init, n_init, max_iter, tol, precompute_distances,
                 verbose, random_state, copy_x, n_jobs, algorithm)
@@ -370,6 +370,8 @@ class KMeans(object):
 
         return self
 
+    # y is here just for compatibility with sklearn api
+    # pylint: disable=unused-argument
     def sklearn_fit(self, X, y=None):
         """Instantiates a scikit-learn model using previously found,
         with fit(), centroids. """
@@ -425,14 +427,14 @@ class KMeans(object):
                                       self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
                                       self._max_iter, c_init,
-                                      c_init_data, self.tol, c_data, None,
+                                      c_init_data, self.tol, c_data,
                                       c_centroids, None, pointer(c_res))
         else:
             lib.make_ptr_double_kmeans(
                 1, self.verbose, self.random_state, self._gpu_id,
                 self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data, None,
+                c_init, c_init_data, self.tol, c_data,
                 c_centroids, None, pointer(c_res))
 
         preds = np.fromiter(
@@ -440,6 +442,8 @@ class KMeans(object):
         preds = np.reshape(preds, rows)
         return preds
 
+    # y is here just for compatibility with sklearn api
+    # pylint: disable=unused-argument
     def sklearn_predict(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
@@ -463,6 +467,7 @@ class KMeans(object):
             Distances to each cluster for each row.
         """
         if self.do_sklearn:
+            # pylint: disable=unexpected-keyword-arg
             return self.modelsklearn.transform(X=X, y=y)
         cols, rows = self._validate_centroids(X)
 
@@ -505,6 +510,7 @@ class KMeans(object):
 
         _check_data_content(self.do_checks, "X", X)
         self.sklearn_fit(X)
+        # pylint: disable=too-many-function-args
         return self.sklearn_model.transform(X, y)
 
     def fit_transform(self, X, y=None):
@@ -587,15 +593,15 @@ class KMeans(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr,
-                None, pointer(pred_centers), pointer(pred_labels))
+                c_init, c_init_data, self.tol, c_data_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr,
-                None, pointer(pred_centers), pointer(pred_labels))
+                c_init, c_init_data, self.tol, c_data_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 

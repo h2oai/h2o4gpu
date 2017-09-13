@@ -39,13 +39,12 @@ class TestKmeans(object):
             model_rerun.cluster_centers_, model_rerun2.cluster_centers_
         )
 
-        # model_all = KMeans(n_clusters=clusters, random_state=123).fit(X)
+        model_all = KMeans(n_clusters=clusters, random_state=123).fit(X)
 
         # Multi GPU should yield same result as single GPU
-        # TODO multi GPU returns wrong results
-        # assert np.allclose(
-        #     model.cluster_centers_, model_all.cluster_centers_
-        # )
+        assert np.allclose(
+            model.cluster_centers_, model_all.cluster_centers_
+        )
 
     def test_fit_vs_sk_iris(self):
         X = load_iris().data
@@ -104,11 +103,10 @@ class TestKmeans(object):
 
         model_rerun = KMeans(n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
 
-        # Choosing initial clusters for sklearn should yield similar result (stable clusters)
-        # TODO: Below fails, so our solution seems very different from what should be?
-        #assert np.allclose(
-        #    model.cluster_centers_, model_rerun.cluster_centers_
-        #)
+        # Choosing initial clusters for sklearn should yield similar result
+        assert np.allclose(
+           model.cluster_centers_, model_rerun.cluster_centers_
+        )
 
         # sklearn directly or our indirect should be same (and is)
         from sklearn.cluster import KMeans as KMeans_test
