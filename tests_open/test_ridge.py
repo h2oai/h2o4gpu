@@ -65,13 +65,17 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
     print("DONE.")
     sys.stdout.flush()
 
+# for now don't test folds with simple because h2o-3 can't handle it
+# for small data sets
+altfold = 1
+
 def test_glmridge_ipums_gpu_fold1_quick_0(): fun(nGPUs=1, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0)
 
 
 def test_glmridge_ipums_gpu_fold1_0(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0)
 
 
-def test_glmridge_ipums_gpu_fold5_0(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0)
+def test_glmridge_ipums_gpu_fold5_0(): fun(nGPUs=1, nFolds=altfold, nLambdas=20, nAlphas=3, validFraction=0)
 
 
 def test_glmridge_ipums_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nAlphas=3, validFraction=0.2)
@@ -80,7 +84,7 @@ def test_glmridge_ipums_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=5, nA
 def test_glmridge_ipums_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
-def test_glmridge_ipums_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=20, nAlphas=3, validFraction=0.2)
+def test_glmridge_ipums_gpu_fold5(): fun(nGPUs=1, nFolds=altfold, nLambdas=20, nAlphas=3, validFraction=0.2)
 
 
 def test_glmridge_ipums_gpu2_fold1_quick(): fun(nGPUs=2, nFolds=1, nLambdas=3, nAlphas=3, validFraction=0.2)

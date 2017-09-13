@@ -30,7 +30,7 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2):
 
     t1 = time.time()
     rmse_train, rmse_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name, solver="lasso")
+                                        validFraction=validFraction, verbose=0, name=name, solver="lasso", tolerance=0.2)
 
     # check rmse
     print(rmse_train[0, 0])

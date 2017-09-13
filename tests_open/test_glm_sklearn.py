@@ -138,7 +138,7 @@ class TestGlmSklearn(object):
         print("Start GLM")
         rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                         nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=0, name=name)
+                                        validFraction=validFraction, verbose=0, name=name, tolerance=0.2)
         print("End GLM")
     
         # check rmse
@@ -171,6 +171,7 @@ class TestGlmSklearn(object):
     @pytest.mark.skip("No multi-class yet")
     def test_glm_sklearn_gpu_data4(self): TestGlmSklearn. fun(whichdata=4)
 
+    @pytest.mark.skip("Currently response is constant, h2o-3 complains")
     def test_glm_sklearn_gpu_data5(self): TestGlmSklearn. fun(whichdata=5)
 
     def test_glm_sklearn_gpu_data6(self): TestGlmSklearn. fun(whichdata=6)
