@@ -49,8 +49,7 @@ def func():
     y_p = mm.predict(X_test)
     print(y_pred, np.round(y_pred))
 
-    # TO-DO: change the assertion once the logic to convert probabilities 
-    # to classes is implemented
+    # TO-DO: change the assertion once the logic to convert probabilities to classes is implemented
     assert (y_test == np.round(y_pred)).all() == True
     assert (y_pred == y_p).all() == True
 
