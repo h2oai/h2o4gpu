@@ -798,9 +798,6 @@ def run_glm(X,
 
 
 # Animation stuff
-import seaborn as sns
-sns.set_style("whitegrid")
-import pylab as pl
 
 def new_alpha(row_fold):
     if row_fold == 0:
@@ -842,6 +839,9 @@ def plot_glm_results(axis, results, best_rmse, cb):
     axis.set_title('Elastic Net Models Trained and Evaluated: ' + str(num_models), fontsize = 16)
 
     try:
+        import seaborn as sns
+        sns.set_style("whitegrid")
+        import pylab as pl
         from matplotlib.colors import ListedColormap
         cm = ListedColormap(sns.color_palette("RdYlGn", 10).as_hex())
         cf = axis.scatter(results['lambda'], results['alpha_prime'], c=results['rel_acc'],
