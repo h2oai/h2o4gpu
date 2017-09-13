@@ -71,6 +71,9 @@ own GPU versions.  In cases when our GPU class is currently
 incapable of an important scikit-learn feature, we revert to the
 scikit-learn class.
 
+Another primary goal is to support all operations the GPU
+via the [GOAI initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).
+
 
 ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg
  "ROADMAP.")
@@ -81,7 +84,7 @@ Among others, the solver can be used for the following classes of problems
 
   + GLM: Lasso, Ridge Regression, Logistic Regression, Elastic Net Regulariation,
   + KMeans
-  + Gradient Boosting Machine (GBM)
+  + Gradient Boosting Machine (GBM) via [XGBoost](https://devblogs.nvidia.com/parallelforall/gradient-boosting-decision-trees-xgboost-cuda/)
 
 Planned:
   + GLM: Linear SVM, Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
