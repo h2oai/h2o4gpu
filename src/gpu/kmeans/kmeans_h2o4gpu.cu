@@ -122,7 +122,6 @@ void copy_labels_shuffled(int verbose, std::vector<int> v, const char ord, thrus
   copy_data_shuffled(verbose, v, ord, labels, srclabels, q, n, npergpu, 1);
 }
 
-
 template<typename T>
 void copy_centroids_shuffled(int verbose, std::vector<int> v, const char ord, thrust::device_vector<T> &array,
                              const T *srcdata, int n, int k, int d) {
@@ -291,6 +290,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     std::random_shuffle(v.begin(), v.end());
   }
 
+  // Copy the data to devices
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
@@ -306,47 +306,40 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     }
   }
 
-  // get non-random centroids on 1 gpu, then share with rest.
-  if (init_from_data == 1) {
-    int masterq = 0;
-    CUDACHECK(cudaSetDevice(dList[masterq]));
-    copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
-    int bytecount = cols * k * sizeof(T); // all centroids
+  // Get random points as centroids
+  int masterq = 0;
+  CUDACHECK(cudaSetDevice(dList[masterq]));
+  copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
+  int bytecount = cols * k * sizeof(T); // all centroids
 
-    // copy centroids to rest of gpus asynchronously
-    std::vector < cudaStream_t * > streams;
-    streams.resize(n_gpu);
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
+  // Copy centroids to all devices
+  std::vector < cudaStream_t * > streams;
+  streams.resize(n_gpu);
+  for (int q = 0; q < n_gpu; q++) {
+    if (q == masterq) continue;
 
-      CUDACHECK(cudaSetDevice(dList[q]));
-      std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+    CUDACHECK(cudaSetDevice(dList[q]));
+    std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
 
-      streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
-      cudaStreamCreate(streams[q]);
-      cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
-                          dList[q],
-                          thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
-                          dList[masterq],
-                          bytecount,
-                          *(streams[q]));
-    }
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
-      cudaSetDevice(dList[q]);
-      cudaStreamSynchronize(*(streams[q]));
-    }
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
-      cudaSetDevice(dList[q]);
-      cudaStreamDestroy(*(streams[q]));
+    streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
+    cudaStreamCreate(streams[q]);
+    cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
+                        dList[q],
+                        thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
+                        dList[masterq],
+                        bytecount,
+                        *(streams[q]));
+  }
+  for (int q = 0; q < n_gpu; q++) {
+    if (q == masterq) continue;
+    cudaSetDevice(dList[q]);
+    cudaStreamDestroy(*(streams[q]));
 #if(DEBUGKMEANS)
-      thrust::host_vector<T> h_centroidq=*d_centroids[q];
-      for(int ii=0;ii<k*d;ii++){
-          fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
-      }
-#endif
+    thrust::host_vector<T> h_centroidq=*d_centroids[q];
+    for(int ii=0;ii<k*d;ii++){
+        fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
     }
+#endif
   }
 
   double timetransfer = static_cast<double>(timer<double>() - t0t);
@@ -356,7 +349,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   double t0 = timer<double>();
 
   int status = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, dList, n_gpu,
-                                 max_iterations, init_from_data, threshold, true);
+                                 max_iterations, threshold, true);
 
   if (status) {
     fprintf(stderr, "KMeans status was %d\n", status);
@@ -386,7 +379,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
   // The initial dataset was shuffled, we need to reshuffle the labels accordingly
   // This also reshuffles the initial permutation scheme v
-  if(init_data > 1) {
+  if (init_data > 1) {
     for (int i = 0; i < rows; i++) {
       while (v[i] != i) {
         int tmpIdx = v[v[i]];
@@ -431,11 +424,11 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                    const char ord, int k,
                    const T *srcdata, const T *centroids, void **pred_labels) {
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < cols * k; i++) {
+    for (int i = 0; i < cols * k; i++) {
       std::cout << centroids[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }
@@ -513,11 +506,11 @@ int kmeans_transform(int verbose,
                      const T *srcdata, const T *centroids,
                      void **preds) {
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < cols * k; i++) {
+    for (int i = 0; i < cols * k; i++) {
       std::cout << centroids[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }
@@ -564,11 +557,11 @@ int kmeans_transform(int verbose,
   *preds = h_pairwise_distances->data();
 
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < rows * cols; i++) {
+    for (int i = 0; i < rows * cols; i++) {
       std::cout << h_pairwise_distances->data()[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }

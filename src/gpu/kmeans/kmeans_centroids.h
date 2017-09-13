@@ -83,15 +83,65 @@ __global__ void calculate_centroids(int n, int d, int k,
 }
 
 template<typename T>
+__global__ void revert_zeroed_centroids(int d, int k,
+                                    T *tmp_centroids,
+                                    T *centroids,
+                                    int *counts) {
+  int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
+  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  if ((global_id_x < d) && (global_id_y < k)) {
+    if (counts[global_id_y] < 1) {
+      centroids[global_id_x + d * global_id_y] = tmp_centroids[global_id_x + d * global_id_y];
+    }
+  }
+}
+
+__global__ void normalize_counts(int k, int *counts) {
+  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  if (global_id_y < k && counts[global_id_y] < 1) {
+    counts[global_id_y] = 1;
+  }
+}
+
+template<typename T>
+__global__ void scale_centroids(int d, int k, int *counts, T *centroids) {
+  int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
+  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  if ((global_id_x < d) && (global_id_y < k)) {
+    int count = counts[global_id_y];
+    //To avoid introducing divide by zero errors
+    //If a centroid has no weight, we'll do no normalization
+    //This will keep its coordinates defined.
+    if (count < 1) {
+      count = 1;
+    }
+    T scale = 1.0 / T(count);
+    centroids[global_id_x + d * global_id_y] *= scale;
+  }
+}
+
+// Scale - should be true when running on a single GPU
+template<typename T>
 void find_centroids(int q, int n, int d, int k,
                     thrust::device_vector<T> &data,
                     thrust::device_vector<int> &labels,
                     thrust::device_vector<T> &centroids,
                     thrust::device_vector<int> &range,
                     thrust::device_vector<int> &indices,
-                    thrust::device_vector<int> &counts) {
+                    thrust::device_vector<int> &counts,
+                    bool scale) {
   int dev_num;
   cudaGetDevice(&dev_num);
+
+  // If no scaling then this step will be handled on the host
+  // when aggregating centroids from all GPUs
+  // Cache original centroids
+  thrust::device_vector<T> tmp_centroids;
+  if(scale) {
+    tmp_centroids = thrust::device_vector<T>(k*d);
+    memcpy(tmp_centroids, centroids);
+  }
+
   memcpy(indices, range);
   //Bring all labels with the same value together
   // TODO calculate_centroids doesn't really require ordered labels/data I think
@@ -106,14 +156,9 @@ void find_centroids(int q, int n, int d, int k,
   gpuErrchk(cudaDeviceSynchronize());
 #endif
 
-  // TODO should we really zero all of them?
-  // If centroid has no members, then this will leave centroid at (arbitrarily) zero position for all dimensions.
-  // Rather keep original position in case no members, so can gracefully add or remove members toward convergence.
-  // Required for ngpu>1 where average centroids.  I.e., if gpu_id=1 has a centroid that lost members, then the blind average drives the average centroid position toward zero.  This likely reduces its members, leading to run away case of centroids heading to zero.
-  //Initialize centroids to all zeros
+  // Need to zero this - the algo uses this array to accumulate values for each centroid
+  // which are then averaged to get a new centroid
   memzero(centroids);
-
-  //Initialize counts to all zeros
   memzero(counts);
 
   //Calculate centroids
@@ -130,10 +175,38 @@ void find_centroids(int q, int n, int d, int k,
           thrust::raw_pointer_cast(centroids.data()),
           thrust::raw_pointer_cast(counts.data()));
 
-#if(CHECK)
+  #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
+  #endif
+
+  // Scaling should take place on the GPU is n_gpus=1 so we don't
+  // move centroids and counts between host and device all the time for nothing
+  if(scale) {
+    // Revert only if `scale`, otherwise this will be taken care of in the host
+    revert_zeroed_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
+        0, cuda_stream[dev_num] >> >
+        (d, k,
+            thrust::raw_pointer_cast(tmp_centroids.data()),
+            thrust::raw_pointer_cast(centroids.data()),
+            thrust::raw_pointer_cast(counts.data()));
+
+    #if(CHECK)
+    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaDeviceSynchronize());
+    #endif
+
+    //Scale centroids
+    scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
+        0, cuda_stream[dev_num] >> >
+        (d, k,
+            thrust::raw_pointer_cast(counts.data()),
+            thrust::raw_pointer_cast(centroids.data()));
+#if(CHECK)
+    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaDeviceSynchronize());
 #endif
+  }
 }
 
 }

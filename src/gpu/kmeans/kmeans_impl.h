@@ -36,10 +36,6 @@ namespace kmeans {
   \param distances Distances from points to centroids. This vector has
   size n. It is passed by reference since it is shared with the caller
   and not copied.
-  \param init_from_data If true, the labels need to be initialized
-  before calling kmeans. If false, the centroids need to be
-  initialized before calling kmeans. Defaults to true, which means
-  the labels must be initialized.
   \param threshold This controls early termination of the kmeans
   iterations. If the ratio of points being reassigned to a different
   centroid is less than the threshold, than the iterations are
@@ -60,7 +56,6 @@ int kmeans(
     std::vector<int> dList,
     int n_gpu,
     int max_iterations,
-    int init_from_data = 0,
     double threshold = 1e-3,
     bool do_per_iter_check = true) {
 
@@ -75,6 +70,7 @@ int kmeans(
   thrust::host_vector<int> h_counts(k);
   thrust::host_vector<int> h_counts_tmp(k);
   thrust::host_vector<T> h_centroids(k * d);
+  h_centroids = *centroids[0]; // all should be equal
   thrust::host_vector<T> h_centroids_tmp(k * d);
 
   int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
@@ -130,18 +126,6 @@ int kmeans(
     }
 
     detail::make_self_dots(n / n_gpu, d, *data[q], *data_dots[q]);
-
-    if (init_from_data == 0) {
-      if (verbose) {
-        fprintf(stderr, "Before find_centroids: gpu: %d\n", q);
-        fflush(stderr);
-      }
-      detail::find_centroids(q, n / n_gpu, d, k,
-                             *data[q], *labels[q],
-                             *centroids[q], *range[q],
-                             *indices[q], *counts[q]);
-      // TODO average all the centroids and spread around
-    }
   }
 
   if (verbose) {
@@ -175,29 +159,59 @@ int kmeans(
                              *centroids[q],
                              *range[q],
                              *indices[q],
-                             *counts[q]);
+                             *counts[q],
+                             n_gpu <= 1
+      );
     }
 
-    //Average the centroids from each device
-    for (int p = 0; p < k * d; p++) h_centroids[p] = 0.0;
-    for (int p = 0; p < k; p++) h_counts[p] = 0.0;
-    for (int q = 0; q < n_gpu; q++) {
-      safe_cuda(cudaSetDevice(dList[q]));
-      detail::memcpy(h_centroids_tmp, *centroids[q]);
-      detail::memcpy(h_counts_tmp, *counts[q]);
-      detail::streamsync(dList[q]);
-      for (int p = 0; p < k * d; p++) h_centroids[p] += h_centroids_tmp[p];
-      for (int p = 0; p < k; p++) h_counts[p] += h_counts_tmp[p];
-    }
-    for (int p = 0; p < k; p++) {
-      for (int r = 0; r < d; r++) {
-        h_centroids[p * d + r] /= h_counts[p];
+    // Scale the centroids on host
+    if(n_gpu > 1) {
+      //Average the centroids from each device
+      for (int p = 0; p < k; p++) h_counts[p] = 0.0;
+      for (int q = 0; q < n_gpu; q++) {
+        safe_cuda(cudaSetDevice(dList[q]));
+        detail::memcpy(h_counts_tmp, *counts[q]);
+        detail::streamsync(dList[q]);
+        for (int p = 0; p < k; p++) h_counts[p] += h_counts_tmp[p];
       }
-    }
-    //Copy the averaged centroids to each device
-    for (int q = 0; q < n_gpu; q++) {
-      safe_cuda(cudaSetDevice(dList[q]));
-      detail::memcpy(*centroids[q], h_centroids);
+
+      // Zero the centroids only if any of the GPUs actually updated them
+      for (int p = 0; p < k; p++) {
+        for (int r = 0; r < d; r++) {
+          if (h_counts_tmp[p] != 0) {
+            h_centroids[p*d + r] = 0.0;
+          }
+        }
+      }
+
+      for (int q = 0; q < n_gpu; q++) {
+        safe_cuda(cudaSetDevice(dList[q]));
+        detail::memcpy(h_centroids_tmp, *centroids[q]);
+        detail::streamsync(dList[q]);
+        for (int p = 0; p < k; p++) {
+          for (int r = 0; r < d; r++) {
+            if (h_counts_tmp[p] != 0) {
+              h_centroids[p*d + r] += h_centroids_tmp[p*d + r];
+            }
+          }
+        }
+      }
+
+      for (int p = 0; p < k; p++) {
+        for (int r = 0; r < d; r++) {
+          // If 0 counts that means we leave the original centroids
+          if(h_counts[p] == 0) {
+            h_counts[p] = 1;
+          }
+          h_centroids[p * d + r] /= h_counts[p];
+        }
+      }
+
+      //Copy the averaged centroids to each device
+      for (int q = 0; q < n_gpu; q++) {
+        safe_cuda(cudaSetDevice(dList[q]));
+        detail::memcpy(*centroids[q], h_centroids);
+      }
     }
 
     // whether to perform per iteration check
@@ -244,25 +258,17 @@ int kmeans(
   }
 
 // Final relabeling - uses final centroids
-  for (
-      int q = 0;
-      q < n_gpu;
-      q++) {
+  for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
 
-    detail::calculate_distances(verbose, q, n
-                                    / n_gpu, d, k,
+    detail::calculate_distances(verbose, q, n / n_gpu, d, k,
                                 *data[q], *centroids[q], *data_dots[q],
                                 *centroid_dots[q], *pairwise_distances[q]);
 
-    detail::relabel(n
-                        / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
   }
 
-  for (
-      int q = 0;
-      q < n_gpu;
-      q++) {
+  for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaFree(d_changes[q]));
     detail::labels_close();
