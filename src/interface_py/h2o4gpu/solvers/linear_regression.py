@@ -20,6 +20,10 @@ class LinearRegression(GLM):
 
     :param float tol: tolerance.  Default is 1E-2.
 
+    :param float tol_seek_factor : factor of tolerance to seek
+        once below null model accuracy.  Default is 1E-1, so seeks tolerance
+        of 1E-3 once below null model accuracy for tol=1E-2.
+
     :param bool glm_stop_early: Stop early when there is no more relative
         improvement in the primary and dual residuals for ADMM.
         Default is True.
@@ -42,6 +46,7 @@ class LinearRegression(GLM):
                  fit_intercept=True,
                  n_folds=1,
                  tol=1E-2,
+                 tol_seek_factor=1E-1,
                  glm_stop_early=True,
                  glm_stop_early_error_fraction=1.0,
                  max_iter=5000,
@@ -56,6 +61,7 @@ class LinearRegression(GLM):
             n_folds=n_folds,
             n_alphas=1,
             tol=tol,
+            tol_seek_factor=tol_seek_factor,
             lambda_stop_early=False,
             glm_stop_early=glm_stop_early,
             glm_stop_early_error_fraction=glm_stop_early_error_fraction,

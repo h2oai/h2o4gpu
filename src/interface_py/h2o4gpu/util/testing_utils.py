@@ -253,7 +253,9 @@ def run_glm(X,
             solver="glm",
             lambda_min_ratio=1e-9,
             alphas=None,
-            lambdas=None):
+            lambdas=None,
+            tol=1E-2,
+            tol_seek_factor=1E-1):
     """Runs GLM test"""
     #Other default parameters for solving glm
     fit_intercept = True
@@ -267,6 +269,9 @@ def run_glm(X,
     sys.stdout.flush()
     doassert = 0  # default is not assert
 
+    print("tol=%g tol_seek_factor=%g" % (tol, tol_seek_factor))
+    sys.stdout.flush()
+
     #Override run_h2o False default if environ exists
     if os.getenv("H2OGLM_PERFORMANCE") is not None:
         run_h2o = True
@@ -274,13 +279,13 @@ def run_glm(X,
 #Setup Train / validation Set Split
     morig = X.shape[0]
     norig = X.shape[1]
-    print("Original m=%d n=%d" % (morig, norig))
-    sys.stdout.flush()
 
     mvalid = 0
     validX = None
     validY = None
     if Xtest is None and ytest is None:
+        print("Original m=%d n=%d" % (morig, norig))
+        sys.stdout.flush()
         #Do train / valid split
         HO = int(validFraction * morig)
         H = morig - HO
@@ -317,6 +322,8 @@ def run_glm(X,
             validFraction = 0.0
         else:
             validFraction = (1.0 * mvalid) / (1.0 * mTrain)
+        print("Original m=%d n=%d" % (morig + mvalid, norig))
+        sys.stdout.flush()
     print("mTrain=%d mvalid=%d validFraction=%g" % (mTrain, mvalid,
                                                     validFraction))
 
@@ -344,7 +351,7 @@ def run_glm(X,
             family=family,
             store_full_path=store_full_path,
             alphas=alphas,
-            lambdas=lambdas)
+            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
     elif solver == "lasso":
         Solver = h2o4gpu.Lasso
         enet = Solver(
@@ -356,7 +363,7 @@ def run_glm(X,
             verbose=verbose,
             family=family,
             store_full_path=store_full_path,
-            lambdas=lambdas)
+            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
     elif solver == "ridge":
         Solver = h2o4gpu.Ridge
         enet = Solver(
@@ -368,14 +375,14 @@ def run_glm(X,
             verbose=verbose,
             family=family,
             store_full_path=store_full_path,
-            lambdas=lambdas)
+            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
     elif solver == "linear_regression":
         Solver = h2o4gpu.LinearRegression
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
             n_folds=nFolds,
-            verbose=verbose)
+            verbose=verbose, tol=tol, tol_seek_factor=tol_seek_factor)
     elif solver == "logistic":
         Solver = h2o4gpu.LogisticRegression
         enet = Solver(
@@ -386,7 +393,7 @@ def run_glm(X,
             n_folds=nFolds,
             n_alphas=nAlphas,
             verbose=verbose,
-            store_full_path=store_full_path)
+            store_full_path=store_full_path, tol=tol, tol_seek_factor=tol_seek_factor)
 
     print("trainX")
     print(trainX)

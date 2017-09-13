@@ -47,6 +47,10 @@ class GLM(object):
 
     :param float tol : tolerance.  Default is 1E-2.
 
+    :param float tol_seek_factor : factor of tolerance to seek
+        once below null model accuracy.  Default is 1E-1, so seeks tolerance
+        of 1E-3 once below null model accuracy for tol=1E-2.
+
     :param bool lambda_stop_early : Stop early when there is no more relative
         improvement on train or validation. Default is True.
 
@@ -110,6 +114,7 @@ class GLM(object):
                  n_folds=5,
                  n_alphas=5,
                  tol=1E-2,
+                 tol_seek_factor=1E-2,
                  lambda_stop_early=True,
                  glm_stop_early=True,
                  glm_stop_early_error_fraction=1.0,
@@ -135,6 +140,7 @@ class GLM(object):
         assert_is_type(n_folds, int)
         assert_is_type(n_alphas, int)
         assert_is_type(tol, float)
+        assert_is_type(tol_seek_factor, float)
         assert_is_type(lambda_stop_early, bool)
         assert_is_type(glm_stop_early, bool)
         assert_is_type(glm_stop_early_error_fraction, float)
@@ -189,6 +195,7 @@ class GLM(object):
         self.did_fit_ptr = 0
         self.did_predict = 0
         self.tol = tol
+        self.tol_seek_factor = tol_seek_factor
         if lambda_stop_early is True:
             self.lambda_stop_early = 1
         else:
@@ -721,6 +728,7 @@ class GLM(object):
             c_alphas,
             c_lambdas,
             c_double(self.tol),
+            c_double(self.tol_seek_factor),
             c_int(self.lambda_stop_early),
             c_int(self.glm_stop_early),
             c_double(self.glm_stop_early_error_fraction),
