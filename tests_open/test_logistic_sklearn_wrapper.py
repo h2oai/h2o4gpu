@@ -8,6 +8,7 @@ import pandas as pd
 print(sys.path)
 
 from h2o4gpu.util.testing_utils import find_file, run_glm
+import h2o4gpu
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -22,7 +23,7 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
     sys.stdout.flush()
 
     print("Reading Data")
-    df = pd.read_csv("./open_data/creditcard.csv")
+    df = pd.read_csv("../open_data/creditcard.csv")
     print(df.shape)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
@@ -78,27 +79,38 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
     print("DONE.")
     sys.stdout.flush()
 
-
-def test_glmlogistic_credit_gpu_quick_train(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.0, verbose=0,
-                                            family="logistic", print_all_errors=False, tolerance=.1)
-
-
-def test_glmlogistic_credit_gpu_quick_train_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.0,
-                                                  verbose=0, family="logistic", print_all_errors=False, tolerance=.1)
-
-
-def test_glmlogistic_credit_gpu_quick_train_valid_nofold(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.2,
-                                                         verbose=0, family="logistic", print_all_errors=False,
-                                                         tolerance=.1)
+#Function to check fall back to sklearn
+def test_fit_credit_backupsklearn():
+    df = pd.read_csv("./open_data/creditcard.csv")
+    X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    Solver = h2o4gpu.LogisticRegression
+    enet = Solver(dual=True)
+    enet.fit(X, y)
 
 
-def test_glmlogistic_credit_gpu_quick_train_valid_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.2,
-                                                        verbose=0, family="logistic", print_all_errors=False,
-                                                        tolerance=.1)
+# def test_glmlogistic_credit_gpu_quick_train(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.0, verbose=0,
+#                                             family="logistic", print_all_errors=False, tolerance=.1)
+#
+#
+# def test_glmlogistic_credit_gpu_quick_train_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.0,
+#                                                   verbose=0, family="logistic", print_all_errors=False, tolerance=.1)
+#
+#
+# def test_glmlogistic_credit_gpu_quick_train_valid_nofold(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.2,
+#                                                          verbose=0, family="logistic", print_all_errors=False,
+#                                                          tolerance=.1)
+#
+#
+# def test_glmlogistic_credit_gpu_quick_train_valid_5fold(): func(nGPUs=1, nFolds=5, nLambdas=5, nAlphas=3, validFraction=0.2,
+#                                                         verbose=0, family="logistic", print_all_errors=False,
+#                                                         tolerance=.1)
+#def test_sklearn_logit(): test_fit_credit_backupsklearn()
 
 
 if __name__ == '__main__':
-    test_glmlogistic_credit_gpu_quick_train()
-    test_glmlogistic_credit_gpu_quick_train_5fold()
-    test_glmlogistic_credit_gpu_quick_train_valid_nofold()
-    test_glmlogistic_credit_gpu_quick_train_valid_5fold()
+    # test_glmlogistic_credit_gpu_quick_train()
+    # test_glmlogistic_credit_gpu_quick_train_5fold()
+    # test_glmlogistic_credit_gpu_quick_train_valid_nofold()
+    # test_glmlogistic_credit_gpu_quick_train_valid_5fold()
+    test_sklearn_logit()
