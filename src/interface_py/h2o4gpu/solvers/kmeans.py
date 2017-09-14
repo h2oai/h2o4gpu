@@ -131,7 +131,6 @@ class KMeans(object):
         >>> kmeans.predict(X)
         >>> kmeans.cluster_centers_
     """
-
     def __init__(
             self,
             # sklearn API (but with possibly different choices for defaults)

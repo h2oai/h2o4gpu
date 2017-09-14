@@ -135,7 +135,8 @@ void find_centroids(int q, int n, int d, int k,
 
   // If no scaling then this step will be handled on the host
   // when aggregating centroids from all GPUs
-  // Cache original centroids
+  // Cache original centroids in case some centroids are not present in labels
+  // and would get zeroed
   thrust::device_vector<T> tmp_centroids;
   if(scale) {
     tmp_centroids = thrust::device_vector<T>(k*d);
@@ -143,8 +144,8 @@ void find_centroids(int q, int n, int d, int k,
   }
 
   memcpy(indices, range);
-  //Bring all labels with the same value together
-  // TODO calculate_centroids doesn't really require ordered labels/data I think
+  // TODO the rest of the algorithm doesn't necessarily require labels/data to be sorted
+  // but *might* make if faster due to less atomic updates
   thrust::sort_by_key(labels.begin(),
                       labels.end(),
                       indices.begin());
@@ -180,10 +181,11 @@ void find_centroids(int q, int n, int d, int k,
   gpuErrchk(cudaDeviceSynchronize());
   #endif
 
-  // Scaling should take place on the GPU is n_gpus=1 so we don't
+  // Scaling should take place on the GPU if n_gpus=1 so we don't
   // move centroids and counts between host and device all the time for nothing
   if(scale) {
     // Revert only if `scale`, otherwise this will be taken care of in the host
+    // Revert reverts centroids for which count is equal 0
     revert_zeroed_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
         0, cuda_stream[dev_num] >> >
         (d, k,
@@ -196,7 +198,7 @@ void find_centroids(int q, int n, int d, int k,
     gpuErrchk(cudaDeviceSynchronize());
     #endif
 
-    //Scale centroids
+    //Averages the centroids
     scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
         0, cuda_stream[dev_num] >> >
         (d, k,
