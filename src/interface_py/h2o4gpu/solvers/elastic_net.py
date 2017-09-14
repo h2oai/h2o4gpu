@@ -220,6 +220,14 @@ class GLM(object):
         self.alphas_list = alphas
         self.lambdas_list = lambdas
 
+        # default None for _full stuff
+        self.x_vs_alpha_lambdanew = None
+        self.x_vs_alpha_lambdapure = None
+        self.valid_pred_vs_alpha_lambdapure = None
+        self._lambdas = None
+        self._alphas = None
+        self._tols = None
+
         #Experimental features
         #TODO _shared_a and _standardize do not work currently.
         #TODO Always need to set to 0.
