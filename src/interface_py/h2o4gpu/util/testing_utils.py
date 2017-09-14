@@ -385,15 +385,7 @@ def run_glm(X,
             verbose=verbose, tol=tol, tol_seek_factor=tol_seek_factor)
     elif solver == "logistic":
         Solver = h2o4gpu.LogisticRegression
-        enet = Solver(
-            n_gpus=nGPUs,
-            fit_intercept=fit_intercept,
-            lambda_min_ratio=lambda_min_ratio,
-            n_lambdas=nLambdas,
-            n_folds=nFolds,
-            n_alphas=nAlphas,
-            verbose=verbose,
-            store_full_path=store_full_path, tol=tol, tol_seek_factor=tol_seek_factor)
+        enet = Solver()
 
     print("trainX")
     print(trainX)
