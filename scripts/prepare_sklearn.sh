@@ -30,5 +30,7 @@ do
         sed -i 's/LogisticRegression/LogisticRegression_sklearn/g' $fil
         sed -i 's/LinearRegression/LinearRegression_sklearn/g' $fil
         sed -i 's/sklearn_sklearn/sklearn/g' $fil
+        sed -i "s/from \.\. import get_config as _get_config/import os\n_ASSUME_FINITE = bool(os.environ.get('SKLEARN_ASSUME_FINITE', False))\ndef _get_config\(\):\n    return \{'assume_finite': _ASSUME_FINITE\}/g" $fil
     fi
 done
+
