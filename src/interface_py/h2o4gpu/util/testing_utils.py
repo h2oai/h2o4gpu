@@ -432,11 +432,12 @@ def run_glm(X,
     print(tols)
 
     print("All lambdas")
-    lambdas = enet.lambdas_full
-    print(lambdas)
+    if enet.store_full_path !=0:
+        lambdas = enet.lambdas_full
+        print(lambdas)
 
     assert np.isfinite(enet.X).all()
-    if store_full_path != 0:
+    if enet.store_full_path != 0:
         assert np.isfinite(enet.X_full).all()
 
     Xvsalphabest = enet.X_best
@@ -504,7 +505,7 @@ def run_glm(X,
                 display=1,
                 enet=enet,
                 string="Train",
-                store_full_path=store_full_path))
+                store_full_path=enet.store_full_path))
 
     enet.finish()
     print("Done Reporting")
