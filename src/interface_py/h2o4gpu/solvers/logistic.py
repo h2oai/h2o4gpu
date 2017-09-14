@@ -3,10 +3,10 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from h2o4gpu.solvers.elastic_net import GLM
+from h2o4gpu.solvers import elastic_net
+from h2o4gpu.linear_model import logistic
 
-
-class LogisticRegression(GLM):
+class LogisticRegression(elastic_net.GLM):
     """H2O Logistic Regression Solver
 
     :param int n_threads: Number of threads to use in the gpu. Default is None.
