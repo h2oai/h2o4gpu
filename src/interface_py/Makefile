@@ -9,7 +9,7 @@ pylint:
 		if [ "$$py" == "h2o4gpu/__init__.py" ]; \
 		then echo "Skip $$py"; \
 		else echo $$py; \
-		pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
+		mkdir -p ./pylint.d ; PYLINTHOME=./pylint.d pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
 		tmp=$$?; \
 		if [ $$tmp -ne 0 ]; then status=$$tmp; fi; \
 		fi; \
