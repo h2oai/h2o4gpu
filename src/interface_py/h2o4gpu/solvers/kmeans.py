@@ -24,6 +24,7 @@ class KMeans_h2o4gpu(object):
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
      implementation of the K-Means clustering algorithm.
+
     Approximate GPU Memory Use:
      n_clusters*rows + rows*cols + cols*n_clusters
 
@@ -32,19 +33,21 @@ class KMeans_h2o4gpu(object):
         centroids to generate.
 
     :param init : {'k-means++', 'random' or an ndarray}
-        Method for initialization, defaults to 'k-means++':
+        Method for initialization, defaults to 'random':
         'k-means++' : selects initial cluster centers for k-mean
-        clustering in a smart way to speed up convergence. See section
-        Notes in k_init for more details.
+        clustering in a smart way to speed up convergence.
+        *Not supported yet* - if chosen we will use SKLearn's methods.
         'random': choose k observations (rows) at random from data for
         the initial centroids.
         If an ndarray is passed, it should be of shape (n_clusters, n_features)
         and gives the initial centers.
+        *Not supported yet* - if chosen we will use SKLearn's methods.
 
     :param n_init : int, default: 1
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
+        *Not supported yet* - always runs 1.
 
     :param max_iter : int, optional, default: 1000
         Maximum number of iterations of the algorithm.
@@ -59,6 +62,7 @@ class KMeans_h2o4gpu(object):
         double precision.
         True : always precompute distances
         False : never precompute distances
+        *Not supported yet* - always uses auto if running h2o4gpu version.
 
     :param verbose : int, optional, default 0
         Logger verbosity level.
@@ -73,6 +77,7 @@ class KMeans_h2o4gpu(object):
         modified.  If False, the original data is modified, and put back before
         the function returns, but small numerical differences may be introduced
         by subtracting and then adding the data mean.
+        *Not supported yet* - always uses True if running h2o4gpu version.
 
     :param n_jobs : int
         The number of jobs to use for the computation. This works by computing
@@ -81,12 +86,14 @@ class KMeans_h2o4gpu(object):
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
+        *Not supported yet* - CPU backend not yet implemented.
 
     :param algorithm : "auto", "full" or "elkan", default="auto"
         K-means algorithm to use. The classical EM-style algorithm is "full".
         The "elkan" variation is more efficient by using the triangle
         inequality, but currently doesn't support sparse data. "auto" chooses
         "elkan" for dense data and "full" for sparse data.
+        *Not supported yet* - always uses full if running h2o4gpu version.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
@@ -98,6 +105,9 @@ class KMeans_h2o4gpu(object):
 
     :param init_data : "random", "selectstrat" or
                 "randomselect", optional, default: "randomselect"
+                "Random": runs the algorithm on a completely random data set
+                "Selectstrat": uses data in given order
+                "Randomselect": first shuffles the data before using it
 
     :param do_checks : int, optional, default: 1
         If set to 0 GPU error check will not be performed.
@@ -119,7 +129,6 @@ class KMeans_h2o4gpu(object):
         >>> kmeans.predict(X)
         >>> kmeans.cluster_centers_
     """
-
     def __init__(
             self,
             # sklearn API (but with possibly different choices for defaults)
@@ -158,8 +167,6 @@ class KMeans_h2o4gpu(object):
         assert_is_type(init_data, str)
         assert_is_type(do_checks, int)
 
-
-
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
         if type(tol) == type(example):
@@ -186,8 +193,6 @@ class KMeans_h2o4gpu(object):
         self._did_sklearn_fit = 0
         self.verbose = verbose
         self.do_checks = do_checks
-
-        self.lib = self._load_lib()
 
         if random_state is None:
             import random
@@ -319,22 +324,19 @@ class KMeans_h2o4gpu(object):
 
         :param X: array-like, shape=(n_samples, n_features)
             Training instances.
-        :param y: array-like, optional, shape=(n_samples, 1)
-            Initial labels for training.
         """
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
         _check_data_content(self.do_checks, "X", X_np)
-        rows = np.shape(X_np)[0]
 
-        y_np = self._validate_y(y, rows)
-
-        self._fit(X_np, y_np)
+        self._fit(X_np)
 
         self._did_sklearn_fit = 0
 
         return self
 
+    # y is here just for compatibility with sklearn api
+    # pylint: disable=unused-argument
     def sklearn_fit(self, X, y=None):
         """Instantiates a scikit-learn model using previously found,
         with fit(), centroids. """
@@ -345,9 +347,6 @@ class KMeans_h2o4gpu(object):
         if self._did_sklearn_fit == 0:
             X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
             _check_data_content(self.do_checks, "X", X_np)
-            rows = np.shape(X_np)[0]
-
-            y_np = self._validate_y(y, rows)
 
             self._did_sklearn_fit = 1
             import sklearn.cluster as sk_cluster
@@ -356,10 +355,10 @@ class KMeans_h2o4gpu(object):
                 max_iter=1,
                 init=self.cluster_centers_,
                 n_init=1)
-            self.sklearn_model.fit(X_np, y_np)
-            #The code above initializes the SKlearn KMeans model,
-            #but due to validations we need to run 1 extra iteration,
-            #which might alter the cluster centers so we override them
+            self.sklearn_model.fit(X_np)
+            # The code above initializes the SKlearn KMeans model,
+            # but due to validations we need to run 1 extra iteration,
+            # which might alter the cluster centers so we override them
             self.sklearn_model.cluster_centers_ = self.cluster_centers_
 
     def predict(self, X):
@@ -391,14 +390,14 @@ class KMeans_h2o4gpu(object):
                                       self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
                                       self._max_iter, c_init,
-                                      c_init_data, self.tol, c_data, None,
+                                      c_init_data, self.tol, c_data,
                                       c_centroids, None, pointer(c_res))
         else:
             lib.make_ptr_double_kmeans(
                 1, self.verbose, self.random_state, self._gpu_id,
                 self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data, None,
+                c_init, c_init_data, self.tol, c_data,
                 c_centroids, None, pointer(c_res))
 
         preds = np.fromiter(
@@ -406,6 +405,8 @@ class KMeans_h2o4gpu(object):
         preds = np.reshape(preds, rows)
         return preds
 
+    # y is here just for compatibility with sklearn api
+    # pylint: disable=unused-argument
     def sklearn_predict(self, X, y=None):
         """
         Instantiates, if necessary, a scikit-learn model using centroids
@@ -414,13 +415,10 @@ class KMeans_h2o4gpu(object):
         """
         _check_data_content(self.do_checks, "X", X)
 
-        rows = np.shape(X)[0]
-        y_np = self._validate_y(y, rows)
-
-        self.sklearn_fit(X, y_np)
+        self.sklearn_fit(X)
         return self.sklearn_model.predict(X)
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         """Transform X to a cluster-distance space.
 
         Each dimension is the distance to a cluster center.
@@ -471,8 +469,9 @@ class KMeans_h2o4gpu(object):
         """
 
         _check_data_content(self.do_checks, "X", X)
-        self.sklearn_fit(X, y)
-        return self.sklearn_model.transform(X)
+        self.sklearn_fit(X)
+        # pylint: disable=too-many-function-args
+        return self.sklearn_model.transform(X, y)
 
     def fit_transform(self, X, y=None):
         """Perform fitting and transform X.
@@ -504,8 +503,7 @@ class KMeans_h2o4gpu(object):
         """
         return self.fit(X, y).labels_
 
-
-    def _fit(self, data, labels):
+    def _fit(self, data):
         """Actual method calling the underlying fitting implementation."""
         data_ord = ord('c' if np.isfortran(data) else 'r')
 
@@ -532,7 +530,6 @@ class KMeans_h2o4gpu(object):
 
         pred_centers = c_void_p(0)
         pred_labels = c_void_p(0)
-        c_labels = cptr(labels, dtype=c_int)
 
         lib = self._load_lib()
 
@@ -544,15 +541,15 @@ class KMeans_h2o4gpu(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
-                None, pointer(pred_centers), pointer(pred_labels))
+                c_init, c_init_data, self.tol, c_data_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, c_labels,
-                None, pointer(pred_centers), pointer(pred_labels))
+                c_init, c_init_data, self.tol, c_data_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
@@ -598,23 +595,6 @@ class KMeans_h2o4gpu(object):
                 "Unsupported data type %s, "
                 "should be either np.float32 or np.float64" % data.dtype)
         return data, cptr(data, dtype=my_ctype), my_ctype
-
-    def _validate_y(self, y, rows):
-        """Validate contents of y
-
-        If y is None then generates random values.
-        If y is not None then checks the data content.
-        """
-        if y is None:
-            from numpy.random import RandomState
-            ynp = RandomState(self.random_state).randint(rows, size=rows) % \
-                  self._n_clusters
-        else:
-            ynp, _, _, _, _, _ = _get_data(y)
-            _check_data_content(self.do_checks, "y", ynp)
-
-        ynp = ynp.astype(np.int32)
-        return np.mod(ynp, self._n_clusters)
 
     def _print_verbose(self, level, msg):
         if self.verbose > level:

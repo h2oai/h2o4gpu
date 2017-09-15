@@ -3,7 +3,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from ctypes import c_int, c_size_t, c_float, c_double, cdll
-from h2o4gpu.types import c_int_p, c_float_p, c_void_pp, c_double_p
+from h2o4gpu.types import c_float_p, c_void_pp, c_double_p
 
 
 class CPUlib:
@@ -55,7 +55,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # init_data
             c_float,  # tol
             c_float_p,  # data
-            c_int_p,  # labels
             c_float_p,  # centers
             c_void_pp,  # pred_centers
             c_void_pp  # pred_labels
@@ -77,7 +76,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # init_data
             c_double,  # tol
             c_double_p,  # data
-            c_int_p,  # labels
             c_double_p,  # centers
             c_void_pp,  # pred_centers
             c_void_pp  # pred_labels

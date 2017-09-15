@@ -109,39 +109,6 @@ void random_labels(int verbose, std::vector<int> &labels, int n, int k) {
     }
 }
 
-void nonrandom_labels(int verbose, const char ord, std::vector<int> &labels, const int *srclabels, int q, int n,
-                      int npercpu) {
-    int d = 1; // only 1 dimension
-    if (ord == 'c') {
-        if (verbose) {
-            fprintf(stderr, "labels COL ORDER -> ROW ORDER\n");
-            fflush(stderr);
-        }
-        int indexi, indexj;
-        for (int i = 0; i < npercpu; i++) {
-#if(1)
-            indexi = i % d; // col
-            indexj = i / d + q * npercpu; // row (shifted by which cpu)
-            //      labels[i] = srclabels[indexi*n + indexj];
-            labels[i] = srclabels[indexi * n + indexj];
-#else
-            indexj = i%d;
-            indexi = i/d;
-            //      labels[i] = srclabels[indexi*n + indexj];
-            labels[i] = srclabels[indexi*d + indexj];
-#endif
-        }
-    } else {
-        if (verbose) {
-            fprintf(stderr, "labels ROW ORDER not changed\n");
-            fflush(stderr);
-        }
-        for (int i = 0; i < npercpu; i++) {
-            labels[i] = srclabels[q * npercpu * d + i]; // shift by which cpu
-        }
-    }
-}
-
 template<typename T>
 void random_centroids(int verbose, const char ord, std::vector <T> &array, const T *srcdata, int q, int n, int npercpu,
                       int d, int k) {
@@ -232,7 +199,7 @@ namespace h2o4gpukmeans {
     int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry,
                    size_t rows, size_t cols, const char ord, int k, int max_iterations,
                    int init_from_data, int init_data, T threshold,
-                   const T *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels) {
+                   const T *srcdata, void **pred_centroids, void **pred_labels) {
         if (rows > std::numeric_limits<int>::max()) {
             fprintf(stderr, "rows > %d not implemented\n", std::numeric_limits<int>::max());
             fflush(stderr);
@@ -291,7 +258,6 @@ namespace h2o4gpukmeans {
         std::random_shuffle(v.begin(), v.end());
 
         for (int q = 0; q < n_cpu; q++) {
-            nonrandom_labels(verbose, ord, *labels[q], &srclabels[0], q, n, n / n_cpu);
             if (init_data == 0) { // random (for testing)
                 random_data<T>(verbose, *data[q], n / n_cpu, d);
             } else if (init_data == 1) { // shard by row
@@ -494,12 +460,12 @@ namespace h2o4gpukmeans {
     template<typename T>
     int makePtr_dense(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data, int init_data,
-                      T threshold, const T *srcdata, const int *srclabels, const T *centroids,
+                      T threshold, const T *srcdata, const T *centroids,
                       void **pred_centroids, void **pred_labels) {
         if (dopredict == 0) {
             return kmeans_fit(verbose, seed, cpu_idtry, n_cputry, rows, cols,
                               ord, k, max_iterations, init_from_data, init_data, threshold,
-                              srcdata, srclabels, pred_centroids, pred_labels);
+                              srcdata, pred_centroids, pred_labels);
         } else {
             return kmeans_predict(verbose, cpu_idtry, n_cputry, rows, cols,
                                   ord, k,
@@ -510,13 +476,13 @@ namespace h2o4gpukmeans {
     template
     int makePtr_dense<float>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                              const char ord, int k, int max_iterations, int init_from_data,
-                             int init_data, float threshold, const float *srcdata, const int *srclabels,
+                             int init_data, float threshold, const float *srcdata,
                              const float *centroids, void **pred_centroids, void **pred_labels);
 
     template
     int makePtr_dense<double>(int dopredict, int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows, size_t cols,
                               const char ord, int k, int max_iterations, int init_from_data,
-                              int init_data, double threshold, const double *srcdata, const int *srclabels,
+                              int init_data, double threshold, const double *srcdata,
                               const double *centroids, void **pred_centroids, void **pred_labels);
 
     template
@@ -524,14 +490,14 @@ namespace h2o4gpukmeans {
                           size_t rows, size_t cols,
                           const char ord, int k, int max_iterations,
                           int init_from_data, int init_data, float threshold,
-                          const float *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels);
+                          const float *srcdata, void **pred_centroids, void **pred_labels);
 
     template
     int kmeans_fit<double>(int verbose, int seed, int cpu_idtry, int n_cputry,
                            size_t rows, size_t cols,
                            const char ord, int k, int max_iterations,
                            int init_from_data, int init_data, double threshold,
-                           const double *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels);
+                           const double *srcdata, void **pred_centroids, void **pred_labels);
 
     template
     int kmeans_predict<float>(int verbose, int cpu_idtry, int n_cputry,
@@ -583,21 +549,21 @@ extern "C" {
 // Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_data,
-                          int init_data, float threshold, const float *srcdata, const int *srclabels,
+                          int init_data, float threshold, const float *srcdata,
                           const float *centroids, void **pred_centroids, void **pred_labels) {
     return h2o4gpukmeans::makePtr_dense<float>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                 max_iterations, init_from_data, init_data, threshold,
-                                                srcdata, srclabels, centroids,
+                                                srcdata, centroids,
                                                 pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_data,
-                           int init_data, double threshold, const double *srcdata, const int *srclabels,
+                           int init_data, double threshold, const double *srcdata,
                            const double *centroids, void **pred_centroids, void **pred_labels) {
     return h2o4gpukmeans::makePtr_dense<double>(dopredict, verbose, seed, cpu_id, n_cpu, mTrain, n, ord, k,
                                                  max_iterations, init_from_data, init_data, threshold,
-                                                 srcdata, srclabels, centroids,
+                                                 srcdata, centroids,
                                                  pred_centroids, pred_labels);
 }
 
