@@ -64,7 +64,7 @@ Instead of default way to install, do instead the below to get the shared python
 
 PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 
-### How is this different from scikit-cuda or pycuda ###
+### How is this different from scikit-cuda,  pycuda, magma, cula, etc. ###
 
 [Scikit-cuda](https://github.com/lebedov/scikit-cuda) and
 [pycuda](https://pypi.python.org/pypi/pycuda) are both python wrappers
@@ -73,17 +73,27 @@ to obtain the functionality of C++ cuda functions.  The cuda functions
 perform many linear algebra operations (CUBLAS, CUSOLVER) and other
 specific algorithms (CUFFT).
 
-H2O4PU has a C++ back-end that uses many different cuda, cub, and
-thrust functions to provide machine learning (ML) algorithms that can
-be used in artificial intelligence (AI) applications.  Since H2O4PU
+MAGMA is a set of linear algebra and other mathematical routines, and
+includes some basic fitting routines (without regularization).  CULA
+is a closed-source library that provides matrix operations and linear
+algebra operations.
+
+H2O4PU focusees on machine learning (ML) algorithms that can be used
+in artificial intelligence (AI) contexts.  It has a C++ back-end that
+uses many different cuda, cub, and thrust functions. Since H2O4PU
 already uses C++ as a backend, these packages don't provide any
-additional functionality.
+additional functionality (although in limited use, they may make it
+easier to prototype new features).
 
 In addition, by having H2O4GPU do all operations with C++, this allows
 the data to stay on the GPU for the entire ML algorithm, instead of
 data being transferred back and forth between the CPU and GPU (an
 expensive operation) for each separate linear algebra call.
 
-Lastly, this allows the ML algorithm to be designed to have all inputs
-and outputs on the GPU, allow the ML algorithm to be a component
-within a pure GPU pipeline.
+This allows the ML algorithm to be designed to have all inputs and
+outputs on the GPU, allow the ML algorithm to be a component within a
+pure GPU pipeline.
+
+In summary, ML algorithms differ from standard linear algebra
+algorithms, because ML requires unsupervised and supervised
+modeling with regularization and validation.
