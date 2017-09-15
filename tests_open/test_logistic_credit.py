@@ -31,7 +31,7 @@ def func(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, verbose=
 
     logloss_train, logloss_test = run_glm(X, y, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds, nalpha=nAlphas,
                                           validFraction=validFraction, verbose=verbose,print_all_errors=print_all_errors,
-                                          tolerance=tolerance, name=name, solver="logistic")
+                                          tolerance=tolerance, name=name, solver="glm", family = "logistic")
 
     # check logloss
     print(logloss_train[0, 0])
