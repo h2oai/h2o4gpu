@@ -1509,14 +1509,14 @@ class GLM(object):
         self.e = e
         return a, b, c, d, e
 
-    def score(self, X=None, y=None, sample_weight=None):
-        if X is not None and y is not None:
-            self.prediction = self.predict(
-                valid_x=X, valid_y=y, sample_weight=sample_weight)
-#otherwise score makes no sense, need both X and y,
-#else just return existing error
-#TODO : Should return R ^ 2 and redo predict if X and y are passed
-        return self.error
+#     def score(self, X=None, y=None, sample_weight=None):
+#         if X is not None and y is not None:
+#             self.prediction = self.predict(
+#                 valid_x=X, valid_y=y, sample_weight=sample_weight)
+# #otherwise score makes no sense, need both X and y,
+# #else just return existing error
+# #TODO : Should return R ^ 2 and redo predict if X and y are passed
+#         return self.error
 
     @classmethod
     def _get_param_names(cls):
