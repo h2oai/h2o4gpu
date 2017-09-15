@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Function to check fall back to sklearn
 def test_fit_simple_backupsklearn():
-    df = pd.read_csv("../open_data/simple.txt", delim_whitespace=True)
+    df = pd.read_csv("./open_data/simple.txt", delim_whitespace=True)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.LinearRegression
