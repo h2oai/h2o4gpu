@@ -21,7 +21,7 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
 
 class GLM(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
-    
+
     :param int n_threads : Number of threads to use in the gpu.
     Each thread is an independent model builder. Default is None.
 

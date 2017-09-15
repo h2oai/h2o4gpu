@@ -1,13 +1,13 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # pylint: disable=unused-import
+import numpy as np
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import logistic as sk
 from ..solvers.utils import _setter
-import numpy as np
 
 class LogisticRegression(object):
     """H2O Logistic Regression Solver
@@ -20,79 +20,85 @@ class LogisticRegression(object):
     """
 
     def __init__(self,
-                 penalty='l2', #h2o4gpu
+                 penalty='l2',  # h2o4gpu
                  dual=False,
-                 tol=1E-2, #h2o4gpu
-                 C=1.0, #h2o4gpu
-                 fit_intercept=True, #h2o4gpu
+                 tol=1E-2,  # h2o4gpu
+                 C=1.0,  # h2o4gpu
+                 fit_intercept=True,  # h2o4gpu
                  intercept_scaling=1,
                  class_weight=None,
                  random_state=None,
                  solver='liblinear',
-                 max_iter=5000, #h2o4gpu
+                 max_iter=5000,  # h2o4gpu
                  multi_class='ovr',
-                 verbose=0, #h2o4gpu
+                 verbose=0,  # h2o4gpu
                  warm_start=False,
                  n_jobs=1,
-                 n_gpus=-1, #h2o4gpu
-                 glm_stop_early=True, #h2o4gpu
-                 glm_stop_early_error_fraction=1.0): #h2o4gpu
+                 n_gpus=-1,  # h2o4gpu
+                 glm_stop_early=True,  # h2o4gpu
+                 glm_stop_early_error_fraction=1.0):  # h2o4gpu
 
-        #Fall back to Sklearn
-        #Can remove if fully implement sklearn functionality
+        # Fall back to Sklearn
+        # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
-        
-        params_string=['dual', 'intercept_scaling', 'class_weight', 'random_state', 'solver', 'multi_class', 'warm_start', 'n_jobs']
-        params=[dual ,intercept_scaling, class_weight,random_state, solver, multi_class, warm_start, n_jobs]
+
+        params_string = ['dual', 'intercept_scaling', 'class_weight',
+                         'random_state', 'solver', 'multi_class',
+                         'warm_start', 'n_jobs']
+        params = [dual, intercept_scaling, class_weight,
+                  random_state, solver, multi_class,
+                  warm_start, n_jobs]
         params_default = [False, 1, None, None, 'liblinear', 'ovr', False, 1]
 
-        i=0
+        i = 0
         self.do_sklearn = False
         for param in params:
             if param != params_default[i]:
                 self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i] + " has been changed from default to " + str(
-                    param) + ". Will run Sklearn Logistic Regression.")
+                print("WARNING: The sklearn parameter " + params_string[i]
+                      + " has been changed from default to "
+                      + str(param) + ". Will run Sklearn Logistic Regression.")
                 self.do_sklearn = True
-            i=i+1
+            i = i + 1
 
-        self.model_sklearn=sk.LogisticRegression_sklearn(
-                                      penalty=penalty,
-                                      dual=dual,
-                                      tol=tol,
-                                      C=C,
-                                      fit_intercept=fit_intercept,
-                                      intercept_scaling=intercept_scaling,
-                                      class_weight=class_weight,
-                                      random_state=random_state,
-                                      solver=solver,
-                                      max_iter=max_iter,
-                                      multi_class=multi_class,
-                                      verbose=verbose,
-                                      warm_start=warm_start,
-                                      n_jobs=n_jobs)
+        self.model_sklearn = sk.LogisticRegression_sklearn(
+            penalty=penalty,
+            dual=dual,
+            tol=tol,
+            C=C,
+            fit_intercept=fit_intercept,
+            intercept_scaling=intercept_scaling,
+            class_weight=class_weight,
+            random_state=random_state,
+            solver=solver,
+            max_iter=max_iter,
+            multi_class=multi_class,
+            verbose=verbose,
+            warm_start=warm_start,
+            n_jobs=n_jobs)
         n_threads = None
-        n_alphas = 1 #n_alphas is always 1 since we are only dealing with l1 or l2 regularization
-        n_lambdas = 1 #n_lambdas is always 1 since we are only dealing with l1 or l2 regularization
-        n_folds = 1 #Might set aside for separate CV class?
-        lambda_max = 1.0/C #Inverse of lambda is C
+        n_alphas = 1
+        n_lambdas = 1
+        n_folds = 1
+        lambda_max = 1.0 / C
         lambda_min_ratio = 1.0
         lambda_stop_early = False
         store_full_path = 0
         alphas = None
         lambdas = None
 
-        #Utilize penalty parameter to setup alphas
-        if penalty is 'l2':
+        # Utilize penalty parameter to setup alphas
+        if penalty == 'l2':
             alpha_min = 0.0
             alpha_max = 0.0
-        elif penalty is 'l1':
+        elif penalty == 'l1':
             alpha_min = 1.0
             alpha_max = 1.0
         else:
-            assert ValueError, "penalty should be either l1 or l2 but got " + penalty
+            assert ValueError, "penalty should be either l1 " \
+                               "or l2 but got " + penalty
 
-        self.model_h2o4gpu=elastic_net.GLM(
+        self.model_h2o4gpu = elastic_net.GLM(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,
@@ -123,7 +129,7 @@ class LogisticRegression(object):
             self.model = self.model_h2o4gpu
 
     def fit(self, X, y=None, sample_weight=None):
-        res = self.model.fit(X,y,sample_weight)
+        res = self.model.fit(X, y, sample_weight)
         self.set_attributes()
         return res
 
@@ -132,15 +138,14 @@ class LogisticRegression(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        else:
-            res = self.model.predict(X)
-            self.set_attributes()
-            return res
+        res = self.model.predict(X)
+        self.set_attributes()
+        return res
 
-    def decision_function(self,X):
+    def decision_function(self, X):
         print("WARNING: decision_function() is using sklearn")
         return self.model_sklearn.decision_function(X)
-    
+
     def densify(self):
         if self.do_sklearn:
             return self.model.densify()
@@ -155,22 +160,21 @@ class LogisticRegression(object):
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        else:
-            res = self.model.predict(X)
-            res[res<0.5] = 0
-            res[res>0.5] = 1
-            self.set_attributes()
-            return res
+        res = self.model.predict(X)
+        res[res < 0.5] = 0
+        res[res > 0.5] = 1
+        self.set_attributes()
+        return res
 
     def predict_log_proba(self, X):
         res = self.predict_proba(X)
         self.set_attributes()
         return np.log(res)
 
-    def score(self, X, y, sample_weight = None):
-        #TODO add for h2o4gpu
+    def score(self, X, y, sample_weight=None):
+        # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
-        res =  self.model_sklearn.score(X, y, sample_weight)
+        res = self.model_sklearn.score(X, y, sample_weight)
         self.model_sklearn.score(X, y, sample_weight)
         return res
 
