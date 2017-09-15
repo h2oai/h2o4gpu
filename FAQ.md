@@ -64,3 +64,26 @@ Instead of default way to install, do instead the below to get the shared python
 
 PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 
+### How is this different from scikit-cuda or pycuda ###
+
+[Scikit-cuda](https://github.com/lebedov/scikit-cuda) and
+[pycuda](https://pypi.python.org/pypi/pycuda) are both python wrappers
+for underlying cuda C++ functions.  They make it easy for python users
+to obtain the functionality of C++ cuda functions.  The cuda functions
+perform many linear algebra operations (CUBLAS, CUSOLVER) and other
+specific algorithms (CUFFT).
+
+H2O4PU has a C++ back-end that uses many different cuda, cub, and
+thrust functions to provide machine learning (ML) algorithms that can
+be used in artificial intelligence (AI) applications.  Since H2O4PU
+already uses C++ as a backend, these packages don't provide any
+additional functionality.
+
+In addition, by having H2O4GPU do all operations with C++, this allows
+the data to stay on the GPU for the entire ML algorithm, instead of
+data being transferred back and forth between the CPU and GPU (an
+expensive operation) for each separate linear algebra call.
+
+Lastly, this allows the ML algorithm to be designed to have all inputs
+and outputs on the GPU, allow the ML algorithm to be a component
+within a pure GPU pipeline.
