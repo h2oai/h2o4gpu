@@ -19,6 +19,15 @@ def test_fit_credit_backupsklearn():
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.LogisticRegression
+
+    enet_h2o4gpu = Solver(glm_stop_early=False)
+    print("h2o4gpu fit()")
+    enet_h2o4gpu.fit(X, y)
+    print("h2o4gpu predict()")
+    print(enet_h2o4gpu.predict(X))
+    print("h2o4gpu score()")
+    print(enet_h2o4gpu.score(X,y))
+
     enet = Solver(dual=True, max_iter=100, tol=1E-4,random_state=1234)
     print("h2o4gpu scikit wrapper fit()")
     enet.fit(X, y)

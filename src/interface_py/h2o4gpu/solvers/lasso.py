@@ -45,7 +45,7 @@ class Lasso(object):
         params = [normalize, precompute, copy_X,
                   warm_start, positive, random_state,
                   selection]
-        params_default = [1.0, False, True, False, False, None, 'cyclic']
+        params_default = [False, False, True, False, False, None, 'cyclic']
 
         i = 0
         self.do_sklearn = False
@@ -118,6 +118,7 @@ class Lasso(object):
             self.set_attributes()
             return res
         res = self.model.fit(X, y)
+        self.set_attributes()
         return res
 
     def get_params(self):
@@ -131,6 +132,8 @@ class Lasso(object):
     def score(self, X, y, sample_weight=None):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
+        if not self.do_sklearn:
+            self.model_sklearn.fit(X, y) #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         self.model_sklearn.score(X, y, sample_weight)
         return res
