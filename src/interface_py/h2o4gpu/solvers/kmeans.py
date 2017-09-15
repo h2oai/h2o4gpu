@@ -21,7 +21,7 @@ from ..types import cptr
 
 
 
-class KMeans(object):
+class KMeans_H2O4GPU(object):
     """K-Means clustering
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
@@ -160,37 +160,12 @@ class KMeans(object):
         assert_is_type(init_data, str)
         assert_is_type(do_checks, int)
 
-        # setup backup to sklearn class
-        # (can remove if fully implement sklearn functionality)
-        self.do_sklearn = False
-        example = np.array([1, 2, 3])
-        # pylint: disable=unidiomatic-typecheck
-        if type(init) == type(example):
-            print("WARNING: init as ndarray of centers not yet supported."
-                  "  Using sklearn.")
-            self.do_sklearn = True
-        else:
-            if init == "k-means++":
-                print("WARNING: init as k-means++ not yet supported."
-                      "  Using sklearn.")
-                self.do_sklearn = True
-        if n_init != 1:
-            print("WARNING: n_init not supported currently."
-                  "  Still using h2o4gpu.")
-        if precompute_distances != "auto":
-            print("WARNING: precompute_distances not used."
-                  "  Still using h2o4gpu.")
+
 
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
         if type(tol) == type(example):
             tol = tol.item()
-
-        if self.do_sklearn:
-            from h2o4gpu.cluster import KMeans_sklearn
-            self.modelsklearn = KMeans_sklearn(
-                n_clusters, init, n_init, max_iter, tol, precompute_distances,
-                verbose, random_state, copy_x, n_jobs, algorithm)
 
         # Things to do if not using sklearn
         # sklearn option overrides detailed option
@@ -268,9 +243,6 @@ class KMeans(object):
 
         :returns dict params : Parameter names mapped to their values.
         """
-        if self.do_sklearn:
-            return self.modelsklearn.get_params(deep=deep)
-
         out = dict()
         for key in self._get_param_names():
             # We need deprecation warnings to always be on in order to
@@ -299,8 +271,6 @@ class KMeans(object):
 
         :return: self
         """
-        if self.do_sklearn:
-            return self.modelsklearn.set_params(params)
         if not params:
             # Simple optimization to gain speed(inspect is slow)
             return self
@@ -352,8 +322,6 @@ class KMeans(object):
         :param y: array-like, optional, shape=(n_samples, 1)
             Initial labels for training.
         """
-        if self.do_sklearn:
-            return self.modelsklearn.fit(X=X, y=y)
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
         _check_data_content(self.do_checks, "X", X_np)
@@ -402,8 +370,6 @@ class KMeans(object):
         :return: array of shape [n_samples,]
                 A cluster index for each record
         """
-        if self.do_sklearn:
-            return self.modelsklearn.predict(X=X)
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
@@ -465,8 +431,6 @@ class KMeans(object):
         :return: array, shape [n_samples, k]
             Distances to each cluster for each row.
         """
-        if self.do_sklearn:
-            return self.modelsklearn.transform(X=X)
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
@@ -523,8 +487,6 @@ class KMeans(object):
         :return: array, shape [n_samples, k]
             Distances to each cluster for each row.
         """
-        if self.do_sklearn:
-            return self.modelsklearn.fit_transform(X=X, y=y)
         return self.fit(X, y).transform(X)
 
     def fit_predict(self, X, y=None):
@@ -540,17 +502,8 @@ class KMeans(object):
         :return: array of shape [n_samples,]
             A cluster index for each record
         """
-        if self.do_sklearn:
-            return self.modelsklearn.fit_predict(X=X, y=y)
         return self.fit(X, y).labels_
 
-    def score(self, X, y=None):
-        # TODO: No such scheme for our class yet,
-        # So force use of sklearn version
-        if self.do_sklearn or 1 == 1:
-            return self.modelsklearn.score(X=X, y=y)
-        else:
-            pass
 
     def _fit(self, data, labels):
         """Actual method calling the underlying fitting implementation."""
@@ -729,3 +682,108 @@ class KMeans(object):
         assert_satisfies(value, value > 0,
                          "Number of maximum iterations must be non-negative.")
         self._max_iter = value
+
+
+# Wrapper
+class KMeans(object):
+    def __init__(
+               self,
+               n_clusters=8,
+               init='random',
+               n_init=1,
+               max_iter=300,
+               tol=1e-4,
+               precompute_distances='auto',
+               verbose=0,
+               random_state=None,
+               copy_x=True,
+               n_jobs=1,
+               algorithm='auto',
+               # Beyond sklearn (with optimal defaults)
+               gpu_id=0,
+               n_gpus=-1,
+               init_data="randomselect",
+               do_checks=1):
+
+
+        # setup backup to sklearn class
+        # (can remove if fully implement sklearn functionality)
+        self.do_sklearn = False
+        example = np.array([1, 2, 3])
+        # pylint: disable=unidiomatic-typecheck
+        if type(init) == type(example):
+            print("WARNING: init as ndarray of centers not yet supported."
+                  "  Using sklearn.")
+            self.do_sklearn = True
+        else:
+            if init == "k-means++":
+                print("WARNING: init as k-means++ not yet supported."
+                      "  Using sklearn.")
+                self.do_sklearn = True
+        if n_init != 1:
+            print("WARNING: n_init not supported currently."
+                  "  Still using h2o4gpu.")
+        if precompute_distances != "auto":
+            print("WARNING: precompute_distances not used."
+                  "  Still using h2o4gpu.")
+
+
+        from h2o4gpu.cluster import k_means_
+        self.model_sklearn = k_means_.KMeans_sklearn(n_clusters=n_clusters,
+                                    init=init,
+                                    n_init=n_init,
+                                    max_iter=max_iter,
+                                    tol=tol,
+                                    precompute_distances=precompute_distances,
+                                    verbose=verbose,
+                                    random_state=random_state,
+                                    copy_x=copy_x,
+                                    n_jobs=n_jobs,
+                                    algorithm=algorithm)
+        from h2o4gpu.solvers import KMeans as KMeans_h2o4gpu
+        self.model_h2o4gpu = KMeans_h2o4gpu(n_clusters=n_clusters,
+                                     init=init,
+                                     n_init=n_init,
+                                     max_iter=max_iter,
+                                     tol=tol,
+                                     precompute_distances=precompute_distances,
+                                     verbose=verbose,
+                                     random_state=random_state,
+                                     copy_x=copy_x,
+                                     n_jobs=n_jobs,
+                                     algorithm=algorithm,
+                                     # H2O4GPU
+                                     gpu_id=gpu_id,
+                                     n_gpus=n_gpus,
+                                     init_data=init_data,
+                                     do_checks=do_checks)
+
+        if self.do_sklearn:
+            self.model = self.model_sklearn
+        else:
+            self.model = self.model_h2o4gpu
+
+
+    def fit(self, X, y=None):
+        return self.model.fit(X,y)
+
+    def fit_predict(self, X, y=None):
+        return self.model.fit_predict(X,y)
+
+    def fit_transform(X, y=None):
+        return self.model.fit_transform(X, y)
+
+    def get_params(self, deep=True):
+        return self.model.get_params(deep)
+
+    def predict(self, X):
+        return self.model.predict(X)
+
+    def score(self, X, y=None):
+        return self.model_sklearn.score(X, y)
+
+    def set_params(self, **params):
+        return self.model.set_params(params)
+
+    def transform(self, X):
+        return self.model.transform(X)
