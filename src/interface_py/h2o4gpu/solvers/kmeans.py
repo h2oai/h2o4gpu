@@ -9,19 +9,17 @@ import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
     POINTER, cast
 
-import warnings
 
 import numpy as np
 
-from ..libs.lib_kmeans import GPUlib, CPUlib
 from ..solvers.utils import device_count, _check_data_content, \
-    _get_data
+    _get_data, _setter
 from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
 
 
 
-class KMeans_H2O4GPU(object):
+class KMeans_h2o4gpu(object):
     """K-Means clustering
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
@@ -249,6 +247,8 @@ class KMeans_H2O4GPU(object):
             # catch deprecated param values.
             # This is set in utils / __init__.py but it gets overwritten
             # when running under python3 somehow.
+            import warnings
+
             warnings.simplefilter("always", DeprecationWarning)
             try:
                 with warnings.catch_warnings(record=True) as w:
@@ -626,6 +626,8 @@ class KMeans_H2O4GPU(object):
                             (param_name, old_val, new_val))
 
     def _load_lib(self):
+        from ..libs.lib_kmeans import GPUlib, CPUlib
+
         gpu_lib = GPUlib().get()
         cpu_lib = CPUlib().get()
 
@@ -740,7 +742,6 @@ class KMeans(object):
                                     copy_x=copy_x,
                                     n_jobs=n_jobs,
                                     algorithm=algorithm)
-        from h2o4gpu.solvers import KMeans as KMeans_h2o4gpu
         self.model_h2o4gpu = KMeans_h2o4gpu(n_clusters=n_clusters,
                                      init=init,
                                      n_init=n_init,
@@ -765,25 +766,49 @@ class KMeans(object):
 
 
     def fit(self, X, y=None):
-        return self.model.fit(X,y)
+        res = self.model.fit(X,y)
+        self.set_attributes()
+        return res
 
     def fit_predict(self, X, y=None):
-        return self.model.fit_predict(X,y)
+        res=self.model.fit_predict(X,y)
+        self.set_attributes()
+        return res
 
-    def fit_transform(X, y=None):
-        return self.model.fit_transform(X, y)
+    def fit_transform(self, X, y=None):
+        res=self.model.fit_transform(X, y)
+        self.set_attributes()
+        return res
 
     def get_params(self, deep=True):
-        return self.model.get_params(deep)
+        res = self.model.get_params(deep)
+        self.set_attributes()
+        return res
 
     def predict(self, X):
-        return self.model.predict(X)
+        res = self.model.predict(X)
+        self.set_attributes()
+        return res
 
     def score(self, X, y=None):
-        return self.model_sklearn.score(X, y)
+        res = self.model_sklearn.score(X, y)
+        self.set_attributes()
+        return res
 
     def set_params(self, **params):
-        return self.model.set_params(params)
+        res = self.model.set_params(**params)
+        self.set_attributes()
+        return res
 
     def transform(self, X):
-        return self.model.transform(X)
+        res = self.model.transform(X)
+        self.set_attributes()
+        return res
+
+    def set_attributes(self):
+        s = _setter(oself=self, e1=NameError, e2=AttributeError)
+
+        s('oself.cluster_centers_ = oself.model.cluster_centers_')
+        s('oself.labels_ = oself.model.labels_')
+        self.inertia_ = None
+        s('oself.inertia_ = oself.model.intertia_')
