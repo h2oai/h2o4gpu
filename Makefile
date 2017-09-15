@@ -234,7 +234,7 @@ apply_sklearn_initmerge:
 
 cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjeknins: update_submodule cpp c py
+buildjenkins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
