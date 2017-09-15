@@ -9,7 +9,7 @@ from h2o4gpu.linear_model import logistic as sk
 from ..typecheck.typechecks import assert_is_type
 import numpy as np
 
-class LogisticRegression(elastic_net.GLM):
+class LogisticRegression(object):
 
     """H2O Logistic Regression Solver
 
@@ -158,7 +158,7 @@ class LogisticRegression(elastic_net.GLM):
         #Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         
-        params_string=['dual' ,'intercept_scaling' ,'class_weight' , 'random_state', 'solver' ,'multi_class' ,'warm_start' ,'n_jobs']
+        params_string=['dual', 'intercept_scaling', 'class_weight', 'random_state', 'solver', 'multi_class', 'warm_start', 'n_jobs']
         params=[dual ,intercept_scaling, class_weight,random_state, solver, multi_class, warm_start, n_jobs]
         params_default = [False, 1, None, None, 'liblinear', 'ovr', False, 1]
 
@@ -239,7 +239,9 @@ class LogisticRegression(elastic_net.GLM):
             self.model = self.model_h2o4gpu
 
     def fit(self, X, y=None, sample_weight=None):
-        return self.model.fit(X,y,sample_weight)
+        model_fit = self.model.fit(X,y,sample_weight)
+        self.coef_ = model_fit.coef_
+        return model_fit
 
     def predict_proba(self, X):
         if self.do_sklearn:

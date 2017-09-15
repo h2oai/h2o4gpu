@@ -9,6 +9,7 @@ print(sys.path)
 
 from h2o4gpu.util.testing_utils import find_file, run_glm
 import h2o4gpu
+from scipy.sparse import csr_matrix
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -85,8 +86,50 @@ def test_fit_credit_backupsklearn():
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.LogisticRegression
-    enet = Solver(dual=True)
-    enet.fit(X, y)
+    enet = Solver(dual=True, max_iter=100, tol=1E-4)
+    print("h2o4gpu scikit wrapper fit()")
+    print(enet.fit(X, y))
+    print("h2o4gpu scikit wrapper predict()")
+    print(enet.predict(X))
+    print("h2o4gpu scikit wrapper predict_proba()")
+    print(enet.predict_proba(X))
+    print("h2o4gpu scikit wrapper predict_log_proba()")
+    print(enet.predict_log_proba(X))
+    print("h2o4gpu scikit wrapper score()")
+    print(enet.score(X,y))
+    print("h2o4gpu scikit wrapper decision_function()")
+    print(enet.decision_function(X))
+    print("h2o4gpu scikit wrapper densify()")
+    print(enet.densify())
+    print("h2o4gpu scikit wrapper sparsify")
+    print(enet.sparsify())
+    
+    from sklearn.linear_model.logistic import  LogisticRegression
+    enet_sk = LogisticRegression(dual=True, max_iter=100, tol=1E-4)
+    print("Scikit fit()")
+    print(enet_sk.fit(X, y))
+    print("Scikit predict()")
+    print(enet_sk.predict(X))
+    print("Scikit predict_proba()")
+    print(enet_sk.predict_proba(X))
+    print("Scikit predict_log_proba()")
+    print(enet_sk.predict_log_proba(X))
+    print("Scikit score()")
+    print(enet_sk.score(X,y))
+    print("Scikit decision_function()")
+    print(enet_sk.decision_function(X))
+    print("Scikit densify()")
+    print(enet_sk.densify())
+    print("Sciki sparsify")
+    print(enet_sk.sparsify())
+
+    enet_sk_coef = csr_matrix(enet_sk.coef_, dtype=np.float32).toarray()
+    print(enet_sk.coef_)
+    print(enet_sk_coef)
+    print(enet.coef_)
+    print("Coeffs should match")
+    assert np.allclose(enet.coef_, enet_sk_coef)
+    
 
 
 # def test_glmlogistic_credit_gpu_quick_train(): func(nGPUs=1, nFolds=0, nLambdas=5, nAlphas=3, validFraction=0.0, verbose=0,
@@ -113,4 +156,4 @@ if __name__ == '__main__':
     # test_glmlogistic_credit_gpu_quick_train_5fold()
     # test_glmlogistic_credit_gpu_quick_train_valid_nofold()
     # test_glmlogistic_credit_gpu_quick_train_valid_5fold()
-    test_sklearn_logit()
+    test_fit_credit_backupsklearn()
