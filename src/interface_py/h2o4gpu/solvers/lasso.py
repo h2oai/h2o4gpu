@@ -135,7 +135,6 @@ class Lasso(object):
         if not self.do_sklearn:
             self.model_sklearn.fit(X, y) #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
-        self.model_sklearn.score(X, y, sample_weight)
         return res
 
     def set_params(self, **params):
