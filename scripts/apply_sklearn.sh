@@ -8,6 +8,3 @@ bash ./scripts/appkly_sklearn_link.sh
 
 # handle base __init__.py file appending
 bash ./scripts/apply_sklearn_initmerge.sh
-
-# register 
-bash ./scripts/apply_sklearn_register.sh

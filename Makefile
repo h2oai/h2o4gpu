@@ -87,8 +87,10 @@ c:
 py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
-fullpy: apply_sklearn_simple
+pylint:
 	$(MAKE) pylint all -C src/interface_py
+
+fullpy: apply_sklearn_simple pylint
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
@@ -218,8 +220,6 @@ apply_sklearn_simple:
 	bash ./scripts/apply_sklearn_link.sh
     # handle base __init__.py file appending
 	bash ./scripts/apply_sklearn_initmerge.sh
-    # register
-	bash ./scripts/apply_sklearn_register.sh
 
 apply_sklearn_pipinstall:
 	bash ./scripts/apply_sklearn_pipinstall.sh
@@ -230,18 +230,15 @@ apply_sklearn_link:
 apply_sklearn_initmerge:
 	bash ./scripts/apply_sklearn_initmerge.sh
 
-apply_sklearn_register:
-	bash ./scripts/apply_sklearn_register.sh
-
 #################### Jenkins specific
 
 cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjekins: update_submodule cpp c fullpy
+buildjeknins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
-fullinstalljenkins: cleanjenkins alldeps_private buildjekins installjenkins
+fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
 
 .PHONY: mrproper
 mrproper: clean
