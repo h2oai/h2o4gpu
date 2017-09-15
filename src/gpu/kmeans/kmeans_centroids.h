@@ -4,6 +4,7 @@
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <thrust/device_vector.h>
+#include <thrust/sort.h>
 #include "kmeans_labels.h"
 
 __device__ double my_atomic_add(double *address, double val) {
@@ -82,6 +83,27 @@ __global__ void calculate_centroids(int n, int d, int k,
 }
 
 template<typename T>
+__global__ void revert_zeroed_centroids(int d, int k,
+                                    T *tmp_centroids,
+                                    T *centroids,
+                                    int *counts) {
+  int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
+  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  if ((global_id_x < d) && (global_id_y < k)) {
+    if (counts[global_id_y] < 1) {
+      centroids[global_id_x + d * global_id_y] = tmp_centroids[global_id_x + d * global_id_y];
+    }
+  }
+}
+
+__global__ void normalize_counts(int k, int *counts) {
+  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  if (global_id_y < k && counts[global_id_y] < 1) {
+    counts[global_id_y] = 1;
+  }
+}
+
+template<typename T>
 __global__ void scale_centroids(int d, int k, int *counts, T *centroids) {
   int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
   int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -98,6 +120,7 @@ __global__ void scale_centroids(int d, int k, int *counts, T *centroids) {
   }
 }
 
+// Scale - should be true when running on a single GPU
 template<typename T>
 void find_centroids(int q, int n, int d, int k,
                     thrust::device_vector<T> &data,
@@ -105,33 +128,38 @@ void find_centroids(int q, int n, int d, int k,
                     thrust::device_vector<T> &centroids,
                     thrust::device_vector<int> &range,
                     thrust::device_vector<int> &indices,
-                    thrust::device_vector<int> &counts) {
+                    thrust::device_vector<int> &counts,
+                    bool scale) {
   int dev_num;
   cudaGetDevice(&dev_num);
+
+  // If no scaling then this step will be handled on the host
+  // when aggregating centroids from all GPUs
+  // Cache original centroids in case some centroids are not present in labels
+  // and would get zeroed
+  thrust::device_vector<T> tmp_centroids;
+  if(scale) {
+    tmp_centroids = thrust::device_vector<T>(k*d);
+    memcpy(tmp_centroids, centroids);
+  }
+
   memcpy(indices, range);
-  //Bring all labels with the same value together
-  mycub::sort_by_key_int(labels, indices);
+  // TODO the rest of the algorithm doesn't necessarily require labels/data to be sorted
+  // but *might* make if faster due to less atomic updates
+  thrust::sort_by_key(labels.begin(),
+                      labels.end(),
+                      indices.begin());
+  // TODO cub is faster but sort_by_key_int isn't sorting, possibly a bug
+  //  mycub::sort_by_key_int(labels, indices);
 
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
 #endif
-#if(DEBUG)
-  thrust::host_vector<int> h_labels = labels;
-  thrust::host_vector<int> h_indices = indices;
-  for(int i=0;i<n;i++){
-    fprintf(stderr,"after q=%d labels[%d]=%d indices[%d]=%d\n",q,i,h_labels[i],i,h_indices[i]);
-  }
-  fflush(stderr);
-#endif
 
-  if (0) { // no, if centroid has no members, then this will leave centroid at (arbitrarily) zero position for all dimensions.  Rather keep original position in case no members, so can gracefully add or remove members toward convergence.
-    // Required for ngpu>1 where average centroids.  I.e., if gpu_id=1 has a centroid that lost members, then the blind average drives the average centroid position toward zero.  This likely reduces its members, leading to run away case of centroids heading to zero.
-    //Initialize centroids to all zeros
-    memzero(centroids);
-  }
-
-  //Initialize counts to all zeros
+  // Need to zero this - the algo uses this array to accumulate values for each centroid
+  // which are then averaged to get a new centroid
+  memzero(centroids);
   memzero(counts);
 
   //Calculate centroids
@@ -147,34 +175,40 @@ void find_centroids(int q, int n, int d, int k,
           thrust::raw_pointer_cast(indices.data()),
           thrust::raw_pointer_cast(centroids.data()),
           thrust::raw_pointer_cast(counts.data()));
-#if(CHECK)
+
+  #if(CHECK)
   gpuErrchk(cudaGetLastError());
   gpuErrchk(cudaDeviceSynchronize());
-#endif
-#if(DEBUG)
-  thrust::host_vector<T> h_centroids = centroids;
-  for(int i=0;i<k*d;i++){
-    fprintf(stderr,"after q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
-  }
-  fflush(stderr);
-#endif
-  //Scale centroids
-  scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
-      0, cuda_stream[dev_num] >> >
-      (d, k,
-          thrust::raw_pointer_cast(counts.data()),
-          thrust::raw_pointer_cast(centroids.data()));
+  #endif
+
+  // Scaling should take place on the GPU if n_gpus=1 so we don't
+  // move centroids and counts between host and device all the time for nothing
+  if(scale) {
+    // Revert only if `scale`, otherwise this will be taken care of in the host
+    // Revert reverts centroids for which count is equal 0
+    revert_zeroed_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
+        0, cuda_stream[dev_num] >> >
+        (d, k,
+            thrust::raw_pointer_cast(tmp_centroids.data()),
+            thrust::raw_pointer_cast(centroids.data()),
+            thrust::raw_pointer_cast(counts.data()));
+
+    #if(CHECK)
+    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaDeviceSynchronize());
+    #endif
+
+    //Averages the centroids
+    scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
+        0, cuda_stream[dev_num] >> >
+        (d, k,
+            thrust::raw_pointer_cast(counts.data()),
+            thrust::raw_pointer_cast(centroids.data()));
 #if(CHECK)
-  gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
+    gpuErrchk(cudaGetLastError());
+    gpuErrchk(cudaDeviceSynchronize());
 #endif
-#if(DEBUG)
-  h_centroids = centroids;
-  for(int i=0;i<k*d;i++){
-    fprintf(stderr,"afters q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
   }
-  fflush(stderr);
-#endif
 }
 
 }

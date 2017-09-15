@@ -75,11 +75,6 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, con
   array = host_array;
 }
 
-void copy_labels(int verbose, const char ord, thrust::device_vector<int> &labels, const int *srclabels,
-                 int q, int n, int npergpu) {
-  copy_data(verbose, ord, labels, srclabels, q, n, npergpu, 1);
-}
-
 /**
  * Like copy_data but shuffles the data according to mapping from v
  * @tparam T
@@ -116,12 +111,6 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
   }
   array = host_array;
 }
-
-void copy_labels_shuffled(int verbose, std::vector<int> v, const char ord, thrust::device_vector<int> &labels,
-                          const int *srclabels, int q, int n, int npergpu) {
-  copy_data_shuffled(verbose, v, ord, labels, srclabels, q, n, npergpu, 1);
-}
-
 
 template<typename T>
 void copy_centroids_shuffled(int verbose, std::vector<int> v, const char ord, thrust::device_vector<T> &array,
@@ -238,7 +227,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
                size_t rows, size_t cols, const char ord,
                int k, int max_iterations, int init_from_data,
                int init_data, T threshold,
-               const T *srcdata, const int *srclabels, void **pred_centroids, void **pred_labels) {
+               const T *srcdata, void **pred_centroids, void **pred_labels) {
   log_debug(verbose, "KMeans - Start fitting");
 
   // init random seed if use the C function rand()
@@ -291,16 +280,10 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     std::random_shuffle(v.begin(), v.end());
   }
 
+  // Copy the data to devices
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
-
-
-    if (init_data == 1) { // shard by row
-      copy_labels(verbose, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
-    } else { // shard by randomly (without replacement) selected by row
-      copy_labels_shuffled(verbose, v, ord, *labels[q], &srclabels[0], q, rows, rows / n_gpu);
-    }
 
     if (init_data == 0) { // random (for testing)
       random_data<T>(verbose, *data[q], rows / n_gpu, cols);
@@ -311,47 +294,40 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     }
   }
 
-  // get non-random centroids on 1 gpu, then share with rest.
-  if (init_from_data == 0) {
-    int masterq = 0;
-    CUDACHECK(cudaSetDevice(dList[masterq]));
-    copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
-    int bytecount = cols * k * sizeof(T); // all centroids
+  // Get random points as centroids
+  int masterq = 0;
+  CUDACHECK(cudaSetDevice(dList[masterq]));
+  copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
+  int bytecount = cols * k * sizeof(T); // all centroids
 
-    // copy centroids to rest of gpus asynchronously
-    std::vector < cudaStream_t * > streams;
-    streams.resize(n_gpu);
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
+  // Copy centroids to all devices
+  std::vector < cudaStream_t * > streams;
+  streams.resize(n_gpu);
+  for (int q = 0; q < n_gpu; q++) {
+    if (q == masterq) continue;
 
-      CUDACHECK(cudaSetDevice(dList[q]));
-      std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+    CUDACHECK(cudaSetDevice(dList[q]));
+    std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
 
-      streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
-      cudaStreamCreate(streams[q]);
-      cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
-                          dList[q],
-                          thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
-                          dList[masterq],
-                          bytecount,
-                          *(streams[q]));
-    }
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
-      cudaSetDevice(dList[q]);
-      cudaStreamSynchronize(*(streams[q]));
-    }
-    for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq) continue;
-      cudaSetDevice(dList[q]);
-      cudaStreamDestroy(*(streams[q]));
+    streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
+    cudaStreamCreate(streams[q]);
+    cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
+                        dList[q],
+                        thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
+                        dList[masterq],
+                        bytecount,
+                        *(streams[q]));
+  }
+  for (int q = 0; q < n_gpu; q++) {
+    if (q == masterq) continue;
+    cudaSetDevice(dList[q]);
+    cudaStreamDestroy(*(streams[q]));
 #if(DEBUGKMEANS)
-      thrust::host_vector<T> h_centroidq=*d_centroids[q];
-      for(int ii=0;ii<k*d;ii++){
-          fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
-      }
-#endif
+    thrust::host_vector<T> h_centroidq=*d_centroids[q];
+    for(int ii=0;ii<k*d;ii++){
+        fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
     }
+#endif
   }
 
   double timetransfer = static_cast<double>(timer<double>() - t0t);
@@ -361,7 +337,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   double t0 = timer<double>();
 
   int status = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, dList, n_gpu,
-                                 max_iterations, init_from_data, threshold, true);
+                                 max_iterations, threshold, true);
 
   if (status) {
     fprintf(stderr, "KMeans status was %d\n", status);
@@ -391,7 +367,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
   // The initial dataset was shuffled, we need to reshuffle the labels accordingly
   // This also reshuffles the initial permutation scheme v
-  if(init_data > 1) {
+  if (init_data > 1) {
     for (int i = 0; i < rows; i++) {
       while (v[i] != i) {
         int tmpIdx = v[v[i]];
@@ -436,11 +412,11 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
                    const char ord, int k,
                    const T *srcdata, const T *centroids, void **pred_labels) {
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < cols * k; i++) {
+    for (int i = 0; i < cols * k; i++) {
       std::cout << centroids[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }
@@ -518,11 +494,11 @@ int kmeans_transform(int verbose,
                      const T *srcdata, const T *centroids,
                      void **preds) {
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < cols * k; i++) {
+    for (int i = 0; i < cols * k; i++) {
       std::cout << centroids[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }
@@ -569,11 +545,11 @@ int kmeans_transform(int verbose,
   *preds = h_pairwise_distances->data();
 
   // Print centroids
-  if(verbose >= H2O4GPU_LOG_VERBOSE) {
+  if (verbose >= H2O4GPU_LOG_VERBOSE) {
     std::cout << std::endl;
-    for(int i = 0; i < rows * cols; i++) {
+    for (int i = 0; i < rows * cols; i++) {
       std::cout << h_pairwise_distances->data()[i] << " ";
-      if(i % cols == 1) {
+      if (i % cols == 1) {
         std::cout << std::endl;
       }
     }
@@ -595,12 +571,12 @@ int kmeans_transform(int verbose,
 template<typename T>
 int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
                   const char ord, int k, int max_iterations, int init_from_data, int init_data,
-                  T threshold, const T *srcdata, const int *srclabels, const T *centroids,
+                  T threshold, const T *srcdata, const T *centroids,
                   void **pred_centroids, void **pred_labels) {
   if (dopredict == 0) {
     return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
                       ord, k, max_iterations, init_from_data, init_data, threshold,
-                      srcdata, srclabels, pred_centroids, pred_labels);
+                      srcdata, pred_centroids, pred_labels);
   } else {
     return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
                           ord, k,
@@ -611,27 +587,27 @@ int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gpu
 template int
 makePtr_dense<float>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                      const char ord, int k, int max_iterations, int init_from_data,
-                     int init_data, float threshold, const float *srcdata, const int *srclabels,
+                     int init_data, float threshold, const float *srcdata,
                      const float *centroids, void **pred_centroids, void **pred_labels);
 
 template int
 makePtr_dense<double>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data,
-                      int init_data, double threshold, const double *srcdata, const int *srclabels,
+                      int init_data, double threshold, const double *srcdata,
                       const double *centroids, void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<float>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                size_t rows, size_t cols,
                                const char ord, int k, int max_iterations,
                                int init_from_data, int init_data, float threshold,
-                               const float *srcdata, const int *srclabels,
+                               const float *srcdata,
                                void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<double>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                 size_t rows, size_t cols,
                                 const char ord, int k, int max_iterations,
                                 int init_from_data, int init_data, double threshold,
-                                const double *srcdata, const int *srclabels,
+                                const double *srcdata,
                                 void **pred_centroids, void **pred_labels);
 
 template int kmeans_predict<float>(int verbose, int gpu_idtry, int n_gputry,
@@ -684,20 +660,20 @@ extern "C" {
 // Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_data,
-                          int init_data, float threshold, const float *srcdata, const int *srclabels,
+                          int init_data, float threshold, const float *srcdata,
                           const float *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                              max_iterations, init_from_data, init_data, threshold,
-                                             srcdata, srclabels, centroids, pred_centroids, pred_labels);
+                                             srcdata, centroids, pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_data,
-                           int init_data, double threshold, const double *srcdata, const int *srclabels,
+                           int init_data, double threshold, const double *srcdata,
                            const double *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
                                               max_iterations, init_from_data, init_data, threshold,
-                                              srcdata, srclabels, centroids, pred_centroids, pred_labels);
+                                              srcdata, centroids, pred_centroids, pred_labels);
 }
 
 // Transform

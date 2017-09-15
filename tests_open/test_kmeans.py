@@ -6,11 +6,12 @@ KMeans solver tests using SKLearn datasets.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
-import h2o4gpu
+import time
 from h2o4gpu import KMeans
 from h2o4gpu.datasets import load_iris
 import numpy as np
-
+from sklearn.datasets.samples_generator import make_blobs
+from sklearn.metrics.cluster import v_measure_score
 
 class TestKmeans(object):
     @classmethod
@@ -39,13 +40,12 @@ class TestKmeans(object):
             model_rerun.cluster_centers_, model_rerun2.cluster_centers_
         )
 
-        # model_all = KMeans(n_clusters=clusters, random_state=123).fit(X)
+        model_all = KMeans(n_clusters=clusters, random_state=123).fit(X)
 
         # Multi GPU should yield same result as single GPU
-        # TODO multi GPU returns wrong results
-        # assert np.allclose(
-        #     model.cluster_centers_, model_all.cluster_centers_
-        # )
+        assert np.allclose(
+            model.cluster_centers_, model_all.cluster_centers_
+        )
 
     def test_fit_vs_sk_iris(self):
         X = load_iris().data
@@ -104,11 +104,10 @@ class TestKmeans(object):
 
         model_rerun = KMeans(n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
 
-        # Choosing initial clusters for sklearn should yield similar result (stable clusters)
-        # TODO: Below fails, so our solution seems very different from what should be?
-        #assert np.allclose(
-        #    model.cluster_centers_, model_rerun.cluster_centers_
-        #)
+        # Choosing initial clusters for sklearn should yield similar result
+        assert np.allclose(
+           model.cluster_centers_, model_rerun.cluster_centers_
+        )
 
         # sklearn directly or our indirect should be same (and is)
         from sklearn.cluster import KMeans as KMeans_test
@@ -119,3 +118,41 @@ class TestKmeans(object):
             model_rerun.cluster_centers_, model_rerun2.cluster_centers_
         )
 
+    def test_accuracy(self):
+        from sklearn.cluster import KMeans as skKMeans
+        n_samples = 100000
+        centers = 10
+        X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
+                                    cluster_std=1., random_state=42)
+
+        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers)
+        kmeans_h2o.fit(X)
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random')
+        kmeans_sk.fit(X)
+
+        # If we have accuracy worse than 80% that's bad...
+        accuracy_h2o = v_measure_score(kmeans_h2o.labels_, true_labels)
+        assert accuracy_h2o > 0.8
+        accuracy_sk = v_measure_score(kmeans_sk.labels_, true_labels)
+        # We also want to be either better or at most 5% worse than SKLearn
+        assert accuracy_h2o - accuracy_sk >= -0.05
+
+    def test_speed_vs_sk(self):
+        from sklearn.cluster import KMeans as skKMeans
+        n_samples = 100000
+        centers = 10
+        X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
+                                    cluster_std=1., random_state=42)
+
+        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers)
+        start_h2o = time.time()
+        kmeans_h2o.fit(X)
+        end_h2o = time.time()
+
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random')
+        start_sk = time.time()
+        kmeans_sk.fit(X)
+        end_sk = time.time()
+
+        print(end_h2o - start_h2o)
+        print(end_sk - start_sk)
