@@ -59,10 +59,11 @@ def import_data(data_path,
     print(data.shape)
     data_x = np.array(
         data.iloc[:, :data.shape[1] - 1],
-        dtype='float32', order='C', copy=False)
+        dtype='float32',
+        order='C',
+        copy=False)
     data_y = np.array(
-        data.iloc[:, data.shape[1] - 1],
-        dtype='float32', order='C', copy=False)
+        data.iloc[:, data.shape[1] - 1], dtype='float32', order='C', copy=False)
 
     #Setup train / validation set split
     #(assuming form of mxn where m = row count and n = col count)

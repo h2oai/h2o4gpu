@@ -9,14 +9,12 @@ import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
     POINTER, cast
 
-
 import numpy as np
 
 from ..solvers.utils import device_count, _check_data_content, \
     _get_data, _setter
 from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
-
 
 
 class KMeans_h2o4gpu(object):
@@ -129,6 +127,7 @@ class KMeans_h2o4gpu(object):
         >>> kmeans.predict(X)
         >>> kmeans.cluster_centers_
     """
+
     def __init__(
             self,
             # sklearn API (but with possibly different choices for defaults)
@@ -169,6 +168,7 @@ class KMeans_h2o4gpu(object):
 
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
+        # pylint: disable=unidiomatic-typecheck
         if type(tol) == type(example):
             tol = tol.item()
 
@@ -177,7 +177,7 @@ class KMeans_h2o4gpu(object):
         example = np.array([1, 2, 3])
         # pylint: disable=unidiomatic-typecheck
         if type(init) == type(example):
-            pass
+            assert ValueError("init cannot be numpy array yet.")
         else:
             if init == 'random':
                 init_data = "randomselect"
@@ -287,21 +287,19 @@ class KMeans_h2o4gpu(object):
                 # nested objects case
                 name, sub_name = split
                 if name not in valid_params:
-                    raise ValueError(
-                        'Invalid parameter %s for estimator %s. '
-                        'Check the list of available parameters '
-                        'with `estimator.get_params().keys()`.' % (name,
-                                                                   self))
+                    raise ValueError('Invalid parameter %s for estimator %s. '
+                                     'Check the list of available parameters '
+                                     'with `estimator.get_params().keys()`.' %
+                                     (name, self))
                 sub_object = valid_params[name]
                 sub_object.set_params(**{sub_name: value})
             else:
                 # simple objects case
                 if key not in valid_params:
-                    raise ValueError(
-                        'Invalid parameter %s for estimator %s. '
-                        'Check the list of available parameters '
-                        'with `estimator.get_params().keys()`.' %
-                        (key, self.__class__.__name__))
+                    raise ValueError('Invalid parameter %s for estimator %s. '
+                                     'Check the list of available parameters '
+                                     'with `estimator.get_params().keys()`.' %
+                                     (key, self.__class__.__name__))
                 setattr(self, key, value)
         return self
 
@@ -332,6 +330,9 @@ class KMeans_h2o4gpu(object):
         self._fit(X_np)
 
         self._did_sklearn_fit = 0
+
+        if y is not None:
+            pass # not using labels
 
         return self
 
@@ -377,8 +378,7 @@ class KMeans_h2o4gpu(object):
         c_init = 0
         c_init_data = 0
 
-        _, c_centroids, _ = self._to_cdata(
-            self.cluster_centers_, convert=False)
+        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -389,16 +389,16 @@ class KMeans_h2o4gpu(object):
             lib.make_ptr_float_kmeans(1, self.verbose, self.random_state,
                                       self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
-                                      self._max_iter, c_init,
-                                      c_init_data, self.tol, c_data,
-                                      c_centroids, None, pointer(c_res))
+                                      self._max_iter, c_init, c_init_data,
+                                      self.tol, c_data, c_centroids, None,
+                                      pointer(c_res))
         else:
-            lib.make_ptr_double_kmeans(
-                1, self.verbose, self.random_state, self._gpu_id,
-                self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data,
-                c_centroids, None, pointer(c_res))
+            lib.make_ptr_double_kmeans(1, self.verbose, self.random_state,
+                                       self._gpu_id, self.n_gpus, rows, cols,
+                                       c_int(data_ord), self._n_clusters,
+                                       self._max_iter, c_init, c_init_data,
+                                       self.tol, c_data, c_centroids, None,
+                                       pointer(c_res))
 
         preds = np.fromiter(
             cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
@@ -433,8 +433,7 @@ class KMeans_h2o4gpu(object):
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         X_np, c_data, c_data_type = self._to_cdata(X_np)
-        _, c_centroids, _ = self._to_cdata(
-            self.cluster_centers_, convert=False)
+        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
 
         lib = self._load_lib()
@@ -540,15 +539,15 @@ class KMeans_h2o4gpu(object):
             status = lib.make_ptr_float_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, None,
+                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                c_init_data, self.tol, c_data_ptr, None,
                 pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter,
-                c_init, c_init_data, self.tol, c_data_ptr, None,
+                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                c_init_data, self.tol, c_data_ptr, None,
                 pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
@@ -666,27 +665,28 @@ class KMeans_h2o4gpu(object):
         self._max_iter = value
 
 
-# Wrapper
 class KMeans(object):
-    def __init__(
-               self,
-               n_clusters=8,
-               init='random',
-               n_init=1,
-               max_iter=300,
-               tol=1e-4,
-               precompute_distances='auto',
-               verbose=0,
-               random_state=None,
-               copy_x=True,
-               n_jobs=1,
-               algorithm='auto',
-               # Beyond sklearn (with optimal defaults)
-               gpu_id=0,
-               n_gpus=-1,
-               init_data="randomselect",
-               do_checks=1):
+    """K-Means clustering Wraper
+    """
 
+    def __init__(
+            self,
+            n_clusters=8,
+            init='random',
+            n_init=1,
+            max_iter=300,
+            tol=1e-4,
+            precompute_distances='auto',
+            verbose=0,
+            random_state=None,
+            copy_x=True,
+            n_jobs=1,
+            algorithm='auto',
+            # Beyond sklearn (with optimal defaults)
+            gpu_id=0,
+            n_gpus=-1,
+            init_data="randomselect",
+            do_checks=1):
 
         # setup backup to sklearn class
         # (can remove if fully implement sklearn functionality)
@@ -709,54 +709,54 @@ class KMeans(object):
             print("WARNING: precompute_distances not used."
                   "  Still using h2o4gpu.")
 
-
         from h2o4gpu.cluster import k_means_
-        self.model_sklearn = k_means_.KMeans_sklearn(n_clusters=n_clusters,
-                                    init=init,
-                                    n_init=n_init,
-                                    max_iter=max_iter,
-                                    tol=tol,
-                                    precompute_distances=precompute_distances,
-                                    verbose=verbose,
-                                    random_state=random_state,
-                                    copy_x=copy_x,
-                                    n_jobs=n_jobs,
-                                    algorithm=algorithm)
-        self.model_h2o4gpu = KMeans_h2o4gpu(n_clusters=n_clusters,
-                                     init=init,
-                                     n_init=n_init,
-                                     max_iter=max_iter,
-                                     tol=tol,
-                                     precompute_distances=precompute_distances,
-                                     verbose=verbose,
-                                     random_state=random_state,
-                                     copy_x=copy_x,
-                                     n_jobs=n_jobs,
-                                     algorithm=algorithm,
-                                     # H2O4GPU
-                                     gpu_id=gpu_id,
-                                     n_gpus=n_gpus,
-                                     init_data=init_data,
-                                     do_checks=do_checks)
+        self.model_sklearn = k_means_.KMeans_sklearn(
+            n_clusters=n_clusters,
+            init=init,
+            n_init=n_init,
+            max_iter=max_iter,
+            tol=tol,
+            precompute_distances=precompute_distances,
+            verbose=verbose,
+            random_state=random_state,
+            copy_x=copy_x,
+            n_jobs=n_jobs,
+            algorithm=algorithm)
+        self.model_h2o4gpu = KMeans_h2o4gpu(
+            n_clusters=n_clusters,
+            init=init,
+            n_init=n_init,
+            max_iter=max_iter,
+            tol=tol,
+            precompute_distances=precompute_distances,
+            verbose=verbose,
+            random_state=random_state,
+            copy_x=copy_x,
+            n_jobs=n_jobs,
+            algorithm=algorithm,
+            # H2O4GPU
+            gpu_id=gpu_id,
+            n_gpus=n_gpus,
+            init_data=init_data,
+            do_checks=do_checks)
 
         if self.do_sklearn:
             self.model = self.model_sklearn
         else:
             self.model = self.model_h2o4gpu
 
-
     def fit(self, X, y=None):
-        res = self.model.fit(X,y)
+        res = self.model.fit(X, y)
         self.set_attributes()
         return res
 
     def fit_predict(self, X, y=None):
-        res=self.model.fit_predict(X,y)
+        res = self.model.fit_predict(X, y)
         self.set_attributes()
         return res
 
     def fit_transform(self, X, y=None):
-        res=self.model.fit_transform(X, y)
+        res = self.model.fit_transform(X, y)
         self.set_attributes()
         return res
 
