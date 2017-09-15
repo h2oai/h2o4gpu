@@ -179,17 +179,14 @@ In order to override the sklearn API with new (GPU) functions, one:
 * Adds string replacements in scripts/prepare_sklearn.sh so sklearn
   class is renamed to <origin name>_sklearn
 
-* Adds a new row to the src/interface_py/h2o4gpu/register.dat, giving
-the filename to modify, associated init file, original class name,
-what the sklearn class will be renamed to, and the command to append
-in the init file that overrides the original sklearn class with the
-new class.
+* Adds the override as an echo that appends to __init__.py for whatever
+packages or class is overriden.
 
-* Add new code for new class so that it will revert back to sklearn
-class if arguments passed suggest advanced feature h2o4gpu cannot yet
-handle, or continue with h2o4gpu class if parameter being passed is
-not important or is related to an inferior algorithm option.  Can
-follow class GLM and class KMeans as examples.
+* Add wrapper that choses between new class and sklearn class.
+E.g. use sklearn if arguments passed suggest advanced feature h2o4gpu
+cannot yet handle, or continue with h2o4gpu class if parameter being
+passed is not important or is related to an inferior algorithm option.
+Can follow class LogisticRegression and class KMeans as examples.
 
 This exposes the simplest cases of how to override sklearn classes
 with our own, and then how we write our own class in smart way is up
