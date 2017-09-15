@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 KMeans clustering solver.
 
@@ -332,7 +332,7 @@ class KMeans_h2o4gpu(object):
         self._did_sklearn_fit = 0
 
         if y is not None:
-            pass # not using labels
+            pass  # not using labels
 
         return self
 
@@ -455,7 +455,7 @@ class KMeans_h2o4gpu(object):
             cast(c_res, POINTER(c_data_type)),
             dtype=c_data_type,
             count=rows * self._n_clusters)
-        #TODO don 't set order if X is ' F'
+        # TODO don 't set order if X is ' F'
         transformed = np.reshape(
             transformed, (rows, self._n_clusters), order='F')
         return transformed
@@ -572,13 +572,14 @@ class KMeans_h2o4gpu(object):
 
         return self.cluster_centers_, self.labels_
 
-#FIXME : This function duplicates others in solvers / utils.py as used in GLM
+    # FIXME : This function duplicates others
+    # in solvers / utils.py as used in GLM
 
     def _to_cdata(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(1, "Detected numeric data format which is not "
-                                "supported. Casting to np.float32.")
+                                   "supported. Casting to np.float32.")
             data = np.array(data, copy=False, dtype=np.float32)
 
         if data.dtype == np.float64:
@@ -630,7 +631,7 @@ class KMeans_h2o4gpu(object):
             (cols, centroids_dim)
         return cols, rows
 
-#Properties and setters of properties
+    # Properties and setters of properties
 
     @property
     def n_clusters(self):
@@ -666,7 +667,16 @@ class KMeans_h2o4gpu(object):
 
 
 class KMeans(object):
-    """K-Means clustering Wraper
+    """
+        K-Means clustering Wrapper
+
+        Selects between h2o4gpu.cluster.k_means_.KMeans_sklearn
+        and h2o4gpu.solvers.kmeans.KMeans_h2o4gpu
+
+        Documentation:
+        import h2o4gpu.cluster ; help(h2o4gpu.cluster.k_means_.KMeans_sklearn)
+        help(h2o4gpu.solvers.kmeans.KMeans_h2o4gpu)
+
     """
 
     def __init__(
@@ -688,6 +698,7 @@ class KMeans(object):
             init_data="randomselect",
             do_checks=1):
 
+        # FIXME: Add init as array and kmeans++ to h2o4gpu
         # setup backup to sklearn class
         # (can remove if fully implement sklearn functionality)
         self.do_sklearn = False
@@ -702,6 +713,7 @@ class KMeans(object):
                 print("WARNING: init as k-means++ not yet supported."
                       "  Using sklearn.")
                 self.do_sklearn = True
+        # FIXME: Add n_init to h2o4gpu
         if n_init != 1:
             print("WARNING: n_init not supported currently."
                   "  Still using h2o4gpu.")
@@ -771,6 +783,7 @@ class KMeans(object):
         return res
 
     def score(self, X, y=None):
+        # FIXME: Add score to h2o4gpu
         res = self.model_sklearn.score(X, y)
         self.set_attributes()
         return res
