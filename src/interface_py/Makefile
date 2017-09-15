@@ -57,6 +57,8 @@ install:
 	-cd ../.. && pip uninstall -y h2o4gpu
 	-cd ../.. && pip uninstall -y xgboost
 	-cd ../.. && pip uninstall -y py3nvml
+	find -name *.pyc | xargs rm -rf
+	find -name *__pycache__ | xargs rm -rf
 	python setup.py install
 
 #	python3 setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/

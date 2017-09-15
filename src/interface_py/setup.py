@@ -74,27 +74,31 @@ install_reqs = parse_requirements('../../requirements_runtime.txt', session='hac
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
 
-def package_files(directory):
+def get_packages(directory):
     paths = []
     for (path, directories, filenames) in os.walk(directory, followlinks=True):
-        for filename in filenames:
-            paths.append(os.path.join(path, filename))
+        if './build' in path or './dist' in path or 'h2o4gpu.egg-info' in path or '__pycache__' in path or path == './' or path in paths:
+            pass
+        else:
+            paths.append(path[2:])
     return paths
 
-extra_files = package_files('./')
-print("extra_files")
-print(extra_files)
-
-packages=find_packages()
+packages = get_packages('./')
 print("packages")
 print(packages)
 
+#packages0=find_packages()
+#print("packages0")
+#print(packages0)
+
 package_data = {}
 for package in packages:
-    package_data[package] = ['*']
-package_data[''] = extra_files
+#    package_data[package] = extra_files
+   package_data[package] = ['*']
+#package_data[''] = extra_files
 print("package_data")
 print(package_data)
+
 
 import os
 from setuptools import setup
