@@ -74,14 +74,14 @@ class Lasso(object):
         n_alphas = 1
         n_lambdas = 1
         n_folds = 1
-        lambda_max = None
+        lambda_max = alpha
         lambda_min_ratio = 1.0
         lambda_stop_early = False
         store_full_path = 1
         alphas = None
         lambdas = None
-        alpha_min = alpha
-        alpha_max = alpha
+        alpha_min = 1.0
+        alpha_max = 1.0
 
         self.model_h2o4gpu = elastic_net.GLM(
             n_threads=n_threads,
