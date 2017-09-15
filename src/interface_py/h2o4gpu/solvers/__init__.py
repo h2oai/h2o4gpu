@@ -4,10 +4,10 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
-from h2o4gpu.solvers.pogs import Pogs
-from h2o4gpu.solvers.elastic_net import GLM
-from h2o4gpu.solvers.logistic import LogisticRegression
-from h2o4gpu.solvers.linear_regression import LinearRegression
-from h2o4gpu.solvers.lasso import Lasso
-from h2o4gpu.solvers.ridge import Ridge
-from h2o4gpu.solvers.kmeans import KMeans
+from ..solvers.pogs import Pogs
+from ..solvers.elastic_net import GLM
+from ..solvers.logistic import LogisticRegression
+from ..solvers.linear_regression import LinearRegression
+from ..solvers.lasso import Lasso
+from ..solvers.ridge import Ridge
+from ..solvers.kmeans import KMeans

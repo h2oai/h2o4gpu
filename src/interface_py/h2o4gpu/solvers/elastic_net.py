@@ -22,7 +22,8 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
 class GLM(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
-    :param int n_threads : Number of threads to use in the gpu. Default is None.
+    :param int n_threads : Number of threads to use in the gpu.
+    Each thread is an independent model builder. Default is None.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
@@ -45,7 +46,7 @@ class GLM(object):
 
     :param int n_alphas : Number of alphas to be used in a search. Default is 5.
 
-    :param float tol : tolerance.  Default is 1E-2.
+    :param float tol : Relative tolerance.  Default is 1E-2.
 
     :param float tol_seek_factor : factor of tolerance to seek
         once below null model accuracy.  Default is 1E-1, so seeks tolerance

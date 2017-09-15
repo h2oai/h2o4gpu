@@ -7,6 +7,7 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import logistic
 
+
 class LogisticRegression(elastic_net.GLM):
     """H2O Logistic Regression Solver
 
