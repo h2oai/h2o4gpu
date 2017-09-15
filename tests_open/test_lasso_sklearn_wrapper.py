@@ -20,13 +20,22 @@ def test_fit_simple_backupsklearn():
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.Lasso
-    enet = Solver(precompute=True, random_state=1234)
-    print("h2o4gpu scikit wrapper fit()")
+
+    enet = Solver()
+    print("h2o4gpu fit()")
     enet.fit(X, y)
-    print("h2o4gpu scikit wrapper predict()")
+    print("h2o4gpu predict()")
     print(enet.predict(X))
-    print("h2o4gpu scikit wrapper score()")
+    print("h2o4gpu score()")
     print(enet.score(X, y))
+
+    enet_wrapper = Solver(precompute=True, random_state=1234)
+    print("h2o4gpu scikit wrapper fit()")
+    enet_wrapper.fit(X, y)
+    print("h2o4gpu scikit wrapper predict()")
+    print(enet_wrapper.predict(X))
+    print("h2o4gpu scikit wrapper score()")
+    print(enet_wrapper.score(X, y))
 
     from sklearn.linear_model.coordinate_descent import Lasso
     enet_sk = Lasso(precompute=True, random_state=1234)
@@ -56,10 +65,10 @@ def test_fit_simple_backupsklearn():
     print(enet.n_iter_)
 
     print("Coeffs, sparse coeffs, intercept, and n_iters should match")
-    assert np.allclose(enet.coef_, enet_sk_coef)
-    assert np.allclose(enet.coef_, enet_sk_sparse_coef)
-    assert np.allclose(enet.intercept_, enet_sk.intercept_)
-    assert np.allclose(enet.n_iter_, enet_sk.n_iter_)
+    assert np.allclose(enet_wrapper.coef_, enet_sk_coef)
+    assert np.allclose(enet_wrapper.coef_, enet_sk_sparse_coef)
+    assert np.allclose(enet_wrapper.intercept_, enet_sk.intercept_)
+    assert np.allclose(enet_wrapper.n_iter_, enet_sk.n_iter_)
 
 
 def test_sklearn_logit(): test_fit_simple_backupsklearn()

@@ -112,9 +112,12 @@ class Lasso(object):
             print("Running h2o4gpu Lasso Regression")
             self.model = self.model_h2o4gpu
 
-    def fit(self, X, y=None, sample_weight=None):
-        res = self.model.fit(X, y, sample_weight)
-        self.set_attributes()
+    def fit(self, X, y=None, check_input=True):
+        if self.do_sklearn:
+            res = self.model.fit(X, y, check_input)
+            self.set_attributes()
+            return res
+        res = self.model.fit(X, y)
         return res
 
     def get_params(self):
