@@ -128,7 +128,7 @@ def test_fit_credit_backupsklearn():
     print(enet_sk_coef)
     print(enet.coef_)
     print("Coeffs should match")
-    assert np.allclose(enet.coef_, enet_sk_coef)
+    assert np.allclose(enet.coef_, enet_sk_coef, rtol = 1e-2, atol=1e-2)
     
 
 
