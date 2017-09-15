@@ -355,7 +355,7 @@ def run_glm(X,
             tol=tol,
             tol_seek_factor=tol_seek_factor)
     elif solver == "lasso":
-        Solver = h2o4gpu.Lasso
+        Solver = h2o4gpu.GLM
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -367,9 +367,12 @@ def run_glm(X,
             store_full_path=store_full_path,
             lambdas=lambdas,
             tol=tol,
-            tol_seek_factor=tol_seek_factor)
+            tol_seek_factor=tol_seek_factor,
+            alpha_max=1.0,
+            alpha_min=1.0,
+            n_alphas=1)
     elif solver == "ridge":
-        Solver = h2o4gpu.Ridge
+        Solver = h2o4gpu.GLM
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -381,7 +384,10 @@ def run_glm(X,
             store_full_path=store_full_path,
             lambdas=lambdas,
             tol=tol,
-            tol_seek_factor=tol_seek_factor)
+            tol_seek_factor=tol_seek_factor,
+            alpha_max=0.0,
+            alpha_min=0.0,
+            n_alphas=1)
     elif solver == "linear_regression":
         Solver = h2o4gpu.LinearRegression
         enet = Solver(
