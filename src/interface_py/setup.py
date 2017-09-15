@@ -8,6 +8,7 @@ from distutils.command.build import build
 from setuptools import setup
 from setuptools.command.install import install
 from pip.req import parse_requirements
+from setuptools import setup, find_packages
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -73,6 +74,32 @@ install_reqs = parse_requirements('../../requirements_runtime.txt', session='hac
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 reqs = [str(ir.req) for ir in install_reqs]
 
+def get_packages(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory, followlinks=True):
+        if './build' in path or './dist' in path or 'h2o4gpu.egg-info' in path or '__pycache__' in path or path == './' or path in paths:
+            pass
+        else:
+            paths.append(path[2:])
+    return paths
+
+packages = get_packages('./')
+print("packages")
+print(packages)
+
+#packages0=find_packages()
+#print("packages0")
+#print(packages0)
+
+package_data = {}
+for package in packages:
+#    package_data[package] = extra_files
+   package_data[package] = ['*']
+#package_data[''] = extra_files
+print("package_data")
+print(package_data)
+
+
 import os
 from setuptools import setup
 from setuptools.dist import Distribution
@@ -90,132 +117,8 @@ setup(
     distclass=BinaryDistribution,
     # from:
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
-    packages=['h2o4gpu',
-              'xgboost',
-              'py3nvml',
-              'h2o4gpu.utils/sparsetools/tests',
-              'h2o4gpu.metrics/cluster/tests',
-              'h2o4gpu.datasets/tests/data',
-              'h2o4gpu.utils/tests',
-              'h2o4gpu.utils/sparsetools',
-              'h2o4gpu.tree/tests',
-              'h2o4gpu.svm/tests',
-              'h2o4gpu.semi_supervised/tests',
-              'h2o4gpu.preprocessing/tests',
-              'h2o4gpu.neural_network/tests',
-              'h2o4gpu.neighbors/tests',
-              'h2o4gpu.model_selection/tests',
-              'h2o4gpu.mixture/tests',
-              'h2o4gpu.metrics/tests',
-              'h2o4gpu.metrics/cluster',
-              'h2o4gpu.manifold/tests',
-              'h2o4gpu.linear_model/tests',
-              'h2o4gpu.gaussian_process/tests',
-              'h2o4gpu.feature_selection/tests',
-              'h2o4gpu.feature_extraction/tests',
-              'h2o4gpu.externals/joblib',
-              'h2o4gpu.ensemble/tests',
-              'h2o4gpu.decomposition/tests',
-              'h2o4gpu.datasets/tests',
-              'h2o4gpu.datasets/images',
-              'h2o4gpu.datasets/descr',
-              'h2o4gpu.datasets/data',
-              'h2o4gpu.cross_decomposition/tests',
-              'h2o4gpu.covariance/tests',
-              'h2o4gpu.cluster/tests',
-              'h2o4gpu.utils',
-              'h2o4gpu.util',
-              'h2o4gpu.tree',
-              'h2o4gpu.tests',
-              'h2o4gpu.svm',
-              'h2o4gpu.solvers',
-              'h2o4gpu.semi_supervised',
-              'h2o4gpu.preprocessing',
-              'h2o4gpu.neural_network',
-              'h2o4gpu.neighbors',
-              'h2o4gpu.model_selection',
-              'h2o4gpu.mixture',
-              'h2o4gpu.metrics',
-              'h2o4gpu.manifold',
-              'h2o4gpu.linear_model',
-              'h2o4gpu.libs',
-              'h2o4gpu.gaussian_process',
-              'h2o4gpu.feature_selection',
-              'h2o4gpu.feature_extraction',
-              'h2o4gpu.externals',
-              'h2o4gpu.ensemble',
-              'h2o4gpu.decomposition',
-              'h2o4gpu.datasets',
-              'h2o4gpu.cross_decomposition',
-              'h2o4gpu.covariance',
-              'h2o4gpu.cluster',
-              'h2o4gpu.__check_build',
-              'h2o4gpu._build_utils',
-              'h2o4gpu.typecheck'
-             ],
-    package_data={'h2o4gpu': ['*'],
-                  'xgboost': ['*'],
-                  'py3nvml': ['*'],
-                  'h2o4gpu.utils/sparsetools/tests': ['*'],
-                  'h2o4gpu.metrics/cluster/tests': ['*'],
-                  'h2o4gpu.datasets/tests/data': ['*'],
-                  'h2o4gpu.utils/tests': ['*'],
-                  'h2o4gpu.utils/sparsetools': ['*'],
-                  'h2o4gpu.tree/tests': ['*'],
-                  'h2o4gpu.svm/tests': ['*'],
-                  'h2o4gpu.semi_supervised/tests': ['*'],
-                  'h2o4gpu.preprocessing/tests': ['*'],
-                  'h2o4gpu.neural_network/tests': ['*'],
-                  'h2o4gpu.neighbors/tests': ['*'],
-                  'h2o4gpu.model_selection/tests': ['*'],
-                  'h2o4gpu.mixture/tests': ['*'],
-                  'h2o4gpu.metrics/tests': ['*'],
-                  'h2o4gpu.metrics/cluster': ['*'],
-                  'h2o4gpu.manifold/tests': ['*'],
-                  'h2o4gpu.linear_model/tests': ['*'],
-                  'h2o4gpu.gaussian_process/tests': ['*'],
-                  'h2o4gpu.feature_selection/tests': ['*'],
-                  'h2o4gpu.feature_extraction/tests': ['*'],
-                  'h2o4gpu.externals/joblib': ['*'],
-                  'h2o4gpu.ensemble/tests': ['*'],
-                  'h2o4gpu.decomposition/tests': ['*'],
-                  'h2o4gpu.datasets/tests': ['*'],
-                  'h2o4gpu.datasets/images': ['*'],
-                  'h2o4gpu.datasets/descr': ['*'],
-                  'h2o4gpu.datasets/data': ['*'],
-                  'h2o4gpu.cross_decomposition/tests': ['*'],
-                  'h2o4gpu.covariance/tests': ['*'],
-                  'h2o4gpu.cluster/tests': ['*'],
-                  'h2o4gpu.utils': ['*'],
-                  'h2o4gpu.util': ['*'],
-                  'h2o4gpu.tree': ['*'],
-                  'h2o4gpu.tests': ['*'],
-                  'h2o4gpu.svm': ['*'],
-                  'h2o4gpu.solvers': ['*'],
-                  'h2o4gpu.semi_supervised': ['*'],
-                  'h2o4gpu.preprocessing': ['*'],
-                  'h2o4gpu.neural_network': ['*'],
-                  'h2o4gpu.neighbors': ['*'],
-                  'h2o4gpu.model_selection': ['*'],
-                  'h2o4gpu.mixture': ['*'],
-                  'h2o4gpu.metrics': ['*'],
-                  'h2o4gpu.manifold': ['*'],
-                  'h2o4gpu.linear_model': ['*'],
-                  'h2o4gpu.libs': ['*'],
-                  'h2o4gpu.gaussian_process': ['*'],
-                  'h2o4gpu.feature_selection': ['*'],
-                  'h2o4gpu.feature_extraction': ['*'],
-                  'h2o4gpu.externals': ['*'],
-                  'h2o4gpu.ensemble': ['*'],
-                  'h2o4gpu.decomposition': ['*'],
-                  'h2o4gpu.datasets': ['*'],
-                  'h2o4gpu.cross_decomposition': ['*'],
-                  'h2o4gpu.covariance': ['*'],
-                  'h2o4gpu.cluster': ['*'],
-                  'h2o4gpu.__check_build': ['*'],
-                  'h2o4gpu._build_utils': ['*'],
-                  'h2o4gpu.typecheck' : ['*']
-                 },
+    packages=packages,
+    package_data=package_data,
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai GPU Edition',
