@@ -6,132 +6,17 @@
 # pylint: disable=unused-import
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import logistic as sk
-from ..typecheck.typechecks import assert_is_type
+from ..solvers.utils import _setter
 import numpy as np
 
 class LogisticRegression(object):
     """H2O Logistic Regression Solver
 
-    :param penalty : str, 'l1' or 'l2', default: 'l2'
-        Details for sklearn: Used to specify the norm used in the penalization.
-        The 'newton-cg', 'sag' and 'lbfgs' solvers support only l2 penalties.
-        .. versionadded:: 0.19
-           l1 penalty with SAGA solver (allowing 'multinomial' + L1)
-
-    :param dual : bool, default: False
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Dual or primal formulation. Dual formulation is only implemented for
-        l2 penalty with liblinear solver. Prefer dual=False when
-        n_samples > n_features.
-
-    :param tol : float, default: 1e-4
-        Tolerance for stopping criteria.
-
-    :param C : float, default: 1.0
-        Inverse of regularization strength; must be a positive float.
-        Like in support vector machines, smaller values specify stronger
-        regularization.
-
-    :param fit_intercept : bool, default: True
-        Specifies if a constant (a.k.a. bias or intercept) should be
-        added to the decision function.
-
-    :param intercept_scaling : float, default 1.
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Useful only when the solver 'liblinear' is used
-        and self.fit_intercept is set to True. In this case, x becomes
-        [x, self.intercept_scaling],
-        i.e. a "synthetic" feature with constant value equal to
-        intercept_scaling is appended to the instance vector.
-        The intercept becomes ``intercept_scaling * synthetic_feature_weight``.
-        Note! the synthetic feature weight is subject to l1/l2 regularization
-        as all other features.
-        To lessen the effect of regularization on synthetic feature weight
-        (and therefore on the intercept) intercept_scaling has to be increased.
-
-    :param class_weight : dict or 'balanced', default: None
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Weights associated with classes in the form ``{class_label: weight}``.
-        If not given, all classes are supposed to have weight one.
-        The "balanced" mode uses the values of y to automatically adjust
-        weights inversely proportional to class frequencies in the input data
-        as ``n_samples / (n_classes * np.bincount(y))``.
-        Note that these weights will be multiplied with sample_weight (passed
-        through the fit method) if sample_weight is specified.
-        .. versionadded:: 0.17
-           *class_weight='balanced'*
-
-    :param random_state : int, RandomState instance or None, optional, default: None
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        The seed of the pseudo random number generator to use when shuffling
-        the data.  If int, random_state is the seed used by the random number
-        generator; If RandomState instance, random_state is the random number
-        generator; If None, the random number generator is the RandomState
-        instance used by `np.random`. Used when ``solver`` == 'sag' or
-        'liblinear'.
-
-    :param solver : {'newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'},
-        default: 'liblinear'
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Algorithm to use in the optimization problem.
-        - For small datasets, 'liblinear' is a good choice, whereas 'sag' and
-            'saga' are faster for large ones.
-        - For multiclass problems, only 'newton-cg', 'sag', 'saga' and 'lbfgs'
-            handle multinomial loss; 'liblinear' is limited to one-versus-rest
-            schemes.
-        - 'newton-cg', 'lbfgs' and 'sag' only handle L2 penalty, whereas
-            'liblinear' and 'saga' handle L1 penalty.
-        Note that 'sag' and 'saga' fast convergence is only guaranteed on
-        features with approximately the same scale. You can
-        preprocess the data with a scaler from sklearn.preprocessing.
-        .. versionadded:: 0.17
-           Stochastic Average Gradient descent solver.
-        .. versionadded:: 0.19
-           SAGA solver.
-
-    :param max_iter : int, default: 100
-        Useful only for the newton-cg, sag and lbfgs solvers.
-        Maximum number of iterations taken for the solvers to converge.
-
-    :param multi_class : str, {'ovr', 'multinomial'}, default: 'ovr'
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Multiclass option can be either 'ovr' or 'multinomial'. If the option
-        chosen is 'ovr', then a binary problem is fit for each label. Else
-        the loss minimised is the multinomial loss fit across
-        the entire probability distribution. Does not work for liblinear
-        solver.
-        .. versionadded:: 0.18
-           Stochastic Average Gradient descent solver for 'multinomial' case.
-
-    :param verbose : int, default: 0
-        For the liblinear and lbfgs solvers set verbose to any positive
-        number for verbosity.
-
-    :param warm_start : bool, default: False
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        When set to True, reuse the solution of the previous call to fit as
-        initialization, otherwise, just erase the previous solution.
-        Useless for liblinear solver.
-        .. versionadded:: 0.17
-           *warm_start* to support *lbfgs*, *newton-cg*, *sag*, *saga* solvers.
-
-    :param n_jobs : int, default: 1
-        Only used for sklearn. If set to non-default backend will run sklearn logistic regression solver.
-        Number of CPU cores used when parallelizing over classes if
-        multi_class='ovr'". This parameter is ignored when the ``solver``is set
-        to 'liblinear' regardless of whether 'multi_class' is specified or
-        not. If given a value of -1, all cores are used.
-
-    :param n_gpus: int, default is -1
-        Number of GPUs to use in GLM solver.
-
-    :param glm_stop_early: bool, default is True
-        Stop early when there is no more relative improvement in the primary and
-        dual residuals for ADMM. Default is True
-
-    :param glm_stop_early_error_fraction: float, default is 1.0
-        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at
-        least this much). Default is 1.0.
+        Selects between h2o4gpu.solvers.elastic_net.GLM
+        and h2o4gpu.linear_model.logistic.LogisticRegression_sklearn
+        Documentation:
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.GLM)
+        help(h2o4gpu.linear_model.logistic.LogisticRegression_sklearn)
     """
 
     def __init__(self,
@@ -238,15 +123,19 @@ class LogisticRegression(object):
             self.model = self.model_h2o4gpu
 
     def fit(self, X, y=None, sample_weight=None):
-        model_fit = self.model.fit(X,y,sample_weight)
-        self.coef_ = model_fit.coef_
-        return model_fit
+        res = self.model.fit(X,y,sample_weight)
+        self.set_attributes()
+        return res
 
     def predict_proba(self, X):
         if self.do_sklearn:
-            return self.model.predict_proba(X)
+            res = self.model.predict_proba(X)
+            self.set_attributes()
+            return res
         else:
-            return self.model.predict(X)
+            res = self.model.predict(X)
+            self.set_attributes()
+            return res
 
     def decision_function(self,X):
         print("WARNING: decision_function() is using sklearn")
@@ -263,20 +152,27 @@ class LogisticRegression(object):
 
     def predict(self, X):
         if self.do_sklearn:
-            return self.model.predict(X)
+            res = self.model.predict(X)
+            self.set_attributes()
+            return res
         else:
-            preds = self.model.predict(X)
-            preds[preds<0.5] = 0
-            preds[preds>0.5] = 1
+            res = self.model.predict(X)
+            res[res<0.5] = 0
+            res[res>0.5] = 1
+            self.set_attributes()
+            return res
 
     def predict_log_proba(self, X):
-        preds = self.predict_proba(X)
-        return np.log(preds)
+        res = self.predict_proba(X)
+        self.set_attributes()
+        return np.log(res)
 
     def score(self, X, y, sample_weight = None):
         #TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
-        return self.model_sklearn.score(X, y, sample_weight)
+        res =  self.model_sklearn.score(X, y, sample_weight)
+        self.model_sklearn.score(X, y, sample_weight)
+        return res
 
     def set_params(self, **params):
         return self.model.set_params(**params)
@@ -286,3 +182,10 @@ class LogisticRegression(object):
             return self.model.sparsify()
         else:
             assert ValueError, "sparsify() is not yet supporte for h2o4gpu"
+
+    def set_attributes(self):
+        s = _setter(oself=self, e1=NameError, e2=AttributeError)
+
+        s('oself.coef_ = oself.model.coef_')
+        s('oself.intercept_ = oself.model.intercept_')
+        s('oself.n_iter_ = oself.model.n_iter_')
