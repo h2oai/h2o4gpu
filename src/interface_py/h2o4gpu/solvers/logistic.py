@@ -10,7 +10,6 @@ from ..typecheck.typechecks import assert_is_type
 import numpy as np
 
 class LogisticRegression(object):
-
     """H2O Logistic Regression Solver
 
     :param penalty : str, 'l1' or 'l2', default: 'l2'

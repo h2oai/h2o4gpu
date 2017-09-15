@@ -9,7 +9,6 @@ wheel>=0.29.0
 h2o>=3.10.4.8
 coverage>=4.4.1
 cmake>=0.8.0
-feather-format>=0.4.0
 Cython>=0.25.2
 pillow>=4.2.1
 yapf>=0.17.0

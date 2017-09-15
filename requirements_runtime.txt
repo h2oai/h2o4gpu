@@ -71,3 +71,4 @@ webencodings>=0.5.1
 widgetsnbextension>=2.0.0
 XlsxWriter>=0.9.8
 awscli>=1.11.148
+feather-format>=0.4.0
