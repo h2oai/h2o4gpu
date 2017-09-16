@@ -9,7 +9,7 @@ pylint:
 		if [ "$$py" == "h2o4gpu/__init__.py" ]; \
 		then echo "Skip $$py"; \
 		else echo $$py; \
-		mkdir -p ./pylint.d ; PYLINTHOME=./pylint.d pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
+		mkdir -p ../pylint.d ; PYLINTHOME=../pylint.d pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
 		tmp=$$?; \
 		if [ $$tmp -ne 0 ]; then status=$$tmp; fi; \
 		fi; \
@@ -29,6 +29,7 @@ pyformat:
 prep:
 	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python-tag=.*/python-tag=py'$$PYVER'/g' setup.cfg
 	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'` && sed -i 's/python_version==.*/python_version=='$$PYVER'/g' setup.cfg
+	rm -rf ./.pylint.d
 
 all: prep
 
