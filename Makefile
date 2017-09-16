@@ -87,8 +87,10 @@ c:
 py: apply_sklearn_simple
 	$(MAKE) -j all -C src/interface_py
 
-fullpy: apply_sklearn_simple
-	$(MAKE) pylint all -C src/interface_py
+pylint:
+	$(MAKE) pylint -C src/interface_py
+
+fullpy: apply_sklearn_simple pylint
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
@@ -183,8 +185,29 @@ xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
 
+# http://developer2.download.nvidia.com/compute/cuda/9.0/secure/rc/docs/sidebar/CUDA_Quick_Start_Guide.pdf?_ZyOB0PlGZzBUluXp3FtoWC-LMsTsc5H6SxIaU0i9pGNyWzZCgE-mhnAg2m66Nc3WMDvxWvvQWsXGMqr1hUliGOZvoothMTVnDe12dQQgxwS4Asjoz8XiOvPYOjV6yVQtkFhvDztUlJbNSD4srPWUU2-XegCRFII8_FIpxXERaWV
+libcuda9:
+	# wget https://developer.nvidia.com/compute/cuda/9.0/rc/local_installers/cuda-repo-ubuntu1604-9-0-local-rc_9.0.103-1_amd64-deb
+	sudo dpkg --install cuda-repo-ubuntu1604-9-0-local-rc_9.0.103-1_amd64.deb
+	# wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
+	sudo apt-key add 7fa2af80.pub
+	sudo apt-get update
+	sudo apt-get install cuda
+
+# http://docs.nvidia.com/deeplearning/sdk/nccl-install-guide/index.html
+libnccl2:
+	# cuda8 nccl2
+	#wget https://developer.nvidia.com/compute/machine-learning/nccl/secure/v2.0/prod/nccl-repo-ubuntu1604-2.0.5-ga-cuda8.0_2-1_amd64-deb
+	# cuda9 nccl2
+	# wget https://developer.nvidia.com/compute/machine-learning/nccl/secure/v2.0/prod/nccl-repo-ubuntu1604-2.0.5-ga-cuda9.0_2-1_amd64-deb
+	sudo dpkg -i nccl-repo-ubuntu1604-2.0.5-ga-cuda9.0_2-1_amd64.deb
+	sudo apt update
+	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
+	sudo apt install libnccl2 libnccl-dev
+
+# https://xgboost.readthedocs.io/en/latest/build.html
 libxgboost: # could just get wheel from repo/S3 instead of doing this
-	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
 
 apply_xgboost: libxgboost
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
@@ -218,8 +241,6 @@ apply_sklearn_simple:
 	bash ./scripts/apply_sklearn_link.sh
     # handle base __init__.py file appending
 	bash ./scripts/apply_sklearn_initmerge.sh
-    # register
-	bash ./scripts/apply_sklearn_register.sh
 
 apply_sklearn_pipinstall:
 	bash ./scripts/apply_sklearn_pipinstall.sh
@@ -230,18 +251,15 @@ apply_sklearn_link:
 apply_sklearn_initmerge:
 	bash ./scripts/apply_sklearn_initmerge.sh
 
-apply_sklearn_register:
-	bash ./scripts/apply_sklearn_register.sh
-
 #################### Jenkins specific
 
 cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjekins: update_submodule cpp c fullpy
+buildjenkins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
-fullinstalljenkins: cleanjenkins alldeps_private buildjekins installjenkins
+fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
 
 .PHONY: mrproper
 mrproper: clean

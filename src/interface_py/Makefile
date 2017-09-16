@@ -9,11 +9,12 @@ pylint:
 		if [ "$$py" == "h2o4gpu/__init__.py" ]; \
 		then echo "Skip $$py"; \
 		else echo $$py; \
-		mkdir -p ./pylint.d ; PYLINTHOME=./pylint.d pylint -j 16 --rcfile=../../tools/pylintrc -rn $$py; \
+		mkdir -p ../pylint.d ; PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -rn $$py; \
 		tmp=$$?; \
 		if [ $$tmp -ne 0 ]; then status=$$tmp; fi; \
 		fi; \
 	done; \
+	rm -rf ../pylint.d; \
 	exit $$status
 
 pyformat:
@@ -55,6 +56,10 @@ all: prep
 
 install:
 	-cd ../.. && pip uninstall -y h2o4gpu
+	-cd ../.. && pip uninstall -y xgboost
+	-cd ../.. && pip uninstall -y py3nvml
+	find -name *.pyc | xargs rm -rf
+	find -name *__pycache__ | xargs rm -rf
 	python setup.py install
 
 #	python3 setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/

@@ -64,3 +64,44 @@ Instead of default way to install, do instead the below to get the shared python
 
 PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 
+### How is this different from scikit-cuda,  pycuda, magma, cula, etc. ###
+
+[Scikit-cuda](https://github.com/lebedov/scikit-cuda) and
+[pycuda](https://pypi.python.org/pypi/pycuda) are both python wrappers
+for underlying cuda C++ functions.  They make it easy for python users
+to obtain the functionality of C++ cuda functions.  The cuda functions
+perform many linear algebra operations (CUBLAS, CUSOLVER) and other
+specific algorithms (CUFFT).
+
+[MAGMA](http://icl.cs.utk.edu/magma/) is a set of linear algebra and
+other mathematical routines, and includes some basic fitting routines
+(without regularization), and it has good support for using either
+CPUs, GPUs, or multiple GPUs in some cases.
+
+[CULA](http://www.culatools.com/) is a closed-source library that
+provides matrix operations and linear algebra operations.
+[Arrayfire](https://github.com/arrayfire/arrayfire) has a variety of
+image processing, statistical, and linear algebra algorithms with a
+diverse support of different back-end hardware.
+
+[H2O4PU](https://github.com/h2oai/h2o4gpu) focuses on machine learning
+(ML) algorithms that can be used in artificial intelligence (AI)
+contexts.  ML algorithms differ from standard linear algebra
+algorithms, because ML requires unsupervised and supervised modeling
+with regularization and validation.
+
+It has a C++ back-end that uses many different cuda, cub,
+and thrust functions. Since H2O4PU already uses C++ as a backend, the
+scikit-cuda, pycuda, and CULA packages don't provide any additional
+functionality (although in limited use, they may make it easier to
+prototype new features).
+
+In addition, by having H2O4GPU do all operations with C++, this allows
+the data to stay on the GPU for the entire ML algorithm, instead of
+data being transferred back and forth between the CPU and GPU (an
+expensive operation) for each separate linear algebra call.  This
+allows the ML algorithm to be designed to have all inputs and outputs
+on the GPU, allow the ML algorithm to be a component within a pure GPU
+pipeline.
+
+

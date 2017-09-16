@@ -286,3 +286,22 @@ def _check_equal(iterator):
     except StopIteration:
         return True
     return all(first == rest for rest in iterator)
+
+
+class _setter:
+
+    def __init__(self, oself, e1, e2):
+        self._e1 = e1
+        self._e2 = e2
+        self.oself = oself
+
+    def __call__(self, expression):
+        try:
+            # pylint: disable=unused-variable
+            oself = self.oself
+            # pylint: disable=exec-used
+            exec(expression)
+        except self._e1:
+            pass
+        except self._e2:
+            pass

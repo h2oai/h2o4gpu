@@ -44,7 +44,7 @@ pipeline {
                         $class                           : 'GitSCM',
                         branches                         : scm.branches,
                         doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -123,7 +123,7 @@ pipeline {
                             keepPrivate = false
                             remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                         }
-                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py36-none-any.whl"
                     }
 
                     if (isBleedingEdge()) {
@@ -135,11 +135,41 @@ pipeline {
                             keepPrivate = false
                             remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                         }
-                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py2.py3-none-any.whl"
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py36-none-any.whl"
                     }
                 }
             }
         }
+
+        stage('Pylint on Linux') {
+            agent {
+                label "gpu && nvidia-docker && !mr-dl16"
+            }
+
+            steps {
+                dumpInfo 'Linux Pylint Info'
+                checkout([
+                        $class                           : 'GitSCM',
+                        branches                         : scm.branches,
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : scm.userRemoteConfigs])
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    sh """
+                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} pylint'
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
+                        """
+                }
+            }
+        }
+
 
     }
     post {

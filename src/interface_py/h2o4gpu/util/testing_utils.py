@@ -351,9 +351,11 @@ def run_glm(X,
             family=family,
             store_full_path=store_full_path,
             alphas=alphas,
-            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
+            lambdas=lambdas,
+            tol=tol,
+            tol_seek_factor=tol_seek_factor)
     elif solver == "lasso":
-        Solver = h2o4gpu.Lasso
+        Solver = h2o4gpu.GLM
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -363,9 +365,14 @@ def run_glm(X,
             verbose=verbose,
             family=family,
             store_full_path=store_full_path,
-            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
+            lambdas=lambdas,
+            tol=tol,
+            tol_seek_factor=tol_seek_factor,
+            alpha_max=1.0,
+            alpha_min=1.0,
+            n_alphas=1)
     elif solver == "ridge":
-        Solver = h2o4gpu.Ridge
+        Solver = h2o4gpu.GLM
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -375,25 +382,24 @@ def run_glm(X,
             verbose=verbose,
             family=family,
             store_full_path=store_full_path,
-            lambdas=lambdas, tol=tol, tol_seek_factor=tol_seek_factor)
+            lambdas=lambdas,
+            tol=tol,
+            tol_seek_factor=tol_seek_factor,
+            alpha_max=0.0,
+            alpha_min=0.0,
+            n_alphas=1)
     elif solver == "linear_regression":
         Solver = h2o4gpu.LinearRegression
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
             n_folds=nFolds,
-            verbose=verbose, tol=tol, tol_seek_factor=tol_seek_factor)
+            verbose=verbose,
+            tol=tol,
+            tol_seek_factor=tol_seek_factor)
     elif solver == "logistic":
         Solver = h2o4gpu.LogisticRegression
-        enet = Solver(
-            n_gpus=nGPUs,
-            fit_intercept=fit_intercept,
-            lambda_min_ratio=lambda_min_ratio,
-            n_lambdas=nLambdas,
-            n_folds=nFolds,
-            n_alphas=nAlphas,
-            verbose=verbose,
-            store_full_path=store_full_path, tol=tol, tol_seek_factor=tol_seek_factor)
+        enet = Solver()
 
     print("trainX")
     print(trainX)
@@ -440,11 +446,12 @@ def run_glm(X,
     print(tols)
 
     print("All lambdas")
-    lambdas = enet.lambdas_full
-    print(lambdas)
+    if enet.store_full_path !=0:
+        lambdas = enet.lambdas_full
+        print(lambdas)
 
     assert np.isfinite(enet.X).all()
-    if store_full_path != 0:
+    if enet.store_full_path != 0:
         assert np.isfinite(enet.X_full).all()
 
     Xvsalphabest = enet.X_best
@@ -512,7 +519,7 @@ def run_glm(X,
                 display=1,
                 enet=enet,
                 string="Train",
-                store_full_path=store_full_path))
+                store_full_path=enet.store_full_path))
 
     enet.finish()
     print("Done Reporting")
@@ -802,9 +809,8 @@ def run_glm(X,
     return myerror_train, myerror_test
 
 
-
-
 # Animation stuff
+
 
 def new_alpha(row_fold):
     if row_fold == 0:
@@ -815,35 +821,47 @@ def new_alpha(row_fold):
         return 0.025
     elif row_fold == 4:
         return 0.05
-    else: return 0
+    else:
+        return 0
+
 
 def plot_cpu_perf(axis, cpu_labels, cpu_snapshot):
     axis.cla()
     axis.grid(False)
-    axis.set_ylim([0,100])
-    axis.set_ylabel('Percent', labelpad=2, fontsize = 14)
+    axis.set_ylim([0, 100])
+    axis.set_ylabel('Percent', labelpad=2, fontsize=14)
     axis.bar(cpu_labels, cpu_snapshot, color='dodgerblue', edgecolor='none')
-    axis.set_title('CPU Utilization', fontsize = 16)
+    axis.set_title('CPU Utilization', fontsize=16)
+
 
 def plot_gpu_perf(axis, gpu_labels, gpu_snapshot):
     axis.cla()
     axis.grid(False)
-    axis.set_ylim([0,100])
+    axis.set_ylim([0, 100])
     axis.set_xticks(gpu_labels)
-    axis.set_ylabel('Percent', labelpad=2, fontsize = 14)
-    axis.bar(gpu_labels, gpu_snapshot, width =0.5, color = 'limegreen',align='center', edgecolor='none')
-    axis.set_title('GPU Utilization', fontsize = 16)
+    axis.set_ylabel('Percent', labelpad=2, fontsize=14)
+    axis.bar(
+        gpu_labels,
+        gpu_snapshot,
+        width=0.5,
+        color='limegreen',
+        align='center',
+        edgecolor='none')
+    axis.set_title('GPU Utilization', fontsize=16)
+
 
 def plot_glm_results(axis, results, best_rmse, cb):
     axis.cla()
     axis.set_xscale('log')
     axis.set_xlim([1e2, 1e9])
     axis.set_ylim([-0.12, 1.12])
-    axis.set_yticks([x/7. for x in range(0,8)])
-    axis.set_ylabel('Parameter 1:  '+r'$\alpha$', fontsize = 16)
-    axis.set_xlabel('Parameter 2:  '+r'$\lambda$', fontsize = 16)
-    num_models = min(4000,int(4000*results.shape[0]/2570))
-    axis.set_title('Elastic Net Models Trained and Evaluated: ' + str(num_models), fontsize = 16)
+    axis.set_yticks([x / 7. for x in range(0, 8)])
+    axis.set_ylabel('Parameter 1:  ' + r'$\alpha$', fontsize=16)
+    axis.set_xlabel('Parameter 2:  ' + r'$\lambda$', fontsize=16)
+    num_models = min(4000, int(4000 * results.shape[0] / 2570))
+    axis.set_title(
+        'Elastic Net Models Trained and Evaluated: ' + str(num_models),
+        fontsize=16)
 
     try:
         import seaborn as sns
@@ -851,19 +869,36 @@ def plot_glm_results(axis, results, best_rmse, cb):
         import pylab as pl
         from matplotlib.colors import ListedColormap
         cm = ListedColormap(sns.color_palette("RdYlGn", 10).as_hex())
-        cf = axis.scatter(results['lambda'], results['alpha_prime'], c=results['rel_acc'],
-                    cmap=cm, vmin=0, vmax=1, s=60, lw=0)
-        axis.plot(best_rmse['lambda'],best_rmse['alpha_prime'], 'o',
-            ms=15, mec='k', mfc='none', mew=2)
+        cf = axis.scatter(
+            results['lambda'],
+            results['alpha_prime'],
+            c=results['rel_acc'],
+            cmap=cm,
+            vmin=0,
+            vmax=1,
+            s=60,
+            lw=0)
+        axis.plot(
+            best_rmse['lambda'],
+            best_rmse['alpha_prime'],
+            'o',
+            ms=15,
+            mec='k',
+            mfc='none',
+            mew=2)
 
         if not cb:
             cb = pl.colorbar(cf, ax=axis)
-            cb.set_label('Relative  Validation  Accuracy', rotation=270,
-                         labelpad=18, fontsize = 16)
+            cb.set_label(
+                'Relative  Validation  Accuracy',
+                rotation=270,
+                labelpad=18,
+                fontsize=16)
         cb.update_normal(cf)
     except:
         #print("plot_glm_results exception -- no frame")
         pass
+
 
 def RunAnimation(arg):
     import os, sys, time
@@ -875,7 +910,6 @@ def RunAnimation(arg):
     import seaborn as sns
     import pandas as pd
     import numpy as np
-
 
     print("RunAnimation")
     sys.stdout.flush()
@@ -899,79 +933,93 @@ def RunAnimation(arg):
 
     file = os.getcwd() + "/error.txt"
     print("opening %s" % (file))
-    fig = pl.figure(figsize = (9,9))
+    fig = pl.figure(figsize=(9, 9))
     pl.rcParams['xtick.labelsize'] = 14
     pl.rcParams['ytick.labelsize'] = 14
     gs = gridspec.GridSpec(3, 2, wspace=0.3, hspace=0.4)
-    ax1 = pl.subplot(gs[0,-2])
-    ax2 = pl.subplot(gs[0,1])
-    ax3 = pl.subplot(gs[1:,:])
-    fig.suptitle('H2O.ai Machine Learning $-$ Generalized Linear Modeling', size=18)
+    ax1 = pl.subplot(gs[0, -2])
+    ax2 = pl.subplot(gs[0, 1])
+    ax3 = pl.subplot(gs[1:, :])
+    fig.suptitle(
+        'H2O.ai Machine Learning $-$ Generalized Linear Modeling', size=18)
 
     pl.gcf().subplots_adjust(bottom=0.2)
 
     #cb = False
     from matplotlib.colors import ListedColormap
     cm = ListedColormap(sns.color_palette("RdYlGn", 10).as_hex())
-    cc = ax3.scatter([0.001, 0.001], [0,0], c =[0,1], cmap = cm)
+    cc = ax3.scatter([0.001, 0.001], [0, 0], c=[0, 1], cmap=cm)
     cb = pl.colorbar(cc, ax=ax3)
     os.system("mkdir -p images")
-    i=0
-    while(True):
+    i = 0
+    while (True):
         #try:
-            #print("In try i=%d" % i)
-            #sys.stdout.flush()
+        #print("In try i=%d" % i)
+        #sys.stdout.flush()
 
-            #cpu
-            snapshot = psutil.cpu_percent(percpu=True)
-            cpu_labels = range(1,len(snapshot)+1)
-            plot_cpu_perf(ax1, cpu_labels, snapshot)
+        #cpu
+        snapshot = psutil.cpu_percent(percpu=True)
+        cpu_labels = range(1, len(snapshot) + 1)
+        plot_cpu_perf(ax1, cpu_labels, snapshot)
 
-            #gpu
-            gpu_snapshot = []
-            gpu_labels = list(range(1,deviceCount+1))
-            import py3nvml
-            for j in range(deviceCount):
-                handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
-                util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(handle)
-                gpu_snapshot.append(util.gpu)
-            gpu_snapshot = gpu_snapshot
-            plot_gpu_perf(ax2, gpu_labels, gpu_snapshot)
+        #gpu
+        gpu_snapshot = []
+        gpu_labels = list(range(1, deviceCount + 1))
+        import py3nvml
+        for j in range(deviceCount):
+            handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
+            util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(handle)
+            gpu_snapshot.append(util.gpu)
+        gpu_snapshot = gpu_snapshot
+        plot_gpu_perf(ax2, gpu_labels, gpu_snapshot)
 
-            res = pd.read_csv(file, sep="\s+",header=None,names=['time','pass','fold','a','i','alpha','lambda','trainrmse','ivalidrmse','validrmse'])
+        res = pd.read_csv(
+            file,
+            sep="\s+",
+            header=None,
+            names=[
+                'time', 'pass', 'fold', 'a', 'i', 'alpha', 'lambda',
+                'trainrmse', 'ivalidrmse', 'validrmse'
+            ])
 
-            res['rel_acc'] = ((42665- res['validrmse'])/(42665-31000))
-            res['alpha_prime'] = res['alpha'] + res['fold'].apply(lambda x: new_alpha(x))
+        res['rel_acc'] = ((42665 - res['validrmse']) / (42665 - 31000))
+        res['alpha_prime'] = res['alpha'] + res['fold'].apply(
+            lambda x: new_alpha(x))
 
-            best = res.loc[res['rel_acc']==np.max(res['rel_acc']),:]
-            plot_glm_results(ax3, res, best.tail(1), cb)
-            # flag for colorbar to avoid redrawing
-            #cb = True
+        best = res.loc[res['rel_acc'] == np.max(res['rel_acc']), :]
+        plot_glm_results(ax3, res, best.tail(1), cb)
+        # flag for colorbar to avoid redrawing
+        #cb = True
 
-            # Add footnotes
-            footnote_text = "*U.S. Census dataset (predict Income): 45k rows, 10k cols\nParameters: 5-fold cross-validation, " + r'$\alpha = \{\frac{i}{7},i=0\ldots7\}$' + ", "\
-   'full $\lambda$-' + "search"
-            #pl.figtext(.05, -.04, footnote_text, fontsize = 14,)
-            pl.annotate(footnote_text, (0,0), (-30, -50), fontsize = 12,
-                        xycoords='axes fraction', textcoords='offset points', va='top')
+        # Add footnotes
+        footnote_text = "*U.S. Census dataset (predict Income): 45k rows, 10k cols\nParameters: 5-fold cross-validation, " + r'$\alpha = \{\frac{i}{7},i=0\ldots7\}$' + ", "\
+'full $\lambda$-' + "search"
+        #pl.figtext(.05, -.04, footnote_text, fontsize = 14,)
+        pl.annotate(
+            footnote_text, (0, 0), (-30, -50),
+            fontsize=12,
+            xycoords='axes fraction',
+            textcoords='offset points',
+            va='top')
 
-            #update the graphics
-            display.display(pl.gcf())
-            display.clear_output(wait=True)
-            time.sleep(0.01)
+        #update the graphics
+        display.display(pl.gcf())
+        display.clear_output(wait=True)
+        time.sleep(0.01)
 
-            #save the images
-            saveimage=0
-            if saveimage:
-                file_name = './images/glm_run_%04d.png' % (i,)
-                pl.savefig(file_name, dpi=200)
-            i=i+1
+        #save the images
+        saveimage = 0
+        if saveimage:
+            file_name = './images/glm_run_%04d.png' % (i,)
+            pl.savefig(file_name, dpi=200)
+        i = i + 1
 
-        #except KeyboardInterrupt:
-        #    break
-        #except:
-        #    #print("Could not Create Frame")
-        #    pass
+    #except KeyboardInterrupt:
+    #    break
+    #except:
+    #    #print("Could not Create Frame")
+    #    pass
+
 
 def RunH2Oaiglm(arg):
     import h2o4gpu as h2o4gpu
@@ -980,8 +1028,17 @@ def RunH2Oaiglm(arg):
     trainX, trainY, validX, validY, family, intercept, lambda_min_ratio, n_folds, n_alphas, n_lambdas, n_gpus = arg
 
     print("Begin Setting up Solver")
-    os.system("rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt") ## for visualization
-    enet = h2o4gpu.GLM(n_gpus=n_gpus, fit_intercept=intercept, lambda_min_ratio=lambda_min_ratio, n_lambdas=n_lambdas, n_folds=n_folds, n_alphas=n_alphas, family=family)
+    os.system(
+        "rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt"
+    )  ## for visualization
+    enet = h2o4gpu.GLM(
+        n_gpus=n_gpus,
+        fit_intercept=intercept,
+        lambda_min_ratio=lambda_min_ratio,
+        n_lambdas=n_lambdas,
+        n_folds=n_folds,
+        n_alphas=n_alphas,
+        family=family)
     print("End Setting up Solver")
 
     # Solve
@@ -991,7 +1048,8 @@ def RunH2Oaiglm(arg):
     t1 = time.time()
     print("End Solving")
 
-    print("Time to train H2O AI GLM: %r" % (t1-t0))
+    print("Time to train H2O AI GLM: %r" % (t1 - t0))
+
 
 def RunH2Oaiglm_ptr(arg):
     import h2o4gpu as h2o4gpu
@@ -1000,15 +1058,23 @@ def RunH2Oaiglm_ptr(arg):
     trainX, trainY, validX, validY, trainW, fortran, mTrain, n, mvalid, intercept, lambda_min_ratio, n_folds, n_alphas, n_lambdas, n_gpus = arg
 
     print("Begin Setting up Solver")
-    os.system("rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt")  ## for visualization
-    enet = h2o4gpu.GLM(n_gpus=n_gpus, fit_intercept=intercept, lambda_min_ratio=lambda_min_ratio,
-                       n_lambdas=n_lambdas, n_folds=n_folds, n_alphas=n_alphas)
+    os.system(
+        "rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt"
+    )  ## for visualization
+    enet = h2o4gpu.GLM(
+        n_gpus=n_gpus,
+        fit_intercept=intercept,
+        lambda_min_ratio=lambda_min_ratio,
+        n_lambdas=n_lambdas,
+        n_folds=n_folds,
+        n_alphas=n_alphas)
     print("End Setting up Solver")
 
     ## First, get backend pointers
     sourceDev = 0
     t0 = time.time()
-    a, b, c, d, e = enet.prepare_and_upload_data(trainX, trainY, validX, validY, trainW, source_dev=sourceDev)
+    a, b, c, d, e = enet.prepare_and_upload_data(
+        trainX, trainY, validX, validY, trainW, source_dev=sourceDev)
     t1 = time.time()
     print("Time to ingest data: %r" % (t1 - t0))
 
@@ -1019,7 +1085,18 @@ def RunH2Oaiglm_ptr(arg):
         order = 'c' if fortran else 'r'
         double_precision = 0  # Not used
         store_full_path = 0
-        enet.fit_ptr(mTrain, n, mvalid, double_precision, order, a, b, c, d, e, source_dev=sourceDev)
+        enet.fit_ptr(
+            mTrain,
+            n,
+            mvalid,
+            double_precision,
+            order,
+            a,
+            b,
+            c,
+            d,
+            e,
+            source_dev=sourceDev)
         t1 = time.time()
         print("Done Solving")
         print("Time to train H2O AI GLM: %r" % (t1 - t0))

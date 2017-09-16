@@ -22,7 +22,8 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
 class GLM(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
-    :param int n_threads : Number of threads to use in the gpu. Default is None.
+    :param int n_threads : Number of threads to use in the gpu.
+    Each thread is an independent model builder. Default is None.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
@@ -45,7 +46,7 @@ class GLM(object):
 
     :param int n_alphas : Number of alphas to be used in a search. Default is 5.
 
-    :param float tol : tolerance.  Default is 1E-2.
+    :param float tol : Relative tolerance.  Default is 1E-2.
 
     :param float tol_seek_factor : factor of tolerance to seek
         once below null model accuracy.  Default is 1E-1, so seeks tolerance
@@ -1508,14 +1509,14 @@ class GLM(object):
         self.e = e
         return a, b, c, d, e
 
-    def score(self, X=None, y=None, sample_weight=None):
-        if X is not None and y is not None:
-            self.prediction = self.predict(
-                valid_x=X, valid_y=y, sample_weight=sample_weight)
-#otherwise score makes no sense, need both X and y,
-#else just return existing error
-#TODO : Should return R ^ 2 and redo predict if X and y are passed
-        return self.error
+#     def score(self, X=None, y=None, sample_weight=None):
+#         if X is not None and y is not None:
+#             self.prediction = self.predict(
+#                 valid_x=X, valid_y=y, sample_weight=sample_weight)
+# #otherwise score makes no sense, need both X and y,
+# #else just return existing error
+# #TODO : Should return R ^ 2 and redo predict if X and y are passed
+#         return self.error
 
     @classmethod
     def _get_param_names(cls):

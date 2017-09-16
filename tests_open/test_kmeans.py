@@ -98,11 +98,18 @@ class TestKmeans(object):
     def test_fit_iris_backupsklearn(self):
         X = load_iris().data
         clusters = 4
+
+        print("Running model")
         model = KMeans(n_gpus=1, n_clusters=clusters, random_state=123).fit(X)
 
         assert model.cluster_centers_.shape == (X.shape[1], clusters)
+        print("passed 1")
 
+        print("Running model_rerun")
         model_rerun = KMeans(n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        import sys
+        print(model_rerun.cluster_centers_)
+        sys.stdout.flush()
 
         # Choosing initial clusters for sklearn should yield similar result
         assert np.allclose(
@@ -112,11 +119,15 @@ class TestKmeans(object):
         # sklearn directly or our indirect should be same (and is)
         from sklearn.cluster import KMeans as KMeans_test
 
+        print("Running model_rerun2")
         model_rerun2 = KMeans_test(n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        print(model_rerun2.cluster_centers_)
+        sys.stdout.flush()
 
         assert np.allclose(
             model_rerun.cluster_centers_, model_rerun2.cluster_centers_
         )
+        print("passed 2")
 
     def test_accuracy(self):
         from sklearn.cluster import KMeans as skKMeans
