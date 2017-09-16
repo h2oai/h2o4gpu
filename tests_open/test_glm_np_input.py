@@ -8,25 +8,64 @@ GLM solver tests using Kaggle datasets.
 import sys
 import logging
 import numpy as np
-from h2o4gpu.solvers.linear_regression import LinearRegression
+from h2o4gpu.solvers.elastic_net import GLM
 
 #
 print(sys.path)
 #
 logging.basicConfig(level=logging.DEBUG)
 
-
-#
-def func():
+#Set up model
+tol = 1E-3
+n_threads = None
+n_gpus = -1
+fit_intercept = True
+n_folds = 1
+tol_seek_factor = 1E-1
+glm_stop_early = False
+lambda_stop_early=False
+glm_stop_early_error_fraction = 1.0
+max_iter = 5000
+verbose = 0
+store_full_path = 0
+lambda_max = 0.0
+alpha_max = 0.0
+alpha_min = 0.0
+n_alphas=1
+n_lambdas=1
+lambda_min_ratio=0.0
+family = "elasticnet"
+order=None
+lm = GLM(
+    n_threads=n_threads,
+    n_gpus=n_gpus,
+    fit_intercept=fit_intercept,
+    lambda_min_ratio=lambda_min_ratio,
+    n_lambdas=n_lambdas,
+    n_folds=n_folds,
+    n_alphas=n_alphas,
+    tol=tol,
+    tol_seek_factor=tol_seek_factor,
+    lambda_stop_early=lambda_stop_early,
+    glm_stop_early=glm_stop_early,
+    glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+    max_iter=max_iter,
+    verbose=verbose,
+    family=family,
+    lambda_max=lambda_max,
+    alpha_max=alpha_max,
+    alpha_min=alpha_min,
+    store_full_path=store_full_path,
+    order=order
+)
+def func(model):
     X = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
     #
     a = 2.0
     b = 10.0
     y = a * X + b
     #
-    tol = 1E-3
-    lm = LinearRegression(tol = tol, glm_stop_early=False)
-    lm.fit(X, y)
+    lm = model.fit(X, y)
     #
     print('Linear Regression')
     test0 = np.array([15.0])
@@ -48,18 +87,14 @@ def func():
     assert np.fabs(result2 - 40.0) < 1.1*tol
     assert np.fabs(result3 - 40.0) < 1.1*tol
 
-
-#
-
-def func2():
+def func2(model):
     X = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     #
     a = 2
     b = 10
     y = a * X + b
     #
-    tol = 1e-3
-    lm = LinearRegression(tol=tol, glm_stop_early=False)
+    lm = model
     lm.fit(X, y)
     #
     print('Linear Regression')
@@ -86,7 +121,7 @@ def func2():
 
 # test for higher precision linear fit (exact values)
 # No early stopping and low tolerance
-def func3():
+def func3(model):
     X = np.array([1,2,3,4,5,6,7,8,9,10])    
     X = X.astype(np.float32)
     
@@ -94,20 +129,20 @@ def func3():
     b = 10
     y = a * X + b
 
-    lm = LinearRegression(glm_stop_early=False, tol=1e-6)
+    model.tol=1E-6
+    lm = model
     lm.fit(X, y)
 
-    assert lm.predict(np.array([15.0])) == 40.
-    assert lm.predict(np.array([16.0])) == 42.
+    assert lm.predict(np.array([15.0])) - 40 <= 1E-5
+    assert lm.predict(np.array([16.0])) -42 <= 1E-5
 
 #
 #
-def test_glm_np_input(): func()
+def test_glm_np_input(): func(model=lm)
 
+def test_glm_np_input_integer(): func2(model=lm)
 
-def test_glm_np_input_integer(): func2()
-
-def test_glm_np_exact(): func3()
+def test_glm_np_exact(): func3(model=lm)
 
 #
 #

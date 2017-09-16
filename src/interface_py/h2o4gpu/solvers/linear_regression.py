@@ -24,6 +24,7 @@ class LinearRegression(object):
                  copy_X=True,
                  n_jobs=1,
                  n_gpus=-1,
+                 tol=1E-4,
                  glm_stop_early=True,  # h2o4gpu
                  glm_stop_early_error_fraction=1.0,  # h2o4gpu
                  verbose=False):
@@ -60,7 +61,7 @@ class LinearRegression(object):
         n_lambdas = 1
         n_folds = 1
         n_alphas = 1
-        tol = 1E-2
+        tol = tol
         tol_seek_factor = 1E-1
         lambda_stop_early = False
         glm_stop_early = glm_stop_early
