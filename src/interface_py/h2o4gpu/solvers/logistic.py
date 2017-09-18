@@ -76,6 +76,8 @@ class LogisticRegression(object):
             verbose=verbose,
             warm_start=warm_start,
             n_jobs=n_jobs)
+
+        # Equivalent Logistic parameters for h2o4gpu
         n_threads = None
         n_alphas = 1
         n_lambdas = 1

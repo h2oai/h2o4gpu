@@ -54,6 +54,7 @@ class LinearRegression(object):
             copy_X=copy_X,
             n_jobs=n_jobs)
 
+        # Equivalent Linear Regression parameters for h2o4gpu
         n_threads = None
         n_gpus = n_gpus
         fit_intercept = fit_intercept

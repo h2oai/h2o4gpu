@@ -61,6 +61,7 @@ class Ridge(object):
             solver=solver,
             random_state=random_state)
 
+        # Equivalent Ridge parameters for h2o4gpu
         n_threads = None
         n_alphas = 1
         n_lambdas = 1

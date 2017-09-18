@@ -70,6 +70,8 @@ class Lasso(object):
             positive=positive,
             random_state=random_state,
             selection=selection)
+
+        #Equivalent Lasso parameters for h2o4gpu
         n_threads = None
         n_alphas = 1
         n_lambdas = 1
