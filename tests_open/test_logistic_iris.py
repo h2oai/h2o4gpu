@@ -39,14 +39,29 @@ def func():
 
     classification = True
 
-    logreg = h2o4gpu.LogisticRegression(alpha_max = 1.0, alpha_min = 1.0)
-    lr = h2o4gpu.GLM(family = 'logistic', alpha_max = 1.0, alpha_min = 1.0, n_folds = 1, n_alphas = 1)
+    logreg = h2o4gpu.LogisticRegression(penalty="l1")
+    lr = h2o4gpu.GLM(
+        n_threads = None,
+        n_alphas = 1,
+        n_lambdas = 1,
+        n_folds = 1,
+        lambda_max = 1.0,
+        lambda_min_ratio = 1.0,
+        lambda_stop_early = False,
+        store_full_path = 0,
+        alphas = None,
+        lambdas = None,
+        family = 'logistic',
+        alpha_max = 1.0,
+        alpha_min = 1.0)
     
     model = logreg.fit(X, y)
     mm = lr.fit(X, y)
 
     y_pred = model.predict(X_test)
+    print(y_pred)
     y_p = mm.predict(X_test)
+    print(y_p)
     print(y_pred, np.round(y_pred))
 
     # TO-DO: change the assertion once the logic to convert probabilities to classes is implemented
