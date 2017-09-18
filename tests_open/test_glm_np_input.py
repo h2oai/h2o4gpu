@@ -130,23 +130,18 @@ def func3(model):
     y = a * X + b
 
     model.tol=1E-6
-    #model.verbose=10
     lm = model
     lm.fit(X, y)
 
     assert lm.predict(np.array([15.0])) == 40
     assert lm.predict(np.array([16.0])) == 42
 
-#
-#
-#def test_glm_np_input(): func(model=lm)
+def test_glm_np_input(): func(model=lm)
 
-#def test_glm_np_input_integer(): func2(model=lm)
+def test_glm_np_input_integer(): func2(model=lm)
 
 def test_glm_np_exact(): func3(model=lm)
 
-#
-#
 if __name__ == '__main__':
     test_glm_np_input()
     test_glm_np_input_integer()
