@@ -166,7 +166,7 @@ class LogisticRegression(object):
         res[res < 0.5] = 0
         res[res > 0.5] = 1
         self.set_attributes()
-        return res
+        return res.squeeze()
 
     def predict_log_proba(self, X):
         res = self.predict_proba(X)
