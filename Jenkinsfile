@@ -97,6 +97,31 @@ pipeline {
             }
         }
 
+        stage('Pylint on Linux') {
+            agent {
+                label "gpu && nvidia-docker && !mr-dl16"
+            }
+
+            steps {
+                dumpInfo 'Linux Pylint Info'
+                checkout([
+                        $class                           : 'GitSCM',
+                        branches                         : scm.branches,
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : scm.userRemoteConfigs])
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    sh """
+                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make pylint'
+                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
+                        """
+                }
+            }
+        }
+
         stage('Publish to S3') {
             agent {
                 label "linux && !mr-dl16"
@@ -116,7 +141,7 @@ pipeline {
 
                     if (isRelease()) {
                         s3up {
-                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
                             artifactId = "h2o4gpu"
                             majorVersion = _majorVersion
                             buildVersion = _buildVersion
@@ -128,7 +153,7 @@ pipeline {
 
                     if (isBleedingEdge()) {
                         s3up {
-                            localArtifact = 'src/interface_py/dist/*h2o4gpu*.whl'
+                            localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
                             artifactId = "h2o4gpu"
                             majorVersion = _majorVersion
                             buildVersion = _buildVersion
@@ -140,37 +165,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Pylint on Linux') {
-            agent {
-                label "gpu && nvidia-docker && !mr-dl16"
-            }
-
-            steps {
-                dumpInfo 'Linux Pylint Info'
-                checkout([
-                        $class                           : 'GitSCM',
-                        branches                         : scm.branches,
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
-                        submoduleCfg                     : [],
-                        userRemoteConfigs                : scm.userRemoteConfigs])
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    sh """
-                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} pylint'
-                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
-                        """
-                }
-            }
-        }
-
-
     }
     post {
         failure {
