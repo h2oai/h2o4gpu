@@ -10,6 +10,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from h2o4gpu.linear_model import coordinate_descent as sk
+from ..solvers.utils import _setter
 from tabulate import tabulate
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib
@@ -19,7 +21,7 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
 
 
-class GLM(object):
+class ElasticNet_h2o4gpu(object):
     """H2O Generalized Linear Modelling (GLM) Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu.
@@ -1607,3 +1609,151 @@ class GLM(object):
                                      (key, self.__class__.__name__))
                 setattr(self, key, value)
         return self
+
+class ElasticNet(object):
+    """H2O ElasticNet Solver
+
+        Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
+        and h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn
+        Documentation:
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
+        help(h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn)
+    """
+    def __init__(self,
+                 alpha=1.0, #h2o4gpu
+                 l1_ratio=0.5, #h2o4gpu
+                 fit_intercept=True, #h2o4gpu
+                 normalize=False,
+                 precompute=False,
+                 max_iter=5000, #h2o4gpu
+                 copy_X=True,
+                 tol=1e-2, #h2o4gpu
+                 warm_start=False,
+                 positive=False,
+                 random_state=None,
+                 selection='cyclic',
+                 n_gpus=-1,  # h2o4gpu
+                 glm_stop_early=True,  # h2o4gpu
+                 glm_stop_early_error_fraction=1.0, #h2o4gpu
+                 verbose=False): # h2o4gpu
+
+        # Fall back to Sklearn
+        # Can remove if fully implement sklearn functionality
+        self.do_sklearn = False
+
+        params_string = ['normalize', 'precompute', 'copy_X',
+                         'warm_start', 'positive', 'random_state',
+                         'selection']
+        params = [normalize, precompute, copy_X,
+                  warm_start, positive, random_state,
+                  selection]
+        params_default = [False, False, True, False, False, None, 'cyclic']
+
+        i = 0
+        self.do_sklearn = False
+        for param in params:
+            if param != params_default[i]:
+                self.do_sklearn = True
+                print("WARNING: The sklearn parameter " + params_string[i]
+                      + " has been changed from default to "
+                      + str(param) + ". Will run Sklearn Lasso Regression.")
+                self.do_sklearn = True
+            i = i + 1
+
+        self.model_sklearn = sk.ElasticNet_sklearn(
+            alpha=alpha,
+            l1_ratio=l1_ratio,
+            fit_intercept=fit_intercept,
+            normalize=normalize,
+            precompute=precompute,
+            max_iter=max_iter,
+            copy_X=copy_X,
+            tol=tol,
+            warm_start=warm_start,
+            positive=positive,
+            random_state=random_state,
+            selection=selection)
+
+        #Equivalent Lasso parameters for h2o4gpu
+
+        #Logic about l1_ratio:
+        #The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1. For l1_ratio = 0 the penalty is an L2 penalty.
+        #For l1_ratio = 1 it is an L1 penalty.For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
+        alpha_min = alpha_max = l1_ratio
+
+        #Other parameters
+        n_threads = None
+        n_alphas = 1
+        n_lambdas = 1
+        n_folds = 1
+        lambda_max = alpha
+        lambda_min_ratio = 1.0
+        lambda_stop_early = False
+        store_full_path = 1
+        alphas = None
+        lambdas = None
+
+        self.model_h2o4gpu = ElasticNet_h2o4gpu(
+            n_threads=n_threads,
+            n_gpus=n_gpus,
+            fit_intercept=fit_intercept,
+            lambda_min_ratio=lambda_min_ratio,
+            n_lambdas=n_lambdas,
+            n_folds=n_folds,
+            n_alphas=n_alphas,
+            tol=tol,
+            lambda_stop_early=lambda_stop_early,
+            glm_stop_early=glm_stop_early,
+            glm_stop_early_error_fraction=glm_stop_early_error_fraction,
+            max_iter=max_iter,
+            verbose=verbose,
+            store_full_path=store_full_path,
+            lambda_max=lambda_max,
+            alpha_max=alpha_max,
+            alpha_min=alpha_min,
+            alphas=alphas,
+            lambdas=lambdas,
+            order=None)
+
+        if self.do_sklearn:
+            print("Running sklearn Lasso Regression")
+            self.model = self.model_sklearn
+        else:
+            print("Running h2o4gpu Lasso Regression")
+            self.model = self.model_h2o4gpu
+
+    def fit(self, X, y=None, check_input=True):
+        if self.do_sklearn:
+            res = self.model.fit(X, y, check_input)
+            self.set_attributes()
+            return res
+        res = self.model.fit(X, y)
+        self.set_attributes()
+        return res
+
+    def get_params(self):
+        return self.model.get_params()
+
+    def predict(self, X):
+        res = self.model.predict(X)
+        self.set_attributes()
+        return res
+
+    def score(self, X, y, sample_weight=None):
+        # TODO add for h2o4gpu
+        print("WARNING: score() is using sklearn")
+        if not self.do_sklearn:
+            self.model_sklearn.fit(X, y) #Need to re-fit
+        res = self.model_sklearn.score(X, y, sample_weight)
+        return res
+
+    def set_params(self, **params):
+        return self.model.set_params(**params)
+
+    def set_attributes(self):
+        s = _setter(oself=self, e1=NameError, e2=AttributeError)
+
+        s('oself.coef_ = oself.model.coef_')
+        s('oself.sparse_coef_ = oself.model.sparse_coef_')
+        s('oself.intercept_ = oself.model.intercept_')
+        s('oself.n_iter_ = oself.model.n_iter_')

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-GLM solver tests using SKLearn datasets.
+ElasticNet_h2o4gpu solver tests using SKLearn datasets.
 
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -144,11 +144,11 @@ class TestGlmSklearn(object):
         # TODO: Should write this to file and avoid doing encoding if already exists
     
         t1 = time.time()
-        print("Start GLM")
+        print("Start ElasticNet_h2o4gpu")
         rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                         nalpha=nAlphas,
                                         validFraction=validFraction, verbose=10, name=name, tolerance=0.2, tol=1E-2, tol_seek_factor=1.0)
-        print("End GLM")
+        print("End ElasticNet_h2o4gpu")
     
         # check rmse
         print(rmse_train[0, 0])

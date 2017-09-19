@@ -11,10 +11,10 @@ from ..solvers.utils import _setter
 class Lasso(object):
     """H2O Lasso Regression Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.GLM
+        Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
         and h2o4gpu.linear_model.coordinate_descent.Lasso_sklearn
         Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.GLM)
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
         help(h2o4gpu.linear_model.lasso.Lasso_sklearn)
     """
 
@@ -85,7 +85,7 @@ class Lasso(object):
         alpha_min = 1.0
         alpha_max = 1.0
 
-        self.model_h2o4gpu = elastic_net.GLM(
+        self.model_h2o4gpu = elastic_net.ElasticNet_h2o4gpu(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,

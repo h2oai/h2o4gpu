@@ -67,7 +67,7 @@ def run_glm_ptr(nFolds,
                 write,
                 display,
                 nGPUs=1):
-    """Runs GLM test"""
+    """Runs ElasticNet_h2o4gpu test"""
     use_gpu = nGPUs > 0
 
     if use_gpu == 1:
@@ -137,7 +137,7 @@ def run_glm_ptr(nFolds,
     print("Setting up Solver")
     sys.stdout.flush()
 
-    Solver = h2o4gpu.GLM
+    Solver = h2o4gpu.ElasticNet_h2o4gpu
     enet = Solver(
         n_gpus=nGPUs,
         order='c' if fortran else 'r',
@@ -256,7 +256,7 @@ def run_glm(X,
             lambdas=None,
             tol=1E-2,
             tol_seek_factor=1E-1):
-    """Runs GLM test"""
+    """Runs ElasticNet_h2o4gpu test"""
     #Other default parameters for solving glm
     fit_intercept = True
     lambda_min_ratio = lambda_min_ratio  # Issues for h2o3 with 1k ipums dataset
@@ -273,7 +273,7 @@ def run_glm(X,
     sys.stdout.flush()
 
     #Override run_h2o False default if environ exists
-    if os.getenv("H2OGLM_PERFORMANCE") is not None:
+    if os.getenv("H2OElasticNet_h2o4gpu_PERFORMANCE") is not None:
         run_h2o = True
 
 #Setup Train / validation Set Split
@@ -339,7 +339,7 @@ def run_glm(X,
     #######################
     #Choose solver
     if solver == "glm":
-        Solver = h2o4gpu.GLM
+        Solver = h2o4gpu.ElasticNet_h2o4gpu
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -355,7 +355,7 @@ def run_glm(X,
             tol=tol,
             tol_seek_factor=tol_seek_factor)
     elif solver == "lasso":
-        Solver = h2o4gpu.GLM
+        Solver = h2o4gpu.ElasticNet_h2o4gpu
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -372,7 +372,7 @@ def run_glm(X,
             alpha_min=1.0,
             n_alphas=1)
     elif solver == "ridge":
-        Solver = h2o4gpu.GLM
+        Solver = h2o4gpu.ElasticNet_h2o4gpu
         enet = Solver(
             n_gpus=nGPUs,
             fit_intercept=fit_intercept,
@@ -390,13 +390,7 @@ def run_glm(X,
             n_alphas=1)
     elif solver == "linear_regression":
         Solver = h2o4gpu.LinearRegression
-        enet = Solver(
-            n_gpus=nGPUs,
-            fit_intercept=fit_intercept,
-            n_folds=nFolds,
-            verbose=verbose,
-            tol=tol,
-            tol_seek_factor=tol_seek_factor)
+        enet = Solver()
     elif solver == "logistic":
         Solver = h2o4gpu.LogisticRegression
         enet = Solver()
@@ -621,7 +615,7 @@ def run_glm(X,
                     training_frame=train_h2o,
                     validation_frame=valid_h2o)
             print("\nComparing results to H2O")
-            print("\nH2O GLM Summary")
+            print("\nH2O ElasticNet_h2o4gpu Summary")
             print(h2o_glm)
 
             if family == "logistic":
@@ -696,7 +690,7 @@ def run_glm(X,
                             print(
                                 ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print("H2O Train Error is larger than GPU GLM "
+                        print("H2O Train Error is larger than GPU ElasticNet_h2o4gpu "
                               "with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
@@ -725,7 +719,7 @@ def run_glm(X,
                             print(
                                 ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print("H2O CV Error is larger than GPU GLM "
+                        print("H2O CV Error is larger than GPU ElasticNet_h2o4gpu "
                               "with alpha = %s" % alpha)
                         print("H2O CV Error is %s" % h2o_cv_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
@@ -754,7 +748,7 @@ def run_glm(X,
                             print(
                                 ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print("H2O Valid Error is larger than GPU GLM "
+                        print("H2O Valid Error is larger than GPU ElasticNet_h2o4gpu "
                               "with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
@@ -796,7 +790,7 @@ def run_glm(X,
         #include asserts for timing
 
         #for pytest only:
-        if os.getenv("H2OGLM_DISABLEPYTEST") is None:
+        if os.getenv("H2OElasticNet_h2o4gpu_DISABLEPYTEST") is None:
             assert doassert == 0
 
     if len(np.shape(error_train)) == 2:
@@ -1031,7 +1025,7 @@ def RunH2Oaiglm(arg):
     os.system(
         "rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt"
     )  ## for visualization
-    enet = h2o4gpu.GLM(
+    enet = h2o4gpu.ElasticNet_h2o4gpu(
         n_gpus=n_gpus,
         fit_intercept=intercept,
         lambda_min_ratio=lambda_min_ratio,
@@ -1048,7 +1042,7 @@ def RunH2Oaiglm(arg):
     t1 = time.time()
     print("End Solving")
 
-    print("Time to train H2O AI GLM: %r" % (t1 - t0))
+    print("Time to train H2O AI ElasticNet_h2o4gpu: %r" % (t1 - t0))
 
 
 def RunH2Oaiglm_ptr(arg):
@@ -1061,7 +1055,7 @@ def RunH2Oaiglm_ptr(arg):
     os.system(
         "rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt"
     )  ## for visualization
-    enet = h2o4gpu.GLM(
+    enet = h2o4gpu.ElasticNet_h2o4gpu(
         n_gpus=n_gpus,
         fit_intercept=intercept,
         lambda_min_ratio=lambda_min_ratio,
@@ -1099,4 +1093,4 @@ def RunH2Oaiglm_ptr(arg):
             source_dev=sourceDev)
         t1 = time.time()
         print("Done Solving")
-        print("Time to train H2O AI GLM: %r" % (t1 - t0))
+        print("Time to train H2O AI ElasticNet_h2o4gpu: %r" % (t1 - t0))
