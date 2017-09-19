@@ -111,6 +111,31 @@ def _load_kmeans_lib(lib_path):
         ]  # result
         h2o4gpu_kmeans_lib.kmeans_transform_double.restype = c_int
 
+        # TODO move to a common lib
+        h2o4gpu_kmeans_lib.upload_data_double.argtypes = [
+            c_int,  # shared
+            c_int,  # source_me
+            c_int,  # source_dev
+            c_size_t,  # rows
+            c_size_t,  # cols
+            c_int,  # order
+            c_double_p,  # original data ptr
+            c_void_pp  # uploaded data ptr
+        ]
+        h2o4gpu_kmeans_lib.upload_data_double.restype = c_int
+
+        h2o4gpu_kmeans_lib.upload_data_float.argtypes = [
+            c_int,  # shared
+            c_int,  # source_me
+            c_int,  # source_dev
+            c_size_t,  # rows
+            c_size_t,  # cols
+            c_int,  # order
+            c_float_p,  # original data ptr
+            c_void_pp  # uploaded data ptr
+        ]
+        h2o4gpu_kmeans_lib.upload_data_float.restype = c_int
+
     except OSError:
         print(
             '\nWarning: h2o4gpu_kmeans_lib shared object (dynamic library) %s '

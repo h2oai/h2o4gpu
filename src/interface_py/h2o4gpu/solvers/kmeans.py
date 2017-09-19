@@ -212,6 +212,7 @@ class H2OKMeans(object):
         self.did_fit_ptr = 0
         self.did_predict = 0
         self.data_ptr = None
+        self.source_me = 0
 
     @classmethod
     def _get_param_names(cls):
@@ -388,8 +389,6 @@ class H2OKMeans(object):
         lib = self._load_lib()
 
         if self.double_precision == 0:
-            # TODO check if the new X_ptr is compatible with the old one
-            # probably no
             status = lib.make_ptr_float_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 m, n,
@@ -651,8 +650,9 @@ class H2OKMeans(object):
         self.uploaded_data = 1
 
         if self.double_precision == 1:
-            # TODO add make_ptr_double for only 1 matrix
-            status = self.lib.make_ptr_double(
+            status = self.lib.upload_data_double(
+                c_int(0),
+                c_int(self.source_me),
                 c_int(source_dev),
                 c_size_t(rows),
                 c_size_t(cols),
@@ -660,7 +660,9 @@ class H2OKMeans(object):
                 c_data_ptr,
                 pointer(data_ptr))
         elif self.double_precision == 0:
-            status = self.lib.make_ptr_float(
+            status = self.lib.upload_data_float(
+                c_int(0),
+                c_int(self.source_me),
                 c_int(source_dev),
                 c_size_t(rows),
                 c_size_t(cols),
