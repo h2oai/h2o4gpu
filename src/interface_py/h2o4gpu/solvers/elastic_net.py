@@ -22,7 +22,7 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
 
 
 class ElasticNet_h2o4gpu(object):
-    """H2O Generalized Linear Modelling (GLM) Solver for GPUs
+    """H2O Elastic Net Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu.
     Each thread is an independent model builder. Default is None.
