@@ -6,7 +6,10 @@
 the easy-to-use Scikit-Learn API and its well-tested CPU-based
 algorithms.  It can be used as a drop-in replacement for sklearn
 (i.e. import h2o4gpu as sklearn) with support for GPUs on selected
-(and ever-growing) algorithms.
+(and ever-growing) algorithms.  H2O4PU inherits all the existing
+Scikit-learn algorithms and falls-back to CPU aglorithms when the GPU
+algorithm does not support an importnat existing Scikit-learn class
+option.
 
 ## Requirements
 
