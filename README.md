@@ -32,12 +32,8 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 ```
 
 Download the Python wheel file for python 3.6:
-  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
-  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py2.py3-none-any.whl)
-
-Download the Python wheel file for python 3.5:
-  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py3.5.whl)
-  * (TBA) [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py3.5.whl)
+  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py36-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.3/h2o4gpu-0.0.3-py36-none-any.whl)
  
 Start a fresh pyenv or virtualenv session.
 
@@ -46,7 +42,7 @@ overwrite your py3nvml and xgboost installations to use our validated
 versions.
 
 ```
-pip install h2o4gpu-0.0.3-py2.py3-none-any.whl
+pip install h2o4gpu-0.0.3-py36-none-any.whl
 ```
 
 Test your installation
