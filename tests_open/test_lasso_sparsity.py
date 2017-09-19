@@ -32,7 +32,7 @@ def func():
     y = np.dot(X, coefs) + const_coef
 
     start = time.time()
-    lasso = h2o4gpu.Lasso()
+    lasso = h2o4gpu.Lasso(tol=tol)
     lasso_model = lasso.fit(X, y)
     print('time to train:', time.time() - start)
     print('original coeffs', coefs)
