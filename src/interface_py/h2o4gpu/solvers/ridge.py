@@ -14,7 +14,7 @@ class Ridge(object):
         Selects between h2o4gpu.solvers.elastic_net.GLM
         and h2o4gpu.linear_model.ridge.Ridge_sklearn
         Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.GLM)
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
         help(h2o4gpu.linear_model.ridge.Ridge_sklearn)
     """
 
@@ -75,7 +75,7 @@ class Ridge(object):
         alpha_min = 0.0
         alpha_max = 0.0
 
-        self.model_h2o4gpu = elastic_net.GLM(
+        self.model_h2o4gpu = elastic_net.ElasticNet_h2o4gpu(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,
