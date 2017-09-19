@@ -2,9 +2,11 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
-**H2O4GPU** is a collection of GPU (and CPU) solvers by H2Oai.  It can
-be used as a drop-in replacement for sklearn (i.e. import h2o4gpu as sklearn)
-with support for GPUs on selected (and ever-growing) algorithms.
+**H2O4GPU** is a collection of GPU solvers by H2Oai.  It builds upon
+the easy-to-use Scikit-Learn API and its well-tested CPU-based
+algorithms.  It can be used as a drop-in replacement for sklearn
+(i.e. import h2o4gpu as sklearn) with support for GPUs on selected
+(and ever-growing) algorithms.
 
 ## Requirements
 
@@ -76,10 +78,13 @@ own GPU versions.  In cases when our GPU class is currently
 incapable of an important scikit-learn feature, we revert to the
 scikit-learn class.
 
-Another primary goal is to support all operations the GPU
-via the [GOAI initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).  This involves
-ensuring the GPU algorithms can take and return GPU pointers to data instead of going back to the host.  In scikit-learn API language
-these are called fit_ptr, predict_ptr, transform_ptr, etc., where ptr stands for memory pointer.
+Another primary goal is to support all operations the GPU via the
+[GOAI
+initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).
+This involves ensuring the GPU algorithms can take and return GPU
+pointers to data instead of going back to the host.  In scikit-learn
+API language these are called fit_ptr, predict_ptr, transform_ptr,
+etc., where ptr stands for memory pointer.
 
 
 ![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg
