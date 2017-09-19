@@ -9,7 +9,12 @@ with support for GPUs on selected (and ever-growing) algorithms.
 ## Requirements
 
 * PC with Ubuntu 16.04+
-* Install [CUDA 8](https://developer.nvidia.com/cuda-downloads).
+
+* Install CUDA with bundled display drivers
+  [CUDA 8](https://developer.nvidia.com/cuda-downloads)
+  or
+  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download)
+
 * Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
 
 ## Installation
