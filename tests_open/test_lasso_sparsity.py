@@ -41,7 +41,8 @@ def func():
 
     zero_coef_index = np.where(lasso_model.X[0] == 0)
 
-    assert (zero_coef_index == np.sort(zero_coef_loc)).all() == True
+    check_true = (zero_coef_index == np.sort(zero_coef_loc)).all()
+    assert check_true == True
     assert np.fabs(lasso_model.X[0][-1] - const_coef) < 2 * tol
 
 
