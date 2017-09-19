@@ -12,7 +12,7 @@ class Ridge(object):
     """H2O Ridge Regression Solver
 
         Selects between h2o4gpu.solvers.elastic_net.GLM
-        and h2o4gpu.linear_model.coordinate_descent.Ridge_sklearn
+        and h2o4gpu.linear_model.ridge.Ridge_sklearn
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.GLM)
         help(h2o4gpu.linear_model.ridge.Ridge_sklearn)
