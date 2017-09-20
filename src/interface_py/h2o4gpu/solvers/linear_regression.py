@@ -7,6 +7,8 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
 from ..solvers.utils import _setter
+from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
+                                    pandas_dataframe)
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -16,6 +18,12 @@ class LinearRegression(object):
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.base.LinearRegression_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
+
+
     """
 
     def __init__(self,
@@ -27,26 +35,36 @@ class LinearRegression(object):
                  tol=1E-4,
                  glm_stop_early=True,  # h2o4gpu
                  glm_stop_early_error_fraction=1.0,  # h2o4gpu
-                 verbose=False):
+                 verbose=False,
+                 backend = 'auto'
+                 ):
 
-        # Fall back to Sklearn
-        # Can remove if fully implement sklearn functionality
-        self.do_sklearn = False
+        assert_is_type(backend, str)
 
-        params_string = ['normalize', 'copy_X', 'n_jobs']
-        params = [normalize, copy_X, n_jobs]
-        params_default = [False, True, 1]
+        if backend == 'auto':
+            # Fall back to Sklearn
+            # Can remove if fully implement sklearn functionality
+            self.do_sklearn = False
 
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Linear Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            params_string = ['normalize', 'copy_X', 'n_jobs']
+            params = [normalize, copy_X, n_jobs]
+            params_default = [False, True, 1]
+
+            i = 0
+            self.do_sklearn = False
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i]
+                          + " has been changed from default to "
+                          + str(param) + ". Will run Sklearn Linear Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,

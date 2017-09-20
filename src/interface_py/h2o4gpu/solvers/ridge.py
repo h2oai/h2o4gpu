@@ -16,6 +16,11 @@ class Ridge(object):
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.ridge.Ridge_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
+
     """
 
     def __init__(self,
@@ -30,26 +35,32 @@ class Ridge(object):
                  n_gpus=-1,  # h2o4gpu
                  glm_stop_early=True,  # h2o4gpu
                  glm_stop_early_error_fraction=1.0, #h2o4gpu
-                 verbose=False): # h2o4gpu
+                 verbose=False,
+                 backend='auto'
+                 ): # h2o4gpu
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
+        if backend == 'auto':
+            params_string = ['normalize', 'copy_X', 'solver', 'random_state']
+            params = [normalize, copy_X, solver, random_state]
+            params_default = [False, True, 'auto', None]
 
-        params_string = ['normalize', 'copy_X', 'solver', 'random_state']
-        params = [normalize, copy_X, solver, random_state]
-        params_default = [False, True, 'auto', None]
-
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Ridge Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            i = 0
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i]
+                          + " has been changed from default to "
+                          + str(param) + ". Will run Sklearn Ridge Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,

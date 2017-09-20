@@ -677,6 +677,10 @@ class KMeans(object):
         import h2o4gpu.cluster ; help(h2o4gpu.cluster.k_means_.KMeansSklearn)
         help(h2o4gpu.solvers.kmeans.KMeansH2O)
 
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
+
     """
 
     def __init__(
@@ -696,30 +700,40 @@ class KMeans(object):
             gpu_id=0,
             n_gpus=-1,
             init_data="randomselect",
-            do_checks=1):
+            do_checks=1,
+            backend = 'auto'
+            ):
+
+        assert_is_type(backend, str)
 
         # FIXME: Add init as array and kmeans++ to h2o4gpu
         # setup backup to sklearn class
         # (can remove if fully implement sklearn functionality)
         self.do_sklearn = False
-        example = np.array([1, 2, 3])
-        # pylint: disable=unidiomatic-typecheck
-        if type(init) == type(example):
-            print("WARNING: init as ndarray of centers not yet supported."
-                  "  Using sklearn.")
-            self.do_sklearn = True
-        else:
-            if init == "k-means++":
-                print("WARNING: init as k-means++ not yet supported."
+        if backend == 'auto':
+            example = np.array([1, 2, 3])
+            # pylint: disable=unidiomatic-typecheck
+            if type(init) == type(example):
+                print("WARNING: init as ndarray of centers not yet supported."
                       "  Using sklearn.")
                 self.do_sklearn = True
-        # FIXME: Add n_init to h2o4gpu
-        if n_init != 1:
-            print("WARNING: n_init not supported currently."
-                  "  Still using h2o4gpu.")
-        if precompute_distances != "auto":
-            print("WARNING: precompute_distances not used."
-                  "  Still using h2o4gpu.")
+            else:
+                if init == "k-means++":
+                    print("WARNING: init as k-means++ not yet supported."
+                          "  Using sklearn.")
+                    self.do_sklearn = True
+            # FIXME: Add n_init to h2o4gpu
+            if n_init != 1:
+                print("WARNING: n_init not supported currently."
+                      "  Still using h2o4gpu.")
+            if precompute_distances != "auto":
+                print("WARNING: precompute_distances not used."
+                      "  Still using h2o4gpu.")
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         from h2o4gpu.cluster import k_means_
         self.model_sklearn = k_means_.KMeansSklearn(

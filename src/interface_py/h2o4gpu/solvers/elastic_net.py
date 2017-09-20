@@ -1619,6 +1619,11 @@ class ElasticNet(object):
         import h2o4gpu.solvers ;
         help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
         help(h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
+
     """
     def __init__(self,
                  alpha=1.0, #h2o4gpu
@@ -1636,30 +1641,41 @@ class ElasticNet(object):
                  n_gpus=-1,  # h2o4gpu
                  glm_stop_early=True,  # h2o4gpu
                  glm_stop_early_error_fraction=1.0, #h2o4gpu
-                 verbose=False): # h2o4gpu
+                 verbose=False,
+                 backend = 'auto'
+                 ): # h2o4gpu
+
+        assert_is_type(backend, str)
+
+
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
+        if backend == 'auto':
 
-        params_string = ['normalize', 'precompute', 'copy_X',
-                         'warm_start', 'positive', 'random_state',
-                         'selection']
-        params = [normalize, precompute, copy_X,
-                  warm_start, positive, random_state,
-                  selection]
-        params_default = [False, False, True, False, False, None, 'cyclic']
+            params_string = ['normalize', 'precompute', 'copy_X',
+                             'warm_start', 'positive', 'random_state',
+                             'selection']
+            params = [normalize, precompute, copy_X,
+                      warm_start, positive, random_state,
+                      selection]
+            params_default = [False, False, True, False, False, None, 'cyclic']
 
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Lasso Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            i = 0
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i]
+                          + " has been changed from default to "
+                          + str(param) + ". Will run Sklearn Lasso Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.ElasticNetSklearn(
             alpha=alpha,

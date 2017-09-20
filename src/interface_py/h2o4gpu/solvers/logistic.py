@@ -17,6 +17,10 @@ class LogisticRegression(object):
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.logistic.LogisticRegression_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
     """
 
     def __init__(self,
@@ -36,30 +40,36 @@ class LogisticRegression(object):
                  n_jobs=1,
                  n_gpus=-1,  # h2o4gpu
                  glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0):  # h2o4gpu
+                 glm_stop_early_error_fraction=1.0,
+                 backend='auto'
+                 ):  # h2o4gpu
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
+        if backend == 'auto':
+            params_string = ['dual', 'intercept_scaling', 'class_weight',
+                             'random_state', 'solver', 'multi_class',
+                             'warm_start', 'n_jobs']
+            params = [dual, intercept_scaling, class_weight,
+                      random_state, solver, multi_class,
+                      warm_start, n_jobs]
+            params_default = [False, 1, None, None, 'liblinear', 'ovr', False, 1]
 
-        params_string = ['dual', 'intercept_scaling', 'class_weight',
-                         'random_state', 'solver', 'multi_class',
-                         'warm_start', 'n_jobs']
-        params = [dual, intercept_scaling, class_weight,
-                  random_state, solver, multi_class,
-                  warm_start, n_jobs]
-        params_default = [False, 1, None, None, 'liblinear', 'ovr', False, 1]
-
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Logistic Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            i = 0
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i]
+                          + " has been changed from default to "
+                          + str(param) + ". Will run Sklearn Logistic Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.LogisticRegressionSklearn(
             penalty=penalty,
