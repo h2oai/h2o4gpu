@@ -3,13 +3,15 @@
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
 **H2O4GPU** is a collection of GPU solvers by H2Oai.  It builds upon
-the easy-to-use Scikit-Learn API and its well-tested CPU-based
-algorithms.  It can be used as a drop-in replacement for sklearn
-(i.e. import h2o4gpu as sklearn) with support for GPUs on selected
+the easy-to-use [scikit-learn](modules/ensemble.html#forest) API and its well-tested CPU-based
+algorithms.  It can be used as a drop-in replacement for scikit-learn
+(i.e. `import h2o4gpu as sklearn`) with support for GPUs on selected
 (and ever-growing) algorithms.  H2OG4PU inherits all the existing
-Scikit-learn algorithms and falls-back to CPU aglorithms when the GPU
+scikit-learn algorithms and falls-back to CPU aglorithms when the GPU
 algorithm does not support an important existing Scikit-learn class
 option.
+
+An R API is in developement and will be released as a stand-alone R package in the future.
 
 ## Requirements
 
@@ -32,6 +34,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 ```
 
 Download the Python wheel file for python 3.6 and CUDA 8:
+
   * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
   * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
  
@@ -60,13 +63,12 @@ For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2
 
 ## Plans and RoadMap
 
-Vision is to develop fast GPU algorithms to complement the CPU
+The vision is to develop fast GPU algorithms to complement the CPU
 algorithms in scikit-learn while keeping full scikit-learn API
-compatibility and scikit-learn CPU algorithm capability. The python
-module is to be used as a drop-in-replacement for scikit-learn that
-has the full functionality of sklearn's CPU algorithms.  Functions and
-classes will be gradually overridden by GPU-enabled algorithms (unless
-n_gpu=0 is set and we have no CPU algorithm except scikit-learn's).
+compatibility and scikit-learn CPU algorithm capability. The h2o4gpu Python module is to be used as a drop-in-replacement for scikit-learn that has the full functionality of scikit-learn's CPU algorithms.  
+
+Functions and classes will be gradually overridden by GPU-enabled algorithms (unless
+`n_gpu=0` is set and we have no CPU algorithm except scikit-learn's).
 The CPU algorithms and code initially will be sklearn, but gradually
 those may be replaced by faster open-source codes like those in Intel
 DAAL.
@@ -77,12 +79,14 @@ own GPU versions.  In cases when our GPU class is currently
 incapable of an important scikit-learn feature, we revert to the
 scikit-learn class.
 
+As noted above, there is an R API in development, which will be released as a stand-alone R package.  All algorithms supported by H2O4GPU will be exposed in both Python and R in the future.
+
 Another primary goal is to support all operations the GPU via the
 [GOAI
 initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).
 This involves ensuring the GPU algorithms can take and return GPU
 pointers to data instead of going back to the host.  In scikit-learn
-API language these are called fit_ptr, predict_ptr, transform_ptr,
+API language these are called fit\_ptr, predict\_ptr, transform\_ptr,
 etc., where ptr stands for memory pointer.
 
 
@@ -104,17 +108,21 @@ Planned:
 
 ## Contributing
 
-Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVEL.md](DEVEL.md) for instructions on how to build and test the project and how to contribute.
+Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVEL.md](DEVEL.md) for instructions on how to build and test the project and how to contribute.  The h2o4gpu [Gitter](https://gitter.im/h2oai/h2o4gpu) chatroom can be used for discussion related to open source development.  
 
-GitHub issues are used only for bugs, feature and enhancement discussion/tracking.
+GitHub [issues](https://github.com/h2oai/h2o4gpu/issues) are used for bugs, feature and enhancement discussion/tracking.
+
+
 
 ## Questions
 
-Please ask all `h2o4gpu` related questions either on [StackOverflow](https://stackoverflow.com/questions/tagged/h2o4gpu) or our [Gitter](https://gitter.im/h2oai/h2o4gpu),
+* Please ask all code-related questions on [StackOverflow](https://stackoverflow.com/questions/tagged/h2o4gpu) using the "h2o4gpu" tag.  
 
-[Troubleshooting](https://github.com/h2oai/h2o4gpu/tree/master/TROUBLESHOOTING.md).
+* Questions related to the roadmap can be directed to the developers on [Gitter](https://gitter.im/h2oai/h2o4gpu).
 
-[FAQ](https://github.com/h2oai/h2o4gpu/tree/master/FAQ.md).
+* [Troubleshooting](https://github.com/h2oai/h2o4gpu/tree/master/TROUBLESHOOTING.md)
+
+* [FAQ](https://github.com/h2oai/h2o4gpu/tree/master/FAQ.md)
 
 
 ## References
