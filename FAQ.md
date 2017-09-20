@@ -64,6 +64,21 @@ Instead of default way to install, do instead the below to get the shared python
 
 PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 
+### How can I force use of the GPU back end no matter how I set my class parameters ###
+
+There are two options:
+
+* Add a named argument of backend='h2o4gpu' to each class wrapper
+  (those in h2o4gpu.solvers like h2o4gpu.solvers.LogisticRegression).
+
+* Before calling python or jupyter notebook, set the environment variable
+H2O4GPU_BACKEND to 'h2o4gpu' .
+
+To force sklearn always, set these to 'sklearn'.
+
+The default is backend='auto', and we try to make reasonable decisions
+about which back end is used.
+
 ### How is this different from scikit-cuda,  pycuda, magma, cula, etc. ###
 
 [Scikit-cuda](https://github.com/lebedov/scikit-cuda) and
