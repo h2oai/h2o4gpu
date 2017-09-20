@@ -5,7 +5,7 @@
 """
 
 from ..solvers.pogs import Pogs
-from ..solvers.elastic_net import ElasticNet_h2o4gpu
+from ..solvers.elastic_net import ElasticNetH2O
 from ..solvers.elastic_net import ElasticNet
 from ..solvers.logistic import LogisticRegression
 from ..solvers.linear_regression import LinearRegression

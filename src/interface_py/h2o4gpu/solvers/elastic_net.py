@@ -21,7 +21,7 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
 
 
-class ElasticNet_h2o4gpu(object):
+class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu.
@@ -1660,7 +1660,7 @@ class ElasticNet(object):
                 self.do_sklearn = True
             i = i + 1
 
-        self.model_sklearn = sk.ElasticNet_sklearn(
+        self.model_sklearn = sk.ElasticNetSklearn(
             alpha=alpha,
             l1_ratio=l1_ratio,
             fit_intercept=fit_intercept,
@@ -1693,7 +1693,7 @@ class ElasticNet(object):
         alphas = None
         lambdas = None
 
-        self.model_h2o4gpu = ElasticNet_h2o4gpu(
+        self.model_h2o4gpu = ElasticNetH2O(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,

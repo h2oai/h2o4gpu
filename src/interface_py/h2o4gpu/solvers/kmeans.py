@@ -17,7 +17,7 @@ from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
 
 
-class KMeans_h2o4gpu(object):
+class KMeansH2O(object):
     """K-Means clustering
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
@@ -670,12 +670,12 @@ class KMeans(object):
     """
         K-Means clustering Wrapper
 
-        Selects between h2o4gpu.cluster.k_means_.KMeans_sklearn
-        and h2o4gpu.solvers.kmeans.KMeans_h2o4gpu
+        Selects between h2o4gpu.cluster.k_means_.KMeansSklearn
+        and h2o4gpu.solvers.kmeans.KMeansH2O
 
         Documentation:
-        import h2o4gpu.cluster ; help(h2o4gpu.cluster.k_means_.KMeans_sklearn)
-        help(h2o4gpu.solvers.kmeans.KMeans_h2o4gpu)
+        import h2o4gpu.cluster ; help(h2o4gpu.cluster.k_means_.KMeansSklearn)
+        help(h2o4gpu.solvers.kmeans.KMeansH2O)
 
     """
 
@@ -722,7 +722,7 @@ class KMeans(object):
                   "  Still using h2o4gpu.")
 
         from h2o4gpu.cluster import k_means_
-        self.model_sklearn = k_means_.KMeans_sklearn(
+        self.model_sklearn = k_means_.KMeansSklearn(
             n_clusters=n_clusters,
             init=init,
             n_init=n_init,
@@ -734,7 +734,7 @@ class KMeans(object):
             copy_x=copy_x,
             n_jobs=n_jobs,
             algorithm=algorithm)
-        self.model_h2o4gpu = KMeans_h2o4gpu(
+        self.model_h2o4gpu = KMeansH2O(
             n_clusters=n_clusters,
             init=init,
             n_init=n_init,

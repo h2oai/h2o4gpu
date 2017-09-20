@@ -11,10 +11,10 @@ from ..solvers.utils import _setter
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
+        Selects between h2o4gpu.solvers.elastic_net.ElasticNetH2O
         and h2o4gpu.linear_model.base.LinearRegression_sklearn
         Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.base.LinearRegression_sklearn)
     """
 
@@ -48,7 +48,7 @@ class LinearRegression(object):
                 self.do_sklearn = True
             i = i + 1
 
-        self.model_sklearn = sk.LinearRegression_sklearn(
+        self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
             normalize=normalize,
             copy_X=copy_X,
@@ -76,7 +76,7 @@ class LinearRegression(object):
         alphas = None
         lambdas = None
 
-        self.model_h2o4gpu = elastic_net.ElasticNet_h2o4gpu(
+        self.model_h2o4gpu = elastic_net.ElasticNetH2O(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,

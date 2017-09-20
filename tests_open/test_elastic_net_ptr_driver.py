@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-ElasticNet_h2o4gpu solver tests using Kaggle datasets.
+ElasticNetH2O solver tests using Kaggle datasets.
 
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -22,7 +22,7 @@ Elastic Net
 '''
 
 def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2):
-  Solver = h2o4gpu.ElasticNet_h2o4gpu
+  Solver = h2o4gpu.ElasticNetH2O
 
   sourceDev = 0
   intercept = True

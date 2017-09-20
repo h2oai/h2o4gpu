@@ -24,14 +24,14 @@ do
         sed -i 's/sklearn/h2o4gpu/g' $fil
         sed -i 's/scikit-learn/h2o4gpu/g' $fil
         # replace names
-        sed -i 's/\([^_a-zA-Z0-9]\?\)KMeans\([^_a-zA-Z0-9]\?\)/\1KMeans_sklearn\2/g' $fil
-        sed -i 's/\([^_a-zA-Z0-9]\?\)Ridge\([^_a-zA-Z0-9]\?\)/\1Ridge_sklearn\2/g' $fil
-        sed -i 's/\([^_a-zA-Z0-9]\?\)Lasso\([^_a-zA-Z0-9]\?\)/\1Lasso_sklearn\2/g' $fil
-        sed -i 's/\([^_a-zA-Z0-9]\?\)LogisticRegression\([^_a-zA-Z0-9]\?\)/\1LogisticRegression_sklearn\2/g' $fil
-        sed -i 's/\([^_a-zA-Z0-9]\?\)LinearRegression\([^_a-zA-Z0-9]\?\)/\1LinearRegression_sklearn\2/g' $fil 
-        sed -i 's/\([^_a-zA-Z0-9]\?\)ElasticNet\([^_a-zA-Z0-9]\?\)/\1ElasticNet_sklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)KMeans\([^_a-zA-Z0-9]\?\)/\1KMeansSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)Ridge\([^_a-zA-Z0-9]\?\)/\1RidgeSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)Lasso\([^_a-zA-Z0-9]\?\)/\1LassoSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)LogisticRegression\([^_a-zA-Z0-9]\?\)/\1LogisticRegressionSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)LinearRegression\([^_a-zA-Z0-9]\?\)/\1LinearRegressionSklearn\2/g' $fil 
+        sed -i 's/\([^_a-zA-Z0-9]\?\)ElasticNet\([^_a-zA-Z0-9]\?\)/\1ElasticNetSklearn\2/g' $fil
 	# avoid duplicate conversions
-        sed -i 's/sklearn_sklearn/sklearn/g' $fil
+        sed -i 's/sklearnSklearn/sklearn/g' $fil
         # other replacements
         sed -i "s/from \.\. import get_config as _get_config/import os\n_ASSUME_FINITE = bool(os.environ.get('SKLEARN_ASSUME_FINITE', False))\ndef _get_config\(\):\n    return \{'assume_finite': _ASSUME_FINITE\}/g" $fil
     fi

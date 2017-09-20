@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-ElasticNet_h2o4gpu solver tests using Kaggle datasets.
+ElasticNetH2O solver tests using Kaggle datasets.
 
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)

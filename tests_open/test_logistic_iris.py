@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-ElasticNet_h2o4gpu solver tests using Iris dataset.
+ElasticNetH2O solver tests using Iris dataset.
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -40,7 +40,7 @@ def func():
     classification = True
 
     logreg = h2o4gpu.LogisticRegression(penalty="l1")
-    lr = h2o4gpu.ElasticNet_h2o4gpu(
+    lr = h2o4gpu.ElasticNetH2O(
         n_threads = None,
         n_alphas = 1,
         n_lambdas = 1,
