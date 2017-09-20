@@ -108,7 +108,7 @@ pipeline {
                         $class                           : 'GitSCM',
                         branches                         : scm.branches,
                         doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
