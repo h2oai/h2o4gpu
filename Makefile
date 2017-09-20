@@ -364,6 +364,8 @@ testbigperfquick: dotestbigperf
 
 #################### Build info
 
+.PHONY: build/VERSION.txt
+
 build/VERSION.txt:
 	@rm -rf build
 	@mkdir -p build
