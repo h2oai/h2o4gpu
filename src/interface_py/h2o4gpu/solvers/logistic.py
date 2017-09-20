@@ -12,10 +12,10 @@ from ..solvers.utils import _setter
 class LogisticRegression(object):
     """H2O Logistic Regression Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
+        Selects between h2o4gpu.solvers.elastic_net.ElasticNetH2O
         and h2o4gpu.linear_model.logistic.LogisticRegression_sklearn
         Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
+        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.logistic.LogisticRegression_sklearn)
     """
 
@@ -61,7 +61,7 @@ class LogisticRegression(object):
                 self.do_sklearn = True
             i = i + 1
 
-        self.model_sklearn = sk.LogisticRegression_sklearn(
+        self.model_sklearn = sk.LogisticRegressionSklearn(
             penalty=penalty,
             dual=dual,
             tol=tol,
@@ -100,7 +100,7 @@ class LogisticRegression(object):
             assert ValueError, "penalty should be either l1 " \
                                "or l2 but got " + penalty
 
-        self.model_h2o4gpu = elastic_net.ElasticNet_h2o4gpu(
+        self.model_h2o4gpu = elastic_net.ElasticNetH2O(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,

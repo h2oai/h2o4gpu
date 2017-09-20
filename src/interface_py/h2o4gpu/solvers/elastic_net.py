@@ -11,8 +11,8 @@ import warnings
 import numpy as np
 import pandas as pd
 from h2o4gpu.linear_model import coordinate_descent as sk
-from ..solvers.utils import _setter
 from tabulate import tabulate
+from ..solvers.utils import _setter
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib
 from ..solvers.utils import device_count, _get_data, _data_info, \
@@ -21,7 +21,7 @@ from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
 
 
-class ElasticNet_h2o4gpu(object):
+class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
 
     :param int n_threads : Number of threads to use in the gpu.
@@ -1616,7 +1616,8 @@ class ElasticNet(object):
         Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
         and h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn
         Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
+        import h2o4gpu.solvers ;
+        help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
         help(h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn)
     """
     def __init__(self,
@@ -1660,7 +1661,7 @@ class ElasticNet(object):
                 self.do_sklearn = True
             i = i + 1
 
-        self.model_sklearn = sk.ElasticNet_sklearn(
+        self.model_sklearn = sk.ElasticNetSklearn(
             alpha=alpha,
             l1_ratio=l1_ratio,
             fit_intercept=fit_intercept,
@@ -1677,8 +1678,10 @@ class ElasticNet(object):
         #Equivalent Lasso parameters for h2o4gpu
 
         #Logic about l1_ratio:
-        #The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1. For l1_ratio = 0 the penalty is an L2 penalty.
-        #For l1_ratio = 1 it is an L1 penalty.For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
+        #The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1.
+        # For l1_ratio = 0 the penalty is an L2 penalty.
+        #For l1_ratio = 1 it is an L1 penalty.
+        # For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
         alpha_min = alpha_max = l1_ratio
 
         #Other parameters
@@ -1693,7 +1696,7 @@ class ElasticNet(object):
         alphas = None
         lambdas = None
 
-        self.model_h2o4gpu = ElasticNet_h2o4gpu(
+        self.model_h2o4gpu = ElasticNetH2O(
             n_threads=n_threads,
             n_gpus=n_gpus,
             fit_intercept=fit_intercept,
@@ -1757,3 +1760,4 @@ class ElasticNet(object):
         s('oself.sparse_coef_ = oself.model.sparse_coef_')
         s('oself.intercept_ = oself.model.intercept_')
         s('oself.n_iter_ = oself.model.n_iter_')
+        

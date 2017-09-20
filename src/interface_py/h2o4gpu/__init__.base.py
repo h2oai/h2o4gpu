@@ -10,7 +10,7 @@ __version__ = "0.0.3"
 from .types import FunctionVector
 from .solvers.pogs import Pogs
 from .solvers.elastic_net import ElasticNet
-from .solvers.elastic_net import ElasticNet_h2o4gpu
+from .solvers.elastic_net import ElasticNetH2O
 from .solvers.logistic import LogisticRegression
 from .solvers.linear_regression import LinearRegression
 from .solvers.lasso import Lasso
