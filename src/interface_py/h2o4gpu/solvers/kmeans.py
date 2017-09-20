@@ -101,12 +101,6 @@ class H2OKMeans(object):
         < 0 means all possible GPUs on the machine.
         0 means no GPUs, run on CPU.
 
-    :param init_data : "random", "selectstrat" or
-                "randomselect", optional, default: "randomselect"
-                "Random": runs the algorithm on a completely random data set
-                "Selectstrat": uses data in given order
-                "Randomselect": first shuffles the data before using it
-
     :param do_checks : int, optional, default: 1
         If set to 0 GPU error check will not be performed.
 
@@ -145,7 +139,6 @@ class H2OKMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
             do_checks=1):
 
         assert_is_type(n_clusters, int)
@@ -163,7 +156,6 @@ class H2OKMeans(object):
 
         assert_is_type(gpu_id, int)
         assert_is_type(n_gpus, int)
-        assert_is_type(init_data, str)
         assert_is_type(do_checks, int)
 
         # fix-up tol in case input was numpy
@@ -178,9 +170,6 @@ class H2OKMeans(object):
         # pylint: disable=unidiomatic-typecheck
         if type(init) == type(example):
             assert ValueError("init cannot be numpy array yet.")
-        else:
-            if init == 'random':
-                init_data = "randomselect"
 
         self.init = init
         self._n_clusters = n_clusters
@@ -188,7 +177,6 @@ class H2OKMeans(object):
         (self.n_gpus, self.devices) = device_count(n_gpus)
 
         self._max_iter = max_iter
-        self.init_data = init_data
         self.tol = tol
         self._did_sklearn_fit = 0
         self.verbose = verbose
@@ -211,7 +199,7 @@ class H2OKMeans(object):
         self.uploaded_data = 0
         self.did_fit_ptr = 0
         self.did_predict = 0
-        self.data_ptr = None
+        self.data_ptrs = None
         self.source_me = 0
 
     @classmethod
@@ -329,6 +317,7 @@ class H2OKMeans(object):
 
         :param X: array-like, shape=(n_samples, n_features)
             Training instances.
+        :param y: ignored, just for API compatibility
         :param free_input_data: int, 0 - does not free memory from
             training data after fitting. 1 - frees the memory.
             Defaults to 1.
@@ -341,11 +330,12 @@ class H2OKMeans(object):
         cols = np.shape(X_np)[1]
 
         order = 'c' if np.isfortran(X_np) else 'r'
-        X_ptr = self.upload_data(X_np, rows, cols, order)
 
-        return self.fit_ptr(X_ptr, rows, cols, order, free_input_data)
+        X_ptrs = self.upload_data(X_np, rows, cols, order)
 
-    def fit_ptr(self, X_ptr, m, n, order,
+        return self.fit_ptr(X_ptrs, rows, cols, order, free_input_data)
+
+    def fit_ptr(self, X_ptrs, m, n, order,
                 free_input_data=0):
         """Run fitting using data which already resides on the GPU
 
@@ -353,15 +343,21 @@ class H2OKMeans(object):
             already called or that self.double_precision has been set
             to either 1 for np.float64 or to 0 for np.float32!
 
-            :param X_ptr: pointer to the training data residing on
-            the GPUs
-            :param m: int, number of training observations
+            :param X_ptrs: int or array_like, pointers to the training data
+                residing on the GPUs
+            :param m: int or array_like, number of training observations in
+                each pointer
             :param n: int, number of features
             :param order: order of the datasets, should be 'r' or 'c'
             :param free_input_data: int, 0 - does not free memory from
                 training data after fitting. 1 - frees the memory.
                 Defaults to 1.
         """
+        if self.n_gpus > 1 and isinstance(X_ptrs, int):
+            self.redistribute_data(X_ptrs, m, n, order)
+
+        # TODO make sure X_ptrs is of type void**data
+
         data_ord = ord(order)
 
         if self.init == "random" or self.init == "k-means++":
@@ -369,19 +365,6 @@ class H2OKMeans(object):
         else:
             c_init = 0
 
-        if self.init_data == "random":
-            c_init_data = 0
-        elif self.init_data == "selectstrat":
-            c_init_data = 1
-        elif self.init_data == "randomselect":
-            c_init_data = 2
-        else:
-            print("""
-                Unknown init_data "%s", should be
-                "random", "selectstrat" or "randomselect".
-                """ % self.init_data)
-            sys.stdout.flush()
-            return
 
         pred_centers = c_void_p(0)
         pred_labels = c_void_p(0)
@@ -393,14 +376,14 @@ class H2OKMeans(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 m, n,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, X_ptr, None,
+                self.tol, X_ptrs, None,
                 pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 m, n,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, X_ptr, None,
+                self.tol, X_ptrs, None,
                 pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
@@ -473,7 +456,6 @@ class H2OKMeans(object):
         _check_data_content(self.do_checks, "X", X_np)
         X_np, c_data, _ = self._to_cdata(X_np)
         c_init = 0
-        c_init_data = 0
 
         _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
@@ -486,14 +468,14 @@ class H2OKMeans(object):
             lib.make_ptr_float_kmeans(1, self.verbose, self.random_state,
                                       self._gpu_id, self.n_gpus, rows, cols,
                                       c_int(data_ord), self._n_clusters,
-                                      self._max_iter, c_init, c_init_data,
+                                      self._max_iter, c_init,
                                       self.tol, c_data, c_centroids, None,
                                       pointer(c_res))
         else:
             lib.make_ptr_double_kmeans(1, self.verbose, self.random_state,
                                        self._gpu_id, self.n_gpus, rows, cols,
                                        c_int(data_ord), self._n_clusters,
-                                       self._max_iter, c_init, c_init_data,
+                                       self._max_iter, c_init,
                                        self.tol, c_data, c_centroids, None,
                                        pointer(c_res))
 
@@ -633,21 +615,86 @@ class H2OKMeans(object):
         self.free_sols()
         self.free_preds()
 
-    def upload_data(self, data, rows, cols, order, source_dev=0):
-        """Uploads the data to GPU
+    def redistribute_data(self, data_ptr, rows, cols, order,
+                          n_gpus=-1, gpu_ids=None, source_dev=0):
+        """Redistributes data from a single GPU among multiple GPUs
 
-            If data was previously uploaded it frees the previously
-            allocated memory first.
+            :param data_ptr: int, pointer to the data on a single GPU
+            :param rows: int, number of rows in data_ptr
+            :param cols: int, number of columns in data_ptr
+            :param order: char, 'r' for row aligned, 'c' for column aligned
+            :param n_gpus: int, number of GPUs to redistribute the data to
+                Defaults to the number of GPUs set for this object
+            :param gpu_ids: array_like: list of GPU IDs to upload the data to,
+                len(gpu_ids) should equal n_gpus.
+                Currently ignored! Data is uploaded to IDs [0,..,n]
+            :param source_dev: int, ID of the GPU on which data resides.
+                Defaults to 0.
+
+            :return: array of shape [n_gpus,3]
+                First dimension contains pointers to data
+                Second dimension contains device ID
+                Third dimension contains size of data
         """
+        if n_gpus < 0:
+            n_gpus = self.n_gpus
+
+        if self.uploaded_data == 1:
+            self.free_data()
+        self.uploaded_data = 1
+
+        # TODO do I need to initialize this with n_gpu size??
+        data_ptrs = pointer(c_void_p(0))
+
+        status = self.lib.redistribute_data(
+            c_int(source_dev),
+            c_size_t(rows), c_size_t(cols),
+            c_int(ord(order)),
+            c_int(n_gpus),
+            data_ptr, pointer(data_ptrs))
+
+        assert status == 0, 'Failure uploading the data'
+
+        return data_ptrs
+
+    def upload_data(self, data, rows, cols, order,
+                    n_gpus=-1, gpu_ids=None, source_dev=0):
+        """Uploads the data to GPU(s) from RAM
+
+            If data was previously uploaded (or redistributed) via
+            this object it frees the previously allocated memory first.
+
+            :param data: array_like, data to be uploaded to GPUs
+            :param rows: int, rows in data
+            :param cols: int, cols in data
+            :param order: char, 'c' for column aligned, 'r' for row aligned
+            :param n_gpus: int, number of GPUs to redistribute the data to
+                Defaults to the number of GPUs set for this object
+            :param gpu_ids: array_like: list of GPU IDs to upload the data to,
+                len(gpu_ids) should equal n_gpus.
+                Currently ignored! Data is uploaded to IDs [0,..,n]
+            :param source_dev: int, ID of the device on which data resides.
+                Defaults to 0.
+
+            :return: array of shape [n_gpus,3]
+                First dimension contains pointers to data
+                Second dimension contains device ID
+                Third dimension contains size of data
+        """
+        if n_gpus < 0:
+            n_gpus = self.n_gpus
+
+        # ptr to the original data
         _, c_data_ptr, _ = self._to_cdata(data)
 
-        data_ptr = c_void_p(0)
+        # TODO do I need to initialize this with n_gpu size??
+        data_ptrs = pointer(c_void_p(0))
 
         status = -1
 
         if self.uploaded_data == 1:
             self.free_data()
-        self.uploaded_data = 1
+        self.uploaded_data = 0
 
         if self.double_precision == 1:
             status = self.lib.upload_data_double(
@@ -658,7 +705,8 @@ class H2OKMeans(object):
                 c_size_t(cols),
                 c_int(ord(order)),
                 c_data_ptr,
-                pointer(data_ptr))
+                c_int(n_gpus),
+                pointer(data_ptrs))
         elif self.double_precision == 0:
             status = self.lib.upload_data_float(
                 c_int(0),
@@ -668,12 +716,15 @@ class H2OKMeans(object):
                 c_size_t(cols),
                 c_int(ord(order)),
                 c_data_ptr,
-                pointer(data_ptr))
+                c_int(n_gpus),
+                pointer(data_ptrs))
 
         assert status == 0, 'Failure uploading the data'
 
-        self.data_ptr = data_ptr
-        return data_ptr
+        self.uploaded_data = 1
+
+        self.data_ptrs = data_ptrs
+        return data_ptrs
 
     # FIXME : This function duplicates others
     # in solvers / utils.py as used in GLM
@@ -798,7 +849,6 @@ class KMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
             do_checks=1):
 
         # FIXME: Add init as array and kmeans++ to h2o4gpu
@@ -852,7 +902,6 @@ class KMeans(object):
             # H2O4GPU
             gpu_id=gpu_id,
             n_gpus=n_gpus,
-            init_data=init_data,
             do_checks=do_checks)
 
         if self.do_sklearn:

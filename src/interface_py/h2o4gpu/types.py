@@ -68,6 +68,7 @@ c_int_p = POINTER(c_int)
 c_int32_p = POINTER(c_int32)
 c_float_p = POINTER(c_float)
 c_void_pp = POINTER(c_void_p)
+c_void_ppp = POINTER(c_void_pp)
 c_double_p = POINTER(c_double)
 
 

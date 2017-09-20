@@ -962,18 +962,26 @@ template class MatrixDense<double>;
 template class MatrixDense<float>;
 #endif
 
+// TODO move to common lib
 template <typename T>
-int upload_data(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const T *data, void **_data){
+int upload_data(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const T *data, void ***_data){
   if(shared_pointer != 0){
-    *_data = const_cast<T*>(data);
+    *_data[0] = const_cast<T*>(data);
   } else{ // if shared_pointer == 0, then assume need to make copy of data in case gets modified
-      *_data = new T[m * n];
-      ASSERT(*_data != 0);
-      memcpy(*_data, data, m * n * sizeof(T));
+      *_data[0] = new T[m * n];
+      ASSERT(*_data[0] != 0);
+      memcpy(*_data[0], data, m * n * sizeof(T));
   }
 
   return(0);
 }
+
+// TODO move to common lib and implement
+template <typename T>
+int redistribute_data(int me, int wDev, size_t m, size_t n, const char ord, const T *data, int n_gpus, void ***_data){
+    return(0);
+}
+
 
 template <typename T>
 int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight){
@@ -1028,8 +1036,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
   return(0);
 }
 
-  template int upload_data<double>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const double *data, void **_data){
-  template int upload_data<float>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const float *data, void **_data){
+  template int redistribute_data<double>(int me, int wDev, size_t m, size_t n, const char ord, const double *data, int n_gpus, void **_data);
+  template int redistribute_data<float>(int me, int wDev, size_t m, size_t n, const char ord, const float *data, int n_gpus, void **_data);
+
+  template int upload_data<double>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const double *data, void ***_data){
+  template int upload_data<float>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const float *data, void ***_data){
 
   template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
                                      const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
@@ -1061,15 +1072,21 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 extern "C" {
 #endif
 
+  int redistribute_data(int source_me, int source_dev,
+                        size_t rows, size_t cols, const char ord,
+                        void *data, int n_gpus, void ***redistributed_data) {
+    return h2o4gpu::redistribute_data(source_me, source_dev, rows, cols, ord, data, n_gpus, redistributed_data);
+  }
+
   int upload_data_double(int shared_pointer, int source_me, int source_dev,
                          size_t rows, size_t cols, const char ord,
-                         const double* data, void **uploaded_data) {
+                         const double* data, int n_gpus, void ***uploaded_data) {
       return h2o4gpu::upload_data<double>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
   }
 
   int upload_data_float(int shared_pointer, int source_me, int source_dev,
                         size_t rows, size_t cols, const char ord,
-                        const float* data, void **uploaded_data) {
+                        const float* data, int n_gpus, void ***uploaded_data) {
     return h2o4gpu::upload_data<float>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
   }
 

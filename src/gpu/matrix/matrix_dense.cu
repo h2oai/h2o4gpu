@@ -1932,14 +1932,38 @@ template class MatrixDense<float>;
 
 // Upload data (single matrix) to a single GPU.
 // TODO This should be put in some common utils class/file probably - not really dense matrix related
+// TODO make this work for ord = c
 template <typename T>
-int upload_data(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const T *data, void **_data){
-    checkwDev(wDev);
-    CUDACHECK(cudaSetDevice(wDev));
+int upload_data(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const T *data, int n_gpus, void ***_data){
+    int per_gpu_m = m / n_gpus;
 
-    // Copy Matrix to GPU (unlike CPU case, cannot copy just pointer because always assume input is CPU and output is GPU)
-    CUDACHECK(cudaMalloc(_data, m * n * sizeof(T))); // allocate on GPU
-    CUDACHECK(cudaMemcpy(*_data, data, m * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    for(int dev = 0; dev < n_gpus; dev++) {
+        checkwDev(dev);
+        CUDACHECK(cudaSetDevice(dev));
+
+        // Copy Matrix to GPU (unlike CPU case, cannot copy just pointer because always assume input is CPU and output is GPU)
+        CUDACHECK(cudaMalloc(_data[dev], per_gpu_m * n * sizeof(T))); // allocate on GPU
+        CUDACHECK(cudaMemcpy(*_data[dev], data + dev * per_gpu_m, per_gpu_m * n * sizeof(T),cudaMemcpyHostToDevice)); // copy from orig CPU data to GPU
+    }
+
+    return(0);
+}
+
+// TODO This should be put in some common utils class/file probably - not really dense matrix related
+// TODO make this work for ord = c
+// TODO can we "destroy" the original data? then in case of n_gpus=1 we can just return the original pointer
+template <typename T>
+int redistribute_data(int me, int wDev, size_t m, size_t n, const char ord, const T *data, int n_gpus, void ***_data){
+    // Redistribute data from GPU with id = wDev among N GPUs
+    int per_gpu_m = m / n_gpus;
+
+    for(int dev = 0; dev < n_gpus; dev++) {
+        checkwDev(dev);
+        CUDACHECK(cudaSetDevice(dev));
+
+        CUDACHECK(cudaMalloc(_data[dev], per_gpu_m * n * sizeof(T))); // allocate on GPU
+        CUDACHECK(cudaMemcpyPeer(*_data[dev], dev, data + dev * per_gpu_m, wDev, per_gpu_m * n * sizeof(T));
+    }
 
     return(0);
 }
@@ -2022,8 +2046,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
     return(0);
 }
 
-  template int upload_data<double>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const double *data, void **_data);
-  template int upload_data<float>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const float *data, void **_data);
+  template int redistribute_data<double>(int me, int wDev, size_t m, size_t n, const char ord, const double *data, int n_gpus, void **_data);
+  template int redistribute_data<float>(int me, int wDev, size_t m, size_t n, const char ord, const float *data, int n_gpus, void **_data);
+
+  template int upload_data<double>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const double *data, int n_gpus, void ***_data);
+  template int upload_data<float>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const float *data, int n_gpus, void ***_data);
 
   template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
                                      const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
@@ -2057,15 +2084,21 @@ int modelFree1(T *aptr){
 extern "C" {
 #endif
 
+    int redistribute_data(int source_me, int source_dev,
+                           size_t rows, size_t cols, const char ord,
+                           void *data, int n_gpus, void ***redistributed_data) {
+      return h2o4gpu::redistribute_data(source_me, source_dev, rows, cols, ord, data, n_gpus, redistributed_data);
+    }
+
     int upload_data_double(int shared_pointer, int source_me, int source_dev,
                            size_t rows, size_t cols, const char ord,
-                           const double* data, void **uploaded_data) {
-      return h2o4gpu::upload_data<double>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
+                           const double* data, int n_gpus, void ***uploaded_data) {
+      return h2o4gpu::upload_data<double>(shared_pointer, source_me, source_dev, rows, cols, ord, data, n_gpus, uploaded_data);
     }
     int upload_data_float(int shared_pointer, int source_me, int source_dev,
                            size_t rows, size_t cols, const char ord,
-                           const float* data, void **uploaded_data) {
-      return h2o4gpu::upload_data<float>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
+                           const float* data, int n_gpus, void ***uploaded_data) {
+      return h2o4gpu::upload_data<float>(shared_pointer, source_me, source_dev, rows, cols, ord, data, n_gpus, uploaded_data);
     }
 
     int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,

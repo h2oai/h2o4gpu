@@ -2,8 +2,8 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from ctypes import c_int, c_size_t, c_float, c_double, cdll
-from h2o4gpu.types import c_float_p, c_void_pp, c_double_p
+from ctypes import c_int, c_size_t, c_float, c_double, cdll, c_void_p
+from h2o4gpu.types import c_float_p, c_void_pp, c_void_ppp, c_double_p
 
 
 class CPUlib:
@@ -52,7 +52,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # n_clusters
             c_int,  # max_iter
             c_int,  # init_from_data
-            c_int,  # init_data
             c_float,  # tol
             c_float_p,  # data
             c_float_p,  # centers
@@ -73,7 +72,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # n_clusters
             c_int,  # max_iter
             c_int,  # init_from_data
-            c_int,  # init_data
             c_double,  # tol
             c_double_p,  # data
             c_double_p,  # centers
@@ -120,7 +118,8 @@ def _load_kmeans_lib(lib_path):
             c_size_t,  # cols
             c_int,  # order
             c_double_p,  # original data ptr
-            c_void_pp  # uploaded data ptr
+            c_int,  # n_gpus
+            c_void_ppp  # uploaded data ptr
         ]
         h2o4gpu_kmeans_lib.upload_data_double.restype = c_int
 
@@ -132,9 +131,22 @@ def _load_kmeans_lib(lib_path):
             c_size_t,  # cols
             c_int,  # order
             c_float_p,  # original data ptr
-            c_void_pp  # uploaded data ptr
+            c_int,  # n_gpus
+            c_void_ppp  # uploaded data ptr
         ]
         h2o4gpu_kmeans_lib.upload_data_float.restype = c_int
+
+        h2o4gpu_kmeans_lib.redistribute_data.argtypes = [
+            c_int,  # source_me
+            c_int,  # source_dev
+            c_size_t,  # rows
+            c_size_t,  # cols
+            c_int,  # order
+            c_void_p,  # original data ptr
+            c_int,  # n_gpus
+            c_void_ppp  # uploaded data ptr
+        ]
+        h2o4gpu_kmeans_lib.redistribute_data.restype = c_int
 
     except OSError:
         print(

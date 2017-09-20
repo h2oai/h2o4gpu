@@ -226,7 +226,7 @@ template<typename T>
 int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
                size_t rows, size_t cols, const char ord,
                int k, int max_iterations, int init_from_data,
-               int init_data, T threshold,
+               T threshold,
                const T *srcdata, void **pred_centroids, void **pred_labels) {
   log_debug(verbose, "KMeans - Start fitting");
 
@@ -285,13 +285,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
-    if (init_data == 0) { // random (for testing)
-      random_data<T>(verbose, *data[q], rows / n_gpu, cols);
-    } else if (init_data == 1) { // shard by row
-      copy_data(verbose, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
-    } else { // shard by randomly (without replacement) selected by row
-      copy_data_shuffled(verbose, v, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
-    }
+    copy_data(verbose, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
   }
 
   // Get random points as centroids
@@ -365,23 +359,6 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     h_labels->insert(h_labels->end(), labels[q]->begin(), labels[q]->end());
   }
 
-  // The initial dataset was shuffled, we need to reshuffle the labels accordingly
-  // This also reshuffles the initial permutation scheme v
-  if (init_data > 1) {
-    for (int i = 0; i < rows; i++) {
-      while (v[i] != i) {
-        int tmpIdx = v[v[i]];
-        int tmpLabel = h_labels->data()[v[i]];
-
-        h_labels->data()[v[i]] = h_labels->data()[i];
-        v[v[i]] = v[i];
-
-        v[i] = tmpIdx;
-        h_labels->data()[i] = tmpLabel;
-      }
-    }
-  }
-
   *pred_labels = h_labels->data();
 
   // debug
@@ -434,7 +411,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
   thrust::device_vector<T> *distances[n_gpu];
   int *d_changes[n_gpu];
 
-  for (int q = 0; q < n_gpu; q++) {
+  for (int q = 0; q < n_gpun_gpu; q++) {
     // TODO everything from here till "distances[q]" is exactly the same as in transform
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
@@ -570,12 +547,12 @@ int kmeans_transform(int verbose,
 
 template<typename T>
 int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
-                  const char ord, int k, int max_iterations, int init_from_data, int init_data,
+                  const char ord, int k, int max_iterations, int init_from_data,
                   T threshold, const T *srcdata, const T *centroids,
                   void **pred_centroids, void **pred_labels) {
   if (dopredict == 0) {
     return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
-                      ord, k, max_iterations, init_from_data, init_data, threshold,
+                      ord, k, max_iterations, init_from_data, threshold,
                       srcdata, pred_centroids, pred_labels);
   } else {
     return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
@@ -587,26 +564,26 @@ int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gpu
 template int
 makePtr_dense<float>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                      const char ord, int k, int max_iterations, int init_from_data,
-                     int init_data, float threshold, const float *srcdata,
+                     float threshold, const float *srcdata,
                      const float *centroids, void **pred_centroids, void **pred_labels);
 
 template int
 makePtr_dense<double>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data,
-                      int init_data, double threshold, const double *srcdata,
+                      double threshold, const double *srcdata,
                       const double *centroids, void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<float>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                size_t rows, size_t cols,
                                const char ord, int k, int max_iterations,
-                               int init_from_data, int init_data, float threshold,
+                               int init_from_data, float threshold,
                                const float *srcdata,
                                void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<double>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                 size_t rows, size_t cols,
                                 const char ord, int k, int max_iterations,
-                                int init_from_data, int init_data, double threshold,
+                                int init_from_data, double threshold,
                                 const double *srcdata,
                                 void **pred_centroids, void **pred_labels);
 
@@ -660,19 +637,19 @@ extern "C" {
 // Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_data,
-                          int init_data, float threshold, const float *srcdata,
+                          float threshold, const float *srcdata,
                           const float *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
-                                             max_iterations, init_from_data, init_data, threshold,
+                                             max_iterations, init_from_data, threshold,
                                              srcdata, centroids, pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_data,
-                           int init_data, double threshold, const double *srcdata,
+                           double threshold, const double *srcdata,
                            const double *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
-                                              max_iterations, init_from_data, init_data, threshold,
+                                              max_iterations, init_from_data, threshold,
                                               srcdata, centroids, pred_centroids, pred_labels);
 }
 
