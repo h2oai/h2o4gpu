@@ -32,7 +32,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 ```
 
 Download the Python wheel file for python 3.6 and CUDA 8:
-  * (TBA) [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
   * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
  
 Start a fresh pyenv or virtualenv session.
