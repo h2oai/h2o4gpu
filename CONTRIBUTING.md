@@ -177,7 +177,7 @@ TBA.
 In order to override the sklearn API with new (GPU) functions, one:
 
 * Adds string replacements in scripts/prepare_sklearn.sh so sklearn
-  class is renamed to <origin name>_sklearn
+  class is renamed to <origin name>Sklearn
 
 * Adds the override as an echo that appends to __init__.py for whatever
 packages or class is overriden.

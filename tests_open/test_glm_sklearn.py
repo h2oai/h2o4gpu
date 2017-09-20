@@ -174,6 +174,7 @@ class TestGlmSklearn(object):
 
     # data2 test takes excessive iterations per glm model (i.e. per alpha/lambda).
     # Perhaps adapative rho improvements will help.
+    @pytest.mark.skip("Too slow for testing, but should figure out why slow.")
     def test_glm_sklearn_gpu_data2(self): TestGlmSklearn. fun(whichdata=2)
 
     @pytest.mark.skip("Unknown")

@@ -7,6 +7,9 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
 from ..solvers.utils import _setter
+from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
+                                    pandas_dataframe)
+
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -16,37 +19,57 @@ class LinearRegression(object):
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.base.LinearRegression_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
+
+
     """
 
-    def __init__(self,
-                 fit_intercept=True,  #h2o4gpu
-                 normalize=False,
-                 copy_X=True,
-                 n_jobs=1,
-                 n_gpus=-1,
-                 tol=1E-4,
-                 glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0,  # h2o4gpu
-                 verbose=False):
+    def __init__(
+            self,
+            fit_intercept=True,  #h2o4gpu
+            normalize=False,
+            copy_X=True,
+            n_jobs=1,
+            n_gpus=-1,
+            tol=1E-4,
+            glm_stop_early=True,  # h2o4gpu
+            glm_stop_early_error_fraction=1.0,  # h2o4gpu
+            verbose=False,
+            backend='auto'):
 
-        # Fall back to Sklearn
-        # Can remove if fully implement sklearn functionality
-        self.do_sklearn = False
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
+        assert_is_type(backend, str)
 
-        params_string = ['normalize', 'copy_X', 'n_jobs']
-        params = [normalize, copy_X, n_jobs]
-        params_default = [False, True, 1]
+        if backend == 'auto':
+            # Fall back to Sklearn
+            # Can remove if fully implement sklearn functionality
+            self.do_sklearn = False
 
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Linear Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            params_string = ['normalize', 'copy_X', 'n_jobs']
+            params = [normalize, copy_X, n_jobs]
+            params_default = [False, True, 1]
+
+            i = 0
+            self.do_sklearn = False
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i] +
+                          " has been changed from default to " + str(param) +
+                          ". Will run Sklearn Linear Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
@@ -127,7 +150,7 @@ class LinearRegression(object):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y) #Need to re-fit
+            self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

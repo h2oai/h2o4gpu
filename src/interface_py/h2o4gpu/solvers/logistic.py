@@ -8,6 +8,8 @@ import numpy as np
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import logistic as sk
 from ..solvers.utils import _setter
+from ..typecheck.typechecks import assert_is_type, assert_satisfies
+
 
 class LogisticRegression(object):
     """H2O Logistic Regression Solver
@@ -17,49 +19,68 @@ class LogisticRegression(object):
         Documentation:
         import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
         help(h2o4gpu.linear_model.logistic.LogisticRegression_sklearn)
+
+    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
+        'h2o4gpu'.  Default is 'auto'.
+        Saves as attribute for actual backend used.
     """
 
-    def __init__(self,
-                 penalty='l2',  # h2o4gpu
-                 dual=False,
-                 tol=1E-2,  # h2o4gpu
-                 C=1.0,  # h2o4gpu
-                 fit_intercept=True,  # h2o4gpu
-                 intercept_scaling=1,
-                 class_weight=None,
-                 random_state=None,
-                 solver='liblinear',
-                 max_iter=5000,  # h2o4gpu
-                 multi_class='ovr',
-                 verbose=0,  # h2o4gpu
-                 warm_start=False,
-                 n_jobs=1,
-                 n_gpus=-1,  # h2o4gpu
-                 glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0):  # h2o4gpu
+    def __init__(
+            self,
+            penalty='l2',  # h2o4gpu
+            dual=False,
+            tol=1E-2,  # h2o4gpu
+            C=1.0,  # h2o4gpu
+            fit_intercept=True,  # h2o4gpu
+            intercept_scaling=1,
+            class_weight=None,
+            random_state=None,
+            solver='liblinear',
+            max_iter=5000,  # h2o4gpu
+            multi_class='ovr',
+            verbose=0,  # h2o4gpu
+            warm_start=False,
+            n_jobs=1,
+            n_gpus=-1,  # h2o4gpu
+            glm_stop_early=True,  # h2o4gpu
+            glm_stop_early_error_fraction=1.0,
+            backend='auto'):  # h2o4gpu
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
+        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
+        if backend == 'auto':
+            params_string = [
+                'dual', 'intercept_scaling', 'class_weight', 'random_state',
+                'solver', 'multi_class', 'warm_start', 'n_jobs'
+            ]
+            params = [
+                dual, intercept_scaling, class_weight, random_state, solver,
+                multi_class, warm_start, n_jobs
+            ]
+            params_default = [
+                False, 1, None, None, 'liblinear', 'ovr', False, 1
+            ]
 
-        params_string = ['dual', 'intercept_scaling', 'class_weight',
-                         'random_state', 'solver', 'multi_class',
-                         'warm_start', 'n_jobs']
-        params = [dual, intercept_scaling, class_weight,
-                  random_state, solver, multi_class,
-                  warm_start, n_jobs]
-        params_default = [False, 1, None, None, 'liblinear', 'ovr', False, 1]
-
-        i = 0
-        self.do_sklearn = False
-        for param in params:
-            if param != params_default[i]:
-                self.do_sklearn = True
-                print("WARNING: The sklearn parameter " + params_string[i]
-                      + " has been changed from default to "
-                      + str(param) + ". Will run Sklearn Logistic Regression.")
-                self.do_sklearn = True
-            i = i + 1
+            i = 0
+            for param in params:
+                if param != params_default[i]:
+                    self.do_sklearn = True
+                    print("WARNING: The sklearn parameter " + params_string[i] +
+                          " has been changed from default to " + str(param) +
+                          ". Will run Sklearn Logistic Regression.")
+                    self.do_sklearn = True
+                i = i + 1
+        elif backend == 'sklearn':
+            self.do_sklearn = True
+        elif backend == 'h2o4gpu':
+            self.do_sklearn = False
+        self.backend = backend
 
         self.model_sklearn = sk.LogisticRegressionSklearn(
             penalty=penalty,
@@ -177,7 +198,7 @@ class LogisticRegression(object):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y) #Need to re-fit
+            self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 
