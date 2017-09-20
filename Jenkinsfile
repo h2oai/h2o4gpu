@@ -128,6 +128,7 @@ pipeline {
             }
 
             steps {
+                unstash 'linux_whl'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 script {
                     sh "make build/VERSION.txt"
