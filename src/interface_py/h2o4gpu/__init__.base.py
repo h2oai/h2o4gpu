@@ -5,7 +5,7 @@
 """
 #Skip pylint b / c this is automatically concatenated at compile time
 #with other init files
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from .types import FunctionVector
 from .solvers.pogs import Pogs

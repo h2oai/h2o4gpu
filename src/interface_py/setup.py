@@ -110,7 +110,7 @@ class BinaryDistribution(Distribution):
 
 setup(
     name='h2o4gpu',
-    version='0.0.3',
+    version='0.0.4',
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
