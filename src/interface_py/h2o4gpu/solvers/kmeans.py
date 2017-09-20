@@ -7,7 +7,7 @@ KMeans clustering solver.
 """
 import sys
 from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
-    POINTER, cast
+    POINTER, cast, c_size_t
 
 import numpy as np
 
@@ -17,7 +17,7 @@ from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
 
 
-class KMeans_h2o4gpu(object):
+class H2OKMeans(object):
     """K-Means clustering
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
@@ -208,6 +208,12 @@ class KMeans_h2o4gpu(object):
 
         self.sklearn_model = None
 
+        self.uploaded_data = 0
+        self.did_fit_ptr = 0
+        self.did_predict = 0
+        self.data_ptr = None
+        self.source_me = 0
+
     @classmethod
     def _get_param_names(cls):
         """Get parameter names for the estimator"""
@@ -303,7 +309,8 @@ class KMeans_h2o4gpu(object):
                 setattr(self, key, value)
         return self
 
-    def fit(self, X, y=None):
+    # pylint: disable=unused-argument
+    def fit(self, X, y=None, free_input_data=1):
         """Compute cluster centers using KMeans algorithm.
 
         The memory used by this algorithm depends on:
@@ -322,17 +329,107 @@ class KMeans_h2o4gpu(object):
 
         :param X: array-like, shape=(n_samples, n_features)
             Training instances.
+        :param free_input_data: int, 0 - does not free memory from
+            training data after fitting. 1 - frees the memory.
+            Defaults to 1.
         """
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
 
         _check_data_content(self.do_checks, "X", X_np)
 
-        self._fit(X_np)
+        rows = np.shape(X_np)[0]
+        cols = np.shape(X_np)[1]
+
+        order = 'c' if np.isfortran(X_np) else 'r'
+        X_ptr = self.upload_data(X_np, rows, cols, order)
+
+        return self.fit_ptr(X_ptr, rows, cols, order, free_input_data)
+
+    def fit_ptr(self, X_ptr, m, n, order,
+                free_input_data=0):
+        """Run fitting using data which already resides on the GPU
+
+            This method assumes that either fit() or upload_data() was
+            already called or that self.double_precision has been set
+            to either 1 for np.float64 or to 0 for np.float32!
+
+            :param X_ptr: pointer to the training data residing on
+            the GPUs
+            :param m: int, number of training observations
+            :param n: int, number of features
+            :param order: order of the datasets, should be 'r' or 'c'
+            :param free_input_data: int, 0 - does not free memory from
+                training data after fitting. 1 - frees the memory.
+                Defaults to 1.
+        """
+        data_ord = ord(order)
+
+        if self.init == "random" or self.init == "k-means++":
+            c_init = 1
+        else:
+            c_init = 0
+
+        if self.init_data == "random":
+            c_init_data = 0
+        elif self.init_data == "selectstrat":
+            c_init_data = 1
+        elif self.init_data == "randomselect":
+            c_init_data = 2
+        else:
+            print("""
+                Unknown init_data "%s", should be
+                "random", "selectstrat" or "randomselect".
+                """ % self.init_data)
+            sys.stdout.flush()
+            return
+
+        pred_centers = c_void_p(0)
+        pred_labels = c_void_p(0)
+
+        lib = self._load_lib()
+
+        if self.double_precision == 0:
+            status = lib.make_ptr_float_kmeans(
+                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                m, n,
+                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                c_init_data, self.tol, X_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
+        else:
+            status = lib.make_ptr_double_kmeans(
+                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                m, n,
+                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                c_init_data, self.tol, X_ptr, None,
+                pointer(pred_centers), pointer(pred_labels))
+        if status:
+            raise ValueError('KMeans failed in C++ library.')
+
+        if free_input_data == 1:
+            # TODO free also centroids and labels??
+            self.free_data()
+
+        data_ctype = c_double if self.double_precision == 1 else c_float
+
+        centroids = np.fromiter(
+            cast(pred_centers, POINTER(data_ctype)),
+            dtype=data_ctype,
+            count=self._n_clusters * n)
+        centroids = np.reshape(centroids, (self._n_clusters, n))
+
+        if np.isnan(centroids).any():
+            centroids = centroids[~np.isnan(centroids).any(axis=1)]
+            self._print_verbose(0, "Removed %d empty centroids" %
+                                (self._n_clusters - centroids.shape[0]))
+            self._n_clusters = centroids.shape[0]
+
+        self.cluster_centers_ = centroids
+
+        labels = np.fromiter(
+            cast(pred_labels, POINTER(c_int)), dtype=np.int32, count=m)
+        self.labels_ = np.reshape(labels, m)
 
         self._did_sklearn_fit = 0
-
-        if y is not None:
-            pass  # not using labels
 
         return self
 
@@ -502,75 +599,81 @@ class KMeans_h2o4gpu(object):
         """
         return self.fit(X, y).labels_
 
-    def _fit(self, data):
-        """Actual method calling the underlying fitting implementation."""
-        data_ord = ord('c' if np.isfortran(data) else 'r')
+    # Pointer manipulation
+    def free_data(self):
+        if self.uploaded_data == 1:
+            self.uploaded_data = 0
+            if self.double_precision == 1:
+                self.lib.modelfree1_double(self.X_ptr)
+            else:
+                self.lib.modelfree1_float(self.X_ptr)
 
-        data, c_data_ptr, data_ctype = self._to_cdata(data)
+    def free_sols(self):
+        if self.did_fit_ptr == 1:
+            # TODO add this flag to fit
+            self.did_fit_ptr = 0
+            if self.double_precision == 1:
+                # TODO store cluster centers on the device, this should
+                self.lib.modelfree2_double(self.device_cluster_centers_)
+            else:
+                self.lib.modelfree2_float(self.device_cluster_centers_)
 
-        if self.init == "random" or self.init == "k-means++":
-            c_init = 1
-        else:
-            c_init = 0
+    def free_preds(self):
+        if self.did_predict == 1:
+            # TODO add this flag to predict
+            self.did_predict = 0
+            if self.double_precision == 1:
+                # TODO store cluster centers on the device, this should
+                self.lib.modelfree2_double(self.device_labels_)
+            else:
+                self.lib.modelfree2_float(self.device_labels_)
 
-        if self.init_data == "random":
-            c_init_data = 0
-        elif self.init_data == "selectstrat":
-            c_init_data = 1
-        elif self.init_data == "randomselect":
-            c_init_data = 2
-        else:
-            print("""
-                Unknown init_data "%s", should be
-                "random", "selectstrat" or "randomselect".
-                """ % self.init_data)
-            sys.stdout.flush()
-            return
+    def finish(self):
+        self.free_data()
+        self.free_sols()
+        self.free_preds()
 
-        pred_centers = c_void_p(0)
-        pred_labels = c_void_p(0)
+    def upload_data(self, data, rows, cols, order, source_dev=0):
+        """Uploads the data to GPU
 
-        lib = self._load_lib()
+            If data was previously uploaded it frees the previously
+            allocated memory first.
+        """
+        _, c_data_ptr, _ = self._to_cdata(data)
 
-        rows = np.shape(data)[0]
-        cols = np.shape(data)[1]
+        data_ptr = c_void_p(0)
 
-        if self.double_precision == 0:
-            status = lib.make_ptr_float_kmeans(
-                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
-                rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, c_data_ptr, None,
-                pointer(pred_centers), pointer(pred_labels))
-        else:
-            status = lib.make_ptr_double_kmeans(
-                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
-                rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, c_data_ptr, None,
-                pointer(pred_centers), pointer(pred_labels))
-        if status:
-            raise ValueError('KMeans failed in C++ library.')
+        status = -1
 
-        centroids = np.fromiter(
-            cast(pred_centers, POINTER(data_ctype)),
-            dtype=data_ctype,
-            count=self._n_clusters * cols)
-        centroids = np.reshape(centroids, (self._n_clusters, cols))
+        if self.uploaded_data == 1:
+            self.free_data()
+        self.uploaded_data = 1
 
-        if np.isnan(centroids).any():
-            centroids = centroids[~np.isnan(centroids).any(axis=1)]
-            self._print_verbose(0, "Removed %d empty centroids" %
-                                (self._n_clusters - centroids.shape[0]))
-            self._n_clusters = centroids.shape[0]
+        if self.double_precision == 1:
+            status = self.lib.upload_data_double(
+                c_int(0),
+                c_int(self.source_me),
+                c_int(source_dev),
+                c_size_t(rows),
+                c_size_t(cols),
+                c_int(ord(order)),
+                c_data_ptr,
+                pointer(data_ptr))
+        elif self.double_precision == 0:
+            status = self.lib.upload_data_float(
+                c_int(0),
+                c_int(self.source_me),
+                c_int(source_dev),
+                c_size_t(rows),
+                c_size_t(cols),
+                c_int(ord(order)),
+                c_data_ptr,
+                pointer(data_ptr))
 
-        self.cluster_centers_ = centroids
+        assert status == 0, 'Failure uploading the data'
 
-        labels = np.fromiter(
-            cast(pred_labels, POINTER(c_int)), dtype=np.int32, count=rows)
-        self.labels_ = np.reshape(labels, rows)
-
-        return self.cluster_centers_, self.labels_
+        self.data_ptr = data_ptr
+        return data_ptr
 
     # FIXME : This function duplicates others
     # in solvers / utils.py as used in GLM
@@ -671,11 +774,11 @@ class KMeans(object):
         K-Means clustering Wrapper
 
         Selects between h2o4gpu.cluster.k_means_.KMeans_sklearn
-        and h2o4gpu.solvers.kmeans.KMeans_h2o4gpu
+        and h2o4gpu.solvers.kmeans.H2OKMeans
 
         Documentation:
         import h2o4gpu.cluster ; help(h2o4gpu.cluster.k_means_.KMeans_sklearn)
-        help(h2o4gpu.solvers.kmeans.KMeans_h2o4gpu)
+        help(h2o4gpu.solvers.kmeans.H2OKMeans)
 
     """
 
@@ -734,7 +837,7 @@ class KMeans(object):
             copy_x=copy_x,
             n_jobs=n_jobs,
             algorithm=algorithm)
-        self.model_h2o4gpu = KMeans_h2o4gpu(
+        self.model_h2o4gpu = H2OKMeans(
             n_clusters=n_clusters,
             init=init,
             n_init=n_init,

@@ -962,6 +962,18 @@ template class MatrixDense<double>;
 template class MatrixDense<float>;
 #endif
 
+template <typename T>
+int upload_data(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const T *data, void **_data){
+  if(shared_pointer != 0){
+    *_data = const_cast<T*>(data);
+  } else{ // if shared_pointer == 0, then assume need to make copy of data in case gets modified
+      *_data = new T[m * n];
+      ASSERT(*_data != 0);
+      memcpy(*_data, data, m * n * sizeof(T));
+  }
+
+  return(0);
+}
 
 template <typename T>
 int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight,void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight){
@@ -1016,6 +1028,8 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
   return(0);
 }
 
+  template int upload_data<double>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const double *data, void **_data){
+  template int upload_data<float>(int shared_pointer, int me, int wDev, size_t m, size_t n, const char ord, const float *data, void **_data){
 
   template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
                                      const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
@@ -1046,6 +1060,18 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+  int upload_data_double(int shared_pointer, int source_me, int source_dev,
+                         size_t rows, size_t cols, const char ord,
+                         const double* data, void **uploaded_data) {
+      return h2o4gpu::upload_data<double>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
+  }
+
+  int upload_data_float(int shared_pointer, int source_me, int source_dev,
+                        size_t rows, size_t cols, const char ord,
+                        const float* data, void **uploaded_data) {
+    return h2o4gpu::upload_data<float>(shared_pointer, source_me, source_dev, rows, cols, ord, data, uploaded_data);
+  }
 
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                       const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
