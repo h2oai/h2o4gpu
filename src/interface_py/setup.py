@@ -84,8 +84,8 @@ def get_packages(directory):
     return paths
 
 packages = get_packages('./')
-print("packages")
-print(packages)
+#print("packages")
+#print(packages)
 
 #packages0=find_packages()
 #print("packages0")
@@ -96,8 +96,8 @@ for package in packages:
 #    package_data[package] = extra_files
    package_data[package] = ['*']
 #package_data[''] = extra_files
-print("package_data")
-print(package_data)
+#print("package_data")
+#print(package_data)
 
 
 import os
