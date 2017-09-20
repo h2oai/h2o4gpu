@@ -128,7 +128,6 @@ pipeline {
             }
 
             steps {
-                unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 script {
                     sh "make build/VERSION.txt"
