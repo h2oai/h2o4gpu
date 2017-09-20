@@ -31,7 +31,7 @@ do
         sed -i 's/\([^_a-zA-Z0-9]\?\)LinearRegression\([^_a-zA-Z0-9]\?\)/\1LinearRegressionSklearn\2/g' $fil 
         sed -i 's/\([^_a-zA-Z0-9]\?\)ElasticNet\([^_a-zA-Z0-9]\?\)/\1ElasticNetSklearn\2/g' $fil
 	# avoid duplicate conversions
-        sed -i 's/sklearnSklearn/sklearn/g' $fil
+        sed -i 's/Sklearn_Sklearn/Sklearn/g' $fil
         # other replacements
         sed -i "s/from \.\. import get_config as _get_config/import os\n_ASSUME_FINITE = bool(os.environ.get('SKLEARN_ASSUME_FINITE', False))\ndef _get_config\(\):\n    return \{'assume_finite': _ASSUME_FINITE\}/g" $fil
     fi
