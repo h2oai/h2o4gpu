@@ -1,6 +1,24 @@
 # OSX #
 *.DS_STORE
 
+#Some untracked files from scikit submodule
+src/interface_py/h2o4gpu/base.py
+src/interface_py/h2o4gpu/calibration.py
+src/interface_py/h2o4gpu/cross_validation.py
+src/interface_py/h2o4gpu/discriminant_analysis.py
+src/interface_py/h2o4gpu/dummy.py
+src/interface_py/h2o4gpu/exceptions.py
+src/interface_py/h2o4gpu/grid_search.py
+src/interface_py/h2o4gpu/isotonic.py
+src/interface_py/h2o4gpu/kernel_approximation.py
+src/interface_py/h2o4gpu/kernel_ridge.py
+src/interface_py/h2o4gpu/learning_curve.py
+src/interface_py/h2o4gpu/multiclass.py
+src/interface_py/h2o4gpu/multioutput.py
+src/interface_py/h2o4gpu/naive_bayes.py
+src/interface_py/h2o4gpu/pipeline.py
+src/interface_py/h2o4gpu/random_projection.py
+
 #Sphinx docs
 _build
 src/interface_py/docs/source
