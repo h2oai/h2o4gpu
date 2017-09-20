@@ -6,9 +6,9 @@
 the easy-to-use Scikit-Learn API and its well-tested CPU-based
 algorithms.  It can be used as a drop-in replacement for sklearn
 (i.e. import h2o4gpu as sklearn) with support for GPUs on selected
-(and ever-growing) algorithms.  H2O4PU inherits all the existing
+(and ever-growing) algorithms.  H2OG4PU inherits all the existing
 Scikit-learn algorithms and falls-back to CPU aglorithms when the GPU
-algorithm does not support an importnat existing Scikit-learn class
+algorithm does not support an important existing Scikit-learn class
 option.
 
 ## Requirements
@@ -65,7 +65,7 @@ algorithms in scikit-learn while keeping full scikit-learn API
 compatibility and scikit-learn CPU algorithm capability. The python
 module is to be used as a drop-in-replacement for scikit-learn that
 has the full functionality of sklearn's CPU algorithms.  Functions and
-classes will be gradually overriden by GPU-enabled algorithms (unless
+classes will be gradually overridden by GPU-enabled algorithms (unless
 n_gpu=0 is set and we have no CPU algorithm except scikit-learn's).
 The CPU algorithms and code initially will be sklearn, but gradually
 those may be replaced by faster open-source codes like those in Intel
