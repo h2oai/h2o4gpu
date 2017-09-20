@@ -579,7 +579,7 @@ class KMeansH2O(object):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(1, "Detected numeric data format which is not "
-                                   "supported. Casting to np.float32.")
+                                "supported. Casting to np.float32.")
             data = np.array(data, copy=False, dtype=np.float32)
 
         if data.dtype == np.float64:
@@ -701,9 +701,12 @@ class KMeans(object):
             n_gpus=-1,
             init_data="randomselect",
             do_checks=1,
-            backend = 'auto'
-            ):
+            backend='auto'):
 
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
         assert_is_type(backend, str)
 
         # FIXME: Add init as array and kmeans++ to h2o4gpu

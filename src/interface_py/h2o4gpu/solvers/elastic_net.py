@@ -1574,6 +1574,7 @@ class ElasticNetH2O(object):
             finally:
                 warnings.filters.pop(0)
 
+
 #XXX : should we rather test if instance of estimator ?
             if deep and hasattr(value, 'get_params'):
                 deep_items = value.get_params().items()
@@ -1610,6 +1611,7 @@ class ElasticNetH2O(object):
                 setattr(self, key, value)
         return self
 
+
 class ElasticNet(object):
     """H2O ElasticNet Solver
 
@@ -1625,50 +1627,55 @@ class ElasticNet(object):
         Saves as attribute for actual backend used.
 
     """
-    def __init__(self,
-                 alpha=1.0, #h2o4gpu
-                 l1_ratio=0.5, #h2o4gpu
-                 fit_intercept=True, #h2o4gpu
-                 normalize=False,
-                 precompute=False,
-                 max_iter=5000, #h2o4gpu
-                 copy_X=True,
-                 tol=1e-2, #h2o4gpu
-                 warm_start=False,
-                 positive=False,
-                 random_state=None,
-                 selection='cyclic',
-                 n_gpus=-1,  # h2o4gpu
-                 glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0, #h2o4gpu
-                 verbose=False,
-                 backend = 'auto'
-                 ): # h2o4gpu
 
+    def __init__(
+            self,
+            alpha=1.0,  #h2o4gpu
+            l1_ratio=0.5,  #h2o4gpu
+            fit_intercept=True,  #h2o4gpu
+            normalize=False,
+            precompute=False,
+            max_iter=5000,  #h2o4gpu
+            copy_X=True,
+            tol=1e-2,  #h2o4gpu
+            warm_start=False,
+            positive=False,
+            random_state=None,
+            selection='cyclic',
+            n_gpus=-1,  # h2o4gpu
+            glm_stop_early=True,  # h2o4gpu
+            glm_stop_early_error_fraction=1.0,  #h2o4gpu
+            verbose=False,
+            backend='auto'):  # h2o4gpu
+
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
         assert_is_type(backend, str)
-
-
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
 
-            params_string = ['normalize', 'precompute', 'copy_X',
-                             'warm_start', 'positive', 'random_state',
-                             'selection']
-            params = [normalize, precompute, copy_X,
-                      warm_start, positive, random_state,
-                      selection]
+            params_string = [
+                'normalize', 'precompute', 'copy_X', 'warm_start', 'positive',
+                'random_state', 'selection'
+            ]
+            params = [
+                normalize, precompute, copy_X, warm_start, positive,
+                random_state, selection
+            ]
             params_default = [False, False, True, False, False, None, 'cyclic']
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i]
-                          + " has been changed from default to "
-                          + str(param) + ". Will run Sklearn Lasso Regression.")
+                    print("WARNING: The sklearn parameter " + params_string[i] +
+                          " has been changed from default to " + str(param) +
+                          ". Will run Sklearn Lasso Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -1762,7 +1769,7 @@ class ElasticNet(object):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y) #Need to re-fit
+            self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 
@@ -1776,4 +1783,3 @@ class ElasticNet(object):
         s('oself.sparse_coef_ = oself.model.sparse_coef_')
         s('oself.intercept_ = oself.model.intercept_')
         s('oself.n_iter_ = oself.model.n_iter_')
-        

@@ -10,6 +10,7 @@ from ..solvers.utils import _setter
 from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
 
+
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
 
@@ -26,19 +27,23 @@ class LinearRegression(object):
 
     """
 
-    def __init__(self,
-                 fit_intercept=True,  #h2o4gpu
-                 normalize=False,
-                 copy_X=True,
-                 n_jobs=1,
-                 n_gpus=-1,
-                 tol=1E-4,
-                 glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0,  # h2o4gpu
-                 verbose=False,
-                 backend = 'auto'
-                 ):
+    def __init__(
+            self,
+            fit_intercept=True,  #h2o4gpu
+            normalize=False,
+            copy_X=True,
+            n_jobs=1,
+            n_gpus=-1,
+            tol=1E-4,
+            glm_stop_early=True,  # h2o4gpu
+            glm_stop_early_error_fraction=1.0,  # h2o4gpu
+            verbose=False,
+            backend='auto'):
 
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
         assert_is_type(backend, str)
 
         if backend == 'auto':
@@ -55,9 +60,9 @@ class LinearRegression(object):
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i]
-                          + " has been changed from default to "
-                          + str(param) + ". Will run Sklearn Linear Regression.")
+                    print("WARNING: The sklearn parameter " + params_string[i] +
+                          " has been changed from default to " + str(param) +
+                          ". Will run Sklearn Linear Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -145,7 +150,7 @@ class LinearRegression(object):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y) #Need to re-fit
+            self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

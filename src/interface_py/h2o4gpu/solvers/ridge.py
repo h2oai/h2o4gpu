@@ -7,6 +7,8 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import ridge as sk
 from ..solvers.utils import _setter
+from ..typecheck.typechecks import assert_is_type, assert_satisfies
+
 
 class Ridge(object):
     """H2O Ridge Regression Solver
@@ -23,21 +25,27 @@ class Ridge(object):
 
     """
 
-    def __init__(self,
-                 alpha=1.0, #h2o4gpu
-                 fit_intercept=True, #h2o4gpu
-                 normalize=False,
-                 copy_X=True,
-                 max_iter=5000, #h2o4gpu
-                 tol=1e-2, #h2o4gpu
-                 solver='auto',
-                 random_state=None,
-                 n_gpus=-1,  # h2o4gpu
-                 glm_stop_early=True,  # h2o4gpu
-                 glm_stop_early_error_fraction=1.0, #h2o4gpu
-                 verbose=False,
-                 backend='auto'
-                 ): # h2o4gpu
+    def __init__(
+            self,
+            alpha=1.0,  #h2o4gpu
+            fit_intercept=True,  #h2o4gpu
+            normalize=False,
+            copy_X=True,
+            max_iter=5000,  #h2o4gpu
+            tol=1e-2,  #h2o4gpu
+            solver='auto',
+            random_state=None,
+            n_gpus=-1,  # h2o4gpu
+            glm_stop_early=True,  # h2o4gpu
+            glm_stop_early_error_fraction=1.0,  #h2o4gpu
+            verbose=False,
+            backend='auto'):  # h2o4gpu
+
+        import os
+        _backend = os.environ.get('H2O4GPU_BACKEND', None)
+        if _backend is not None:
+            backend = _backend
+        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -51,9 +59,9 @@ class Ridge(object):
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i]
-                          + " has been changed from default to "
-                          + str(param) + ". Will run Sklearn Ridge Regression.")
+                    print("WARNING: The sklearn parameter " + params_string[i] +
+                          " has been changed from default to " + str(param) +
+                          ". Will run Sklearn Ridge Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -136,7 +144,7 @@ class Ridge(object):
         # TODO add for h2o4gpu
         print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y) #Need to re-fit
+            self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

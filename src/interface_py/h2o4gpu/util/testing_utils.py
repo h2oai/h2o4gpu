@@ -167,6 +167,7 @@ def run_glm_ptr(nFolds,
     else:
         enet.fit(a, b, c, d, e)
 
+
 #t1 = time()
     print("Done Solving\n")
     sys.stdout.flush()
@@ -440,7 +441,7 @@ def run_glm(X,
     print(tols)
 
     print("All lambdas")
-    if enet.store_full_path !=0:
+    if enet.store_full_path != 0:
         lambdas = enet.lambdas_full
         print(lambdas)
 
@@ -690,8 +691,9 @@ def run_glm(X,
                             print(
                                 ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print("H2O Train Error is larger than GPU ElasticNetH2O "
-                              "with alpha = %s" % alpha)
+                        print(
+                            "H2O Train Error is larger than GPU ElasticNetH2O "
+                            "with alpha = %s" % alpha)
                         print("H2O Train Error is %s" % h2o_train_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' GOOD', file=f1, end="")
@@ -748,8 +750,9 @@ def run_glm(X,
                             print(
                                 ' %g' % error_train[index, j], file=f1b, end="")
                     else:
-                        print("H2O Valid Error is larger than GPU ElasticNetH2O "
-                              "with alpha = %s" % alpha)
+                        print(
+                            "H2O Valid Error is larger than GPU ElasticNetH2O "
+                            "with alpha = %s" % alpha)
                         print("H2O Valid Error is %s" % h2o_valid_error)
                         print("H2O GPU ML Error is %s" % error_train[index, j])
                         print(' GOOD', file=f1, end="")

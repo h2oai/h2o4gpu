@@ -88,6 +88,7 @@ class H2O4GPUTypeError(H2O4GPUSoftError, TypeError):
         if self._message:
             return self._message
 
+
 #Otherwise construct the message
         var = self._var_name
         val = self._var_value

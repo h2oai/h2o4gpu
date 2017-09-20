@@ -89,6 +89,7 @@ def import_data(data_path,
         train_x = data_x
         train_y = data_y
 
+
 #Using intercept
     if intercept:
         train_x = np.hstack(
