@@ -1659,9 +1659,12 @@ class ElasticNet(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose:
-                        print("WARNING: The sklearn parameter " + params_string[i] +
-                            " has been changed from default to " + str(param) +
-                            ". Will use Sklearn.")
+                        print("WARNING:"
+                              " The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              ". Will use Sklearn.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':

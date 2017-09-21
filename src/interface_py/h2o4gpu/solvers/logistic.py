@@ -72,9 +72,12 @@ class LogisticRegression(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose:
-                        print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn Logistic Regression.")
+                        print("WARNING:"
+                              " The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              "  Will run Sklearn Logistic Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
