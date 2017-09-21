@@ -117,7 +117,7 @@ class ElasticNetH2O(object):
                  n_folds=5,
                  n_alphas=5,
                  tol=1E-2,
-                 tol_seek_factor=1E-2,
+                 tol_seek_factor=1E-1,
                  lambda_stop_early=True,
                  glm_stop_early=True,
                  glm_stop_early_error_fraction=1.0,
