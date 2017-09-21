@@ -42,14 +42,14 @@ pipeline {
             steps {
                 dumpInfo 'Linux Build Info'
                 retryWithTimeout(20 /* seconds */, 3 /* retries */) {
-                deleteDir()
-                checkout([
-                        $class                           : 'GitSCM',
-                        branches                         : scm.branches,
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
-                        submoduleCfg                     : [],
-                        userRemoteConfigs                : scm.userRemoteConfigs])
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 // Get source code
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -67,9 +67,9 @@ pipeline {
                     stash includes: 'build/VERSION.txt', name: 'version_info'
                     // Archive artifacts
                     arch 'src/interface_py/dist/*.whl'
-                    }
                 }
             }
+        }
 
         stage('Test on Linux') {
             agent {
