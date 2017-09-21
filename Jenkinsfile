@@ -80,6 +80,11 @@ pipeline {
             steps {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
+                   deleteDir()
+                   checkout scm
+                }
                 script {
                     try {
                         sh """
