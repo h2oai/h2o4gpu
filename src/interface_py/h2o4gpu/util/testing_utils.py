@@ -1024,6 +1024,16 @@ def RunH2Oaiglm(arg):
 
     trainX, trainY, validX, validY, family, intercept, lambda_min_ratio, n_folds, n_alphas, n_lambdas, n_gpus = arg
 
+    # assume ok with 32-bit float for speed on GPU if using this wrapper
+    if trainX is not None:
+        trainX.astype(np.float32)
+    if trainY is not None:
+        trainY.astype(np.float32)
+    if validX is not None:
+        validX.astype(np.float32)
+    if validY is not None:
+        validY.astype(np.float32)
+
     print("Begin Setting up Solver")
     os.system(
         "rm -f error.txt ; touch error.txt ; rm -f varimp.txt ; touch varimp.txt"
@@ -1053,6 +1063,18 @@ def RunH2Oaiglm_ptr(arg):
     import time
 
     trainX, trainY, validX, validY, trainW, fortran, mTrain, n, mvalid, intercept, lambda_min_ratio, n_folds, n_alphas, n_lambdas, n_gpus = arg
+
+    # assume ok with 32-bit float for speed on GPU if using this wrapper
+    if trainX is not None:
+        trainX.astype(np.float32)
+    if trainY is not None:
+        trainY.astype(np.float32)
+    if validX is not None:
+        validX.astype(np.float32)
+    if validY is not None:
+        validY.astype(np.float32)
+    if trainW is not None:
+        trainW.astype(np.float32)
 
     print("Begin Setting up Solver")
     os.system(

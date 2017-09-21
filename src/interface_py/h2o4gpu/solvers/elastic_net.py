@@ -117,7 +117,7 @@ class ElasticNetH2O(object):
                  n_folds=5,
                  n_alphas=5,
                  tol=1E-2,
-                 tol_seek_factor=1E-2,
+                 tol_seek_factor=1E-1,
                  lambda_stop_early=True,
                  glm_stop_early=True,
                  glm_stop_early_error_fraction=1.0,
@@ -1628,6 +1628,7 @@ class ElasticNet(object):
             random_state=None,
             selection='cyclic',
             n_gpus=-1,  # h2o4gpu
+            lambda_stop_early=True,  # h2o4gpu
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  #h2o4gpu
             verbose=False,
@@ -1706,7 +1707,6 @@ class ElasticNet(object):
         n_folds = 1
         lambda_max = alpha
         lambda_min_ratio = 1.0
-        lambda_stop_early = False
         store_full_path = 1
         alphas = None
         lambdas = None

@@ -1205,7 +1205,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						}
 
 						if (lambdatype == LAMBDATYPEPATH) {
-							if (lambdastopearly>1) {
+							if (lambdastopearly>0) {
 								if (scoring_history.size() >= 1) {
 									double ratio = (norm
 											- scoring_history.back()) / norm;

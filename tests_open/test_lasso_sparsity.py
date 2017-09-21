@@ -40,6 +40,8 @@ def func():
     print(const_coef)
 
     zero_coef_index = np.where(lasso_model.X[0] == 0)
+    print(zero_coef_index)
+    print(zero_coef_loc)
 
     check_true = (zero_coef_index == np.sort(zero_coef_loc)).all()
     assert check_true == True
