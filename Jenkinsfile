@@ -7,11 +7,8 @@ import ai.h2o.ci.Utils
 def utilsLib = new Utils()
 
 def SAFE_CHANGE_ID = changeId()
-def CONTAINER_NAME = containerName()
+def CONTAINER_NAME
 
-String containerName() {
-    return "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-}
 String changeId() {
     if (env.CHANGE_ID) {
         return "-${env.CHANGE_ID}".toString()
@@ -58,6 +55,7 @@ pipeline {
                 }
                 
                 script {
+                    CONTAINER_NAME = "h2o4gpu${SAFE_CONTAINER_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
