@@ -50,6 +50,7 @@ pipeline {
                         extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
+                }
                 // Get source code
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
@@ -69,7 +70,6 @@ pipeline {
                     }
                 }
             }
-        }
 
         stage('Test on Linux') {
             agent {
