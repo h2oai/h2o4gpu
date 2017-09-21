@@ -111,9 +111,8 @@ Planned:
 
 ## Benchmarks
 
-![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/presentations/benchmark.pdf
- "Benchmarks for GLM, KMeans, and XGBoost for CPU vs. GPU.")
-
+[Benchmarks for GLM, KMeans, and XGBoost for CPU vs. GPU.](https://github.com/h2oai/h2o4gpu/blob/master/presentations/benchmark.pdf)
+ 
 
 ## Contributing
 
