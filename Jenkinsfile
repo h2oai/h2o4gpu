@@ -6,9 +6,8 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
-String SAFE_CHANGE_ID = changeId()
-
-String CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+def SAFE_CHANGE_ID = changeId()
+def CONTAINER_NAME
 
 String changeId() {
     if (env.CHANGE_ID) {
@@ -43,6 +42,8 @@ pipeline {
 
             steps {
                 dumpInfo 'Linux Build Info'
+                CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                // Do checkout
                 retryWithTimeout(20 /* seconds */, 3 /* retries */) {
                     deleteDir()
                     checkout([
