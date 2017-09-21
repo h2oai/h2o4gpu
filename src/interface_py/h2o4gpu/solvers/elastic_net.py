@@ -1459,48 +1459,33 @@ class ElasticNetH2O(object):
         E = _convert_to_ptr(sample_weight)
 
         if self.double_precision == 1:
-            status = self.lib.make_ptr_double(
-                c_int(self._shared_a),
-                c_int(self.source_me),
-                c_int(source_dev),
-                c_size_t(m_train),
-                c_size_t(n),
-                c_size_t(m_valid),
-                c_int(self.ord),
-                A,
-                B,
-                C,
-                D,
-                E,
-                pointer(a),
-                pointer(b),
-                pointer(c),
-                pointer(d),
-                pointer(e),)
+            c_upload_data = self.lib.make_ptr_double
         elif self.double_precision == 0:
-            status = self.lib.make_ptr_float(
-                c_int(self._shared_a),
-                c_int(self.source_me),
-                c_int(source_dev),
-                c_size_t(m_train),
-                c_size_t(n),
-                c_size_t(m_valid),
-                c_int(self.ord),
-                A,
-                B,
-                C,
-                D,
-                E,
-                pointer(a),
-                pointer(b),
-                pointer(c),
-                pointer(d),
-                pointer(e),)
+            c_upload_data = self.lib.make_ptr_float
         else:
             print('Unknown numpy type detected')
             print(train_x.dtype)
             sys.stdout.flush()
             return a, b, c, d, e
+
+        status = c_upload_data(
+            c_int(self._shared_a),
+            c_int(self.source_me),
+            c_int(source_dev),
+            c_size_t(m_train),
+            c_size_t(n),
+            c_size_t(m_valid),
+            c_int(self.ord),
+            A,
+            B,
+            C,
+            D,
+            E,
+            pointer(a),
+            pointer(b),
+            pointer(c),
+            pointer(d),
+            pointer(e),)
 
         assert status == 0, 'Failure uploading the data'
 
@@ -1673,16 +1658,20 @@ class ElasticNet(object):
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn Lasso Regression.")
+                    if verbose:
+                        print("WARNING: The sklearn parameter " + params_string[i] +
+                            " has been changed from default to " + str(param) +
+                            ". Will use Sklearn.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-        self.backend = backend
+        if self.do_sklearn:
+            self.backend = 'sklearn'
+        else:
+            self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.ElasticNetSklearn(
             alpha=alpha,
@@ -1742,11 +1731,15 @@ class ElasticNet(object):
             order=None)
 
         if self.do_sklearn:
-            print("Running sklearn Lasso Regression")
+            if verbose:
+                print("Running sklearn Lasso Regression")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu Lasso Regression")
+            if verbose:
+                print("Running h2o4gpu Lasso Regression")
             self.model = self.model_h2o4gpu
+
+        self.verbose = verbose
 
     def fit(self, X, y=None, check_input=True):
         if self.do_sklearn:
@@ -1766,8 +1759,9 @@ class ElasticNet(object):
         return res
 
     def score(self, X, y, sample_weight=None):
-        # TODO add for h2o4gpu
-        print("WARNING: score() is using sklearn")
+        # TODO: add for h2o4gpu
+        if self.verbose:
+            print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
             self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)

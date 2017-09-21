@@ -71,7 +71,8 @@ class LogisticRegression(object):
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
+                    if verbose:
+                        print("WARNING: The sklearn parameter " + params_string[i] +
                           " has been changed from default to " + str(param) +
                           ". Will run Sklearn Logistic Regression.")
                     self.do_sklearn = True
@@ -80,7 +81,10 @@ class LogisticRegression(object):
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-        self.backend = backend
+        if self.do_sklearn:
+            self.backend = 'sklearn'
+        else:
+            self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.LogisticRegressionSklearn(
             penalty=penalty,
@@ -145,11 +149,14 @@ class LogisticRegression(object):
             order=None)
 
         if self.do_sklearn:
-            print("Running sklearn Logistic Regression")
+            if verbose:
+                print("Running sklearn Logistic Regression")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu Logistic Regression")
+            if verbose:
+                print("Running h2o4gpu Logistic Regression")
             self.model = self.model_h2o4gpu
+        self.verbose = verbose
 
     def fit(self, X, y=None, sample_weight=None):
         res = self.model.fit(X, y, sample_weight)
@@ -166,7 +173,8 @@ class LogisticRegression(object):
         return res
 
     def decision_function(self, X):
-        print("WARNING: decision_function() is using sklearn")
+        if self.verbose:
+            print("WARNING: decision_function() is using sklearn")
         return self.model_sklearn.decision_function(X)
 
     def densify(self):
@@ -196,7 +204,8 @@ class LogisticRegression(object):
 
     def score(self, X, y, sample_weight=None):
         # TODO add for h2o4gpu
-        print("WARNING: score() is using sklearn")
+        if self.verbose:
+            print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
             self.model_sklearn.fit(X, y)  #Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)

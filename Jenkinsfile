@@ -25,6 +25,7 @@ pipeline {
         timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
+        skipDefaultCheckout()
     }
 
     environment {
@@ -47,6 +48,11 @@ pipeline {
                         extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
+                // Get source code
+                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
+                   deleteDir()
+                   checkout scm
+                }
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
@@ -55,10 +61,11 @@ pipeline {
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins;'
+                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                             nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
                         """
                     stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
+                    stash includes: 'build/VERSION.txt', name: 'version_info'
                     // Archive artifacts
                     arch 'src/interface_py/dist/*.whl'
                 }
@@ -129,9 +136,9 @@ pipeline {
 
             steps {
                 unstash 'linux_whl'
+                unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 script {
-                    sh "make build/VERSION.txt"
                     // Load the version file content
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     def version = utilsLib.fragmentVersion(versionTag)
