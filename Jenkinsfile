@@ -41,6 +41,8 @@ pipeline {
 
             steps {
                 dumpInfo 'Linux Build Info'
+                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
+                deleteDir()
                 checkout([
                         $class                           : 'GitSCM',
                         branches                         : scm.branches,
@@ -52,7 +54,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker run --init --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
                             nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
@@ -64,6 +66,7 @@ pipeline {
                     stash includes: 'build/VERSION.txt', name: 'version_info'
                     // Archive artifacts
                     arch 'src/interface_py/dist/*.whl'
+                    }
                 }
             }
         }
