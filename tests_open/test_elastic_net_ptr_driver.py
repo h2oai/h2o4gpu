@@ -45,17 +45,32 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Size of Train rows=%d valid rows=%d" % (H,HO))
   trainX = np.copy(X[0:H,:])
   trainY = np.copy(y[0:H])
-  validX = np.copy(X[H:norig,:])
-  validY = np.copy(y[H:norig])
+  if validFraction>0:
+      validX = np.copy(X[H:norig,:])
+      validY = np.copy(y[H:norig])
+  else:
+      validX = None
+      validY = None
+
   trainW = np.copy(trainY)*0.0 + 1.0 # constant unity weight
 
+  half = int(H/2)
+  validX2 = np.copy(X[H-half:norig-half,:])
+  validY2 = np.copy(y[H-half:norig-half])
+
   mTrain = trainX.shape[0]
-  mvalid = validX.shape[0]
-  print("mTrain=%d mvalid=%d" % (mTrain,mvalid))
+  if validX is not None:
+      mvalid = validX.shape[0]
+  else:
+      mvalid = 0
+  mvalid2 = validX2.shape[0]
+  print("mTrain=%d mvalid=%d mvalid2=%d" % (mTrain,mvalid,mvalid2))
   
   if intercept==1:
     trainX = np.hstack([trainX, np.ones((trainX.shape[0],1),dtype=trainX.dtype)])
-    validX = np.hstack([validX, np.ones((validX.shape[0],1),dtype=validX.dtype)])
+    if validX is not None:
+        validX = np.hstack([validX, np.ones((validX.shape[0],1),dtype=validX.dtype)])
+    validX2 = np.hstack([validX2, np.ones((validX2.shape[0], 1), dtype=validX2.dtype)])
   n = trainX.shape[1]
   print("New n=%d" % (n))
 
@@ -67,8 +82,9 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Uploading")
   print(trainX.dtype)
   print(trainY.dtype)
-  print(validX.dtype)
-  print(validY.dtype)
+  if validX is not None:
+      print(validX.dtype)
+      print(validY.dtype)
   print(trainW.dtype)
   a,b,c,d,e = enet.prepare_and_upload_data(trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
 
@@ -101,14 +117,27 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
                     
 
   print("Predicting")
-  if 1==1:
-       validPredsvsalphapure = enet.predict_ptr(c, d)
-  else:
-       validPredsvsalphapure = enet.predict(validX, validY)
+  if validX is not None:
+      if 1==1:
+           validPredsvsalphapure = enet.predict_ptr(c, d)
+      else:
+           validPredsvsalphapure = enet.predict(validX, validY)
 
-  print("validPredsvsalphapure")
-  print(validPredsvsalphapure)
-          
+      print("validPredsvsalphapure")
+      print(validPredsvsalphapure)
+
+  # upload new validation for new predict
+  _,_,e,f,_ = enet.upload_data(None, None, validX2, validY2, None, source_dev = sourceDev)
+
+  print("Predicting2")
+  if 1==1:
+       validPredsvsalphapure2 = enet.predict_ptr(e, f)
+  else:
+       validPredsvsalphapure2 = enet.predict(validX2, validY2)
+
+  print("validPredsvsalphapure2")
+  print(validPredsvsalphapure2)
+
   print("Done Predicting")
 
   # show something about validPredsvsalphalambdapure, validPredsvsalphapure
@@ -130,7 +159,25 @@ def test_elastic_net_ptr_driver():
     X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
     #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
+    ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
+
+def test_elastic_net_ptr_driver2():
+    import numpy as np
+    from numpy.random import randn
+    #  m=1000
+    #  n=100
+    #  A=randn(m,n)
+    #  x_true=(randn(n)/n)*float64(randn(n)<0.8)
+    #  b=A.dot(x_true)+0.5*randn(m)
+    import pandas as pd
+    import feather
+    df = pd.read_csv("./open_data/simple.txt", sep=" ", header=None)
+    print(df.shape)
+    X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
+    #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
     ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0.2)
 
 if __name__ == "__main__":
     test_elastic_net_ptr_driver()
+    test_elastic_net_ptr_driver2()
