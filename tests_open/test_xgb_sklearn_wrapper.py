@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Function to check fall back to sklearn
 def test_drf_regressor_backupsklearn(backend='auto'):
-    df = pd.read_csv("../open_data/simple.txt", delim_whitespace=True)
+    df = pd.read_csv("./open_data/simple.txt", delim_whitespace=True)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.RandomForestRegressor
@@ -64,7 +64,7 @@ def test_drf_regressor_backupsklearn(backend='auto'):
         assert (drf.oob_prediction_ == drf_sk.oob_prediction_).all() == True
 
 def test_drf_classifier_backupsklearn(backend='auto'):
-    df = pd.read_csv("../open_data/creditcard.csv")
+    df = pd.read_csv("./open_data/creditcard.csv")
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.RandomForestClassifier
@@ -124,7 +124,7 @@ def test_drf_classifier_backupsklearn(backend='auto'):
 
 # Function to check fall back to sklearn
 def test_gbm_regressor_backupsklearn(backend='auto'):
-    df = pd.read_csv("../open_data/simple.txt", delim_whitespace=True)
+    df = pd.read_csv("./open_data/simple.txt", delim_whitespace=True)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.GradientBoostingRegressor
@@ -173,7 +173,7 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
 
 # Function to check fall back to sklearn
 def test_gbm_classifier_backupsklearn(backend='auto'):
-    df = pd.read_csv("../open_data/creditcard.csv")
+    df = pd.read_csv("./open_data/creditcard.csv")
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     Solver = h2o4gpu.GradientBoostingClassifier
