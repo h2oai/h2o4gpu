@@ -120,6 +120,11 @@ to obtain the functionality of C++ cuda functions.  The cuda functions
 perform many linear algebra operations (CUBLAS, CUSOLVER) and other
 specific algorithms (CUFFT).
 
+[Numba](https://numba.pydata.org/) is like python numpy for the GPU
+and allows compiling python functions for the GPU.  One can use numba
+with pyculib, which allows access to native C++ cuda functions,
+similar to scikit-cuda.
+
 [MAGMA](http://icl.cs.utk.edu/magma/) is a set of linear algebra and
 other mathematical routines, and includes some basic fitting routines
 (without regularization), and it has good support for using either
@@ -127,6 +132,7 @@ CPUs, GPUs, or multiple GPUs in some cases.
 
 [CULA](http://www.culatools.com/) is a closed-source library that
 provides matrix operations and linear algebra operations.
+
 [Arrayfire](https://github.com/arrayfire/arrayfire) has a variety of
 image processing, statistical, and linear algebra algorithms with a
 diverse support of different back-end hardware.
