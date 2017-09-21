@@ -79,6 +79,38 @@ To force sklearn always, set these to 'sklearn'.
 The default is backend='auto', and we try to make reasonable decisions
 about which back end is used.
 
+### Why is the GPU algorithm so slow? ###
+
+Ensure the model.model.backend is 'h2o4gpu' to confirm the GPU was
+used.  You should also get a WARNING that the class reverted to
+sklearn.
+
+Check your input data type by checking model.model.double_precision
+(or directly model.double_precision if not using wrapper), and if this
+is 1 uses 64-bit floats on the GPU.  64-bit floats are much slower
+than 32-bit floats (double_precision=0).
+
+Lastly, for small data sizes, the transfer time to the GPU can take
+longer than the processing on the GPU, and the CPU can be faster in
+such or similar cases.
+
+### Why is sklearn bundled into h2o4gpu? ###
+
+Minor reason 1) Our wrappers need API consistency, and sometimes
+sklearn or xgboost change their API.  Or we want to support advanced
+featuers in the APIs that are by default disabled.
+
+Minor reason 2) We want to ensure anyone who uses h2o4gpu gets a
+consistent and reliable experience in terms of stability.  Anyone can
+rebuild h2o4gpu against any sklearn or xgboost version they like, but
+it wouldn't be validated to work.
+
+Major reason: We found it easiest to wrap our GPU backend and the
+sklearn as a backend by having a wrapper class that is the same name
+as sklearn classes.  And in order to easily inherit sklearn CPU
+backends, even if we haven't written a wrapper, bundling seems easiest
+via a bit of bash magic.
+
 ### How is this different from scikit-cuda,  pycuda, magma, cula, etc. ###
 
 [Scikit-cuda](https://github.com/lebedov/scikit-cuda) and

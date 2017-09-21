@@ -65,7 +65,9 @@ For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2
 
 The vision is to develop fast GPU algorithms to complement the CPU
 algorithms in scikit-learn while keeping full scikit-learn API
-compatibility and scikit-learn CPU algorithm capability. The h2o4gpu Python module is to be used as a drop-in-replacement for scikit-learn that has the full functionality of scikit-learn's CPU algorithms.  
+compatibility and scikit-learn CPU algorithm capability. The h2o4gpu
+Python module is to be used as a drop-in-replacement for scikit-learn
+that has the full functionality of scikit-learn's CPU algorithms.
 
 Functions and classes will be gradually overridden by GPU-enabled algorithms (unless
 `n_gpu=0` is set and we have no CPU algorithm except scikit-learn's).
@@ -79,7 +81,9 @@ own GPU versions.  In cases when our GPU class is currently
 incapable of an important scikit-learn feature, we revert to the
 scikit-learn class.
 
-As noted above, there is an R API in development, which will be released as a stand-alone R package.  All algorithms supported by H2O4GPU will be exposed in both Python and R in the future.
+As noted above, there is an R API in development, which will be
+released as a stand-alone R package.  All algorithms supported by
+H2O4GPU will be exposed in both Python and R in the future.
 
 Another primary goal is to support all operations the GPU via the
 [GOAI
@@ -105,10 +109,18 @@ Planned:
   + GLM: Linear SVM, Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
   + SVD, PCA
 
+## Benchmarks
+
+[Benchmarks for GLM, KMeans, and XGBoost for CPU vs. GPU.](https://github.com/h2oai/h2o4gpu/blob/master/presentations/benchmark.pdf)
+ 
 
 ## Contributing
 
-Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVEL.md](DEVEL.md) for instructions on how to build and test the project and how to contribute.  The h2o4gpu [Gitter](https://gitter.im/h2oai/h2o4gpu) chatroom can be used for discussion related to open source development.  
+Please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) and
+[DEVEL.md](DEVEL.md) for instructions on how to build and test the
+project and how to contribute.  The h2o4gpu
+[Gitter](https://gitter.im/h2oai/h2o4gpu) chatroom can be used for
+discussion related to open source development.
 
 GitHub [issues](https://github.com/h2oai/h2o4gpu/issues) are used for bugs, feature and enhancement discussion/tracking.
 

@@ -386,19 +386,16 @@ class KMeansH2O(object):
         data_ord = ord('c' if np.isfortran(X_np) else 'r')
 
         if self.double_precision == 0:
-            lib.make_ptr_float_kmeans(1, self.verbose, self.random_state,
-                                      self._gpu_id, self.n_gpus, rows, cols,
-                                      c_int(data_ord), self._n_clusters,
-                                      self._max_iter, c_init, c_init_data,
-                                      self.tol, c_data, c_centroids, None,
-                                      pointer(c_res))
+            c_kmeans = lib.make_ptr_float_kmeans
         else:
-            lib.make_ptr_double_kmeans(1, self.verbose, self.random_state,
-                                       self._gpu_id, self.n_gpus, rows, cols,
-                                       c_int(data_ord), self._n_clusters,
-                                       self._max_iter, c_init, c_init_data,
-                                       self.tol, c_data, c_centroids, None,
-                                       pointer(c_res))
+            c_kmeans = lib.make_ptr_double_kmeans
+
+        c_kmeans(1, self.verbose, self.random_state,
+                 self._gpu_id, self.n_gpus, rows, cols,
+                 c_int(data_ord), self._n_clusters,
+                 self._max_iter, c_init, c_init_data,
+                 self.tol, c_data, c_centroids, None,
+                 pointer(c_res))
 
         preds = np.fromiter(
             cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
@@ -736,7 +733,10 @@ class KMeans(object):
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-        self.backend = backend
+        if self.do_sklearn:
+            self.backend = 'sklearn'
+        else:
+            self.backend = 'h2o4gpu'
 
         from h2o4gpu.cluster import k_means_
         self.model_sklearn = k_means_.KMeansSklearn(
