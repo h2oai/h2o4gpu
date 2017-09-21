@@ -55,7 +55,7 @@ pipeline {
                 }
                 
                 script {
-                    CONTAINER_NAME = "h2o4gpu${SAFE_CONTAINER_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
