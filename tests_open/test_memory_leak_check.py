@@ -2,7 +2,7 @@ import gc
 import random
 import time
 import numpy as np
-
+import pytest
 import h2o4gpu
 from h2o4gpu.solvers import elastic_net
 from sklearn import linear_model
