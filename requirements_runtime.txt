@@ -1,3 +1,6 @@
+sphinx>=1.5.6
+sphinx_rtd_theme>=0.2.4
+sphinxcontrib-osexample>=0.1.1
 matplotlib>=2.0.0
 numpy>=1.13.1
 numpydoc>=0.7.0
