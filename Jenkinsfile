@@ -6,7 +6,8 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
-String SAFE_CHANGE_ID = changeId()
+def SAFE_CHANGE_ID = changeId()
+def CONTAINER_NAME
 
 String changeId() {
     if (env.CHANGE_ID) {
@@ -41,33 +42,40 @@ pipeline {
 
             steps {
                 dumpInfo 'Linux Build Info'
-                checkout([
-                        $class                           : 'GitSCM',
-                        branches                         : scm.branches,
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
-                        submoduleCfg                     : [],
-                        userRemoteConfigs                : scm.userRemoteConfigs])
-                // Get source code
+                // Do checkout
                 retryWithTimeout(20 /* seconds */, 3 /* retries */) {
-                   deleteDir()
-                   checkout scm
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    sh """
-                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
-                        """
-                    stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
-                    stash includes: 'build/VERSION.txt', name: 'version_info'
-                    // Archive artifacts
-                    arch 'src/interface_py/dist/*.whl'
+                
+                script {
+                    CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    // Get source code
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        try {
+                            sh """
+                                    nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                                    nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+                                    nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+                                    nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+                                    nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                """
+                            stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
+                            stash includes: 'build/VERSION.txt', name: 'version_info'
+                            // Archive artifacts
+                            arch 'src/interface_py/dist/*.whl'
+                        } finally {
+                            sh "nvidia-docker stop ${CONTAINER_NAME}"
+                        }
+                    }
                 }
             }
         }
@@ -81,23 +89,23 @@ pipeline {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
-                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                    checkout scm
                 }
                 script {
                     try {
                         sh """
-                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /data ./data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID ln -s /open_data ./open_data
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID rm -rf py3nvml
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c 'export HOME=`pwd`; . /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+                            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+                            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+                            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+                            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; . /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
-                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
+                            nvidia-docker stop ${CONTAINER_NAME}
                         """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
@@ -124,10 +132,10 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run --rm --name h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID bash -c '. /h2oai_env/bin/activate; make pylint'
-                            nvidia-docker stop h2o4gpu${SAFE_CHANGE_ID}-$BUILD_ID
+                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; make pylint'
+                            nvidia-docker stop ${CONTAINER_NAME}
                         """
                 }
             }

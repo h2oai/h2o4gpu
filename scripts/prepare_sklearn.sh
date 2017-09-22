@@ -29,7 +29,11 @@ do
         sed -i 's/\([^_a-zA-Z0-9]\?\)Lasso\([^_a-zA-Z0-9]\?\)/\1LassoSklearn\2/g' $fil
         sed -i 's/\([^_a-zA-Z0-9]\?\)LogisticRegression\([^_a-zA-Z0-9]\?\)/\1LogisticRegressionSklearn\2/g' $fil
         sed -i 's/\([^_a-zA-Z0-9]\?\)LinearRegression\([^_a-zA-Z0-9]\?\)/\1LinearRegressionSklearn\2/g' $fil 
-        sed -i 's/\([^_a-zA-Z0-9]\?\)ElasticNet\([^_a-zA-Z0-9]\?\)/\1ElasticNetSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)ElasticNet\([^_a-zA-Z0-9]\?\)/\1ElasticNetSklearn\2/g' $fil	
+        sed -i 's/\([^_a-zA-Z0-9]\?\)GradientBoostingRegressor\([^_a-zA-Z0-9]\?\)/\1GradientBoostingRegressorSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)GradientBoostingClassifier\([^_a-zA-Z0-9]\?\)/\1GradientBoostingClassifierSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)RandomForestRegressor\([^_a-zA-Z0-9]\?\)/\1RandomForestRegressorSklearn\2/g' $fil
+        sed -i 's/\([^_a-zA-Z0-9]\?\)RandomForestClassifier\([^_a-zA-Z0-9]\?\)/\1RandomForestClassifierSklearn\2/g' $fil
 	# avoid duplicate conversions
         sed -i 's/Sklearn_Sklearn/Sklearn/g' $fil
         # other replacements
