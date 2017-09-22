@@ -95,7 +95,7 @@ pipeline {
                     def _majorVersion = version[0]
                     def _buildVersion = version[1]
                     version = null // This is necessary, else version:Tuple will be serialized
-                    sh "cd src/interface_py/docs; make html"
+                    sh "pwd; cd ~/h2o4gpu*/src/interface_py/docs; make html"
                     if (isRelease()) {
                         s3up {
                             localArtifact = 'src/interface_py/docs/'
