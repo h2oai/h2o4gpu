@@ -112,36 +112,44 @@ def fit_model(X_train, y_train, X_test, y_test, reg_type='enet'):
 
     return time_h2o, time_sklearn, r2_h2o, r2_sklearn
 
+def func():
 
-n_rows = [600000, 800000]
-n_cols = [400, 600, 800, 1000, 1200]
-for rows in n_rows:
-    # res = {}
-    # res['n_rows'] = []
-    # res['n_cols'] = []
-    # res['t_h2o'] = []
-    # res['t_sklearn'] = []
-    # res['r2_h2o'] = []
-    # res['r2_sklearn'] = []
+    n_rows = [600000, 800000]
+    n_cols = [400, 600, 800, 1000, 1200]
+    for rows in n_rows:
+        # res = {}
+        # res['n_rows'] = []
+        # res['n_cols'] = []
+        # res['t_h2o'] = []
+        # res['t_sklearn'] = []
+        # res['r2_h2o'] = []
+        # res['r2_sklearn'] = []
 
-    for cols in n_cols:
-        X, y = generate_data(rows, cols)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42)
-        print(X_train.nbytes, 'bytes')
+        for cols in n_cols:
+            X, y = generate_data(rows, cols)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42)
+            print(X_train.nbytes, 'bytes')
 
-        time_h2o, time_sklearn, r2_h2o, r2_sklearn = fit_model(
-            X_train, y_train, X_test, y_test, reg_type='lasso')
+            time_h2o, time_sklearn, r2_h2o, r2_sklearn = fit_model(
+                X_train, y_train, X_test, y_test, reg_type='lasso')
 
-        # res['n_rows'].append(rows)
-        # res['n_cols'].append(cols)
-        # res['t_h2o'].append(ret[0])
-        # res['t_sklearn'].append(ret[1])
-        # res['r2_h2o'].append(ret[2])
-        # res['r2_sklearn'].append(ret[3])
+            # res['n_rows'].append(rows)
+            # res['n_cols'].append(cols)
+            # res['t_h2o'].append(ret[0])
+            # res['t_sklearn'].append(ret[1])
+            # res['r2_h2o'].append(ret[2])
+            # res['r2_sklearn'].append(ret[3])
+            time.sleep(0.1)
+        # res = pd.DataFrame(res)
+        # res.to_csv("./benchmarks/results_%1.0f.csv" % rows, index=False)
+
         time.sleep(0.1)
-    # res = pd.DataFrame(res)
-    # res.to_csv("./benchmarks/results_%1.0f.csv" % rows, index=False)
+        print('DONE!')
 
-    time.sleep(0.1)
-    print('DONE!')
+@pytest.mark.skip("WIP")
+def test_memory_leak_check(): func()
+
+
+if __name__ == '__main__':
+    test_memory_leak_check()
