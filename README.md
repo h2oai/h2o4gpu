@@ -46,7 +46,7 @@ Download the Python wheel file:
 
   * [Stable: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
   * [Bleeding edge: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge: Conda Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-condapy36-none-any.whl)
+  * [Bleeding edge: Conda Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4_conda/h2o4gpu-0.0.4-py36-none-any.whl)
  
 Start a fresh pyenv or virtualenv session.
 
