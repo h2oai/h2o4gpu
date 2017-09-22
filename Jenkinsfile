@@ -130,13 +130,19 @@ pipeline {
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    sh """
-                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
-                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; make pylint'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
+                script{
+                        try{
+                            sh """
+                                    nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
+                                    nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; make pylint'
+                                    nvidia-docker stop ${CONTAINER_NAME}
+                            """
+                         } finally {
+                            sh "nvidia-docker stop ${CONTAINER_NAME}"
+                         }
+                    }
                 }
             }
         }
