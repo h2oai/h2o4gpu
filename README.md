@@ -22,6 +22,8 @@ An R API is in developement and will be released as a stand-alone R package in t
   or
   [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download)
 
+When installing, choose to link the cuda install to /usr/local/cuda .
+
 * Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
 
 ## Installation
@@ -31,6 +33,12 @@ Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 ```
 export CUDA_HOME=/usr/local/cuda
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
+```
+
+- Install OpenBlas dev environment:
+
+```
+sudo apt-get install libopenblas-dev
 ```
 
 Download the Python wheel file:
