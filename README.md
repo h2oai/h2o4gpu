@@ -22,6 +22,9 @@ An R API is in developement and will be released as a stand-alone R package in t
   or
   [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download)
 
+When installing, choose to link the cuda install to /usr/local/cuda .
+Ensure to reboot after installing the new nvidia drivers.
+
 * Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
 
 ## Installation
@@ -33,10 +36,17 @@ export CUDA_HOME=/usr/local/cuda
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
 ```
 
-Download the Python wheel file for python 3.6 and CUDA 8:
+- Install OpenBlas dev environment:
 
-  * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+```
+sudo apt-get install libopenblas-dev
+```
+
+Download the Python wheel file:
+
+  * [Stable: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Bleeding edge: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Bleeding edge: Conda Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-condapy36-none-any.whl)
  
 Start a fresh pyenv or virtualenv session.
 
@@ -57,6 +67,19 @@ import numpy as np
 X = np.array([[1.,1.], [1.,4.], [1.,0.]])
 model = h2o4gpu.KMeans(n_clusters=2).fit(X)
 model.fit(X).cluster_centers_
+```
+Should give input/output of:
+```
+>>>import h2o4gpu
+>>> import numpy as np
+>>> 
+>>> X = np.array([[1.,1.], [1.,4.], [1.,0.]])
+>>> model = h2o4gpu.KMeans(n_clusters=2).fit(X)
+Copying centroid data to device: 1
+>>> model.fit(X).cluster_centers_
+Copying centroid data to device: 1
+array([[ 1.,  4.],
+      [ 1.,  0.]])
 ```
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).

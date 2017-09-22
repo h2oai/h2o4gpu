@@ -28,6 +28,8 @@ environment to ensure the python cache is not used.
 
 ### can't properly load ch2o4gpu_gpu.so ###
 
+e.g. Warning: h2o4gpu_kmeans_lib shared object (dynamic library) /home/tomk/anaconda3/envs/h2o4gpu/lib/python3.6/site-packages/h2o4gpu/libs/../../ch2o4gpu_gpu.so failed to load.
+
 This usually means some other library is missing.  One can run:
 
 ```
@@ -35,6 +37,8 @@ cd <your python environment path>/site-packages/
 e.g. for pyenv: /home/$USER/.pyenv/versions/3.6.1/lib/python3.6/site-packages/
 ldd ch2o4gpu_gpu.so
 ```
+
+To see if things are missing.  Make sure you installed cuda and it's linked correctly to /usr/local/cuda .  And make sure you set the environment variables related to cuda.
 
 And check if any missing dependencies
 

@@ -84,14 +84,13 @@ pipeline {
             agent {
                 label "mr-dl11"
             }
-
             steps {
-                unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                    checkout scm
                 }
+                unstash 'linux_whl'
                 script {
                     try {
                         sh """
