@@ -49,10 +49,6 @@ pipeline {
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 // Get source code
-                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
-                   deleteDir()
-                   checkout scm
-                }
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
@@ -81,7 +77,7 @@ pipeline {
                 unstash 'linux_whl'
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
-                retryWithTimeout(20 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                    checkout scm
                 }
                 script {

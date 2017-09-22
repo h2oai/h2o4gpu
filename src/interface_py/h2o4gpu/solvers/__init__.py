@@ -12,3 +12,7 @@ from ..solvers.linear_regression import LinearRegression
 from ..solvers.lasso import Lasso
 from ..solvers.ridge import Ridge
 from ..solvers.kmeans import KMeans
+from ..solvers.xgboost import RandomForestRegressor
+from ..solvers.xgboost import RandomForestClassifier
+from ..solvers.xgboost import GradientBoostingClassifier
+from ..solvers.xgboost import GradientBoostingRegressor
