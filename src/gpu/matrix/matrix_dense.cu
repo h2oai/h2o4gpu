@@ -2022,12 +2022,12 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 
 template <typename T>
-int modelFree1(T *aptr){
+int modelFree1(T **aptr){
 
-  if(aptr!=NULL){
-    // for now, freed during ~
-    //cudaFree(aptr);
-    //CUDA_CHECK_ERR();
+  if(*aptr!=NULL){
+    cudaFree(*aptr);
+    CUDA_CHECK_ERR();
+    *aptr = NULL;
   }
   return(0);
 }

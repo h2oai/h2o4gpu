@@ -1811,13 +1811,14 @@ template double ElasticNetptr_predict<float>(const char family, int sourceDev, i
 		size_t *countfull, size_t *countshort, size_t *countmore);
 
 template<typename T>
-int modelFree2(T *aptr) {
-	free(aptr);
+int modelFree2(T **aptr) {
+	free(*aptr);
+	*aptr = NULL;
 	return (0);
 }
 
-template int modelFree2<float>(float *aptr);
-template int modelFree2<double>(double *aptr);
+template int modelFree2<float>(float **aptr);
+template int modelFree2<double>(double **aptr);
 
 #ifdef __cplusplus
 extern "C" {
@@ -1872,10 +1873,10 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 			validPredsvsalpha, countfull, countshort, countmore);
 }
 
-int modelfree2_float(float *aptr) {
+int modelfree2_float(float **aptr) {
 	return modelFree2<float>(aptr);
 }
-int modelfree2_double(double *aptr) {
+int modelfree2_double(double **aptr) {
 	return modelFree2<double>(aptr);
 }
 

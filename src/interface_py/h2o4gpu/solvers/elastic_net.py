@@ -1324,37 +1324,37 @@ class ElasticNetH2O(object):
         if self.uploaded_data == 1:
             self.uploaded_data = 0
             if self.double_precision == 1:
-                self.lib.modelfree1_double(self.a)
-                self.lib.modelfree1_double(self.b)
-                self.lib.modelfree1_double(self.c)
-                self.lib.modelfree1_double(self.d)
-                self.lib.modelfree1_double(self.e)
+                self.lib.modelfree1_double(POINTER(self.a))
+                self.lib.modelfree1_double(POINTER(self.b))
+                self.lib.modelfree1_double(POINTER(self.c))
+                self.lib.modelfree1_double(POINTER(self.d))
+                self.lib.modelfree1_double(POINTER(self.e))
             else:
-                self.lib.modelfree1_float(self.a)
-                self.lib.modelfree1_float(self.b)
-                self.lib.modelfree1_float(self.c)
-                self.lib.modelfree1_float(self.d)
-                self.lib.modelfree1_float(self.e)
+                self.lib.modelfree1_float(POINTER(self.a))
+                self.lib.modelfree1_float(POINTER(self.b))
+                self.lib.modelfree1_float(POINTER(self.c))
+                self.lib.modelfree1_float(POINTER(self.d))
+                self.lib.modelfree1_float(POINTER(self.e))
 
     def free_sols(self):
         if self.did_fit_ptr == 1:
             self.did_fit_ptr = 0
-            if self.double_precision == 1:
-                self.lib.modelfree2_double(self.x_vs_alpha_lambda)
-                self.lib.modelfree2_double(self.x_vs_alpha)
+            if self.double_precision == 1: # x_vs_alpha_lambda
+                self.lib.modelfree2_double(POINTER(self.x_vs_alpha_lambda))
+                self.lib.modelfree2_double(POINTER(self.x_vs_alpha))
             else:
-                self.lib.modelfree2_float(self.x_vs_alpha_lambda)
-                self.lib.modelfree2_float(self.x_vs_alpha)
+                self.lib.modelfree2_float(POINTER(self.x_vs_alpha_lambda))
+                self.lib.modelfree2_float(POINTER(self.x_vs_alpha))
 
     def free_preds(self):
         if self.did_predict == 1:
             self.did_predict = 0
             if self.double_precision == 1:
-                self.lib.modelfree2_double(self.valid_pred_vs_alpha_lambda)
-                self.lib.modelfree2_double(self.valid_pred_vs_alpha)
+                self.lib.modelfree2_double(POINTER(self.valid_pred_vs_alpha_lambda))
+                self.lib.modelfree2_double(POINTER(self.valid_pred_vs_alpha))
             else:
-                self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
-                self.lib.modelfree2_float(self.valid_pred_vs_alpha)
+                self.lib.modelfree2_float(POINTER(self.valid_pred_vs_alpha_lambda))
+                self.lib.modelfree2_float(POINTER(self.valid_pred_vs_alpha))
 
     def finish(self):
         self.free_data()

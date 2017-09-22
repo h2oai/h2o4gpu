@@ -147,7 +147,7 @@ def func():
         time.sleep(0.1)
         print('DONE!')
 
-@pytest.mark.skip("WIP")
+#@pytest.mark.skip("WIP")
 def test_memory_leak_check(): func()
 
 
