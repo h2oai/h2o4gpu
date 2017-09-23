@@ -1,15 +1,6 @@
-# Copy this file and Run from one level higher than the git pull directory
-# To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
-# To run: nvidia-docker run -it --rm -p 12345:12345 opsh2o4gpu/h2o4gpu-runtime
-
-# run app:
-# nvidia-docker run --rm -v /var/tmp:/data -v /var/tmp:/log -p 12345:12345 -d opsh2o4gpu/h2o4gpu-runtime
-
-# run tests:
-# nvidia-docker run --rm -v $PWD/tests:/tests opsh2o4gpu/h2o4gpu-runtime /tests pytest --verbose -n auto
-
-# go inside:
-# nvidia-docker run --rm -it -v $PWD/tests:/tests --entrypoint bash opsh2o4gpu/h2o4gpu-runtime
+#How to run:
+#docker build -t opsh2oai/h2o4gpu -f Dockerfile-runtime .
+#nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2oai/h2o4gpu &
 
 FROM nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04
 MAINTAINER H2o.ai <ops@h2o.ai>
