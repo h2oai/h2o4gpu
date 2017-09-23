@@ -130,6 +130,7 @@ def func3(model):
     y = a * X + b
 
     model.tol=1E-6
+    #model.tol_seek_factor=1E-2
     lm = model
     lm.fit(X, y)
 
