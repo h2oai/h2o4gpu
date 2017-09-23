@@ -5,7 +5,6 @@ import pandas as pd
 
 print(sys.path)
 
-import h2o4gpu
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -15,6 +14,7 @@ def test_drf_regressor_backupsklearn(backend='auto'):
     df = pd.read_csv("./open_data/simple.txt", delim_whitespace=True)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    import h2o4gpu
     Solver = h2o4gpu.RandomForestRegressor
 
     #Run h2o4gpu version of RandomForest Regression
@@ -67,6 +67,7 @@ def test_drf_classifier_backupsklearn(backend='auto'):
     df = pd.read_csv("./open_data/creditcard.csv")
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    import h2o4gpu
     Solver = h2o4gpu.RandomForestClassifier
 
     #Run h2o4gpu version of RandomForest Regression
@@ -127,6 +128,7 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
     df = pd.read_csv("./open_data/simple.txt", delim_whitespace=True)
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    import h2o4gpu
     Solver = h2o4gpu.GradientBoostingRegressor
 
     #Run h2o4gpu version of RandomForest Regression
@@ -176,6 +178,7 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
     df = pd.read_csv("./open_data/creditcard.csv")
     X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    import h2o4gpu
     Solver = h2o4gpu.GradientBoostingClassifier
 
     # Run h2o4gpu version of RandomForest Regression

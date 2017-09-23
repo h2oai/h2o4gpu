@@ -23,7 +23,7 @@ src/interface_py/h2o4gpu/random_projection.py
 _build
 src/interface_py/docs/source
 source
-src/interface_py/pylint.d/*
+src/pylint.d/*
 # Ignore artifacts made from make, h2o4gpu
 src/interface_py/py3nvml
 src/interface_py/xgboost
@@ -156,3 +156,9 @@ src/interface_py/h2o4gpu/tests/
 src/interface_py/h2o4gpu/tree/
 src/interface_py/h2o4gpu/utils/
 
+## add submodules so user has to force to add/commit
+cub
+xgboost
+py3nvml
+scikit-learn
+tests/googletest
