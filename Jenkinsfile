@@ -43,7 +43,7 @@ pipeline {
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
-                retryWithTimeout(2000 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                     deleteDir()
                     checkout([
                             $class                           : 'GitSCM',
@@ -87,7 +87,7 @@ pipeline {
             steps {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
-                retryWithTimeout(2000 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                    checkout scm
                 }
                 unstash 'linux_whl'

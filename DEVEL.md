@@ -72,18 +72,33 @@ cd h2o4gpu
 make fullinstall
 ```
 
-This installs full h2o4gpu as user. It also compiles a python wheel and puts it in $BASE/src/interface_py/dist/h2o4gpu-0.0.1-py2.py3-none-any.whl .  One can share this wheel and have someone install it as: pip install h2o4gpu-0.0.1-py2.py3-none-any.whl
+This installs full h2o4gpu as user. It also compiles a python wheel
+and puts it in
+$BASE/src/interface_py/dist/h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl .  One
+can share this wheel and have someone install it as: pip install
+h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl
+
+If already have repository and want to get updates, do:
+```
+git checkout master
+git pull
+git submodule update
+make fullinstall
+```
+
+If fully understand build, can do jump to latter steps of
+"fullinstall", but when in doubt always do "fullinstall."
 
 ## Testing
 
 - test python package
 ```
-make test && make testbig
+make test
 ```
 
 - test performance and accuracy of python package
 ```
-make testperf && make testbigperf
+make testperf
 ```
 
 - test performance and accuracy of python package for xgboost vs. lightgbm
@@ -92,7 +107,7 @@ make liblightgbm # only need to do ever once per environment
 make testxgboost
 ```
 
-- show all test errors and timings
+- show all test errors and timings (can show only result of testperf or only testxgboost or both):
 ```
 sh tests/showresults.sh
 ```
@@ -103,16 +118,10 @@ sh tests/showresults.sh
 ```
 examples/py/demos/H2O4GPU_GLM.ipynb
 examples/py/demos/H2O4GPU_GBM.ipynb
-examples/py/demos/H2O4GPU_KMeans_Homesite.ipynb
 examples/py/demos/H2O4GPU_KMeans_Images.ipynb
 ```
 
-- To run gpu C++ version:
+- To compile and run gpu C++ version:
 ```
 cd $BASE/examples/cpp && make -j all ; make run
-```
-
-- Or, to run 16-gpu version on ipums.txt data:
-```
-./h2o4gpu-glm-gpu-ptr ipums.txt 0 16 16 100 5 5 1 0 0.2 &> fold5x5.txt
 ```

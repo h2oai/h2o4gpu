@@ -4,15 +4,6 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
-import xgboost as xgb
-import numpy as np
-from h2o4gpu.ensemble import RandomForestClassifierSklearn, \
-    RandomForestRegressorSklearn, GradientBoostingClassifierSklearn, \
-    GradientBoostingRegressorSklearn
-from ..typecheck.typechecks import assert_is_type
-from ..solvers.utils import _setter
-
-
 class RandomForestClassifier(object):
     """H2O RandomForestClassifier Solver
 
@@ -58,6 +49,7 @@ class RandomForestClassifier(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+        from ..typecheck.typechecks import assert_is_type
         assert_is_type(backend, str)
 
         # Fall back to Sklearn
@@ -97,6 +89,7 @@ class RandomForestClassifier(object):
             self.do_sklearn = False
         self.backend = backend
 
+        from h2o4gpu.ensemble import RandomForestClassifierSklearn
         self.model_sklearn = RandomForestClassifierSklearn(
             n_estimators=n_estimators,
             criterion=criterion,
@@ -122,6 +115,8 @@ class RandomForestClassifier(object):
             silent = True
         if random_state is None:
             random_state = 0
+
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBClassifier(
             n_estimators=n_estimators,  # h2o4gpu
             max_depth=max_depth,  # h2o4gpu
@@ -174,6 +169,7 @@ class RandomForestClassifier(object):
     def predict_log_proba(self, X):
         res = self.predict_proba(X)
         self.set_attributes()
+        import numpy as np
         return np.log(res)
 
     def predict_proba(self, X):
@@ -198,6 +194,7 @@ class RandomForestClassifier(object):
 
     def set_attributes(self):
         """ Set attributes for class"""
+        from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.estimators_ = oself.model.estimators_')
@@ -254,6 +251,7 @@ class RandomForestRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+        from ..typecheck.typechecks import assert_is_type
         assert_is_type(backend, str)
 
         # Fall back to Sklearn
@@ -293,6 +291,7 @@ class RandomForestRegressor(object):
             self.do_sklearn = False
         self.backend = backend
 
+        from h2o4gpu.ensemble import RandomForestRegressorSklearn
         self.model_sklearn = RandomForestRegressorSklearn(
             n_estimators=n_estimators,
             criterion=criterion,
@@ -317,6 +316,8 @@ class RandomForestRegressor(object):
             silent = True
         if random_state is None:
             random_state = 0
+
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBRegressor(
             n_estimators=n_estimators,  # h2o4gpu
             max_depth=max_depth,  # h2o4gpu
@@ -379,6 +380,7 @@ class RandomForestRegressor(object):
 
     def set_attributes(self):
         """ Set attributes for class"""
+        from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.estimators_ = oself.model.estimators_')
@@ -434,6 +436,7 @@ class GradientBoostingClassifier(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+        from ..typecheck.typechecks import assert_is_type
         assert_is_type(backend, str)
 
         # Fall back to Sklearn
@@ -473,6 +476,7 @@ class GradientBoostingClassifier(object):
             self.do_sklearn = False
         self.backend = backend
 
+        from h2o4gpu.ensemble import GradientBoostingClassifierSklearn
         self.model_sklearn = GradientBoostingClassifierSklearn(
             loss=loss,
             learning_rate=learning_rate,  # h2o4gpu
@@ -499,6 +503,8 @@ class GradientBoostingClassifier(object):
             silent = True
         if random_state is None:
             random_state = 0
+
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBClassifier(
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
@@ -550,6 +556,7 @@ class GradientBoostingClassifier(object):
     def predict_log_proba(self, X):
         res = self.predict_proba(X)
         self.set_attributes()
+        import numpy as np
         return np.log(res)
 
     def predict_proba(self, X):
@@ -586,6 +593,7 @@ class GradientBoostingClassifier(object):
 
     def set_attributes(self):
         """ Set attributes for class"""
+        from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.feature_importances_ = oself.model.feature_importances_')
@@ -642,6 +650,7 @@ class GradientBoostingRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+        from ..typecheck.typechecks import assert_is_type
         assert_is_type(backend, str)
 
         # Fall back to Sklearn
@@ -681,6 +690,7 @@ class GradientBoostingRegressor(object):
             self.do_sklearn = False
         self.backend = backend
 
+        from h2o4gpu.ensemble import GradientBoostingRegressorSklearn
         self.model_sklearn = GradientBoostingRegressorSklearn(
             loss=loss,
             learning_rate=learning_rate,  # h2o4gpu
@@ -708,6 +718,8 @@ class GradientBoostingRegressor(object):
             silent = True
         if random_state is None:
             random_state = 0
+
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBClassifier(
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
@@ -769,6 +781,7 @@ class GradientBoostingRegressor(object):
 
     def set_attributes(self):
         """ Set attributes for class"""
+        from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.feature_importances_ = oself.model.feature_importances_')
