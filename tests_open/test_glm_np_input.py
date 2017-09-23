@@ -122,7 +122,7 @@ def func2(model):
     # Assert coefficients are within a reasonable range for various prediction values
     # 2.0*tol because reverts to float32
     assert isclose(lm.X[0][0] , a, tol)
-    assert np.fabs(lm.X[0][1] - b) < 2.0*tol
+    assert isclose(lm.X[0][1] , b, tol)
 
     assert isclose(result1, 40, tol)
     assert isclose(result2, 40, tol)
