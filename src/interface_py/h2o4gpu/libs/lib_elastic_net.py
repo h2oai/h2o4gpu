@@ -53,7 +53,9 @@ def _load_glm_lib(lib_path):
         ]
         h2o4gpu_glm_lib.make_ptr_float.restype = c_int
 
-    except OSError:
+    except Exception as e:
+        print("Exception")
+        print(e)
         print('\nWarning: h2o4gpu_glm_lib shared object (dynamic library) %s '
               'failed to load. ' % lib_path)
         h2o4gpu_glm_lib = None
