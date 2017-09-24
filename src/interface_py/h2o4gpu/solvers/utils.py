@@ -66,6 +66,14 @@ def _gpu_info_subprocess():
         py3nvml.py3nvml.nvmlInit()
         total_gpus = py3nvml.py3nvml.nvmlDeviceGetCount()
 
+        import os
+        cudavis=os.getenv("CUDA_VISIBLE_DEVICES")
+        if cudavis is not None:
+            if len(cudavis)==0:
+                total_gpus = 0
+            else:
+                total_gpus = min(total_gpus,os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
+
         total_mem = \
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
