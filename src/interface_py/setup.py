@@ -115,6 +115,7 @@ setup(
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
     distclass=BinaryDistribution,
+    #platforms=['linux_x86_64'], # scikit-learn: h2o4gpu-0.20.dev0-cp36-cp36m-linux_x86_64.whl
     # from:
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=packages,

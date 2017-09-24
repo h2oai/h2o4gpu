@@ -17,10 +17,10 @@ An R API is in developement and will be released as a stand-alone R package in t
 
 * PC with Ubuntu 16.04+
 
-* Install CUDA with bundled display drivers
+* Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
   or
-  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download)
+  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download))
 
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
@@ -42,11 +42,11 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 sudo apt-get install libopenblas-dev
 ```
 
-Download the Python wheel file:
+Download the Python wheel file (For Python 3.6 on linux_x86_64 with CUDA 8):
 
-  * [Stable: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge: Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge: Conda Python 3.6, CUDA 8](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4_conda/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Bleeding edge for Conda](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4_conda/h2o4gpu-0.0.4-py36-none-any.whl)
  
 Start a fresh pyenv or virtualenv session.
 
