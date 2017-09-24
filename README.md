@@ -66,7 +66,7 @@ import numpy as np
 
 X = np.array([[1.,1.], [1.,4.], [1.,0.]])
 model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
-model.fit(X).cluster_centers_
+model.cluster_centers_
 ```
 Should give input/output of:
 ```
@@ -75,11 +75,7 @@ Should give input/output of:
 >>>
 >>> X = np.array([[1.,1.], [1.,4.], [1.,0.]])
 >>> model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
-Copying centroid data to device: 1
-Copying centroid data to device: 2
->>> model.fit(X).cluster_centers_
-Copying centroid data to device: 1
-Copying centroid data to device: 2
+>>> model.cluster_centers_
 array([[ 0.25,  0.  ],
        [ 1.  ,  4.  ]])
 ```

@@ -307,7 +307,9 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     if (q == masterq) continue;
 
     CUDACHECK(cudaSetDevice(dList[q]));
-    std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+    if(verbose>0){
+      std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+    }
 
     streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
     cudaStreamCreate(streams[q]);
