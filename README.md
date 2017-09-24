@@ -65,21 +65,23 @@ import h2o4gpu
 import numpy as np
 
 X = np.array([[1.,1.], [1.,4.], [1.,0.]])
-model = h2o4gpu.KMeans(n_clusters=2).fit(X)
+model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
 model.fit(X).cluster_centers_
 ```
 Should give input/output of:
 ```
->>>import h2o4gpu
+>>> import h2o4gpu
 >>> import numpy as np
->>> 
+>>>
 >>> X = np.array([[1.,1.], [1.,4.], [1.,0.]])
->>> model = h2o4gpu.KMeans(n_clusters=2).fit(X)
+>>> model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
 Copying centroid data to device: 1
+Copying centroid data to device: 2
 >>> model.fit(X).cluster_centers_
 Copying centroid data to device: 1
-array([[ 1.,  4.],
-      [ 1.,  0.]])
+Copying centroid data to device: 2
+array([[ 0.25,  0.  ],
+       [ 1.  ,  4.  ]])
 ```
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
