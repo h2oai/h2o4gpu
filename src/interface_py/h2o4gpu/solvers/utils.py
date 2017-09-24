@@ -68,8 +68,8 @@ def _gpu_info_subprocess():
 
         import os
         cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
-        lencudavis = len(cudavis)
         if cudavis is not None:
+            lencudavis = len(cudavis)
             if lencudavis == 0:
                 total_gpus = 0
             else:
