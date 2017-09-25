@@ -90,9 +90,21 @@ Check your input data type by checking model.model.double_precision
 is 1 uses 64-bit floats on the GPU.  64-bit floats are much slower
 than 32-bit floats (double_precision=0).
 
-Lastly, for small data sizes, the transfer time to the GPU can take
+For small data sizes, the transfer time to the GPU can take
 longer than the processing on the GPU, and the CPU can be faster in
 such or similar cases.
+
+So, the GPU is most useful when doing multiple models on the same
+data, like full alpha-lambda path in elastic net, large k in k-means,
+or multiple trees in GBM or RF.
+
+Some sklearn algorithms, like their Ridge solver, uses specialized
+algorithms that can solve that particular case quickly (because it's a
+simple smooth loss function or has an exact closed-form solution).
+These specialized algorithms can be ported to the GPU to obtain much
+faster solver times.  Even fast algorithms, like our GPU version of
+elastic net, can be improved to use parallel coordinate descent for an
+even faster GPU algorithm.
 
 ### Why is sklearn bundled into h2o4gpu? ###
 
