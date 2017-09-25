@@ -80,6 +80,49 @@ pipeline {
             }
         }
 
+        stage('Building Python Docs') {
+            agent {
+                label "linux && !mr-dl16"
+            }
+            steps {
+                unstash 'linux_whl'
+                unstash 'version_info'
+                sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
+                script {
+                    // Load the version file content
+                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                    def version = utilsLib.fragmentVersion(versionTag)
+                    def _majorVersion = version[0]
+                    def _buildVersion = version[1]
+                    version = null // This is necessary, else version:Tuple will be serialized
+                    sh "pwd; ls; cd src/interface_py/docs; make html"
+                    if (isRelease()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/docs/'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
+                        }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/docs"
+                    }
+
+                    if (isBleedingEdge()) {
+                        s3up {
+                            localArtifact = 'src/interface_py/_build/html/'
+                            artifactId = "h2o4gpu"
+                            majorVersion = _majorVersion
+                            buildVersion = _buildVersion
+                            keepPrivate = false
+                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
+                        }
+                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/docs"
+                    }
+                }
+            }
+        }
+
         stage('Test on Linux') {
             agent {
                 label "mr-dl11"
@@ -183,6 +226,7 @@ pipeline {
                 }
             }
         }
+
     }
     post {
         failure {
