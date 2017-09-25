@@ -111,6 +111,10 @@ install: pyinstall
 
 fullinstall: clean alldeps sync_open_data build install
 
+runtime:
+	$(MAKE) py
+	@echo "+--Building Runtime Docker Image--+"
+	docker build -t opsh2oai/h2o4gpu-runtime:latest -f Dockerfile-runtime .
 #############################################
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
