@@ -2,14 +2,15 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
-**H2O4GPU** is a collection of GPU solvers by H2Oai.  It builds upon
-the easy-to-use [scikit-learn](modules/ensemble.html#forest) API and its well-tested CPU-based
-algorithms.  It can be used as a drop-in replacement for scikit-learn
-(i.e. `import h2o4gpu as sklearn`) with support for GPUs on selected
-(and ever-growing) algorithms.  H2OG4PU inherits all the existing
-scikit-learn algorithms and falls-back to CPU aglorithms when the GPU
-algorithm does not support an important existing Scikit-learn class
-option.
+**H2O4GPU** is a collection of GPU solvers by
+[H2Oai](https://www.h2o.ai/).  It builds upon the easy-to-use
+[Scikit-learn](http://scikit-learn.org) API and its well-tested
+CPU-based algorithms.  It can be used as a drop-in replacement for
+scikit-learn (i.e. `import h2o4gpu as sklearn`) with support for GPUs
+on selected (and ever-growing) algorithms.  H2O4GPU inherits all the
+existing scikit-learn algorithms and falls-back to CPU aglorithms when
+the GPU algorithm does not support an important existing Scikit-learn
+class option.
 
 An R API is in developement and will be released as a stand-alone R package in the future.
 
