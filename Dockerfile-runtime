@@ -65,6 +65,8 @@ RUN \
 RUN \
   mkdir -p jupyter/demos
 COPY examples/py/demos/H2O4GPU_GLM.ipynb /jupyter/demos/H2O4GPU_GLM.ipynb
+COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans_Images.ipynb
+COPY examples/py/xgboost_simple_demo.ipynb /jupyter/demos/xgboost_simple_demo.ipynb
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
