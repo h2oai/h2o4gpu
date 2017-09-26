@@ -85,6 +85,32 @@ array([[ 0.25,  0.  ],
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
+## Running Jupyter Notebooks with Docker
+```
+#Build Docker image
+make runtime
+
+#Run docker image
+To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
+```
+This container has a /demos directory which contains Jupyter notebooks. You will need to make sure that port 8888 inside the container is exposed to reach it.
+
+By default, the notebook is created with a token for security. You can find the token in the jupyter.log file:
+
+```
+cat /some/local/log/YYYYMMDD-HHMMSS/jupyter.log 
+```
+
+```
+...
+Copy/paste this URL into your browser when you connect for the first time,
+to login with a token:
+    http://localhost:8888/?token=93f7d1fd17ff1942717656f5f8a43ce63ffcc135afc1475a
+...
+```
+
+(Replace localhost and port 8888 with the IP address and host port where the container is exposed.)
+
 ## Plans and RoadMap
 
 The vision is to develop fast GPU algorithms to complement the CPU
