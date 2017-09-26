@@ -43,15 +43,20 @@ CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
 $(warning Compiling with Cuda9 or higher)
 # >=52 required for kmeans for larger data of size rows/32>2^16
-NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 \
+NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
+                -gencode=arch=compute_35,code=compute_35 \
+				-gencode=arch=compute_52,code=sm_52 \
                 -gencode=arch=compute_52,code=compute_52 \
                 -gencode=arch=compute_61,code=sm_61 \
                 -gencode=arch=compute_61,code=compute_61 \
+                -gencode=arch=compute_70,code=sm_70 \
                 -gencode=arch=compute_70,code=compute_70
 else
 $(warning Compiling with Cuda8 or lower)
 # >=52 required for kmeans for larger data of size rows/32>2^16
-NVCC_GENCODE ?= -gencode=arch=compute_52,code=sm_52 \
+NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
+                -gencode=arch=compute_35,code=compute_35 \
+				-gencode=arch=compute_52,code=sm_52 \
                 -gencode=arch=compute_52,code=compute_52 \
                 -gencode=arch=compute_61,code=sm_61 \
                 -gencode=arch=compute_61,code=compute_61
