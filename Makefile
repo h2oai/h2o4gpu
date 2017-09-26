@@ -223,7 +223,7 @@ libnccl2:
 
 # https://xgboost.readthedocs.io/en/latest/build.html
 libxgboost: # could just get wheel from repo/S3 instead of doing this
-	sed -i 's/USE_NCCL.*/USE_NCCL = 0/g' xgboost/src/tree/updater_gpu_hist.cu
+	sed -i 's/define USE_NCCL.*/define USE_NCCL 0/g' xgboost/src/tree/updater_gpu_hist.cu
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
 
 apply_xgboost: libxgboost
