@@ -28,6 +28,8 @@ Ensure to reboot after installing the new nvidia drivers.
 
 * Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
 
+* For advanced features, like handling rows/32>2^16 in K-means, need Capability>=52
+
 ## Installation
 
 Add to `~/.bashrc` or environment (set appropriate paths for your OS):

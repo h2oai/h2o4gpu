@@ -6,6 +6,18 @@ SHELL := /bin/bash # force avoidance of dash as shell
 CONFIG=make/config.mk
 include $(CONFIG)
 
+# System specific stuff
+include src/config2.mk
+
+ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
+$(warning Compiling with Cuda9 or higher)
+XGB_CUDA ?= -DGPU_COMPUTE_VER="3.5;5.2;6.0;6.1;7.0"
+else
+$(warning Compiling with Cuda8 or lower)
+# >=52 required for kmeans for larger data of size rows/32>2^16
+XGB_CUDA ?= -DGPU_COMPUTE_VER="3.5;5.2;6.0;6.1"
+endif
+
 # Location of local directory with dependencies
 DEPS_DIR = deps
 
@@ -211,7 +223,8 @@ libnccl2:
 
 # https://xgboost.readthedocs.io/en/latest/build.html
 libxgboost: # could just get wheel from repo/S3 instead of doing this
-	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON -DPLUGIN_UPDATER_GPU=ON -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+	sed -i 's/USE_NCCL.*/USE_NCCL = 0/g' xgboost/src/tree/updater_gpu_hist.cu
+	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON -DPLUGIN_UPDATER_GPU=ON $XGB_CUDA -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
 
 apply_xgboost: libxgboost
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
