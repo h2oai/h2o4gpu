@@ -83,7 +83,7 @@ array([[ 0.25,  0.  ],
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
-## Running with Docker
+## Running Jupyter Notebooks with Docker
 ```
 #Build Docker image
 make runtime
