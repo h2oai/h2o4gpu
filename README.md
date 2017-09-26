@@ -91,7 +91,7 @@ make runtime
 #Run docker image
 To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
 ```
-If the container has a /jupyter/notebooks directory then it will automatically start Jupyter. You also need to make sure that port 8888 inside the container is exposed to reach it.
+This container has a /demos directory which contains Jupyter notebooks. You will need to make sure that port 8888 inside the container is exposed to reach it.
 
 By default, the notebook is created with a token for security. You can find the token in the jupyter.log file:
 
