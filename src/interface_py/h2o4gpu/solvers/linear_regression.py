@@ -51,9 +51,9 @@ class LinearRegression(object):
             # Can remove if fully implement sklearn functionality
             self.do_sklearn = False
 
-            params_string = ['normalize', 'copy_X', 'n_jobs']
-            params = [normalize, copy_X, n_jobs]
-            params_default = [False, True, 1]
+            params_string = ['normalize']
+            params = [normalize]
+            params_default = [False]
 
             i = 0
             self.do_sklearn = False

@@ -29,7 +29,7 @@ def test_fit_simple_backupsklearn():
     print("h2o4gpu score()")
     print(enet.score(X,y))
 
-    enet_wrapper = Solver(random_state=1234)
+    enet_wrapper = Solver(positive=True, random_state=1234)
     print("h2o4gpu scikit wrapper fit()")
     enet_wrapper.fit(X, y)
     print("h2o4gpu scikit wrapper predict()")
@@ -38,7 +38,7 @@ def test_fit_simple_backupsklearn():
     print(enet_wrapper.score(X, y))
 
     from sklearn.linear_model.coordinate_descent import ElasticNet
-    enet_sk = ElasticNet(random_state=1234)
+    enet_sk = ElasticNet(positive=True, random_state=1234)
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")

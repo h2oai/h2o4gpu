@@ -105,8 +105,6 @@ class ElasticNetH2O(object):
     class solution:
         pass
 
-#TODO : add gpu_id like kmeans and ensure wraps around device_count
-
     def __init__(self,
                  n_threads=None,
                  gpu_id=0,
@@ -1642,18 +1640,17 @@ class ElasticNet(object):
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
+        # If parameter not listed, then ignored because not important
         self.do_sklearn = False
         if backend == 'auto':
 
             params_string = [
-                'normalize', 'precompute', 'copy_X', 'warm_start', 'positive',
-                'random_state', 'selection'
+                'normalize', 'positive', 'selection'
             ]
             params = [
-                normalize, precompute, copy_X, warm_start, positive,
-                random_state, selection
+                normalize, positive, selection
             ]
-            params_default = [False, False, True, False, False, None, 'cyclic']
+            params_default = [False, False, 'cyclic']
 
             i = 0
             for param in params:
@@ -1691,16 +1688,16 @@ class ElasticNet(object):
             random_state=random_state,
             selection=selection)
 
-        #Equivalent Lasso parameters for h2o4gpu
+        # Equivalent Lasso parameters for h2o4gpu
 
-        #Logic about l1_ratio:
-        #The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1.
-        # For l1_ratio = 0 the penalty is an L2 penalty.
-        #For l1_ratio = 1 it is an L1 penalty.
+        # Logic about l1_ratio:
+        # The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1.
+        #  For l1_ratio = 0 the penalty is an L2 penalty.
+        # For l1_ratio = 1 it is an L1 penalty.
         # For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
         alpha_min = alpha_max = l1_ratio
 
-        #Other parameters
+        # Other parameters
         n_threads = None
         n_alphas = 1
         n_lambdas = 1
@@ -1774,9 +1771,16 @@ class ElasticNet(object):
         return self.model.set_params(**params)
 
     def set_attributes(self):
+        """
+        Set attributes and don't fail if not yet present
+        """
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
+        self.coef_ = None
         s('oself.coef_ = oself.model.coef_')
+        self.sparse_coef_ = None
         s('oself.sparse_coef_ = oself.model.sparse_coef_')
+        self.intercept_ = None
         s('oself.intercept_ = oself.model.intercept_')
+        self.n_iter_ = None
         s('oself.n_iter_ = oself.model.n_iter_')

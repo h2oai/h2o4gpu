@@ -51,9 +51,9 @@ class Ridge(object):
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-            params_string = ['normalize', 'copy_X', 'solver', 'random_state']
-            params = [normalize, copy_X, solver, random_state]
-            params_default = [False, True, 'auto', None]
+            params_string = ['normalize', 'solver']
+            params = [normalize, solver]
+            params_default = [False, 'auto']
 
             i = 0
             for param in params:

@@ -28,7 +28,7 @@ def test_fit_credit_backupsklearn():
     print("h2o4gpu score()")
     print(enet_h2o4gpu.score(X,y))
 
-    enet = Solver(dual=True, max_iter=100, tol=1E-4,random_state=1234)
+    enet = Solver(dual=True, max_iter=100, tol=1E-4, intercept_scaling=0.99, random_state=1234)
     print("h2o4gpu scikit wrapper fit()")
     enet.fit(X, y)
     print("h2o4gpu scikit wrapper predict()")
@@ -47,7 +47,7 @@ def test_fit_credit_backupsklearn():
     print(enet.sparsify())
     
     from sklearn.linear_model.logistic import  LogisticRegression
-    enet_sk = LogisticRegression(dual=True, max_iter=100, tol=1E-4,random_state=1234)
+    enet_sk = LogisticRegression(dual=True, max_iter=100, tol=1E-4, intercept_scaling=0.99, random_state=1234)
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")
@@ -79,4 +79,8 @@ def test_fit_credit_backupsklearn():
     assert np.allclose(enet.predict(X), enet_sk.predict(X))
     assert np.allclose(enet.predict_log_proba(X), enet_sk.predict_log_proba(X))
 
-def test_sklearn_logit(): test_fit_credit_backupsklearn()
+#def test_sklearn_logit(): test_fit_credit_backupsklearn()
+
+
+if __name__ == '__main__':
+    test_fit_credit_backupsklearn()

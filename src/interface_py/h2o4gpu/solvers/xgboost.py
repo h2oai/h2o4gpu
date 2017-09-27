@@ -62,25 +62,28 @@ class RandomForestClassifier(object):
                 'min_weight_fraction_leaf', 'max_features',
                 'max_leaf_nodes', 'min_impurity_decrease',
                 'min_impurity_split', 'bootstrap', 'oob_score',
-                'warm_start', 'class_weight'
+                'class_weight'
             ]
             params = [
                 criterion, min_samples_split, min_samples_leaf,
                 min_weight_fraction_leaf, max_features,
                 max_leaf_nodes, min_impurity_decrease,
                 min_impurity_split, bootstrap, oob_score,
-                warm_start, class_weight
+                class_weight
             ]
             params_default = ['gini', 2, 1, 0.0, 'auto', None, 0.0,
-                              None, True, False, 0, False]
+                              None, True, False, None]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn RandomForestsClassifier.")
+                    if verbose > 0:
+                        print("WARNING: The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              ". Will run Sklearn RandomForestsClassifier.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -263,26 +266,27 @@ class RandomForestRegressor(object):
                 'min_samples_split', 'min_samples_leaf',
                 'min_weight_fraction_leaf', 'max_features',
                 'max_leaf_nodes', 'min_impurity_decrease',
-                'min_impurity_split', 'bootstrap', 'oob_score',
-                'warm_start'
+                'min_impurity_split', 'bootstrap', 'oob_score'
             ]
             params = [
                 min_samples_split, min_samples_leaf,
                 min_weight_fraction_leaf, max_features,
                 max_leaf_nodes, min_impurity_decrease,
-                min_impurity_split, bootstrap, oob_score,
-                warm_start
+                min_impurity_split, bootstrap, oob_score
             ]
             params_default = [2, 1, 0.0, 'auto', None, 0.0,
-                              None, True, False, 0, False]
+                              None, True, False]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn RandomForestRegressor.")
+                    if verbose > 0:
+                        print("WARNING: The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              ". Will run Sklearn RandomForestRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -420,7 +424,7 @@ class GradientBoostingClassifier(object):
                  min_impurity_split=None,
                  init=None,
                  random_state=None,  # h2o4gpu
-                 max_features=None,
+                 max_features='auto',
                  verbose=0,  # h2o4gpu
                  max_leaf_nodes=None,
                  warm_start=False,
@@ -449,25 +453,28 @@ class GradientBoostingClassifier(object):
                 'min_weight_fraction_leaf', 'min_impurity_decrease',
                 'min_impurity_split', 'init',
                 'max_features', 'max_leaf_nodes',
-                'warm_start', 'presort'
+                'presort'
             ]
             params = [
                 loss, criterion, min_samples_split, min_samples_leaf,
                 min_weight_fraction_leaf,
                 min_impurity_decrease, min_impurity_split, init,
                 max_features, max_leaf_nodes,
-                warm_start, presort
+                presort
             ]
             params_default = ['deviance', 'friedman-mse', 2, 1, 0.0, 0.0, None,
-                              None, 'auto', None, False, 'auto']
+                              None, 'auto', None, 'auto']
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn GradientBoostingClassifier.")
+                    if verbose > 0:
+                        print("WARNING: The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              ". Will run Sklearn GradientBoostingClassifier.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -633,7 +640,7 @@ class GradientBoostingRegressor(object):
                  min_impurity_split=None,
                  init=None,
                  random_state=None,  # h2o4gpu
-                 max_features=None,
+                 max_features='auto',
                  alpha=0.9,
                  verbose=0,  # h2o4gpu
                  max_leaf_nodes=None,
@@ -663,25 +670,28 @@ class GradientBoostingRegressor(object):
                 'min_weight_fraction_leaf',
                 'min_impurity_decrease', 'min_impurity_split', 'init',
                 'max_features', 'alpha', 'max_leaf_nodes',
-                'warm_start', 'presort'
+                'presort'
             ]
             params = [
                 loss, criterion, min_samples_split, min_samples_leaf,
                 min_weight_fraction_leaf,
                 min_impurity_decrease, min_impurity_split, init,
                 max_features, alpha, max_leaf_nodes,
-                warm_start, presort
+                presort
             ]
             params_default = ['ls', 'friedman-mse', 2, 1, 0.0, 0.0, None,
-                              None, 'auto', 0.9, None, False, 'auto']
+                              None, 'auto', 0.9, None, 'auto']
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
-                    print("WARNING: The sklearn parameter " + params_string[i] +
-                          " has been changed from default to " + str(param) +
-                          ". Will run Sklearn GradientBoostingRegressor.")
+                    if verbose > 0:
+                        print("WARNING: The sklearn parameter "
+                              + params_string[i] +
+                              " has been changed from default to "
+                              + str(param) +
+                              ". Will run Sklearn GradientBoostingRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':

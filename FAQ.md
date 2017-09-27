@@ -123,6 +123,20 @@ as sklearn classes.  And in order to easily inherit sklearn CPU
 backends, even if we haven't written a wrapper, bundling seems easiest
 via a bit of bash magic.
 
+### Will we create wrappers for all sklearn functions ###
+
+We will rely upon the community developers to create any additional
+wrappers.  The scikit-learn design decision to have many wrappers that
+call very similar backend classes leads to excessive code that becomes
+difficult to maintain.  We have created wrappers for several cases,
+but we will focus development on improving the primary classes and
+adding advanced features rather than creating individual wrappers that
+only vary by one or a few parameters of the back end class.
+
+In cases where some base classes completely reproduce scikit-learn, we
+can remove the base wrapper and any sub-classes in scikit-learn will
+automatically use the base class.
+
 ### How is this different from scikit-cuda,  pycuda, magma, cula, etc. ###
 
 [Scikit-cuda](https://github.com/lebedov/scikit-cuda) and

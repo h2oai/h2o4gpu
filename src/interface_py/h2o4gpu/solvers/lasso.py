@@ -56,14 +56,12 @@ class Lasso(object):
         self.do_sklearn = False
         if backend == 'auto':
             params_string = [
-                'normalize', 'precompute', 'copy_X', 'warm_start', 'positive',
-                'random_state', 'selection'
+                'normalize', 'positive', 'selection'
             ]
             params = [
-                normalize, precompute, copy_X, warm_start, positive,
-                random_state, selection
+                normalize, positive, selection
             ]
-            params_default = [False, False, True, False, False, None, 'cyclic']
+            params_default = [False, False, 'cyclic']
 
             i = 0
             for param in params:

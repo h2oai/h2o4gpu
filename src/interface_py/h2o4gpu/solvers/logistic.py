@@ -32,7 +32,7 @@ class LogisticRegression(object):
             tol=1E-2,  # h2o4gpu
             C=1.0,  # h2o4gpu
             fit_intercept=True,  # h2o4gpu
-            intercept_scaling=1,
+            intercept_scaling=1.0,
             class_weight=None,
             random_state=None,
             solver='liblinear',
@@ -56,15 +56,15 @@ class LogisticRegression(object):
         self.do_sklearn = False
         if backend == 'auto':
             params_string = [
-                'dual', 'intercept_scaling', 'class_weight', 'random_state',
-                'solver', 'multi_class', 'warm_start', 'n_jobs'
+                'intercept_scaling', 'class_weight',
+                'solver', 'multi_class'
             ]
             params = [
-                dual, intercept_scaling, class_weight, random_state, solver,
-                multi_class, warm_start, n_jobs
+                intercept_scaling, class_weight, solver,
+                multi_class
             ]
             params_default = [
-                False, 1, None, None, 'liblinear', 'ovr', False, 1
+                1.0, None, 'liblinear', 'ovr'
             ]
 
             i = 0

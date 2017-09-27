@@ -29,7 +29,7 @@ def test_fit_simple_backupsklearn(backend='auto'):
     print("h2o4gpu score()")
     print(enet.score(X,y))
 
-    enet_wrapper = Solver(precompute=True, random_state=1234, backend=backend)
+    enet_wrapper = Solver(positive=True, random_state=1234, backend=backend)
     print("h2o4gpu scikit wrapper fit()")
     enet_wrapper.fit(X, y)
     print("h2o4gpu scikit wrapper predict()")
@@ -38,7 +38,7 @@ def test_fit_simple_backupsklearn(backend='auto'):
     print(enet_wrapper.score(X, y))
 
     from sklearn.linear_model.coordinate_descent import Lasso
-    enet_sk = Lasso(precompute=True, random_state=1234)
+    enet_sk = Lasso(positive=True, random_state=1234)
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")
