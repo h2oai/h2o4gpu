@@ -231,6 +231,16 @@ apply_xgboost: libxgboost
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
+libdaal:
+	cd daal
+	#make -j daal PLAT=lnx32e COMPILER=gnu
+	make -j daal PLAT=lnx32e COMPILER=gnu CPATH=/usr/lib/jvm/java-8-openjdk-amd64/include:/usr/lib/jvm/java-8-openjdk-amd64/include/linux/
+
+install_daal:
+	# https://software.intel.com/en-us/distribution-for-python
+	# https://github.com/daaltces/pydaal-tutorials/blob/master/kmeans_example.ipynb
+	# https://software.intel.com/en-us/get-started-with-daal-for-linux
+	conda install -c intel/label/beta2017 pydaal
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml

@@ -13,3 +13,6 @@
 [submodule "tests/googletest"]
 	path = tests/googletest
 	url = https://github.com/google/googletest.git
+[submodule "daal"]
+	path = daal
+	url = https://github.com/01org/daal.git

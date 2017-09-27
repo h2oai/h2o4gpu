@@ -362,6 +362,110 @@ class KMeansH2O(object):
             # which might alter the cluster centers so we override them
             self.sklearn_model.cluster_centers_ = self.cluster_centers_
 
+    def daal_fit(self, X, y=None):
+        # hist(dataset)
+        np.savetxt("data.csv", X, delimiter=",")
+        # see /opt/intel/compilers_and_libraries_2017/linux/daal/examples/python/source/kmeans
+        # source /opt/intel/compilers_and_libraries_2017/linux/daal/bin/daalvars.sh intel64
+        # cp -a /opt/intel/compilers_and_libraries_2017/linux/daal/examples/python/source/utils  ~/.pyenv/versions/3.6.1/lib/python3.6/site-packages/
+        # sudo chown -R $USER:$USER /opt/intel
+        # cd /opt/intel/compilers_and_libraries_2017/linux/daal/pydaal_sources ; python setup.py install
+
+        # 59s with stepdata=1 , k=21 , maxiterations=1000 , whichalgo=2 , whichimage=0 physics.umd.edu
+        # 50s with stepdata=1 , k=21 , maxiterations=1000 , whichalgo=2 , whichimage=0 pseudotensor
+        import daal
+        from daal.data_management import (
+            FileDataSource, DataSourceIface
+        )
+        from daal.algorithms.kmeans import (
+            Batch_Float32LloydDense, init, data, inputCentroids, assignments, centroids, goalFunction
+        )
+        from os.path import join as jp
+
+        datasetFileName = jp('data.csv')
+
+        import inspect, sys, os.path
+
+        utils_folder = os.path.realpath(
+            os.path.abspath(jp(os.path.split(inspect.getfile(inspect.currentframe()))[0], "..")))
+        if utils_folder not in sys.path:
+            sys.path.insert(0, utils_folder)
+        from utils import printNumericTable
+        from utils import isFull
+
+        from daal.data_management import (
+            CSRNumericTable, NumericTableIface, readOnly, BlockDescriptor,
+            packed_mask, HomogenNumericTable, KeyValueDataCollection,
+            DataSourceIface, FileDataSource, HomogenTensor, SubtensorDescriptor,
+        )
+
+        # K-Means algorithm parameters
+        nClusters = k
+        nIterations = maxiterations
+
+        # Initialize FileDataSource to retrieve the input data from a .csv file
+        dataSource = FileDataSource(
+            datasetFileName,
+            DataSourceIface.doAllocateNumericTable,
+            DataSourceIface.doDictionaryFromContext
+        )
+
+        # Retrieve the data from the input file
+        dataSource.loadDataBlock()
+
+        # Get initial clusters for the K-Means algorithm (can change Float32 to Float64)
+        initAlg = init.Batch_Float32RandomDense(nClusters)
+
+        initAlg.input.set(init.data, dataSource.getNumericTable())
+
+        res = initAlg.compute()
+        % time
+        centroidsResult = res.get(init.centroids)
+
+        # Create an algorithm object for the K-Means algorithm (can change Float32 to Float64)
+        algorithm = Batch_Float32LloydDense(nClusters, nIterations)
+
+        algorithm.input.set(data, dataSource.getNumericTable())
+        algorithm.input.set(inputCentroids, centroidsResult)
+
+        % time
+        res = algorithm.compute()
+
+        # Print the clusterization results
+        asses0 = res.get(assignments)
+        cents0 = res.get(centroids)
+
+        num_rows = asses0.getNumberOfRows()
+        num_cols = asses0.getNumberOfColumns()
+        layout = asses0.getDataLayout()
+        if isFull(layout) or layout == NumericTableIface.csrArray:
+            datatype = 0
+        else:
+            datatype = 1
+        print("asses: num_rows=%d num_cols=%d datatype=%d" % (num_rows, num_cols, datatype))
+        block = BlockDescriptor()
+        asses0.getBlockOfRows(0, num_rows, readOnly, block)
+        asses = block.getArray()
+
+        num_rows = cents0.getNumberOfRows()
+        num_cols = cents0.getNumberOfColumns()
+        layout = cents0.getDataLayout()
+        if isFull(layout) or layout == NumericTableIface.csrArray:
+            datatype = 0
+        else:
+            datatype = 1
+        print("cents: num_rows=%d num_cols=%d datatype=%d" % (num_rows, num_cols, datatype))
+        block2 = BlockDescriptor()
+        cents0.getBlockOfRows(0, num_rows, readOnly, block2)
+        cents = block2.getArray()
+
+        printNumericTable(res.get(assignments), "First k cluster assignments:", k)
+        printNumericTable(res.get(centroids), "First 3 dimensions of centroids:", k, 3)
+        printNumericTable(res.get(goalFunction), "Goal function value:")
+
+    def daal_predict(self, X, y=None):
+        pass
+
     def predict(self, X):
         """ Assign the each record in X to the closest cluster.
 
