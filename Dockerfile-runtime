@@ -1,5 +1,5 @@
 #How to run:
-#To build: docker build -t opsh2oai/h2o4gpu-runtime -f Dockerfile-runtime .
+#To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
 #To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
 
 FROM nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04
@@ -61,6 +61,11 @@ ADD src/interface_py/dist/ /dist
 RUN \
   . h2o4gpu_env/bin/activate && \
   pip install --no-cache-dir /dist/*.whl
+
+#Below will get the latest stable wheel file instead.
+#RUN \
+#  . h2o4gpu_env/bin/activate && \
+#  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl
 
 # Add a canned jupyter notebook demo to the container
 RUN \
