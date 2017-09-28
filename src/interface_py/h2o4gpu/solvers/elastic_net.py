@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import sys
+import time
 from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
     pointer, cast, addressof
 import warnings
@@ -343,7 +344,7 @@ class ElasticNetH2O(object):
                                 source_dev=0):
         """ Prepare data and then upload data
         """
-
+        time_prepare0 = time.time()
         train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
             train_x,
             ismatrix=True,
@@ -391,9 +392,13 @@ class ElasticNetH2O(object):
                 'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
 #otherwise m_valid is used, and m_valid_y can be there
 # or not(sets whether do error or not)
+        self.time_prepare = time.time() - time_prepare0
 
+        time_upload_data0 = time.time()
         (a, b, c, d, e) = self.upload_data(train_x_np, train_y_np, valid_x_np,
                                            valid_y_np, weight_np, source_dev)
+
+        self.time_upload_data = time.time() - time_upload_data0
 
         self.a = a
         self.b = b
@@ -530,6 +535,8 @@ class ElasticNetH2O(object):
         :param source_dev GPU ID of device
         """
 
+        time_fit0 = time.time()
+
         self._fitorpredict_ptr(
             source_dev,
             m_train,
@@ -544,6 +551,7 @@ class ElasticNetH2O(object):
             e,
             do_predict=0,
             free_input_data=free_input_data)
+        self.time_fitonly = time.time() - time_fit0
 
 #TODO Add type checking
 

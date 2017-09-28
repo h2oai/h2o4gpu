@@ -445,6 +445,13 @@ def run_glm(X,
         lambdas = enet.lambdas_full
         print(lambdas)
 
+    print("Time Prepare")
+    print(enet.time_prepare)
+    print("Time Upload")
+    print(enet.time_upload_data)
+    print("Time fit only")
+    print(enet.time_fitonly)
+
     assert np.isfinite(enet.X).all()
     if enet.store_full_path != 0:
         assert np.isfinite(enet.X_full).all()
