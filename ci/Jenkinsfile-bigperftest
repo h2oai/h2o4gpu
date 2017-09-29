@@ -1,4 +1,4 @@
-@Library('test-shared-library') _
+@Library('test-shared-library')
 
 import ai.h2o.ci.Utils
 import ai.h2o.ci.BuildInfo
