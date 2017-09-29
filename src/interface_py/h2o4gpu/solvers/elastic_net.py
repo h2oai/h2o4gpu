@@ -133,21 +133,25 @@ class ElasticNetH2O(object):
                  order=None):
         ##############################
         #asserts
-        assert_is_type(n_threads, int, None)
-        assert_is_type(gpu_id, int)
-        assert_is_type(n_gpus, int)
+        assert_is_type(n_threads, int, None, type(np.int32), type(np.int64))
+        assert_is_type(gpu_id, int, type(np.int32), type(np.int64))
+        assert_is_type(n_gpus, int, type(np.int32), type(np.int64))
         assert_is_type(fit_intercept, bool)
-        assert_is_type(lambda_min_ratio, float)
-        assert_is_type(n_lambdas, int)
-        assert_is_type(n_folds, int)
-        assert_is_type(n_alphas, int)
-        assert_is_type(tol, float)
-        assert_is_type(tol_seek_factor, float)
+        assert_is_type(lambda_min_ratio, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(n_lambdas, int, type(np.int32), type(np.int64))
+        assert_is_type(n_folds, int, type(np.int32), type(np.int64))
+        assert_is_type(n_alphas, int, type(np.int32), type(np.int64))
+        assert_is_type(tol, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(tol_seek_factor, float,
+                       type(np.float16), type(np.float32), type(np.float64))
         assert_is_type(lambda_stop_early, bool)
         assert_is_type(glm_stop_early, bool)
-        assert_is_type(glm_stop_early_error_fraction, float)
-        assert_is_type(max_iter, int)
-        assert_is_type(verbose, int)
+        assert_is_type(glm_stop_early_error_fraction, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(max_iter, int, type(np.int32), type(np.int64))
+        assert_is_type(verbose, int, type(np.int32), type(np.int64))
         assert_is_type(family, str)
         assert family in ['logistic',
                           'elasticnet'], \
