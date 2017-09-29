@@ -142,7 +142,7 @@ pipeline {
 
         stage('Publish to S3') {
             agent {
-                label "linux && !mr-dl16"
+                label "docker"
             }
 
             steps {
