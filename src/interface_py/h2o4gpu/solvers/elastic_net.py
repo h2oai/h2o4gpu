@@ -1216,6 +1216,9 @@ class ElasticNetH2O(object):
 
     @property
     def X_full(self):
+        ''' Returns full solution if store_full_path=1
+           X[which lambda][which alpha]
+         '''
         return self.x_vs_alpha_lambdapure
 
     @property
@@ -1225,10 +1228,6 @@ class ElasticNetH2O(object):
     @property
     def validPreds(self):
         return self.valid_pred_vs_alphapure
-
-    @property
-    def validPreds_full(self):
-        return self.valid_pred_vs_alpha_lambdapure
 
     @property
     def validPreds_best(self):
@@ -1241,10 +1240,6 @@ class ElasticNetH2O(object):
     @intercept_.setter
     def intercept_(self, value):
         self._intercept_ = value
-
-    @property
-    def intercept_full(self):
-        return self.intercept_
 
     @property
     def intercept_best(self):
@@ -1260,8 +1255,6 @@ class ElasticNetH2O(object):
 
     @lambdas.setter
     def lambdas(self, value):
-
-        #add check
         self._lambdas = value
 
     @property
@@ -1281,19 +1274,42 @@ class ElasticNetH2O(object):
         self._tols = value
 
     @property
+    def validPreds_full(self):
+        ''' Returns full predictions if store_full_path=1
+           validPreds[which lambda][which alpha]
+         '''
+        return self.valid_pred_vs_alpha_lambdapure
+
+    @property
+    def intercept_full(self):
+        ''' Returns full intercept if store_full_path=1
+           intercept[which lambda][which alpha]
+         '''
+        return self.intercept_
+
+    @property
     def error_full(self):
         return self.error_vs_alpha_lambda
 
     @property
     def lambdas_full(self):
+        ''' Returns full lambda path if store_full_path=1
+           lambda[which lambda][which alpha]
+         '''
         return self._lambdas
 
     @property
     def alphas_full(self):
+        ''' Returns full alpha if store_full_path=1
+           alpha[which lambda][which alpha]
+         '''
         return self._alphas
 
     @property
     def tols_full(self):
+        ''' Returns full tols if store_full_path=1
+           tols[which lambda][which alpha]
+         '''
         return self._tols
 
     @property
