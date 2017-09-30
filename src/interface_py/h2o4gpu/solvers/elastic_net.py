@@ -312,7 +312,9 @@ class ElasticNetH2O(object):
         if not (train_x is None and train_y is None and valid_x is None and
                 valid_y is None and sample_weight is None):
 
-            self.prepare_and_upload_data(
+
+            self.prepare_and_upload_data = prepare_and_upload_data(
+                self,
                 train_x=train_x,
                 train_y=train_y,
                 valid_x=valid_x,
@@ -339,78 +341,6 @@ class ElasticNetH2O(object):
             free_input_data=free_input_data,
             source_dev=source_dev)
         return self
-
-    def prepare_and_upload_data(self,
-                                train_x=None,
-                                train_y=None,
-                                valid_x=None,
-                                valid_y=None,
-                                sample_weight=None,
-                                source_dev=0):
-        """ Prepare data and then upload data
-        """
-        time_prepare0 = time.time()
-        train_x_np, m_train, n1, fortran1, self.ord, self.dtype = _get_data(
-            train_x,
-            ismatrix=True,
-            fit_intercept=self.fit_intercept,
-            order=self.ord,
-            dtype=self.dtype)
-        train_y_np, m_y, _, fortran2, self.ord, self.dtype = _get_data(
-            train_y, order=self.ord, dtype=self.dtype)
-        valid_x_np, m_valid, n2, fortran3, self.ord, self.dtype = _get_data(
-            valid_x,
-            ismatrix=True,
-            fit_intercept=self.fit_intercept,
-            order=self.ord,
-            dtype=self.dtype)
-        valid_y_np, m_valid_y, _, fortran4, self.ord, self.dtype = \
-            _get_data(valid_y, order=self.ord, dtype=self.dtype)
-        weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(
-            sample_weight, order=self.ord, dtype=self.dtype)
-
-        #check that inputs all have same 'c' or 'r' order
-        fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
-        _check_equal(fortran_list)
-
-        #now can do checks
-
-        # ############## #
-        #check do_predict input
-
-        if m_train >= 1 and m_y >= 1 and m_train != m_y:
-            print('training X and Y must have same number of rows, '
-                  'but m_train=%d m_y=%d\n' % (m_train, m_y))
-
-# ################
-
-        if n1 >= 0 and n2 >= 0 and n1 != n2:
-            raise ValueError(
-                'train_x and valid_x must have same number of columns, '
-                'but n=%d n2=%d\n' % (n1, n2))
-
-# ################ #
-
-        if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
-            raise ValueError(
-                'valid_x and valid_y must have same number of rows, '
-                'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
-#otherwise m_valid is used, and m_valid_y can be there
-# or not(sets whether do error or not)
-        self.time_prepare = time.time() - time_prepare0
-
-        time_upload_data0 = time.time()
-        (a, b, c, d, e) = self.upload_data(train_x_np, train_y_np, valid_x_np,
-                                           valid_y_np, weight_np, source_dev)
-
-        self.time_upload_data = time.time() - time_upload_data0
-
-        self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
-        self.e = e
-        return a, b, c, d, e
 
 #TODO Add typechecking
 
@@ -439,7 +369,8 @@ class ElasticNetH2O(object):
         source_dev = 0
         if not (valid_x is None and valid_y is None and sample_weight is None):
 
-            self.prepare_and_upload_data(
+            prepare_and_upload_data(
+                self,
                 train_x=None,
                 train_y=None,
                 valid_x=valid_x,
@@ -775,7 +706,7 @@ class ElasticNetH2O(object):
         # or predict_ptr or only call fit and predict
 
         if free_input_data == 1:
-            self.free_data()
+            free_data(self)
 
 # ####################################
 #PROCESS OUTPUT
@@ -1340,188 +1271,6 @@ class ElasticNetH2O(object):
     @property
     def tols_best(self):
         return self._tols2
-
-# ################## #Free up memory functions
-
-    def free_data(self):
-
-        #NOTE : For now, these are automatically freed
-        #when done with fit-- ok, since not used again
-
-        if self.uploaded_data == 1:
-            self.uploaded_data = 0
-            if self.double_precision == 1:
-                self.lib.modelfree1_double(self.a)
-                self.lib.modelfree1_double(self.b)
-                self.lib.modelfree1_double(self.c)
-                self.lib.modelfree1_double(self.d)
-                self.lib.modelfree1_double(self.e)
-            else:
-                self.lib.modelfree1_float(self.a)
-                self.lib.modelfree1_float(self.b)
-                self.lib.modelfree1_float(self.c)
-                self.lib.modelfree1_float(self.d)
-                self.lib.modelfree1_float(self.e)
-
-    def free_sols(self):
-        if self.did_fit_ptr == 1:
-            self.did_fit_ptr = 0
-            if self.double_precision == 1:
-                self.lib.modelfree2_double(self.x_vs_alpha_lambda)
-                self.lib.modelfree2_double(self.x_vs_alpha)
-            else:
-                self.lib.modelfree2_float(self.x_vs_alpha_lambda)
-                self.lib.modelfree2_float(self.x_vs_alpha)
-
-    def free_preds(self):
-        if self.did_predict == 1:
-            self.did_predict = 0
-            if self.double_precision == 1:
-                self.lib.modelfree2_double(self.valid_pred_vs_alpha_lambda)
-                self.lib.modelfree2_double(self.valid_pred_vs_alpha)
-            else:
-                self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
-                self.lib.modelfree2_float(self.valid_pred_vs_alpha)
-
-    def finish(self):
-        self.free_data()
-        self.free_sols()
-        self.free_preds()
-
-    def upload_data(self,
-                    train_x,
-                    train_y,
-                    valid_x=None,
-                    valid_y=None,
-                    sample_weight=None,
-                    source_dev=0):
-        """Upload the data through the backend library"""
-        if self.uploaded_data == 1:
-            self.free_data()
-        self.uploaded_data = 1
-
-        #
-        # ################
-
-        self.double_precision1, m_train, n1 = _data_info(train_x, self.verbose)
-        self.m_train = m_train
-        self.double_precision3, _, _ = _data_info(train_y, self.verbose)
-        self.double_precision2, m_valid, n2 = _data_info(valid_x, self.verbose)
-        self.m_valid = m_valid
-        self.double_precision4, _, _ = _data_info(valid_y, self.verbose)
-        self.double_precision5, _, _ = _data_info(sample_weight, self.verbose)
-
-        if self.double_precision1 >= 0 and self.double_precision2 >= 0:
-            if self.double_precision1 != self.double_precision2:
-                print('train_x and valid_x must be same precision')
-                exit(0)
-            else:
-                self.double_precision = self.double_precision1  # either one
-        elif self.double_precision1 >= 0:
-            self.double_precision = self.double_precision1
-        elif self.double_precision2 >= 0:
-            self.double_precision = self.double_precision2
-
-# ##############
-
-        if self.double_precision1 >= 0 and self.double_precision3 >= 0:
-            if self.double_precision1 != self.double_precision3:
-                print('train_x and train_y must be same precision')
-                exit(0)
-
-# ##############
-
-        if self.double_precision2 >= 0 and self.double_precision4 >= 0:
-            if self.double_precision2 != self.double_precision4:
-                print('valid_x and valid_y must be same precision')
-                exit(0)
-
-# ##############
-
-        if self.double_precision3 >= 0 and self.double_precision5 >= 0:
-            if self.double_precision3 != self.double_precision5:
-                print('train_y and weight must be same precision')
-                exit(0)
-
-# ##############
-
-        n = -1
-        if n1 >= 0 and n2 >= 0:
-            if n1 != n2:
-                print('train_x and valid_x must have same number of columns')
-                exit(0)
-            else:
-                n = n1  # either one
-        elif n1 >= 0:
-            n = n1
-        elif n2 >= 0:
-            n = n2
-        self.n = n
-
-        # ############## #
-
-        a = c_void_p(0)
-        b = c_void_p(0)
-        c = c_void_p(0)
-        d = c_void_p(0)
-        e = c_void_p(0)
-        if self.double_precision == 1:
-            self.dtype = np.float64
-
-            if self.verbose > 0:
-                print('Detected np.float64')
-                sys.stdout.flush()
-        else:
-            self.dtype = np.float32
-
-            if self.verbose > 0:
-                print('Detected np.float32')
-                sys.stdout.flush()
-
-#make these types consistent
-        A = _convert_to_ptr(train_x)
-        B = _convert_to_ptr(train_y)
-        C = _convert_to_ptr(valid_x)
-        D = _convert_to_ptr(valid_y)
-        E = _convert_to_ptr(sample_weight)
-
-        if self.double_precision == 1:
-            c_upload_data = self.lib.make_ptr_double
-        elif self.double_precision == 0:
-            c_upload_data = self.lib.make_ptr_float
-        else:
-            print('Unknown numpy type detected')
-            print(train_x.dtype)
-            sys.stdout.flush()
-            return a, b, c, d, e
-
-        status = c_upload_data(
-            c_int(self._shared_a),
-            c_int(self.source_me),
-            c_int(source_dev),
-            c_size_t(m_train),
-            c_size_t(n),
-            c_size_t(m_valid),
-            c_int(self.ord),
-            A,
-            B,
-            C,
-            D,
-            E,
-            pointer(a),
-            pointer(b),
-            pointer(c),
-            pointer(d),
-            pointer(e),)
-
-        assert status == 0, 'Failure uploading the data'
-
-        self.a = a
-        self.b = b
-        self.c = c
-        self.d = d
-        self.e = e
-        return a, b, c, d, e
 
 #     def score(self, X=None, y=None, sample_weight=None):
 #         if X is not None and y is not None:
