@@ -149,7 +149,9 @@ class Lasso(object):
             res = self.model.fit(X, y, check_input)
             self.set_attributes()
             return res
-        res = self.model.fit(X, y)
+        import numpy as np
+        sample_weight = y*0.0 + 1.0/(2.0*np.shape(X)[0]) # FIXME: only works if numpy input
+        res = self.model.fit(X, y, sample_weight=sample_weight)
         self.set_attributes()
         return res
 
