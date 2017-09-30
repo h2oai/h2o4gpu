@@ -65,6 +65,10 @@ def test_fit_simple_backupsklearn(backend='auto'):
         print(enet_sk.n_iter_)
         print(enet_wrapper.n_iter_)
 
+        print(enet_wrapper.time_prepare)
+        print(enet_wrapper.time_upload_data)
+        print(enet_wrapper.time_fitonly)
+
         assert np.allclose(enet_wrapper.coef_, enet_sk_coef)
         assert np.allclose(enet_wrapper.intercept_, enet_sk.intercept_)
         assert np.allclose(enet_wrapper.n_iter_, enet_sk.n_iter_)

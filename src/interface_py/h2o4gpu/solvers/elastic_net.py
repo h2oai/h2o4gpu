@@ -1812,3 +1812,11 @@ class ElasticNet(object):
         s('oself.intercept_ = oself.model.intercept_')
         self.n_iter_ = None
         s('oself.n_iter_ = oself.model.n_iter_')
+
+        self.time_prepare=None
+        s('oself.time_prepare = oself.model.time_prepare')
+        self.time_upload_data = None
+        s('oself.time_upload_data = oself.model.time_upload_data')
+        self.time_fitonly = None
+        s('oself.time_fitonly = oself.model.time_fitonly')
+
