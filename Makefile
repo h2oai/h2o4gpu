@@ -231,14 +231,14 @@ libprexgboost:
 
 # https://xgboost.readthedocs.io/en/latest/build.html
 # could just get wheel from repo/S3 instead of doing this
-libxgboost: libxgboost1 libxgboost2 libxgboost3
-libxgboost2: libxgboost1 libprexgboost libxgboost2 libxgboost3
+libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
+libxgboost2: libxgboostp1 libprexgboost libxgboostp2 libxgboostp3
 
-libxgboost1:
+libxgboostp1:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
-libxgboost2:
+libxgboostp2:
 	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
-libxgboost3:
+libxgboostp3:
 	cd xgboost/python-package ; rm -rf dist && python setup.py sdist bdist_wheel
 
 apply_xgboost: libxgboost pipxgboost
