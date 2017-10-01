@@ -55,12 +55,8 @@ class Lasso(object):
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-            params_string = [
-                'normalize', 'positive', 'selection'
-            ]
-            params = [
-                normalize, positive, selection
-            ]
+            params_string = ['normalize', 'positive', 'selection']
+            params = [normalize, positive, selection]
             params_default = [False, False, 'cyclic']
 
             i = 0
@@ -69,11 +65,9 @@ class Lasso(object):
                     self.do_sklearn = True
                     if verbose:
                         print("WARNING:"
-                              " The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will run Sklearn Lasso Regression.")
+                              " The sklearn parameter " + params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + ". Will run Sklearn Lasso Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -145,15 +139,19 @@ class Lasso(object):
         self.verbose = verbose
 
     def fit(self, X, y=None, check_input=True):
+        """H2O Lasso Regression Fitter
+        """
+
         if self.do_sklearn:
             res = self.model.fit(X, y, check_input)
             self.set_attributes()
             return res
         import numpy as np
-        try:
-            sample_weight = X[:,0]*0.0 + 1.0/(2.0*np.shape(X)[0]) # FIXME: only works if numpy input
-        except:
-            sample_weight = X[:] * 0.0 + 1.0 / (2.0 * np.shape(X)[0])  # FIXME: only works if numpy input
+        # FIXME: only works if numpy input
+        if len(X.shape) == 2:
+            sample_weight = X[:, 0] * 0.0 + 1.0 / (2.0 * np.shape(X)[0])
+        else:
+            sample_weight = X[:] * 0.0 + 1.0 / (2.0 * np.shape(X)[0])
         res = self.model.fit(X, y, sample_weight=sample_weight)
         self.set_attributes()
         return res
@@ -179,6 +177,8 @@ class Lasso(object):
         return self.model.set_params(**params)
 
     def set_attributes(self):
+        """ set attributes for Lasso
+        """
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.coef_ = oself.model.coef_')
@@ -186,7 +186,7 @@ class Lasso(object):
         s('oself.intercept_ = oself.model.intercept_')
         s('oself.n_iter_ = oself.model.n_iter_')
 
-        self.time_prepare=None
+        self.time_prepare = None
         s('oself.time_prepare = oself.model.time_prepare')
         self.time_upload_data = None
         s('oself.time_upload_data = oself.model.time_upload_data')

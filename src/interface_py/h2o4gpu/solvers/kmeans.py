@@ -390,11 +390,10 @@ class KMeansH2O(object):
         else:
             c_kmeans = lib.make_ptr_double_kmeans
 
-        c_kmeans(1, self.verbose, self.random_state,
-                 self._gpu_id, self.n_gpus, rows, cols,
-                 c_int(data_ord), self._n_clusters,
-                 self._max_iter, c_init, c_init_data,
-                 self.tol, c_data, c_centroids, None,
+        c_kmeans(1, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                 rows, cols,
+                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                 c_init_data, self.tol, c_data, c_centroids, None,
                  pointer(c_res))
 
         preds = np.fromiter(

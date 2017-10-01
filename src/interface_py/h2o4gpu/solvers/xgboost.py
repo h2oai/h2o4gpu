@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+
 class RandomForestClassifier(object):
     """H2O RandomForestClassifier Solver
 
@@ -19,32 +20,33 @@ class RandomForestClassifier(object):
 
     """
 
-    def __init__(self,
-                 n_estimators=10,  # h2o4gpu
-                 criterion='gini',
-                 max_depth=3,  # h2o4gpu
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
-                 max_features='auto',
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.0,
-                 min_impurity_split=None,
-                 bootstrap=True,
-                 oob_score=False,
-                 n_jobs=1,  # h2o4gpu
-                 random_state=None,  # h2o4gpu
-                 verbose=0,  # h2o4gpu
-                 warm_start=False,
-                 class_weight=None,
-                 # XGBoost specific params
-                 subsample=1.0,  # h2o4gpu
-                 colsample_bytree=1.0,  # h2o4gpu
-                 num_parallel_tree=100,  # h2o4gpu
-                 tree_method='gpu_hist',  # h2o4gpu
-                 n_gpus=-1,  # h2o4gpu
-                 predictor='gpu_predictor',  # h2o4gpu
-                 backend='auto'):  # h2o4gpu
+    def __init__(
+            self,
+            n_estimators=10,  # h2o4gpu
+            criterion='gini',
+            max_depth=3,  # h2o4gpu
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_features='auto',
+            max_leaf_nodes=None,
+            min_impurity_decrease=0.0,
+            min_impurity_split=None,
+            bootstrap=True,
+            oob_score=False,
+            n_jobs=1,  # h2o4gpu
+            random_state=None,  # h2o4gpu
+            verbose=0,  # h2o4gpu
+            warm_start=False,
+            class_weight=None,
+            # XGBoost specific params
+            subsample=1.0,  # h2o4gpu
+            colsample_bytree=1.0,  # h2o4gpu
+            num_parallel_tree=100,  # h2o4gpu
+            tree_method='gpu_hist',  # h2o4gpu
+            n_gpus=-1,  # h2o4gpu
+            predictor='gpu_predictor',  # h2o4gpu
+            backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -59,31 +61,29 @@ class RandomForestClassifier(object):
 
             params_string = [
                 'criterion', 'min_samples_split', 'min_samples_leaf',
-                'min_weight_fraction_leaf', 'max_features',
-                'max_leaf_nodes', 'min_impurity_decrease',
-                'min_impurity_split', 'bootstrap', 'oob_score',
-                'class_weight'
+                'min_weight_fraction_leaf', 'max_features', 'max_leaf_nodes',
+                'min_impurity_decrease', 'min_impurity_split', 'bootstrap',
+                'oob_score', 'class_weight'
             ]
             params = [
                 criterion, min_samples_split, min_samples_leaf,
-                min_weight_fraction_leaf, max_features,
-                max_leaf_nodes, min_impurity_decrease,
-                min_impurity_split, bootstrap, oob_score,
+                min_weight_fraction_leaf, max_features, max_leaf_nodes,
+                min_impurity_decrease, min_impurity_split, bootstrap, oob_score,
                 class_weight
             ]
-            params_default = ['gini', 2, 1, 0.0, 'auto', None, 0.0,
-                              None, True, False, None]
+            params_default = [
+                'gini', 2, 1, 0.0, 'auto', None, 0.0, None, True, False, None
+            ]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will run Sklearn RandomForestsClassifier.")
+                        print("WARNING: The sklearn parameter " +
+                              params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + ". Will run Sklearn RandomForestsClassifier.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -132,8 +132,7 @@ class RandomForestClassifier(object):
             silent=silent,
             num_round=1,
             subsample=subsample,
-            colsample_bytree=colsample_bytree
-        )
+            colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
             print("Running sklearn RandomForestClassifier")
@@ -225,31 +224,32 @@ class RandomForestRegressor(object):
 
     """
 
-    def __init__(self,
-                 n_estimators=10,  # h2o4gpu
-                 criterion='mse',
-                 max_depth=3,  # h2o4gpu
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
-                 max_features='auto',
-                 max_leaf_nodes=None,
-                 min_impurity_decrease=0.0,
-                 min_impurity_split=None,
-                 bootstrap=True,
-                 oob_score=False,
-                 n_jobs=1,  # h2o4gpu
-                 random_state=None,  # h2o4gpu
-                 verbose=0,  # h2o4gpu
-                 warm_start=False,
-                 # XGBoost specific params
-                 subsample=1.0,  # h2o4gpu
-                 colsample_bytree=1.0,  # h2o4gpu
-                 num_parallel_tree=100,  # h2o4gpu
-                 tree_method='gpu_hist',  # h2o4gpu
-                 n_gpus=-1,  # h2o4gpu
-                 predictor='gpu_predictor',  # h2o4gpu
-                 backend='auto'):  # h2o4gpu
+    def __init__(
+            self,
+            n_estimators=10,  # h2o4gpu
+            criterion='mse',
+            max_depth=3,  # h2o4gpu
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_features='auto',
+            max_leaf_nodes=None,
+            min_impurity_decrease=0.0,
+            min_impurity_split=None,
+            bootstrap=True,
+            oob_score=False,
+            n_jobs=1,  # h2o4gpu
+            random_state=None,  # h2o4gpu
+            verbose=0,  # h2o4gpu
+            warm_start=False,
+            # XGBoost specific params
+            subsample=1.0,  # h2o4gpu
+            colsample_bytree=1.0,  # h2o4gpu
+            num_parallel_tree=100,  # h2o4gpu
+            tree_method='gpu_hist',  # h2o4gpu
+            n_gpus=-1,  # h2o4gpu
+            predictor='gpu_predictor',  # h2o4gpu
+            backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -264,29 +264,26 @@ class RandomForestRegressor(object):
 
             params_string = [
                 'min_samples_split', 'min_samples_leaf',
-                'min_weight_fraction_leaf', 'max_features',
-                'max_leaf_nodes', 'min_impurity_decrease',
-                'min_impurity_split', 'bootstrap', 'oob_score'
+                'min_weight_fraction_leaf', 'max_features', 'max_leaf_nodes',
+                'min_impurity_decrease', 'min_impurity_split', 'bootstrap',
+                'oob_score'
             ]
             params = [
-                min_samples_split, min_samples_leaf,
-                min_weight_fraction_leaf, max_features,
-                max_leaf_nodes, min_impurity_decrease,
+                min_samples_split, min_samples_leaf, min_weight_fraction_leaf,
+                max_features, max_leaf_nodes, min_impurity_decrease,
                 min_impurity_split, bootstrap, oob_score
             ]
-            params_default = [2, 1, 0.0, 'auto', None, 0.0,
-                              None, True, False]
+            params_default = [2, 1, 0.0, 'auto', None, 0.0, None, True, False]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will run Sklearn RandomForestRegressor.")
+                        print("WARNING: The sklearn parameter " +
+                              params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + ". Will run Sklearn RandomForestRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -334,8 +331,7 @@ class RandomForestRegressor(object):
             silent=silent,
             num_round=1,
             subsample=subsample,
-            colsample_bytree=colsample_bytree
-        )
+            colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
             print("Running sklearn RandomForestRegressor")
@@ -410,32 +406,33 @@ class GradientBoostingClassifier(object):
 
     """
 
-    def __init__(self,
-                 loss='deviance',
-                 learning_rate=0.1,  # h2o4gpu
-                 n_estimators=100,  # h2o4gpu
-                 subsample=1.0,  # h2o4gpu
-                 criterion='friedman_mse',
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
-                 max_depth=3,  # h2o4gpu
-                 min_impurity_decrease=0.0,
-                 min_impurity_split=None,
-                 init=None,
-                 random_state=None,  # h2o4gpu
-                 max_features='auto',
-                 verbose=0,  # h2o4gpu
-                 max_leaf_nodes=None,
-                 warm_start=False,
-                 presort='auto',
-                 # XGBoost specific params
-                 colsample_bytree=1.0,  # h2o4gpu
-                 num_parallel_tree=100,  # h2o4gpu
-                 tree_method='gpu_hist',  # h2o4gpu
-                 n_gpus=-1,  # h2o4gpu
-                 predictor='gpu_predictor',  # h2o4gpu
-                 backend='auto'):  # h2o4gpu
+    def __init__(
+            self,
+            loss='deviance',
+            learning_rate=0.1,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
+            subsample=1.0,  # h2o4gpu
+            criterion='friedman_mse',
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_depth=3,  # h2o4gpu
+            min_impurity_decrease=0.0,
+            min_impurity_split=None,
+            init=None,
+            random_state=None,  # h2o4gpu
+            max_features='auto',
+            verbose=0,  # h2o4gpu
+            max_leaf_nodes=None,
+            warm_start=False,
+            presort='auto',
+            # XGBoost specific params
+            colsample_bytree=1.0,  # h2o4gpu
+            num_parallel_tree=100,  # h2o4gpu
+            tree_method='gpu_hist',  # h2o4gpu
+            n_gpus=-1,  # h2o4gpu
+            predictor='gpu_predictor',  # h2o4gpu
+            backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -451,30 +448,28 @@ class GradientBoostingClassifier(object):
             params_string = [
                 'loss', 'criterion', 'min_samples_split', 'min_samples_leaf',
                 'min_weight_fraction_leaf', 'min_impurity_decrease',
-                'min_impurity_split', 'init',
-                'max_features', 'max_leaf_nodes',
+                'min_impurity_split', 'init', 'max_features', 'max_leaf_nodes',
                 'presort'
             ]
             params = [
                 loss, criterion, min_samples_split, min_samples_leaf,
-                min_weight_fraction_leaf,
-                min_impurity_decrease, min_impurity_split, init,
-                max_features, max_leaf_nodes,
-                presort
+                min_weight_fraction_leaf, min_impurity_decrease,
+                min_impurity_split, init, max_features, max_leaf_nodes, presort
             ]
-            params_default = ['deviance', 'friedman-mse', 2, 1, 0.0, 0.0, None,
-                              None, 'auto', None, 'auto']
+            params_default = [
+                'deviance', 'friedman-mse', 2, 1, 0.0, 0.0, None, None, 'auto',
+                None, 'auto'
+            ]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will run Sklearn GradientBoostingClassifier.")
+                        print(
+                            "WARNING: The sklearn parameter " + params_string[i]
+                            + " has been changed from default to " + str(param)
+                            + ". Will run Sklearn GradientBoostingClassifier.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -626,33 +621,34 @@ class GradientBoostingRegressor(object):
 
     """
 
-    def __init__(self,
-                 loss='ls',
-                 learning_rate=0.1,  # h2o4gpu
-                 n_estimators=100,  # h2o4gpu
-                 subsample=1.0,  # h2o4gpu
-                 criterion='friedman_mse',
-                 min_samples_split=2,
-                 min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
-                 max_depth=3,  # h2o4gpu
-                 min_impurity_decrease=0.0,
-                 min_impurity_split=None,
-                 init=None,
-                 random_state=None,  # h2o4gpu
-                 max_features='auto',
-                 alpha=0.9,
-                 verbose=0,  # h2o4gpu
-                 max_leaf_nodes=None,
-                 warm_start=False,
-                 presort='auto',
-                 # XGBoost specific params
-                 colsample_bytree=1.0,  # h2o4gpu
-                 num_parallel_tree=100,  # h2o4gpu
-                 tree_method='gpu_hist',  # h2o4gpu
-                 n_gpus=-1,  # h2o4gpu
-                 predictor='gpu_predictor',  # h2o4gpu
-                 backend='auto'):  # h2o4gpu
+    def __init__(
+            self,
+            loss='ls',
+            learning_rate=0.1,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
+            subsample=1.0,  # h2o4gpu
+            criterion='friedman_mse',
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_depth=3,  # h2o4gpu
+            min_impurity_decrease=0.0,
+            min_impurity_split=None,
+            init=None,
+            random_state=None,  # h2o4gpu
+            max_features='auto',
+            alpha=0.9,
+            verbose=0,  # h2o4gpu
+            max_leaf_nodes=None,
+            warm_start=False,
+            presort='auto',
+            # XGBoost specific params
+            colsample_bytree=1.0,  # h2o4gpu
+            num_parallel_tree=100,  # h2o4gpu
+            tree_method='gpu_hist',  # h2o4gpu
+            n_gpus=-1,  # h2o4gpu
+            predictor='gpu_predictor',  # h2o4gpu
+            backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -667,31 +663,30 @@ class GradientBoostingRegressor(object):
 
             params_string = [
                 'loss', 'criterion', 'min_samples_split', 'min_samples_leaf',
-                'min_weight_fraction_leaf',
-                'min_impurity_decrease', 'min_impurity_split', 'init',
-                'max_features', 'alpha', 'max_leaf_nodes',
-                'presort'
+                'min_weight_fraction_leaf', 'min_impurity_decrease',
+                'min_impurity_split', 'init', 'max_features', 'alpha',
+                'max_leaf_nodes', 'presort'
             ]
             params = [
                 loss, criterion, min_samples_split, min_samples_leaf,
-                min_weight_fraction_leaf,
-                min_impurity_decrease, min_impurity_split, init,
-                max_features, alpha, max_leaf_nodes,
+                min_weight_fraction_leaf, min_impurity_decrease,
+                min_impurity_split, init, max_features, alpha, max_leaf_nodes,
                 presort
             ]
-            params_default = ['ls', 'friedman-mse', 2, 1, 0.0, 0.0, None,
-                              None, 'auto', 0.9, None, 'auto']
+            params_default = [
+                'ls', 'friedman-mse', 2, 1, 0.0, 0.0, None, None, 'auto', 0.9,
+                None, 'auto'
+            ]
 
             i = 0
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will run Sklearn GradientBoostingRegressor.")
+                        print("WARNING: The sklearn parameter " +
+                              params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + ". Will run Sklearn GradientBoostingRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
