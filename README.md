@@ -161,8 +161,22 @@ Planned:
 
 ## Benchmarks
 
+Our benchmarking plan is to clearly highlight when modeling benefits
+from the GPU (usually complex models) or does not (e.g. one-shot
+simple models dominated by data transfer).
+
+We have benchmarked h2o4gpu, scikit-learn, and h2o-3 on a variety of
+solvers.  Some benchmarks have been performed for a few selected cases
+that highlight the GPU capabilities (i.e. compute or on-GPU memory
+operations dominate data transfer to GPU from host):
+
 [Benchmarks for GLM, KMeans, and XGBoost for CPU vs. GPU.](https://github.com/h2oai/h2o4gpu/blob/master/presentations/benchmarks.pdf)
- 
+
+A suite of benchmarks are computed when doing "make testperf" from a
+build directory. These take all of our tests and benchmarks h2o4gpu
+against h2o-3.  These will soon be presented as a live
+commit-by-commit streaming plots on a website.
+
 
 ## Contributing
 
