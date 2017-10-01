@@ -11,8 +11,9 @@ from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
 
 import numpy as np
 
-from ..solvers.utils import device_count, _check_data_content, \
+from ..solvers.utils import _check_data_content, \
     _get_data, _setter
+from ..util.gpu import device_count
 from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
 

@@ -156,6 +156,7 @@ GPU_OBJ=$(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o \
 	$(OBJDIR)/gpu/kmeans/kmeans_labels.o \
 	$(OBJDIR)/gpu/h2o4gpuglm.o \
 	$(OBJDIR)/gpu/warmstart.o  \
+	$(OBJDIR)/gpu/utils.o  \
 	$(OBJDIR)/gpu/p2pbwcheck.o  \
 	$(OBJDIR)/gpu/bwcheck.o \
 	$(OBJDIR)/gpu/elastic_net_ptr.o \
@@ -245,6 +246,8 @@ $(OBJDIR)/gpu/warmstart.o: gpu/warmstart.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR
 $(OBJDIR)/gpu/p2pbwcheck.o: gpu/p2pbwcheck.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 $(OBJDIR)/gpu/bwcheck.o: gpu/bwcheck.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
+$(OBJDIR)/gpu/utils.o: gpu/utils.cu $(H2O4GPU_HDR) $(CML_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) -dc -o $@ 
 
 $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix Makefile config2.mk
