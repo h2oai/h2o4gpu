@@ -246,17 +246,17 @@ pipeline {
                     version = null // This is necessary, else version:Tuple will be serialized
 
                     if (isRelease()) {
-                        artifact = h2o4gpu-${versionTag}-py36-none-any.whl
-                        localArtifact = src/interface_py/dist2/${artifact}
-                        bucket = s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                        def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                        def localArtifact = src/interface_py/dist2/${artifact}
+                        def bucket = s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
                         sh "s3cmd put ${localArtifact} ${bucket}"
                         sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
                     }
 
                     if (isBleedingEdge()) {
-                        artifact = h2o4gpu-${versionTag}-py36-none-any.whl
-                        localArtifact = src/interface_py/dist2/${artifact}
-                        bucket = s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                        def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                        def localArtifact = src/interface_py/dist2/${artifact}
+                        def bucket = s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
                         sh "s3cmd put ${localArtifact} ${bucket}"
                         sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
                     }
