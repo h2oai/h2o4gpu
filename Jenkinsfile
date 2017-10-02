@@ -217,7 +217,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                                     nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
-                            stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl'
+                            stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl2'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
                             arch 'src/interface_py/dist2/*.whl'
@@ -234,7 +234,7 @@ pipeline {
             }
 
             steps {
-                unstash 'linux_whl'
+                unstash 'linux_whl2'
                 unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist2/'
                 script {
@@ -245,21 +245,21 @@ pipeline {
                     def _buildVersion = version[1]
                     version = null // This is necessary, else version:Tuple will be serialized
 
-                    if (isRelease()) {
-                        def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
-                        def localArtifact = src/interface_py/dist2/${artifact}
-                        def bucket = s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
-                        sh "s3cmd put ${localArtifact} ${bucket}"
-                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
-                    }
+                    #if (isRelease()) {
+                    #    def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                    #    def localArtifact = src/interface_py/dist2/${artifact}
+                    #    def bucket = s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                    #    sh "s3cmd put ${localArtifact} ${bucket}"
+                    #    sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
+                    #}
 
-                    if (isBleedingEdge()) {
-                        def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
-                        def localArtifact = src/interface_py/dist2/${artifact}
-                        def bucket = s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
-                        sh "s3cmd put ${localArtifact} ${bucket}"
-                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
-                    }
+                    #if (isBleedingEdge()) {
+                    #    def artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                    #    def localArtifact = src/interface_py/dist2/${artifact}
+                    #    def bucket = s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                    #    sh "s3cmd put ${localArtifact} ${bucket}"
+                    #    sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
+                    #}
                 }
             }
         }
