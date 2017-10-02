@@ -10,9 +10,8 @@ from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
 import numpy as np
 from h2o4gpu.types import cptr
 
-#############################
-# Data utils
 
+# Data utils
 
 def _unicode_order(fortran):
     return ord('c') if fortran else ord('r')
@@ -220,7 +219,6 @@ def _check_equal(iterator):
         return True
     return all(first == rest for rest in iterator)
 
-# ################## #Free up memory functions
 
 def prepare_and_upload_data(self,
                             train_x=None,
@@ -251,39 +249,39 @@ def prepare_and_upload_data(self,
     weight_np, _, _, fortran5, self.ord, self.dtype = _get_data(
         sample_weight, order=self.ord, dtype=self.dtype)
 
-    #check that inputs all have same 'c' or 'r' order
+    # check that inputs all have same 'c' or 'r' order
     fortran_list = [fortran1, fortran2, fortran3, fortran4, fortran5]
     _check_equal(fortran_list)
 
-    #now can do checks
+    # now can do checks
 
     # ############## #
-    #check do_predict input
+    # check do_predict input
 
     if m_train >= 1 and m_y >= 1 and m_train != m_y:
         print('training X and Y must have same number of rows, '
               'but m_train=%d m_y=%d\n' % (m_train, m_y))
 
-# ################
+    # ################
 
     if n1 >= 0 and n2 >= 0 and n1 != n2:
         raise ValueError(
             'train_x and valid_x must have same number of columns, '
             'but n=%d n2=%d\n' % (n1, n2))
 
-# ################ #
+    # ################ #
 
     if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
         raise ValueError(
             'valid_x and valid_y must have same number of rows, '
             'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
-#otherwise m_valid is used, and m_valid_y can be there
-# or not(sets whether do error or not)
+        # otherwise m_valid is used, and m_valid_y can be there
+    # or not(sets whether do error or not)
     self.time_prepare = time.time() - time_prepare0
 
     time_upload_data0 = time.time()
     (a, b, c, d, e) = upload_data(self, train_x_np, train_y_np, valid_x_np,
-                                       valid_y_np, weight_np, source_dev)
+                                  valid_y_np, weight_np, source_dev)
 
     self.time_upload_data = time.time() - time_upload_data0
 
@@ -294,50 +292,6 @@ def prepare_and_upload_data(self,
     self.e = e
     return a, b, c, d, e
 
-def free_data(self):
-
-    #NOTE : For now, these are automatically freed
-    #when done with fit-- ok, since not used again
-
-    if self.uploaded_data == 1:
-        self.uploaded_data = 0
-        if self.double_precision == 1:
-            self.lib.modelfree1_double(self.a)
-            self.lib.modelfree1_double(self.b)
-            self.lib.modelfree1_double(self.c)
-            self.lib.modelfree1_double(self.d)
-            self.lib.modelfree1_double(self.e)
-        else:
-            self.lib.modelfree1_float(self.a)
-            self.lib.modelfree1_float(self.b)
-            self.lib.modelfree1_float(self.c)
-            self.lib.modelfree1_float(self.d)
-            self.lib.modelfree1_float(self.e)
-
-def free_sols(self):
-    if self.did_fit_ptr == 1:
-        self.did_fit_ptr = 0
-        if self.double_precision == 1:
-            self.lib.modelfree2_double(self.x_vs_alpha_lambda)
-            self.lib.modelfree2_double(self.x_vs_alpha)
-        else:
-            self.lib.modelfree2_float(self.x_vs_alpha_lambda)
-            self.lib.modelfree2_float(self.x_vs_alpha)
-
-def free_preds(self):
-    if self.did_predict == 1:
-        self.did_predict = 0
-        if self.double_precision == 1:
-            self.lib.modelfree2_double(self.valid_pred_vs_alpha_lambda)
-            self.lib.modelfree2_double(self.valid_pred_vs_alpha)
-        else:
-            self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
-            self.lib.modelfree2_float(self.valid_pred_vs_alpha)
-
-def finish(self):
-    free_data(self)
-    free_sols(self)
-    free_preds(self)
 
 def upload_data(self,
                 train_x,
@@ -373,28 +327,28 @@ def upload_data(self,
     elif self.double_precision2 >= 0:
         self.double_precision = self.double_precision2
 
-# ##############
+    # ##############
 
     if self.double_precision1 >= 0 and self.double_precision3 >= 0:
         if self.double_precision1 != self.double_precision3:
             print('train_x and train_y must be same precision')
             exit(0)
 
-# ##############
+        # ##############
 
     if self.double_precision2 >= 0 and self.double_precision4 >= 0:
         if self.double_precision2 != self.double_precision4:
             print('valid_x and valid_y must be same precision')
             exit(0)
 
-# ##############
+        # ##############
 
     if self.double_precision3 >= 0 and self.double_precision5 >= 0:
         if self.double_precision3 != self.double_precision5:
             print('train_y and weight must be same precision')
             exit(0)
 
-# ##############
+        # ##############
 
     n = -1
     if n1 >= 0 and n2 >= 0:
@@ -429,7 +383,7 @@ def upload_data(self,
             print('Detected np.float32')
             sys.stdout.flush()
 
-#make these types consistent
+            # make these types consistent
     A = _convert_to_ptr(train_x)
     B = _convert_to_ptr(train_y)
     C = _convert_to_ptr(valid_x)
@@ -463,7 +417,7 @@ def upload_data(self,
         pointer(b),
         pointer(c),
         pointer(d),
-        pointer(e),)
+        pointer(e), )
 
     assert status == 0, 'Failure uploading the data'
 
@@ -475,8 +429,56 @@ def upload_data(self,
     return a, b, c, d, e
 
 
-class _setter:
+# Functions that free memory
+def free_data(self):
+    # NOTE : For now, these are automatically freed
+    # when done with fit-- ok, since not used again
 
+    if self.uploaded_data == 1:
+        self.uploaded_data = 0
+        if self.double_precision == 1:
+            self.lib.modelfree1_double(self.a)
+            self.lib.modelfree1_double(self.b)
+            self.lib.modelfree1_double(self.c)
+            self.lib.modelfree1_double(self.d)
+            self.lib.modelfree1_double(self.e)
+        else:
+            self.lib.modelfree1_float(self.a)
+            self.lib.modelfree1_float(self.b)
+            self.lib.modelfree1_float(self.c)
+            self.lib.modelfree1_float(self.d)
+            self.lib.modelfree1_float(self.e)
+
+
+def free_sols(self):
+    if self.did_fit_ptr == 1:
+        self.did_fit_ptr = 0
+        if self.double_precision == 1:
+            self.lib.modelfree2_double(self.x_vs_alpha_lambda)
+            self.lib.modelfree2_double(self.x_vs_alpha)
+        else:
+            self.lib.modelfree2_float(self.x_vs_alpha_lambda)
+            self.lib.modelfree2_float(self.x_vs_alpha)
+
+
+def free_preds(self):
+    if self.did_predict == 1:
+        self.did_predict = 0
+        if self.double_precision == 1:
+            self.lib.modelfree2_double(self.valid_pred_vs_alpha_lambda)
+            self.lib.modelfree2_double(self.valid_pred_vs_alpha)
+        else:
+            self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
+            self.lib.modelfree2_float(self.valid_pred_vs_alpha)
+
+
+def finish(self):
+    free_data(self)
+    free_sols(self)
+    free_preds(self)
+
+
+class _setter:
     def __init__(self, oself, e1, e2):
         self._e1 = e1
         self._e2 = e2
