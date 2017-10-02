@@ -178,6 +178,8 @@ private_deps_fetch:
 deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
+	easy_install pip
+	easy_install setuptools
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
@@ -307,6 +309,13 @@ mrproper: clean
 
 fullinstallprivate: clean alldeps_private build sync_data install
 fullinstallprivate2: clean alldeps_private2 build sync_data install
+
+s3upload:
+	artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                        def localArtifact = src/interface_py/dist2/${artifact}
+                        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/"
+                        sh "s3cmd put ${localArtifact} ${bucket}"
+                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
 
 sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using smalldata
 
