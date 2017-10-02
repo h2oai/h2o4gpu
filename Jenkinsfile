@@ -250,7 +250,7 @@ pipeline {
                         def localArtifact = "src/interface_py/dist2/${artifact}"
                         def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/"
                         sh "s3cmd put ${localArtifact} ${bucket}"
-                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
+                        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                     }
 
                     if (isBleedingEdge()) {
@@ -258,7 +258,7 @@ pipeline {
                         def localArtifact = "src/interface_py/dist2/${artifact}"
                         def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/"
                         sh "s3cmd put ${localArtifact} ${bucket}"
-                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
+                        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                     }
                 }
             }
