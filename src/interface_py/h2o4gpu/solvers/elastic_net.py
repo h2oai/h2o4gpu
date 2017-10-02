@@ -16,8 +16,7 @@ from tabulate import tabulate
 from ..solvers.utils import _setter
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib
-from ..solvers.utils import _get_data, _data_info, \
-    _convert_to_ptr, _check_equal
+from ..solvers.utils import prepare_and_upload_data, free_data
 from ..util.gpu import device_count
 from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
