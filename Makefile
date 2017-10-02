@@ -288,7 +288,7 @@ apply_sklearn_initmerge:
 
 #################### Jenkins specific
 
-cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
+cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
 buildjenkins: update_submodule cpp c py
 
@@ -296,6 +296,7 @@ installjenkins: pyinstall
 
 fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
 fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
 
 .PHONY: mrproper
 mrproper: clean

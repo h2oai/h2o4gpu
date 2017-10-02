@@ -184,7 +184,7 @@ pipeline {
             }
         }
 
-        stage('Build on Linux for no nccl xgboost') {
+        stage('Build on Linux no nccl xgboost') {
             agent {
                 label "gpu && nvidia-docker && !mr-dl16"
             }
@@ -217,10 +217,10 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                                     nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
-                            stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
+                            stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
-                            arch 'src/interface_py/dist/*.whl'
+                            arch 'src/interface_py/dist2/*.whl'
                         } finally {
                             sh "nvidia-docker stop ${CONTAINER_NAME}"
                         }
@@ -236,7 +236,7 @@ pipeline {
             steps {
                 unstash 'linux_whl'
                 unstash 'version_info'
-                sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
+                sh 'echo "Stashed files:" && ls -l src/interface_py/dist2/'
                 script {
                     // Load the version file content
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -246,27 +246,19 @@ pipeline {
                     version = null // This is necessary, else version:Tuple will be serialized
 
                     if (isRelease()) {
-                        s3up {
-                            localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
-                            artifactId = "h2o4gpu"
-                            majorVersion = _majorVersion
-                            buildVersion = _buildVersion
-                            keepPrivate = false
-                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
-                        }
-                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py36-none-any.whl"
+                        artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                        localArtifact = src/interface_py/dist2/${artifact}
+                        bucket = s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                        sh "s3cmd put ${localArtifact} ${bucket}"
+                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
                     }
 
                     if (isBleedingEdge()) {
-                        s3up {
-                            localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
-                            artifactId = "h2o4gpu"
-                            majorVersion = _majorVersion
-                            buildVersion = _buildVersion
-                            keepPrivate = false
-                            remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
-                        }
-                        sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/h2o4gpu-${versionTag}-py36-none-any.whl"
+                        artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+                        localArtifact = src/interface_py/dist2/${artifact}
+                        bucket = s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/
+                        sh "s3cmd put ${localArtifact} ${bucket}"
+                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
                     }
                 }
             }
