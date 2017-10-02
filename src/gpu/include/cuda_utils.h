@@ -4,15 +4,7 @@
 #ifndef _CUDA_UTILS_H
 #define _CUDA_UTILS_H
 
-#define CUDACHECK(cmd) do {                         \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));   \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
-  } while(0)
-
+#include "cuda_utils2.h"
 
 int checkwDev(int wDev){
   int nVis = 0;

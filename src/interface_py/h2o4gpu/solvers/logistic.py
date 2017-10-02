@@ -56,16 +56,10 @@ class LogisticRegression(object):
         self.do_sklearn = False
         if backend == 'auto':
             params_string = [
-                'intercept_scaling', 'class_weight',
-                'solver', 'multi_class'
+                'intercept_scaling', 'class_weight', 'solver', 'multi_class'
             ]
-            params = [
-                intercept_scaling, class_weight, solver,
-                multi_class
-            ]
-            params_default = [
-                1.0, None, 'liblinear', 'ovr'
-            ]
+            params = [intercept_scaling, class_weight, solver, multi_class]
+            params_default = [1.0, None, 'liblinear', 'ovr']
 
             i = 0
             for param in params:
@@ -73,11 +67,9 @@ class LogisticRegression(object):
                     self.do_sklearn = True
                     if verbose:
                         print("WARNING:"
-                              " The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              "  Will run Sklearn Logistic Regression.")
+                              " The sklearn parameter " + params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + "  Will run Sklearn Logistic Regression.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -224,8 +216,17 @@ class LogisticRegression(object):
             assert ValueError, "sparsify() is not yet supporte for h2o4gpu"
 
     def set_attributes(self):
+        """ set attributes for Logistic
+        """
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.coef_ = oself.model.coef_')
         s('oself.intercept_ = oself.model.intercept_')
         s('oself.n_iter_ = oself.model.n_iter_')
+
+        self.time_prepare = None
+        s('oself.time_prepare = oself.model.time_prepare')
+        self.time_upload_data = None
+        s('oself.time_upload_data = oself.model.time_upload_data')
+        self.time_fitonly = None
+        s('oself.time_fitonly = oself.model.time_fitonly')

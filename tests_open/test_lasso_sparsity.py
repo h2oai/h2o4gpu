@@ -47,7 +47,8 @@ def func():
     assert check_true == True
     assert np.fabs(lasso_model.X[0][-1] - const_coef) < 2 * tol
 
-
+import pytest
+@pytest.mark.skip("Not a rigorous test as can have many more coefficients set as zero as one designed.")
 def test_lasso_sparsity(): func()
 
 

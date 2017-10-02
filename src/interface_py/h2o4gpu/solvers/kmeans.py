@@ -11,8 +11,9 @@ from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
 
 import numpy as np
 
-from ..solvers.utils import device_count, _check_data_content, \
+from ..solvers.utils import _check_data_content, \
     _get_data, _setter
+from ..util.gpu import device_count
 from ..typecheck.typechecks import assert_is_type, assert_satisfies
 from ..types import cptr
 
@@ -148,23 +149,23 @@ class KMeansH2O(object):
             init_data="randomselect",
             do_checks=1):
 
-        assert_is_type(n_clusters, int)
+        assert_is_type(n_clusters, int, type(np.int32), type(np.int64))
         assert_is_type(init, str, np.ndarray)
-        assert_is_type(n_init, int)
-        assert_is_type(max_iter, int)
+        assert_is_type(n_init, int, type(np.int32), type(np.int64))
+        assert_is_type(max_iter, int, type(np.int32), type(np.int64))
         assert_is_type(tol, float,
                        type(np.float16), type(np.float32), type(np.float64))
         assert_is_type(precompute_distances, str, bool)
-        assert_is_type(verbose, int)
-        assert_is_type(random_state, int, None)
+        assert_is_type(verbose, int, type(np.int32), type(np.int64))
+        assert_is_type(random_state, int, None, type(np.int32), type(np.int64))
         assert_is_type(copy_x, bool)
-        assert_is_type(n_jobs, int)
+        assert_is_type(n_jobs, int, type(np.int32), type(np.int64))
         assert_is_type(algorithm, str)
 
-        assert_is_type(gpu_id, int)
-        assert_is_type(n_gpus, int)
+        assert_is_type(gpu_id, int, type(np.int32), type(np.int64))
+        assert_is_type(n_gpus, int, type(np.int32), type(np.int64))
         assert_is_type(init_data, str)
-        assert_is_type(do_checks, int)
+        assert_is_type(do_checks, int, type(np.int32), type(np.int64))
 
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
@@ -390,11 +391,10 @@ class KMeansH2O(object):
         else:
             c_kmeans = lib.make_ptr_double_kmeans
 
-        c_kmeans(1, self.verbose, self.random_state,
-                 self._gpu_id, self.n_gpus, rows, cols,
-                 c_int(data_ord), self._n_clusters,
-                 self._max_iter, c_init, c_init_data,
-                 self.tol, c_data, c_centroids, None,
+        c_kmeans(1, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
+                 rows, cols,
+                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
+                 c_init_data, self.tol, c_data, c_centroids, None,
                  pointer(c_res))
 
         preds = np.fromiter(

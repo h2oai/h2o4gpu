@@ -53,6 +53,7 @@ def _load_glm_lib(lib_path):
         ]
         h2o4gpu_glm_lib.make_ptr_float.restype = c_int
 
+
 # pylint: disable=broad-except
     except Exception as e:
         print("Exception")

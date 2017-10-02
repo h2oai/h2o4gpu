@@ -16,8 +16,9 @@ from tabulate import tabulate
 from ..solvers.utils import _setter
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib
-from ..solvers.utils import device_count, _get_data, _data_info, \
+from ..solvers.utils import _get_data, _data_info, \
     _convert_to_ptr, _check_equal
+from ..util.gpu import device_count
 from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
 
@@ -133,21 +134,25 @@ class ElasticNetH2O(object):
                  order=None):
         ##############################
         #asserts
-        assert_is_type(n_threads, int, None)
-        assert_is_type(gpu_id, int)
-        assert_is_type(n_gpus, int)
+        assert_is_type(n_threads, int, None, type(np.int32), type(np.int64))
+        assert_is_type(gpu_id, int, type(np.int32), type(np.int64))
+        assert_is_type(n_gpus, int, type(np.int32), type(np.int64))
         assert_is_type(fit_intercept, bool)
-        assert_is_type(lambda_min_ratio, float)
-        assert_is_type(n_lambdas, int)
-        assert_is_type(n_folds, int)
-        assert_is_type(n_alphas, int)
-        assert_is_type(tol, float)
-        assert_is_type(tol_seek_factor, float)
+        assert_is_type(lambda_min_ratio, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(n_lambdas, int, type(np.int32), type(np.int64))
+        assert_is_type(n_folds, int, type(np.int32), type(np.int64))
+        assert_is_type(n_alphas, int, type(np.int32), type(np.int64))
+        assert_is_type(tol, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(tol_seek_factor, float,
+                       type(np.float16), type(np.float32), type(np.float64))
         assert_is_type(lambda_stop_early, bool)
         assert_is_type(glm_stop_early, bool)
-        assert_is_type(glm_stop_early_error_fraction, float)
-        assert_is_type(max_iter, int)
-        assert_is_type(verbose, int)
+        assert_is_type(glm_stop_early_error_fraction, float,
+                       type(np.float16), type(np.float32), type(np.float64))
+        assert_is_type(max_iter, int, type(np.int32), type(np.int64))
+        assert_is_type(verbose, int, type(np.int32), type(np.int64))
         assert_is_type(family, str)
         assert family in ['logistic',
                           'elasticnet'], \
@@ -1224,6 +1229,9 @@ class ElasticNetH2O(object):
 
     @property
     def X_full(self):
+        ''' Returns full solution if store_full_path=1
+           X[which lambda][which alpha]
+         '''
         return self.x_vs_alpha_lambdapure
 
     @property
@@ -1233,10 +1241,6 @@ class ElasticNetH2O(object):
     @property
     def validPreds(self):
         return self.valid_pred_vs_alphapure
-
-    @property
-    def validPreds_full(self):
-        return self.valid_pred_vs_alpha_lambdapure
 
     @property
     def validPreds_best(self):
@@ -1249,10 +1253,6 @@ class ElasticNetH2O(object):
     @intercept_.setter
     def intercept_(self, value):
         self._intercept_ = value
-
-    @property
-    def intercept_full(self):
-        return self.intercept_
 
     @property
     def intercept_best(self):
@@ -1268,8 +1268,6 @@ class ElasticNetH2O(object):
 
     @lambdas.setter
     def lambdas(self, value):
-
-        #add check
         self._lambdas = value
 
     @property
@@ -1289,19 +1287,42 @@ class ElasticNetH2O(object):
         self._tols = value
 
     @property
+    def validPreds_full(self):
+        ''' Returns full predictions if store_full_path=1
+           validPreds[which lambda][which alpha]
+         '''
+        return self.valid_pred_vs_alpha_lambdapure
+
+    @property
+    def intercept_full(self):
+        ''' Returns full intercept if store_full_path=1
+           intercept[which lambda][which alpha]
+         '''
+        return self.intercept_
+
+    @property
     def error_full(self):
         return self.error_vs_alpha_lambda
 
     @property
     def lambdas_full(self):
+        ''' Returns full lambda path if store_full_path=1
+           lambda[which lambda][which alpha]
+         '''
         return self._lambdas
 
     @property
     def alphas_full(self):
+        ''' Returns full alpha if store_full_path=1
+           alpha[which lambda][which alpha]
+         '''
         return self._alphas
 
     @property
     def tols_full(self):
+        ''' Returns full tols if store_full_path=1
+           tols[which lambda][which alpha]
+         '''
         return self._tols
 
     @property
@@ -1652,12 +1673,8 @@ class ElasticNet(object):
         self.do_sklearn = False
         if backend == 'auto':
 
-            params_string = [
-                'normalize', 'positive', 'selection'
-            ]
-            params = [
-                normalize, positive, selection
-            ]
+            params_string = ['normalize', 'positive', 'selection']
+            params = [normalize, positive, selection]
             params_default = [False, False, 'cyclic']
 
             i = 0
@@ -1666,11 +1683,9 @@ class ElasticNet(object):
                     self.do_sklearn = True
                     if verbose:
                         print("WARNING:"
-                              " The sklearn parameter "
-                              + params_string[i] +
-                              " has been changed from default to "
-                              + str(param) +
-                              ". Will use Sklearn.")
+                              " The sklearn parameter " + params_string[i] +
+                              " has been changed from default to " + str(param)
+                              + ". Will use Sklearn.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -1792,3 +1807,10 @@ class ElasticNet(object):
         s('oself.intercept_ = oself.model.intercept_')
         self.n_iter_ = None
         s('oself.n_iter_ = oself.model.n_iter_')
+
+        self.time_prepare = None
+        s('oself.time_prepare = oself.model.time_prepare')
+        self.time_upload_data = None
+        s('oself.time_upload_data = oself.model.time_upload_data')
+        self.time_fitonly = None
+        s('oself.time_fitonly = oself.model.time_fitonly')

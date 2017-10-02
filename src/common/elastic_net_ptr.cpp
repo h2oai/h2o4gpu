@@ -909,17 +909,17 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						*/
 						if(family == 'e'){ //elasticnet
 							// minimize ||Ax-b||_2^2 + \alpha\lambda||x||_1 + (1/2)(1-alpha)*lambda x^2
-							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], trainW[j]); // h2o4gpu.R
+							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kSquare, 1.0, trainY[j], weights[j]); // h2o4gpu.R
 							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
 							if (intercept) g.emplace_back(kZero);
 						}else if(family == 'l'){ //logistic
 							// minimize \sum_i -d_i y_i + log(1 + e ^ y_i) + \lambda ||x||_1
-							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kLogistic, 1.0, 0.0, trainW[j], -trainW[j]*trainY[j]); // h2o4gpu.R
+							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kLogistic, 1.0, 0.0, weights[j], -weights[j]*trainY[j]); // h2o4gpu.R
 							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
 							if (intercept) g.emplace_back(kZero);
 						// }else if(family == 's'){ //svm
 						// 	// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
-						// 	for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, trainW[j]*lambda); // h2o4gpu.R}
+						// 	for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, weights[j]*lambda); // h2o4gpu.R}
 						// 	for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
 						// 	if (intercept) g.emplace_back(kZero);
 						}else{

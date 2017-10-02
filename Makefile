@@ -110,8 +110,10 @@ pyinstall:
 ##############################################
 
 alldeps: deps_fetch alldeps_install
+alldeps2: deps_fetch alldeps_install2
 
 alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
+alldeps_private2: deps_fetch private_deps_fetch private_deps_install alldeps_install2
 
 build: update_submodule cleanbuild cpp c py
 
@@ -122,7 +124,9 @@ buildquick: cpp c py
 install: pyinstall
 
 fullinstall: clean alldeps sync_open_data build install
-
+	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
+fullinstall2: clean alldeps2 sync_open_data build install
+	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 runtime:
 	$(MAKE) py
 	@echo "+--Building Runtime Docker Image--+"
@@ -175,9 +179,13 @@ private_deps_fetch:
 deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
+	easy_install pip
+	easy_install setuptools
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
+	# issue with their package, have to do this here.
+	pip install sphinxcontrib-osexample
 
 private_deps_install:
 	@echo "---- Install private dependencies ----"
@@ -185,6 +193,7 @@ private_deps_install:
 	#pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
 alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 ###################
 
@@ -221,13 +230,28 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-# https://xgboost.readthedocs.io/en/latest/build.html
-libxgboost: # could just get wheel from repo/S3 instead of doing this
-	# Below should be uncommented to avoid NCCL in xgb
-	#sed -i 's/define USE_NCCL.*/define USE_NCCL 0/g' xgboost/src/tree/updater_gpu_hist.cu
-	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j  && cd ../python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+# Below should be run to avoid NCCL in xgboost
+libprexgboost1:
+	sed -i 's/define USE_NCCL.*/define USE_NCCL 1/g' xgboost/src/tree/updater_gpu_hist.cu
+libprexgboost2:
+	sed -i 's/define USE_NCCL.*/define USE_NCCL 0/g' xgboost/src/tree/updater_gpu_hist.cu
 
-apply_xgboost: libxgboost
+# https://xgboost.readthedocs.io/en/latest/build.html
+# could just get wheel from repo/S3 instead of doing this
+libxgboost: libxgboostp1 libprexgboost1 libxgboostp2 libxgboostp3
+libxgboost2: libxgboostp1 libprexgboost2 libxgboostp2 libxgboostp3
+
+libxgboostp1:
+	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
+libxgboostp2:
+	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
+libxgboostp3:
+	cd xgboost/python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+
+apply_xgboost: libxgboost pipxgboost
+apply_xgboost2: libxgboost2 pipxgboost
+
+pipxgboost:
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
@@ -271,13 +295,15 @@ apply_sklearn_initmerge:
 
 #################### Jenkins specific
 
-cleanjenkins: cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
+cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
 buildjenkins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
 fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
+fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
 
 .PHONY: mrproper
 mrproper: clean
@@ -287,7 +313,15 @@ mrproper: clean
 #################### H2O.ai specific
 
 fullinstallprivate: clean alldeps_private build sync_data install
+fullinstallprivate2: clean alldeps_private2 build sync_data install
 
+#s3upload:
+#	artifact = h2o4gpu-${versionTag}-py36-none-any.whl
+#                        def localArtifact = src/interface_py/dist2/${artifact}
+#                        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/"
+#                        sh "s3cmd put ${localArtifact} ${bucket}"
+#                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
+#
 sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using smalldata
 
 ##################

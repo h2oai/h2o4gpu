@@ -136,12 +136,12 @@ class TestKmeans(object):
         X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
                                     cluster_std=1., random_state=42)
 
-        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers)
+        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers, random_state=42)
         kmeans_h2o.fit(X)
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random')
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random',
+                             random_state=42)
         kmeans_sk.fit(X)
 
-        # If we have accuracy worse than 80% that's bad...
         accuracy_h2o = v_measure_score(kmeans_h2o.labels_, true_labels)
         accuracy_sk = v_measure_score(kmeans_sk.labels_, true_labels)
         # We also want to be either better or at most 10% worse than SKLearn

@@ -96,6 +96,7 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/gpu/kmeans/kmeans_h2o4gpu.o \
 	$(H2O4GPUROOT)/build/gpu/kmeans/kmeans_labels.o \
 	$(H2O4GPUROOT)/build/gpu/warmstart.o \
+	$(H2O4GPUROOT)/build/gpu/utils.o \
 	$(H2O4GPUROOT)/build/gpu/p2pbwcheck.o \
 	$(H2O4GPUROOT)/build/gpu/bwcheck.o \
 	$(H2O4GPUROOT)/build/gpu/matrix/matrix_dense.o \
