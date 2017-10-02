@@ -124,8 +124,9 @@ buildquick: cpp c py
 install: pyinstall
 
 fullinstall: clean alldeps sync_open_data build install
+	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullinstall2: clean alldeps2 sync_open_data build install
-
+	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 runtime:
 	$(MAKE) py
 	@echo "+--Building Runtime Docker Image--+"
@@ -183,6 +184,8 @@ deps_install:
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
+	# issue with their package, have to do this here.
+	pip install sphinxcontrib-osexample
 
 private_deps_install:
 	@echo "---- Install private dependencies ----"
@@ -228,13 +231,15 @@ libnccl2:
 	sudo apt install libnccl2 libnccl-dev
 
 # Below should be run to avoid NCCL in xgboost
-libprexgboost:
+libprexgboost1:
+	sed -i 's/define USE_NCCL.*/define USE_NCCL 1/g' xgboost/src/tree/updater_gpu_hist.cu
+libprexgboost2:
 	sed -i 's/define USE_NCCL.*/define USE_NCCL 0/g' xgboost/src/tree/updater_gpu_hist.cu
 
 # https://xgboost.readthedocs.io/en/latest/build.html
 # could just get wheel from repo/S3 instead of doing this
-libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
-libxgboost2: libxgboostp1 libprexgboost libxgboostp2 libxgboostp3
+libxgboost: libxgboostp1 libprexgboost1 libxgboostp2 libxgboostp3
+libxgboost2: libxgboostp1 libprexgboost2 libxgboostp2 libxgboostp3
 
 libxgboostp1:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
