@@ -5,8 +5,7 @@
 """
 import sys
 import time
-from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
-    pointer, cast, addressof
+from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, pointer
 import numpy as np
 from h2o4gpu.types import cptr
 
@@ -401,7 +400,7 @@ def upload_data(self,
         return a, b, c, d, e
 
     status = c_upload_data(
-        c_int(self._shared_a),
+        c_int(self._shared_a), # pylint: disable=W0212
         c_int(self.source_me),
         c_int(source_dev),
         c_size_t(m_train),
@@ -417,7 +416,7 @@ def upload_data(self,
         pointer(b),
         pointer(c),
         pointer(d),
-        pointer(e), )
+        pointer(e),)
 
     assert status == 0, 'Failure uploading the data'
 
