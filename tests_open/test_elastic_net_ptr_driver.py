@@ -7,7 +7,7 @@ ElasticNetH2O solver tests using Kaggle datasets.
 """
 import h2o4gpu as h2o4gpu
 import numpy as np
-
+from h2o4gpu.solvers.utils import prepare_and_upload_data, upload_data
 from ctypes import *
 from h2o4gpu.types import *
 
@@ -86,7 +86,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
       print(validX.dtype)
       print(validY.dtype)
   print(trainW.dtype)
-  a,b,c,d,e = enet.prepare_and_upload_data(trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
+  a,b,c,d,e = prepare_and_upload_data(enet, trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
 
   ## Solve
   print("Solving")
@@ -127,7 +127,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
       print(validPredsvsalphapure)
 
   # upload new validation for new predict
-  _,_,e,f,_ = enet.upload_data(None, None, validX2, validY2, None, source_dev = sourceDev)
+  _,_,e,f,_ = upload_data(enet, None, None, validX2, validY2, None, source_dev = sourceDev)
 
   print("Predicting2")
   if 1==1:

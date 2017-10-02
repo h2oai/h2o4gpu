@@ -15,6 +15,7 @@ import pytest
 import h2o4gpu
 import numpy as np
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+from ..solvers.utils import finish
 
 
 def find_file(file):
@@ -192,7 +193,7 @@ def run_glm_ptr(nFolds,
                   'rm -f varimp.txt; '
                   'rm -f me*.txt; '
                   'rm -f stats.txt')
-    enet.finish()
+    finish(enet)
 
     return pred_val, error_train, error_test
 
@@ -523,7 +524,7 @@ def run_glm(X,
                 string="Train",
                 store_full_path=enet.store_full_path))
 
-    enet.finish()
+    finish(enet)
     print("Done Reporting")
 
     duration_h2o4gpu = time() - start_h2o4gpu
