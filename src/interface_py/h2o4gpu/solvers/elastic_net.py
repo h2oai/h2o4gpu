@@ -16,7 +16,7 @@ from tabulate import tabulate
 from ..solvers.utils import _setter
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib
-from ..solvers.utils import prepare_and_upload_data, free_data
+from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
 from ..util.gpu import device_count
 from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
                                     pandas_dataframe)
@@ -574,7 +574,7 @@ class ElasticNetH2O(object):
         #if fitted earlier clear
         #otherwise don't clear solution, just use it
         if do_predict == 0 and self.did_fit_ptr == 1:
-            self.free_sols()
+            free_sols(self)
 
 # ############## #
 

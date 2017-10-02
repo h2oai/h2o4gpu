@@ -302,7 +302,7 @@ def upload_data(self,
                 source_dev=0):
     """Upload the data through the backend library"""
     if self.uploaded_data == 1:
-        self.free_data()
+        free_data(self)
     self.uploaded_data = 1
 
     #
