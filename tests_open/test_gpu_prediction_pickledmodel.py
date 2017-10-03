@@ -30,7 +30,6 @@ num_rows = 5000
 num_cols = 500
 n_estimators = 1
 
-
 def makeXy():
     np.random.seed(1)
     X = np.random.randn(num_rows, num_cols)
