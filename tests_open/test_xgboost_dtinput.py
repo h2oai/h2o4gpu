@@ -161,7 +161,7 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
         xgb.train(param, dtrain, iterations, evals=[(dtrain, "train"),(dtest, "test")], evals_result=res_tmp)
         res['3'] = res_tmp['train']['error']
         print ("Train Time: %s seconds" % (str(time.time() - tmp)))
-    if do_check_accuracy:
+    if HAVE_DT and do_check_accuracy:
         assert_accuracy(res['1'],res['2'])
         assert_accuracy(res['1'],res['3'])
 
