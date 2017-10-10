@@ -100,7 +100,7 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
         xgb.train(param, dtrain, iterations, evals=[(dtrain, "train"),(dtest, "test")], evals_result=res_tmp)
         res['1'] = res_tmp['train']['error']
         print("Train Time: %s seconds" % (str(time.time() - tmp)))
-    if do_dt:
+    if HAVE_DT and do_dt:
 
         # convert to column-major contiguous in memory to mimic persistent column-major state
         # do_cccont = True leads to prepare2 time of about 1.4s for 1000000 rows * 50 columns
@@ -131,7 +131,7 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
         xgb.train(param, dtrain, iterations, evals=[(dtrain, "train"),(dtest, "test")], evals_result=res_tmp)
         res['2'] = res_tmp['train']['error']
         print ("Train Time: %s seconds" % (str(time.time() - tmp)))
-    if do_dt_likeDAI:
+    if HAVE_DT and do_dt_likeDAI:
 
         # convert to column-major contiguous in memory to mimic persistent column-major state
         # do_cccont = True leads to prepare2 time of about 1.4s for 1000000 rows * 50 columns
