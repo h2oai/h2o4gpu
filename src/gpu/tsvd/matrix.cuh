@@ -2,7 +2,7 @@
 #include "utils.cuh"
 #include "device_context.cuh"
 #include "cusolverDn.h"
-#include <../../cub/cub/cub.cuh>
+#include <../../../cub/cub/cub.cuh>
 #include "tsvd.h"
 
 namespace tsvd
