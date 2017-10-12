@@ -82,7 +82,7 @@ endif
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc --expt-extended-lambda $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
 CUFLAGS=$(IFLAGS) -std=c++11 $(OPTFLAG) $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
-CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas $(NVCC_GENCODE)
+CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas -lcusolver -lcusparse $(NVCC_GENCODE)
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
