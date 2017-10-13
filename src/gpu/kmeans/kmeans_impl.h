@@ -165,7 +165,7 @@ int kmeans(
     }
 
     // Scale the centroids on host
-    if(n_gpu > 1) {
+    if (n_gpu > 1) {
       //Average the centroids from each device
       for (int p = 0; p < k; p++) h_counts[p] = 0.0;
       for (int q = 0; q < n_gpu; q++) {
@@ -179,7 +179,7 @@ int kmeans(
       for (int p = 0; p < k; p++) {
         for (int r = 0; r < d; r++) {
           if (h_counts_tmp[p] != 0) {
-            h_centroids[p*d + r] = 0.0;
+            h_centroids[p * d + r] = 0.0;
           }
         }
       }
@@ -191,7 +191,7 @@ int kmeans(
         for (int p = 0; p < k; p++) {
           for (int r = 0; r < d; r++) {
             if (h_counts_tmp[p] != 0) {
-              h_centroids[p*d + r] += h_centroids_tmp[p*d + r];
+              h_centroids[p * d + r] += h_centroids_tmp[p * d + r];
             }
           }
         }
@@ -200,7 +200,7 @@ int kmeans(
       for (int p = 0; p < k; p++) {
         for (int r = 0; r < d; r++) {
           // If 0 counts that means we leave the original centroids
-          if(h_counts[p] == 0) {
+          if (h_counts[p] == 0) {
             h_counts[p] = 1;
           }
           h_centroids[p * d + r] /= h_counts[p];

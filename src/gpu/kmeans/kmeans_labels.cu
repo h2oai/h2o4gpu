@@ -7,8 +7,10 @@
 #include <cfloat>
 #include <unistd.h>
 #include "kmeans_general.h"
+#include "timer.h"
 
 cudaStream_t cuda_stream[MAX_NGPUS];
+
 namespace kmeans {
 namespace detail {
 
@@ -53,6 +55,65 @@ void streamsync(int dev_num) {
   cudaStreamSynchronize(cuda_stream[dev_num]);
 }
 
+/**
+ * Matrix multiplication: alpha * A^T * B + beta * C
+ * Optimized for tall and skinny matrices
+ *
+ * @tparam float_t
+ * @param A
+ * @param B
+ * @param C
+ * @param alpha
+ * @param beta
+ * @param n
+ * @param d
+ * @param k
+ * @param max_block_rows
+ * @return
+ */
+template<typename float_t>
+__global__ void matmul(const float_t *A, const float_t *B, float_t *C,
+                       const float_t alpha, const float_t beta, int n, int d, int k, int max_block_rows) {
+  extern __shared__ float_t
+  shared[];
+  float_t * s_A = shared;
+  float_t * s_B = shared + max_block_rows * d;
+
+  for (int i = threadIdx.x; i < d * k; i += blockDim.x) {
+    s_B[i] = B[i];
+  }
+
+  int block_start_row_index = blockIdx.x * max_block_rows;
+  int block_rows = max_block_rows;
+
+  if (blockIdx.x == gridDim.x - 1 && n % max_block_rows != 0) {
+    block_rows = n % max_block_rows;
+  }
+
+  for (int i = threadIdx.x; i < d * block_rows; i += blockDim.x) {
+    s_A[i] = alpha * A[d * block_start_row_index + i];
+  }
+
+  __syncthreads();
+
+  float_t elem_c = 0;
+
+  int col_c = threadIdx.x % k;
+  int abs_row_c = block_start_row_index + threadIdx.x / k;
+  int row_c = threadIdx.x / k;
+
+  if (abs_row_c >= n) {
+    return;
+  }
+
+  for (int i = 0; i < d; i++) {
+    elem_c += s_B[d * col_c + i] * s_A[d * row_c + i];
+  }
+
+  C[col_c * n + abs_row_c] = beta * C[col_c * n + abs_row_c] + elem_c;
+
+}
+
 template<>
 void calculate_distances<double>(int verbose, int q, int n, int d, int k,
                                  thrust::device_vector<double> &data,
@@ -62,6 +123,7 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
                                  thrust::device_vector<double> &pairwise_distances) {
   detail::make_self_dots(k, d, centroids, centroid_dots);
   detail::make_all_dots(n, k, data_dots, centroid_dots, pairwise_distances);
+
   //||x-y||^2 = ||x||^2 + ||y||^2 - 2 x . y
   //pairwise_distances has ||x||^2 + ||y||^2, so beta = 1
   //The dgemm calculates x.y for all x and y, so alpha = -2.0
@@ -73,31 +135,47 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
   //the arguments a little
   int dev_num;
   safe_cuda(cudaGetDevice(&dev_num));
-  cublasStatus_t stat =
-  safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
-                          CUBLAS_OP_T, CUBLAS_OP_N,
-                          n, k, d, &alpha,
-                          thrust::raw_pointer_cast(data.data()),
-                          d,//Has to be n or d
-                          thrust::raw_pointer_cast(centroids.data()),
-                          d,//Has to be k or d
-                          &beta,
-                          thrust::raw_pointer_cast(pairwise_distances.data()),
-                          n)); //Has to be n or k
+
+  if (k <= 16 && d <= 64) {
+    const int BLOCK_SIZE_MUL = 128;
+    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int grid_size = std::ceil(static_cast<double>(n) / block_rows);
+
+    int shared_size_B = d * k * sizeof(double);
+    int shared_size_A = block_rows * d * sizeof(double);
+
+    matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
+        thrust::raw_pointer_cast(data.data()),
+            thrust::raw_pointer_cast(centroids.data()),
+            thrust::raw_pointer_cast(pairwise_distances.data()),
+            alpha, beta, n, d, k, block_rows
+    );
+  } else {
+    cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
+                                                  CUBLAS_OP_T, CUBLAS_OP_N,
+                                                  n, k, d, &alpha,
+                                                  thrust::raw_pointer_cast(data.data()),
+                                                  d,//Has to be n or d
+                                                  thrust::raw_pointer_cast(centroids.data()),
+                                                  d,//Has to be k or d
+                                                  &beta,
+                                                  thrust::raw_pointer_cast(pairwise_distances.data()),
+                                                  n)); //Has to be n or k
+
+    if (stat != CUBLAS_STATUS_SUCCESS) {
+      std::cout << "Invalid Dgemm" << std::endl;
+      exit(1);
+    }
+  }
 
   thrust::for_each(pairwise_distances.begin(),
                    pairwise_distances.end(),
                    absolute_value<double>()); // in-place transformation to ensure all distances are positive indefinite
 
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-    std::cout << "Invalid Dgemm" << std::endl;
-    exit(1);
-  }
-    
-#if(CHECK)
-  gpuErrchk( cudaGetLastError() );
-  gpuErrchk( cudaDeviceSynchronize() );
-#endif
+  #if(CHECK)
+  gpuErrchk(cudaGetLastError());
+  gpuErrchk(cudaDeviceSynchronize());
+  #endif
 }
 
 template<>
@@ -110,26 +188,6 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
   detail::make_self_dots(k, d, centroids, centroid_dots);
   detail::make_all_dots(n, k, data_dots, centroid_dots, pairwise_distances);
 
-#if(DEBUGKMEANS)
-  thrust::host_vector<float> h_data_dots = data_dots;
-  thrust::host_vector<float> h_centroid_dots = centroid_dots;
-  thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
-
-  for(int i=0;i<n;i++){
-    if(i%1==0){
-      fprintf(stderr,"0 q=%d data_dots[%d]=%g\n",q,i,h_data_dots[i]); fflush(stderr);
-    }
-  }
-  for(int i=0;i<k;i++){
-    fprintf(stderr,"0 q=%d centroid_dots[%d]=%g\n",q,i,h_centroid_dots[i]); fflush(stderr);
-  }
-  for(int i=0;i<n*k;i++){
-    if(i%1==0){
-      fprintf(stderr,"0 q=%d pairwise_distances[%d]=%g\n",q,i,h_pairwise_distances[i]); fflush(stderr);
-    }
-  }
-#endif
-
   //||x-y||^2 = ||x||^2 + ||y||^2 - 2 x . y
   //pairwise_distances has ||x||^2 + ||y||^2, so beta = 1
   //The dgemm calculates x.y for all x and y, so alpha = -2.0
@@ -141,77 +199,54 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
   //the arguments a little
   int dev_num;
   safe_cuda(cudaGetDevice(&dev_num));
-  // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6
-  cublasStatus_t stat;
 
-  int M = n; // rows in op(A) and C
-  int N = k; // cols in op(B) and C
-  int K = d; // cols in op(A) and op(B)
-  int lda = K;
-  int ldb =
-      K; // http://docs.nvidia.com/cuda/cublas/index.html#axzz4kgBuzSr6 has mistake, transa should have been transb
-  //see http://www.netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_gafe51bacb54592ff5de056acabd83c260.html#gafe51bacb54592ff5de056acabd83c260
-  int ldc = M;
-  if (verbose >= 2) {
-    fprintf(stderr, "A3 %d x %d -> %d x %d : data size=%zu\n", K, M, M, K, data.size());
-    fflush(stderr);
-    fprintf(stderr, "B3 %d x %d -> %d x %d : centroids size=%zu\n", K, N, K, N, centroids.size());
-    fflush(stderr);
-    fprintf(stderr, "C3 %d x %d : pairwise_distances size=%zu\n", M, N, pairwise_distances.size());
-    fflush(stderr);
-    fflush(stderr);
-    //sleep(5);
-  }
-  stat =
-  safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
-                          CUBLAS_OP_T, CUBLAS_OP_N,
-                          M, N, K, &alpha,
-                          thrust::raw_pointer_cast(data.data()),
-                          lda,//Has to be n or d
-                          thrust::raw_pointer_cast(centroids.data()),
-                          ldb,//Has to be k or d
-                          &beta,
-                          thrust::raw_pointer_cast(pairwise_distances.data()),
-                          ldc)); //Has to be n or k
-  if (verbose >= 2) {
-    fprintf(stderr, "After cublasSgemm\n");
-    fflush(stderr);
-    //sleep(5);
+  if (k <= 16 && d <= 64) {
+    const int BLOCK_SIZE_MUL = 128;
+    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int grid_size = std::ceil(static_cast<float>(n) / block_rows);
+
+    int shared_size_B = d * k * sizeof(float);
+    int shared_size_A = block_rows * d * sizeof(float);
+
+    matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
+        thrust::raw_pointer_cast(data.data()),
+            thrust::raw_pointer_cast(centroids.data()),
+            thrust::raw_pointer_cast(pairwise_distances.data()),
+            alpha, beta, n, d, k, block_rows
+    );
+  } else {
+    cublasStatus_t stat = safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
+                                                  CUBLAS_OP_T, CUBLAS_OP_N,
+                                                  n, k, d, &alpha,
+                                                  thrust::raw_pointer_cast(data.data()),
+                                                  d,//Has to be n or d
+                                                  thrust::raw_pointer_cast(centroids.data()),
+                                                  d,//Has to be k or d
+                                                  &beta,
+                                                  thrust::raw_pointer_cast(pairwise_distances.data()),
+                                                  n)); //Has to be n or k
+
+    if (stat != CUBLAS_STATUS_SUCCESS) {
+      std::cout << "Invalid Sgemm" << std::endl;
+      exit(1);
+    }
   }
 
   thrust::for_each(pairwise_distances.begin(),
                    pairwise_distances.end(),
                    absolute_value<float>()); // in-place transformation to ensure all distances are positive indefinite
-#if(DEBUGKMEANS)
-    thrust::host_vector<float> h_data = data;
-    thrust::host_vector<float> h_centroids = centroids;
-    thrust::host_vector<float> h_pairwise_distances = pairwise_distances;
 
-    for(int i=0;i<M*K;i++){
-      if(i%1==0){
-        fprintf(stderr,"q=%d data[%d]=%g\n",q,i,h_data[i]); fflush(stderr);
-      }
-    }
-    for(int i=0;i<K*N;i++){
-      fprintf(stderr,"q=%d centroids[%d]=%g\n",q,i,h_centroids[i]);
-    }
-    for(int i=0;i<M*N;i++){
-      if(i%1==0){
-        fprintf(stderr,"q=%d pairwise_distances[%d]=%g\n",q,i,h_pairwise_distances[i]); fflush(stderr);
-      }
-    }
-#endif
-
-
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-    std::cout << "Invalid Sgemm" << std::endl;
-    exit(1);
-  }
+  #if(CHECK)
+  gpuErrchk(cudaGetLastError());
+  gpuErrchk(cudaDeviceSynchronize());
+  #endif
 }
 
 }
 }
+
 namespace mycub {
+
 void *d_key_alt_buf[MAX_NGPUS];
 unsigned int key_alt_buf_bytes[MAX_NGPUS];
 void *d_value_alt_buf[MAX_NGPUS];
@@ -302,4 +337,5 @@ void sort_by_key_int(thrust::device_vector<int> &keys, thrust::device_vector<int
   keys.data() = thrust::device_pointer_cast(d_keys.Current());
   values.data() = thrust::device_pointer_cast(d_values.Current());
 }
+
 }
