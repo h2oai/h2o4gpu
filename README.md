@@ -49,7 +49,11 @@ Download the Python wheel file (For Python 3.6 on linux_x86_64 with CUDA 8):
 
   * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
   * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge for Conda](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4_conda/h2o4gpu-0.0.4-py36-none-any.whl)
+
+  * [For Conda (unsupported and untested by H2O.ai)]
+    ```
+        pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
+    ```
  
 Start a fresh pyenv or virtualenv session.
 
