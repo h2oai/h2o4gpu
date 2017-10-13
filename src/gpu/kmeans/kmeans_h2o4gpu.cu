@@ -5,7 +5,11 @@
 #include "matrix/matrix.h"
 #include "matrix/matrix_dense.h"
 #include <thrust/copy.h>
+#include <thrust/reduce.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/execution_policy.h>
+#include <thrust/random.h>
 #include <iostream>
 #include "cuda.h"
 #include <cstdlib>
@@ -17,12 +21,14 @@
 #include <algorithm>
 #include <vector>
 #include <csignal>
+#include "../../common/utils.h"
 
 #define CUDACHECK(cmd) do {                           \
     cudaError_t e = cmd;                              \
     if( e != cudaSuccess ) {                          \
       printf("Cuda failure %s:%d '%s'\n",             \
              __FILE__,__LINE__,cudaGetErrorString(e));\
+      fflush( stdout );                               \
       exit(EXIT_FAILURE);                             \
     }                                                 \
   } while(0)
@@ -172,6 +178,456 @@ void random_centroids(int verbose, int seed, const char ord,
 "----------------------------------------------------------------------------\n"
 
 namespace h2o4gpukmeans {
+
+template<typename T>
+int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
+               size_t rows, size_t cols, const char ord,
+               int k, int max_iterations, int init_from_data,
+               int init_data, T threshold,
+               const T *srcdata, void **pred_centroids, void **pred_labels);
+
+template<typename T>
+int pick_point_idx_weighted(
+    thrust::host_device<T> data,
+    thrust::host_device<T> weights) {
+  T weight_sum = thrust::reduce(
+      weights.begin(),
+      weights.end()
+  );
+
+  T data_sum = 1.0;
+  if (NULL != data) {
+    data_sum = thrust::reduce(
+        data.begin(),
+        data.end()
+    );
+  }
+
+  // TODO should this be calculated for each record separately instead?
+  T r = ((T) rand() / (T) RAND_MAX) * weight_sum * data_sum;
+  int i = -1;
+  T cur_weight = 0.0;
+  T best_prob = 0.0;
+  int best_prob_idx = 0;
+  while (i < data.size() && cur_weight < r) {
+    T data_val = NULL == data ? 1.0 : data[i];
+
+    T curr_prob = data_val * weights[i];
+    if (curr_prob >= best_prob) {
+      best_prob = curr_prob;
+      best_prob_idx = i;
+    }
+
+    cur_weight += (data_val * weights[i]);
+    i += 1;
+  }
+  return i > -1 ? i : best_prob_idx;
+}
+
+/**
+ * Copies cols records, starting at position idx*cols from data to centroids. Removes them afterwards from data.
+ * Removes record from weights at position idx.
+ * @tparam T
+ * @param idx
+ * @param cols
+ * @param data
+ * @param weights
+ * @param centroids
+ */
+template<typename T>
+void add_centroid(int idx, int cols,
+                  thrust::host_device<T> &data,
+                  thrust::host_device<T> &weights,
+                  thrust::host_device<T> &centroids) {
+  for (int i = 0; i < cols; i++) {
+    centroids.push_back(data[idx * cols + i]);
+  }
+  for (int i = 0; i < cols; i++) {
+    data.remove(idx * cols + i);
+  }
+  weights.remove(idx);
+}
+
+/**
+ * K-Means++ algorithm
+ * @tparam T
+ * @param seed
+ * @param data
+ * @param weights
+ * @param k
+ * @param cols
+ * @param centroids
+ */
+template<typename T>
+void kmeans_plus_plus(
+    int seed,
+    thrust::host_device<T> data,
+    thrust::host_device<T> weights,
+    int k,
+    int cols,
+    thrust::host_device<T> &centroids) {
+
+  int centroid_idx = pick_point_idx_weighted(
+      pairwise_cost,
+      weights
+  );
+
+  add_centroid(centroid_idx, cols, data, weights, centroids);
+
+  std::vector<T> best_pairwise_distances(data.size());
+  std::vector<T> std_data(data.data());
+  std::vector<T> std_centroids(centroids.data());
+
+  compute_distances(std_data,
+                    std_centroids,
+                    best_pairwise_distances,
+                    data.size(), cols, 1);
+
+  for (int iter = 0; iter < k; iter++) {
+    centroid_idx = pick_point_idx_weighted(
+        best_pairwise_distances,
+        weights
+    );
+
+    add_centroid(centroid_idx, cols, data, weights, centroids);
+
+    best_pairwise_distances.remove(centroid_idx);
+
+    // TODO necessary?
+    std_data = std::vector<T>(data.data());
+    std_centroids = std::vector<T>(centroids.data() + cols * (iter + 1));
+
+    std::vector<T> curr_pairwise_distances(data.size());
+
+    compute_distances(std_data,
+                      std_centroids,
+                      curr_pairwise_distances,
+                      std_data.size(), cols, 1);
+
+    for (int i = 0; i < curr_pairwise_distances.size(); i++) {
+      best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
+    }
+  }
+}
+
+/**
+ * Calculates closest centroid for each record and counts how many points are assigned to each centroid.
+ * @tparam T
+ * @param verbose
+ * @param num_gpu
+ * @param rows_per_gpu
+ * @param cols
+ * @param data
+ * @param data_dots
+ * @param centroids
+ * @param weights
+ * @param pairwise_distances
+ * @param labels
+ */
+template<typename T>
+void count_pts_per_centroid(
+    int verbose,
+    int num_gpu, int rows_per_gpu, int cols,
+    thrust::device_vector<T> **data,
+    std::vector<thrust::device_vector<T>> data_dots,
+    thrust::host_vector<T> centroids,
+    thrust::host_vector<T> weights,
+    // Reusing vectors, if needed write a wrapper function which will create temp ones
+    std::vector<thrust::device_vector<T>> pairwise_distances, // TODO reimplement so we don't need this
+    std::vector<thrust::device_vector<T>> labels // TODO reimplement so we don't need this
+) {
+
+  thrust::host_vector<T> weights_tmp(weights.size());
+  int k = centroids.size() / cols;
+  for (int i = 0; i < num_gpu; i++) {
+    CUDACHECK(cudaSetDevice(i));
+    thrust::device_vector<T> centroid_dots(k);
+    thrust::device_vector<T> d_centroids = centroids;
+    kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, k,
+                                        *d_data[i], d_centroids, data_dots[i],
+                                        centroid_dots, pairwise_distances[i]);
+
+    thrust::device_vector<T> counts(k);
+    auto counting = thrust::make_counting_iterator(0);
+    auto counts_ptr = counts.data();
+    auto pairwise_distances_ptr = pairwise_distances[i].data();
+    thrust::for_each(counting, counting + rows_per_gpu, [=]
+    __device__(int
+    idx){
+      int closest_centroid_idx = 0;
+      T best_distance = pairwise_distances_ptr[idx];
+      // FIXME potentially slow due to striding
+      for (int i = 1; i < k; i++) {
+        T distance = pairwise_distances_ptr[idx + i * rows_per_gpu];
+        if (distance < best_distance) {
+          best_distance = distance;
+          closest_centroid_idx = i;
+        }
+      }
+
+      // FIXME needs to be atomic?
+      counts_ptr[closest_centroid_idx] += 1;
+    });
+
+    // FIXME necessary?
+    CUDACHECK(cudaDeviceSynchronize());
+
+    if (n_gpu > 1) {
+      CUDACHECK(cudaSetDevice(q));
+      detail::memcpy(weights_tmp, counts);
+      detail::streamsync(q);
+      for (int p = 0; p < k; p++) {
+        weights[p] += weights_tmp[p];
+      }
+    }
+  }
+}
+
+/**
+ * K-Means|| initialization method implementation as described in "Scalable K-Means++".
+ *
+ * This is a probabilistic method, which tries to choose points as much spread out as possible as centroids.
+ *
+ * In case it finds more than k centroids a K-Means++ algorithm is ran on potential centroids to pick k best suited ones.
+ *
+ * http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf
+ *
+ * @tparam T
+ * @param verbose
+ * @param seed
+ * @param ord
+ * @param data
+ * @param data_dots
+ * @param centroids
+ * @param rows
+ * @param cols
+ * @param k
+ * @param num_gpu
+ * @param threshold
+ */
+template<typename T>
+void kmeans_parallel(int verbose, int seed, const char ord,
+                     thrust::device_vector<T> **data,
+                     thrust::device_vector<T> **data_dots,
+                     thrust::device_vector<T> **centroids,
+                     int rows, int cols, int k, int num_gpu, T threshold) {
+  if (seed < 0) {
+    std::random_device rd;
+    int seed = rd();
+  }
+
+  int rows_per_gpu = rows / num_gpu;
+
+  std::mt19937 gen(seed);
+  std::uniform_int_distribution<> dis(0, rows - 1);
+
+  std::vector<thrust::device_vector<T>> d_potential_centroids(num_gpu);
+
+  for (int q = 0; q < num_gpu; q++) {
+    CUDACHECK(cudaSetDevice(q));
+    d_potential_centroids[q].resize(cols);
+  }
+
+  // Find the position (GPU idx and idx on that GPU) of the initial centroid
+  int first_center_idx = dis(gen);
+  int first_center_gpu = first_center_idx / rows_per_gpu;
+
+  // Copies the initial centroid to potential centroids vector. That vector will store all potential centroids found
+  // in the previous iteration.
+  CUDACHECK(cudaSetDevice(first_center_gpu));
+  thrust::copy(
+      thrust::device,
+      (*data)[first_center_gpu].begin() + first_center_idx * cols,
+      (*data)[first_center_gpu].begin() + (first_center_idx + 1) * cols,
+      d_potential_centroids[first_center_gpu].begin()
+  );
+
+  // Initial the cost-to-potential-centroids and cost-to-closest-potential-centroid matrices. Initial cost is +infinity
+  std::vector<thrust::device_vector<T>> d_min_costs(num_gpu);
+  std::vector<thrust::device_vector<T>> d_all_costs(num_gpu);
+  for (int q = 0; q < num_gpu; q++) {
+    CUDACHECK(cudaSetDevice(q));
+    d_min_costs[q].resize(rows_per_gpu);
+    thrust::fill(d_min_costs[q].begin(), d_min_costs[q].end(), std::numeric_limits<T>::max());
+  }
+
+  CUDACHECK(cudaSetDevice(first_center_gpu));
+  thrust::host_vector<T> h_potential_centroids = d_potential_centroids[first_center_gpu];
+  thrust::host_vector<T> h_all_potential_centroids = d_potential_centroids[first_center_gpu];
+  std::vector<thrust::host_vector<T>> h_potential_centroids_per_gpu(num_gpu);
+
+  // TODO calculate initial min distance sum and set max_counter = log(min_distance_sum)
+  for (int counter = 0; counter < 5; counter++) {
+    T total_min_cost = 0.0;
+
+    for (int i = 0; i < num_gpu; i++) {
+      CUDACHECK(cudaSetDevice(i));
+      d_potential_centroids[i] = h_potential_centroids;
+    }
+
+    int new_potential_centroids = 0;
+    for (int i = 0; i < num_gpu; i++) {
+      CUDACHECK(cudaSetDevice(i));
+
+      int potential_k_rows = d_potential_centroids[i].size() / cols;
+
+      d_all_costs[i].clear();
+      d_all_costs[i].resize(rows_per_gpu * potential_k_rows);
+
+      // Compute all the costs to each potential centroid from previous iteration
+      thrust::device_vector<T> centroid_dots(potential_k_rows);
+
+      kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, potential_k_rows,
+                                          *data[i],
+                                          d_potential_centroids[i],
+                                          *data_dots[i],
+                                          centroid_dots,
+                                          d_all_costs[i]);
+
+      // Find the closest potential center cost for each row
+      auto min_cost_counter = thrust::make_counting_iterator(0);
+      auto all_costs_ptr = d_all_costs[i].data();
+      auto min_costs_ptr = d_min_costs[i].data();
+      thrust::for_each(min_cost_counter, min_cost_counter + rows_per_gpu, [=]
+      __device__(int
+      idx){
+        T best = FLT_MAX;
+        for (int j = 0; j < potential_k_rows; j++) {
+          best = min(best, std::abs(all_costs_ptr[j * rows_per_gpu + idx]));
+        }
+
+        min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
+      });
+
+      cudaDeviceSynchronize();
+
+      total_min_cost += thrust::reduce(
+          d_min_costs[i].begin(),
+          d_min_costs[i].end()
+      );
+
+      // Count how many potential centroids there are using probabilities
+      // The further the row is from the closest cluster center the higher the probability
+      auto pot_cent_filter_counter = thrust::make_counting_iterator(0);
+      int pot_cent_num = thrust::count_if(pot_cent_filter_counter, pot_cent_filter_counter + rows_per_gpu, [=]
+      __device__(int
+      idx){
+        thrust::default_random_engine rng(seed);
+        thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+        rng.discard(idx);
+        T prob_threshold = (T) dist(rng);
+
+        T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+
+        return prob_x > prob_threshold;
+      });
+
+      if (pot_cent_num > 0) {
+        // Copy all potential cluster centers
+        thrust::device_vector<T> d_new_potential_centroids(pot_cent_num * cols);
+
+        thrust::copy_if(
+            thrust::make_counting_iterator<int>(0),
+            thrust::make_counting_iterator<int>(rows_per_gpu * cols),
+            (*data)[i].begin(),
+            d_new_potential_centroids.begin(),
+            [=]
+        __device__(int
+        idx){
+          int row = idx / cols;
+          thrust::default_random_engine rng(seed);
+          thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+          rng.discard(row);
+          T prob_threshold = (T) dist(rng);
+
+          T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+
+          return prob_x > prob_threshold;
+        });
+
+        h_potential_centroids_per_gpu[i].clear();
+        h_potential_centroids_per_gpu[i].resize(d_new_potential_centroids.size());
+
+        new_potential_centroids += d_new_potential_centroids.size();
+
+        thrust::copy(
+            d_new_potential_centroids.begin(),
+            d_new_potential_centroids.end(),
+            h_potential_centroids_per_gpu[i].begin()
+        );
+      }
+
+      CUDACHECK(cudaDeviceSynchronize());
+    }
+
+    // Gather potential cluster centers from all GPUs
+    if (new_potential_centroids > 0) {
+      h_potential_centroids.clear();
+      h_potential_centroids.resize(new_potential_centroids);
+
+      int old_pot_centroids_size = h_all_potential_centroids.size();
+      h_all_potential_centroids.resize(old_pot_centroids_size + new_potential_centroids);
+
+      int offset = 0;
+      for (int i = 0; i < num_gpu; i++) {
+        thrust::copy(
+            h_potential_centroids_per_gpu[i].begin(),
+            h_potential_centroids_per_gpu[i].end(),
+            h_potential_centroids.begin() + offset
+        );
+        offset += h_potential_centroids_per_gpu[i].size();
+      }
+
+      thrust::copy(
+          h_potential_centroids.begin(),
+          h_potential_centroids.end(),
+          h_all_potential_centroids.begin() + old_pot_centroids_size
+      );
+    }
+  }
+
+  std::uniform_int_distribution<> dis_k(0, k - 1);
+  thrust::host_vector<T> final_centroids(k * cols);
+  int potential_centroids_num = h_potential_centroids.size() / cols;
+
+  if (potential_centroids_num <= k) {
+    thrust::copy(
+        h_potential_centroids.begin(),
+        h_potential_centroids.end(),
+        final_centroids.begin()
+    );
+    // TODO what if potential_centroids_num < k ?? we don't want 0s
+  } else {
+    // If we found more than k potential cluster centers we need to take only a subset
+    // This is done using a weighted k-means++ method, since the set should be very small
+    // it should converge very fast and is all done on the CPU.
+    thrust::device_vector<T> weights(potential_centroids_num);
+
+    // Weights correspond to the number of data points assigned to each potential cluster center
+    count_pts_per_centroid(
+        data,
+        h_potential_centroids,
+        weights
+    );
+
+    kmeans_plus_plus(
+        seed,
+        h_potential_centroids.data(),
+        weights,
+        k, max_iter, final_cents_pts
+    );
+  }
+
+  for (int i = 0; i < num_gpu; i++) {
+    CUDACHECK(cudaSetDevice(i));
+    thrust::copy(
+        final_centroids.begin(),
+        final_centroids.begin() + k * cols,
+        (*centroids)[i].begin()
+    );
+  }
+}
+
 volatile std::atomic_int flaggpu(0);
 
 inline void my_function_gpu(int sig) { // can be called asynchronously
@@ -252,6 +708,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   thrust::device_vector<int> *labels[n_gpu];
   thrust::device_vector<T> *d_centroids[n_gpu];
   thrust::device_vector<T> *distances[n_gpu];
+  thrust::device_vector<T> *data_dots[n_gpu];
 
   log_debug(verbose, "KMeans - Before allocation");
 
@@ -261,6 +718,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     labels[q] = new thrust::device_vector<int>(rows / n_gpu);
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     distances[q] = new thrust::device_vector<T>(rows / n_gpu);
+    data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
   }
 
   if (verbose >= H2O4GPU_LOG_INFO) {
@@ -292,44 +750,59 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     } else { // shard by randomly (without replacement) selected by row
       copy_data_shuffled(verbose, v, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
     }
+
+    kmeans::detail::make_self_dots(rows / n_gpu, cols, *data[q], *data_dots[q]);
   }
 
   // Get random points as centroids
-  int masterq = 0;
-  CUDACHECK(cudaSetDevice(dList[masterq]));
-  copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
-  int bytecount = cols * k * sizeof(T); // all centroids
+  if (0 == init_from_data) {
+    int masterq = 0;
+    CUDACHECK(cudaSetDevice(dList[masterq]));
+    copy_centroids_shuffled(verbose, v, ord, *d_centroids[masterq], &srcdata[0], rows, k, cols);
 
-  // Copy centroids to all devices
-  std::vector < cudaStream_t * > streams;
-  streams.resize(n_gpu);
-  for (int q = 0; q < n_gpu; q++) {
-    if (q == masterq) continue;
+    int bytecount = cols * k * sizeof(T); // all centroids
 
-    CUDACHECK(cudaSetDevice(dList[q]));
-    if(verbose>0){
-      std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+    // Copy centroids to all devices
+    std::vector < cudaStream_t * > streams;
+    streams.resize(n_gpu);
+    for (int q = 0; q < n_gpu; q++) {
+      if (q == masterq) continue;
+
+      CUDACHECK(cudaSetDevice(dList[q]));
+      if (verbose > 0) {
+        std::cout << "Copying centroid data to device: " << dList[q] << std::endl;
+      }
+
+      streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
+      cudaStreamCreate(streams[q]);
+      cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
+                          dList[q],
+                          thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
+                          dList[masterq],
+                          bytecount,
+                          *(streams[q]));
     }
-
-    streams[q] = reinterpret_cast<cudaStream_t *>(malloc(sizeof(cudaStream_t)));
-    cudaStreamCreate(streams[q]);
-    cudaMemcpyPeerAsync(thrust::raw_pointer_cast(&(*d_centroids[q])[0]),
-                        dList[q],
-                        thrust::raw_pointer_cast(&(*d_centroids[masterq])[0]),
-                        dList[masterq],
-                        bytecount,
-                        *(streams[q]));
-  }
-  for (int q = 0; q < n_gpu; q++) {
-    if (q == masterq) continue;
-    cudaSetDevice(dList[q]);
-    cudaStreamDestroy(*(streams[q]));
-#if(DEBUGKMEANS)
-    thrust::host_vector<T> h_centroidq=*d_centroids[q];
+    for (int q = 0; q < n_gpu; q++) {
+      if (q == masterq) continue;
+      cudaSetDevice(dList[q]);
+      cudaStreamDestroy(*(streams[q]));
+      #if(DEBUGKMEANS)
+      thrust::host_vector<T> h_centroidq=*d_centroids[q];
     for(int ii=0;ii<k*d;ii++){
         fprintf(stderr,"q=%d initcent[%d]=%g\n",q,ii,h_centroidq[ii]); fflush(stderr);
     }
-#endif
+      #endif
+    }
+  } else if (1 == init_from_data) { // kmeans||
+    kmeans_parallel(verbose, seed, ord, data, data_dots, d_centroids, rows, cols, k, n_gpu, threshold);
+  }
+
+  log_debug(verbose, "KMeans - Before labels and distances initialized.");
+
+  for (int q = 0; q < n_gpu; q++) {
+    CUDACHECK(cudaSetDevice(dList[q]));
+    labels[q] = new thrust::device_vector<int>(rows / n_gpu);
+    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
   }
 
   double timetransfer = static_cast<double>(timer<double>() - t0t);
@@ -338,6 +811,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
   double t0 = timer<double>();
 
+  // TODO pass data_dots
   int status = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, dList, n_gpu,
                                  max_iterations, threshold, true);
 

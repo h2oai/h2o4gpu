@@ -133,7 +133,7 @@ class KMeansH2O(object):
             self,
             # sklearn API (but with possibly different choices for defaults)
             n_clusters=8,
-            init='random',
+            init='k-means++',
             n_init=1,
             max_iter=300,
             tol=1e-4,
@@ -173,15 +173,14 @@ class KMeansH2O(object):
         if type(tol) == type(example):
             tol = tol.item()
 
-        # Things to do if not using sklearn
-        # sklearn option overrides detailed option
-        example = np.array([1, 2, 3])
-        # pylint: disable=unidiomatic-typecheck
-        if type(init) == type(example):
-            assert ValueError("init cannot be numpy array yet.")
-        else:
-            if init == 'random':
-                init_data = "randomselect"
+        if isinstance(init, np.array):
+            assert ValueError("Passing initial centroids not yet supported.")
+
+        if isinstance(init, str) and init not in ['random', 'k-means++']:
+            assert ValueError(
+                "Invalid initialization method. "
+                "Should be 'k-means++' or 'random' but got '%s'." % init
+            )
 
         self.init = init
         self._n_clusters = n_clusters
@@ -505,7 +504,7 @@ class KMeansH2O(object):
 
         data, c_data_ptr, data_ctype = self._to_cdata(data)
 
-        if self.init == "random" or self.init == "k-means++":
+        if self.init == "k-means++":
             c_init = 1
         else:
             c_init = 0
@@ -717,11 +716,6 @@ class KMeans(object):
                 print("WARNING: init as ndarray of centers not yet supported."
                       "  Using sklearn.")
                 self.do_sklearn = True
-            else:
-                if init == "k-means++":
-                    print("WARNING: init as k-means++ not yet supported."
-                          "  Using sklearn.")
-                    self.do_sklearn = True
             # FIXME: Add n_init to h2o4gpu
             if n_init != 1:
                 print("WARNING: n_init not supported currently."
