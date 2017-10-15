@@ -74,10 +74,11 @@ void streamsync(int dev_num) {
 template<typename float_t>
 __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
                        const float_t alpha, const float_t beta, int n, int d, int k, int max_block_rows) {
-  extern __shared__ float_t
-  shared[];
-  float_t * s_A = shared;
-  float_t * s_B = shared + max_block_rows * d;
+  extern __shared__ __align__(sizeof(float_t)) unsigned char my_smem[];
+  float_t *shared = reinterpret_cast<float_t *>(my_smem);
+
+  float_t *s_A = shared;
+  float_t *s_B = shared + max_block_rows * d;
 
   for (int i = threadIdx.x; i < d * k; i += blockDim.x) {
     s_B[i] = B[i];
