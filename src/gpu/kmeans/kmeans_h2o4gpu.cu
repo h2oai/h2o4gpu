@@ -188,8 +188,8 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
 template<typename T>
 int pick_point_idx_weighted(
-    thrust::host_device<T> data,
-    thrust::host_device<T> weights) {
+    thrust::host_vector<T> data,
+    thrust::host_vector<T> weights) {
   T weight_sum = thrust::reduce(
       weights.begin(),
       weights.end()
@@ -236,9 +236,9 @@ int pick_point_idx_weighted(
  */
 template<typename T>
 void add_centroid(int idx, int cols,
-                  thrust::host_device<T> &data,
-                  thrust::host_device<T> &weights,
-                  thrust::host_device<T> &centroids) {
+                  thrust::host_vector<T> &data,
+                  thrust::host_vector<T> &weights,
+                  thrust::host_vector<T> &centroids) {
   for (int i = 0; i < cols; i++) {
     centroids.push_back(data[idx * cols + i]);
   }
@@ -261,11 +261,11 @@ void add_centroid(int idx, int cols,
 template<typename T>
 void kmeans_plus_plus(
     int seed,
-    thrust::host_device<T> data,
-    thrust::host_device<T> weights,
+    thrust::host_vector<T> data,
+    thrust::host_vector<T> weights,
     int k,
     int cols,
-    thrust::host_device<T> &centroids) {
+    thrust::host_vector<T> &centroids) {
 
   int centroid_idx = pick_point_idx_weighted(
       pairwise_cost,
