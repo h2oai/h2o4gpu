@@ -16,17 +16,17 @@ An R API is in developement and will be released as a stand-alone R package in t
 
 ## Requirements
 
-* PC with Ubuntu 16.04+
+* PC with Ubuntu 16.04+ w/ GCC4.9+
 
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
   or
-  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download))
+  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download) )
 
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
 
-* Nvidia GPU with Compute Capability>=3.5 [Capability Lookup](https://developer.nvidia.com/cuda-gpus).
+* Nvidia GPU with Compute Capability>=3.5 ([Capability Lookup](https://developer.nvidia.com/cuda-gpus)).
 
 * For advanced features, like handling rows/32>2^16 in K-means, need Capability>=52
 
