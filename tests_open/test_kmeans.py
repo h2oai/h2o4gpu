@@ -148,8 +148,6 @@ class TestKmeans(object):
         # Everything else is horrible and we probably should fix something
         assert accuracy_h2o - accuracy_sk >= -0.1
 
-    # TODO we should always (on large datasets at least) be faster so an assertion should be there at the end
-    # but for some reason for small k's we're not - need to check why
     def test_speed_vs_sk(self):
         from sklearn.cluster import KMeans as skKMeans
         n_samples = 100000
@@ -157,15 +155,17 @@ class TestKmeans(object):
         X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
                                     cluster_std=1., random_state=42)
 
-        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers)
+        kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers, random_state=42)
+        # Warmup - during first call CUDA kernels take ~2sec to load
+        kmeans_h2o.fit(X)
         start_h2o = time.time()
         kmeans_h2o.fit(X)
         end_h2o = time.time()
 
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random')
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random',
+                             algorithm='full', n_jobs=-1)
         start_sk = time.time()
         kmeans_sk.fit(X)
         end_sk = time.time()
 
-        print(end_h2o - start_h2o)
-        print(end_sk - start_sk)
+        assert end_h2o - start_h2o <= end_sk - start_sk
