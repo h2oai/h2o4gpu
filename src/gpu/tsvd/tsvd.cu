@@ -104,13 +104,14 @@ void calc_var_numerator(const Matrix<float> &X, const Matrix<float> &UColMean, M
 	// Determine temporary device storage requirements
 	void     *d_temp_storage = NULL;
 	size_t   temp_storage_bytes = 0;
+    int cols = static_cast<int>(X.columns());
 	cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-	    X.columns(), segments.data(), segments.data() + 1);
+                                    cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
 	// Allocate temporary storage
 	safe_cuda(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 	// Run sum-reduction
 	cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-	    X.columns(), segments.data(), segments.data() + 1);
+                                    cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
 	safe_cuda(cudaFree(d_temp_storage));
 
 }
