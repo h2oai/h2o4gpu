@@ -319,7 +319,7 @@ pipeline {
             }
 
             steps {
-                unstash 'linux_whl2'
+                unstash 'linux_whl3'
                 unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist3/'
                 script {
