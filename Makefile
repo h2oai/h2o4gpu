@@ -184,8 +184,8 @@ deps_install:
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
-	# issue with their package, have to do this here.
-	pip install sphinxcontrib-osexample
+	# issue with their package, have to do this here (still fails sometimes, so remove)
+#	pip install sphinxcontrib-osexample
 
 private_deps_install:
 	@echo "---- Install private dependencies ----"
