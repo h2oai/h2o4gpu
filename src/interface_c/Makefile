@@ -105,7 +105,8 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/gpu/projector/projector_cgls.o \
 	$(H2O4GPUROOT)/build/gpu/elastic_net_ptr.o \
 	$(H2O4GPUROOT)/build/common/logger.o    \
-	$(H2O4GPUROOT)/build/gpu/tsvd/tsvd.o
+	$(H2O4GPUROOT)/build/gpu/tsvd/tsvd.o   \
+        $(H2O4GPUROOT)/build/gpu/tsvd/matrix.o
 
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so	
