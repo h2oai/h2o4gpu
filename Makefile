@@ -301,9 +301,14 @@ buildjenkins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
+# for nccl cuda8 build
 fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
+# for nonccl cuda8 build
 fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
+# for nonccl cuda9 build
+fullinstalljenkins3: cleanjenkins alldeps_private2 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
 .PHONY: mrproper
 mrproper: clean
