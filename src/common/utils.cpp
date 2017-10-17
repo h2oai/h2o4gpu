@@ -20,13 +20,13 @@ void compute_distances(std::vector<double> data_in,
                        std::vector<double> centroids_in,
                        std::vector<double> &pairwise_distances,
                        int n, int dim, int k) {
-  std::vector<double> data_dots_in(n);
+  std::vector<double> data_dots(n);
   std::vector<double> centroid_dots(k);
   self_dot(data_in, n, dim, data_dots);
   self_dot(centroids_in, k, dim, centroid_dots);
   for (int nn=0; nn<n; nn++)
     for (int c=0; c<k; c++) {
-      pairwise_distances[nn*k+c] = data_dots_in[nn] +
+      pairwise_distances[nn*k+c] = data_dots[nn] +
           centroid_dots[c];
     }
   double alpha = -2.0;
@@ -40,13 +40,13 @@ void compute_distances(std::vector<float> data_in,
                        std::vector<float> centroids_in,
                        std::vector<float> &pairwise_distances,
                        int n, int dim, int k) {
-  std::vector<float> data_dots_in(n);
+  std::vector<float> data_dots(n);
   std::vector<float> centroid_dots(k);
   self_dot(data_in, n, dim, data_dots);
   self_dot(centroids_in, k, dim, centroid_dots);
   for (int nn=0; nn<n; nn++)
     for (int c=0; c<k; c++) {
-      pairwise_distances[nn*k+c] = data_dots_in[nn] +
+      pairwise_distances[nn*k+c] = data_dots[nn] +
           centroid_dots[c];
     }
   float alpha = -2.0;

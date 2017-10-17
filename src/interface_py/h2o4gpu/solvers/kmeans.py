@@ -173,7 +173,7 @@ class KMeansH2O(object):
         if type(tol) == type(example):
             tol = tol.item()
 
-        if isinstance(init, np.array):
+        if isinstance(init, np.ndarray):
             assert ValueError("Passing initial centroids not yet supported.")
 
         if isinstance(init, str) and init not in ['random', 'k-means++']:

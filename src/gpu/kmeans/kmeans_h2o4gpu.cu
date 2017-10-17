@@ -17,6 +17,7 @@
 #include "h2o4gpukmeans.h"
 #include "kmeans_impl.h"
 #include "kmeans_general.h"
+#include "kmeans_labels.h"
 #include <random>
 #include <algorithm>
 #include <vector>
@@ -188,7 +189,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
 template<typename T>
 int pick_point_idx_weighted(
-    thrust::host_vector<T> data,
+    std::vector<T> *data,
     thrust::host_vector<T> weights) {
   T weight_sum = thrust::reduce(
       weights.begin(),
@@ -196,10 +197,10 @@ int pick_point_idx_weighted(
   );
 
   T data_sum = 1.0;
-  if (NULL != data) {
+  if (data) {
     data_sum = thrust::reduce(
-        data.begin(),
-        data.end()
+        data->begin(),
+        data->end()
     );
   }
 
@@ -209,8 +210,11 @@ int pick_point_idx_weighted(
   T cur_weight = 0.0;
   T best_prob = 0.0;
   int best_prob_idx = 0;
-  while (i < data.size() && cur_weight < r) {
-    T data_val = NULL == data ? 1.0 : data[i];
+  while (i < data->size() && cur_weight < r) {
+    T data_val = 1.0;
+    if (data) {
+      data_val = data->data()[i];
+    }
 
     T curr_prob = data_val * weights[i];
     if (curr_prob >= best_prob) {
@@ -243,9 +247,9 @@ void add_centroid(int idx, int cols,
     centroids.push_back(data[idx * cols + i]);
   }
   for (int i = 0; i < cols; i++) {
-    data.remove(idx * cols + i);
+    data.erase(data.begin() + idx * cols + i);
   }
-  weights.remove(idx);
+  weights.erase(weights.begin() + idx);
 }
 
 /**
@@ -268,15 +272,15 @@ void kmeans_plus_plus(
     thrust::host_vector<T> &centroids) {
 
   int centroid_idx = pick_point_idx_weighted(
-      pairwise_cost,
+      (std::vector<T> *) NULL,
       weights
   );
 
   add_centroid(centroid_idx, cols, data, weights, centroids);
 
   std::vector<T> best_pairwise_distances(data.size());
-  std::vector<T> std_data(data.data());
-  std::vector<T> std_centroids(centroids.data());
+  std::vector<T> std_data(data.begin(), data.end());
+  std::vector<T> std_centroids(centroids.begin(), centroids.end());
 
   compute_distances(std_data,
                     std_centroids,
@@ -285,17 +289,17 @@ void kmeans_plus_plus(
 
   for (int iter = 0; iter < k; iter++) {
     centroid_idx = pick_point_idx_weighted(
-        best_pairwise_distances,
+        &best_pairwise_distances,
         weights
     );
 
     add_centroid(centroid_idx, cols, data, weights, centroids);
 
-    best_pairwise_distances.remove(centroid_idx);
+    best_pairwise_distances.erase(best_pairwise_distances.begin() + centroid_idx);
 
     // TODO necessary?
-    std_data = std::vector<T>(data.data());
-    std_centroids = std::vector<T>(centroids.data() + cols * (iter + 1));
+    std_data = std::vector<T>(data.begin(), data.end());
+    std_centroids = std::vector<T>(centroids.begin() + cols * (iter + 1), centroids.end());
 
     std::vector<T> curr_pairwise_distances(data.size());
 
@@ -329,14 +333,13 @@ void count_pts_per_centroid(
     int verbose,
     int num_gpu, int rows_per_gpu, int cols,
     thrust::device_vector<T> **data,
-    std::vector<thrust::device_vector<T>> data_dots,
+    thrust::device_vector<T> **data_dots,
     thrust::host_vector<T> centroids,
     thrust::host_vector<T> weights,
     // Reusing vectors, if needed write a wrapper function which will create temp ones
     std::vector<thrust::device_vector<T>> pairwise_distances, // TODO reimplement so we don't need this
     std::vector<thrust::device_vector<T>> labels // TODO reimplement so we don't need this
 ) {
-
   thrust::host_vector<T> weights_tmp(weights.size());
   int k = centroids.size() / cols;
   for (int i = 0; i < num_gpu; i++) {
@@ -344,7 +347,7 @@ void count_pts_per_centroid(
     thrust::device_vector<T> centroid_dots(k);
     thrust::device_vector<T> d_centroids = centroids;
     kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, k,
-                                        *d_data[i], d_centroids, data_dots[i],
+                                        *data[i], d_centroids, *data_dots[i],
                                         centroid_dots, pairwise_distances[i]);
 
     thrust::device_vector<T> counts(k);
@@ -366,16 +369,16 @@ void count_pts_per_centroid(
       }
 
       // FIXME needs to be atomic?
-      counts_ptr[closest_centroid_idx] += 1;
+      counts_ptr[closest_centroid_idx] = counts_ptr[closest_centroid_idx] + 1;
     });
 
     // FIXME necessary?
     CUDACHECK(cudaDeviceSynchronize());
 
-    if (n_gpu > 1) {
-      CUDACHECK(cudaSetDevice(q));
-      detail::memcpy(weights_tmp, counts);
-      detail::streamsync(q);
+    if (num_gpu > 1) {
+      CUDACHECK(cudaSetDevice(i));
+      kmeans::detail::memcpy(weights_tmp, counts);
+      kmeans::detail::streamsync(i);
       for (int p = 0; p < k; p++) {
         weights[p] += weights_tmp[p];
       }
@@ -601,20 +604,32 @@ void kmeans_parallel(int verbose, int seed, const char ord,
     // If we found more than k potential cluster centers we need to take only a subset
     // This is done using a weighted k-means++ method, since the set should be very small
     // it should converge very fast and is all done on the CPU.
-    thrust::device_vector<T> weights(potential_centroids_num);
+    thrust::host_vector<T> weights(potential_centroids_num);
+
+    for (int i = 0; i < num_gpu; i++) {
+      d_all_costs[i].clear();
+      d_all_costs[i].resize(rows_per_gpu * (h_potential_centroids.size() / cols));
+      d_min_costs[i].clear();
+      d_min_costs[i].resize(rows_per_gpu);
+    }
 
     // Weights correspond to the number of data points assigned to each potential cluster center
     count_pts_per_centroid(
-        data,
+        verbose, num_gpu,
+        rows_per_gpu, cols,
+        data, data_dots,
         h_potential_centroids,
-        weights
+        weights,
+        d_all_costs,
+        d_min_costs
     );
 
     kmeans_plus_plus(
         seed,
-        h_potential_centroids.data(),
+        h_potential_centroids,
         weights,
-        k, max_iter, final_cents_pts
+        k, cols,
+        final_centroids
     );
   }
 
