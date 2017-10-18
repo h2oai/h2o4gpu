@@ -253,12 +253,7 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
 		Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
 		Matrix<float>w(Q.rows(), 1);
-		std::string algorithm(_param.algorithm);
-		if(algorithm == "arpack"){
-			calculate_eigen_pairs_exact(XtX, Q, w, context);
-		}else{
-			tsvd_error(std::string("Unknown algorithm: " + algorithm).c_str());
-		}
+		calculate_eigen_pairs_exact(XtX, Q, w, context);
 
 		//Obtain Q^T to obtain vector as row major order
 		Matrix<float>Qt(Q.columns(), Q.rows());

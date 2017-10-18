@@ -18,7 +18,6 @@ namespace tsvd
 			int X_n;
 			int X_m;
 			int k;
-			const char* algorithm;
 		};
 
 		/**
