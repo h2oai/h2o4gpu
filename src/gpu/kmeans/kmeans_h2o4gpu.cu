@@ -204,7 +204,7 @@ int pick_point_idx_weighted(
     );
   }
 
-  // TODO should this be calculated for each record separately instead?
+  // TODO this shouldn't probably be rand() but something better and done for each record separately
   T r = ((T) rand() / (T) RAND_MAX) * weight_sum * data_sum;
   int i = -1;
   T cur_weight = 0.0;
@@ -428,6 +428,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
 
   for (int q = 0; q < num_gpu; q++) {
     CUDACHECK(cudaSetDevice(q));
+    kmeans::detail::labels_init();
     d_potential_centroids[q].resize(cols);
   }
 
@@ -458,6 +459,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
   thrust::host_vector<T> h_potential_centroids = d_potential_centroids[first_center_gpu];
   thrust::host_vector<T> h_all_potential_centroids = d_potential_centroids[first_center_gpu];
   std::vector<thrust::host_vector<T>> h_potential_centroids_per_gpu(num_gpu);
+
 
   // TODO calculate initial min distance sum and set max_counter = log(min_distance_sum)
   for (int counter = 0; counter < 5; counter++) {
@@ -512,40 +514,40 @@ void kmeans_parallel(int verbose, int seed, const char ord,
       // Count how many potential centroids there are using probabilities
       // The further the row is from the closest cluster center the higher the probability
       auto pot_cent_filter_counter = thrust::make_counting_iterator(0);
-      int pot_cent_num = thrust::count_if(pot_cent_filter_counter, pot_cent_filter_counter + rows_per_gpu, [=]
-      __device__(int
-      idx){
-        thrust::default_random_engine rng(seed);
-        thrust::uniform_real_distribution<T> dist(0.f, 1.f);
-        rng.discard(idx);
-        T prob_threshold = (T) dist(rng);
+      int pot_cent_num = thrust::count_if(
+          pot_cent_filter_counter,
+          pot_cent_filter_counter + rows_per_gpu,
+          [=]__device__(int idx){
+            thrust::default_random_engine rng(seed);
+            thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+            rng.discard(idx);
+            T prob_threshold = (T) dist(rng);
 
-        T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+            T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
 
-        return prob_x > prob_threshold;
-      });
+            return prob_x > prob_threshold;
+          }
+      );
 
       if (pot_cent_num > 0) {
         // Copy all potential cluster centers
         thrust::device_vector<T> d_new_potential_centroids(pot_cent_num * cols);
 
         thrust::copy_if(
-            thrust::make_counting_iterator<int>(0),
-            thrust::make_counting_iterator<int>(rows_per_gpu * cols),
             (*data)[i].begin(),
+            (*data)[i].end(),
+            thrust::make_counting_iterator<int>(0),
             d_new_potential_centroids.begin(),
-            [=]
-        __device__(int
-        idx){
-          int row = idx / cols;
-          thrust::default_random_engine rng(seed);
-          thrust::uniform_real_distribution<T> dist(0.f, 1.f);
-          rng.discard(row);
-          T prob_threshold = (T) dist(rng);
+            [=] __device__(int idx){
+              int row = idx / cols;
+              thrust::default_random_engine rng(seed);
+              thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+              rng.discard(row);
+              T prob_threshold = (T) dist(rng);
 
-          T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+              T prob_x = ((2 * k * min_costs_ptr[row]) / total_min_cost);
 
-          return prob_x > prob_threshold;
+              return prob_x > prob_threshold;
         });
 
         h_potential_centroids_per_gpu[i].clear();
@@ -591,12 +593,12 @@ void kmeans_parallel(int verbose, int seed, const char ord,
 
   std::uniform_int_distribution<> dis_k(0, k - 1);
   thrust::host_vector<T> final_centroids(k * cols);
-  int potential_centroids_num = h_potential_centroids.size() / cols;
+  int potential_centroids_num = h_all_potential_centroids.size() / cols;
 
   if (potential_centroids_num <= k) {
     thrust::copy(
-        h_potential_centroids.begin(),
-        h_potential_centroids.end(),
+        h_all_potential_centroids.begin(),
+        h_all_potential_centroids.end(),
         final_centroids.begin()
     );
     // TODO what if potential_centroids_num < k ?? we don't want 0s
@@ -608,7 +610,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
 
     for (int i = 0; i < num_gpu; i++) {
       d_all_costs[i].clear();
-      d_all_costs[i].resize(rows_per_gpu * (h_potential_centroids.size() / cols));
+      d_all_costs[i].resize(rows_per_gpu * potential_centroids_num);
       d_min_costs[i].clear();
       d_min_costs[i].resize(rows_per_gpu);
     }
@@ -618,7 +620,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
         verbose, num_gpu,
         rows_per_gpu, cols,
         data, data_dots,
-        h_potential_centroids,
+        h_all_potential_centroids,
         weights,
         d_all_costs,
         d_min_costs
@@ -626,7 +628,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
 
     kmeans_plus_plus(
         seed,
-        h_potential_centroids,
+        h_all_potential_centroids,
         weights,
         k, cols,
         final_centroids
@@ -640,6 +642,7 @@ void kmeans_parallel(int verbose, int seed, const char ord,
         final_centroids.begin() + k * cols,
         (*centroids)[i].begin()
     );
+    kmeans::detail::labels_close();
   }
 }
 
