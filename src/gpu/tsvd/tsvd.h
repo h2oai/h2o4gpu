@@ -27,6 +27,8 @@ namespace tsvd
 		 * \param [in,out]	_Q
 		 * \param [in,out]	_w
 		 * \param [in,out]  _U
+		 * \param [out] 	_explained_variance
+		 * \param[out]		_explained_variance_ratio
 		 * \param 		  	_param
 		 */
 

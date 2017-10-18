@@ -132,7 +132,7 @@ def reconstruction_error(m=500000, n=10, k=9):
         sklearn_mae_list[i-1] = func(m, n, i)[1]
     print("H2O4GPU MAE across k")
     print(h2o4gpu_mae_list)
-    #Sort in descending order and check
+    #Sort in descending order and check error goes down as k increases
     h2o4gpu_mae_list_sorted = np.sort(h2o4gpu_mae_list)[::-1]
     assert np.array_equal(h2o4gpu_mae_list, h2o4gpu_mae_list_sorted)
     print("Sklearn MAE across k")

@@ -12,6 +12,14 @@
 namespace tsvd
 {
 
+/**
+ * Division utility to get explained variance ratio
+ *
+ * @param XVar
+ * @param XVarSum
+ * @param ExplainedVarRatio
+ * @param context
+ */
 void divide(const Matrix<float> &XVar, const Matrix<float> &XVarSum, Matrix<float> &ExplainedVarRatio, DeviceContext &context){
 	auto d_x_var = XVar.data();
 	auto d_x_var_sum = XVarSum.data();
@@ -23,6 +31,13 @@ void divide(const Matrix<float> &XVar, const Matrix<float> &XVarSum, Matrix<floa
 	} );
 }
 
+/**
+ * Square each value in a matrix
+ *
+ * @param UmultSigma
+ * @param UmultSigmaSquare
+ * @param context
+ */
 void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare, DeviceContext &context){
 	auto n = UmultSigma.columns();
 	auto m = UmultSigma.rows();
@@ -36,6 +51,14 @@ void square_val(const Matrix<float> &UmultSigma, Matrix<float> &UmultSigmaSquare
 	} );
 }
 
+/**
+ * Alternative variance calculation (Can be slow for big matrices)
+ *
+ * @param UmultSigma
+ * @param k
+ * @param UmultSigmaVar
+ * @param context
+ */
 void calc_var(const Matrix<float>UmultSigma, int k, Matrix<float> &UmultSigmaVar, DeviceContext &context){
 	//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
 	Matrix<float>UmultOnes(UmultSigma.rows(), 1);
@@ -66,12 +89,13 @@ void calc_var(const Matrix<float>UmultSigma, int k, Matrix<float> &UmultSigmaVar
 	} );
 }
 
+
 template<typename T>
 class variance_iterator{
 public:
     // Required iterator traits
-    typedef variance_iterator<T>          self_type;              ///< My own type
-    typedef size_t                            difference_type;        ///< Type to express the result of subtracting one iterator from another
+    typedef variance_iterator<T>          self_type;            ///< My own type
+    typedef size_t                            difference_type;  ///< Type to express the result of subtracting one iterator from another
     typedef T                           value_type;             ///< The type of the element the iterator can point to
     typedef T*                          pointer;                ///< The type of a pointer to an element the iterator can point to
     typedef T                           reference;              ///< The type of a reference to an element the iterator can point to
@@ -96,6 +120,15 @@ public:
 
 	}
 };
+
+/**
+ * Utility to calculate variance for each column of a matrix
+ *
+ * @param X
+ * @param UColMean
+ * @param UVar
+ * @param context
+ */
 void calc_var_numerator(const Matrix<float> &X, const Matrix<float> &UColMean, Matrix<float> &UVar, DeviceContext &context){
 	auto m = X.rows();
 	variance_iterator<float> variance(X.data(), UColMean.data(), m);
@@ -115,6 +148,14 @@ void calc_var_numerator(const Matrix<float> &X, const Matrix<float> &UColMean, M
 	safe_cuda(cudaFree(d_temp_storage));
 
 }
+
+/**
+ * Utility to reverse q to show most import k to least important k
+ *
+ * @param Q
+ * @param QReversed
+ * @param context
+ */
 void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceContext &context){
 	auto n = Q.columns();
 	auto m = Q.rows();
@@ -131,7 +172,13 @@ void col_reverse_q(const Matrix<float> &Q, Matrix<float> &QReversed, DeviceConte
 	} );
 }
 
-// Truncated Q to k vectors (truncated svd)
+/**
+ * Truncate Q transpose to top k
+ *
+ * @param Qt
+ * @param QtTrunc
+ * @param context
+ */
 void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, DeviceContext &context){
 	auto m = Qt.rows();
 	auto k = QtTrunc.rows();
@@ -148,8 +195,16 @@ void row_reverse_trunc_q(const Matrix<float> &Qt, Matrix<float> &QtTrunc, Device
 	} );
 }
 
-// Calculate U, which is:
-// U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
+/**
+ * Calculate the U matrix, which is defined as:
+ * U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
+ *
+ * @param X
+ * @param Q
+ * @param w
+ * @param U
+ * @param context
+ */
 void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<float> &w, Matrix<float> &U, DeviceContext &context){
 	multiply(X, Q, U, context, false, false, 1.0f); //A*V
 	auto d_u = U.data();
@@ -169,6 +224,17 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<fl
 
 }
 
+/**
+ * Conduct truncated SVD on a matrix
+ *
+ * @param _X
+ * @param _Q
+ * @param _w
+ * @param _U
+ * @param _explained_variance
+ * @param _explained_variance_ratio
+ * @param _param
+ */
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
 	try
