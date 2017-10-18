@@ -3,7 +3,7 @@ import time
 import sys
 import logging
 from sklearn.decomposition import TruncatedSVD as sklearnsvd
-from h2o4gpu.solvers import TruncatedSVD
+from h2o4gpu.solvers import TruncatedSVDH2O
 from scipy.sparse.linalg import svds
 from sklearn.utils.extmath import svd_flip
 
@@ -25,7 +25,7 @@ def func(m=5000000, n=10, k=9):
     print("\n")
     print("h2o4gpu tsvd run")
     start_time = time.time()
-    h2o4gpu_tsvd = TruncatedSVD(n_components=k)
+    h2o4gpu_tsvd = TruncatedSVDH2O(n_components=k)
     h2o4gpu_tsvd.fit(X)
     end_time = time.time() - start_time
     print("Total time for h2o4gpu tsvd is " + str(end_time))
@@ -138,12 +138,8 @@ def reconstruction_error(m=500000, n=10, k=9):
     print("Sklearn MAE across k")
     print(sklearn_mae_list)
     assert np.allclose(h2o4gpu_mae_list, sklearn_mae_list, 1e-3, 1e-3)
+    # np.savetxt('h2o4gpu_k'+ str(k) + '_' + str(m) + '_by_' + str(n) + '_.csv', h2o4gpu_mae_list, delimiter=',')
+    # np.savetxt('sklearn_k'+ str(k) + '_' + str(m) + '_by_' + str(n) + '_.csv', sklearn_mae_list, delimiter=',')
 
-def test_tsvd_error_k2(): reconstruction_error(k=2)
-def test_tsvd_error_k3(): reconstruction_error(k=3)
-def test_tsvd_error_k4(): reconstruction_error(k=4)
-def test_tsvd_error_k5(): reconstruction_error(k=5)
-def test_tsvd_error_k6(): reconstruction_error(k=6)
-def test_tsvd_error_k7(): reconstruction_error(k=7)
-def test_tsvd_error_k8(): reconstruction_error(k=8)
-def test_tsvd_error_k9(): reconstruction_error(k=9)
+def test_tsvd_error_k2(): reconstruction_error(n=50, k=5)
+def test_tsvd_error_k5(): reconstruction_error(n=100, k=7)
