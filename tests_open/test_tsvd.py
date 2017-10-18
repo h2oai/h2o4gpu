@@ -1,78 +1,149 @@
 import numpy as np
 import time
+import sys
+import logging
 from sklearn.decomposition import TruncatedSVD as sklearnsvd
 from h2o4gpu.solvers import TruncatedSVD
 from scipy.sparse.linalg import svds
 from sklearn.utils.extmath import svd_flip
 
-#Randomized scikit impl
-#svd = TruncatedSVD(algorithm = "randomized", n_components=99, random_state=42, n_iter=5, tol=0.0)
-X = np.array([[1, 2, 3], [4, 5, 6], [7,8,9], [10,11,12]], np.float32)
-#X = np.random.rand(5000000,10)
-k = 2
+print(sys.path)
 
-#Exact scikit impl
-svd = sklearnsvd(algorithm = "arpack", n_components=k, random_state=42)
+logging.basicConfig(level=logging.DEBUG)
 
-print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
-print("Original X Matrix")
-print(X)
-print("\n")
-print("tsvd run")
-start_time = time.time()
-trunc = TruncatedSVD(n_components=k) #Not really using k yet...
-trunc.fit(X)
-end_time = time.time() - start_time
-print("Total time for tsvd is " + str(end_time))
-print("tsvd Singular Values")
-print(trunc.singular_values_)
-print("tsvd Components (V^T)")
-print(trunc.components_)
-print("tsvd Explained Variance")
-print(trunc.explained_variance_)
-print("tsvd Explained Variance Ratio")
-print(trunc.explained_variance_ratio_)
+def func(m=5000000, n=10, k=9):
+    np.random.seed(1234)
 
-print("\n")
-print("sklearn run")
-start_sk = time.time()
-svd.fit(X)
-end_sk = time.time() - start_sk
-print("Total time for sklearn is " + str(end_sk))
-print("Sklearn Singular Values")
-print(svd.singular_values_)
-print("Sklearn Components (V^T)")
-print(svd.components_)
-print("Sklearn Explained Variance")
-print(svd.explained_variance_)
-print("Sklearn Explained Variance Ratio")
-print(svd.explained_variance_ratio_)
-#
-# print("\n")
-# print("tsvd U matrix")
-# print(trunc.U)
-# print("tsvd V^T")
-# print(trunc.components_)
-# print("tsvd Sigma")
-# print(trunc.singular_values_)
-# print("tsvd U * Sigma")
-# x_tsvd_transformed = trunc.U * trunc.singular_values_
-# print(x_tsvd_transformed)
-# print("tsvd Explained Variance")
-# print(np.var(x_tsvd_transformed, axis=0))
-#
-# U, Sigma, VT = svds(X, k=2, tol=0)
-# Sigma = Sigma[::-1]
-# U, VT = svd_flip(U[:, ::-1], VT[::-1])
-# print("\n")
-# print("Sklearn U matrix")
-# print(U)
-# print("Sklearn V^T")
-# print(VT)
-# print("Sklearn Sigma")
-# print(Sigma)
-# print("Sklearn U * Sigma")
-# X_transformed = U * Sigma
-# print(X_transformed)
-# print("sklearn Explained Variance")
-# print(np.var(X_transformed, axis=0))
+    X = np.random.rand(m, n)
+
+    # Exact scikit impl
+    sklearn_tsvd = sklearnsvd(algorithm="arpack", n_components=k, random_state=42)
+
+    print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
+    print("Original X Matrix")
+    print(X)
+    print("\n")
+    print("h2o4gpu tsvd run")
+    start_time = time.time()
+    h2o4gpu_tsvd = TruncatedSVD(n_components=k)
+    h2o4gpu_tsvd.fit(X)
+    end_time = time.time() - start_time
+    print("Total time for h2o4gpu tsvd is " + str(end_time))
+    print("h2o4gpu tsvd Singular Values")
+    print(h2o4gpu_tsvd.singular_values_)
+    print("h2o4gpu tsvd Components (V^T)")
+    print(h2o4gpu_tsvd.components_)
+    print("h2o4gpu tsvd Explained Variance")
+    print(h2o4gpu_tsvd.explained_variance_)
+    print("h2o4gpu tsvd Explained Variance Ratio")
+    print(h2o4gpu_tsvd.explained_variance_ratio_)
+
+    print("\n")
+    print("sklearn run")
+    start_sk = time.time()
+    sklearn_tsvd.fit(X)
+    end_sk = time.time() - start_sk
+    print("Total time for sklearn is " + str(end_sk))
+    print("Sklearn Singular Values")
+    print(sklearn_tsvd.singular_values_)
+    print("Sklearn Components (V^T)")
+    print(sklearn_tsvd.components_)
+    print("Sklearn Explained Variance")
+    print(sklearn_tsvd.explained_variance_)
+    print("Sklearn Explained Variance Ratio")
+    print(sklearn_tsvd.explained_variance_ratio_)
+
+    print("\n")
+    print("h2o4gpu tsvd U matrix")
+    print(h2o4gpu_tsvd.U)
+    print("h2o4gpu tsvd V^T")
+    print(h2o4gpu_tsvd.components_)
+    print("h2o4gpu tsvd Sigma")
+    print(h2o4gpu_tsvd.singular_values_)
+    print("h2o4gpu tsvd U * Sigma")
+    x_tsvd_transformed = h2o4gpu_tsvd.U * h2o4gpu_tsvd.singular_values_
+    print(x_tsvd_transformed)
+    print("h2o4gpu tsvd Explained Variance")
+    print(np.var(x_tsvd_transformed, axis=0))
+
+    U, Sigma, VT = svds(X, k=k, tol=0)
+    Sigma = Sigma[::-1]
+    U, VT = svd_flip(U[:, ::-1], VT[::-1])
+    print("\n")
+    print("Sklearn U matrix")
+    print(U)
+    print("Sklearn V^T")
+    print(VT)
+    print("Sklearn Sigma")
+    print(Sigma)
+    print("Sklearn U * Sigma")
+    X_transformed = U * Sigma
+    print(X_transformed)
+    print("sklearn Explained Variance")
+    print(np.var(X_transformed, axis=0))
+
+    print("U shape")
+    print(np.shape(h2o4gpu_tsvd.U))
+    print(np.shape(U))
+
+    print("Singular Value shape")
+    print(np.shape(h2o4gpu_tsvd.singular_values_))
+    print(np.shape(sklearn_tsvd.singular_values_))
+
+    print("Components shape")
+    print(np.shape(h2o4gpu_tsvd.components_))
+    print(np.shape(sklearn_tsvd.components_))
+
+    print("Reconstruction")
+    reconstruct_h2o4gpu = np.sum([np.outer(h2o4gpu_tsvd.U[:, i], h2o4gpu_tsvd.components_[i, :]) * si for i, si in enumerate(h2o4gpu_tsvd.singular_values_)], axis=0)
+    reconstruct_sklearn = np.sum([np.outer(U[:, i], sklearn_tsvd.components_[i, :]) * si for i, si in enumerate(sklearn_tsvd.singular_values_)], axis=0)
+    print("original X")
+    print(X)
+    print("h2o4gpu reconstruction")
+    print(reconstruct_h2o4gpu)
+    print("sklearn reconstruction")
+    print(reconstruct_sklearn)
+    h2o4gpu_diff = np.subtract(reconstruct_h2o4gpu, X)
+    sklearn_diff = np.subtract(reconstruct_sklearn, X)
+    print("h2o4gpu diff")
+    print(h2o4gpu_diff)
+    print("sklearn diff")
+    print(sklearn_diff)
+    h2o4gpu_max_diff = np.amax(abs(h2o4gpu_diff))
+    sklearn_max_diff = np.amax(abs(sklearn_diff))
+    print("h2o4gpu max diff")
+    print(h2o4gpu_max_diff)
+    print("sklearn max diff")
+    print(sklearn_max_diff)
+    print("h2o4gpu mae")
+    h2o4gpu_mae = np.mean(np.abs(h2o4gpu_diff))
+    print(h2o4gpu_mae)
+    print("sklearn mae")
+    sklearn_mae = np.mean(np.abs(sklearn_diff))
+    print(sklearn_mae)
+
+    return h2o4gpu_mae, sklearn_mae
+
+def reconstruction_error(m=500000, n=10, k=9):
+    h2o4gpu_mae_list = np.zeros(k, dtype=np.float64)
+    sklearn_mae_list = np.zeros(k, dtype=np.float64)
+    for i in range(1,k+1):
+        h2o4gpu_mae_list[i-1] = func(m, n, i)[0]
+        sklearn_mae_list[i-1] = func(m, n, i)[1]
+    print("H2O4GPU MAE across k")
+    print(h2o4gpu_mae_list)
+    #Sort in descending order and check
+    h2o4gpu_mae_list_sorted = np.sort(h2o4gpu_mae_list)[::-1]
+    assert np.array_equal(h2o4gpu_mae_list, h2o4gpu_mae_list_sorted)
+    print("Sklearn MAE across k")
+    print(sklearn_mae_list)
+    assert np.allclose(h2o4gpu_mae_list, sklearn_mae_list, 1e-3, 1e-3)
+
+def test_tsvd_error_k2(): reconstruction_error(k=2)
+def test_tsvd_error_k3(): reconstruction_error(k=3)
+def test_tsvd_error_k4(): reconstruction_error(k=4)
+def test_tsvd_error_k5(): reconstruction_error(k=5)
+def test_tsvd_error_k6(): reconstruction_error(k=6)
+def test_tsvd_error_k7(): reconstruction_error(k=7)
+def test_tsvd_error_k8(): reconstruction_error(k=8)
+def test_tsvd_error_k9(): reconstruction_error(k=9)
