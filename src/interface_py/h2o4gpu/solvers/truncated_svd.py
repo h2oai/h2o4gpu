@@ -97,8 +97,7 @@ class TruncatedSVDH2O(object):
     def inverse_transform(self, X):
         """Transform X back to its original space.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
-                  Training data.
+        :param: X array-like, shape (n_samples, n_components)
 
         :returns X_original : array, shape (n_samples, n_features)
                               Note that this is always a dense array.
