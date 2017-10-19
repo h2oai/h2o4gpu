@@ -95,8 +95,10 @@ def func(m=5000000, n=10, k=9):
     print(np.shape(sklearn_tsvd.components_))
 
     print("Reconstruction")
-    reconstruct_h2o4gpu = np.sum([np.outer(h2o4gpu_tsvd.U[:, i], h2o4gpu_tsvd.components_[i, :]) * si for i, si in enumerate(h2o4gpu_tsvd.singular_values_)], axis=0)
-    reconstruct_sklearn = np.sum([np.outer(U[:, i], sklearn_tsvd.components_[i, :]) * si for i, si in enumerate(sklearn_tsvd.singular_values_)], axis=0)
+    reconstruct_h2o4gpu = h2o4gpu_tsvd.inverse_transform(h2o4gpu_tsvd.fit_transform(X))
+    reconstruct_sklearn = sklearn_tsvd.inverse_transform(sklearn_tsvd.fit_transform(X))
+    #reconstruct_h2o4gpu = np.sum([np.outer(h2o4gpu_tsvd.U[:, i], h2o4gpu_tsvd.components_[i, :]) * si for i, si in enumerate(h2o4gpu_tsvd.singular_values_)], axis=0)
+    #reconstruct_sklearn = np.sum([np.outer(U[:, i], sklearn_tsvd.components_[i, :]) * si for i, si in enumerate(sklearn_tsvd.singular_values_)], axis=0)
     print("original X")
     print(X)
     print("h2o4gpu reconstruction")
