@@ -48,7 +48,7 @@ def _load_tsvd_lib(lib_path):
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
-             params]
+             parameters]
 
 
     # pylint: disable=broad-except
