@@ -26,7 +26,11 @@ void divide(const Matrix<float> &XVar, const Matrix<float> &XVarSum, Matrix<floa
 	auto d_expl_var_ratio = ExplainedVarRatio.data();
 	auto counting = thrust::make_counting_iterator <int>(0);
 	thrust::for_each(counting, counting+ExplainedVarRatio.size(), [=]__device__(int idx){
-		float div_val = d_x_var[idx] / d_x_var_sum[0];
+		float div_val = 0.0;
+		//XVarSum can possibly be zero
+		if(d_x_var_sum[0] != 0.0){
+			div_val = d_x_var[idx] / d_x_var_sum[0];
+		}
 		d_expl_var_ratio[idx] = div_val;
 	} );
 }
