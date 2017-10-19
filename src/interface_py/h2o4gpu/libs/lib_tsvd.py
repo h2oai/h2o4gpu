@@ -1,13 +1,17 @@
+"""
+:copyright: 2017 H2O.ai, Inc.
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import ctypes
 
-class params(ctypes.Structure):
-    _fields_  = [('X_n', ctypes.c_int),
+class parameters(ctypes.Structure):
+    _fields_ = [('X_n', ctypes.c_int),
                 ('X_m', ctypes.c_int),
                 ('k', ctypes.c_int),
                 ('algorithm', ctypes.c_char_p)]
 
-class CPUlib:
 
+class CPUlib:
     def __init__(self):
         pass
 
@@ -19,7 +23,6 @@ class CPUlib:
 
 
 class GPUlib:
-
     def __init__(self):
         pass
 
@@ -38,12 +41,17 @@ def _load_tsvd_lib(lib_path):
     """
     try:
         h2o4gpu_tsvd_lib = ctypes.cdll.LoadLibrary(lib_path)
-        h2o4gpu_tsvd_lib.truncated_svd.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),
-                               ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
-                               params]
+        h2o4gpu_tsvd_lib.truncated_svd.argtypes = \
+            [ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             params]
 
 
-# pylint: disable=broad-except
+    # pylint: disable=broad-except
     except Exception as e:
         print("Exception")
         print(e)

@@ -1,8 +1,14 @@
+# - * - encoding : utf - 8 - * -
+"""
+:copyright: 2017 H2O.ai, Inc.
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 import ctypes
 import numpy as np
-from ..libs.lib_tsvd import params
+from ..libs.lib_tsvd import parameters
 from ..solvers.utils import _setter
-from ..typecheck.typechecks import (assert_is_type, numpy_ndarray)
+from ..typecheck.typechecks import assert_is_type
+
 
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
@@ -32,28 +38,36 @@ class TruncatedSVDH2O(object):
         return self
 
     def fit_transform(self, X):
-        """Fit Truncated SVD on matrix X and perform dimensionality reduction on X.
+        """Fit Truncated SVD on matrix X and perform dimensionality reduction
+           on X.
 
         :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
         :returns X_new : array, shape (n_samples, n_components)
-                         Reduced version of X. This will always be a dense array.
+                         Reduced version of X. This will always be a
+                         dense array.
 
         """
         X = np.asfortranarray(X, dtype=np.float64)
-        Q = np.empty((self.n_components, X.shape[1]), dtype=np.float64, order='F')
-        U = np.empty((X.shape[0], self.n_components), dtype=np.float64, order='F')
+        Q = np.empty((self.n_components, X.shape[1]),
+                     dtype=np.float64, order='F')
+        U = np.empty((X.shape[0], self.n_components),
+                     dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components, dtype=np.float64);
-        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64);
-        param = params()
+        explained_variance = np.empty(self.n_components,
+                                      dtype=np.float64)
+        explained_variance_ratio = np.empty(self.n_components,
+                                            dtype=np.float64)
+        param = parameters()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
 
         lib = self._load_lib()
-        lib.truncated_svd(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U), _as_fptr(explained_variance), _as_fptr(explained_variance_ratio), param)
+        lib.truncated_svd(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
+                          _as_fptr(explained_variance),
+                          _as_fptr(explained_variance_ratio), param)
 
         self._Q = Q
         self._w = w
@@ -72,7 +86,8 @@ class TruncatedSVDH2O(object):
                   Training data.
 
         :returns X_new : array, shape (n_samples, n_components)
-                         Reduced version of X. This will always be a dense array.
+                         Reduced version of X. This will always
+                         be a dense array.
 
         """
         fit = self.fit(X)
@@ -176,7 +191,7 @@ class TruncatedSVDH2O(object):
     def U(self):
         return self._U
 
-    #Util to load gpu lib
+    # Util to load gpu lib
     def _load_lib(self):
         from ..libs.lib_tsvd import GPUlib
 
@@ -184,9 +199,11 @@ class TruncatedSVDH2O(object):
 
         return gpu_lib
 
-#Util to send pointers to backend
+
+# Util to send pointers to backend
 def _as_fptr(x):
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
 
 class TruncatedSVD(object):
     """
@@ -196,7 +213,8 @@ class TruncatedSVD(object):
         and h2o4gpu.solvers.truncated_svd.TruncatedSVDH2O
 
         Documentation:
-        import h2o4gpu.decomposition ; help(h2o4gpu.decomposition.TruncatedSVDSklearn)
+        import h2o4gpu.decomposition ;
+        help(h2o4gpu.decomposition.TruncatedSVDSklearn)
         help(h2o4gpu.solvers.truncated_svd.TruncatedSVD)
 
     :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
@@ -204,6 +222,7 @@ class TruncatedSVD(object):
         Saves as attribute for actual backend used.
 
     """
+
     def __init__(self,
                  n_components=2,
                  algorithm="randomized",
@@ -302,6 +321,6 @@ class TruncatedSVD(object):
 
         s('oself.components_ = oself.model.components_')
         s('oself.explained_variance_= oself.model.explained_variance_')
-        s('oself.explained_variance_ratio_ = oself.model.explained_variance_ratio_')
+        s('oself.explained_variance_ratio_ = '
+          'oself.model.explained_variance_ratio_')
         s('oself.singular_values_ = oself.model.singular_values_')
-
