@@ -80,9 +80,9 @@ NVCCEXTRA=-ccbin=icpc
 endif
 
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
-CUXX=$(CUDA_HOME)/bin/nvcc $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
+CUXX=$(CUDA_HOME)/bin/nvcc --expt-extended-lambda $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
 CUFLAGS=$(IFLAGS) -std=c++11 $(OPTFLAG) $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
-CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas $(NVCC_GENCODE)
+CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas -lcusolver -lcusparse $(NVCC_GENCODE)
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
@@ -151,8 +151,11 @@ GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
 
 GPU_KMEANS_HDR=gpu/kmeans/kmeans_labels.h gpu/kmeans/kmeans_centroids.h gpu/kmeans/kmeans_impl.h common/logger.h
+GPU_TSVD_HDR=gpu/tsvd/tsvd.h gpu/tsvd/matrix.cuh gpu/tsvd/utils.cuh gpu/tsvd/device_context.cuh
 
-GPU_OBJ=$(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o \
+GPU_OBJ=$(OBJDIR)/gpu/tsvd/tsvd.o \
+        $(OBJDIR)/gpu/tsvd/matrix.o \
+	$(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o \
 	$(OBJDIR)/gpu/kmeans/kmeans_labels.o \
 	$(OBJDIR)/gpu/h2o4gpuglm.o \
 	$(OBJDIR)/gpu/warmstart.o  \
@@ -161,7 +164,7 @@ GPU_OBJ=$(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o \
 	$(OBJDIR)/gpu/bwcheck.o \
 	$(OBJDIR)/gpu/elastic_net_ptr.o \
 	$(OBJDIR)/common/logger.o
-
+  
 # Set vpath for build
 VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
@@ -204,6 +207,9 @@ $(OBJDIR)/gpu: $(OBJDIR)
 	mkdir -p $@ 
 
 $(OBJDIR)/gpu/kmeans: $(OBJDIR)
+	mkdir -p $@
+
+$(OBJDIR)/gpu/tsvd: $(OBJDIR)
 	mkdir -p $@
 
 $(OBJDIR)/gpu/matrix: $(OBJDIR)/gpu
@@ -256,7 +262,7 @@ $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix Makefile config
 $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
-$(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk
+$(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk $(OBJDIR)/gpu/tsvd
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/kmeans/*.o: gpu/kmeans/*.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu/kmeans
