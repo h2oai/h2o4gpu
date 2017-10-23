@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+src/interface_py/h2o4gpu/solvers/kmeans.py# -*- encoding: utf-8 -*-
 """
 KMeans solver tests using SKLearn datasets.
 
@@ -106,7 +106,7 @@ class TestKmeans(object):
         print("passed 1")
 
         print("Running model_rerun")
-        model_rerun = KMeans(n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        model_rerun = KMeans(max_iter=1, n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
         import sys
         print(model_rerun.cluster_centers_)
         sys.stdout.flush()
@@ -120,7 +120,7 @@ class TestKmeans(object):
         from sklearn.cluster import KMeans as KMeans_test
 
         print("Running model_rerun2")
-        model_rerun2 = KMeans_test(n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        model_rerun2 = KMeans_test(max_iter=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
         print(model_rerun2.cluster_centers_)
         sys.stdout.flush()
 

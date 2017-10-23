@@ -133,7 +133,8 @@ class KMeansH2O(object):
             self,
             # sklearn API (but with possibly different choices for defaults)
             n_clusters=8,
-            init='k-means++',
+            # init='k-means++',
+            init='random',
             n_init=1,
             max_iter=300,
             tol=1e-4,
@@ -146,7 +147,7 @@ class KMeansH2O(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
+            init_data='randomselect',
             do_checks=1):
 
         assert_is_type(n_clusters, int, type(np.int32), type(np.int64))
@@ -682,6 +683,7 @@ class KMeans(object):
     def __init__(
             self,
             n_clusters=8,
+            #init='k-means++',
             init='random',
             n_init=1,
             max_iter=300,
@@ -695,7 +697,7 @@ class KMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
+            init_data='randomselect',
             do_checks=1,
             backend='auto'):
 
