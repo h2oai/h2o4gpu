@@ -1,4 +1,4 @@
-src/interface_py/h2o4gpu/solvers/kmeans.py# -*- encoding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 """
 KMeans solver tests using SKLearn datasets.
 
