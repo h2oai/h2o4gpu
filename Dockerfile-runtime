@@ -59,10 +59,14 @@ RUN \
 # Add requirements
 COPY requirements_runtime.txt requirements.txt
 RUN \
+  eval "$(/root/.pyenv/bin/pyenv init -)" && \
+  /root/.pyenv/bin/pyenv global 3.6.1 && \
   pip install --no-cache-dir -r requirements.txt
 
 ADD src/interface_py/dist/ /dist
 RUN \
+  eval "$(/root/.pyenv/bin/pyenv init -)" && \
+  /root/.pyenv/bin/pyenv global 3.6.1 && \
   pip install --no-cache-dir /dist/*.whl
 
 #Below will get the latest stable wheel file instead.
