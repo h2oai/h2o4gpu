@@ -68,7 +68,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                                     nvidia-docker exec ${
                                 CONTAINER_NAME
-                            } bash -c '/root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
+                            } bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
@@ -104,7 +104,7 @@ pipeline {
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; chmod -R a+rwx /root ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
@@ -137,7 +137,7 @@ pipeline {
                             nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'chmod -R a+rwx /root ; /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
                             nvidia-docker stop ${CONTAINER_NAME}
                         """
                 }
@@ -221,7 +221,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'chmod -R a+rwx /root/ ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl2'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -300,7 +300,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'chmod -R a+rwx /root ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist3/*.whl', name: 'linux_whl3'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
