@@ -38,14 +38,14 @@ all: prep
 	#cat ../../requirements_runtime.txt > requirements.txt
 
 	# for incorporating xgboost and py3nvml builds
-	ln -sf ../../xgboost/python-package/xgboost .
+	ln -sf ../../xgboost/xgboost .
 	ln -sf ../../py3nvml/py3nvml .
 
 	python setup.py sdist bdist_wheel
 
 	# update build with xgboost shared library
 	mkdir -p build/lib/xgboost/
-	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/lib/libxgboost.so  . ; cd ../../../
+	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/xgboost/lib/libxgboost.so  . ; cd ../../../
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
