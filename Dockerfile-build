@@ -60,4 +60,5 @@ RUN \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
     chmod 777 / && \
-    chmod -R 777 /root
+    chmod -R 777 /root  && \
+    chmod ugo+s /root/
