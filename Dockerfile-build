@@ -47,8 +47,8 @@ RUN \
     mkdir -p .pylint.d && \
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
     eval "$(pyenv init -)" && \
-    pyenv install 3.6.1 && \
-    pyenv global 3.6.1 && \
+    /root/.pyenv/bin/pyenv install 3.6.1 && \
+    /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
