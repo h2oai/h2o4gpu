@@ -37,7 +37,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "gpu && nvidia-docker && !mr-dl16"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
