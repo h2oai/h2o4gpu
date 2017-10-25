@@ -60,4 +60,5 @@ RUN \
     pip install setuptools && \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
-    chmod 777 /
+    chmod 777 / && \
+    chmod -R 777 /root
