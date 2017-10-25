@@ -13,12 +13,13 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 ENV CUDADIR=/usr/local/cuda/include/
 ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
+ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
 ENV PYENV_ROOT=$HOME/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
 
+# Setup Repos
 RUN \
-  # Setup Repos
   apt-get update -y && \
   apt-get -y install curl apt-utils python-software-properties \
   software-properties-common iputils-ping wget cpio net-tools build-essential \
@@ -31,32 +32,33 @@ RUN \
   add-apt-repository ppa:fkrull/deadsnakes  && \
   apt-get update -yqq && \
   curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
-  # Install H2o dependencies
   apt-get -y --no-install-recommends  install \
     python3.6 \
     python3.6-dev \
-    python3-pip && \
+    python3-pip \
+    python3-setuptools \
+    python3-wheel && \
   update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
   python -m pip install --upgrade pip && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev
+  apt-get install -y libopenblas-dev && \
+  apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev
 
 RUN \
-    rm -rf h2oai_env && \
-    mkdir -p h2oai_env && \
     mkdir -p .pylint.d && \
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
-    eval "$(pyenv init -)" && \
-    pyenv install 3.6.1 && \
-    pyenv global 3.6.1 && \
+    eval "$(/root/.pyenv/bin/pyenv init -)" && \
+    /root/.pyenv/bin/pyenv install 3.6.1 && \
+    /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
 RUN \
-    . h2oai_env/bin/activate && \
+    pip install setuptools && \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
-    chmod -R 777 h2oai_env && \
-    chmod 777 /
+    chmod 777 / && \
+    chmod -R 777 /root  && \
+    chmod ugo+s /root/
