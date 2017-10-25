@@ -13,6 +13,7 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 ENV CUDADIR=/usr/local/cuda/include/
 ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
+ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
 ENV PYENV_ROOT=$HOME/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
@@ -43,8 +44,6 @@ RUN \
   apt-get install -y libopenblas-dev
 
 RUN \
-    rm -rf h2oai_env && \
-    mkdir -p h2oai_env && \
     mkdir -p .pylint.d && \
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
     eval "$(pyenv init -)" && \
@@ -55,8 +54,6 @@ RUN \
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
 RUN \
-    . h2oai_env/bin/activate && \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
-    chmod -R 777 h2oai_env && \
     chmod 777 /
