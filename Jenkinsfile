@@ -68,7 +68,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                                     nvidia-docker exec ${
                                 CONTAINER_NAME
-                            } bash -c 'chmod -R a+rwx /root ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
+                            } bash -c '/root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
