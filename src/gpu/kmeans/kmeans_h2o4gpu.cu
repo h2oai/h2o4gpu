@@ -7,7 +7,6 @@
 #include <thrust/copy.h>
 #include <thrust/reduce.h>
 #include <thrust/device_vector.h>
-#include <thrust/functional.h>
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <iostream>
@@ -17,22 +16,12 @@
 #include "h2o4gpukmeans.h"
 #include "kmeans_impl.h"
 #include "kmeans_general.h"
-#include "kmeans_labels.h"
+#include "kmeans_h2o4gpu.h"
 #include <random>
 #include <algorithm>
 #include <vector>
 #include <csignal>
 #include "../../common/utils.h"
-
-#define CUDACHECK(cmd) do {                           \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));\
-      fflush( stdout );                               \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
-  } while(0)
 
 /**
  * METHODS FOR DATA COPYING AND GENERATION
@@ -310,75 +299,6 @@ void kmeans_plus_plus(
 
     for (int i = 0; i < curr_pairwise_distances.size(); i++) {
       best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
-    }
-  }
-}
-
-/**
- * Calculates closest centroid for each record and counts how many points are assigned to each centroid.
- * @tparam T
- * @param verbose
- * @param num_gpu
- * @param rows_per_gpu
- * @param cols
- * @param data
- * @param data_dots
- * @param centroids
- * @param weights
- * @param pairwise_distances
- * @param labels
- */
-template<typename T>
-void count_pts_per_centroid(
-    int verbose,
-    int num_gpu, int rows_per_gpu, int cols,
-    thrust::device_vector<T> **data,
-    thrust::device_vector<T> **data_dots,
-    thrust::host_vector<T> centroids,
-    thrust::host_vector<T> weights
-) {
-  thrust::host_vector<T> weights_tmp(weights.size());
-  int k = centroids.size() / cols;
-  for (int i = 0; i < num_gpu; i++) {
-    CUDACHECK(cudaSetDevice(i));
-    thrust::device_vector<T> pairwise_distances(rows_per_gpu * cols);
-    thrust::device_vector<T> centroid_dots(k);
-    thrust::device_vector<T> d_centroids = centroids;
-    kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, k,
-                                        *data[i],
-                                        d_centroids,
-                                        *data_dots[i],
-                                        centroid_dots,
-                                        pairwise_distances);
-
-    thrust::device_vector<T> counts(k);
-    auto counting = thrust::make_counting_iterator(0);
-    auto counts_ptr = counts.data();
-    auto pairwise_distances_ptr = pairwise_distances.data();
-    thrust::for_each(counting, counting + rows_per_gpu, [=]
-    __device__(int
-    idx){
-      int closest_centroid_idx = 0;
-      T best_distance = pairwise_distances_ptr[idx];
-      // FIXME potentially slow due to striding
-      for (int i = 1; i < k; i++) {
-        T distance = pairwise_distances_ptr[idx + i * rows_per_gpu];
-        if (distance < best_distance) {
-          best_distance = distance;
-          closest_centroid_idx = i;
-        }
-      }
-
-      // FIXME needs to be atomic?
-      counts_ptr[closest_centroid_idx] = counts_ptr[closest_centroid_idx] + 1;
-    });
-
-    CUDACHECK(cudaDeviceSynchronize());
-
-    kmeans::detail::memcpy(weights_tmp, counts);
-    kmeans::detail::streamsync(i);
-    for (int p = 0; p < k; p++) {
-      weights[p] += weights_tmp[p];
     }
   }
 }

@@ -7,7 +7,6 @@
 #include <cfloat>
 #include <unistd.h>
 #include "kmeans_general.h"
-#include "timer.h"
 
 cudaStream_t cuda_stream[MAX_NGPUS];
 

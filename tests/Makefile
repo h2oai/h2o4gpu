@@ -1,102 +1,65 @@
-# How to add new test:
-# 1) Add test file (ending with .cu!) in the tests/ directory
-# 2) Add the test file name to TESTS variable (without .cu)
-# 3) Add a "test.o:" target as shown below, example being "test_kmeans_centroids.o"
-#
-# How to run:
-# All tests: make run_tests
-# Single test from test case TestCase named Name: make run_single_test TEST=TestCase.Name
-# All tests from test case TestCase: make run_single_test TEST=TestCase*
+UTEST_ROOT=../tests
+UTEST_OBJ_ROOT=$(UTEST_ROOT)/build
+UNITTEST=$(UTEST_OBJ_ROOT)/cpp_tests
 
-############### Env variable setup
 HOST_OS := $(shell uname -s 2>/dev/null | tr "[:upper:]" "[:lower:]")
 
 ARCH := $(shell getconf LONG_BIT)
 
 ifeq ($(HOST_OS),darwin)
-	CXX := clang++
 	CUDA_PATH ?= /usr/local/cuda
-	LIB_FLAGS := -L$(CUDA_PATH)/lib
+	LIB_FLAGS := $(CUDA_PATH)/lib
 else
-	CXX := g++
 	CUDA_PATH ?= /usr/local/cuda
-	LIB_FLAGS_32 := -L$(CUDA_PATH)/lib
-	LIB_FLAGS_64 := -L$(CUDA_PATH)/lib64
+	LIB_FLAGS_32 := $(CUDA_PATH)/lib
+	LIB_FLAGS_64 := $(CUDA_PATH)/lib64
 	LIB_FLAGS := $(LIB_FLAGS_$(ARCH))
 endif
 
-GTEST_DIR = googletest/googletest
-H2O4GPU_DIR = ..
-
-H2O4GPU_OBJECTS = kmeans_labels
-
-TESTS = test_kmeans_centroids \
-        test_kmeans_labels
-
-GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
-                $(GTEST_DIR)/include/gtest/internal/*.h
-
-CUB_HOME=../cub/
-CPPFLAGS += -isystem $(GTEST_DIR)/include
-CXXFLAGS += -g -Wall -Wextra -pthread --std=c++11
-
-NVCCFLAGS += -g -arch=sm_30 --std=c++11 --expt-extended-lambda
-NVCCFLAGS += -lcublas -lcudart -lcudadevrt -lcuda
-CUXX=$(CUDA_HOME)/bin/nvcc -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
-
-## Headers from H2O4GPU required for test compilation
-GPU_KMEANS_HDR=../src/gpu/kmeans/kmeans_centroids.h
-
-############### Default target
-
-all : clean test_h2o4gpu
-
-clean :
-	rm -f test_h2o4gpu gtest.a gtest_main.a *.o
-	rm -rf *.dSYM
-
 ############### Builds Google Test lib
 
-GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
+GTEST_PATH = $(UTEST_ROOT)/googletest/googletest
+GTEST_HEADERS = $(GTEST_PATH)/include/gtest/*.h \
+                $(GTEST_PATH)/include/gtest/internal/*.h
 
-gtest-all.o : $(GTEST_SRCS_)
-	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-            $(GTEST_DIR)/src/gtest-all.cc
+GTEST_SRCS_ = $(GTEST_PATH)/src/*.cc $(GTEST_PATH)/src/*.h $(GTEST_HEADERS)
 
-gtest_main.o : $(GTEST_SRCS_)
-	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-            $(GTEST_DIR)/src/gtest_main.cc
+GTEST_CPPFLAGS=-isystem $(GTEST_PATH)/include
 
-gtest.a : gtest-all.o
+$(UTEST_OBJ_ROOT)/gtest-all.o : $(GTEST_SRCS_)
+	$(CXX) $(GTEST_CPPFLAGS) -I$(GTEST_PATH) $(CXXFLAGS) -c \
+	        $(GTEST_PATH)/src/gtest-all.cc -o $@
+
+$(UTEST_OBJ_ROOT)/gtest_main.o : $(GTEST_SRCS_)
+	$(CXX) $(GTEST_CPPFLAGS) -I$(GTEST_PATH) $(CXXFLAGS) -c \
+            $(GTEST_PATH)/src/gtest_main.cc -o $@
+
+$(UTEST_OBJ_ROOT)/gtest_main.a : $(UTEST_OBJ_ROOT)/gtest-all.o $(UTEST_OBJ_ROOT)/gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-gtest_main.a : gtest-all.o gtest_main.o
-	$(AR) $(ARFLAGS) $@ $^
+############### H2O4GPU Unit Tests
 
-############### Build H2O4GPU tests
+UNITTEST_SRC=$(wildcard $(UTEST_ROOT)/*.cu $(UTEST_ROOT)/*/*.cu $(UTEST_ROOT)/*/*/*.cu)
+UNITTEST_OBJ=$(patsubst $(UTEST_ROOT)%.cu, $(UTEST_OBJ_ROOT)%.o, $(UNITTEST_SRC))
 
-# Example for when .cuh/.h/.hpp and .cu/.cpp/.cc files are separated
-# test.o: ../src/gpu/kmeans/test.cu ../src/gpu/kmeans/test.cuh $(GPU_KMEANS_HDR)
-#	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+GTEST_INC=$(GTEST_PATH)/include/
 
-kmeans_labels.o: ../src/gpu/kmeans/kmeans_labels.cu ../src/gpu/kmeans/kmeans_labels.h
-	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+COVER_OBJ=$(patsubst %.o, %.gcda, $(ALL_OBJ)) $(patsubst %.o, %.gcda, $(UNITTEST_OBJ))
 
-test_kmeans_labels.o: gpu/kmeans/test_kmeans_labels.cu ../src/gpu/kmeans/kmeans_labels.h
-	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+$(UTEST_OBJ_ROOT)/%.o: $(UTEST_ROOT)/%.cu
+	@mkdir -p $(@D)
+	$(CUXX) $(CUFLAGS) -I$(GTEST_INC) -o $@ -c $<
 
-test_kmeans_centroids.o: gpu/kmeans/test_kmeans_centroids.cu ../src/gpu/kmeans/kmeans_centroids.h
-	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+UTEST_LIBS=-fopenmp -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lblas -lcurand
+UTEST_LD= -L$(CUDA_PATH) -L$(LIB_FLAGS)
 
-test_main.o: test_main.cu
-	$(CUXX) $(CPPFLAGS) $(NVCCFLAGS) -I$(H2O4GPU_DIR) $< -c -o $@
+UTEST_DEPS=$(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CPU_PRJ_OBJ)
 
-test_h2o4gpu: test_main.o $(H2O4GPU_OBJECTS:=.o) $(TESTS:=.o) gtest_main.a
-	$(CXX) $^ -lpthread -lcublas -lcudart -lcudadevrt -lcuda $(LIB_FLAGS) -o $@
-############### Run tests
+$(UNITTEST): $(UNITTEST_OBJ) $(UTEST_DEPS) $(UTEST_OBJ_ROOT)/gtest_main.a
+	$(CXX) $(UTEST_DEPS) $(UNITTEST_OBJ) -o $@ $(UTEST_LIBS) $(UTEST_LD) $(UTEST_OBJ_ROOT)/gtest_main.a -lpthread
 
-run_tests: test_h2o4gpu
-	./test_h2o4gpu
+ALL_TEST=$(UNITTEST)
+ALL_TEST_OBJ=$(UNITTEST_OBJ)
 
-run_single_test: test_h2o4gpu
-	./test_h2o4gpu --gtest_filter=$(TEST)
+clean_cpp_tests:
+	rm -rf $(UTEST_OBJ_ROOT)

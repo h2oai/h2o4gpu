@@ -419,6 +419,14 @@ testsmallperfquick: dotestsmallperf
 
 testbigperfquick: dotestbigperf
 
+#################### CPP Tests
+
+test_cpp:
+	$(MAKE) -j test_cpp -C src/
+
+clean_test_cpp:
+	$(MAKE) -j clean_cpp_tests -C src/
+
 #################### Build info
 
 .PHONY: build/VERSION.txt

@@ -45,7 +45,6 @@ endif
 #CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 CUB_HOME=../cub/
 
-
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
 
 DFLAGS=-DUSEICC=$(USEICC) -DUSEMKL=$(USEMKL)
@@ -279,8 +278,6 @@ $(OBJDIR)/common/utils.o: common/utils.cpp common/utils.h $(GSL_HDR) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -Iinclude -Icpu/include $< -c $(CXXFLAGS) -o $@
 
 
-
-
 $(OBJDIR)/cpu/h2o4gpu.o: cpu/h2o4gpuglm.cpp $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) -c -o $@
 
@@ -297,8 +294,6 @@ $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
 
-
-
 $(OBJDIR)/common/logger.o: common/logger.cpp common/logger.h | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $< -c $(CXXFLAGS) -o $@
 
@@ -308,3 +303,8 @@ clean:
 	find -name "*.so" -delete
 	find -name "*.a" -delete
 	find -name "*.o" -delete
+
+include ../tests/Makefile
+
+test_cpp: $(ALL_TEST)
+	$(ALL_TEST)
