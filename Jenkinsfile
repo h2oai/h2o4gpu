@@ -37,7 +37,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "gpu && nvidia-docker && !mr-dl16"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -60,7 +60,7 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -68,7 +68,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                                     nvidia-docker exec ${
                                 CONTAINER_NAME
-                            } bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${
+                            } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
@@ -104,7 +104,7 @@ pipeline {
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; . /h2oai_env/bin/activate; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/dist -name "*h2o4gpu*.whl"`; make dotest'
                         """
                     } finally {
                         sh """
@@ -120,7 +120,7 @@ pipeline {
 
         stage('Pylint on Linux') {
             agent {
-                label "gpu && nvidia-docker && !mr-dl16"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -134,10 +134,10 @@ pipeline {
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
-                            nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                            nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; make pylint'
+                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
                             nvidia-docker stop ${CONTAINER_NAME}
                         """
                 }
@@ -192,7 +192,7 @@ pipeline {
 
         stage('Build on Linux nonccl xgboost') {
             agent {
-                label "gpu && nvidia-docker && !mr-dl16"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -215,13 +215,13 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl2'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -236,7 +236,7 @@ pipeline {
         }
         stage('Publish to S3 nonccl xgboost') {
             agent {
-                label "linux && !mr-dl16"
+                label "mr-dl11"
             }
 
             steps {
@@ -271,7 +271,7 @@ pipeline {
         }
         stage('Build on Linux nonccl xgboost cuda9') {
             agent {
-                label "gpu && nvidia-docker && !mr-dl16"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -294,13 +294,13 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-cuda9-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-cuda9-build .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2oai_env/bin/activate; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist3/*.whl', name: 'linux_whl3'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -315,7 +315,7 @@ pipeline {
         }
         stage('Publish to S3 nonccl xgboost cuda9') {
             agent {
-                label "linux && !mr-dl16"
+                label "mr-dl11"
             }
 
             steps {
@@ -353,7 +353,7 @@ pipeline {
     }
     post {
         failure {
-            node('linux && !mr-dl16') {
+            node('mr-dl11') {
                 script {
                     // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
                     def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
