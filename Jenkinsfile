@@ -37,7 +37,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "gpu && nvidia-docker && mr-dl11"
+                label "nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -86,7 +86,7 @@ pipeline {
 
         stage('Test on Linux') {
             agent {
-                label "mr-dl11"
+                label "gpu && nvidia-docker"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -120,7 +120,7 @@ pipeline {
 
         stage('Pylint on Linux') {
             agent {
-                label "gpu && nvidia-docker && mr-dl11"
+                label "gpu && nvidia-docker"
             }
 
             steps {
@@ -146,7 +146,7 @@ pipeline {
 
         stage('Publish to S3') {
             agent {
-                label "docker"
+                label "linux"
             }
 
             steps {
@@ -192,7 +192,7 @@ pipeline {
 
         stage('Build on Linux nonccl xgboost') {
             agent {
-                label "gpu && nvidia-docker && mr-dl11"
+                label "nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -236,7 +236,7 @@ pipeline {
         }
         stage('Publish to S3 nonccl xgboost') {
             agent {
-                label "mr-dl11"
+                label "linux"
             }
 
             steps {
@@ -271,7 +271,7 @@ pipeline {
         }
         stage('Build on Linux nonccl xgboost cuda9') {
             agent {
-                label "gpu && nvidia-docker && mr-dl11"
+                label "nvidia-docker && mr-dl11"
             }
 
             steps {
@@ -315,7 +315,7 @@ pipeline {
         }
         stage('Publish to S3 nonccl xgboost cuda9') {
             agent {
-                label "mr-dl11"
+                label "linux"
             }
 
             steps {
