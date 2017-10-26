@@ -86,7 +86,7 @@ pipeline {
 
         stage('Test on Linux') {
             agent {
-                label "gpu && nvidia-docker"
+                label "gpu && nvidia-docker && mr-dl11"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -120,7 +120,7 @@ pipeline {
 
         stage('Pylint on Linux') {
             agent {
-                label "gpu && nvidia-docker"
+                label "gpu && nvidia-docker && mr-dl11"
             }
 
             steps {
