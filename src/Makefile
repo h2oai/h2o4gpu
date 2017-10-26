@@ -304,7 +304,7 @@ clean:
 	find -name "*.a" -delete
 	find -name "*.o" -delete
 
-include ../tests/Makefile
+include ../tests/cpp/Makefile
 
 test_cpp: $(ALL_TEST)
 	$(ALL_TEST)

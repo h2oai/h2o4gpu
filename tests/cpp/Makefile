@@ -1,4 +1,4 @@
-UTEST_ROOT=../tests
+UTEST_ROOT=../tests/cpp
 UTEST_OBJ_ROOT=$(UTEST_ROOT)/build
 UNITTEST=$(UTEST_OBJ_ROOT)/cpp_tests
 
