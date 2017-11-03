@@ -20,6 +20,7 @@
 #include <random>
 #include <algorithm>
 #include <vector>
+#include <set>
 #include <csignal>
 #include "../../common/utils.h"
 
@@ -178,43 +179,51 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
 template<typename T>
 int pick_point_idx_weighted(
+    int seed,
     std::vector<T> *data,
     thrust::host_vector<T> weights) {
-  T weight_sum = thrust::reduce(
-      weights.begin(),
-      weights.end()
-  );
+  T weighted_sum = 0;
 
-  T data_sum = 1.0;
-  if (data) {
-    data_sum = thrust::reduce(
-        data->begin(),
-        data->end()
-    );
+  for(int i = 0; i < weights.size(); i++) {
+    if(data) {
+      weighted_sum += (data->data()[i] * weights.data()[i]);
+    } else {
+      weighted_sum += weights.data()[i];
+    }
   }
 
-  // TODO this shouldn't probably be rand() but something better and done for each record separately
-  T r = ((T) rand() / (T) RAND_MAX) * weight_sum * data_sum;
-  int i = -1;
-  T cur_weight = 0.0;
   T best_prob = 0.0;
   int best_prob_idx = 0;
-  while (i < data->size() && cur_weight < r) {
-    T data_val = 1.0;
-    if (data) {
-      data_val = data->data()[i];
+
+  std::mt19937 mt(seed);
+  std::uniform_real_distribution<> dist(0.0, 1.0);
+
+  int i = 0;
+  for(i = 0; i <= weights.size(); i++) {
+    if(weights.size() == i) {
+      break;
     }
 
-    T curr_prob = data_val * weights[i];
-    if (curr_prob >= best_prob) {
-      best_prob = curr_prob;
+    T prob_threshold = (T) dist(mt);
+
+    T data_val = weights.data()[i];
+    if (data) {
+      data_val *= data->data()[i];
+    }
+
+    T prob_x = ((2 * data_val) / weighted_sum);
+
+    if(prob_x > prob_threshold) {
+      break;
+    }
+
+    if (prob_x >= best_prob) {
+      best_prob = prob_x;
       best_prob_idx = i;
     }
-
-    cur_weight += (data_val * weights[i]);
-    i += 1;
   }
-  return i > -1 ? i : best_prob_idx;
+
+  return weights.size() == i ? best_prob_idx : i;
 }
 
 /**
@@ -235,7 +244,7 @@ void add_centroid(int idx, int cols,
   for (int i = 0; i < cols; i++) {
     centroids.push_back(data[idx * cols + i]);
   }
-  for (int i = 0; i < cols; i++) {
+  for (int i = cols - 1; i >= 0; i--) {
     data.erase(data.begin() + idx * cols + i);
   }
   weights.erase(weights.begin() + idx);
@@ -261,6 +270,7 @@ void kmeans_plus_plus(
     thrust::host_vector<T> &centroids) {
 
   int centroid_idx = pick_point_idx_weighted(
+      seed,
       (std::vector<T> *) NULL,
       weights
   );
@@ -276,8 +286,9 @@ void kmeans_plus_plus(
                     best_pairwise_distances,
                     data.size(), cols, 1);
 
-  for (int iter = 0; iter < k; iter++) {
+  for (int iter = 0; iter < k - 1; iter++) {
     centroid_idx = pick_point_idx_weighted(
+        seed,
         &best_pairwise_distances,
         weights
     );
@@ -341,8 +352,9 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   std::uniform_int_distribution<> dis(0, rows - 1);
 
   // Find the position (GPU idx and idx on that GPU) of the initial centroid
-  int first_center_idx = dis(gen) % rows_per_gpu;
-  int first_center_gpu = first_center_idx / rows_per_gpu;
+  int first_center = dis(gen);
+  int first_center_idx = first_center % rows_per_gpu;
+  int first_center_gpu = first_center / rows_per_gpu;
 
   // Copies the initial centroid to potential centroids vector. That vector will store all potential centroids found
   // in the previous iteration.
@@ -350,9 +362,10 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   std::vector<thrust::host_vector<T>> h_potential_centroids_per_gpu(num_gpu);
 
   CUDACHECK(cudaSetDevice(first_center_gpu));
+
   thrust::copy(
-      (*data)[first_center_gpu].begin() + first_center_idx * cols,
-      (*data)[first_center_gpu].begin() + (first_center_idx + 1) * cols,
+      (*data[first_center_gpu]).begin() + first_center_idx * cols,
+      (*data[first_center_gpu]).begin() + (first_center_idx + 1) * cols,
       h_potential_centroids.begin()
   );
 
@@ -367,7 +380,8 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     CUDACHECK(cudaDeviceSynchronize());
   }
 
-  // TODO calculate initial min distance sum and set max_counter = log(min_distance_sum)
+  // The original white paper claims 5 should be enough
+//  int max_tries = std::max(std::log(k), 5);
   for (int counter = 0; counter < 5; counter++) {
     T total_min_cost = 0.0;
 
@@ -410,12 +424,14 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
           d_min_costs[i].begin(),
           d_min_costs[i].end()
       );
+
     }
 
     if(total_min_cost == 0) {
       continue;
     }
 
+    std::set<int> copy_from_gpus;
     for (int i = 0; i < num_gpu; i++) {
       CUDACHECK(cudaSetDevice(i));
 
@@ -426,18 +442,14 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       int pot_cent_num = thrust::count_if(
           pot_cent_filter_counter,
           pot_cent_filter_counter + rows_per_gpu, [=]__device__(int idx){
-            if(min_costs_ptr[idx] == 0) {
-              return false;
-            }
-
             thrust::default_random_engine rng(seed);
-            thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+            thrust::uniform_real_distribution<> dist(0.0, 1.0);
             int device;
             cudaGetDevice(&device);
             rng.discard(idx + device * rows_per_gpu);
             T prob_threshold = (T) dist(rng);
 
-            T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+            T prob_x = ((k * min_costs_ptr[idx]) / total_min_cost);
 
             return prob_x > prob_threshold;
           }
@@ -446,6 +458,8 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       CUDACHECK(cudaDeviceSynchronize());
 
       if (pot_cent_num > 0) {
+        copy_from_gpus.insert(i);
+
         // Copy all potential cluster centers
         thrust::device_vector<T> d_new_potential_centroids(pot_cent_num * cols);
 
@@ -459,38 +473,16 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
             (*data[i]).begin(), (*data[i]).end(), range.begin(),
             d_new_potential_centroids.begin(), [=] __device__(int idx){
               int row = idx / cols;
-
-              if(min_costs_ptr[row] == 0 || row < 0 || row >= rows_per_gpu) {
-                return false;
-              }
-
               thrust::default_random_engine rng(seed);
-              thrust::uniform_real_distribution<T> dist(0.f, 1.f);
+              thrust::uniform_real_distribution<> dist(0.0, 1.0);
               int device;
               cudaGetDevice(&device);
               rng.discard(row + device * rows_per_gpu);
               T prob_threshold = (T) dist(rng);
 
-              T prob_x = ((2 * k * min_costs_ptr[row]) / total_min_cost);
+              T prob_x = ((k * min_costs_ptr[row]) / total_min_cost);
 
               return prob_x > prob_threshold;
-        });
-
-        // Mark currently used potential centroids as "already used"
-        auto min_cost_counter = thrust::make_counting_iterator(0);
-        thrust::for_each(min_cost_counter, min_cost_counter + rows_per_gpu, [=]__device__(int idx){
-          thrust::default_random_engine rng(seed);
-          thrust::uniform_real_distribution<T> dist(0.f, 1.f);
-          int device;
-          cudaGetDevice(&device);
-          rng.discard(idx + device * rows_per_gpu);
-          T prob_threshold = (T) dist(rng);
-
-          T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
-
-          if(prob_x > prob_threshold) {
-            min_costs_ptr[idx] = 0;
-          }
         });
 
         CUDACHECK(cudaDeviceSynchronize());
@@ -521,12 +513,14 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
       int offset = 0;
       for (int i = 0; i < num_gpu; i++) {
-        thrust::copy(
-            h_potential_centroids_per_gpu[i].begin(),
-            h_potential_centroids_per_gpu[i].end(),
-            h_potential_centroids.begin() + offset
-        );
-        offset += h_potential_centroids_per_gpu[i].size();
+        if(copy_from_gpus.find(i) != copy_from_gpus.end()) {
+          thrust::copy(
+              h_potential_centroids_per_gpu[i].begin(),
+              h_potential_centroids_per_gpu[i].end(),
+              h_potential_centroids.begin() + offset
+          );
+          offset += h_potential_centroids_per_gpu[i].size();
+        }
       }
 
       thrust::copy(
@@ -537,7 +531,6 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     }
   }
 
-  std::uniform_int_distribution<> dis_k(0, k - 1);
   thrust::host_vector<T> final_centroids(0);
   int potential_centroids_num = h_all_potential_centroids.size() / cols;
 
@@ -571,6 +564,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
         k, cols,
         final_centroids
     );
+
   }
 
   return final_centroids;

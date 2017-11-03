@@ -7,6 +7,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/functional.h>
 #include "kmeans_labels.h"
+#include "kmeans_centroids.h"
 
 #define CUDACHECK(cmd) do {                           \
     cudaError_t e = cmd;                              \
@@ -41,13 +42,15 @@ void count_pts_per_centroid(
     thrust::host_vector<T> centroids,
     thrust::host_vector<T> &weights
 ) {
-  thrust::host_vector<T> weights_tmp(weights.size());
   int k = centroids.size() / cols;
   for (int i = 0; i < num_gpu; i++) {
+    thrust::host_vector<T> weights_tmp(weights.size());
+
     CUDACHECK(cudaSetDevice(i));
-    thrust::device_vector<T> pairwise_distances(rows_per_gpu * cols);
+    thrust::device_vector<T> pairwise_distances(rows_per_gpu * k);
     thrust::device_vector<T> centroid_dots(k);
     thrust::device_vector<T> d_centroids = centroids;
+
     kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, k,
                                         *data[i],
                                         d_centroids,
@@ -57,22 +60,21 @@ void count_pts_per_centroid(
 
     thrust::device_vector<T> counts(k);
     auto counting = thrust::make_counting_iterator(0);
-    auto counts_ptr = counts.data();
-    auto pairwise_distances_ptr = pairwise_distances.data();
+    auto counts_ptr = thrust::raw_pointer_cast(counts.data());
+    auto pairwise_distances_ptr = thrust::raw_pointer_cast(pairwise_distances.data());
     thrust::for_each(counting, counting + rows_per_gpu, [=]__device__(int idx){
       int closest_centroid_idx = 0;
       T best_distance = pairwise_distances_ptr[idx];
       // FIXME potentially slow due to striding
       for (int i = 1; i < k; i++) {
         T distance = pairwise_distances_ptr[idx + i * rows_per_gpu];
+
         if (distance < best_distance) {
           best_distance = distance;
           closest_centroid_idx = i;
         }
       }
-
-      // FIXME needs to be atomic?
-      counts_ptr[closest_centroid_idx] = counts_ptr[closest_centroid_idx] + 1;
+      my_atomic_add(&counts_ptr[closest_centroid_idx], 1);
     });
 
     CUDACHECK(cudaDeviceSynchronize());
@@ -80,7 +82,7 @@ void count_pts_per_centroid(
     kmeans::detail::memcpy(weights_tmp, counts);
     kmeans::detail::streamsync(i);
     for (int p = 0; p < k; p++) {
-      weights[p] += weights_tmp[p] + 1;
+      weights[p] += weights_tmp[p];
     }
   }
 }

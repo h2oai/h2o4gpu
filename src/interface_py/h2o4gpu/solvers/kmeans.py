@@ -133,8 +133,7 @@ class KMeansH2O(object):
             self,
             # sklearn API (but with possibly different choices for defaults)
             n_clusters=8,
-            # init='k-means++',
-            init='random',
+            init='k-means++',
             n_init=1,
             max_iter=300,
             tol=1e-4,
@@ -683,8 +682,7 @@ class KMeans(object):
     def __init__(
             self,
             n_clusters=8,
-            #init='k-means++',
-            init='random',
+            init='k-means++',
             n_init=1,
             max_iter=300,
             tol=1e-4,
