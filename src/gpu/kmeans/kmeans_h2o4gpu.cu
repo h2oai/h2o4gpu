@@ -381,7 +381,6 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   }
 
   // The original white paper claims 5 should be enough
-//  int max_tries = std::max(std::log(k), 5);
   for (int counter = 0; counter < 5; counter++) {
     T total_min_cost = 0.0;
 
@@ -415,6 +414,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
         for (int j = 0; j < potential_k_rows; j++) {
           best = min(best, std::abs(all_costs_ptr[j * rows_per_gpu + idx]));
         }
+
         min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
       });
 
@@ -425,9 +425,10 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
           d_min_costs[i].end()
       );
 
+      CUDACHECK(cudaDeviceSynchronize());
     }
 
-    if(total_min_cost == 0) {
+    if(total_min_cost == (T) 0.0) {
       continue;
     }
 
@@ -449,7 +450,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
             rng.discard(idx + device * rows_per_gpu);
             T prob_threshold = (T) dist(rng);
 
-            T prob_x = ((k * min_costs_ptr[idx]) / total_min_cost);
+            T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
 
             return prob_x > prob_threshold;
           }
@@ -480,7 +481,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
               rng.discard(row + device * rows_per_gpu);
               T prob_threshold = (T) dist(rng);
 
-              T prob_x = ((k * min_costs_ptr[row]) / total_min_cost);
+              T prob_x = ((2 * k * min_costs_ptr[row]) / total_min_cost);
 
               return prob_x > prob_threshold;
         });
@@ -549,13 +550,14 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     thrust::host_vector<T> weights(potential_centroids_num);
 
     // Weights correspond to the number of data points assigned to each potential cluster center
-    count_pts_per_centroid(
+    // TODO uncomment
+    /*count_pts_per_centroid(
         verbose, num_gpu,
         rows_per_gpu, cols,
         data, data_dots,
         h_all_potential_centroids,
         weights
-    );
+    );*/
 
     kmeans_plus_plus(
         seed,

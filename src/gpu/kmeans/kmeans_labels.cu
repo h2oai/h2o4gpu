@@ -102,7 +102,10 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
   int abs_row_c = block_start_row_index + threadIdx.x / k;
   int row_c = threadIdx.x / k;
 
-  if (abs_row_c >= n) {
+  // Thread/Block combination either too far for data array
+  // Or is calculating for index that should be calculated in a different blocks - in some edge cases
+  // "col_c * n + abs_row_c" can yield same result in different thread/block combinations
+  if (abs_row_c >= n || threadIdx.x >= block_rows * k) {
     return;
   }
 
@@ -150,6 +153,8 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
+
+    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
@@ -214,6 +219,7 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
+    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
