@@ -550,14 +550,13 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     thrust::host_vector<T> weights(potential_centroids_num);
 
     // Weights correspond to the number of data points assigned to each potential cluster center
-    // TODO uncomment
-    /*count_pts_per_centroid(
+    count_pts_per_centroid(
         verbose, num_gpu,
         rows_per_gpu, cols,
         data, data_dots,
         h_all_potential_centroids,
         weights
-    );*/
+    );
 
     kmeans_plus_plus(
         seed,
