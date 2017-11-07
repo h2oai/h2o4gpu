@@ -1,6 +1,6 @@
 #How to run:
-#To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
-#To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
+#To build: docker build -t opsh2o4gpu/h2o4gpu-cuda9-runtime -f Dockerfile-cuda9-runtime .
+#To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-cuda9-runtime &
 
 FROM nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04
 MAINTAINER H2o.ai <ops@h2o.ai>
