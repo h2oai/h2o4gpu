@@ -33,6 +33,9 @@ TEST(KMeans, CountsPerCentroids) {
   // WHEN
   count_pts_per_centroid(0, 1, n, d, &d_data, &d_data_dots, h_centroids, h_weights);
 
+  delete(d_data);
+  delete(d_data_dots);
+
   // THEN
   ASSERT_FLOAT_EQ(1.0f, h_weights.data()[0]);
   ASSERT_FLOAT_EQ(3.0f, h_weights.data()[1]);
@@ -82,6 +85,9 @@ TEST(KMeans, CentroidPerDataPoint) {
   ASSERT_FLOAT_EQ(1.0f, h_weights.data()[3]);
   ASSERT_FLOAT_EQ(1.0f, h_weights.data()[4]);
   ASSERT_FLOAT_EQ(1.0f, h_weights.data()[5]);
+
+  delete(d_data);
+  delete(d_data_dots);
 
   SUCCEED();
 
