@@ -609,7 +609,8 @@ class KMeansH2O(object):
         cpu_lib = CPUlib().get()
 
         if (self.n_gpus == 0) or (gpu_lib is None) or (self.devices == 0):
-            raise NotImplementedError("KMeans for CPU not yet supported.")
+            self._print_verbose(0, "H2O KMeans for CPU not yet supported.")
+            return None
         elif (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
             self._print_verbose(
                 0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
@@ -714,21 +715,35 @@ class KMeans(object):
             example = np.array([1, 2, 3])
             # pylint: disable=unidiomatic-typecheck
             if type(init) == type(example):
-                print("WARNING: init as ndarray of centers not yet supported."
-                      "  Using sklearn.")
+                KMeans._print_verbose(
+                    verbose,
+                    0,
+                    "'init' as ndarray of centers not yet supported."
+                    "Running ScikitLearn CPU version."
+                )
                 self.do_sklearn = True
             else:
                 if init == "k-means++":
-                    print("WARNING: init as k-means++ not yet supported."
-                          "  Using sklearn.")
+                    KMeans._print_verbose(
+                        verbose,
+                        0,
+                        "'init' as k-means++ not yet supported."
+                    )
                     self.do_sklearn = True
             # FIXME: Add n_init to h2o4gpu
             if n_init != 1:
-                print("WARNING: n_init not supported currently."
-                      "  Still using h2o4gpu.")
+                KMeans._print_verbose(
+                    verbose,
+                    0,
+                    "'n_init' not supported. "
+                    "Running h2o4gpu with n_init = 1."
+                )
             if precompute_distances != "auto":
-                print("WARNING: precompute_distances not used."
-                      "  Still using h2o4gpu.")
+                KMeans._print_verbose(
+                    verbose,
+                    0,
+                    "'precompute_distances' not used."
+                )
         elif backend == 'sklearn':
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
@@ -769,10 +784,20 @@ class KMeans(object):
             init_data=init_data,
             do_checks=do_checks)
 
-        if self.do_sklearn:
+        if self.do_sklearn or self.model_h2o4gpu._load_lib() is None:
             self.model = self.model_sklearn
+            KMeans._print_verbose(
+                verbose,
+                0,
+                "Using ScikitLearn backend."
+            )
         else:
             self.model = self.model_h2o4gpu
+            KMeans._print_verbose(
+                verbose,
+                0,
+                "Using h2o4gpu backend."
+            )
 
     def fit(self, X, y=None):
         res = self.model.fit(X, y)
@@ -822,3 +847,10 @@ class KMeans(object):
         s('oself.labels_ = oself.model.labels_')
         self.inertia_ = None
         s('oself.inertia_ = oself.model.intertia_')
+
+    # TODO use a proper logger in Python classes
+    @staticmethod
+    def _print_verbose(verbose, level, msg):
+        if verbose > level:
+            print(msg)
+            sys.stdout.flush()
