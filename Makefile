@@ -127,10 +127,16 @@ fullinstall: clean alldeps sync_open_data build install
 	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullinstall2: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+
 runtime:
 	$(MAKE) py
 	@echo "+--Building Runtime Docker Image--+"
 	docker build -t opsh2oai/h2o4gpu-runtime:latest -f Dockerfile-runtime .
+
+runtimecuda9:
+	$(MAKE) py
+	@echo "+--Building Runtime Docker Image for cuda9--+"
+	docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
 #############################################
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
@@ -201,9 +207,17 @@ wheel_in_docker:
 	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
 
+wheel_in_docker_cuda9:
+	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+
 clean_in_docker:
 	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
+
+clean_in_docker_cuda9:
+	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make clean'
 
 ###################
 xgboost_clean:
