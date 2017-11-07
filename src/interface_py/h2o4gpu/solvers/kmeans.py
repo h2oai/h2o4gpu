@@ -783,7 +783,7 @@ class KMeans(object):
             n_gpus=n_gpus,
             init_data=init_data,
             do_checks=do_checks)
-
+        # pylint: disable=protected-access
         if self.do_sklearn or self.model_h2o4gpu._load_lib() is None:
             self.model = self.model_sklearn
             KMeans._print_verbose(
