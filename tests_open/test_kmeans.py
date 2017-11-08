@@ -29,7 +29,7 @@ class TestKmeans(object):
 
         # Same random_state should yield same results
         assert np.allclose(
-            model.cluster_centers_, model_rerun.cluster_centers_
+            np.sort(model.cluster_centers_, axis=0), np.sort(model_rerun.cluster_centers_, axis=0)
         )
 
         model_rerun2 = model_rerun.fit(X)
@@ -37,14 +37,14 @@ class TestKmeans(object):
         # Multiple invocations of fit with the same random_state
         # also should produce the same result
         assert np.allclose(
-            model_rerun.cluster_centers_, model_rerun2.cluster_centers_
+            np.sort(model_rerun.cluster_centers_, axis=0), np.sort(model_rerun2.cluster_centers_, axis=0)
         )
 
         model_all = KMeans(n_clusters=clusters, random_state=123).fit(X)
 
         # Multi GPU should yield same result as single GPU
         assert np.allclose(
-            model.cluster_centers_, model_all.cluster_centers_
+            np.sort(model.cluster_centers_, axis=0), np.sort(model_all.cluster_centers_, axis=0)
         )
 
     def test_fit_vs_sk_iris(self):
@@ -106,7 +106,7 @@ class TestKmeans(object):
         print("passed 1")
 
         print("Running model_rerun")
-        model_rerun = KMeans(n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        model_rerun = KMeans(max_iter=1, n_gpus=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
         import sys
         print(model_rerun.cluster_centers_)
         sys.stdout.flush()
@@ -120,7 +120,7 @@ class TestKmeans(object):
         from sklearn.cluster import KMeans as KMeans_test
 
         print("Running model_rerun2")
-        model_rerun2 = KMeans_test(n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
+        model_rerun2 = KMeans_test(max_iter=1, n_clusters=clusters, random_state=123, init=model.cluster_centers_, n_init=1).fit(X)
         print(model_rerun2.cluster_centers_)
         sys.stdout.flush()
 
@@ -131,15 +131,14 @@ class TestKmeans(object):
 
     def test_accuracy(self):
         from sklearn.cluster import KMeans as skKMeans
-        n_samples = 100000
+        n_samples = 500000
         centers = 10
         X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
                                     cluster_std=1., random_state=42)
 
         kmeans_h2o = KMeans(n_gpus=1, n_clusters=centers, random_state=42)
         kmeans_h2o.fit(X)
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random',
-                             random_state=42)
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, random_state=42)
         kmeans_sk.fit(X)
 
         accuracy_h2o = v_measure_score(kmeans_h2o.labels_, true_labels)
@@ -162,8 +161,7 @@ class TestKmeans(object):
         kmeans_h2o.fit(X)
         end_h2o = time.time()
 
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, init='random',
-                             algorithm='full', n_jobs=-1)
+        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, algorithm='full', n_jobs=-1)
         start_sk = time.time()
         kmeans_sk.fit(X)
         end_sk = time.time()

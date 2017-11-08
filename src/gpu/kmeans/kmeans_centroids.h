@@ -7,7 +7,7 @@
 #include <thrust/sort.h>
 #include "kmeans_labels.h"
 
-__device__ double my_atomic_add(double *address, double val) {
+inline __device__ double my_atomic_add(double *address, double val) {
   unsigned long long int *address_as_ull =
       (unsigned long long int *) address;
   unsigned long long int old = *address_as_ull, assumed;
@@ -20,7 +20,7 @@ __device__ double my_atomic_add(double *address, double val) {
   return __longlong_as_double(old);
 }
 
-__device__ float my_atomic_add(float *address, float val) {
+inline __device__ float my_atomic_add(float *address, float val) {
   return (atomicAdd(address, val));
 }
 
@@ -93,13 +93,6 @@ __global__ void revert_zeroed_centroids(int d, int k,
     if (counts[global_id_y] < 1) {
       centroids[global_id_x + d * global_id_y] = tmp_centroids[global_id_x + d * global_id_y];
     }
-  }
-}
-
-__global__ void normalize_counts(int k, int *counts) {
-  int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
-  if (global_id_y < k && counts[global_id_y] < 1) {
-    counts[global_id_y] = 1;
   }
 }
 
