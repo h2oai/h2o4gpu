@@ -721,14 +721,6 @@ class KMeans(object):
                     "Running ScikitLearn CPU version."
                 )
                 self.do_sklearn = True
-            else:
-                if init == "k-means++":
-                    KMeans._print_verbose(
-                        verbose,
-                        0,
-                        "'init' as k-means++ not yet supported."
-                    )
-                    self.do_sklearn = True
             # FIXME: Add n_init to h2o4gpu
             if n_init != 1:
                 KMeans._print_verbose(
