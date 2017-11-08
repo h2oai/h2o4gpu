@@ -37,7 +37,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "nvidia-docker && mr-dl16 && mr-dl8"
+                label "mr-dl16"
             }
 
             steps {
@@ -86,7 +86,7 @@ pipeline {
 
         stage('Test on Linux') {
             agent {
-                label "gpu && nvidia-docker && mr-dl16 && mr-dl8"
+                label "mr-dl16"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -120,7 +120,7 @@ pipeline {
 
         stage('Pylint on Linux') {
             agent {
-                label "gpu && nvidia-docker && mr-dl16 && mr-dl8"
+                label "mr-dl16"
             }
 
             steps {
@@ -192,7 +192,7 @@ pipeline {
 
         stage('Build on Linux nonccl xgboost') {
             agent {
-                label "nvidia-docker && mr-dl16 && mr-dl8"
+                label "mr-dl16"
             }
 
             steps {
@@ -271,7 +271,7 @@ pipeline {
         }
         stage('Build on Linux nonccl xgboost cuda9') {
             agent {
-                label "nvidia-docker && mr-dl16 && mr-dl8"
+                label "mr-dl16"
             }
 
             steps {
@@ -353,7 +353,7 @@ pipeline {
     }
     post {
         failure {
-            node('mr-dl16 && mr-dl8') {
+            node('mr-dl16') {
                 script {
                     // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
                     def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
