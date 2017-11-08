@@ -66,6 +66,7 @@ int kmeans(
   thrust::device_vector<int> *range[MAX_NGPUS];
   thrust::device_vector<int> *indices[MAX_NGPUS];
   thrust::device_vector<int> *counts[MAX_NGPUS];
+  thrust::device_vector<T> d_old_centroids(k * d);
 
   thrust::host_vector<int> h_counts(k);
   thrust::host_vector<int> h_counts_tmp(k);
@@ -73,8 +74,8 @@ int kmeans(
   h_centroids = *centroids[0]; // all should be equal
   thrust::host_vector<T> h_centroids_tmp(k * d);
 
-  int h_changes[MAX_NGPUS], *d_changes[MAX_NGPUS];
-  T h_distance_sum[MAX_NGPUS], *d_distance_sum[MAX_NGPUS];
+  int *d_changes[MAX_NGPUS];
+  T *d_distance_sum[MAX_NGPUS];
 
   for (int q = 0; q < n_gpu; q++) {
     if (verbose) {
@@ -136,6 +137,10 @@ int kmeans(
 
     for (int q = 0; q < n_gpu; q++) {
       safe_cuda(cudaSetDevice(dList[q]));
+
+      if( 0 == q ) {
+        d_old_centroids = *centroids[q];
+      }
 
       detail::calculate_distances(verbose, q, n / n_gpu, d, k,
                                   *data[q], *centroids[q], *data_dots[q],
@@ -212,34 +217,21 @@ int kmeans(
 
     // whether to perform per iteration check
     if (do_per_iter_check) {
-      double distance_sum = 0.0;
-      int moved_points = 0.0;
-      for (int q = 0; q < n_gpu; q++) {
-        safe_cuda(cudaSetDevice(dList[q])); //  unnecessary
-        safe_cuda(cudaMemcpyAsync(h_changes + q, d_changes[q], sizeof(int), cudaMemcpyDeviceToHost, cuda_stream[q]));
-        safe_cuda(cudaMemcpyAsync(h_distance_sum + q,
-                                  d_distance_sum[q],
-                                  sizeof(T),
-                                  cudaMemcpyDeviceToHost,
-                                  cuda_stream[q]));
-        detail::streamsync(dList[q]);
-        if (verbose >= 2) {
-          std::cout << "Device " << dList[q] << ":  Iteration " << i << " produced " << h_changes[q]
-                    << " changes and the total_distance is " << h_distance_sum[q] << std::endl;
-        }
-        distance_sum += h_distance_sum[q];
-        moved_points += h_changes[q];
-      }
-      if (i > 0) {
-        double fraction = (double) moved_points / n;
-#define NUMSTEP 10
-        if (verbose > 1 && (i <= 1 || i % NUMSTEP == 0)) {
-          std::cout << "Iteration: " << i << ", moved points: " << moved_points << std::endl;
-        }
-        if (fraction < threshold) {
-          if (verbose) { std::cout << "Threshold triggered. Terminating early." << std::endl; }
-          done = true;
-        }
+      safe_cuda(cudaSetDevice(dList[0]));
+      thrust::device_vector<T> diff(d_old_centroids.size());
+
+      thrust::transform(
+          d_old_centroids.begin(), d_old_centroids.end(),
+          (*centroids[0]).begin(),
+          diff.begin(),
+          thrust::minus<T>()
+      );
+      thrust::device_vector<T> squared_norm(1);
+      kmeans::detail::make_self_dots(1, k * d, diff, squared_norm);
+
+      if (squared_norm[0] < threshold) {
+        if (verbose) { std::cout << "Threshold triggered. Terminating early." << std::endl; }
+        done = true;
       }
     }
 
