@@ -53,13 +53,13 @@ int kmeans(
     thrust::device_vector<int> **labels,
     thrust::device_vector<T> **centroids,
     thrust::device_vector<T> **distances,
+    thrust::device_vector<T> **data_dots,
     std::vector<int> dList,
     int n_gpu,
     int max_iterations,
     double threshold = 1e-3,
     bool do_per_iter_check = true) {
 
-  thrust::device_vector<T> *data_dots[MAX_NGPUS];
   thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
   thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
   thrust::device_vector<int> *labels_copy[MAX_NGPUS];
@@ -85,10 +85,8 @@ int kmeans(
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaMalloc(&d_changes[q], sizeof(int)));
     safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
-    detail::labels_init();
 
     try {
-      data_dots[q] = new thrust::device_vector<T>(n / n_gpu);
       centroid_dots[q] = new thrust::device_vector<T>(k);
       pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
       labels_copy[q] = new thrust::device_vector<int>(n / n_gpu);
@@ -124,8 +122,6 @@ int kmeans(
       fprintf(stderr, "Before make_self_dots: gpu: %d\n", q);
       fflush(stderr);
     }
-
-    detail::make_self_dots(n / n_gpu, d, *data[q], *data_dots[q]);
   }
 
   if (verbose) {
@@ -271,9 +267,7 @@ int kmeans(
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaFree(d_changes[q]));
-    detail::labels_close();
     delete (pairwise_distances[q]);
-    delete (data_dots[q]);
     delete (centroid_dots[q]);
     delete (labels_copy[q]);
     delete (range[q]);

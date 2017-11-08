@@ -1,3 +1,4 @@
+
 include ../config2.mk
 
 H2O4GPUROOT=../
@@ -104,12 +105,13 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/gpu/projector/projector_direct_dense.o \
 	$(H2O4GPUROOT)/build/gpu/projector/projector_cgls.o \
 	$(H2O4GPUROOT)/build/gpu/elastic_net_ptr.o \
-	$(H2O4GPUROOT)/build/common/logger.o    \
 	$(H2O4GPUROOT)/build/gpu/tsvd/tsvd.o   \
-        $(H2O4GPUROOT)/build/gpu/tsvd/matrix.o
+    $(H2O4GPUROOT)/build/gpu/tsvd/matrix.o \
+	$(H2O4GPUROOT)/build/common/logger.o \
+	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
-PYCUDART=$(CUDAHOME)/libcudart.so	
+PYCUDART=$(CUDAHOME)/libcudart.so
 
 
 .PHONY: default all clean cpulib gpulib

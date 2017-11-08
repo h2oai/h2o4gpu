@@ -133,7 +133,7 @@ class KMeansH2O(object):
             self,
             # sklearn API (but with possibly different choices for defaults)
             n_clusters=8,
-            init='random',
+            init='k-means++',
             n_init=1,
             max_iter=300,
             tol=1e-4,
@@ -146,7 +146,7 @@ class KMeansH2O(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
+            init_data='randomselect',
             do_checks=1):
 
         assert_is_type(n_clusters, int, type(np.int32), type(np.int64))
@@ -173,15 +173,14 @@ class KMeansH2O(object):
         if type(tol) == type(example):
             tol = tol.item()
 
-        # Things to do if not using sklearn
-        # sklearn option overrides detailed option
-        example = np.array([1, 2, 3])
-        # pylint: disable=unidiomatic-typecheck
-        if type(init) == type(example):
-            assert ValueError("init cannot be numpy array yet.")
-        else:
-            if init == 'random':
-                init_data = "randomselect"
+        if isinstance(init, np.ndarray):
+            assert ValueError("Passing initial centroids not yet supported.")
+
+        if isinstance(init, str) and init not in ['random', 'k-means++']:
+            assert ValueError(
+                "Invalid initialization method. "
+                "Should be 'k-means++' or 'random' but got '%s'." % init
+            )
 
         self.init = init
         self._n_clusters = n_clusters
@@ -505,7 +504,7 @@ class KMeansH2O(object):
 
         data, c_data_ptr, data_ctype = self._to_cdata(data)
 
-        if self.init == "random" or self.init == "k-means++":
+        if self.init == "k-means++":
             c_init = 1
         else:
             c_init = 0
@@ -684,7 +683,7 @@ class KMeans(object):
     def __init__(
             self,
             n_clusters=8,
-            init='random',
+            init='k-means++',
             n_init=1,
             max_iter=300,
             tol=1e-4,
@@ -697,7 +696,7 @@ class KMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data="randomselect",
+            init_data='randomselect',
             do_checks=1,
             backend='auto'):
 
@@ -722,14 +721,6 @@ class KMeans(object):
                     "Running ScikitLearn CPU version."
                 )
                 self.do_sklearn = True
-            else:
-                if init == "k-means++":
-                    KMeans._print_verbose(
-                        verbose,
-                        0,
-                        "'init' as k-means++ not yet supported."
-                    )
-                    self.do_sklearn = True
             # FIXME: Add n_init to h2o4gpu
             if n_init != 1:
                 KMeans._print_verbose(
