@@ -9,6 +9,7 @@
 #include <sstream>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/inner_product.h>
 #include "kmeans_centroids.h"
 #include "kmeans_labels.h"
 #include "kmeans_general.h"
@@ -66,7 +67,7 @@ int kmeans(
   thrust::device_vector<int> *range[MAX_NGPUS];
   thrust::device_vector<int> *indices[MAX_NGPUS];
   thrust::device_vector<int> *counts[MAX_NGPUS];
-  thrust::device_vector<T> d_old_centroids(k * d);
+  thrust::device_vector<T> d_old_centroids;
 
   thrust::host_vector<int> h_counts(k);
   thrust::host_vector<int> h_counts_tmp(k);
@@ -138,7 +139,7 @@ int kmeans(
     for (int q = 0; q < n_gpu; q++) {
       safe_cuda(cudaSetDevice(dList[q]));
 
-      if( 0 == q ) {
+      if (0 == q) {
         d_old_centroids = *centroids[q];
       }
 
@@ -217,19 +218,21 @@ int kmeans(
 
     // whether to perform per iteration check
     if (do_per_iter_check) {
+      safe_cuda(cudaDeviceSynchronize());
       safe_cuda(cudaSetDevice(dList[0]));
-      thrust::device_vector<T> diff(d_old_centroids.size());
 
-      thrust::transform(
+      T squared_norm = thrust::inner_product(
           d_old_centroids.begin(), d_old_centroids.end(),
           (*centroids[0]).begin(),
-          diff.begin(),
-          thrust::minus<T>()
+          (T) 0.0,
+          thrust::plus<T>(),
+          [=]__device__(T left, T right){
+            T diff = left - right;
+            return diff * diff;
+          }
       );
-      thrust::device_vector<T> squared_norm(1);
-      kmeans::detail::make_self_dots(1, k * d, diff, squared_norm);
 
-      if (squared_norm[0] < threshold) {
+      if (squared_norm < threshold) {
         if (verbose) { std::cout << "Threshold triggered. Terminating early." << std::endl; }
         done = true;
       }
@@ -276,4 +279,3 @@ int kmeans(
 }
 
 }
-
