@@ -37,7 +37,7 @@ pipeline {
 
         stage('Build on Linux') {
             agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16)"
+                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
@@ -86,7 +86,7 @@ pipeline {
 
         stage('Test on Linux') {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11||mr-dl16)"
+                label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -120,7 +120,7 @@ pipeline {
 
         stage('Pylint on Linux') {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11||mr-dl16)"
+                label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
@@ -192,7 +192,7 @@ pipeline {
 
         stage('Build on Linux nonccl xgboost') {
             agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16)"
+                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
@@ -271,7 +271,7 @@ pipeline {
         }
         stage('Build on Linux nonccl xgboost cuda9') {
             agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16)"
+                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
