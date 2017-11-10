@@ -271,87 +271,6 @@ pipeline {
             }
         }
 
-        stage('Build Runtime Docker for CUDA 9') {
-            agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
-            }
-
-            steps {
-                dumpInfo 'Linux Build Info'
-                // Do checkout
-                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
-                    deleteDir()
-                    checkout([
-                            $class                           : 'GitSCM',
-                            branches                         : scm.branches,
-                            doGenerateSubmoduleConfigurations: false,
-                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
-                            submoduleCfg                     : [],
-                            userRemoteConfigs                : scm.userRemoteConfigs])
-                }
-
-                script {
-                    CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
-                                nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
-                                gzip  h2o4gpu-cuda9-runtime.tar
-                            """
-                        stash includes: 'h2o4gpu-cuda9-runtime.tar.gz', name: 'docker-cuda9-runtime'
-                        // Archive artifacts
-                        arch 'h2o4gpu-cuda9-runtime.tar.gz'
-                    }
-                }
-            }
-        }
-
-        stage('Publish Runtime Docker for CUDA 9 to S3') {
-            agent {
-                label "linux"
-            }
-
-            steps {
-                unstash 'docker-cuda9-runtime'
-                unstash 'version_info'
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    script {
-                        // Load the version file content
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def version = utilsLib.fragmentVersion(versionTag)
-                        def _majorVersion = version[0]
-                        def _buildVersion = version[1]
-                        version = null // This is necessary, else version:Tuple will be serialized
-
-                        if (isRelease()) {
-                            s3up {
-                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
-                                artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
-                                keepPrivate = false
-                                remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
-                            }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
-                        }
-
-                        if (isBleedingEdge()) {
-                            s3up {
-                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
-                                artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
-                                keepPrivate = false
-                                remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
-                            }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Build on Linux nonccl xgboost') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
@@ -511,6 +430,86 @@ pipeline {
             }
         }
 
+        stage('Build Runtime Docker for CUDA 9') {
+            agent {
+                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
+            }
+
+            steps {
+                dumpInfo 'Linux Build Info'
+                // Do checkout
+                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+
+                script {
+                    CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    // Get source code
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        sh """
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
+                                nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
+                                gzip  h2o4gpu-cuda9-runtime.tar
+                            """
+                        stash includes: 'h2o4gpu-cuda9-runtime.tar.gz', name: 'docker-cuda9-runtime'
+                        // Archive artifacts
+                        arch 'h2o4gpu-cuda9-runtime.tar.gz'
+                    }
+                }
+            }
+        }
+
+        stage('Publish Runtime Docker for CUDA 9 to S3') {
+            agent {
+                label "linux"
+            }
+
+            steps {
+                unstash 'docker-cuda9-runtime'
+                unstash 'version_info'
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    script {
+                        // Load the version file content
+                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                        def version = utilsLib.fragmentVersion(versionTag)
+                        def _majorVersion = version[0]
+                        def _buildVersion = version[1]
+                        version = null // This is necessary, else version:Tuple will be serialized
+
+                        if (isRelease()) {
+                            s3up {
+                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
+                                artifactId = "h2o4gpu"
+                                majorVersion = _majorVersion
+                                buildVersion = _buildVersion
+                                keepPrivate = false
+                                remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
+                            }
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
+                        }
+
+                        if (isBleedingEdge()) {
+                            s3up {
+                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
+                                artifactId = "h2o4gpu"
+                                majorVersion = _majorVersion
+                                buildVersion = _buildVersion
+                                keepPrivate = false
+                                remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
+                            }
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
+                        }
+                    }
+                }
+            }
+        }
 
     }
     post {
