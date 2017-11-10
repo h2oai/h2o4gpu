@@ -226,7 +226,7 @@ pipeline {
             }
         }
 
-        stage('Publish to Runtime Docker for CUDA 8 to S3') {
+        stage('Publish Runtime Docker for CUDA 8 to S3') {
             agent {
                 label "linux"
             }
@@ -257,7 +257,7 @@ pipeline {
 
                         if (isBleedingEdge()) {
                             s3up {
-                                localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
+                                localArtifact = 'h2o4gpu-cuda8-runtime.tar.gz'
                                 artifactId = "h2o4gpu"
                                 majorVersion = _majorVersion
                                 buildVersion = _buildVersion
