@@ -244,20 +244,16 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-# Below should be run to avoid NCCL in xgboost
-libprexgboost1:
-	sed -i 's/define USE_NCCL.*/define USE_NCCL 1/g' xgboost/src/tree/updater_gpu_hist.cu
-libprexgboost2:
-	sed -i 's/define USE_NCCL.*/define USE_NCCL 0/g' xgboost/src/tree/updater_gpu_hist.cu
-
 # https://xgboost.readthedocs.io/en/latest/build.html
 # could just get wheel from repo/S3 instead of doing this
-libxgboost: libxgboostp1 libprexgboost1 libxgboostp2 libxgboostp3
-libxgboost2: libxgboostp1 libprexgboost2 libxgboostp2 libxgboostp3
+libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
+libxgboost2: libxgboostp1 libxgboostp2nonccl libxgboostp3
 
 libxgboostp1:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
 libxgboostp2:
+	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON -DUSE_NCCL=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
+libxgboostp2nonccl:
 	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
 libxgboostp3:
 	cd xgboost/python-package ; rm -rf dist && python setup.py sdist bdist_wheel
