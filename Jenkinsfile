@@ -345,7 +345,7 @@ pipeline {
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                             }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9=-runtime.tar.gz"
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
                         }
                     }
                 }
