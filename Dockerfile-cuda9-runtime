@@ -57,22 +57,16 @@ RUN \
   . h2o4gpu_env/bin/activate && \
   pip install --no-cache-dir -r requirements.txt
 
-ADD src/interface_py/dist/ /dist
+#Below will get the latest stable wheel file instead.
 RUN \
   . h2o4gpu_env/bin/activate && \
-  pip install --no-cache-dir /dist/*.whl
-
-#Below will get the latest stable wheel file instead.
-#RUN \
-#  . h2o4gpu_env/bin/activate && \
-#  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl
+  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4_nonccl_cuda9/h2o4gpu-0.0.4-py36-none-any.whl
 
 # Add a canned jupyter notebook demo to the container
 RUN \
   mkdir -p jupyter/demos
-COPY examples/py/demos/H2O4GPU_GLM.ipynb /jupyter/demos/H2O4GPU_GLM.ipynb
-COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans_Images.ipynb
-COPY examples/py/xgboost_simple_demo.ipynb /jupyter/demos/xgboost_simple_demo.ipynb
+COPY examples/py/demos /jupyter/demos/
+
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
