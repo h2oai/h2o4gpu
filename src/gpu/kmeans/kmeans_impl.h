@@ -75,7 +75,6 @@ int kmeans(
   h_centroids = *centroids[0]; // all should be equal
   thrust::host_vector<T> h_centroids_tmp(k * d);
 
-  int *d_changes[MAX_NGPUS];
   T *d_distance_sum[MAX_NGPUS];
 
   for (int q = 0; q < n_gpu; q++) {
@@ -85,7 +84,6 @@ int kmeans(
     }
 
     safe_cuda(cudaSetDevice(dList[q]));
-    safe_cuda(cudaMalloc(&d_changes[q], sizeof(int)));
     safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
 
     try {
@@ -147,7 +145,7 @@ int kmeans(
                                   *data[q], *centroids[q], *data_dots[q],
                                   *centroid_dots[q], *pairwise_distances[q]);
 
-      detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+      detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q]);
 
       mycub::sum_reduce(*distances[q], d_distance_sum[q]);
 
@@ -218,7 +216,6 @@ int kmeans(
 
     // whether to perform per iteration check
     if (do_per_iter_check) {
-      safe_cuda(cudaDeviceSynchronize());
       safe_cuda(cudaSetDevice(dList[0]));
 
       T squared_norm = thrust::inner_product(
@@ -256,12 +253,11 @@ int kmeans(
                                 *data[q], *centroids[q], *data_dots[q],
                                 *centroid_dots[q], *pairwise_distances[q]);
 
-    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q]);
   }
 
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
-    safe_cuda(cudaFree(d_changes[q]));
     delete (pairwise_distances[q]);
     delete (centroid_dots[q]);
     delete (labels_copy[q]);
