@@ -44,7 +44,7 @@ void count_pts_per_centroid(
 ) {
   int k = centroids.size() / cols;
   for (int i = 0; i < num_gpu; i++) {
-    thrust::host_vector<T> weights_tmp(weights.size());
+    thrust::host_vector<int> weights_tmp(weights.size());
 
     CUDACHECK(cudaSetDevice(i));
     thrust::device_vector<T> pairwise_distances(rows_per_gpu * k);
@@ -58,7 +58,7 @@ void count_pts_per_centroid(
                                         centroid_dots,
                                         pairwise_distances);
 
-    thrust::device_vector<T> counts(k);
+    thrust::device_vector<int> counts(k);
     auto counting = thrust::make_counting_iterator(0);
     auto counts_ptr = thrust::raw_pointer_cast(counts.data());
     auto pairwise_distances_ptr = thrust::raw_pointer_cast(pairwise_distances.data());
@@ -74,9 +74,8 @@ void count_pts_per_centroid(
           closest_centroid_idx = i;
         }
       }
-      my_atomic_add(&counts_ptr[closest_centroid_idx], 1);
+      atomicAdd(&counts_ptr[closest_centroid_idx], 1);
     });
-
     CUDACHECK(cudaDeviceSynchronize());
 
     kmeans::detail::memcpy(weights_tmp, counts);

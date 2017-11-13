@@ -147,7 +147,6 @@ void find_centroids(int q, int n, int d, int k,
 
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
 #endif
 
   // Need to zero this - the algo uses this array to accumulate values for each centroid
@@ -171,7 +170,6 @@ void find_centroids(int q, int n, int d, int k,
 
   #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
   #endif
 
   // Scaling should take place on the GPU if n_gpus=1 so we don't
@@ -188,7 +186,6 @@ void find_centroids(int q, int n, int d, int k,
 
     #if(CHECK)
     gpuErrchk(cudaGetLastError());
-    gpuErrchk(cudaDeviceSynchronize());
     #endif
 
     //Averages the centroids

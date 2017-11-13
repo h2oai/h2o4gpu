@@ -236,14 +236,11 @@ namespace kmeans {
           thrust::device_vector<T>& pairwise_distances);
 
     template<typename T>
-      __global__ void make_new_labels(int n, int k, T* pairwise_distances,
-          int* labels, int* changes,
-          T* distances) {
+      __global__ void make_new_labels(int n, int k, T* pairwise_distances, int* labels, T* distances) {
       T min_distance = FLT_MAX; //std::numeric_limits<T>::max(); // might be ok TODO FIXME
         T min_idx = -1;
         int global_id = threadIdx.x + blockIdx.x * blockDim.x;
         if (global_id < n) {
-          int old_label = labels[global_id];
           for(int c = 0; c < k; c++) {
             T distance = pairwise_distances[c * n + global_id];
             if (distance < min_distance) {
@@ -253,9 +250,6 @@ namespace kmeans {
           }
           labels[global_id] = min_idx;
           distances[global_id] = min_distance;
-          if (old_label != min_idx) {
-            atomicAdd(changes, 1);
-          }
         }
       }
 
@@ -264,18 +258,15 @@ namespace kmeans {
       void relabel(int n, int k,
           thrust::device_vector<T>& pairwise_distances,
           thrust::device_vector<int>& labels,
-          thrust::device_vector<T>& distances,
-          int *d_changes) {
+          thrust::device_vector<T>& distances) {
         int dev_num;
         safe_cuda(cudaGetDevice(&dev_num));
-        safe_cuda(cudaMemsetAsync(d_changes, 0, sizeof(int), cuda_stream[dev_num]));
 #define MAX_BLOCK_THREADS2 256
         const int GRID_SIZE=(n-1)/MAX_BLOCK_THREADS2+1;
         make_new_labels<<<GRID_SIZE, MAX_BLOCK_THREADS2,0,cuda_stream[dev_num]>>>(
             n, k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             thrust::raw_pointer_cast(labels.data()),
-            d_changes,
             thrust::raw_pointer_cast(distances.data()));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
