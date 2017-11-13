@@ -25,11 +25,13 @@ class TruncatedSVDH2O(object):
     def __init__(self, n_components=2):
         self.n_components = n_components
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         """Fit Truncated SVD on matrix X.
 
         :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
+
+        :param y Ignored
 
         :returns self : object
 
@@ -37,12 +39,14 @@ class TruncatedSVDH2O(object):
         self.fit_transform(X)
         return self
 
-    def fit_transform(self, X):
+    def fit_transform(self, X, y=None):
         """Fit Truncated SVD on matrix X and perform dimensionality reduction
            on X.
 
         :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
+
+        :param: y Ignored
 
         :returns X_new : array, shape (n_samples, n_components)
                          Reduced version of X. This will always be a
@@ -224,7 +228,7 @@ class TruncatedSVD(object):
 
     def __init__(self,
                  n_components=2,
-                 algorithm="randomized",
+                 algorithm="arpack",
                  n_iter=5,
                  random_state=None,
                  tol=0.,
@@ -248,7 +252,7 @@ class TruncatedSVD(object):
         if backend == 'auto':
             params_string = ['algorithm', 'n_iter', 'random_state', 'tol']
             params = [algorithm, n_iter, random_state, tol]
-            params_default = ['randomized', 5, None, 0.]
+            params_default = ['arpack', 5, None, 0.]
 
             i = 0
             for param in params:
@@ -285,12 +289,12 @@ class TruncatedSVD(object):
         else:
             self.model = self.model_h2o4gpu
 
-    def fit(self, X):
+    def fit(self, X, y=None):
         res = self.model.fit(X)
         self.set_attributes()
         return res
 
-    def fit_transform(self, X):
+    def fit_transform(self, X, y=None):
         res = self.model.fit_transform(X)
         self.set_attributes()
         return res
