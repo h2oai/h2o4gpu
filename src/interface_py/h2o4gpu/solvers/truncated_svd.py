@@ -25,6 +25,7 @@ class TruncatedSVDH2O(object):
     def __init__(self, n_components=2):
         self.n_components = n_components
 
+    # pylint: disable=unused-argument
     def fit(self, X, y=None):
         """Fit Truncated SVD on matrix X.
 
@@ -39,6 +40,7 @@ class TruncatedSVDH2O(object):
         self.fit_transform(X)
         return self
 
+    # pylint: disable=unused-argument
     def fit_transform(self, X, y=None):
         """Fit Truncated SVD on matrix X and perform dimensionality reduction
            on X.
@@ -289,11 +291,13 @@ class TruncatedSVD(object):
         else:
             self.model = self.model_h2o4gpu
 
+    # pylint: disable=unused-argument
     def fit(self, X, y=None):
         res = self.model.fit(X)
         self.set_attributes()
         return res
 
+    # pylint: disable=unused-argument
     def fit_transform(self, X, y=None):
         res = self.model.fit_transform(X)
         self.set_attributes()
