@@ -66,12 +66,22 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${
-                                CONTAINER_NAME
-                            } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                                env.MAKE_OPTS
-                            } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} cleanbuildjenkins ;'
+                                    nvidia-docker exec ${CONTAINER_NAME} rm -f src/interface_py/h2o4gpu/BUILD_INFO.txt 
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; make buildpy H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
                                 """
+
+                            buildInfo("h2o4gpu", isRelease())
+
+                            script {
+                                // Load the version file content
+                                buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'"))
+                                utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
+                                utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
+                                |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
+                                |""".stripMargin("|"))
+                            }
+
                             stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
@@ -156,18 +166,16 @@ pipeline {
                     sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                     script {
                         // Load the version file content
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def version = utilsLib.fragmentVersion(versionTag)
-                        def _majorVersion = version[0]
-                        def _buildVersion = version[1]
-                        version = null // This is necessary, else version:Tuple will be serialized
+                        def versionTag = buildInfo.get().getVersion()
+                        def majorVer = buildInfo.get().getMajorVersion()
+                        def buildVer = buildInfo.get().getBuildVersion()
 
                         if (isRelease()) {
                             s3up {
-                                localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
+                                localArtifact = "src/interface_py/dist/h2o4gpu-${versionTag}-py36-none-any.whl"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                             }
@@ -176,10 +184,10 @@ pipeline {
 
                         if (isBleedingEdge()) {
                             s3up {
-                                localArtifact = 'src/interface_py/dist/h2o4gpu-*-py36-none-any.whl'
+                                localArtifact = "src/interface_py/dist/h2o4gpu-${versionTag}-py36-none-any.whl"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                             }
@@ -237,34 +245,32 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         // Load the version file content
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def version = utilsLib.fragmentVersion(versionTag)
-                        def _majorVersion = version[0]
-                        def _buildVersion = version[1]
-                        version = null // This is necessary, else version:Tuple will be serialized
+                        def versionTag = buildInfo.get().getVersion()
+                        def majorVer = buildInfo.get().getMajorVersion()
+                        def buildVer = buildInfo.get().getBuildVersion()
 
                         if (isRelease()) {
                             s3up {
-                                localArtifact = 'h2o4gpu-cuda8-runtime.tar.gz'
+                                localArtifact = "h2o4gpu-${versionTag}-cuda8-runtime.tar.gz"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                             }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda8-runtime.tar.gz"
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-cuda8-runtime.tar.gz"
                         }
 
                         if (isBleedingEdge()) {
                             s3up {
-                                localArtifact = 'h2o4gpu-cuda8-runtime.tar.gz'
+                                localArtifact = "h2o4gpu-${versionTag}-cuda8-runtime.tar.gz"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                             }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda8-runtime.tar.gz"
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-cuda8-runtime.tar.gz"
                         }
                     }
                 }
@@ -302,8 +308,12 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} cleanbuildjenkins2 ;'
+                                    nvidia-docker exec ${CONTAINER_NAME} rm -f src/interface_py/h2o4gpu/BUILD_INFO.txt
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; make buildpy H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
+                                    nvidia-docker exec ${CONTAINER_NAME} mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
                                 """
+
                             stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl2'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
@@ -326,11 +336,7 @@ pipeline {
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist2/'
                 script {
                     // Load the version file content
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def version = utilsLib.fragmentVersion(versionTag)
-                    def _majorVersion = version[0]
-                    def _buildVersion = version[1]
-                    version = null // This is necessary, else version:Tuple will be serialized
+                    def versionTag = buildInfo.get().getVersion()
 
                     if (isRelease()) {
                         def artifact = "h2o4gpu-${versionTag}-py36-none-any.whl"
@@ -381,8 +387,12 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} cleanbuildjenkins2'
+                                    nvidia-docker exec ${CONTAINER_NAME} rm -f src/interface_py/h2o4gpu/BUILD_INFO.txt 
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; make buildpy H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
+                                    nvidia-docker exec ${CONTAINER_NAME} mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
                                 """
+
                             stash includes: 'src/interface_py/dist3/*.whl', name: 'linux_whl3'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
@@ -405,11 +415,7 @@ pipeline {
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist3/'
                 script {
                     // Load the version file content
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def version = utilsLib.fragmentVersion(versionTag)
-                    def _majorVersion = version[0]
-                    def _buildVersion = version[1]
-                    version = null // This is necessary, else version:Tuple will be serialized
+                    def versionTag = buildInfo.get().getVersion()
 
                     if (isRelease()) {
                         def artifact = "h2o4gpu-${versionTag}-py36-none-any.whl"
@@ -476,35 +482,32 @@ pipeline {
                 unstash 'version_info'
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        // Load the version file content
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def version = utilsLib.fragmentVersion(versionTag)
-                        def _majorVersion = version[0]
-                        def _buildVersion = version[1]
-                        version = null // This is necessary, else version:Tuple will be serialized
+                        def versionTag = buildInfo.get().getVersion()
+                        def majorVer = buildInfo.get().getMajorVersion()
+                        def buildVer = buildInfo.get().getBuildVersion()
 
                         if (isRelease()) {
                             s3up {
-                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
+                                localArtifact = "h2o4gpu-${versionTag}-cuda9-runtime.tar.gz"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/stable"
                             }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-cuda9-runtime.tar.gz"
                         }
 
                         if (isBleedingEdge()) {
                             s3up {
-                                localArtifact = 'h2o4gpu-cuda9-runtime.tar.gz'
+                                localArtifact = "h2o4gpu-${versionTag}-cuda9-runtime.tar.gz"
                                 artifactId = "h2o4gpu"
-                                majorVersion = _majorVersion
-                                buildVersion = _buildVersion
+                                majorVersion = majorVer
+                                buildVersion = buildVer
                                 keepPrivate = false
                                 remoteArtifactBucket = "s3://artifacts.h2o.ai/releases/bleeding-edge"
                             }
-                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
+                            sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-cuda9-runtime.tar.gz"
                         }
                     }
                 }
@@ -543,5 +546,5 @@ def isRelease() {
 }
 
 def isBleedingEdge() {
-    return env.BRANCH_NAME.startsWith("master")
+    return env.BRANCH_NAME.startsWith("PR") || env.BRANCH_NAME.startsWith("pr")
 }

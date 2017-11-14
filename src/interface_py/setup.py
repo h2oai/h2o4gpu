@@ -5,10 +5,8 @@
 import os
 from subprocess import call
 from distutils.command.build import build
-from setuptools import setup
 from setuptools.command.install import install
 from pip.req import parse_requirements
-from setuptools import setup, find_packages
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -84,8 +82,8 @@ def get_packages(directory):
     return paths
 
 packages = get_packages('./')
-#print("packages")
-#print(packages)
+# print("packages")
+# print(packages)
 
 #packages0=find_packages()
 #print("packages0")
@@ -108,9 +106,13 @@ class BinaryDistribution(Distribution):
     def is_pure(self):
         return False
 
+# Read version
+about_info={}
+with open('__about__.py') as f: exec(f.read(), about_info)
+
 setup(
     name='h2o4gpu',
-    version='0.0.4',
+    version=about_info['__version__'],
     author='H2O.ai, Inc.',
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',

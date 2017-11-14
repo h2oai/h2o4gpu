@@ -6,6 +6,9 @@ SHELL := /bin/bash # force avoidance of dash as shell
 CONFIG=make/config.mk
 include $(CONFIG)
 
+VERSION=make/version.mk
+include $(VERSION)
+
 # System specific stuff
 include src/config2.mk
 
@@ -53,6 +56,14 @@ DOCKER_VERSION_TAG ?= "latest"
 #
 S3_CMD_LINE := aws s3
 
+#
+# BUILD_INFO setup
+#
+H2O4GPU_COMMIT ?= $(shell git rev-parse HEAD)
+H2O4GPU_BUILD_DATE := $(shell date)
+H2O4GPU_BUILD ?= "LOCAL BUILD @ $(shell git rev-parse --short HEAD) build at $(H2O4GPU_BUILD_DATE)"
+H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
+
 help:
 	@echo "make                 fullinstall"
 	@echo "make fullinstalldev  Clean everything, then compile and install project for development."
@@ -96,7 +107,7 @@ cpp:
 c:
 	$(MAKE) -j all -C src/interface_c
 
-py: apply_sklearn_simple
+py: apply_sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
 pylint:
@@ -139,8 +150,12 @@ runtimecuda9:
 	docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
 #############################################
 
-clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
+clean: cleanbuild deps_clean xgboost_clean py3nvml_clean ci_clean
 	rm -rf ./results/ ./tmp/
+
+ci_clean:
+	rm -f src/interface_py/h2o4gpu/BUILD_INFO.txt
+	rm -f ./build/VERSION.txt
 
 cleanbuild: cleancpp cleanc cleanpy
 
@@ -307,18 +322,16 @@ apply_sklearn_initmerge:
 
 cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
-buildjenkins: update_submodule cpp c py
+buildjenkins: update_submodule cpp c
 
-installjenkins: pyinstall
+buildpy: py pyinstall
 
 # for nccl cuda8 build
-fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
+fullinstall: clean alldeps sync_open_data build install
+
+cleanbuildjenkins: cleanjenkins alldeps buildjenkins
 # for nonccl cuda8 build
-fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
-# for nonccl cuda9 build
-fullinstalljenkins3: cleanjenkins alldeps_private2 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
+cleanbuildjenkins2: cleanjenkins alldeps_private2 buildjenkins
 
 .PHONY: mrproper
 mrproper: clean
@@ -439,16 +452,31 @@ clean_test_cpp:
 
 #################### Build info
 
-.PHONY: build/VERSION.txt
+# Generate local build info
+src/interface_py/h2o4gpu/BUILD_INFO.txt:
+	@echo "build=\"$(H2O4GPU_BUILD)\"" > $@
+	@echo "suffix=\"$(H2O4GPU_SUFFIX)\"" >> $@
+	@echo "commit=\"$(H2O4GPU_COMMIT)\"" >> $@
+	@echo "branch=\"`git rev-parse HEAD | git branch -a --contains | grep -v detached | sed -e 's~remotes/origin/~~g' -e 's~^ *~~' | sort | uniq | tr '*\n' ' '`\"" >> $@
+	@echo "describe=\"`git describe --always --dirty`\"" >> $@
+	@echo "build_os=\"`uname -a`\"" >> $@
+	@echo "build_machine=\"`hostname`\"" >> $@
+	@echo "build_date=\"$(H2O4GPU_BUILD_DATE)\"" >> $@
+	@echo "build_user=\"`id -u -n`\"" >> $@
+	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
+	@echo "h2o4gpu_commit=\"$(H2OAI_COMMIT)\"" >> $@
 
-build/VERSION.txt:
-	@rm -rf build
+build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build
-	cd src/interface_py/; python setup.py --version > ../../build/VERSION.txt 2>/dev/null
+	cd src/interface_py/; python setup.py --version > ../../build/VERSION.txt
+
+.PHONY: base_version
+base_version:
+	@echo $(BASE_VERSION)
 
 # Refresh the build info only locally, let Jenkins to generate its own
 ifeq ($(CI),)
-.buildinfo/BUILD_INFO.txt: .ALWAYS_REBUILD
+src/interface_py/h2o4gpu/BUILD_INFO.txt: .ALWAYS_REBUILD
 endif
 
 .PHONY: ALWAYS_REBUILD
