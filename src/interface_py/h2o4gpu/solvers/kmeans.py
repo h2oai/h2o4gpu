@@ -129,6 +129,7 @@ class KMeansH2O(object):
         >>> kmeans.cluster_centers_
     """
 
+    # pylint: disable=unused-argument
     def __init__(
             self,
             # sklearn API (but with possibly different choices for defaults)
