@@ -8,7 +8,6 @@ import numpy as np
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import logistic as sk
 from ..solvers.utils import _setter
-from ..typecheck.typechecks import assert_is_type, assert_satisfies
 
 
 class LogisticRegression(object):
@@ -49,7 +48,6 @@ class LogisticRegression(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
