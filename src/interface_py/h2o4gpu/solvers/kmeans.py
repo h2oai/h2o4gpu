@@ -14,7 +14,7 @@ import numpy as np
 from ..solvers.utils import _check_data_content, \
     _get_data, _setter
 from ..util.gpu import device_count
-from ..typecheck.typechecks import assert_is_type, assert_satisfies
+from ..typecheck.typechecks import assert_satisfies
 from ..types import cptr
 
 
@@ -129,6 +129,7 @@ class KMeansH2O(object):
         >>> kmeans.cluster_centers_
     """
 
+    # pylint: disable=unused-argument
     def __init__(
             self,
             # sklearn API (but with possibly different choices for defaults)
@@ -148,24 +149,6 @@ class KMeansH2O(object):
             n_gpus=-1,
             init_data='randomselect',
             do_checks=1):
-
-        assert_is_type(n_clusters, int, type(np.int32), type(np.int64))
-        assert_is_type(init, str, np.ndarray)
-        assert_is_type(n_init, int, type(np.int32), type(np.int64))
-        assert_is_type(max_iter, int, type(np.int32), type(np.int64))
-        assert_is_type(tol, float,
-                       type(np.float16), type(np.float32), type(np.float64))
-        assert_is_type(precompute_distances, str, bool)
-        assert_is_type(verbose, int, type(np.int32), type(np.int64))
-        assert_is_type(random_state, int, None, type(np.int32), type(np.int64))
-        assert_is_type(copy_x, bool)
-        assert_is_type(n_jobs, int, type(np.int32), type(np.int64))
-        assert_is_type(algorithm, str)
-
-        assert_is_type(gpu_id, int, type(np.int32), type(np.int64))
-        assert_is_type(n_gpus, int, type(np.int32), type(np.int64))
-        assert_is_type(init_data, str)
-        assert_is_type(do_checks, int, type(np.int32), type(np.int64))
 
         # fix-up tol in case input was numpy
         example = np.fabs(1.0)
@@ -636,7 +619,6 @@ class KMeansH2O(object):
 
     @n_clusters.setter
     def n_clusters(self, value):
-        assert_is_type(value, int)
         assert_satisfies(value, value > 0,
                          "Number of clusters must be positive.")
         self._n_clusters = value
@@ -647,7 +629,6 @@ class KMeansH2O(object):
 
     @gpu_id.setter
     def gpu_id(self, value):
-        assert_is_type(value, int)
         assert_satisfies(value, value >= 0, "GPU ID must be non-negative.")
         self._gpu_id = value
 
@@ -657,7 +638,6 @@ class KMeansH2O(object):
 
     @max_iter.setter
     def max_iter(self, value):
-        assert_is_type(value, int)
         assert_satisfies(value, value > 0,
                          "Number of maximum iterations must be non-negative.")
         self._max_iter = value
@@ -704,7 +684,6 @@ class KMeans(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         # FIXME: Add init as array and kmeans++ to h2o4gpu
         # setup backup to sklearn class

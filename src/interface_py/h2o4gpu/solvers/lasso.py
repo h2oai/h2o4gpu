@@ -7,9 +7,6 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
-from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
-                                    pandas_dataframe)
-
 
 class Lasso(object):
     """H2O Lasso Regression Solver
@@ -49,7 +46,6 @@ class Lasso(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
