@@ -129,14 +129,17 @@ fullinstall2: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 runtime:
-	$(MAKE) fullinstall
 	@echo "+--Building Runtime Docker Image--+"
-	nvidia-docker build -t opsh2oai/h2o4gpu-runtime:latest -f Dockerfile-runtime .
-
-runtimecuda9:
 	$(MAKE) fullinstall
+	nvidia-docker build -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
+    nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
+    gzip  h2o4gpu-cuda8-runtime.tar
+runtimecuda9:
 	@echo "+--Building Runtime Docker Image for cuda9--+"
-	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
+	$(MAKE) fullinstall2
+	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
+    nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
+    gzip  h2o4gpu-cuda9-runtime.tar
 #############################################
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
