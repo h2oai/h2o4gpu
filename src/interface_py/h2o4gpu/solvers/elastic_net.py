@@ -786,8 +786,7 @@ class ElasticNetH2O(object):
 
         return self
 
-#TODO Add typechecking
-
+    # pylint: disable=unused-argument
     def predict_ptr(self,
                     valid_xptr=None,
                     valid_yptr=None,
@@ -850,8 +849,7 @@ class ElasticNetH2O(object):
 
         return self.valid_pred_vs_alphapure  # something like valid_y
 
-#TODO Add type checking
-
+    # pylint: disable=unused-argument
     def fit_predict(self,
                     train_x,
                     train_y,
@@ -902,8 +900,7 @@ class ElasticNetH2O(object):
                 free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
-#TODO Add type checking
-
+    # pylint: disable=unused-argument
     def fit_predict_ptr(self,
                         m_train,
                         n,
