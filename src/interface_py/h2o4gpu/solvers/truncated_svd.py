@@ -7,7 +7,6 @@ import ctypes
 import numpy as np
 from ..libs.lib_tsvd import parameters
 from ..solvers.utils import _setter
-from ..typecheck.typechecks import assert_is_type
 
 
 class TruncatedSVDH2O(object):
@@ -246,7 +245,6 @@ class TruncatedSVD(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality

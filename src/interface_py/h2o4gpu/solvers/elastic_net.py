@@ -18,8 +18,6 @@ from ..solvers.utils import _setter
 from ..libs.lib_elastic_net import GPUlib, CPUlib
 from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
 from ..util.gpu import device_count
-from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
-                                    pandas_dataframe)
 
 
 class ElasticNetH2O(object):
@@ -131,39 +129,13 @@ class ElasticNetH2O(object):
                  lambdas=None,
                  double_precision=None,
                  order=None):
-        ##############################
-        #asserts
-        assert_is_type(n_threads, int, None, type(np.int32), type(np.int64))
-        assert_is_type(gpu_id, int, type(np.int32), type(np.int64))
-        assert_is_type(n_gpus, int, type(np.int32), type(np.int64))
-        assert_is_type(fit_intercept, bool)
-        assert_is_type(lambda_min_ratio, float,
-                       type(np.float16), type(np.float32), type(np.float64))
-        assert_is_type(n_lambdas, int, type(np.int32), type(np.int64))
-        assert_is_type(n_folds, int, type(np.int32), type(np.int64))
-        assert_is_type(n_alphas, int, type(np.int32), type(np.int64))
-        assert_is_type(tol, float,
-                       type(np.float16), type(np.float32), type(np.float64))
-        assert_is_type(tol_seek_factor, float,
-                       type(np.float16), type(np.float32), type(np.float64))
-        assert_is_type(lambda_stop_early, bool)
-        assert_is_type(glm_stop_early, bool)
-        assert_is_type(glm_stop_early_error_fraction, float,
-                       type(np.float16), type(np.float32), type(np.float64))
-        assert_is_type(max_iter, int, type(np.int32), type(np.int64))
-        assert_is_type(verbose, int, type(np.int32), type(np.int64))
-        assert_is_type(family, str)
         assert family in ['logistic',
                           'elasticnet'], \
             "family should be 'logistic' or 'elasticnet' but got " + family
-        assert_is_type(lambda_max, float, int, None)
-        assert_is_type(alpha_max, float, int, None)
-        assert_is_type(alpha_min, float, int, None)
 
         self.double_precision = double_precision
 
         if order is not None:
-            assert_is_type(order, str)
             assert order in ['r',
                              'c'], \
                 "Order should be set to 'r' or 'c' but got " + order
@@ -300,13 +272,6 @@ class ElasticNetH2O(object):
             at the end of fit(). Default is 1.
         """
 
-        assert_is_type(train_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(train_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(free_input_data, int)
-
         source_dev = 0
         if not (train_x is None and train_y is None and valid_x is None and
                 valid_y is None and sample_weight is None):
@@ -359,11 +324,6 @@ class ElasticNetH2O(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
-
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(free_input_data, int)
 
         source_dev = 0
         if not (valid_x is None and valid_y is None and sample_weight is None):
@@ -543,19 +503,6 @@ class ElasticNetH2O(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
-
-        assert_is_type(source_dev, int, None)
-        assert_is_type(m_train, int, None)
-        assert_is_type(n, int, None)
-        assert_is_type(double_precision, float, int, None)
-        assert_is_type(order, int, str, None)
-        assert_is_type(a, c_void_p, None)
-        assert_is_type(b, c_void_p, None)
-        assert_is_type(c, c_void_p, None)
-        assert_is_type(d, c_void_p, None)
-        assert_is_type(e, c_void_p, None)
-        assert_is_type(do_predict, int, None)
-        assert_is_type(free_input_data, int)
 
         #store some things for later call to predict_ptr()
 
@@ -839,8 +786,7 @@ class ElasticNetH2O(object):
 
         return self
 
-#TODO Add typechecking
-
+    # pylint: disable=unused-argument
     def predict_ptr(self,
                     valid_xptr=None,
                     valid_yptr=None,
@@ -864,11 +810,6 @@ class ElasticNetH2O(object):
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
         """
-
-        assert_is_type(valid_xptr, c_void_p)
-        assert_is_type(valid_yptr, c_void_p, None)
-        assert_is_type(free_input_data, int)
-        assert_is_type(order, int, None)
 
         #assume self.ord already set by fit_ptr() at least
         #override self if chose to pass this option
@@ -908,8 +849,7 @@ class ElasticNetH2O(object):
 
         return self.valid_pred_vs_alphapure  # something like valid_y
 
-#TODO Add type checking
-
+    # pylint: disable=unused-argument
     def fit_predict(self,
                     train_x,
                     train_y,
@@ -937,14 +877,6 @@ class ElasticNetH2O(object):
             whether row 'r' or column 'c' major order.
         """
 
-        assert_is_type(train_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(train_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(free_input_data, int)
-        assert_is_type(order, int, None)
-
         #let fit() check and convert(to numpy)
         #train_x, train_y, valid_x, valid_y, weight
         self.fit(
@@ -968,8 +900,7 @@ class ElasticNetH2O(object):
                 free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
-#TODO Add type checking
-
+    # pylint: disable=unused-argument
     def fit_predict_ptr(self,
                         m_train,
                         n,
@@ -1014,19 +945,6 @@ class ElasticNetH2O(object):
         :param source_dev GPU ID of device
 
         """
-
-        assert_is_type(source_dev, int, None)
-        assert_is_type(m_train, int, None)
-        assert_is_type(n, int, None)
-        assert_is_type(m_valid, int, None)
-        assert_is_type(double_precision, float, None)
-        assert_is_type(order, int, None)
-        assert_is_type(a, c_void_p, None)
-        assert_is_type(b, c_void_p, None)
-        assert_is_type(c, c_void_p, None)
-        assert_is_type(d, c_void_p, None)
-        assert_is_type(e, c_void_p, None)
-        assert_is_type(free_input_data, int, None)
 
         do_predict = 0  # only fit at first
 
@@ -1074,12 +992,6 @@ class ElasticNetH2O(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
-        assert_is_type(train_x, numpy_ndarray, pandas_dataframe)
-        assert_is_type(train_y, numpy_ndarray, pandas_dataframe)
-        assert_is_type(valid_x, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(valid_y, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(sample_weight, numpy_ndarray, pandas_dataframe, None)
-        assert_is_type(free_input_data, int)
 
         return self.fit_predict(self, train_x, train_y, valid_x, valid_y,
                                 sample_weight, free_input_data)
@@ -1117,7 +1029,6 @@ class ElasticNetH2O(object):
 
     @gpu_id.setter
     def gpu_id(self, value):
-        assert_is_type(value, int)
         assert value >= 0, "GPU ID must be non-negative."
         self._gpu_id = value
 
@@ -1413,7 +1324,6 @@ class ElasticNet(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality

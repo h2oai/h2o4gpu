@@ -7,9 +7,6 @@
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
 from ..solvers.utils import _setter
-from ..typecheck.typechecks import (assert_is_type, numpy_ndarray,
-                                    pandas_dataframe)
-
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -44,7 +41,6 @@ class LinearRegression(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        assert_is_type(backend, str)
 
         if backend == 'auto':
             # Fall back to Sklearn

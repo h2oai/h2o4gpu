@@ -51,8 +51,6 @@ class RandomForestClassifier(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        from ..typecheck.typechecks import assert_is_type
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -254,8 +252,6 @@ class RandomForestRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        from ..typecheck.typechecks import assert_is_type
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -437,8 +433,6 @@ class GradientBoostingClassifier(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        from ..typecheck.typechecks import assert_is_type
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -653,8 +647,6 @@ class GradientBoostingRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        from ..typecheck.typechecks import assert_is_type
-        assert_is_type(backend, str)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
