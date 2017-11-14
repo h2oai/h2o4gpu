@@ -35,7 +35,7 @@ pipeline {
 
     stages {
 
-        stage('Build on Linux') {
+        stage('Build on Linux CUDA8') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -84,7 +84,7 @@ pipeline {
             }
         }
 
-        stage('Test on Linux') {
+        stage('Test on Linux CUDA8') {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -118,7 +118,7 @@ pipeline {
             }
         }
 
-        stage('Pylint on Linux') {
+        stage('Pylint on Linux CUDA8') {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -192,7 +192,7 @@ pipeline {
             }
         }
 
-        stage('Build Runtime Docker for CUDA 8') {
+        stage('Build Runtime Docker for CUDA8') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -228,7 +228,7 @@ pipeline {
             }
         }
 
-        stage('Publish Runtime Docker for CUDA 8 to S3') {
+        stage('Publish Runtime Docker for CUDA8 to S3') {
             agent {
                 label "linux"
             }
@@ -275,7 +275,7 @@ pipeline {
             }
         }
 
-        stage('Build on Linux nonccl xgboost CUDA8') {
+        stage('Build on Linux nonccl CUDA8') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -319,7 +319,7 @@ pipeline {
                 }
             }
         }
-        stage('Publish to S3 nonccl xgboost') {
+        stage('Publish to S3 nonccl CUDA8') {
             agent {
                 label "linux"
             }
@@ -356,7 +356,7 @@ pipeline {
                 }
             }
         }
-        stage('Build on Linux nonccl xgboost cuda9') {
+        stage('Build on Linux nonccl cuda9') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -400,7 +400,7 @@ pipeline {
                 }
             }
         }
-        stage('Publish to S3 nonccl xgboost cuda9') {
+        stage('Publish to S3 nonccl CUDA9') {
             agent {
                 label "linux"
             }
@@ -438,7 +438,7 @@ pipeline {
             }
         }
 
-        stage('Build Runtime Docker for CUDA 9') {
+        stage('Build Runtime Docker for CUDA9') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -474,7 +474,7 @@ pipeline {
             }
         }
 
-        stage('Publish Runtime Docker for CUDA 9 to S3') {
+        stage('Publish Runtime Docker for CUDA9 to S3') {
             agent {
                 label "linux"
             }
