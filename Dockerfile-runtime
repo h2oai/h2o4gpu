@@ -2,7 +2,9 @@
 #To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
 #To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
 
-FROM nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04
+ARG cuda
+FROM $cuda
+
 MAINTAINER H2o.ai <ops@h2o.ai>
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -65,12 +67,26 @@ RUN \
 # Add a canned jupyter notebook demo to the container
 RUN \
   mkdir -p jupyter/demos
-COPY examples/py/demos /jupyter/demos/
+COPY examples/py/demos/H2O4GPU_Ridge.ipynb /jupyter/demos/H2O4GPU_Ridge.ipynb
+COPY examples/py/demos/H2O4GPU_LinearRegression.ipynb /jupyter/demos/H2O4GPU_LinearRegression.ipynb
+COPY examples/py/demos/H2O4GPU_GBM.ipynb /jupyter/demos/H2O4GPU_GBM.ipynb
+COPY examples/py/demos/H2O4GPU_GLM.ipynb /jupyter/demos/H2O4GPU_GLM.ipynb
+COPY examples/py/demos/H2O4GPU_Lasso.ipynb /jupyter/demos/H2O4GPU_Lasso.ipynb
+COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans_Images.ipynb
+COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H2O-GLM-simple.ipynb
+
+
 
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
-  chmod -R o+w /jupyter
+  chmod -R o+w /jupyter && \
+  python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")" && \
+  python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")" && \
+  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/creditcard.csv && \
+  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg && \
+  cp ../../open_data/ipums_1k.csv . && \
+  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/ipums.feather
 
 # Add shell wrapper
 COPY run.sh /run.sh

@@ -60,7 +60,7 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -134,7 +134,7 @@ pipeline {
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                            nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
@@ -152,6 +152,7 @@ pipeline {
             steps {
                 unstash 'linux_whl'
                 unstash 'version_info'
+                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                     script {
@@ -186,6 +187,7 @@ pipeline {
                             sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-${versionTag}-py36-none-any.whl"
                         }
                     }
+                    }
                 }
             }
         }
@@ -214,7 +216,7 @@ pipeline {
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime .
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime  --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
                                 gzip  h2o4gpu-cuda8-runtime.tar
                             """
@@ -234,6 +236,7 @@ pipeline {
             steps {
                 unstash 'docker-cuda8-runtime'
                 unstash 'version_info'
+                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         // Load the version file content
@@ -267,11 +270,12 @@ pipeline {
                             sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda8-runtime.tar.gz"
                         }
                     }
+                    }
                 }
             }
         }
 
-        stage('Build on Linux nonccl xgboost') {
+        stage('Build on Linux nonccl xgboost CUDA8') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -296,7 +300,7 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -324,6 +328,7 @@ pipeline {
                 unstash 'linux_whl2'
                 unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist2/'
+                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 script {
                     // Load the version file content
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -347,6 +352,7 @@ pipeline {
                         sh "s3cmd put ${localArtifact} ${bucket}"
                         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                     }
+                }
                 }
             }
         }
@@ -375,7 +381,7 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-cuda9-build .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-build -f Dockerfile-build --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -403,6 +409,7 @@ pipeline {
                 unstash 'linux_whl3'
                 unstash 'version_info'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist3/'
+                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 script {
                     // Load the version file content
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -426,6 +433,7 @@ pipeline {
                         sh "s3cmd put ${localArtifact} ${bucket}"
                         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                     }
+                }
                 }
             }
         }
@@ -454,7 +462,7 @@ pipeline {
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime  --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
                                 gzip  h2o4gpu-cuda9-runtime.tar
                             """
@@ -475,6 +483,7 @@ pipeline {
                 unstash 'docker-cuda9-runtime'
                 unstash 'version_info'
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     script {
                         // Load the version file content
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -506,6 +515,7 @@ pipeline {
                             }
                             sh "s3cmd setacl --acl-public s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}/h2o4gpu-cuda9-runtime.tar.gz"
                         }
+                    }
                     }
                 }
             }
