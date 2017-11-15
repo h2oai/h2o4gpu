@@ -75,7 +75,7 @@ pipeline {
 
                             script {
                                 // Load the version file content
-                                buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'"))
+                                buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
                                 utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
                                 utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
                                 |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
