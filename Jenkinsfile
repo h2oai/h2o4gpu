@@ -216,7 +216,7 @@ pipeline {
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04 .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
                                 gzip  h2o4gpu-cuda8-runtime.tar
                             """
@@ -462,7 +462,7 @@ pipeline {
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
                                 gzip  h2o4gpu-cuda9-runtime.tar
                             """
