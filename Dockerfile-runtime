@@ -82,11 +82,10 @@ RUN \
   cd /jupyter/demos && \
   chmod -R o+w /jupyter && \
   python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")" && \
-  python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")" && \
-  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/creditcard.csv && \
-  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg && \
-  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/ipums_1k.csv && \
-  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/ipums.feather
+  cp /open_data/creditcard.csv . && \
+  cp /open_data/kmeans_data/h2o-logo.jpg . && \
+  cp /open_data/ipums_1k.csv . && \
+  cp /open_data/ipums.feather .
 
 # Add shell wrapper
 COPY run.sh /run.sh

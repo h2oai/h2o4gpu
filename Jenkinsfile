@@ -144,7 +144,7 @@ pipeline {
             }
         }
 
-        stage('Publish to S3') {
+        stage('Publish to S3 CUDA8') {
             agent {
                 label "linux"
             }
