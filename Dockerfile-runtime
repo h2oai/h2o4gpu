@@ -5,6 +5,7 @@
 
 ARG cuda
 ARG wheel
+ENV wheel=${wheel}
 
 FROM $cuda
 
