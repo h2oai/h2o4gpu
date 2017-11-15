@@ -768,14 +768,9 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
   double t0 = timer<double>();
 
-  int status = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
-                                 dList, n_gpu, max_iterations, threshold, true);
+  kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
+                    dList, n_gpu, max_iterations, threshold, true);
 
-  if (status) {
-    fprintf(stderr, "KMeans status was %d\n", status);
-    fflush(stderr);
-    return (status);
-  }
 
   double timefit = static_cast<double>(timer<double>() - t0);
 

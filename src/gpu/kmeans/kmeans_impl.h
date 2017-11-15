@@ -78,10 +78,7 @@ int kmeans(
   T *d_distance_sum[MAX_NGPUS];
 
   for (int q = 0; q < n_gpu; q++) {
-    if (verbose) {
-      fprintf(stderr, "Before kmeans() Allocation: gpu: %d\n", q);
-      fflush(stderr);
-    }
+    log_debug(verbose, "Before kmeans() Allocation: gpu: %d", q);
 
     safe_cuda(cudaSetDevice(dList[q]));
     safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
@@ -109,25 +106,13 @@ int kmeans(
       //throw std::runtime_error(ss.str());
     }
 
-    if (verbose) {
-      fprintf(stderr, "Before Create and save range for initializing labels: gpu: %d\n", q);
-      fflush(stderr);
-    }
     //Create and save "range" for initializing labels
     thrust::copy(thrust::counting_iterator<int>(0),
                  thrust::counting_iterator<int>(n / n_gpu),
                  (*range[q]).begin());
-
-    if (verbose) {
-      fprintf(stderr, "Before make_self_dots: gpu: %d\n", q);
-      fflush(stderr);
-    }
   }
 
-  if (verbose) {
-    fprintf(stderr, "Before kmeans() Iterations\n");
-    fflush(stderr);
-  }
+  log_debug(verbose, "Before kmeans() Iterations");
 
   int i = 0;
   bool done = false;
@@ -178,7 +163,7 @@ int kmeans(
       // Zero the centroids only if any of the GPUs actually updated them
       for (int p = 0; p < k; p++) {
         for (int r = 0; r < d; r++) {
-          if (h_counts_tmp[p] != 0) {
+          if (h_counts[p] != 0) {
             h_centroids[p * d + r] = 0.0;
           }
         }
@@ -190,7 +175,7 @@ int kmeans(
         detail::streamsync(dList[q]);
         for (int p = 0; p < k; p++) {
           for (int r = 0; r < d; r++) {
-            if (h_counts_tmp[p] != 0) {
+            if (h_counts[p] != 0) {
               h_centroids[p * d + r] += h_centroids_tmp[p * d + r];
             }
           }
@@ -266,12 +251,9 @@ int kmeans(
     delete (indices[q]);
   }
 
-  if (verbose) {
-    fprintf(stderr,
-            "Iterations: %d\n", i);
-    fflush(stderr);
-  }
-  return 0;
+  log_debug(verbose, "Iterations: %d", i);
+
+  return i;
 }
 
 }
