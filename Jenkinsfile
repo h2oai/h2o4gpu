@@ -220,16 +220,18 @@ pipeline {
 
                 script {
                     CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    def versionTag = buildInfo.get().getVersion()
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
                                 nvidia-docker build  -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
                                 gzip  h2o4gpu-cuda8-runtime.tar
+                                mv h2o4gpu-cuda8-runtime.tar.gz h2o4gpu-${versionTag}-cuda8-runtime.tar.gz
                             """
-                        stash includes: 'h2o4gpu-cuda8-runtime.tar.gz', name: 'docker-cuda8-runtime'
+                        stash includes: "h2o4gpu-${versionTag}-cuda8-runtime.tar.gz", name: 'docker-cuda8-runtime'
                         // Archive artifacts
-                        arch 'h2o4gpu-cuda8-runtime.tar.gz'
+                        arch "h2o4gpu-${versionTag}-cuda8-runtime.tar.gz"
                     }
                 }
             }
@@ -458,16 +460,18 @@ pipeline {
 
                 script {
                     CONTAINER_NAME = "h2o4gpu${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    def versionTag = buildInfo.get().getVersion()
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
                                 nvidia-docker build  -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-cuda9-runtime .
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
                                 gzip  h2o4gpu-cuda9-runtime.tar
+                                mv h2o4gpu-cuda9-runtime.tar.gz h2o4gpu-${versionTag}-cuda9-runtime.tar.gz
                             """
-                        stash includes: 'h2o4gpu-cuda9-runtime.tar.gz', name: 'docker-cuda9-runtime'
+                        stash includes: "h2o4gpu-${versionTag}-cuda9-runtime.tar.gz", name: 'docker-cuda9-runtime'
                         // Archive artifacts
-                        arch 'h2o4gpu-cuda9-runtime.tar.gz'
+                        arch "h2o4gpu-${versionTag}-cuda9-runtime.tar.gz"
                     }
                 }
             }
