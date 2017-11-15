@@ -115,6 +115,12 @@ alldeps2: deps_fetch alldeps_install2
 alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
 alldeps_private2: deps_fetch private_deps_fetch private_deps_install alldeps_install2
 
+alldeps_private_nccl_cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nccl_cuda8
+alldeps_private_nonccl_cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl_cuda8
+alldeps_private_nccl_cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nccl_cuda9
+alldeps_private_nonccl_cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl_cuda9
+
+
 build: update_submodule cleanbuild cpp c py
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
@@ -125,7 +131,7 @@ install: pyinstall
 
 fullinstall: clean alldeps sync_open_data build install
 	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
-fullinstall2: clean alldeps2 sync_open_data build install
+fullinstall_nonccl: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 runtime:
@@ -136,7 +142,7 @@ runtime:
 	gzip  h2o4gpu-cuda8-runtime.tar
 runtimecuda9:
 	@echo "+--Building Runtime Docker Image for cuda9--+"
-	$(MAKE) fullinstall2
+	$(MAKE) fullinstall_cuda9
 	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
 	nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
 	gzip  h2o4gpu-cuda9-runtime.tar
@@ -204,6 +210,12 @@ private_deps_install:
 alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
+alldeps_install_nccl_cuda8: deps_install apply_xgboost_nccl_cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install_nonccl_cuda8: deps_install apply_xgboost_nonccl_cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install_nccl_cuda9: deps_install apply_xgboost_nccl_cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install_nonccl_cuda9: deps_install apply_xgboost_nonccl_cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+
+
 ###################
 
 wheel_in_docker:
@@ -248,9 +260,13 @@ libnccl2:
 	sudo apt install libnccl2 libnccl-dev
 
 # https://xgboost.readthedocs.io/en/latest/build.html
-# could just get wheel from repo/S3 instead of doing this
 libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
 libxgboost2: libxgboostp1 libxgboostp2nonccl libxgboostp3
+
+# for jenkins, just get S3 wheel
+libxgboostjenkins:  libxgboostp1 libxgboostp2       libxgboostp3
+libxgboostjenkins2: libxgboostp1 libxgboostp2nonccl libxgboostp3
+
 
 libxgboostp1:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
@@ -264,10 +280,24 @@ libxgboostp3:
 apply_xgboost: libxgboost pipxgboost
 apply_xgboost2: libxgboost2 pipxgboost
 
+apply_xgboost_nccl_cuda8: pipxgboost_nccl_cuda8
+apply_xgboost_nonccl_cuda8:  pipxgboost_nonccl_cuda8
+apply_xgboost_nccl_cuda9:  pipxgboost_nccl_cuda9
+apply_xgboost_nonccl_cuda9:  pipxgboost_nonccl_cuda9
+
+
 pipxgboost:
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
+pipxgboost_nccl_cuda8:
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost_nonccl_cuda8:
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost_nccl_cuda9:
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost_nonccl_cuda9:
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
@@ -315,15 +345,15 @@ buildjenkins: update_submodule cpp c py
 installjenkins: pyinstall
 
 # for nccl cuda8 build
-fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
+fullinstalljenkins_nccl_cuda8: cleanjenkins alldeps_private_nccl_cuda8 buildjenkins installjenkins
 # for nonccl cuda8 build
-fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
+fullinstalljenkins_nonccl_cuda8: cleanjenkins alldeps_private_nonccl_cuda8 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
 # for nccl cuda9 build
-fullinstalljenkins4: cleanjenkins alldeps_private buildjenkins installjenkins
+fullinstalljenkins_nccl_cuda9: cleanjenkins alldeps_private_nccl_cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
 # for nonccl cuda9 build
-fullinstalljenkins3: cleanjenkins alldeps_private2 buildjenkins installjenkins
+fullinstalljenkins_nonccl_cuda9: cleanjenkins alldeps_private_nonccl_cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
 .PHONY: mrproper

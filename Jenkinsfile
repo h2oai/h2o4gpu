@@ -70,7 +70,7 @@ pipeline {
                                 CONTAINER_NAME
                             } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
-                            } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                            } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins_nccl_cuda8 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -319,7 +319,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins2 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins_nonccl_cuda8 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist2/*.whl', name: 'linux_whl2'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -369,7 +369,7 @@ pipeline {
                 }
             }
         }
-        stage('Build Runtime Docker for nonccl cuda8') {
+        stage('Build Runtime Docker for nonccl CUDA8') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -416,7 +416,7 @@ pipeline {
             }
         }
 
-        stage('Publish Runtime Docker for nonccl cuda8 to S3') {
+        stage('Publish Runtime Docker for nonccl CUDA8 to S3') {
             agent {
                 label "linux"
             }
@@ -472,7 +472,7 @@ pipeline {
 
 
 
-        stage('Build on Linux nccl cuda9') {
+        stage('Build on Linux nccl CUDA9') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -503,7 +503,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins4 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins_nccl_cuda9 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist4/*.whl', name: 'linux_whl3'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -654,7 +654,7 @@ pipeline {
 
 
 
-        stage('Build on Linux nonccl cuda9') {
+        stage('Build on Linux nonccl CUDA9') {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -685,7 +685,7 @@ pipeline {
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins3 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                    nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins_nonccl_cuda9 ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
                             stash includes: 'src/interface_py/dist3/*.whl', name: 'linux_whl3'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
