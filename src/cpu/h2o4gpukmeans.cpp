@@ -279,9 +279,9 @@ namespace h2o4gpukmeans {
 
         double t0 = timer<double>();
         int masterq = 0;
-        int status = kmeans::kmeans<T>(verbose, &flag, n, d, k, *data[masterq], *labels[masterq],
-                                       *l_centroids[masterq], max_iterations, init_from_data, threshold);
-        if (status) return (status);
+        kmeans::kmeans<T>(verbose, &flag, n, d, k, *data[masterq], *labels[masterq],
+                          *l_centroids[masterq], max_iterations, init_from_data, threshold);
+
         double timefit = static_cast<double>(timer<double>() - t0);
 
         std::cout << "  Time fit: " << timefit << " s" << std::endl;
