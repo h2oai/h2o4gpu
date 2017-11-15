@@ -155,6 +155,7 @@ clean: cleanbuild deps_clean xgboost_clean py3nvml_clean ci_clean
 
 ci_clean:
 	rm -f src/interface_py/h2o4gpu/BUILD_INFO.txt
+	rm -f src/interface_py/h2o4gpu/dist*
 	rm -f ./build/VERSION.txt
 
 cleanbuild: cleancpp cleanc cleanpy
