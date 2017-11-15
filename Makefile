@@ -319,6 +319,9 @@ fullinstalljenkins: cleanjenkins alldeps_private buildjenkins installjenkins
 # for nonccl cuda8 build
 fullinstalljenkins2: cleanjenkins alldeps_private2 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
+# for nccl cuda9 build
+fullinstalljenkins4: cleanjenkins alldeps_private buildjenkins installjenkins
+	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
 # for nonccl cuda9 build
 fullinstalljenkins3: cleanjenkins alldeps_private2 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/

@@ -2,7 +2,10 @@
 #To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
 #To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
 
+
 ARG cuda
+ARG wheel
+
 FROM $cuda
 
 MAINTAINER H2o.ai <ops@h2o.ai>
@@ -62,7 +65,7 @@ RUN \
 #Below will get the latest stable wheel file instead.
 RUN \
   . h2o4gpu_env/bin/activate && \
-  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl
+  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/$wheel
 
 # Add a canned jupyter notebook demo to the container
 RUN \
@@ -80,12 +83,7 @@ COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
-  chmod -R o+w /jupyter && \
-  python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")" && \
-  cp /home/0xdiag/h2o4gpu/open_data/creditcard.csv . && \
-  wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg && \
-  cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv . && \
-  cp /home/0xdiag/h2o4gpu/data/ipums.feather .
+  chmod -R o+w /jupyter
 
 # Add shell wrapper
 COPY run.sh /run.sh
