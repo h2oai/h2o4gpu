@@ -254,6 +254,17 @@ namespace kmeans {
       double required_byte = n * k * sizeof(T);
 
       int runs = std::ceil( required_byte / free_byte );
+
+      log_verbose(verbose,
+                  "Batch calculate distance - Rows %ld | K %ld | Data size %d",
+                  n, k, sizeof(T)
+      );
+
+      log_verbose(verbose,
+                  "Batch calculate distance - Free memory %ld | Required memory %ld | Runs %d",
+                  free_byte, required_byte, runs + 1
+      );
+
       int offset = 0;
       for(int run = 0; run < runs; run++) {
         int rows_per_run = free_byte / (k * sizeof(T));
@@ -264,6 +275,10 @@ namespace kmeans {
 
         thrust::device_vector<T> pairwise_distances(rows_per_run * k);
 
+        log_verbose(verbose,
+                    "Batch calculate distance - Allocated"
+        );
+
         kmeans::detail::calculate_distances(verbose, 0, rows_per_run, d, k,
                                             data, offset,
                                             centroids,
@@ -271,14 +286,22 @@ namespace kmeans {
                                             centroid_dots,
                                             pairwise_distances);
 
+        log_verbose(verbose,
+                    "Batch calculate distance - Distances calculated"
+        );
+
         functor(rows_per_run, offset, pairwise_distances);
+
+        log_verbose(verbose,
+                    "Batch calculate distance - Functor ran"
+        );
 
         offset += rows_per_run;
       }
     }
 
     template<typename T>
-      __global__ void make_new_labels(int n, int k, T* pairwise_distances, int* labels, T* distances) {
+      __global__ void make_new_labels(int n, int k, T* pairwise_distances, int* labels) {
       T min_distance = FLT_MAX; //std::numeric_limits<T>::max(); // might be ok TODO FIXME
       T min_idx = -1;
         int global_id = threadIdx.x + blockIdx.x * blockDim.x;
@@ -291,7 +314,6 @@ namespace kmeans {
             }
           }
           labels[global_id] = min_idx;
-          distances[global_id] = min_distance;
         }
       }
 
@@ -300,8 +322,7 @@ namespace kmeans {
       void relabel(int n, int k,
                    thrust::device_vector<T>& pairwise_distances,
                    thrust::device_vector<int>& labels,
-                   int offset,
-                   thrust::device_vector<T>& distances) {
+                   int offset) {
         int dev_num;
         safe_cuda(cudaGetDevice(&dev_num));
 #define MAX_BLOCK_THREADS2 256
@@ -309,8 +330,7 @@ namespace kmeans {
         make_new_labels<<<GRID_SIZE, MAX_BLOCK_THREADS2,0,cuda_stream[dev_num]>>>(
             n, k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
-            thrust::raw_pointer_cast(labels.data() + offset),
-            thrust::raw_pointer_cast(distances.data()));
+            thrust::raw_pointer_cast(labels.data() + offset));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );
