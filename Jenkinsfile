@@ -139,7 +139,13 @@ pipeline {
 
             steps {
                 dumpInfo 'Linux Build Info'
+                script {
+                    sh """
+                        mkdir -p build ; rm -rf build/VERSION.txt
+                    """
+                }
                 unstash 'version_info'
+                sh 'echo "Stashed version file:" && ls -l build/'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                     deleteDir()
@@ -154,9 +160,6 @@ pipeline {
 
 
                 script {
-                    sh """
-                        mkdir -p build ; rm -rf build/VERSION.txt ; make build/VERSION.txt
-                    """
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-cuda8-runtime${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
