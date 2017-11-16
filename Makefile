@@ -115,10 +115,10 @@ alldeps2: deps_fetch alldeps_install2
 alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
 alldeps_private2: deps_fetch private_deps_fetch private_deps_install alldeps_install2
 
-alldeps_private_nccl_cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nccl_cuda8
-alldeps_private_nonccl_cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl_cuda8
-alldeps_private_nccl_cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nccl_cuda9
-alldeps_private_nonccl_cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl_cuda9
+alldeps_private-nccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda8
+alldeps_private_nonccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl-cuda8
+alldeps_private-nccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda9
+alldeps_private_nonccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl-cuda9
 
 
 build: update_submodule cleanbuild cpp c py
@@ -142,7 +142,7 @@ runtime:
 	gzip  h2o4gpu-cuda8-runtime.tar
 runtimecuda9:
 	@echo "+--Building Runtime Docker Image for cuda9--+"
-	$(MAKE) fullinstall_cuda9
+	$(MAKE) fullinstall-cuda9
 	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
 	nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
 	gzip  h2o4gpu-cuda9-runtime.tar
@@ -210,10 +210,10 @@ private_deps_install:
 alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
-alldeps_install_nccl_cuda8: deps_install apply_xgboost_nccl_cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install_nonccl_cuda8: deps_install apply_xgboost_nonccl_cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install_nccl_cuda9: deps_install apply_xgboost_nccl_cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install_nonccl_cuda9: deps_install apply_xgboost_nonccl_cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install_nonccl-cuda8: deps_install apply_xgboost_nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install_nonccl-cuda9: deps_install apply_xgboost_nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 
 ###################
@@ -222,7 +222,7 @@ wheel_in_docker:
 	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
 
-wheel_in_docker_cuda9:
+wheel_in_docker-cuda9:
 	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
 
@@ -230,7 +230,7 @@ clean_in_docker:
 	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
 
-clean_in_docker_cuda9:
+clean_in_docker-cuda9:
 	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
 	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make clean'
 
@@ -275,10 +275,10 @@ libxgboostp3:
 apply_xgboost: libxgboost pipxgboost
 apply_xgboost2: libxgboost2 pipxgboost
 
-apply_xgboost_nccl_cuda8: pipxgboost_nccl_cuda8
-apply_xgboost_nonccl_cuda8:  pipxgboost_nonccl_cuda8
-apply_xgboost_nccl_cuda9:  pipxgboost_nccl_cuda9
-apply_xgboost_nonccl_cuda9:  pipxgboost_nonccl_cuda9
+apply_xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
+apply_xgboost_nonccl-cuda8:  pipxgboost_nonccl-cuda8
+apply_xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
+apply_xgboost_nonccl-cuda9:  pipxgboost_nonccl-cuda9
 
 
 pipxgboost:
@@ -286,18 +286,18 @@ pipxgboost:
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
-pipxgboost_nccl_cuda8:
-	@echo "----- pip install xgboost_nccl_cuda8 from S3 -----"
+pipxgboost-nccl-cuda8:
+	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6/xgboost-0.6-py3-none-any.whl --upgrade --target ../
-pipxgboost_nonccl_cuda8:
-	@echo "----- pip install xgboost_nonccl_cuda8 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
-pipxgboost_nccl_cuda9:
-	@echo "----- pip install xgboost_nccl_cuda9 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
-pipxgboost_nonccl_cuda9:
-	@echo "----- pip install xgboost_nonccl_cuda9 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost_nonccl-cuda8:
+	@echo "----- pip install xgboost_nonccl-cuda8 from S3 -----"
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost-nccl-cuda9:
+	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost_nonccl-cuda9:
+	@echo "----- pip install xgboost_nonccl-cuda9 from S3 -----"
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
@@ -346,15 +346,15 @@ buildjenkins: update_submodule cpp c py
 installjenkins: pyinstall
 
 # for nccl cuda8 build
-fullinstalljenkins_nccl_cuda8: cleanjenkins alldeps_private_nccl_cuda8 buildjenkins installjenkins
+fullinstalljenkins-nccl-cuda8: cleanjenkins alldeps_private-nccl-cuda8 buildjenkins installjenkins
 # for nonccl cuda8 build
-fullinstalljenkins_nonccl_cuda8: cleanjenkins alldeps_private_nonccl_cuda8 buildjenkins installjenkins
+fullinstalljenkins_nonccl-cuda8: cleanjenkins alldeps_private_nonccl-cuda8 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
 # for nccl cuda9 build
-fullinstalljenkins_nccl_cuda9: cleanjenkins alldeps_private_nccl_cuda9 buildjenkins installjenkins
+fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
 # for nonccl cuda9 build
-fullinstalljenkins_nonccl_cuda9: cleanjenkins alldeps_private_nonccl_cuda9 buildjenkins installjenkins
+fullinstalljenkins_nonccl-cuda9: cleanjenkins alldeps_private_nonccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
 .PHONY: mrproper
@@ -370,7 +370,7 @@ fullinstallprivate2: clean alldeps_private2 build sync_data install
 #s3upload:
 #	artifact = h2o4gpu-${versionTag}-py36-none-any.whl
 #                        def localArtifact = src/interface_py/dist2/${artifact}
-#                        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl_cuda8/"
+#                        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl-cuda8/"
 #                        sh "s3cmd put ${localArtifact} ${bucket}"
 #                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
 #
