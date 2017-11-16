@@ -169,8 +169,8 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
@@ -425,8 +425,8 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
@@ -618,8 +618,8 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; /data/ipums_1k.csv .'
@@ -808,8 +808,8 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
