@@ -116,9 +116,9 @@ alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_inst
 alldeps_private2: deps_fetch private_deps_fetch private_deps_install alldeps_install2
 
 alldeps_private-nccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda8
-alldeps_private_nonccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl-cuda8
+alldeps_private-nonccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install-nonccl-cuda8
 alldeps_private-nccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda9
-alldeps_private_nonccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install_nonccl-cuda9
+alldeps_private-nonccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nonccl-cuda9
 
 
 build: update_submodule cleanbuild cpp c py
@@ -131,7 +131,7 @@ install: pyinstall
 
 fullinstall: clean alldeps sync_open_data build install
 	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
-fullinstall_nonccl: clean alldeps2 sync_open_data build install
+fullinstall-nonccl: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 runtime:
@@ -211,9 +211,9 @@ alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for s
 alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install_nonccl-cuda8: deps_install apply_xgboost_nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install_nonccl-cuda9: deps_install apply_xgboost_nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 
 ###################
@@ -276,9 +276,9 @@ apply_xgboost: libxgboost pipxgboost
 apply_xgboost2: libxgboost2 pipxgboost
 
 apply_xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
-apply_xgboost_nonccl-cuda8:  pipxgboost_nonccl-cuda8
+apply_xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
 apply_xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
-apply_xgboost_nonccl-cuda9:  pipxgboost_nonccl-cuda9
+apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 
 
 pipxgboost:
@@ -289,15 +289,15 @@ pipxgboost:
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6/xgboost-0.6-py3-none-any.whl --upgrade --target ../
-pipxgboost_nonccl-cuda8:
-	@echo "----- pip install xgboost_nonccl-cuda8 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost-nonccl-cuda8:
+	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost-nccl-cuda9:
 	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
-pipxgboost_nonccl-cuda9:
-	@echo "----- pip install xgboost_nonccl-cuda9 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+pipxgboost-nonccl-cuda9:
+	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
@@ -348,13 +348,13 @@ installjenkins: pyinstall
 # for nccl cuda8 build
 fullinstalljenkins-nccl-cuda8: cleanjenkins alldeps_private-nccl-cuda8 buildjenkins installjenkins
 # for nonccl cuda8 build
-fullinstalljenkins_nonccl-cuda8: cleanjenkins alldeps_private_nonccl-cuda8 buildjenkins installjenkins
+fullinstalljenkins-nonccl-cuda8: cleanjenkins alldeps_private-nonccl-cuda8 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
 # for nccl cuda9 build
 fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
 # for nonccl cuda9 build
-fullinstalljenkins_nonccl-cuda9: cleanjenkins alldeps_private_nonccl-cuda9 buildjenkins installjenkins
+fullinstalljenkins-nonccl-cuda9: cleanjenkins alldeps_private-nonccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
 .PHONY: mrproper
@@ -367,13 +367,6 @@ mrproper: clean
 fullinstallprivate: clean alldeps_private build sync_data install
 fullinstallprivate2: clean alldeps_private2 build sync_data install
 
-#s3upload:
-#	artifact = h2o4gpu-${versionTag}-py36-none-any.whl
-#                        def localArtifact = src/interface_py/dist2/${artifact}
-#                        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${versionTag}_nonccl-cuda8/"
-#                        sh "s3cmd put ${localArtifact} ${bucket}"
-#                        sh "s3cmd setacl --acl-public  ${bucket}/${artifact}"
-#
 sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using smalldata
 
 ##################

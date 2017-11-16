@@ -16,7 +16,16 @@ String changeId() {
     return "-master"
 }
 
+def tags         = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+def cudatags     = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+def dobuilds      = [1, 0, 0, 0]
+def dofulltests   = [0, 0, 0, 0]
+def dopytests     = [0, 0, 0, 0]
+def doruntimes    = [0, 0, 0, 0]
+def dockerimages  = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+def dists         = ["dist","dist2","dist3","dist4"]
 
+def branches = [:]
 
 pipeline {
     agent none
@@ -36,8 +45,22 @@ pipeline {
     }
 
     stages {
+        for (int i = 0; i < dobuilds.size(); i++) {
+        def index = i
+        def tag = ${tags[i]}
+        def cudatag = ${cudatags[i]}
+        def dobuild = ${dobuilds[i]}
+        def dofulltest = ${dofulltests[i]}
+        def dopytest = ${dopytests[i]}
+        def doruntime = ${doruntimes[i]}
+        def dockerimage = ${dockerimages[i]}
+        def dist = ${dists[$i]}
+        // derived tag
+        def extratag = "-${tag}-${cudatag}"
 
-        stage('Build on Linux nccl CUDA8') {
+        if (${dobuild}==1) {
+
+        stage("Build on Linux ${extratag}") {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -57,13 +80,12 @@ pipeline {
                 }
 
                 script {
-                    def extratag = "-nccl-cuda8"
                     CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
                             sh """
-                                    nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
+                                    nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=${dockerimage} .
                                     nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
                                     nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                     nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -75,10 +97,10 @@ pipeline {
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
-                            stash includes: 'src/interface_py/dist/*.whl', name: 'linux_whl'
+                            stash includes: 'src/interface_py/${dist}/*.whl', name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
-                            arch 'src/interface_py/dist/*.whl'
+                            arch 'src/interface_py/${dist}/*.whl'
                         } finally {
                             sh "nvidia-docker stop ${CONTAINER_NAME}"
                         }
@@ -86,8 +108,10 @@ pipeline {
                 }
             }
         }
+        }
 
 
+        if (${dofulltest}==1) {
 
         stage('Full Test on Linux nccl CUDA8') {
             agent {
@@ -99,7 +123,11 @@ pipeline {
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
-                unstash 'linux_whl'
+                unstash 'version_info'
+                script {
+                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                    unstash 'linux_whl'
+                }
                 script {
                     def extratag = "-nccl-cuda8"
                     try {
@@ -123,7 +151,10 @@ pipeline {
                 }
             }
         }
-        stage('Pylint on Linux nccl CUDA8') {
+        }
+
+        if (${dopytest}==1) {
+        stage("Pylint on Linux ${extratag}") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -141,7 +172,7 @@ pipeline {
                 script {
                     def extratag = "-nccl-cuda8"
                     sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
+                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build  --build-arg cuda=nvidia/${dockerimage} .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
@@ -151,8 +182,10 @@ pipeline {
                 }
             }
         }
+        }
 
 
+        if (${dobuild}==1) {
         stage('Publish to S3 nccl CUDA8') {
             agent {
                 label "linux"
@@ -162,13 +195,13 @@ pipeline {
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def extratag = "-nccl-cuda8"
-                    }
-                unstash 'linux_whl'
+                    unstash 'linux_whl'
+                }
 
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                         def artifactId = "h2o4gpu"
                         def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
@@ -179,11 +212,13 @@ pipeline {
                 }
             }
         }
+        }
 
 
 
+        if (${doruntime}==1) {
 
-        stage('Build Runtime Docker for nccl CUDA8') {
+        stage("Build Runtime Docker for ${extratag}") {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -211,7 +246,6 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def extratag = "-nccl-cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
@@ -241,8 +275,10 @@ pipeline {
                 }
             }
         }
+        }
 
-        stage('Publish Runtime Docker for nccl CUDA8 to S3') {
+        if (${doruntime}==1) {
+        stage("Publish Runtime Docker for ${extratag} to S3") {
             agent {
                 label "linux"
             }
@@ -251,14 +287,14 @@ pipeline {
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def extratag = "-nccl-cuda8"
+                    unstash 'docker-${versionTag}${extratag}-runtime'
                 }
-                unstash 'docker-${versionTag}${extratag}-runtime'
 
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         sh 'echo "Stashed files:" && ls -l docker*'
+                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         def artifactId = "h2o4gpu"
                         def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
                         def localArtifact = "${artifact}"
@@ -268,6 +304,9 @@ pipeline {
                 }
             }
         }
+        }
+
+        }// end over loop
 
 
 
