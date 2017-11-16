@@ -58,7 +58,7 @@ pipeline {
 
                 script {
                     def extratag = "_nccl_cuda8"
-                    CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -206,7 +206,8 @@ pipeline {
                 script {
                     def extratag = "_nccl_cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    //CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-runtime${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -291,7 +292,7 @@ pipeline {
 
                 script {
                     def extratag = "_nonccl_cuda8"
-                    CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -367,7 +368,7 @@ pipeline {
                 script {
                     def extratag = "_nonccl_cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -450,7 +451,7 @@ pipeline {
 
                 script {
                     def extratag = "_nccl_cuda9"
-                    CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -527,7 +528,7 @@ pipeline {
                 script {
                     def extratag = "_nccl_cuda9"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
@@ -605,7 +606,7 @@ pipeline {
                 }
                 script {
                     def extratag = "_nonccl_cuda9"
-                    CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -684,7 +685,7 @@ pipeline {
                 script {
                     def extratag = "_nonccl_cuda9"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
