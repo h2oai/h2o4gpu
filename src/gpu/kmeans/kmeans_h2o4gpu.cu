@@ -277,16 +277,20 @@ void kmeans_plus_plus(
 
   add_centroid(centroid_idx, cols, data, weights, centroids);
 
-  std::vector<T> best_pairwise_distances(data.size());
+  log_verbose(verbose, "KMeans++ - Allocating memory %d | %d | %d", data.size(), cols, centroids.size());
+
+  std::vector<T> best_pairwise_distances(data.size() / cols); // one for each row in data
   std::vector<T> std_data(data.begin(), data.end());
   std::vector<T> std_centroids(centroids.begin(), centroids.end());
 
   compute_distances(std_data,
                     std_centroids,
                     best_pairwise_distances,
-                    data.size(), cols, 1);
+                    data.size() / cols, cols, 1);
 
   for (int iter = 0; iter < k - 1; iter++) {
+    log_verbose(verbose, "KMeans++ - Iteraton %d/%d.", iter, k-1);
+
     centroid_idx = pick_point_idx_weighted(
         seed,
         &best_pairwise_distances,
@@ -301,12 +305,13 @@ void kmeans_plus_plus(
     std_data = std::vector<T>(data.begin(), data.end());
     std_centroids = std::vector<T>(centroids.begin() + cols * (iter + 1), centroids.end());
 
-    std::vector<T> curr_pairwise_distances(data.size());
+    int centroids_nr = std_centroids.size() / cols;
+    std::vector<T> curr_pairwise_distances( centroids_nr * (std_data.size() / cols));
 
     compute_distances(std_data,
                       std_centroids,
                       curr_pairwise_distances,
-                      std_data.size(), cols, 1);
+                      std_data.size() / cols, cols, 1);
 
     for (int i = 0; i < curr_pairwise_distances.size(); i++) {
       best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
@@ -356,7 +361,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   int first_center_idx = first_center % rows_per_gpu;
   int first_center_gpu = first_center / rows_per_gpu;
 
-  log_debug(verbose, "KMeans|| - Initial centroid %d on GPU %d.", first_center_idx, first_center_gpu);
+  log_verbose(verbose, "KMeans|| - Initial centroid %d on GPU %d.", first_center_idx, first_center_gpu);
 
   // Copies the initial centroid to potential centroids vector. That vector will store all potential centroids found
   // in the previous iteration.
@@ -386,7 +391,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   // The original white paper claims 8 should be enough
   int max_iter = std::min(8, (int)(2 + log(k)) );
   for (int counter = 0; counter < max_iter; counter++) {
-    log_debug(verbose, "KMeans|| - Iteration %d.", counter);
+    log_verbose(verbose, "KMeans|| - Iteration %d.", counter);
     T total_min_cost = 0.0;
 
     int new_potential_centroids = 0;
@@ -397,31 +402,55 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
       int potential_k_rows = d_potential_centroids.size() / cols;
 
-      thrust::device_vector<T> d_all_costs(rows_per_gpu * potential_k_rows);
-
       // Compute all the costs to each potential centroid from previous iteration
       thrust::device_vector<T> centroid_dots(potential_k_rows);
 
-      kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, potential_k_rows,
-                                          *data[i],
-                                          d_potential_centroids,
-                                          *data_dots[i],
-                                          centroid_dots,
-                                          d_all_costs);
+      // Get info about available memory
+      // This part of the algo can be very memory consuming
+      // We might need to batch it
+      // TODO not using batch_calculate_distances because nvcc is complaining about using the __device__
+      // lambda inside a lambda
+      size_t free_byte;
+      size_t total_byte;
+      CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
+      free_byte *= 0.8;
 
-      // Find the closest potential center cost for each row
-      auto min_cost_counter = thrust::make_counting_iterator(0);
-      auto all_costs_ptr = thrust::raw_pointer_cast(d_all_costs.data());
-      auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data());
-      T max = std::numeric_limits<T>::max();
-      thrust::for_each(min_cost_counter, min_cost_counter + rows_per_gpu, [=]__device__(int idx){
-        T best = max;
-        for (int j = 0; j < potential_k_rows; j++) {
-          best = min(best, std::abs(all_costs_ptr[j * rows_per_gpu + idx]));
+      double required_byte = rows_per_gpu * potential_k_rows * sizeof(T);
+
+      int runs = std::ceil( required_byte / free_byte );
+      int offset = 0;
+      for(int run = 0; run < runs; run++) {
+        int rows_per_run = free_byte / (potential_k_rows * sizeof(T));
+
+        if( run + 1 == runs ) {
+          rows_per_run = rows_per_gpu % rows_per_run;
         }
 
-        min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
-      });
+        thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
+
+        kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, potential_k_rows,
+                                            *data[i], offset,
+                                            d_potential_centroids,
+                                            *data_dots[i],
+                                            centroid_dots,
+                                            d_all_costs);
+
+        // Find the closest potential center cost for each row
+        auto min_cost_counter = thrust::make_counting_iterator(0);
+        auto all_costs_ptr = thrust::raw_pointer_cast(d_all_costs.data());
+        auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data() + offset);
+        T max = std::numeric_limits<T>::max();
+        thrust::for_each(min_cost_counter, min_cost_counter + rows_per_run, [=]
+        __device__(int idx){
+          T best = max;
+          for (int j = 0; j < potential_k_rows; j++) {
+            best = min(best, std::abs(all_costs_ptr[j * rows_per_run + idx]));
+          }
+
+          min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
+        });
+        offset += rows_per_run;
+      }
 
       CUDACHECK(cudaDeviceSynchronize());
 
@@ -500,7 +529,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
     }
 
-    log_debug(verbose, "KMeans|| - New potential centroids %d.", new_potential_centroids);
+    log_verbose(verbose, "KMeans|| - New potential centroids %d.", new_potential_centroids);
 
     // Gather potential cluster centers from all GPUs
     if (new_potential_centroids > 0) {
@@ -562,8 +591,6 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
     double timecount = static_cast<double>(timer<double>() - tc0);
 
-    log_debug(verbose, "KMeans|| - Counted weights.");
-
     double tkpp = timer<double>();
 
     kmeans_plus_plus(
@@ -577,7 +604,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
     double timekpp = static_cast<double>(timer<double>() - tkpp);
 
-    log_debug(verbose, "KMeans|| - Time loop: %g Time count: %g Time kpp: %g.", timeloop, timecount, timekpp);
+    log_verbose(verbose, "KMeans|| - Time loop: %g Time count: %g Time kpp: %g.", timeloop, timecount, timekpp);
   }
 
   return final_centroids;
@@ -768,9 +795,13 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
 
   double t0 = timer<double>();
 
-  kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
+  int iter = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
                     dList, n_gpu, max_iterations, threshold, true);
 
+  if (iter < 0) {
+    log_error(verbose, "KMeans algorithm failed.");
+    return iter;
+  }
 
   double timefit = static_cast<double>(timer<double>() - t0);
 
@@ -845,21 +876,17 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
   std::vector<int> dList = kmeans_init(verbose, &n_gpu, n_gputry, gpu_idtry, rows);
 
   thrust::device_vector<T> *d_data[n_gpu];
-  thrust::device_vector<int> *d_labels[n_gpu];
   thrust::device_vector<T> *d_centroids[n_gpu];
-  thrust::device_vector<T> *pairwise_distances[n_gpu];
   thrust::device_vector<T> *data_dots[n_gpu];
   thrust::device_vector<T> *centroid_dots[n_gpu];
-  thrust::device_vector<T> *distances[n_gpu];
+  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
 
   for (int q = 0; q < n_gpu; q++) {
-    // TODO everything from here till "distances[q]" is exactly the same as in transform
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
 
     data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
     centroid_dots[q] = new thrust::device_vector<T>(k);
-    pairwise_distances[q] = new thrust::device_vector<T>(rows / n_gpu * k);
 
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
@@ -870,20 +897,17 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
 
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
-    kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
-                                        *d_data[q], *d_centroids[q], *data_dots[q],
-                                        *centroid_dots[q], *pairwise_distances[q]);
+    thrust::device_vector<int> d_labels(rows / n_gpu);
+    thrust::device_vector<T> distances(rows / n_gpu);
 
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
-    d_labels[q] = new thrust::device_vector<int>(rows / n_gpu);
+    kmeans::detail::batch_calculate_distances(verbose, q, rows / n_gpu, cols, k,
+                                      *d_data[q], *d_centroids[q], *data_dots[q], *centroid_dots[q],
+                                      [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
+                                        kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset, distances);
+                                      }
+    );
 
-    kmeans::detail::relabel(rows / n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q]);
-  }
-
-  // Move the resulting labels into host memory from all devices
-  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
-  for (int q = 0; q < n_gpu; q++) {
-    h_labels->insert(h_labels->end(), d_labels[q]->begin(), d_labels[q]->end());
+    h_labels->insert(h_labels->end(), d_labels.begin(), d_labels.end());
   }
 
   *pred_labels = h_labels->data();
@@ -891,13 +915,10 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
     kmeans::detail::labels_close();
-    delete (d_labels[q]);
-    delete (pairwise_distances[q]);
     delete (data_dots[q]);
     delete (centroid_dots[q]);
     delete (d_centroids[q]);
     delete (d_data[q]);
-    delete (distances[q]);
   }
 
   return 0;
@@ -946,8 +967,9 @@ int kmeans_transform(int verbose,
 
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
+    // TODO batch this
     kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
-                                        *d_data[q], *d_centroids[q], *data_dots[q],
+                                        *d_data[q], 0, *d_centroids[q], *data_dots[q],
                                         *centroid_dots[q], *d_pairwise_distances[q]);
   }
 

@@ -9,16 +9,6 @@
 #include "kmeans_labels.h"
 #include "kmeans_centroids.h"
 
-#define CUDACHECK(cmd) do {                           \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));\
-      fflush( stdout );                               \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
-  } while(0)
-
 /**
  * Calculates closest centroid for each record and counts how many points are assigned to each centroid.
  * @tparam T
@@ -47,35 +37,58 @@ void count_pts_per_centroid(
     thrust::host_vector<int> weights_tmp(weights.size());
 
     CUDACHECK(cudaSetDevice(i));
-    thrust::device_vector<T> pairwise_distances(rows_per_gpu * k);
     thrust::device_vector<T> centroid_dots(k);
     thrust::device_vector<T> d_centroids = centroids;
-
-    kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, k,
-                                        *data[i],
-                                        d_centroids,
-                                        *data_dots[i],
-                                        centroid_dots,
-                                        pairwise_distances);
-
     thrust::device_vector<int> counts(k);
-    auto counting = thrust::make_counting_iterator(0);
-    auto counts_ptr = thrust::raw_pointer_cast(counts.data());
-    auto pairwise_distances_ptr = thrust::raw_pointer_cast(pairwise_distances.data());
-    thrust::for_each(counting, counting + rows_per_gpu, [=]__device__(int idx){
-      int closest_centroid_idx = 0;
-      T best_distance = pairwise_distances_ptr[idx];
-      // FIXME potentially slow due to striding
-      for (int i = 1; i < k; i++) {
-        T distance = pairwise_distances_ptr[idx + i * rows_per_gpu];
 
-        if (distance < best_distance) {
-          best_distance = distance;
-          closest_centroid_idx = i;
-        }
+    // Get info about available memory
+    // This part of the algo can be very memory consuming
+    // We might need to batch it
+    // TODO not using batch_calculate_distances because nvcc is complaining about using the __device__
+    // lambda inside a lambda
+    size_t free_byte;
+    size_t total_byte;
+    CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
+    free_byte *= 0.8;
+
+    double required_byte = rows_per_gpu * k * sizeof(T);
+
+    int runs = std::ceil( required_byte / free_byte );
+    int offset = 0;
+    for(int run = 0; run < runs; run++) {
+      int rows_per_run = free_byte / (k * sizeof(T));
+
+      if (run + 1 == runs) {
+        rows_per_run = rows_per_gpu % rows_per_run;
       }
-      atomicAdd(&counts_ptr[closest_centroid_idx], 1);
-    });
+
+      thrust::device_vector<T> pairwise_distances(rows_per_run * k);
+      kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, k,
+                                          *data[i], offset,
+                                          d_centroids,
+                                          *data_dots[i],
+                                          centroid_dots,
+                                          pairwise_distances);
+
+      auto counting = thrust::make_counting_iterator(0);
+      auto counts_ptr = thrust::raw_pointer_cast(counts.data());
+      auto pairwise_distances_ptr = thrust::raw_pointer_cast(pairwise_distances.data());
+      thrust::for_each(counting, counting + rows_per_run, [=]__device__(int idx){
+        int closest_centroid_idx = 0;
+        T best_distance = pairwise_distances_ptr[idx];
+        // FIXME potentially slow due to striding
+        for (int i = 1; i < k; i++) {
+          T distance = pairwise_distances_ptr[idx + i * rows_per_run];
+
+          if (distance < best_distance) {
+            best_distance = distance;
+            closest_centroid_idx = i;
+          }
+        }
+        atomicAdd(&counts_ptr[closest_centroid_idx], 1);
+      });
+      offset += rows_per_run;
+    }
     CUDACHECK(cudaDeviceSynchronize());
 
     kmeans::detail::memcpy(weights_tmp, counts);

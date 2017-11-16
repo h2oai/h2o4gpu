@@ -61,12 +61,11 @@ int kmeans(
     double threshold = 1e-3,
     bool do_per_iter_check = true) {
 
-  thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
-  thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
-  thrust::device_vector<int> *labels_copy[MAX_NGPUS];
-  thrust::device_vector<int> *range[MAX_NGPUS];
-  thrust::device_vector<int> *indices[MAX_NGPUS];
-  thrust::device_vector<int> *counts[MAX_NGPUS];
+  thrust::device_vector<T> *centroid_dots[n_gpu];
+  thrust::device_vector<int> *labels_copy[n_gpu];
+  thrust::device_vector<int> *range[n_gpu];
+  thrust::device_vector<int> *indices[n_gpu];
+  thrust::device_vector<int> *counts[n_gpu];
   thrust::device_vector<T> d_old_centroids;
 
   thrust::host_vector<int> h_counts(k);
@@ -75,7 +74,7 @@ int kmeans(
   h_centroids = *centroids[0]; // all should be equal
   thrust::host_vector<T> h_centroids_tmp(k * d);
 
-  T *d_distance_sum[MAX_NGPUS];
+  T *d_distance_sum[n_gpu];
 
   for (int q = 0; q < n_gpu; q++) {
     log_debug(verbose, "Before kmeans() Allocation: gpu: %d", q);
@@ -85,23 +84,18 @@ int kmeans(
 
     try {
       centroid_dots[q] = new thrust::device_vector<T>(k);
-      pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
       labels_copy[q] = new thrust::device_vector<int>(n / n_gpu);
       range[q] = new thrust::device_vector<int>(n / n_gpu);
       counts[q] = new thrust::device_vector<int>(k);
       indices[q] = new thrust::device_vector<int>(n / n_gpu);
     } catch (thrust::system_error &e) {
-      // output an error message and exit
-      std::stringstream ss;
-      ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
-         << " error: " << e.what() << std::endl;
+      log_error(verbose, "Unable to allocate memory for gpu: %d | n/n_gpu: %d | k: %d | d: %d | error: %s",
+                q, n / n_gpu, k, d, e.what());
       return (-1);
       // throw std::runtime_error(ss.str());
     } catch (std::bad_alloc &e) {
-      // output an error message and exit
-      std::stringstream ss;
-      ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
-         << " error: " << e.what() << std::endl;
+      log_error(verbose, "Unable to allocate memory for gpu: %d | n/n_gpu: %d | k: %d | d: %d | error: %s",
+                q, n / n_gpu, k, d, e.what());
       return (-1);
       //throw std::runtime_error(ss.str());
     }
@@ -117,6 +111,8 @@ int kmeans(
   int i = 0;
   bool done = false;
   for (; i < max_iterations; i++) {
+    log_verbose(verbose, "KMeans - Iteration %d/%d", i, max_iterations);
+
     if (*flag) continue;
 
     for (int q = 0; q < n_gpu; q++) {
@@ -126,11 +122,14 @@ int kmeans(
         d_old_centroids = *centroids[q];
       }
 
-      detail::calculate_distances(verbose, q, n / n_gpu, d, k,
-                                  *data[q], *centroids[q], *data_dots[q],
-                                  *centroid_dots[q], *pairwise_distances[q]);
+      detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
+                                        *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
+                                        [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
+                                          detail::relabel(n, k, pairwise_distances, *labels[q], offset, *distances[q]);
+                                        }
+      );
 
-      detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q]);
+      log_verbose(verbose, "KMeans - Relabeled.");
 
       mycub::sum_reduce(*distances[q], d_distance_sum[q]);
 
@@ -234,16 +233,16 @@ int kmeans(
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
 
-    detail::calculate_distances(verbose, q, n / n_gpu, d, k,
-                                *data[q], *centroids[q], *data_dots[q],
-                                *centroid_dots[q], *pairwise_distances[q]);
-
-    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q]);
+    detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
+                                      *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
+                                      [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
+                                        detail::relabel(n, k, pairwise_distances, *labels[q], offset, *distances[q]);
+                                      }
+    );
   }
 
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
-    delete (pairwise_distances[q]);
     delete (centroid_dots[q]);
     delete (labels_copy[q]);
     delete (range[q]);

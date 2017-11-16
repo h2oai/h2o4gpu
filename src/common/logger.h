@@ -20,6 +20,6 @@
 #define log_info(desired_level, ...)  log(desired_level, H2O4GPU_LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
 #define log_warn(desired_level, ...)  log(desired_level, H2O4GPU_LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
 #define log_debug(desired_level, ...) log(desired_level, H2O4GPU_LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
-#define log_verbose(desired_level, ...) log(desired_level, H2O4GPULOG_VERBOSE, __FILE__, __LINE__, __VA_ARGS__)
+#define log_verbose(desired_level, ...) log(desired_level, H2O4GPU_LOG_VERBOSE, __FILE__, __LINE__, __VA_ARGS__)
 
 void log(int desired_level, int level, const char *file, int line, const char *fmt, ...);
