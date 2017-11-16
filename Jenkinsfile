@@ -58,7 +58,7 @@ pipeline {
 
                 script {
                     def extratag = "_nccl_cuda8"
-                    CONTAINER_NAME = 'h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}'
+                    CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         try {
