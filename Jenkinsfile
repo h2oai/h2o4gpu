@@ -57,7 +57,7 @@ pipeline {
                 }
 
                 script {
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                     CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -101,7 +101,7 @@ pipeline {
                 }
                 unstash 'linux_whl'
                 script {
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                     try {
                         sh """
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
@@ -139,7 +139,7 @@ pipeline {
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                 script {
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                     sh """
                             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
@@ -162,7 +162,7 @@ pipeline {
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                     }
                 unstash 'linux_whl'
 
@@ -211,7 +211,7 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
@@ -251,7 +251,7 @@ pipeline {
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    def extratag = "_nccl_cuda8"
+                    def extratag = "-nccl-cuda8"
                 }
                 unstash 'docker-${versionTag}${extratag}-runtime'
 
