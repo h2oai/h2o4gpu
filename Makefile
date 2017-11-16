@@ -263,11 +263,6 @@ libnccl2:
 libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
 libxgboost2: libxgboostp1 libxgboostp2nonccl libxgboostp3
 
-# for jenkins, just get S3 wheel
-libxgboostjenkins:  libxgboostp1 libxgboostp2       libxgboostp3
-libxgboostjenkins2: libxgboostp1 libxgboostp2nonccl libxgboostp3
-
-
 libxgboostp1:
 	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
 libxgboostp2:
@@ -287,16 +282,21 @@ apply_xgboost_nonccl_cuda9:  pipxgboost_nonccl_cuda9
 
 
 pipxgboost:
+	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
 pipxgboost_nccl_cuda8:
+	@echo "----- pip install xgboost_nccl_cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost_nonccl_cuda8:
+	@echo "----- pip install xgboost_nonccl_cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost_nccl_cuda9:
+	@echo "----- pip install xgboost_nccl_cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost_nonccl_cuda9:
+	@echo "----- pip install xgboost_nonccl_cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6_nonccl_cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
@@ -313,6 +313,7 @@ liblightgbm: # only done if user directly requests, never an explicit dependency
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
 
 libsklearn:	# assume already submodule gets sklearn
+	@echo "----- Make sklearn wheel -----"
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
 	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
