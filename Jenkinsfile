@@ -6,7 +6,6 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
-def env.BUILD_ID=""
 def SAFE_CHANGE_ID = changeId()
 def CONTAINER_NAME
 
