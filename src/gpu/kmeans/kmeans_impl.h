@@ -34,9 +34,6 @@ namespace kmeans {
   centroid x occupies positions [x * d, (x + 1) * d) in the
   vector. The vector is passed by reference since it is shared
   with the caller and not copied.
-  \param distances Distances from points to centroids. This vector has
-  size n. It is passed by reference since it is shared with the caller
-  and not copied.
   \param threshold This controls early termination of the kmeans
   iterations. If the ratio of points being reassigned to a different
   centroid is less than the threshold, than the iterations are
@@ -53,7 +50,6 @@ int kmeans(
     thrust::device_vector<T> **data,
     thrust::device_vector<int> **labels,
     thrust::device_vector<T> **centroids,
-    thrust::device_vector<T> **distances,
     thrust::device_vector<T> **data_dots,
     std::vector<int> dList,
     int n_gpu,
@@ -124,14 +120,12 @@ int kmeans(
 
       detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
                                         *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
-                                        [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
-                                          detail::relabel(n, k, pairwise_distances, *labels[q], offset, *distances[q]);
+                                        [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                          detail::relabel(n, k, pairwise_distances, *labels[q], offset);
                                         }
       );
 
       log_verbose(verbose, "KMeans - Relabeled.");
-
-      mycub::sum_reduce(*distances[q], d_distance_sum[q]);
 
       detail::memcpy(*labels_copy[q], *labels[q]);
       detail::find_centroids(q,
@@ -235,8 +229,8 @@ int kmeans(
 
     detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
                                       *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
-                                      [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
-                                        detail::relabel(n, k, pairwise_distances, *labels[q], offset, *distances[q]);
+                                      [=](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                        detail::relabel(n, k, pairwise_distances, *labels[q], offset);
                                       }
     );
   }

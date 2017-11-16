@@ -687,27 +687,22 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   thrust::device_vector<T> *data[n_gpu];
   thrust::device_vector<int> *labels[n_gpu];
   thrust::device_vector<T> *d_centroids[n_gpu];
-  thrust::device_vector<T> *distances[n_gpu];
   thrust::device_vector<T> *data_dots[n_gpu];
 
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
-    labels[q] = new thrust::device_vector<int>(rows / n_gpu);
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
     data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
 
     kmeans::detail::labels_init();
   }
 
-  if (verbose >= H2O4GPU_LOG_INFO) {
-    std::cout << "Number of points: " << rows << std::endl;
-    std::cout << "Number of dimensions: " << cols << std::endl;
-    std::cout << "Number of clusters: " << k << std::endl;
-    std::cout << "Max. number of iterations: " << max_iterations << std::endl;
-    std::cout << "Stopping threshold: " << threshold << std::endl;
-  }
+  log_debug(verbose, "Number of points: %d", rows);
+  log_debug(verbose, "Number of dimensions: %d", cols);
+  log_debug(verbose, "Number of clusters: %d", k);
+  log_debug(verbose, "Max. number of iterations: %d", max_iterations);
+  log_debug(verbose, "Stopping threshold: %d", threshold);
 
   std::vector<int> v(rows);
   std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., rows.
@@ -784,18 +779,17 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     }
 
   }
-  
+
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     labels[q] = new thrust::device_vector<int>(rows / n_gpu);
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
   }
 
   double timetransfer = static_cast<double>(timer<double>() - t0t);
 
   double t0 = timer<double>();
 
-  int iter = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
+  int iter = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, data_dots,
                     dList, n_gpu, max_iterations, threshold, true);
 
   if (iter < 0) {
@@ -840,7 +834,6 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     delete (data[q]);
     delete (labels[q]);
     delete (d_centroids[q]);
-    delete (distances[q]);
     delete (data_dots[q]);
     kmeans::detail::labels_close();
   }
@@ -898,12 +891,11 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
     thrust::device_vector<int> d_labels(rows / n_gpu);
-    thrust::device_vector<T> distances(rows / n_gpu);
 
     kmeans::detail::batch_calculate_distances(verbose, q, rows / n_gpu, cols, k,
                                       *d_data[q], *d_centroids[q], *data_dots[q], *centroid_dots[q],
-                                      [&](int n, int offset, thrust::device_vector<T> pairwise_distances) {
-                                        kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset, distances);
+                                      [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                        kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
                                       }
     );
 
