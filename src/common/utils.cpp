@@ -3,6 +3,7 @@
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
 #include "utils.h"
+#include "logger.h"
 
 template<typename T>
 void self_dot(std::vector<T> array_in, int n, int dim,

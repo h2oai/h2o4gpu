@@ -14,3 +14,13 @@
 #define gpuErrchk(ans) { gpu_assert((ans), __FILE__, __LINE__); }
 #define safe_cuda(ans) throw_on_cuda_error((ans), __FILE__, __LINE__);
 #define safe_cublas(ans) throw_on_cublas_error((ans), __FILE__, __LINE__);
+
+#define CUDACHECK(cmd) do {                           \
+    cudaError_t e = cmd;                              \
+    if( e != cudaSuccess ) {                          \
+      printf("Cuda failure %s:%d '%s'\n",             \
+             __FILE__,__LINE__,cudaGetErrorString(e));\
+      fflush( stdout );                               \
+      exit(EXIT_FAILURE);                             \
+    }                                                 \
+  } while(0)
