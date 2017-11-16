@@ -67,7 +67,8 @@ RUN \
 #Below will get the latest stable wheel file instead.
 RUN \
   . h2o4gpu_env/bin/activate && \
-  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/$Env:wheel
+  echo "Wheel is $wheel" && \
+  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/${wheel}
 
 # Add a canned jupyter notebook demo to the container
 RUN \
