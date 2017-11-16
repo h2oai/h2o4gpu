@@ -169,11 +169,11 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /open_data/creditcard.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .'
                                 nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
                                 gzip  h2o4gpu-cuda8-runtime.tar
                                 nvidia-docker stop ${CONTAINER_NAME}
@@ -424,11 +424,11 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /open_data/creditcard.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .'
                                 nvidia-docker save opsh2oai/h2o4gpu-nonccl-cuda8-runtime > h2o4gpu-nonccl-cuda8-runtime.tar
                                 gzip  h2o4gpu-nonccl-cuda8-runtime.tar
                             """
@@ -616,11 +616,11 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /open_data/creditcard.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .'
                                 nvidia-docker save opsh2oai/h2o4gpu-nccl-cuda9-runtime > h2o4gpu-nccl-cuda9-runtime.tar
                                 gzip  h2o4gpu-nccl-cuda9-runtime.tar
                             """
@@ -805,11 +805,11 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /open_data/creditcard.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .
-                                nvidia-docker exec ${CONTAINER_NAME} cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; python -c "exec(\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\")"'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums_1k.csv .'
+                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /home/0xdiag/h2o4gpu/data/ipums.feather .'
                                 nvidia-docker save opsh2oai/h2o4gpu-nonccl-cuda9-runtime > h2o4gpu-nonccl-cuda9-runtime.tar
                                 gzip  h2o4gpu-nonccl-cuda9-runtime.tar
                             """

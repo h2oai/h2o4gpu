@@ -81,8 +81,6 @@ COPY examples/py/demos/H2O4GPU_Lasso.ipynb /jupyter/demos/H2O4GPU_Lasso.ipynb
 COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans_Images.ipynb
 COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H2O-GLM-simple.ipynb
 
-
-
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
