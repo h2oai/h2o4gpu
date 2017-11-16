@@ -2,7 +2,9 @@
 # To build: docker build -t opsh2oai/h2oai-nv -f Dockerfile-nvdocker .
 # To run with docker run -it -p 12345:12345 opsh2oai/h2oai-nv
 
-FROM nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04
+ARG cuda
+FROM $cuda
+
 MAINTAINER H2o.ai <ops@h2o.ai>
 
 ENV DEBIAN_FRONTEND noninteractive
