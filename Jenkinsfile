@@ -183,7 +183,6 @@ pipeline {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
-            def extratag = "_nccl_cuda8"
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
@@ -205,6 +204,7 @@ pipeline {
                 unstash 'version_info'
                 sh 'echo "Stashed version file:" && ls -l build/'
                 script {
+                    def extratag = "_nccl_cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
@@ -289,8 +289,8 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
 
-                def extratag = "_nonccl_cuda8"
                 script {
+                    def extratag = "_nonccl_cuda8"
                     CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
@@ -356,7 +356,6 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                def extratag = "_nonccl_cuda8"
                 script {
                     sh """
                         mkdir -p build ; rm -rf build/VERSION.txt
@@ -366,6 +365,7 @@ pipeline {
                 sh 'echo "Stashed version file:" && ls -l build/'
 
                 script {
+                    def extratag = "_nonccl_cuda8"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
@@ -448,8 +448,8 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
 
-                def extratag = "_nccl_cuda9"
                 script {
+                    def extratag = "_nccl_cuda9"
                     CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
@@ -524,8 +524,8 @@ pipeline {
                 unstash 'version_info'
                 sh 'echo "Stashed version file:" && ls -l build/'
 
-                def extratag = "_nccl_cuda9"
                 script {
+                    def extratag = "_nccl_cuda9"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
@@ -603,8 +603,8 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                def extratag = "_nonccl_cuda9"
                 script {
+                    def extratag = "_nonccl_cuda9"
                     CONTAINER_NAME = "h2o4gpu-${extratag}-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
@@ -681,8 +681,8 @@ pipeline {
                 unstash 'version_info'
                 sh 'echo "Stashed version file:" && ls -l build/'
 
-                def extratag = "_nonccl_cuda9"
                 script {
+                    def extratag = "_nonccl_cuda9"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
