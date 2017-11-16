@@ -230,7 +230,7 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker save opsh2oai/h2o4gpu$-${versionTag}{extratag}-runtime > h2o4gpu-${versionTag}${extratag}-runtime.tar
+                                nvidia-docker save opsh2oai/h2o4gpu-runtime > h2o4gpu-${versionTag}${extratag}-runtime.tar
                                 gzip  h2o4gpu-${versionTag}${extratag}-runtime.tar
                                 nvidia-docker stop ${CONTAINER_NAME}
                             """
