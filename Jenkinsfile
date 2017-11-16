@@ -138,6 +138,7 @@ pipeline {
                         submoduleCfg                     : [],
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                script {
                     def extratag = "_nccl_cuda8"
                     sh """
                             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build  --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
@@ -146,6 +147,7 @@ pipeline {
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
                             nvidia-docker stop ${CONTAINER_NAME}
                         """
+                        }
                 }
             }
         }
