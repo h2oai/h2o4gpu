@@ -44,8 +44,7 @@ pipeline {
         MAKE_OPTS = "-s CI=1" // -s: silent mode
     }
 
-    stages {
-        for (int i = 0; i < dobuilds.size(); i++) {
+    for (int i = 0; i < dobuilds.size(); i++) {
         def index = i
         def tag = ${tags[i]}
         def cudatag = ${cudatags[i]}
