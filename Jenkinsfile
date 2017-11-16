@@ -8,7 +8,6 @@ def utilsLib = new Utils()
 
 def SAFE_CHANGE_ID = changeId()
 def CONTAINER_NAME
-def extratag
 
 String changeId() {
     if (env.CHANGE_ID) {
@@ -129,8 +128,8 @@ pipeline {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
-            extratag = "_nccl_cuda8"
             steps {
+                extratag = "_nccl_cuda8"
                 dumpInfo 'Linux Pylint Info'
                 checkout([
                         $class                           : 'GitSCM',
@@ -159,17 +158,16 @@ pipeline {
 
             steps {
                 unstash 'version_info'
-                def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                extratag = "_nccl_cuda8"
-                unstash 'linux_whl'
-                sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
-                def artifactId = h2o4gpu
-                def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                def localArtifact = "src/interface_py/dist/${artifact}"
-
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                        def extratag = "_nccl_cuda8"
+                        unstash 'linux_whl'
+                        sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
+                        def artifactId = h2o4gpu
+                        def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
+                        def localArtifact = "src/interface_py/dist/${artifact}"
                         s3up_simple(${versionTag}, ${extratag}, ${artifactId}, ${artifact}, ${localArtifact})
                     }
                 }
