@@ -4,10 +4,11 @@
 
 
 ARG cuda
+FROM $cuda
+
 ARG wheel
 ENV wheel=${wheel}
 
-FROM $cuda
 
 MAINTAINER H2o.ai <ops@h2o.ai>
 

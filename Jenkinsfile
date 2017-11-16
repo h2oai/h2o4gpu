@@ -198,8 +198,8 @@ pipeline {
             }
 
             steps {
-                unstash 'version_info'
                 dumpInfo 'Linux Build Info'
+                unstash 'version_info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                     deleteDir()
