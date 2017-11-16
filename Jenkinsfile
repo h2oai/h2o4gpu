@@ -129,7 +129,7 @@ pipeline {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
-            def extratag = "_nccl_cuda8"
+            extratag = "_nccl_cuda8"
             steps {
                 dumpInfo 'Linux Pylint Info'
                 checkout([
@@ -160,7 +160,7 @@ pipeline {
             steps {
                 unstash 'version_info'
                 def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                def extratag = "_nccl_cuda8"
+                extratag = "_nccl_cuda8"
                 unstash 'linux_whl'
                 sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                 def artifactId = h2o4gpu
