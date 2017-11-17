@@ -303,16 +303,8 @@ pipeline {
             }
         }
         }
-        } // end over stages
         } // end over loop
-
-
-
-
-
-
-
-    }
+    } // end over stages
     post {
         failure {
             node('mr-dl11') {
