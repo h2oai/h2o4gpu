@@ -543,8 +543,7 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
-    def versionTag = buildInfo.get().getVersion()
-    
+
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh """
             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
@@ -558,10 +557,10 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             echo "Building on linux - stopped docker"
            """
 
-        stash includes: "src/interface_py/${dist}/*h2o4gpu-${versionTag}*.whl", name: stashName
+        stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
-        arch "src/interface_py/${dist}/*h2o4gpu-${versionTag}*.whl"
+        arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
     }
 }
 
