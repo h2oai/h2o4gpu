@@ -16,16 +16,15 @@ String changeId() {
     return "-master"
 }
 
-def tags         = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
-def cudatags     = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+def jobnums       = [0 , 1 , 2  , 3]
+def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
 def dobuilds      = [1, 0, 0, 0]
 def dofulltests   = [0, 0, 0, 0]
 def dopytests     = [0, 0, 0, 0]
 def doruntimes    = [0, 0, 0, 0]
 def dockerimages  = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
 def dists         = ["dist","dist2","dist3","dist4"]
-
-def branches = [:]
 
 pipeline {
     agent none
@@ -44,22 +43,22 @@ pipeline {
         MAKE_OPTS = "-s CI=1" // -s: silent mode
     }
 
-    for (int i = 0; i < dobuilds.size(); i++) {
-        def index = i
-        def tag = ${tags[i]}
-        def cudatag = ${cudatags[i]}
-        def dobuild = ${dobuilds[i]}
-        def dofulltest = ${dofulltests[i]}
-        def dopytest = ${dopytests[i]}
-        def doruntime = ${doruntimes[i]}
-        def dockerimage = ${dockerimages[i]}
-        def dist = ${dists[$i]}
-        // derived tag
-        def extratag = "-${tag}-${cudatag}"
+    stages {
 
-        stages {
+        stage("Build on Linux 0) {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
 
-        stage("Build on Linux ${extratag}") {
             if (${dobuild}==1) {
 
             agent {
@@ -113,7 +112,20 @@ pipeline {
 
 
 
-        stage('Full Test on Linux nccl CUDA8') {
+        stage('Full Test on Linux 0') {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
+
             if (${dofulltest}==1) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
@@ -153,7 +165,20 @@ pipeline {
         }
         }
 
-        stage("Pylint on Linux ${extratag}") {
+        stage("Pylint on Linux 0") {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
+
             if (${dopytest}==1) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
@@ -184,7 +209,20 @@ pipeline {
         }
 
 
-        stage('Publish to S3 nccl CUDA8') {
+        stage('Publish to S3 0') {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
+
             if (${dobuild}==1) {
             agent {
                 label "linux"
@@ -215,7 +253,20 @@ pipeline {
 
 
 
-        stage("Build Runtime Docker for ${extratag}") {
+        stage("Build Runtime Docker 0") {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
+
             if (${doruntime}==1) {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
@@ -275,7 +326,20 @@ pipeline {
         }
         }
 
-        stage("Publish Runtime Docker for ${extratag} to S3") {
+        stage("Publish Runtime Docker for 0 to S3") {
+            i = 0
+            def index = i
+            def tag = ${tags[i]}
+            def cudatag = ${cudatags[i]}
+            def dobuild = ${dobuilds[i]}
+            def dofulltest = ${dofulltests[i]}
+            def dopytest = ${dopytests[i]}
+            def doruntime = ${doruntimes[i]}
+            def dockerimage = ${dockerimages[i]}
+            def dist = ${dists[$i]}
+            // derived tag
+            def extratag = "-${tag}-${cudatag}"
+
             if (${doruntime}==1) {
             agent {
                 label "linux"
@@ -303,7 +367,6 @@ pipeline {
             }
         }
         }
-        } // end over loop
     } // end over stages
     post {
         failure {
