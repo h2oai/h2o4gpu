@@ -170,12 +170,12 @@ pipeline {
                                 sh "s3cmd put ${localArtifact} ${bucket}"
                                 sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                             }
-                            if (!(isRelease() || isBleedingEdge())) {
+                            //if (!(isRelease() || isBleedingEdge())) {
                                 // always upload for testing
                                 def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
                                 sh "s3cmd put ${localArtifact} ${bucket}"
                                 sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
+                            //}
                         }
                     }
                 }
@@ -218,13 +218,14 @@ pipeline {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
 
-                    if (isRelease()) {
-                        def buckettype = "releases/stable"
-                    } else if (isBleedingEdge()) {
-                        def buckettype = "releases/bleeding-edge"
-                    } else {
-                        def buckettype = "snapshots"
-                    }
+                    //if (isRelease()) {
+                    //    def buckettype = "releases/stable"
+                    //} else if (isBleedingEdge()) {
+                    //    def buckettype = "releases/bleeding-edge"
+                    //} else {
+                    //    def buckettype = "snapshots"
+                    //}
+                    def buckettype = "snapshots"
 
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
