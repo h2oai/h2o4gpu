@@ -145,9 +145,9 @@ pipeline {
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
                             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            echo "exec test"
+                            sh "echo "exec test""
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu*.whl"`; make dotest'
-                            echo "exec pylint"
+                            sh "echo "exec pylint""
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
                         """
@@ -216,7 +216,6 @@ pipeline {
                     def extratag = "-${tag}-${cudatag}"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
                     try {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
