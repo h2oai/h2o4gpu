@@ -546,7 +546,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
             nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
             nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
             nvidia-docker stop ${CONTAINER_NAME}
            """
 
