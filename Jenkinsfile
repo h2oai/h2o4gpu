@@ -57,9 +57,11 @@ pipeline {
         // derived tag
         def extratag = "-${tag}-${cudatag}"
 
-        if (${dobuild}==1) {
+        stages {
 
         stage("Build on Linux ${extratag}") {
+            if (${dobuild}==1) {
+
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -110,9 +112,9 @@ pipeline {
         }
 
 
-        if (${dofulltest}==1) {
 
         stage('Full Test on Linux nccl CUDA8') {
+            if (${dofulltest}==1) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -151,8 +153,8 @@ pipeline {
         }
         }
 
-        if (${dopytest}==1) {
         stage("Pylint on Linux ${extratag}") {
+            if (${dopytest}==1) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -182,8 +184,8 @@ pipeline {
         }
 
 
-        if (${dobuild}==1) {
         stage('Publish to S3 nccl CUDA8') {
+            if (${dobuild}==1) {
             agent {
                 label "linux"
             }
@@ -213,9 +215,8 @@ pipeline {
 
 
 
-        if (${doruntime}==1) {
-
         stage("Build Runtime Docker for ${extratag}") {
+            if (${doruntime}==1) {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -274,8 +275,8 @@ pipeline {
         }
         }
 
-        if (${doruntime}==1) {
         stage("Publish Runtime Docker for ${extratag} to S3") {
+            if (${doruntime}==1) {
             agent {
                 label "linux"
             }
@@ -302,8 +303,8 @@ pipeline {
             }
         }
         }
-
-        }// end over loop
+        } // end over stages
+        } // end over loop
 
 
 
