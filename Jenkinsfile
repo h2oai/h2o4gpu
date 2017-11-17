@@ -466,7 +466,6 @@ pipeline {
     }
 }
 
-@NonCPS
 void publishToS3(String extratag, String dist) {
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
@@ -489,7 +488,6 @@ void publishToS3(String extratag, String dist) {
     //}
 }
 
-@NonCPS
 void publishRuntimeToS3(String extratag) {
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
@@ -512,7 +510,6 @@ void publishRuntimeToS3(String extratag) {
     //}
 }
 
-@NonCPS
 void runTests(String dockerimage, String extratag, String dist, String target) {
     def versionTag = buildInfo.get().getVersion()
 
@@ -536,7 +533,6 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
     }
 }
 
-@NonCPS
 void buildOnLinux(String dockerimage, String extratag, String dist) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         echo "Building on linux - running docker"
@@ -562,7 +558,6 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
     }
 }
 
-@NonCPS
 void buildRuntime(String dockerimage, String extratag) {
     //if (isRelease()) {
     //    def buckettype = "releases/stable"
