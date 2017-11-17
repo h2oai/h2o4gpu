@@ -104,7 +104,7 @@ pipeline {
                         } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                             nvidia-docker stop ${CONTAINER_NAME}
                             """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
+                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl1'
                         stash includes: 'build/VERSION.txt', name: 'version_info'
                         // Archive artifacts
                         arch "src/interface_py/${dist}/*.whl"
@@ -128,6 +128,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                    unstash 'linux_whl1'
 
                     def tag = "nccl"
                     def cudatag = "cuda8"
@@ -210,6 +211,7 @@ pipeline {
                         mkdir -p build ; rm -rf build/VERSION.txt
                     """
                 }
+                unstash 'linux_whl1'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
@@ -341,7 +343,7 @@ pipeline {
                         } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                             nvidia-docker stop ${CONTAINER_NAME}
                             """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
+                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl2'
                         stash includes: 'build/VERSION.txt', name: 'version_info'
                         // Archive artifacts
                         arch "src/interface_py/${dist}/*.whl"
@@ -365,7 +367,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-
+                    unstash 'linux_whl2'
                     def tag = "nonccl"
                     def cudatag = "cuda8"
                     def dist = "dist"
@@ -447,6 +449,7 @@ pipeline {
                         mkdir -p build ; rm -rf build/VERSION.txt
                     """
                 }
+                unstash 'linux_whl2'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
@@ -580,7 +583,7 @@ pipeline {
                         } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                             nvidia-docker stop ${CONTAINER_NAME}
                             """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
+                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl3'
                         stash includes: 'build/VERSION.txt', name: 'version_info'
                         // Archive artifacts
                         arch "src/interface_py/${dist}/*.whl"
@@ -604,6 +607,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                    unstash 'linux_whl3'
 
                     def tag = "nccl"
                     def cudatag = "cuda9"
@@ -686,6 +690,7 @@ pipeline {
                         mkdir -p build ; rm -rf build/VERSION.txt
                     """
                 }
+                unstash 'linux_whl3'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
@@ -817,7 +822,7 @@ pipeline {
                         } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                             nvidia-docker stop ${CONTAINER_NAME}
                             """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
+                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl4'
                         stash includes: 'build/VERSION.txt', name: 'version_info'
                         // Archive artifacts
                         arch "src/interface_py/${dist}/*.whl"
@@ -841,6 +846,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                    unstash 'linux_whl4'
 
                     def tag = "nonccl"
                     def cudatag = "cuda9"
@@ -923,6 +929,7 @@ pipeline {
                         mkdir -p build ; rm -rf build/VERSION.txt
                     """
                 }
+                unstash 'linux_whl4'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
