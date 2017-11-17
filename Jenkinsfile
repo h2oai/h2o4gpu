@@ -538,7 +538,7 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
 @NonCPS
 void buildOnLinux(String dockerimage, String extratag, String dist) {
     // Get source code
-    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+//    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh """
             echo "Building on linux - running docker"
             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
@@ -556,7 +556,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
         arch "src/interface_py/${dist}/*.whl"
-    }
+//    }
 }
 
 @NonCPS
