@@ -45,7 +45,7 @@ pipeline {
 
     stages {
 
-        stage("Build on Linux 0) {
+        stage("Build on Linux 0") {
             i = 0
             def index = i
             def tag = ${tags[i]}
@@ -112,7 +112,7 @@ pipeline {
 
 
 
-        stage('Full Test on Linux 0') {
+        stage("Full Test on Linux 0") {
             i = 0
             def index = i
             def tag = ${tags[i]}
@@ -209,7 +209,7 @@ pipeline {
         }
 
 
-        stage('Publish to S3 0') {
+        stage("Publish to S3 0") {
             i = 0
             def index = i
             def tag = ${tags[i]}
