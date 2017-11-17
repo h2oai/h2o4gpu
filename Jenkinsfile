@@ -535,7 +535,6 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
     }
 }
 
-@NonCPS
 void buildOnLinux(String dockerimage, String extratag, String dist) {
     echo "Building on linux ${dockerimage} | ${extratag} | ${dist}"
     // Get source code
