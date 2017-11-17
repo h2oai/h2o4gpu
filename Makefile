@@ -288,7 +288,7 @@ pipxgboost:
 
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost-nonccl-cuda8:
 	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../

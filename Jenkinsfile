@@ -20,10 +20,11 @@ String changeId() {
 //def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
 //def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
 //def dobuilds      = [1, 0, 0, 0]
-//def dofulltests   = [0, 0, 0, 0]
-//def dopytests     = [0, 0, 0, 0]
-//def doruntimes    = [0, 0, 0, 0]
-//def dockerimages  = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+//def dofulltests   = [1, 0, 0, 0]
+//def dopytests     = [1, 0, 0, 0]
+//def doruntimes    = [1, 1, 1, 1]
+//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist","dist2","dist3","dist4"]
 
 pipeline {
@@ -45,7 +46,14 @@ pipeline {
 
     stages {
 
-        stage("Build on Linux 0") {
+
+
+        /////////////////////////////////////////////////////////////////////
+        //
+        // -nccl-cuda8
+        //
+        /////////////////////////////////////////////////////////////////////
+        stage("Build on Linux -nccl-cuda8") {
 
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
@@ -103,7 +111,7 @@ pipeline {
 
 
 
-        stage("Full Test on Linux 0") {
+        stage("Full Test on Linux -nccl-cuda8) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -145,7 +153,7 @@ pipeline {
             }
         }
 
-        stage("Pylint on Linux 0") {
+        stage("Pylint on Linux -nccl-cuda8) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -177,7 +185,7 @@ pipeline {
         }
 
 
-        stage("Publish to S3 0") {
+        stage("Publish to S3 -nccl-cuda8) {
             agent {
                 label "linux"
             }
@@ -189,11 +197,11 @@ pipeline {
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                    def tag = "nccl"
-                    def cudatag = "cuda8"
-                    def dist = "dist"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
+                        def tag = "nccl"
+                        def cudatag = "cuda8"
+                        def dist = "dist"
+                        // derived tag
+                        def extratag = "-${tag}-${cudatag}"
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         sh 'echo "Stashed files:" && ls -l src/interface_py/${dist}/'
                         def artifactId = "h2o4gpu"
@@ -208,7 +216,7 @@ pipeline {
 
 
 
-        stage("Build Runtime Docker 0") {
+        stage("Build Runtime Docker -nccl-cuda8) {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
