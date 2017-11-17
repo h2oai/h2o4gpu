@@ -97,10 +97,10 @@ pipeline {
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
                                 """
-                            stash includes: 'src/interface_py/${dist}/*.whl', name: 'linux_whl'
+                            stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             // Archive artifacts
-                            arch 'src/interface_py/${dist}/*.whl'
+                            arch "src/interface_py/${dist}/*.whl"
                         } finally {
                             sh "nvidia-docker stop ${CONTAINER_NAME}"
                         }
@@ -203,7 +203,7 @@ pipeline {
                         // derived tag
                         def extratag = "-${tag}-${cudatag}"
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        sh 'echo "Stashed files:" && ls -l src/interface_py/${dist}/'
+                        sh "echo "Stashed files:" && ls -l src/interface_py/${dist}/"
                         def artifactId = "h2o4gpu"
                         def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
                         def localArtifact = "src/interface_py/${dist}/${artifact}"
@@ -270,9 +270,9 @@ pipeline {
                                 gzip  h2o4gpu-${versionTag}${extratag}-runtime.tar
                                 nvidia-docker stop ${CONTAINER_NAME}
                             """
-                        stash includes: 'h2o4gpu-${versionTag}${extratag}-runtime.tar.gz', name: 'docker-${versionTag}${extratag}-runtime'
+                        stash includes: "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz", name: "docker-${versionTag}${extratag}-runtime"
                         // Archive artifacts
-                        arch 'h2o4gpu-${versionTag}${extratag}-runtime.tar.gz'
+                        arch "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz"
                     }
                 }
             }
@@ -292,7 +292,7 @@ pipeline {
                     def extratag = "-${tag}-${cudatag}"
 
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    unstash 'docker-${versionTag}${extratag}-runtime'
+                    unstash "docker-${versionTag}${extratag}-runtime"
                 }
 
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
