@@ -217,6 +217,7 @@ pipeline {
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
                     // Get source code
+                    try {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
                                 nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl .
@@ -233,17 +234,17 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
                                 nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime > h2o4gpu-${versionTag}${extratag}-runtime.tar
                                 gzip  h2o4gpu-${versionTag}${extratag}-runtime.tar
+                                nvidia-docker stop ${CONTAINER_NAME}
                             """
                         //stash includes: "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz", name: "docker-${versionTag}${extratag}-runtime"
                         // Archive artifacts
                         //arch "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz"
                     }
-                }
-                finally {
-                    sh """
-                        nvidia-docker stop ${CONTAINER_NAME}
+                    } finally {
+                        sh """
+                            nvidia-docker stop ${CONTAINER_NAME}
                         """
-                }
+                    }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
@@ -262,6 +263,7 @@ pipeline {
                 }
                 }
             }
+
         }
 
     } // end over stages
