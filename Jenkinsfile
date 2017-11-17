@@ -574,7 +574,7 @@ void buildRuntime(String dockerimage, String extratag) {
     //}
     def buckettype = "snapshots"
     def fullVersionTag = buildInfo.get().getVersion()
-    def encodedFullVersionTag = java.net.URLEncoder.encode(fullVersionTag)
+    def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     // Get source code
