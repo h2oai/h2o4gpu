@@ -56,7 +56,7 @@ pipeline {
         stage("Build on Linux -nccl-cuda8") {
 
             agent {
-                label "nvidia-docker && (mr-dl11)"
+                label "nvidia-docker && (mr-dl11 || mr-dl16)"
             }
 
             steps {
@@ -113,7 +113,7 @@ pipeline {
 
         stage("Full Test on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 )"
+                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 )"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -133,6 +133,7 @@ pipeline {
                     def extratag = "-${tag}-${cudatag}"
                     try {
                         sh """
+                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=${dockerimage} .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                             nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -155,7 +156,7 @@ pipeline {
 
         stage("Pylint on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 )"
+                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 )"
             }
             steps {
                 dumpInfo 'Linux Pylint Info'
@@ -187,7 +188,7 @@ pipeline {
 
         stage("Publish to S3 -nccl-cuda8") {
             agent {
-                label "linux && (mr-dl11 )"
+                label "linux"
             }
 
             steps {
@@ -218,7 +219,7 @@ pipeline {
 
         stage("Build Runtime Docker -nccl-cuda8") {
             agent {
-                label "nvidia-docker && (mr-dl11 )"
+                label "nvidia-docker && (mr-dl11 || mr-dl16 )"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -280,7 +281,7 @@ pipeline {
 
         stage("Publish Runtime Docker for -nccl-cuda8 to S3") {
             agent {
-                label "linux && (mr-dl11 )"
+                label "linux"
             }
 
             steps {
