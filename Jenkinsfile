@@ -535,12 +535,12 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
     }
 }
 
+@NonCPS
 void buildOnLinux(String dockerimage, String extratag, String dist) {
-    echo "Building on linux ${dockerimage} | ${extratag} | ${dist}"
     // Get source code
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        echo "Building on linux - running docker"
         sh """
+            echo "Building on linux - running docker"
             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
             nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
             nvidia-docker exec ${CONTAINER_NAME} rm -rf data
@@ -549,6 +549,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
             nvidia-docker stop ${CONTAINER_NAME}
+            echo "Building on linux - stopped docker"
            """
 
         stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl1'
