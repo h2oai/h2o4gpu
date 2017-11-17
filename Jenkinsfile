@@ -157,7 +157,7 @@ pipeline {
                         """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                        #deleteDir()
+                        //deleteDir()
                     }
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
