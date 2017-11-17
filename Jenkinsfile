@@ -46,15 +46,15 @@ pipeline {
     stages {
 
         stage("Build on Linux 0") {
-            i = 0
-            def index = i
-            def tag = ${tags[i]}
-            def cudatag = ${cudatags[i]}
-            def dobuild = ${dobuilds[i]}
-            def dofulltest = ${dofulltests[i]}
-            def dopytest = ${dopytests[i]}
-            def doruntime = ${doruntimes[i]}
-            def dockerimage = ${dockerimages[i]}
+            def i = 0
+            def index = $i
+            def tag = ${tags[$i]}
+            def cudatag = ${cudatags[$i]}
+            def dobuild = ${dobuilds[$i]}
+            def dofulltest = ${dofulltests[$i]}
+            def dopytest = ${dopytests[$i]}
+            def doruntime = ${doruntimes[$i]}
+            def dockerimage = ${dockerimages[$i]}
             def dist = ${dists[$i]}
             // derived tag
             def extratag = "-${tag}-${cudatag}"
@@ -113,15 +113,15 @@ pipeline {
 
 
         stage("Full Test on Linux 0") {
-            i = 0
-            def index = i
-            def tag = ${tags[i]}
-            def cudatag = ${cudatags[i]}
-            def dobuild = ${dobuilds[i]}
-            def dofulltest = ${dofulltests[i]}
-            def dopytest = ${dopytests[i]}
-            def doruntime = ${doruntimes[i]}
-            def dockerimage = ${dockerimages[i]}
+            def i = 0
+            def index = $i
+            def tag = ${tags[$i]}
+            def cudatag = ${cudatags[$i]}
+            def dobuild = ${dobuilds[$i]}
+            def dofulltest = ${dofulltests[$i]}
+            def dopytest = ${dopytests[$i]}
+            def doruntime = ${doruntimes[$i]}
+            def dockerimage = ${dockerimages[$i]}
             def dist = ${dists[$i]}
             // derived tag
             def extratag = "-${tag}-${cudatag}"
@@ -166,15 +166,15 @@ pipeline {
         }
 
         stage("Pylint on Linux 0") {
-            i = 0
-            def index = i
-            def tag = ${tags[i]}
-            def cudatag = ${cudatags[i]}
-            def dobuild = ${dobuilds[i]}
-            def dofulltest = ${dofulltests[i]}
-            def dopytest = ${dopytests[i]}
-            def doruntime = ${doruntimes[i]}
-            def dockerimage = ${dockerimages[i]}
+            def i = 0
+            def index = $i
+            def tag = ${tags[$i]}
+            def cudatag = ${cudatags[$i]}
+            def dobuild = ${dobuilds[$i]}
+            def dofulltest = ${dofulltests[$i]}
+            def dopytest = ${dopytests[$i]}
+            def doruntime = ${doruntimes[$i]}
+            def dockerimage = ${dockerimages[$i]}
             def dist = ${dists[$i]}
             // derived tag
             def extratag = "-${tag}-${cudatag}"
@@ -210,15 +210,15 @@ pipeline {
 
 
         stage("Publish to S3 0") {
-            i = 0
-            def index = i
-            def tag = ${tags[i]}
-            def cudatag = ${cudatags[i]}
-            def dobuild = ${dobuilds[i]}
-            def dofulltest = ${dofulltests[i]}
-            def dopytest = ${dopytests[i]}
-            def doruntime = ${doruntimes[i]}
-            def dockerimage = ${dockerimages[i]}
+            def i = 0
+            def index = $i
+            def tag = ${tags[$i]}
+            def cudatag = ${cudatags[$i]}
+            def dobuild = ${dobuilds[$i]}
+            def dofulltest = ${dofulltests[$i]}
+            def dopytest = ${dopytests[$i]}
+            def doruntime = ${doruntimes[$i]}
+            def dockerimage = ${dockerimages[$i]}
             def dist = ${dists[$i]}
             // derived tag
             def extratag = "-${tag}-${cudatag}"
@@ -254,15 +254,15 @@ pipeline {
 
 
         stage("Build Runtime Docker 0") {
-            i = 0
-            def index = i
-            def tag = ${tags[i]}
-            def cudatag = ${cudatags[i]}
-            def dobuild = ${dobuilds[i]}
-            def dofulltest = ${dofulltests[i]}
-            def dopytest = ${dopytests[i]}
-            def doruntime = ${doruntimes[i]}
-            def dockerimage = ${dockerimages[i]}
+            def i = 0
+            def index = $i
+            def tag = ${tags[$i]}
+            def cudatag = ${cudatags[$i]}
+            def dobuild = ${dobuilds[$i]}
+            def dofulltest = ${dofulltests[$i]}
+            def dopytest = ${dopytests[$i]}
+            def doruntime = ${doruntimes[$i]}
+            def dockerimage = ${dockerimages[$i]}
             def dist = ${dists[$i]}
             // derived tag
             def extratag = "-${tag}-${cudatag}"
