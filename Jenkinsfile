@@ -74,6 +74,7 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
 
+
                 script {
                     buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist")
 
@@ -537,10 +538,10 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
 
 @NonCPS
 void buildOnLinux(String dockerimage, String extratag, String dist) {
-    // Get source code
-//    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+        echo "Building on linux - running docker"
+        sh "echo 'Building on linux - running docker'"
         sh """
-            echo "Building on linux - running docker"
             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
             nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
             nvidia-docker exec ${CONTAINER_NAME} rm -rf data
@@ -556,7 +557,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
         arch "src/interface_py/${dist}/*.whl"
-//    }
+    }
 }
 
 @NonCPS
