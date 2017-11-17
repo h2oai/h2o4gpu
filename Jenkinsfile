@@ -6,8 +6,8 @@ import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
 
-def SAFE_CHANGE_ID = changeId()
-def CONTAINER_NAME
+SAFE_CHANGE_ID = changeId()
+CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
 
 String changeId() {
     if (env.CHANGE_ID) {
@@ -28,10 +28,7 @@ String changeId() {
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist","dist2","dist3","dist4"]
 
-
 // MAJOR NOTE: all other nonccl-cuda8, nccl-cuda9, nonccl-cuda9 are just copies of nccl-cuda8 but with test as fast
-
-
 
 pipeline {
     agent none
@@ -51,9 +48,6 @@ pipeline {
     }
 
     stages {
-
-
-
         /////////////////////////////////////////////////////////////////////
         //
         // -nccl-cuda8
@@ -81,39 +75,21 @@ pipeline {
                 }
 
                 script {
-                    def tag = "nccl"
-                    def cudatag = "cuda8"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                                nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${
-                            CONTAINER_NAME
-                        } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                            env.MAKE_OPTS
-                        } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                            """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl1'
-                        stash includes: 'build/VERSION.txt', name: 'version_info'
-                        // Archive artifacts
-                        arch "src/interface_py/${dist}/*.whl"
+                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist")
+
+                    buildInfo("h2o4gpu", isRelease())
+
+                    script {
+                        // Load the version file content
+                        buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+                        utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
+                        utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
+                                |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
+                                |""".stripMargin("|"))
                     }
                 }
             }
         }
-
-
 
         stage("Full Test Wheel & Pylint & S3up on Linux -nccl-cuda8") {
             agent {
@@ -127,67 +103,18 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash 'linux_whl1'
-
-                    def tag = "nccl"
-                    def cudatag = "cuda8"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    try {
-                        sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu*.whl"`; make dotest'
-                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
-                    } finally {
-                        arch 'tmp/*.log'
-                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                    }
+                    runTests("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", "dotest")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def tag = "nccl"
-                            def cudatag = "cuda8"
-                            def dist = "dist"
-                            def extratag = "-${tag}-${cudatag}"
-                            def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                            def artifactId = "h2o4gpu"
-                            def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                            def localArtifact = "src/interface_py/${dist}/${artifact}"
-                            if (isRelease()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            if (isBleedingEdge()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            //if (!(isRelease() || isBleedingEdge())) {
-                                // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            //}
+                            publishToS3("-nccl-cuda8" , "dist")
                         }
                     }
                 }
             }
         }
-
 
         stage("Build/Publish Runtime Docker -nccl-cuda8") {
             agent {
@@ -206,92 +133,24 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                script {
-                    sh """
-                        mkdir -p build ; rm -rf build/VERSION.txt
-                    """
-                }
+
                 unstash 'linux_whl1'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def tag = "nccl"
-                    def cudatag = "cuda8"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-
-                    //if (isRelease()) {
-                    //    def buckettype = "releases/stable"
-                    //} else if (isBleedingEdge()) {
-                    //    def buckettype = "releases/bleeding-edge"
-                    //} else {
-                    //    def buckettype = "snapshots"
-                    //}
-                    def buckettype = "snapshots"
-
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
-                                nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker stop ${CONTAINER_NAME}
-                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
-                            """
-                    }
+                    buildRuntime("nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "-nccl-cuda8")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def tag = "nccl"
-                        def cudatag = "cuda8"
-                        def extratag = "-${tag}-${cudatag}"
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def artifactId = "h2o4gpu"
-                        def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
-                        def localArtifact = "${artifact}"
-                        if (isRelease()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (isBleedingEdge()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (!(isRelease() || isBleedingEdge())) {
-                            // always upload for testing
-                            def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
+                        publishRuntimeToS3("-nccl-cuda8")
                     }
                 }
                 }
             }
         }
-
-
-
-
-
-
-
 
         /////////////////////////////////////////////////////////////////////
         //
@@ -320,39 +179,10 @@ pipeline {
                 }
 
                 script {
-                    def tag = "nonccl"
-                    def cudatag = "cuda8"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                                nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${
-                            CONTAINER_NAME
-                        } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                            env.MAKE_OPTS
-                        } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                            """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl2'
-                        stash includes: 'build/VERSION.txt', name: 'version_info'
-                        // Archive artifacts
-                        arch "src/interface_py/${dist}/*.whl"
-                    }
+                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2")
                 }
             }
         }
-
-
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda8") {
             agent {
@@ -366,66 +196,18 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash 'linux_whl2'
-                    def tag = "nonccl"
-                    def cudatag = "cuda8"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    try {
-                        sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu*.whl"`; make dotestfast'
-                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
-                    } finally {
-                        arch 'tmp/*.log'
-                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                    }
+                    runTests("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def tag = "nonccl"
-                            def cudatag = "cuda8"
-                            def dist = "dist"
-                            def extratag = "-${tag}-${cudatag}"
-                            def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                            def artifactId = "h2o4gpu"
-                            def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                            def localArtifact = "src/interface_py/${dist}/${artifact}"
-                            if (isRelease()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            if (isBleedingEdge()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            //if (!(isRelease() || isBleedingEdge())) {
-                                // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            //}
+                            publishToS3("-nonccl-cuda8" , "dist2")
                         }
                     }
                 }
             }
         }
-
 
         stage("Build/Publish Runtime Docker -nonccl-cuda8") {
             agent {
@@ -455,83 +237,17 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def tag = "nonccl"
-                    def cudatag = "cuda8"
-                    def dockerimage = "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-
-                    //if (isRelease()) {
-                    //    def buckettype = "releases/stable"
-                    //} else if (isBleedingEdge()) {
-                    //    def buckettype = "releases/bleeding-edge"
-                    //} else {
-                    //    def buckettype = "snapshots"
-                    //}
-                    def buckettype = "snapshots"
-
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
-                                nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker stop ${CONTAINER_NAME}
-                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
-                            """
-                    }
+                    buildRuntime("nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "-nonccl-cuda8")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def tag = "nonccl"
-                        def cudatag = "cuda8"
-                        def extratag = "-${tag}-${cudatag}"
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def artifactId = "h2o4gpu"
-                        def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
-                        def localArtifact = "${artifact}"
-                        if (isRelease()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (isBleedingEdge()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (!(isRelease() || isBleedingEdge())) {
-                            // always upload for testing
-                            def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
+                        publishRuntimeToS3("-nonccl-cuda8")
                     }
                 }
                 }
             }
         }
-
-
-
-
-
-
-
-
-
 
         /////////////////////////////////////////////////////////////////////
         //
@@ -560,39 +276,10 @@ pipeline {
                 }
 
                 script {
-                    def tag = "nccl"
-                    def cudatag = "cuda9"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                                nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${
-                            CONTAINER_NAME
-                        } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                            env.MAKE_OPTS
-                        } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                            """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl3'
-                        stash includes: 'build/VERSION.txt', name: 'version_info'
-                        // Archive artifacts
-                        arch "src/interface_py/${dist}/*.whl"
-                    }
+                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4")
                 }
             }
         }
-
-
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nccl-cuda9") {
             agent {
@@ -606,67 +293,18 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash 'linux_whl3'
-
-                    def tag = "nccl"
-                    def cudatag = "cuda9"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    try {
-                        sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu*.whl"`; make dotestfast'
-                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
-                    } finally {
-                        arch 'tmp/*.log'
-                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                    }
+                    runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def tag = "nccl"
-                            def cudatag = "cuda9"
-                            def dist = "dist"
-                            def extratag = "-${tag}-${cudatag}"
-                            def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                            def artifactId = "h2o4gpu"
-                            def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                            def localArtifact = "src/interface_py/${dist}/${artifact}"
-                            if (isRelease()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            if (isBleedingEdge()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            //if (!(isRelease() || isBleedingEdge())) {
-                                // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            //}
+                            publishToS3("-nccl-cuda9" , "dist4")
                         }
                     }
                 }
             }
         }
-
 
         stage("Build/Publish Runtime Docker -nccl-cuda9") {
             agent {
@@ -696,81 +334,17 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def tag = "nccl"
-                    def cudatag = "cuda9"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-
-                    //if (isRelease()) {
-                    //    def buckettype = "releases/stable"
-                    //} else if (isBleedingEdge()) {
-                    //    def buckettype = "releases/bleeding-edge"
-                    //} else {
-                    //    def buckettype = "snapshots"
-                    //}
-                    def buckettype = "snapshots"
-
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
-                                nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker stop ${CONTAINER_NAME}
-                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
-                            """
-                    }
+                    buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def tag = "nccl"
-                        def cudatag = "cuda9"
-                        def extratag = "-${tag}-${cudatag}"
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def artifactId = "h2o4gpu"
-                        def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
-                        def localArtifact = "${artifact}"
-                        if (isRelease()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (isBleedingEdge()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (!(isRelease() || isBleedingEdge())) {
-                            // always upload for testing
-                            def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
+                        publishRuntimeToS3("-nccl-cuda9")
                     }
                 }
                 }
             }
         }
-
-
-
-
-
-
-
 
         /////////////////////////////////////////////////////////////////////
         //
@@ -799,39 +373,10 @@ pipeline {
                 }
 
                 script {
-                    def tag = "nonccl"
-                    def cudatag = "cuda9"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                                nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${
-                            CONTAINER_NAME
-                        } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                            env.MAKE_OPTS
-                        } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                            """
-                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl4'
-                        stash includes: 'build/VERSION.txt', name: 'version_info'
-                        // Archive artifacts
-                        arch "src/interface_py/${dist}/*.whl"
-                    }
+                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3")
                 }
             }
         }
-
-
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9") {
             agent {
@@ -845,67 +390,18 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash 'linux_whl4'
-
-                    def tag = "nonccl"
-                    def cudatag = "cuda9"
-                    def dist = "dist"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-                    def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-                    try {
-                        sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-                            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu*.whl"`; make dotestfast'
-                            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-                            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
-                    } finally {
-                        arch 'tmp/*.log'
-                        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                    }
+                    runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def tag = "nonccl"
-                            def cudatag = "cuda9"
-                            def dist = "dist"
-                            def extratag = "-${tag}-${cudatag}"
-                            def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                            def artifactId = "h2o4gpu"
-                            def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                            def localArtifact = "src/interface_py/${dist}/${artifact}"
-                            if (isRelease()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            if (isBleedingEdge()) {
-                                def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            }
-                            //if (!(isRelease() || isBleedingEdge())) {
-                                // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                                sh "s3cmd put ${localArtifact} ${bucket}"
-                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                            //}
+                            publishToS3("-nonccl-cuda9" , "dist3")
                         }
                     }
                 }
             }
         }
-
 
         stage("Build/Publish Runtime Docker -nonccl-cuda9") {
             agent {
@@ -935,90 +431,17 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def tag = "nonccl"
-                    def cudatag = "cuda9"
-                    def dockerimage = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-                    // derived tag
-                    def extratag = "-${tag}-${cudatag}"
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
-
-                    //if (isRelease()) {
-                    //    def buckettype = "releases/stable"
-                    //} else if (isBleedingEdge()) {
-                    //    def buckettype = "releases/bleeding-edge"
-                    //} else {
-                    //    def buckettype = "snapshots"
-                    //}
-                    def buckettype = "snapshots"
-
-                    // Get source code
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        sh """
-                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
-                                nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-                                nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker stop ${CONTAINER_NAME}
-                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
-                            """
-                    }
+                    buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nonccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def tag = "nonccl"
-                        def cudatag = "cuda9"
-                        def extratag = "-${tag}-${cudatag}"
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        def artifactId = "h2o4gpu"
-                        def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
-                        def localArtifact = "${artifact}"
-                        if (isRelease()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (isBleedingEdge()) {
-                            def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
-                        if (!(isRelease() || isBleedingEdge())) {
-                            // always upload for testing
-                            def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-                            sh "s3cmd put ${localArtifact} ${bucket}"
-                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-                        }
+                        publishRuntimeToS3("-nonccl-cuda9")
                     }
                 }
                 }
             }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     } // end over stages
     post {
         failure {
@@ -1033,11 +456,7 @@ pipeline {
                             attachLog: true,
                             compressLog: true,
                             recipientProviders: [
-                                    [$class: 'CulpritsRecipientProvider'],
                                     [$class: 'DevelopersRecipientProvider'],
-                                    [$class: 'FailingTestSuspectsRecipientProvider'],
-                                    [$class: 'FirstFailingBuildSuspectsRecipientProvider'],
-                                    [$class: 'RequesterRecipientProvider']
                             ]
                     )
                 }
@@ -1046,7 +465,130 @@ pipeline {
     }
 }
 
+@NonCPS
+void publishToS3(String extratag, String dist) {
+    def versionTag = buildInfo.get().getVersion()
+    def artifactId = "h2o4gpu"
+    def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
+    def localArtifact = "src/interface_py/${dist}/${artifact}"
+    if (isRelease()) {
+        def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${bucket}"
+        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+    }
+    if (isBleedingEdge()) {
+        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${bucket}"
+        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+    }
+    //if (!(isRelease() || isBleedingEdge())) {
+    // always upload for testing
+    def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    sh "s3cmd put ${localArtifact} ${bucket}"
+    //}
+}
 
+@NonCPS
+void publishRuntimeToS3(String extratag) {
+    def versionTag = buildInfo.get().getVersion()
+    def artifactId = "h2o4gpu"
+    def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
+    def localArtifact = "${artifact}"
+    if (isRelease()) {
+        def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${bucket}"
+        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+    }
+    if (isBleedingEdge()) {
+        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${bucket}"
+        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+    }
+    //if (!(isRelease() || isBleedingEdge())) {
+    // always upload for testing
+    def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    sh "s3cmd put ${localArtifact} ${bucket}"
+    //}
+}
+
+@NonCPS
+void runTests(String dockerimage, String extratag, String dist, String target) {
+    def versionTag = buildInfo.get().getVersion()
+
+    try {
+        sh """
+            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
+            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu-${versionTag}*.whl"`; make ${target}'
+            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
+            nvidia-docker stop ${CONTAINER_NAME}
+            """
+    } finally {
+        arch 'tmp/*.log'
+        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+    }
+}
+
+@NonCPS
+void buildOnLinux(String dockerimage, String extratag, String dist) {
+    // Get source code
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+        sh """
+            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
+            nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
+            nvidia-docker stop ${CONTAINER_NAME}
+           """
+
+        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl1'
+        stash includes: 'build/VERSION.txt', name: 'version_info'
+        // Archive artifacts
+        arch "src/interface_py/${dist}/*.whl"
+    }
+}
+
+@NonCPS
+void buildRuntime(String dockerimage, String extratag) {
+    //if (isRelease()) {
+    //    def buckettype = "releases/stable"
+    //} else if (isBleedingEdge()) {
+    //    def buckettype = "releases/bleeding-edge"
+    //} else {
+    //    def buckettype = "snapshots"
+    //}
+    def buckettype = "snapshots"
+    def versionTag = buildInfo.get().getVersion()
+
+    // Get source code
+    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+        sh """
+            nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
+            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
+            nvidia-docker stop ${CONTAINER_NAME}
+            nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
+          """
+    }
+}
 
 def isRelease() {
     return env.BRANCH_NAME.startsWith("rel")
