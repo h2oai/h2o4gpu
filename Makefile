@@ -145,6 +145,8 @@ fullinstall: clean alldeps sync_open_data build install
 fullinstall-nonccl: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
+####################################################
+# Docker stuff
 runtime:
 	@echo "+--Building Runtime Docker Image--+"
 	$(MAKE) fullinstall
@@ -157,7 +159,25 @@ runtimecuda9:
 	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
 	nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
 	gzip  h2o4gpu-cuda9-runtime.tar
+
+get_docker:
+	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
+load_docker:
+	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
+run_in_docker:
+	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
+	nvidia-docker run \
+	--rm \
+	--name h2o4gpu-nccl-cuda8 \
+	-p 8888:8888 \
+	-p 8889:8889 \
+	-u `id -u`:`id -g` \
+	-v /home/$$USER/log:/log \
+	opsh2oai/h2o4gpu-0.0.4-nccl-cuda8-runtime:latest
+
 #############################################
+
+
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	rm -f ./build
