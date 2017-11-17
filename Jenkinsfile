@@ -76,7 +76,7 @@ pipeline {
 
 
                 script {
-                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist")
+                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", 'linux_whl1')
 
                     buildInfo("h2o4gpu", isRelease())
 
@@ -180,7 +180,7 @@ pipeline {
                 }
 
                 script {
-                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2")
+                    buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2", 'linux_whl2')
                 }
             }
         }
@@ -277,7 +277,7 @@ pipeline {
                 }
 
                 script {
-                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4")
+                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl3')
                 }
             }
         }
@@ -374,7 +374,7 @@ pipeline {
                 }
 
                 script {
-                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3")
+                    buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl4')
                 }
             }
         }
@@ -541,7 +541,7 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
     }
 }
 
-void buildOnLinux(String dockerimage, String extratag, String dist) {
+void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh """
@@ -556,10 +556,10 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
             echo "Building on linux - stopped docker"
            """
 
-        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl1'
+        stash includes: "src/interface_py/${dist}/*h2o4gpu-${versionTag}*.whl", name: stashName
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
-        arch "src/interface_py/${dist}/*.whl"
+        arch "src/interface_py/${dist}/*h2o4gpu-${versionTag}*.whl"
     }
 }
 
