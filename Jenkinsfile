@@ -46,26 +46,25 @@ pipeline {
     stages {
 
         stage("Build on Linux 0") {
-            def i = 0
-            def index = $i
-            def tag = ${tags[$i]}
-            def cudatag = ${cudatags[$i]}
-            def dobuild = ${dobuilds[$i]}
-            def dofulltest = ${dofulltests[$i]}
-            def dopytest = ${dopytests[$i]}
-            def doruntime = ${doruntimes[$i]}
-            def dockerimage = ${dockerimages[$i]}
-            def dist = ${dists[$i]}
-            // derived tag
-            def extratag = "-${tag}-${cudatag}"
-
-            if (${dobuild}==1) {
 
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
+                def i = 0
+                def index = $i
+                def tag = ${tags[$i]}
+                def cudatag = ${cudatags[$i]}
+                def dobuild = ${dobuilds[$i]}
+                def dofulltest = ${dofulltests[$i]}
+                def dopytest = ${dopytests[$i]}
+                def doruntime = ${doruntimes[$i]}
+                def dockerimage = ${dockerimages[$i]}
+                def dist = ${dists[$i]}
+                // derived tag
+                def extratag = "-${tag}-${cudatag}"
+
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -107,7 +106,6 @@ pipeline {
                     }
                 }
             }
-        }
         }
 
 
@@ -166,25 +164,23 @@ pipeline {
         }
 
         stage("Pylint on Linux 0") {
-            def i = 0
-            def index = $i
-            def tag = ${tags[$i]}
-            def cudatag = ${cudatags[$i]}
-            def dobuild = ${dobuilds[$i]}
-            def dofulltest = ${dofulltests[$i]}
-            def dopytest = ${dopytests[$i]}
-            def doruntime = ${doruntimes[$i]}
-            def dockerimage = ${dockerimages[$i]}
-            def dist = ${dists[$i]}
-            // derived tag
-            def extratag = "-${tag}-${cudatag}"
-
-            if (${dopytest}==1) {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
-
             steps {
+                def i = 0
+                def index = $i
+                def tag = ${tags[$i]}
+                def cudatag = ${cudatags[$i]}
+                def dobuild = ${dobuilds[$i]}
+                def dofulltest = ${dofulltests[$i]}
+                def dopytest = ${dopytests[$i]}
+                def doruntime = ${doruntimes[$i]}
+                def dockerimage = ${dockerimages[$i]}
+                def dist = ${dists[$i]}
+                // derived tag
+                def extratag = "-${tag}-${cudatag}"
+
                 dumpInfo 'Linux Pylint Info'
                 checkout([
                         $class                           : 'GitSCM',
@@ -206,29 +202,27 @@ pipeline {
                 }
             }
         }
-        }
 
 
         stage("Publish to S3 0") {
-            def i = 0
-            def index = $i
-            def tag = ${tags[$i]}
-            def cudatag = ${cudatags[$i]}
-            def dobuild = ${dobuilds[$i]}
-            def dofulltest = ${dofulltests[$i]}
-            def dopytest = ${dopytests[$i]}
-            def doruntime = ${doruntimes[$i]}
-            def dockerimage = ${dockerimages[$i]}
-            def dist = ${dists[$i]}
-            // derived tag
-            def extratag = "-${tag}-${cudatag}"
-
-            if (${dobuild}==1) {
             agent {
                 label "linux"
             }
 
             steps {
+                def i = 0
+                def index = $i
+                def tag = ${tags[$i]}
+                def cudatag = ${cudatags[$i]}
+                def dobuild = ${dobuilds[$i]}
+                def dofulltest = ${dofulltests[$i]}
+                def dopytest = ${dopytests[$i]}
+                def doruntime = ${doruntimes[$i]}
+                def dockerimage = ${dockerimages[$i]}
+                def dist = ${dists[$i]}
+                // derived tag
+                def extratag = "-${tag}-${cudatag}"
+
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -249,30 +243,28 @@ pipeline {
                 }
             }
         }
-        }
 
 
 
         stage("Build Runtime Docker 0") {
-            def i = 0
-            def index = $i
-            def tag = ${tags[$i]}
-            def cudatag = ${cudatags[$i]}
-            def dobuild = ${dobuilds[$i]}
-            def dofulltest = ${dofulltests[$i]}
-            def dopytest = ${dopytests[$i]}
-            def doruntime = ${doruntimes[$i]}
-            def dockerimage = ${dockerimages[$i]}
-            def dist = ${dists[$i]}
-            // derived tag
-            def extratag = "-${tag}-${cudatag}"
-
-            if (${doruntime}==1) {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
 
             steps {
+                def i = 0
+                def index = $i
+                def tag = ${tags[$i]}
+                def cudatag = ${cudatags[$i]}
+                def dobuild = ${dobuilds[$i]}
+                def dofulltest = ${dofulltests[$i]}
+                def dopytest = ${dopytests[$i]}
+                def doruntime = ${doruntimes[$i]}
+                def dockerimage = ${dockerimages[$i]}
+                def dist = ${dists[$i]}
+                // derived tag
+                def extratag = "-${tag}-${cudatag}"
+
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
