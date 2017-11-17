@@ -53,7 +53,7 @@ pipeline {
         // -nccl-cuda8
         //
         /////////////////////////////////////////////////////////////////////
-        stage("Build on Linux -nccl-cuda8") {
+        stage("Build Wheel on Linux -nccl-cuda8") {
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
@@ -96,14 +96,15 @@ pipeline {
                             } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                                nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build > h2o4gpu-${extratag}-build.tar
-                                gzip h2o4gpu-${extratag}-build.tar
+                            // ADD smoke test for each build
+                                nvidia-docker stop ${CONTAINER_NAME}
+                                nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build | gzip > h2o4gpu-${extratag}-build.tar.gz
                                 """
                             stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
                             stash includes: "h2o4gpu-${extratag}-build.tar.gz", name: "docker-${extratag}-build"
                             // Archive artifacts
-                            arch "h2o4gpu-${extratag}-build.tar.gz"
+                            //arch "h2o4gpu-${extratag}-build.tar.gz"
                             arch "src/interface_py/${dist}/*.whl"
                         } finally {
                             sh "nvidia-docker stop ${CONTAINER_NAME}"
@@ -115,7 +116,7 @@ pipeline {
 
 
 
-        stage("Full Test & Pylint on Linux -nccl-cuda8") {
+        stage("Full Test Wheel & Pylint & S3up on Linux -nccl-cuda8") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 )"
             }
@@ -181,7 +182,7 @@ pipeline {
         }
 
 
-        stage("Build&Publish Runtime Docker -nccl-cuda8") {
+        stage("Build/Publish Runtime Docker -nccl-cuda8") {
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16 )"
             }
@@ -232,9 +233,8 @@ pipeline {
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
                                 nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime > h2o4gpu-${versionTag}${extratag}-runtime.tar
-                                gzip  h2o4gpu-${versionTag}${extratag}-runtime.tar
                                 nvidia-docker stop ${CONTAINER_NAME}
+                                nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
                             """
                         //stash includes: "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz", name: "docker-${versionTag}${extratag}-runtime"
                         // Archive artifacts
