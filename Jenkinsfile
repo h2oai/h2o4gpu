@@ -120,11 +120,10 @@ pipeline {
                     checkout scm
                 }
                 unstash 'version_info'
+                unstash 'linux_whl'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    unstash 'linux_whl'
-                }
-                script {
+
                     def i = 0
                     def index = $i
                     def tag = ${tags[$i]}
@@ -206,10 +205,7 @@ pipeline {
 
             steps {
                 unstash 'version_info'
-                script {
-                    def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    unstash 'linux_whl'
-                }
+                unstash 'linux_whl'
 
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
