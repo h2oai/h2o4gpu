@@ -70,6 +70,12 @@ install:
 #	python3 setup.py sdist bdist_wheel
 
 clean:
+	rm -f h2o4gpu/BUILD_INFO.txt
+	rm -f h2o4gpu/dist*
+    # A bit hacky b/c of how we are merging __init__.py with other frameworks
+    # This *is* required
+	rm -f h2o4gpu/__init__.py
+	touch h2o4gpu/__init__.py
 	python setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
 	cd h2o4gpu && find -L -name *.pyc | xargs rm -rf
 
