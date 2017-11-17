@@ -245,6 +245,7 @@ pipeline {
                             nvidia-docker stop ${CONTAINER_NAME}
                         """
                     }
+                }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
@@ -263,7 +264,6 @@ pipeline {
                 }
                 }
             }
-
         }
 
     } // end over stages
