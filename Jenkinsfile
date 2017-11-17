@@ -56,7 +56,7 @@ pipeline {
         stage("Build on Linux -nccl-cuda8") {
 
             agent {
-                label "nvidia-docker && (mr-dl11 || mr-dl16)"
+                label "nvidia-docker && (mr-dl11)"
             }
 
             steps {
@@ -74,7 +74,7 @@ pipeline {
                 }
 
                 script {
-                    def tag = "nccl"
+s                    def tag = "nccl"
                     def cudatag = "cuda8"
                     def dist = "dist"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
@@ -113,7 +113,7 @@ pipeline {
 
         stage("Full Test on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
+                label "gpu && nvidia-docker && (mr-dl11 )"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -155,7 +155,7 @@ pipeline {
 
         stage("Pylint on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
+                label "gpu && nvidia-docker && (mr-dl11 )"
             }
             steps {
                 dumpInfo 'Linux Pylint Info'
@@ -187,7 +187,7 @@ pipeline {
 
         stage("Publish to S3 -nccl-cuda8") {
             agent {
-                label "linux && (mr-dl11 || mr-dl16)"
+                label "linux && (mr-dl11 )"
             }
 
             steps {
@@ -218,7 +218,7 @@ pipeline {
 
         stage("Build Runtime Docker -nccl-cuda8") {
             agent {
-                label "nvidia-docker && (mr-dl11 || mr-dl16)"
+                label "nvidia-docker && (mr-dl11 )"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -280,7 +280,7 @@ pipeline {
 
         stage("Publish Runtime Docker for -nccl-cuda8 to S3") {
             agent {
-                label "linux && (mr-dl11 || mr-dl16)"
+                label "linux && (mr-dl11 )"
             }
 
             steps {
