@@ -84,28 +84,27 @@ pipeline {
                     CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                        try {
-                            sh """
-                                    nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=${dockerimage} .
-                                    nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-                                    nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-                                    nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-                                    nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-                                    nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-                                    nvidia-docker exec ${
-                                CONTAINER_NAME
-                            } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
-                                env.MAKE_OPTS
-                            } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                                nvidia-docker stop ${CONTAINER_NAME}
-                                nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build | gzip > h2o4gpu-${extratag}-build.tar.gz
-                                """
-                            stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
-                            stash includes: 'build/VERSION.txt', name: 'version_info'
-                            stash includes: "h2o4gpu-${extratag}-build.tar.gz", name: "docker-${extratag}-build"
-                            // Archive artifacts
-                            //arch "h2o4gpu-${extratag}-build.tar.gz"
-                            arch "src/interface_py/${dist}/*.whl"
+                        sh """
+                                nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=${dockerimage} .
+                                nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
+                                nvidia-docker exec ${CONTAINER_NAME} rm -rf data
+                                nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
+                                nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
+                                nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
+                                nvidia-docker exec ${
+                            CONTAINER_NAME
+                        } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
+                            env.MAKE_OPTS
+                        } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                            nvidia-docker stop ${CONTAINER_NAME}
+                            nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build | gzip > h2o4gpu-${extratag}-build.tar.gz
+                            """
+                        stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
+                        stash includes: 'build/VERSION.txt', name: 'version_info'
+                        stash includes: "h2o4gpu-${extratag}-build.tar.gz", name: "docker-${extratag}-build"
+                        // Archive artifacts
+                        //arch "h2o4gpu-${extratag}-build.tar.gz"
+                        arch "src/interface_py/${dist}/*.whl"
                     }
                 }
             }
@@ -147,33 +146,31 @@ pipeline {
                             sh "echo "exec pylint""
                             nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
                             nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
+                            nvidia-docker stop ${CONTAINER_NAME}
                         """
 
                     } finally {
-                        sh """
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
                         //deleteDir()
                     }
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                    script {
-                        def tag = "nccl"
-                        def cudatag = "cuda8"
-                        def dist = "dist"
-                        // derived tag
-                        def extratag = "-${tag}-${cudatag}"
-                        def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                        sh "echo "Stashed files:" && ls -l src/interface_py/${dist}/"
-                        def artifactId = "h2o4gpu"
-                        def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
-                        def localArtifact = "src/interface_py/${dist}/${artifact}"
-                        s3up_simple(${versionTag}, ${extratag}, ${artifactId}, ${artifact}, ${localArtifact})
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        script {
+                            def tag = "nccl"
+                            def cudatag = "cuda8"
+                            def dist = "dist"
+                            // derived tag
+                            def extratag = "-${tag}-${cudatag}"
+                            def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
+                            sh "echo "Stashed files:" && ls -l src/interface_py/${dist}/"
+                            def artifactId = "h2o4gpu"
+                            def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
+                            def localArtifact = "src/interface_py/${dist}/${artifact}"
+                            s3up_simple(${versionTag}, ${extratag}, ${artifactId}, ${artifact}, ${localArtifact})
+                        }
                     }
-                }
                 }
             }
         }
