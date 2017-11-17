@@ -120,12 +120,13 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
 template<>
 void calculate_distances<double>(int verbose, int q, int n, int d, int k,
                                  thrust::device_vector<double> &data,
+                                 int data_offset,
                                  thrust::device_vector<double> &centroids,
                                  thrust::device_vector<double> &data_dots,
                                  thrust::device_vector<double> &centroid_dots,
                                  thrust::device_vector<double> &pairwise_distances) {
   detail::make_self_dots(k, d, centroids, centroid_dots);
-  detail::make_all_dots(n, k, data_dots, centroid_dots, pairwise_distances);
+  detail::make_all_dots(n, k, data_offset, data_dots, centroid_dots, pairwise_distances);
 
   //||x-y||^2 = ||x||^2 + ||y||^2 - 2 x . y
   //pairwise_distances has ||x||^2 + ||y||^2, so beta = 1
@@ -148,7 +149,7 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
     int shared_size_A = block_rows * d * sizeof(double);
 
     matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
-        thrust::raw_pointer_cast(data.data()),
+        thrust::raw_pointer_cast(data.data() + data_offset * d),
             thrust::raw_pointer_cast(centroids.data()),
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
@@ -159,7 +160,7 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
     cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
                                                   n, k, d, &alpha,
-                                                  thrust::raw_pointer_cast(data.data()),
+                                                  thrust::raw_pointer_cast(data.data() + data_offset * d),
                                                   d,//Has to be n or d
                                                   thrust::raw_pointer_cast(centroids.data()),
                                                   d,//Has to be k or d
@@ -186,12 +187,13 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
 template<>
 void calculate_distances<float>(int verbose, int q, int n, int d, int k,
                                 thrust::device_vector<float> &data,
+                                int data_offset,
                                 thrust::device_vector<float> &centroids,
                                 thrust::device_vector<float> &data_dots,
                                 thrust::device_vector<float> &centroid_dots,
                                 thrust::device_vector<float> &pairwise_distances) {
   detail::make_self_dots(k, d, centroids, centroid_dots);
-  detail::make_all_dots(n, k, data_dots, centroid_dots, pairwise_distances);
+  detail::make_all_dots(n, k, data_offset, data_dots, centroid_dots, pairwise_distances);
 
   //||x-y||^2 = ||x||^2 + ||y||^2 - 2 x . y
   //pairwise_distances has ||x||^2 + ||y||^2, so beta = 1
@@ -214,7 +216,7 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
     int shared_size_A = block_rows * d * sizeof(float);
 
     matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
-        thrust::raw_pointer_cast(data.data()),
+        thrust::raw_pointer_cast(data.data() + data_offset * d),
             thrust::raw_pointer_cast(centroids.data()),
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
@@ -224,7 +226,7 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
     cublasStatus_t stat = safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
                                                   n, k, d, &alpha,
-                                                  thrust::raw_pointer_cast(data.data()),
+                                                  thrust::raw_pointer_cast(data.data() + data_offset * d),
                                                   d,//Has to be n or d
                                                   thrust::raw_pointer_cast(centroids.data()),
                                                   d,//Has to be k or d
