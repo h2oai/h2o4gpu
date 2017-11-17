@@ -322,7 +322,7 @@ pipeline {
                 script {
                     def tag = "nonccl"
                     def cudatag = "cuda8"
-                    def dist = "dist"
+                    def dist = "dist2"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
@@ -370,7 +370,7 @@ pipeline {
                     unstash 'linux_whl2'
                     def tag = "nonccl"
                     def cudatag = "cuda8"
-                    def dist = "dist"
+                    def dist = "dist2"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
                     def extratag = "-${tag}-${cudatag}"
                     CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
@@ -398,7 +398,7 @@ pipeline {
                         script {
                             def tag = "nonccl"
                             def cudatag = "cuda8"
-                            def dist = "dist"
+                            def dist = "dist2"
                             def extratag = "-${tag}-${cudatag}"
                             def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                             def artifactId = "h2o4gpu"
@@ -562,7 +562,7 @@ pipeline {
                 script {
                     def tag = "nccl"
                     def cudatag = "cuda9"
-                    def dist = "dist"
+                    def dist = "dist4"
                     def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
@@ -611,7 +611,7 @@ pipeline {
 
                     def tag = "nccl"
                     def cudatag = "cuda9"
-                    def dist = "dist"
+                    def dist = "dist4"
                     def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
                     def extratag = "-${tag}-${cudatag}"
                     CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
@@ -639,7 +639,7 @@ pipeline {
                         script {
                             def tag = "nccl"
                             def cudatag = "cuda9"
-                            def dist = "dist"
+                            def dist = "dist4"
                             def extratag = "-${tag}-${cudatag}"
                             def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                             def artifactId = "h2o4gpu"
@@ -801,7 +801,7 @@ pipeline {
                 script {
                     def tag = "nonccl"
                     def cudatag = "cuda9"
-                    def dist = "dist"
+                    def dist = "dist3"
                     def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
@@ -850,7 +850,7 @@ pipeline {
 
                     def tag = "nonccl"
                     def cudatag = "cuda9"
-                    def dist = "dist"
+                    def dist = "dist3"
                     def dockerimage = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
                     def extratag = "-${tag}-${cudatag}"
                     CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
@@ -878,7 +878,7 @@ pipeline {
                         script {
                             def tag = "nonccl"
                             def cudatag = "cuda9"
-                            def dist = "dist"
+                            def dist = "dist3"
                             def extratag = "-${tag}-${cudatag}"
                             def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                             def artifactId = "h2o4gpu"
