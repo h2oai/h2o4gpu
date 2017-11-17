@@ -573,8 +573,8 @@ void buildRuntime(String dockerimage, String extratag) {
     //    def buckettype = "snapshots"
     //}
     def buckettype = "snapshots"
-    def versionTag = buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
     def fullVersionTag = buildInfo.get().getVersion()
+    def versionTag = fullVersionTag.tokenize('+')[0]
 
     // Get source code
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
