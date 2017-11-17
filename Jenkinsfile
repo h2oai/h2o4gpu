@@ -171,7 +171,7 @@ pipeline {
                             }
                             if (!(isRelease() || isBleedingEdge())) {
                                 // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                                def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
                                 sh "s3cmd put ${localArtifact} ${bucket}"
                                 sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                             }
@@ -223,7 +223,7 @@ pipeline {
                         def buckettype = "releases/bleeding-edge"
                     }
                     else {
-                        def buckettype = "snapshots/bleeding-edge"
+                        def buckettype = "snapshots"
                     }
 
                     // Get source code
