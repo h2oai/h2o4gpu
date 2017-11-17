@@ -53,6 +53,7 @@ pipeline {
         //
         // -nccl-cuda8
         //
+        //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
         stage("Build Wheel on Linux -nccl-cuda8") {
 
@@ -81,7 +82,7 @@ pipeline {
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
@@ -111,7 +112,7 @@ pipeline {
 
         stage("Full Test Wheel & Pylint & S3up on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 )"
+                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -128,7 +129,7 @@ pipeline {
                     def dist = "dist"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
                     def extratag = "-${tag}-${cudatag}"
-                    CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     try {
                         sh """
                             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
@@ -184,7 +185,7 @@ pipeline {
 
         stage("Build/Publish Runtime Docker -nccl-cuda8") {
             agent {
-                label "nvidia-docker && (mr-dl11 || mr-dl16 )"
+                label "nvidia-docker"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -215,14 +216,13 @@ pipeline {
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
-                    CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+                    CONTAINER_NAME = "h2o4gpu-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
 
                     if (isRelease()) {
                         def buckettype = "releases/stable"
                     } else if (isBleedingEdge()) {
                         def buckettype = "releases/bleeding-edge"
-                    }
-                    else {
+                    } else {
                         def buckettype = "snapshots"
                     }
 
