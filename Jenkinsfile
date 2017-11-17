@@ -74,7 +74,7 @@ pipeline {
                 }
 
                 script {
-s                    def tag = "nccl"
+                    def tag = "nccl"
                     def cudatag = "cuda8"
                     def dist = "dist"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
