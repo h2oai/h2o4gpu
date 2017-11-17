@@ -52,19 +52,6 @@ pipeline {
             }
 
             steps {
-                def i = 0
-                def index = $i
-                def tag = ${tags[$i]}
-                def cudatag = ${cudatags[$i]}
-                def dobuild = ${dobuilds[$i]}
-                def dofulltest = ${dofulltests[$i]}
-                def dopytest = ${dopytests[$i]}
-                def doruntime = ${doruntimes[$i]}
-                def dockerimage = ${dockerimages[$i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -79,6 +66,18 @@ pipeline {
                 }
 
                 script {
+                    def i = 0
+                    def index = $i
+                    def tag = ${tags[$i]}
+                    def cudatag = ${cudatags[$i]}
+                    def dobuild = ${dobuilds[$i]}
+                    def dofulltest = ${dofulltests[$i]}
+                    def dopytest = ${dopytests[$i]}
+                    def doruntime = ${doruntimes[$i]}
+                    def dockerimage = ${dockerimages[$i]}
+                    def dist = ${dists[$i]}
+                    // derived tag
+                    def extratag = "-${tag}-${cudatag}"
                     CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -115,19 +114,6 @@ pipeline {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
             steps {
-                def i = 0
-                def index = $i
-                def tag = ${tags[$i]}
-                def cudatag = ${cudatags[$i]}
-                def dobuild = ${dobuilds[$i]}
-                def dofulltest = ${dofulltests[$i]}
-                def dopytest = ${dopytests[$i]}
-                def doruntime = ${doruntimes[$i]}
-                def dockerimage = ${dockerimages[$i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -139,6 +125,18 @@ pipeline {
                     unstash 'linux_whl'
                 }
                 script {
+                    def i = 0
+                    def index = $i
+                    def tag = ${tags[$i]}
+                    def cudatag = ${cudatags[$i]}
+                    def dobuild = ${dobuilds[$i]}
+                    def dofulltest = ${dofulltests[$i]}
+                    def dopytest = ${dopytests[$i]}
+                    def doruntime = ${doruntimes[$i]}
+                    def dockerimage = ${dockerimages[$i]}
+                    def dist = ${dists[$i]}
+                    // derived tag
+                    def extratag = "-${tag}-${cudatag}"
                     try {
                         sh """
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
@@ -166,19 +164,6 @@ pipeline {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
             steps {
-                def i = 0
-                def index = $i
-                def tag = ${tags[$i]}
-                def cudatag = ${cudatags[$i]}
-                def dobuild = ${dobuilds[$i]}
-                def dofulltest = ${dofulltests[$i]}
-                def dopytest = ${dopytests[$i]}
-                def doruntime = ${doruntimes[$i]}
-                def dockerimage = ${dockerimages[$i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 dumpInfo 'Linux Pylint Info'
                 checkout([
                         $class                           : 'GitSCM',
@@ -189,6 +174,18 @@ pipeline {
                         userRemoteConfigs                : scm.userRemoteConfigs])
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                 script {
+                    def i = 0
+                    def index = $i
+                    def tag = ${tags[$i]}
+                    def cudatag = ${cudatags[$i]}
+                    def dobuild = ${dobuilds[$i]}
+                    def dofulltest = ${dofulltests[$i]}
+                    def dopytest = ${dopytests[$i]}
+                    def doruntime = ${doruntimes[$i]}
+                    def dockerimage = ${dockerimages[$i]}
+                    def dist = ${dists[$i]}
+                    // derived tag
+                    def extratag = "-${tag}-${cudatag}"
                     sh """
                             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build  --build-arg cuda=nvidia/${dockerimage} .
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
@@ -208,19 +205,6 @@ pipeline {
             }
 
             steps {
-                def i = 0
-                def index = $i
-                def tag = ${tags[$i]}
-                def cudatag = ${cudatags[$i]}
-                def dobuild = ${dobuilds[$i]}
-                def dofulltest = ${dofulltests[$i]}
-                def dopytest = ${dopytests[$i]}
-                def doruntime = ${doruntimes[$i]}
-                def dockerimage = ${dockerimages[$i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
@@ -230,6 +214,18 @@ pipeline {
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def i = 0
+                        def index = $i
+                        def tag = ${tags[$i]}
+                        def cudatag = ${cudatags[$i]}
+                        def dobuild = ${dobuilds[$i]}
+                        def dofulltest = ${dofulltests[$i]}
+                        def dopytest = ${dopytests[$i]}
+                        def doruntime = ${doruntimes[$i]}
+                        def dockerimage = ${dockerimages[$i]}
+                        def dist = ${dists[$i]}
+                        // derived tag
+                        def extratag = "-${tag}-${cudatag}"
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         sh 'echo "Stashed files:" && ls -l src/interface_py/dist/'
                         def artifactId = "h2o4gpu"
@@ -249,19 +245,6 @@ pipeline {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
             steps {
-                def i = 0
-                def index = $i
-                def tag = ${tags[$i]}
-                def cudatag = ${cudatags[$i]}
-                def dobuild = ${dobuilds[$i]}
-                def dofulltest = ${dofulltests[$i]}
-                def dopytest = ${dopytests[$i]}
-                def doruntime = ${doruntimes[$i]}
-                def dockerimage = ${dockerimages[$i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -284,6 +267,18 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
+                    def i = 0
+                    def index = $i
+                    def tag = ${tags[$i]}
+                    def cudatag = ${cudatags[$i]}
+                    def dobuild = ${dobuilds[$i]}
+                    def dofulltest = ${dofulltests[$i]}
+                    def dopytest = ${dopytests[$i]}
+                    def doruntime = ${doruntimes[$i]}
+                    def dockerimage = ${dockerimages[$i]}
+                    def dist = ${dists[$i]}
+                    // derived tag
+                    def extratag = "-${tag}-${cudatag}"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     echo "CONTAINER_NAME = ${CONTAINER_NAME}"
@@ -320,19 +315,6 @@ pipeline {
             }
 
             steps {
-                i = 0
-                def index = i
-                def tag = ${tags[i]}
-                def cudatag = ${cudatags[i]}
-                def dobuild = ${dobuilds[i]}
-                def dofulltest = ${dofulltests[i]}
-                def dopytest = ${dopytests[i]}
-                def doruntime = ${doruntimes[i]}
-                def dockerimage = ${dockerimages[i]}
-                def dist = ${dists[$i]}
-                // derived tag
-                def extratag = "-${tag}-${cudatag}"
-
                 unstash 'version_info'
                 script {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
