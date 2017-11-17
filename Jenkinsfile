@@ -16,6 +16,7 @@ String changeId() {
     return "-master"
 }
 
+// Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
 //def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
 //def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
@@ -105,9 +106,6 @@ pipeline {
                             // Archive artifacts
                             //arch "h2o4gpu-${extratag}-build.tar.gz"
                             arch "src/interface_py/${dist}/*.whl"
-                        } finally {
-                            sh "nvidia-docker stop ${CONTAINER_NAME}"
-                        }
                     }
                 }
             }
@@ -216,7 +214,6 @@ pipeline {
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     // Get source code
-                    try {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
                                 nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl .
@@ -237,11 +234,6 @@ pipeline {
                         //stash includes: "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz", name: "docker-${versionTag}${extratag}-runtime"
                         // Archive artifacts
                         //arch "h2o4gpu-${versionTag}${extratag}-runtime.tar.gz"
-                    }
-                    } finally {
-                        sh """
-                            nvidia-docker stop ${CONTAINER_NAME}
-                        """
                     }
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
