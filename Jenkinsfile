@@ -477,6 +477,7 @@ void publishToS3(String extratag, String dist) {
     // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
+    sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
         bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
@@ -501,6 +502,7 @@ void publishRuntimeToS3(String extratag) {
     // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
+    sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
         bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
