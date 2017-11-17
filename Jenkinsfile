@@ -313,7 +313,6 @@ pipeline {
                 }
             }
         }
-        }
 
         stage("Publish Runtime Docker for 0 to S3") {
             agent {
