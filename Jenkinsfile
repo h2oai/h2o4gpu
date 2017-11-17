@@ -317,6 +317,19 @@ pipeline {
             steps {
                 unstash 'version_info'
                 script {
+                    def i = 0
+                    def index = $i
+                    def tag = ${tags[$i]}
+                    def cudatag = ${cudatags[$i]}
+                    def dobuild = ${dobuilds[$i]}
+                    def dofulltest = ${dofulltests[$i]}
+                    def dopytest = ${dopytests[$i]}
+                    def doruntime = ${doruntimes[$i]}
+                    def dockerimage = ${dockerimages[$i]}
+                    def dist = ${dists[$i]}
+                    // derived tag
+                    def extratag = "-${tag}-${cudatag}"
+
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash 'docker-${versionTag}${extratag}-runtime'
                 }
@@ -324,6 +337,19 @@ pipeline {
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def i = 0
+                        def index = $i
+                        def tag = ${tags[$i]}
+                        def cudatag = ${cudatags[$i]}
+                        def dobuild = ${dobuilds[$i]}
+                        def dofulltest = ${dofulltests[$i]}
+                        def dopytest = ${dopytests[$i]}
+                        def doruntime = ${doruntimes[$i]}
+                        def dockerimage = ${dockerimages[$i]}
+                        def dist = ${dists[$i]}
+                        // derived tag
+                        def extratag = "-${tag}-${cudatag}"
+
                         sh 'echo "Stashed files:" && ls -l docker*'
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         def artifactId = "h2o4gpu"
