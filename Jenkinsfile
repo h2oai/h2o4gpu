@@ -5,7 +5,7 @@
 import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
-
+CI_VERSION_SUFFIX = utilsLib.getCiVersionSuffix()
 SAFE_CHANGE_ID = changeId()
 CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
 
@@ -549,7 +549,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist) {
             nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
             nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
             nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + utilsLib.getCiVersionSuffix()};'
+            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX};'
             nvidia-docker stop ${CONTAINER_NAME}
             echo "Building on linux - stopped docker"
            """
