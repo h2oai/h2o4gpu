@@ -96,7 +96,6 @@ pipeline {
                             } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
-                            // ADD smoke test for each build
                                 nvidia-docker stop ${CONTAINER_NAME}
                                 nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build | gzip > h2o4gpu-${extratag}-build.tar.gz
                                 """
