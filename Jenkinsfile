@@ -56,7 +56,7 @@ pipeline {
         stage("Build on Linux -nccl-cuda8") {
 
             agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
+                label "nvidia-docker"
             }
 
             steps {
@@ -113,7 +113,7 @@ pipeline {
 
         stage("Full Test on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
+                label "gpu && nvidia-docker"
             }
             steps {
                 dumpInfo 'Linux Test Info'
@@ -155,7 +155,7 @@ pipeline {
 
         stage("Pylint on Linux -nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
+                label "gpu && nvidia-docker"
             }
             steps {
                 dumpInfo 'Linux Pylint Info'
@@ -218,7 +218,7 @@ pipeline {
 
         stage("Build Runtime Docker -nccl-cuda8") {
             agent {
-                label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
+                label "nvidia-docker"
             }
             steps {
                 dumpInfo 'Linux Build Info'
