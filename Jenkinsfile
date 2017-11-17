@@ -543,7 +543,8 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
-    def versionTag = fullVersionTag.tokenize('+')[0]
+    def versionTag = buildInfo.get().getVersion()
+    
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh """
             nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
