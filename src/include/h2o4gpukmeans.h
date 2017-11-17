@@ -43,14 +43,14 @@ class H2O4GPUKMeansCPU {
 
 template<typename T>
 int makePtr_dense(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
-                  const char ord, int k, int max_iterations, int init_from_data, int init_data,
+                  const char ord, int k, int max_iterations, int init_from_data,
                   T threshold, const T *srcdata, const T *centroids,
                   void **pred_centroids, void **pred_labels);
 
 template<typename T>
 int makePtr_dense_cpu(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data,
-                      int init_data, T threshold, const T *srcdata, const T *centroids,
+                      T threshold, const T *srcdata, const T *centroids,
                       void **pred_centroids, void **pred_labels);
 
 template<typename T>

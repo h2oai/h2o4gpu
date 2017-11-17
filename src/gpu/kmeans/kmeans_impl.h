@@ -34,9 +34,6 @@ namespace kmeans {
   centroid x occupies positions [x * d, (x + 1) * d) in the
   vector. The vector is passed by reference since it is shared
   with the caller and not copied.
-  \param distances Distances from points to centroids. This vector has
-  size n. It is passed by reference since it is shared with the caller
-  and not copied.
   \param threshold This controls early termination of the kmeans
   iterations. If the ratio of points being reassigned to a different
   centroid is less than the threshold, than the iterations are
@@ -53,7 +50,6 @@ int kmeans(
     thrust::device_vector<T> **data,
     thrust::device_vector<int> **labels,
     thrust::device_vector<T> **centroids,
-    thrust::device_vector<T> **distances,
     thrust::device_vector<T> **data_dots,
     std::vector<int> dList,
     int n_gpu,
@@ -61,12 +57,11 @@ int kmeans(
     double threshold = 1e-3,
     bool do_per_iter_check = true) {
 
-  thrust::device_vector<T> *centroid_dots[MAX_NGPUS];
-  thrust::device_vector<T> *pairwise_distances[MAX_NGPUS];
-  thrust::device_vector<int> *labels_copy[MAX_NGPUS];
-  thrust::device_vector<int> *range[MAX_NGPUS];
-  thrust::device_vector<int> *indices[MAX_NGPUS];
-  thrust::device_vector<int> *counts[MAX_NGPUS];
+  thrust::device_vector<T> *centroid_dots[n_gpu];
+  thrust::device_vector<int> *labels_copy[n_gpu];
+  thrust::device_vector<int> *range[n_gpu];
+  thrust::device_vector<int> *indices[n_gpu];
+  thrust::device_vector<int> *counts[n_gpu];
   thrust::device_vector<T> d_old_centroids;
 
   thrust::host_vector<int> h_counts(k);
@@ -75,65 +70,45 @@ int kmeans(
   h_centroids = *centroids[0]; // all should be equal
   thrust::host_vector<T> h_centroids_tmp(k * d);
 
-  int *d_changes[MAX_NGPUS];
-  T *d_distance_sum[MAX_NGPUS];
+  T *d_distance_sum[n_gpu];
 
   for (int q = 0; q < n_gpu; q++) {
-    if (verbose) {
-      fprintf(stderr, "Before kmeans() Allocation: gpu: %d\n", q);
-      fflush(stderr);
-    }
+    log_debug(verbose, "Before kmeans() Allocation: gpu: %d", q);
 
     safe_cuda(cudaSetDevice(dList[q]));
-    safe_cuda(cudaMalloc(&d_changes[q], sizeof(int)));
     safe_cuda(cudaMalloc(&d_distance_sum[q], sizeof(T)));
 
     try {
       centroid_dots[q] = new thrust::device_vector<T>(k);
-      pairwise_distances[q] = new thrust::device_vector<T>(n / n_gpu * k);
       labels_copy[q] = new thrust::device_vector<int>(n / n_gpu);
       range[q] = new thrust::device_vector<int>(n / n_gpu);
       counts[q] = new thrust::device_vector<int>(k);
       indices[q] = new thrust::device_vector<int>(n / n_gpu);
     } catch (thrust::system_error &e) {
-      // output an error message and exit
-      std::stringstream ss;
-      ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
-         << " error: " << e.what() << std::endl;
+      log_error(verbose, "Unable to allocate memory for gpu: %d | n/n_gpu: %d | k: %d | d: %d | error: %s",
+                q, n / n_gpu, k, d, e.what());
       return (-1);
       // throw std::runtime_error(ss.str());
     } catch (std::bad_alloc &e) {
-      // output an error message and exit
-      std::stringstream ss;
-      ss << "Unable to allocate memory for gpu: " << q << " n/n_gpu: " << n / n_gpu << " k: " << k << " d: " << d
-         << " error: " << e.what() << std::endl;
+      log_error(verbose, "Unable to allocate memory for gpu: %d | n/n_gpu: %d | k: %d | d: %d | error: %s",
+                q, n / n_gpu, k, d, e.what());
       return (-1);
       //throw std::runtime_error(ss.str());
     }
 
-    if (verbose) {
-      fprintf(stderr, "Before Create and save range for initializing labels: gpu: %d\n", q);
-      fflush(stderr);
-    }
     //Create and save "range" for initializing labels
     thrust::copy(thrust::counting_iterator<int>(0),
                  thrust::counting_iterator<int>(n / n_gpu),
                  (*range[q]).begin());
-
-    if (verbose) {
-      fprintf(stderr, "Before make_self_dots: gpu: %d\n", q);
-      fflush(stderr);
-    }
   }
 
-  if (verbose) {
-    fprintf(stderr, "Before kmeans() Iterations\n");
-    fflush(stderr);
-  }
+  log_debug(verbose, "Before kmeans() Iterations");
 
   int i = 0;
   bool done = false;
   for (; i < max_iterations; i++) {
+    log_verbose(verbose, "KMeans - Iteration %d/%d", i, max_iterations);
+
     if (*flag) continue;
 
     for (int q = 0; q < n_gpu; q++) {
@@ -143,13 +118,14 @@ int kmeans(
         d_old_centroids = *centroids[q];
       }
 
-      detail::calculate_distances(verbose, q, n / n_gpu, d, k,
-                                  *data[q], *centroids[q], *data_dots[q],
-                                  *centroid_dots[q], *pairwise_distances[q]);
+      detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
+                                        *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
+                                        [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                          detail::relabel(n, k, pairwise_distances, *labels[q], offset);
+                                        }
+      );
 
-      detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
-
-      mycub::sum_reduce(*distances[q], d_distance_sum[q]);
+      log_verbose(verbose, "KMeans - Relabeled.");
 
       detail::memcpy(*labels_copy[q], *labels[q]);
       detail::find_centroids(q,
@@ -180,7 +156,7 @@ int kmeans(
       // Zero the centroids only if any of the GPUs actually updated them
       for (int p = 0; p < k; p++) {
         for (int r = 0; r < d; r++) {
-          if (h_counts_tmp[p] != 0) {
+          if (h_counts[p] != 0) {
             h_centroids[p * d + r] = 0.0;
           }
         }
@@ -192,7 +168,7 @@ int kmeans(
         detail::streamsync(dList[q]);
         for (int p = 0; p < k; p++) {
           for (int r = 0; r < d; r++) {
-            if (h_counts_tmp[p] != 0) {
+            if (h_counts[p] != 0) {
               h_centroids[p * d + r] += h_centroids_tmp[p * d + r];
             }
           }
@@ -218,7 +194,6 @@ int kmeans(
 
     // whether to perform per iteration check
     if (do_per_iter_check) {
-      safe_cuda(cudaDeviceSynchronize());
       safe_cuda(cudaSetDevice(dList[0]));
 
       T squared_norm = thrust::inner_product(
@@ -252,17 +227,16 @@ int kmeans(
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
 
-    detail::calculate_distances(verbose, q, n / n_gpu, d, k,
-                                *data[q], *centroids[q], *data_dots[q],
-                                *centroid_dots[q], *pairwise_distances[q]);
-
-    detail::relabel(n / n_gpu, k, *pairwise_distances[q], *labels[q], *distances[q], d_changes[q]);
+    detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
+                                      *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
+                                      [=](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                        detail::relabel(n, k, pairwise_distances, *labels[q], offset);
+                                      }
+    );
   }
 
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
-    safe_cuda(cudaFree(d_changes[q]));
-    delete (pairwise_distances[q]);
     delete (centroid_dots[q]);
     delete (labels_copy[q]);
     delete (range[q]);
@@ -270,12 +244,9 @@ int kmeans(
     delete (indices[q]);
   }
 
-  if (verbose) {
-    fprintf(stderr,
-            "Iterations: %d\n", i);
-    fflush(stderr);
-  }
-  return 0;
+  log_debug(verbose, "Iterations: %d", i);
+
+  return i;
 }
 
 }
