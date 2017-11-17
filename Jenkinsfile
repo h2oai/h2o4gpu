@@ -127,7 +127,6 @@ pipeline {
                     def cudatag = "cuda8"
                     def dist = "dist"
                     def dockerimage = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
-                    // derived tag
                     def extratag = "-${tag}-${cudatag}"
                     CONTAINER_NAME = "h2o4gpu-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
                     try {
@@ -147,7 +146,6 @@ pipeline {
                     } finally {
                         arch 'tmp/*.log'
                         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-                        //deleteDir()
                     }
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
@@ -156,13 +154,27 @@ pipeline {
                             def tag = "nccl"
                             def cudatag = "cuda8"
                             def dist = "dist"
-                            // derived tag
                             def extratag = "-${tag}-${cudatag}"
                             def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                             def artifactId = "h2o4gpu"
                             def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
                             def localArtifact = "src/interface_py/${dist}/${artifact}"
-                            s3up_simple(${versionTag}, ${extratag}, ${artifactId}, ${artifact}, ${localArtifact})
+                            if (isRelease()) {
+                                def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                                sh "s3cmd put ${localArtifact} ${bucket}"
+                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                            }
+                            if (isBleedingEdge()) {
+                                def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                                sh "s3cmd put ${localArtifact} ${bucket}"
+                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                            }
+                            if (!(isRelease() || isBleedingEdge())) {
+                                // always upload for testing
+                                def bucket = "s3://artifacts.h2o.ai/releases/snapshots_other/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                                sh "s3cmd put ${localArtifact} ${bucket}"
+                                sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                            }
                         }
                     }
                 }
@@ -229,13 +241,27 @@ pipeline {
                     script {
                         def tag = "nccl"
                         def cudatag = "cuda8"
-                        // derived tag
                         def extratag = "-${tag}-${cudatag}"
                         def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                         def artifactId = "h2o4gpu"
                         def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
                         def localArtifact = "${artifact}"
-                        s3up_simple(${versionTag}, ${extratag}, ${artifactId}, ${artifact}, ${localArtifact})
+                        if (isRelease()) {
+                            def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                            sh "s3cmd put ${localArtifact} ${bucket}"
+                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                        }
+                        if (isBleedingEdge()) {
+                            def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                            sh "s3cmd put ${localArtifact} ${bucket}"
+                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                        }
+                        if (!(isRelease() || isBleedingEdge())) {
+                            // always upload for testing
+                            def bucket = "s3://artifacts.h2o.ai/releases/snapshots_other/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                            sh "s3cmd put ${localArtifact} ${bucket}"
+                            sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+                        }
                     }
                 }
                 }
@@ -270,24 +296,6 @@ pipeline {
 }
 
 
-def s3up_simple(versionTag, extratag, artifactId, artifact, localArtifact) {
-    if (isRelease()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-        sh "s3cmd put ${localArtifact} ${bucket}"
-        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-    }
-    if (isBleedingEdge()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-        sh "s3cmd put ${localArtifact} ${bucket}"
-        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-    }
-    if (!(isRelease() || isBleedingEdge())) {
-        // always upload for testing
-        def bucket = "s3://artifacts.h2o.ai/releases/snapshots_other/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-        sh "s3cmd put ${localArtifact} ${bucket}"
-        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-    }
-}
 
 def isRelease() {
     return env.BRANCH_NAME.startsWith("rel")
