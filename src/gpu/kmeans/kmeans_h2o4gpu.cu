@@ -23,6 +23,7 @@
 #include <set>
 #include <csignal>
 #include "../../common/utils.h"
+#include <math.h>
 
 /**
  * METHODS FOR DATA COPYING AND GENERATION
@@ -52,8 +53,8 @@ void random_data(int verbose, thrust::device_vector<T> &array, int m, int n) {
 template<typename T>
 void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, const T *srcdata,
                int q, int n, int npergpu, int d) {
-  thrust::host_vector<T> host_array(npergpu * d);
   if (ord == 'c') {
+    thrust::host_vector<T> host_array(npergpu * d);
     log_debug(verbose, "Copy data COL ORDER -> ROW ORDER");
 
     int indexi, indexj;
@@ -62,14 +63,12 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, con
       indexj = i / d + q * npergpu; // row (shifted by which gpu)
       host_array[i] = srcdata[indexi * n + indexj];
     }
+    array = host_array;
   } else {
     log_debug(verbose, "Copy data ROW ORDER not changed");
-
-    for (int i = 0; i < npergpu * d; i++) {
-      host_array[i] = srcdata[q * npergpu * d + i]; // shift by which gpu
-    }
+    thrust::host_vector<T> host_array(srcdata + q * npergpu * d, srcdata + q * npergpu * d + npergpu * d);
+    array = host_array;
   }
-  array = host_array;
 }
 
 /**
@@ -174,7 +173,7 @@ template<typename T>
 int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
                size_t rows, size_t cols, const char ord,
                int k, int max_iterations, int init_from_data,
-               int init_data, T threshold,
+               T threshold,
                const T *srcdata, void **pred_centroids, void **pred_labels);
 
 template<typename T>
@@ -211,7 +210,7 @@ int pick_point_idx_weighted(
       data_val *= data->data()[i];
     }
 
-    T prob_x = ((2 * data_val) / weighted_sum);
+    T prob_x = (data_val / weighted_sum);
 
     if(prob_x > prob_threshold) {
       break;
@@ -262,6 +261,7 @@ void add_centroid(int idx, int cols,
  */
 template<typename T>
 void kmeans_plus_plus(
+    int verbose,
     int seed,
     thrust::host_vector<T> data,
     thrust::host_vector<T> weights,
@@ -277,16 +277,20 @@ void kmeans_plus_plus(
 
   add_centroid(centroid_idx, cols, data, weights, centroids);
 
-  std::vector<T> best_pairwise_distances(data.size());
+  log_verbose(verbose, "KMeans++ - Allocating memory %d | %d | %d", data.size(), cols, centroids.size());
+
+  std::vector<T> best_pairwise_distances(data.size() / cols); // one for each row in data
   std::vector<T> std_data(data.begin(), data.end());
   std::vector<T> std_centroids(centroids.begin(), centroids.end());
 
   compute_distances(std_data,
                     std_centroids,
                     best_pairwise_distances,
-                    data.size(), cols, 1);
+                    data.size() / cols, cols, 1);
 
   for (int iter = 0; iter < k - 1; iter++) {
+    log_verbose(verbose, "KMeans++ - Iteraton %d/%d.", iter, k-1);
+
     centroid_idx = pick_point_idx_weighted(
         seed,
         &best_pairwise_distances,
@@ -301,12 +305,13 @@ void kmeans_plus_plus(
     std_data = std::vector<T>(data.begin(), data.end());
     std_centroids = std::vector<T>(centroids.begin() + cols * (iter + 1), centroids.end());
 
-    std::vector<T> curr_pairwise_distances(data.size());
+    int centroids_nr = std_centroids.size() / cols;
+    std::vector<T> curr_pairwise_distances( centroids_nr * (std_data.size() / cols));
 
     compute_distances(std_data,
                       std_centroids,
                       curr_pairwise_distances,
-                      std_data.size(), cols, 1);
+                      std_data.size() / cols, cols, 1);
 
     for (int i = 0; i < curr_pairwise_distances.size(); i++) {
       best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
@@ -356,6 +361,8 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
   int first_center_idx = first_center % rows_per_gpu;
   int first_center_gpu = first_center / rows_per_gpu;
 
+  log_verbose(verbose, "KMeans|| - Initial centroid %d on GPU %d.", first_center_idx, first_center_gpu);
+
   // Copies the initial centroid to potential centroids vector. That vector will store all potential centroids found
   // in the previous iteration.
   thrust::host_vector<T> h_potential_centroids(cols);
@@ -377,11 +384,14 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     CUDACHECK(cudaSetDevice(q));
     d_min_costs[q].resize(rows_per_gpu);
     thrust::fill(d_min_costs[q].begin(), d_min_costs[q].end(), std::numeric_limits<T>::max());
-    CUDACHECK(cudaDeviceSynchronize());
   }
 
-  // The original white paper claims 5 should be enough
-  for (int counter = 0; counter < 5; counter++) {
+  double t0 = timer<double>();
+
+  // The original white paper claims 8 should be enough
+  int max_iter = std::min(8, (int)(2 + log(k)) );
+  for (int counter = 0; counter < max_iter; counter++) {
+    log_verbose(verbose, "KMeans|| - Iteration %d.", counter);
     T total_min_cost = 0.0;
 
     int new_potential_centroids = 0;
@@ -392,31 +402,55 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
 
       int potential_k_rows = d_potential_centroids.size() / cols;
 
-      thrust::device_vector<T> d_all_costs(rows_per_gpu * potential_k_rows);
-
       // Compute all the costs to each potential centroid from previous iteration
       thrust::device_vector<T> centroid_dots(potential_k_rows);
 
-      kmeans::detail::calculate_distances(verbose, 0, rows_per_gpu, cols, potential_k_rows,
-                                          *data[i],
-                                          d_potential_centroids,
-                                          *data_dots[i],
-                                          centroid_dots,
-                                          d_all_costs);
+      // Get info about available memory
+      // This part of the algo can be very memory consuming
+      // We might need to batch it
+      // TODO not using batch_calculate_distances because nvcc is complaining about using the __device__
+      // lambda inside a lambda
+      size_t free_byte;
+      size_t total_byte;
+      CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
+      free_byte *= 0.8;
 
-      // Find the closest potential center cost for each row
-      auto min_cost_counter = thrust::make_counting_iterator(0);
-      auto all_costs_ptr = thrust::raw_pointer_cast(d_all_costs.data());
-      auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data());
-      T max = std::numeric_limits<T>::max();
-      thrust::for_each(min_cost_counter, min_cost_counter + rows_per_gpu, [=]__device__(int idx){
-        T best = max;
-        for (int j = 0; j < potential_k_rows; j++) {
-          best = min(best, std::abs(all_costs_ptr[j * rows_per_gpu + idx]));
+      double required_byte = rows_per_gpu * potential_k_rows * sizeof(T);
+
+      int runs = std::ceil( required_byte / free_byte );
+      int offset = 0;
+      for(int run = 0; run < runs; run++) {
+        int rows_per_run = free_byte / (potential_k_rows * sizeof(T));
+
+        if( run + 1 == runs ) {
+          rows_per_run = rows_per_gpu % rows_per_run;
         }
 
-        min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
-      });
+        thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
+
+        kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, potential_k_rows,
+                                            *data[i], offset,
+                                            d_potential_centroids,
+                                            *data_dots[i],
+                                            centroid_dots,
+                                            d_all_costs);
+
+        // Find the closest potential center cost for each row
+        auto min_cost_counter = thrust::make_counting_iterator(0);
+        auto all_costs_ptr = thrust::raw_pointer_cast(d_all_costs.data());
+        auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data() + offset);
+        T max = std::numeric_limits<T>::max();
+        thrust::for_each(min_cost_counter, min_cost_counter + rows_per_run, [=]
+        __device__(int idx){
+          T best = max;
+          for (int j = 0; j < potential_k_rows; j++) {
+            best = min(best, std::abs(all_costs_ptr[j * rows_per_run + idx]));
+          }
+
+          min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
+        });
+        offset += rows_per_run;
+      }
 
       CUDACHECK(cudaDeviceSynchronize());
 
@@ -425,7 +459,6 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
           d_min_costs[i].end()
       );
 
-      CUDACHECK(cudaDeviceSynchronize());
     }
 
     if(total_min_cost == (T) 0.0) {
@@ -450,13 +483,13 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
             rng.discard(idx + device * rows_per_gpu);
             T prob_threshold = (T) dist(rng);
 
-            T prob_x = ((2 * k * min_costs_ptr[idx]) / total_min_cost);
+            T prob_x = (( 2.0 * k * min_costs_ptr[idx]) / total_min_cost);
 
             return prob_x > prob_threshold;
           }
       );
 
-      CUDACHECK(cudaDeviceSynchronize());
+      log_debug(verbose, "KMeans|| - Potential centroids on GPU %d = %d.", i, pot_cent_num);
 
       if (pot_cent_num > 0) {
         copy_from_gpus.insert(i);
@@ -464,14 +497,9 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
         // Copy all potential cluster centers
         thrust::device_vector<T> d_new_potential_centroids(pot_cent_num * cols);
 
-        thrust::device_vector<int> range(rows_per_gpu * cols);
-        thrust::sequence(range.begin(),
-                         range.end());
-
-        CUDACHECK(cudaDeviceSynchronize());
-
+        auto range = thrust::make_counting_iterator(0);
         thrust::copy_if(
-            (*data[i]).begin(), (*data[i]).end(), range.begin(),
+            (*data[i]).begin(), (*data[i]).end(), range,
             d_new_potential_centroids.begin(), [=] __device__(int idx){
               int row = idx / cols;
               thrust::default_random_engine rng(seed);
@@ -481,12 +509,10 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
               rng.discard(row + device * rows_per_gpu);
               T prob_threshold = (T) dist(rng);
 
-              T prob_x = ((2 * k * min_costs_ptr[row]) / total_min_cost);
+              T prob_x = (( 2.0 * k * min_costs_ptr[row]) / total_min_cost);
 
               return prob_x > prob_threshold;
         });
-
-        CUDACHECK(cudaDeviceSynchronize());
 
         h_potential_centroids_per_gpu[i].clear();
         h_potential_centroids_per_gpu[i].resize(d_new_potential_centroids.size());
@@ -499,10 +525,11 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
             h_potential_centroids_per_gpu[i].begin()
         );
 
-        CUDACHECK(cudaDeviceSynchronize());
       }
 
     }
+
+    log_verbose(verbose, "KMeans|| - New potential centroids %d.", new_potential_centroids);
 
     // Gather potential cluster centers from all GPUs
     if (new_potential_centroids > 0) {
@@ -532,6 +559,8 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     }
   }
 
+  double timeloop = static_cast<double>(timer<double>() - t0);
+
   thrust::host_vector<T> final_centroids(0);
   int potential_centroids_num = h_all_potential_centroids.size() / cols;
 
@@ -549,6 +578,8 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     // it should converge very fast and is all done on the CPU.
     thrust::host_vector<T> weights(potential_centroids_num);
 
+    double tc0 = timer<double>();
+
     // Weights correspond to the number of data points assigned to each potential cluster center
     count_pts_per_centroid(
         verbose, num_gpu,
@@ -558,7 +589,12 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
         weights
     );
 
+    double timecount = static_cast<double>(timer<double>() - tc0);
+
+    double tkpp = timer<double>();
+
     kmeans_plus_plus(
+        verbose,
         seed,
         h_all_potential_centroids,
         weights,
@@ -566,6 +602,9 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
         final_centroids
     );
 
+    double timekpp = static_cast<double>(timer<double>() - tkpp);
+
+    log_verbose(verbose, "KMeans|| - Time loop: %g Time count: %g Time kpp: %g.", timeloop, timecount, timekpp);
   }
 
   return final_centroids;
@@ -625,7 +664,7 @@ template<typename T>
 int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
                size_t rows, size_t cols, const char ord,
                int k, int max_iterations, int init_from_data,
-               int init_data, T threshold,
+               T threshold,
                const T *srcdata, void **pred_centroids, void **pred_labels) {
   // init random seed if use the C function rand()
   if (seed >= 0) {
@@ -648,27 +687,22 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   thrust::device_vector<T> *data[n_gpu];
   thrust::device_vector<int> *labels[n_gpu];
   thrust::device_vector<T> *d_centroids[n_gpu];
-  thrust::device_vector<T> *distances[n_gpu];
   thrust::device_vector<T> *data_dots[n_gpu];
 
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
-    labels[q] = new thrust::device_vector<int>(rows / n_gpu);
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
     data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
 
     kmeans::detail::labels_init();
   }
 
-  if (verbose >= H2O4GPU_LOG_INFO) {
-    std::cout << "Number of points: " << rows << std::endl;
-    std::cout << "Number of dimensions: " << cols << std::endl;
-    std::cout << "Number of clusters: " << k << std::endl;
-    std::cout << "Max. number of iterations: " << max_iterations << std::endl;
-    std::cout << "Stopping threshold: " << threshold << std::endl;
-  }
+  log_debug(verbose, "Number of points: %d", rows);
+  log_debug(verbose, "Number of dimensions: %d", cols);
+  log_debug(verbose, "Number of clusters: %d", k);
+  log_debug(verbose, "Max. number of iterations: %d", max_iterations);
+  log_debug(verbose, "Stopping threshold: %d", threshold);
 
   std::vector<int> v(rows);
   std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., rows.
@@ -684,13 +718,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     CUDACHECK(cudaSetDevice(dList[q]));
     if (verbose) { std::cout << "Copying data to device: " << dList[q] << std::endl; }
 
-    if (init_data == 0) { // random (for testing)
-      random_data<T>(verbose, *data[q], rows / n_gpu, cols);
-    } else if (init_data == 1) { // shard by row
-      copy_data(verbose, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
-    } else { // shard by randomly (without replacement) selected by row
-      copy_data_shuffled(verbose, v, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
-    }
+    copy_data(verbose, ord, *data[q], &srcdata[0], q, rows, rows / n_gpu, cols);
 
     // Pre-compute the data matrix norms
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *data[q], *data_dots[q]);
@@ -751,34 +779,27 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     }
 
   }
-  
+
   for (int q = 0; q < n_gpu; q++) {
     CUDACHECK(cudaSetDevice(dList[q]));
     labels[q] = new thrust::device_vector<int>(rows / n_gpu);
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
   }
 
   double timetransfer = static_cast<double>(timer<double>() - t0t);
 
   double t0 = timer<double>();
 
-  // TODO pass data_dots
-  int status = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, distances, data_dots,
-                                 dList, n_gpu, max_iterations, threshold, true);
+  int iter = kmeans::kmeans<T>(verbose, &flaggpu, rows, cols, k, data, labels, d_centroids, data_dots,
+                    dList, n_gpu, max_iterations, threshold, true);
 
-  if (status) {
-    fprintf(stderr, "KMeans status was %d\n", status);
-    fflush(stderr);
-    return (status);
+  if (iter < 0) {
+    log_error(verbose, "KMeans algorithm failed.");
+    return iter;
   }
 
   double timefit = static_cast<double>(timer<double>() - t0);
 
-  if (verbose) {
-    std::cout << "  Time fit: " << timefit << " s" << std::endl;
-    fprintf(stderr, "Timetransfer: %g Timefit: %g\n", timetransfer, timefit);
-    fflush(stderr);
-  }
+  double t1 = timer<double>();
 
   // copy result of centroids (sitting entirely on each device) back to host
   thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
@@ -787,26 +808,11 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
   *pred_centroids = ctr->data();
 
   // copy assigned labels
-  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
+  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(rows);
+  int offset = 0;
   for (int q = 0; q < n_gpu; q++) {
-    h_labels->insert(h_labels->end(), labels[q]->begin(), labels[q]->end());
-  }
-
-  // The initial dataset was shuffled, we need to reshuffle the labels accordingly
-  // This also reshuffles the initial permutation scheme v
-  if (init_data > 1) {
-    for (int i = 0; i < rows; i++) {
-      while (v[i] != i) {
-        int tmpIdx = v[v[i]];
-        int tmpLabel = h_labels->data()[v[i]];
-
-        h_labels->data()[v[i]] = h_labels->data()[i];
-        v[v[i]] = v[i];
-
-        v[i] = tmpIdx;
-        h_labels->data()[i] = tmpLabel;
-      }
-    }
+    h_labels->insert(h_labels->begin() + offset, labels[q]->begin(), labels[q]->end());
+    offset += labels[q]->size();
   }
 
   *pred_labels = h_labels->data();
@@ -828,9 +834,16 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     delete (data[q]);
     delete (labels[q]);
     delete (d_centroids[q]);
-    delete (distances[q]);
     delete (data_dots[q]);
     kmeans::detail::labels_close();
+  }
+
+  double timecleanup = static_cast<double>(timer<double>() - t1);
+
+  if (verbose) {
+    std::cout << "  Time fit: " << timefit << " s" << std::endl;
+    fprintf(stderr, "Timetransfer: %g Timefit: %g Timecleanup: %g\n", timetransfer, timefit, timecleanup);
+    fflush(stderr);
   }
 
   return 0;
@@ -856,22 +869,17 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
   std::vector<int> dList = kmeans_init(verbose, &n_gpu, n_gputry, gpu_idtry, rows);
 
   thrust::device_vector<T> *d_data[n_gpu];
-  thrust::device_vector<int> *d_labels[n_gpu];
   thrust::device_vector<T> *d_centroids[n_gpu];
-  thrust::device_vector<T> *pairwise_distances[n_gpu];
   thrust::device_vector<T> *data_dots[n_gpu];
   thrust::device_vector<T> *centroid_dots[n_gpu];
-  thrust::device_vector<T> *distances[n_gpu];
-  int *d_changes[n_gpu];
+  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
 
   for (int q = 0; q < n_gpu; q++) {
-    // TODO everything from here till "distances[q]" is exactly the same as in transform
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
 
     data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
     centroid_dots[q] = new thrust::device_vector<T>(k);
-    pairwise_distances[q] = new thrust::device_vector<T>(rows / n_gpu * k);
 
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
     d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
@@ -882,36 +890,27 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
 
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
-    kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
-                                        *d_data[q], *d_centroids[q], *data_dots[q],
-                                        *centroid_dots[q], *pairwise_distances[q]);
+    thrust::device_vector<int> d_labels(rows / n_gpu);
 
-    distances[q] = new thrust::device_vector<T>(rows / n_gpu);
-    d_labels[q] = new thrust::device_vector<int>(rows / n_gpu);
-    cudaMalloc(&d_changes[q], sizeof(int));
+    kmeans::detail::batch_calculate_distances(verbose, q, rows / n_gpu, cols, k,
+                                      *d_data[q], *d_centroids[q], *data_dots[q], *centroid_dots[q],
+                                      [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                        kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
+                                      }
+    );
 
-    kmeans::detail::relabel(rows / n_gpu, k, *pairwise_distances[q], *d_labels[q], *distances[q], d_changes[q]);
-  }
-
-  // Move the resulting labels into host memory from all devices
-  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
-  for (int q = 0; q < n_gpu; q++) {
-    h_labels->insert(h_labels->end(), d_labels[q]->begin(), d_labels[q]->end());
+    h_labels->insert(h_labels->end(), d_labels.begin(), d_labels.end());
   }
 
   *pred_labels = h_labels->data();
 
   for (int q = 0; q < n_gpu; q++) {
     safe_cuda(cudaSetDevice(dList[q]));
-    safe_cuda(cudaFree(d_changes[q]));
     kmeans::detail::labels_close();
-    delete (d_labels[q]);
-    delete (pairwise_distances[q]);
     delete (data_dots[q]);
     delete (centroid_dots[q]);
     delete (d_centroids[q]);
     delete (d_data[q]);
-    delete (distances[q]);
   }
 
   return 0;
@@ -960,8 +959,9 @@ int kmeans_transform(int verbose,
 
     kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q], *data_dots[q]);
 
+    // TODO batch this
     kmeans::detail::calculate_distances(verbose, q, rows / n_gpu, cols, k,
-                                        *d_data[q], *d_centroids[q], *data_dots[q],
+                                        *d_data[q], 0, *d_centroids[q], *data_dots[q],
                                         *centroid_dots[q], *d_pairwise_distances[q]);
   }
 
@@ -1000,12 +1000,12 @@ int kmeans_transform(int verbose,
 
 template<typename T>
 int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows, size_t cols,
-                  const char ord, int k, int max_iterations, int init_from_data, int init_data,
+                  const char ord, int k, int max_iterations, int init_from_data,
                   T threshold, const T *srcdata, const T *centroids,
                   void **pred_centroids, void **pred_labels) {
   if (dopredict == 0) {
     return kmeans_fit(verbose, seed, gpu_idtry, n_gputry, rows, cols,
-                      ord, k, max_iterations, init_from_data, init_data, threshold,
+                      ord, k, max_iterations, init_from_data, threshold,
                       srcdata, pred_centroids, pred_labels);
   } else {
     return kmeans_predict(verbose, gpu_idtry, n_gputry, rows, cols,
@@ -1017,26 +1017,26 @@ int makePtr_dense(int dopredict, int verbose, int seed, int gpu_idtry, int n_gpu
 template int
 makePtr_dense<float>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                      const char ord, int k, int max_iterations, int init_from_data,
-                     int init_data, float threshold, const float *srcdata,
+                     float threshold, const float *srcdata,
                      const float *centroids, void **pred_centroids, void **pred_labels);
 
 template int
 makePtr_dense<double>(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data,
-                      int init_data, double threshold, const double *srcdata,
+                      double threshold, const double *srcdata,
                       const double *centroids, void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<float>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                size_t rows, size_t cols,
                                const char ord, int k, int max_iterations,
-                               int init_from_data, int init_data, float threshold,
+                               int init_from_data, float threshold,
                                const float *srcdata,
                                void **pred_centroids, void **pred_labels);
 
 template int kmeans_fit<double>(int verbose, int seed, int gpu_idtry, int n_gputry,
                                 size_t rows, size_t cols,
                                 const char ord, int k, int max_iterations,
-                                int init_from_data, int init_data, double threshold,
+                                int init_from_data, double threshold,
                                 const double *srcdata,
                                 void **pred_centroids, void **pred_labels);
 
@@ -1090,19 +1090,19 @@ extern "C" {
 // Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                           const char ord, int k, int max_iterations, int init_from_data,
-                          int init_data, float threshold, const float *srcdata,
+                          float threshold, const float *srcdata,
                           const float *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<float>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
-                                             max_iterations, init_from_data, init_data, threshold,
+                                             max_iterations, init_from_data, threshold,
                                              srcdata, centroids, pred_centroids, pred_labels);
 }
 
 int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t mTrain, size_t n,
                            const char ord, int k, int max_iterations, int init_from_data,
-                           int init_data, double threshold, const double *srcdata,
+                           double threshold, const double *srcdata,
                            const double *centroids, void **pred_centroids, void **pred_labels) {
   return h2o4gpukmeans::makePtr_dense<double>(dopredict, verbose, seed, gpu_id, n_gpu, mTrain, n, ord, k,
-                                              max_iterations, init_from_data, init_data, threshold,
+                                              max_iterations, init_from_data, threshold,
                                               srcdata, centroids, pred_centroids, pred_labels);
 }
 

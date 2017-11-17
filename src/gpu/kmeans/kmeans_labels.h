@@ -205,7 +205,7 @@ namespace kmeans {
 
 
     template<typename T>
-      void make_all_dots(int n, int k, thrust::device_vector<T>& data_dots,
+      void make_all_dots(int n, int k, int offset, thrust::device_vector<T>& data_dots,
           thrust::device_vector<T>& centroid_dots,
           thrust::device_vector<T>& dots) {
         int dev_num;
@@ -218,7 +218,7 @@ namespace kmeans {
         all_dots<<<
           dim3(GRID_SIZEX,GRID_SIZEY),
           dim3(BLOCK_THREADSX, BLOCK_THREADSY), 0,
-          cuda_stream[dev_num]>>>(n, k, thrust::raw_pointer_cast(data_dots.data()),
+          cuda_stream[dev_num]>>>(n, k, thrust::raw_pointer_cast(data_dots.data() + offset),
               thrust::raw_pointer_cast(centroid_dots.data()),
               thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
@@ -229,21 +229,83 @@ namespace kmeans {
 
     template<typename T>
       void calculate_distances(int verbose, int q, int n, int d, int k,
-          thrust::device_vector<T>& data,
-          thrust::device_vector<T>& centroids,
-          thrust::device_vector<T>& data_dots,
-          thrust::device_vector<T>& centroid_dots,
-          thrust::device_vector<T>& pairwise_distances);
+                               thrust::device_vector<T>& data,
+                               int data_offset,
+                               thrust::device_vector<T>& centroids,
+                               thrust::device_vector<T>& data_dots,
+                               thrust::device_vector<T>& centroid_dots,
+                               thrust::device_vector<T>& pairwise_distances);
+
+    template<typename T, typename F>
+    void batch_calculate_distances(int verbose, int q, int n, int d, int k,
+                                           thrust::device_vector<T> &data,
+                                           thrust::device_vector<T> &centroids,
+                                           thrust::device_vector<T> &data_dots,
+                                           thrust::device_vector<T> &centroid_dots,
+                                           F functor) {
+      // Get info about available memory
+      // This part of the algo can be very memory consuming
+      // We might need to batch it
+      size_t free_byte;
+      size_t total_byte;
+      CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
+      free_byte *= 0.8;
+
+      double required_byte = n * k * sizeof(T);
+
+      int runs = std::ceil( required_byte / free_byte );
+
+      log_verbose(verbose,
+                  "Batch calculate distance - Rows %ld | K %ld | Data size %d",
+                  n, k, sizeof(T)
+      );
+
+      log_verbose(verbose,
+                  "Batch calculate distance - Free memory %ld | Required memory %ld | Runs %d",
+                  free_byte, required_byte, runs + 1
+      );
+
+      int offset = 0;
+      for(int run = 0; run < runs; run++) {
+        int rows_per_run = free_byte / (k * sizeof(T));
+
+        if( run + 1 == runs ) {
+          rows_per_run = n % rows_per_run;
+        }
+
+        thrust::device_vector<T> pairwise_distances(rows_per_run * k);
+
+        log_verbose(verbose,
+                    "Batch calculate distance - Allocated"
+        );
+
+        kmeans::detail::calculate_distances(verbose, 0, rows_per_run, d, k,
+                                            data, offset,
+                                            centroids,
+                                            data_dots,
+                                            centroid_dots,
+                                            pairwise_distances);
+
+        log_verbose(verbose,
+                    "Batch calculate distance - Distances calculated"
+        );
+
+        functor(rows_per_run, offset, pairwise_distances);
+
+        log_verbose(verbose,
+                    "Batch calculate distance - Functor ran"
+        );
+
+        offset += rows_per_run;
+      }
+    }
 
     template<typename T>
-      __global__ void make_new_labels(int n, int k, T* pairwise_distances,
-          int* labels, int* changes,
-          T* distances) {
+      __global__ void make_new_labels(int n, int k, T* pairwise_distances, int* labels) {
       T min_distance = FLT_MAX; //std::numeric_limits<T>::max(); // might be ok TODO FIXME
-        T min_idx = -1;
+      T min_idx = -1;
         int global_id = threadIdx.x + blockIdx.x * blockDim.x;
         if (global_id < n) {
-          int old_label = labels[global_id];
           for(int c = 0; c < k; c++) {
             T distance = pairwise_distances[c * n + global_id];
             if (distance < min_distance) {
@@ -252,31 +314,23 @@ namespace kmeans {
             }
           }
           labels[global_id] = min_idx;
-          distances[global_id] = min_distance;
-          if (old_label != min_idx) {
-            atomicAdd(changes, 1);
-          }
         }
       }
 
 
     template<typename T>
       void relabel(int n, int k,
-          thrust::device_vector<T>& pairwise_distances,
-          thrust::device_vector<int>& labels,
-          thrust::device_vector<T>& distances,
-          int *d_changes) {
+                   thrust::device_vector<T>& pairwise_distances,
+                   thrust::device_vector<int>& labels,
+                   int offset) {
         int dev_num;
         safe_cuda(cudaGetDevice(&dev_num));
-        safe_cuda(cudaMemsetAsync(d_changes, 0, sizeof(int), cuda_stream[dev_num]));
 #define MAX_BLOCK_THREADS2 256
         const int GRID_SIZE=(n-1)/MAX_BLOCK_THREADS2+1;
         make_new_labels<<<GRID_SIZE, MAX_BLOCK_THREADS2,0,cuda_stream[dev_num]>>>(
             n, k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
-            thrust::raw_pointer_cast(labels.data()),
-            d_changes,
-            thrust::raw_pointer_cast(distances.data()));
+            thrust::raw_pointer_cast(labels.data() + offset));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
         gpuErrchk( cudaDeviceSynchronize() );

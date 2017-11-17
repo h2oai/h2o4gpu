@@ -102,12 +102,6 @@ class KMeansH2O(object):
         < 0 means all possible GPUs on the machine.
         0 means no GPUs, run on CPU.
 
-    :param init_data : "random", "selectstrat" or
-                "randomselect", optional, default: "randomselect"
-                "Random": runs the algorithm on a completely random data set
-                "Selectstrat": uses data in given order
-                "Randomselect": first shuffles the data before using it
-
     :param do_checks : int, optional, default: 1
         If set to 0 GPU error check will not be performed.
 
@@ -147,7 +141,6 @@ class KMeansH2O(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data='randomselect',
             do_checks=1):
 
         # fix-up tol in case input was numpy
@@ -171,7 +164,6 @@ class KMeansH2O(object):
         (self.n_gpus, self.devices) = device_count(n_gpus)
 
         self._max_iter = max_iter
-        self.init_data = init_data
         self.tol = tol
         self._did_sklearn_fit = 0
         self.verbose = verbose
@@ -359,7 +351,6 @@ class KMeansH2O(object):
         _check_data_content(self.do_checks, "X", X_np)
         X_np, c_data, _ = self._to_cdata(X_np)
         c_init = 0
-        c_init_data = 0
 
         _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
         c_res = c_void_p(0)
@@ -376,7 +367,7 @@ class KMeansH2O(object):
         c_kmeans(1, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                  rows, cols,
                  c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                 c_init_data, self.tol, c_data, c_centroids, None,
+                 self.tol, c_data, c_centroids, None,
                  pointer(c_res))
 
         preds = np.fromiter(
@@ -492,20 +483,6 @@ class KMeansH2O(object):
         else:
             c_init = 0
 
-        if self.init_data == "random":
-            c_init_data = 0
-        elif self.init_data == "selectstrat":
-            c_init_data = 1
-        elif self.init_data == "randomselect":
-            c_init_data = 2
-        else:
-            print("""
-                Unknown init_data "%s", should be
-                "random", "selectstrat" or "randomselect".
-                """ % self.init_data)
-            sys.stdout.flush()
-            return
-
         pred_centers = c_void_p(0)
         pred_labels = c_void_p(0)
 
@@ -519,14 +496,14 @@ class KMeansH2O(object):
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, c_data_ptr, None,
+                self.tol, c_data_ptr, None,
                 pointer(pred_centers), pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
                 rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                c_init_data, self.tol, c_data_ptr, None,
+                self.tol, c_data_ptr, None,
                 pointer(pred_centers), pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
@@ -545,8 +522,10 @@ class KMeansH2O(object):
 
         self.cluster_centers_ = centroids
 
-        labels = np.fromiter(
-            cast(pred_labels, POINTER(c_int)), dtype=np.int32, count=rows)
+        labels = np.ctypeslib.as_array(
+            cast(pred_labels, POINTER(c_int)),
+            (rows,)
+        )
         self.labels_ = np.reshape(labels, rows)
 
         return self.cluster_centers_, self.labels_
@@ -676,7 +655,6 @@ class KMeans(object):
             # Beyond sklearn (with optimal defaults)
             gpu_id=0,
             n_gpus=-1,
-            init_data='randomselect',
             do_checks=1,
             backend='auto'):
 
@@ -751,7 +729,6 @@ class KMeans(object):
             # H2O4GPU
             gpu_id=gpu_id,
             n_gpus=n_gpus,
-            init_data=init_data,
             do_checks=do_checks)
         # pylint: disable=protected-access
         if self.do_sklearn or self.model_h2o4gpu._load_lib() is None:

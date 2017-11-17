@@ -52,7 +52,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # n_clusters
             c_int,  # max_iter
             c_int,  # init_from_data
-            c_int,  # init_data
             c_float,  # tol
             c_float_p,  # data
             c_float_p,  # centers
@@ -73,7 +72,6 @@ def _load_kmeans_lib(lib_path):
             c_int,  # n_clusters
             c_int,  # max_iter
             c_int,  # init_from_data
-            c_int,  # init_data
             c_double,  # tol
             c_double_p,  # data
             c_double_p,  # centers
