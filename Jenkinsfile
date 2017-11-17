@@ -474,10 +474,9 @@ void publishToS3(String extratag, String dist) {
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
     def localArtifact = "src/interface_py/${dist}/${artifact}"
 
-    // always upload and delete for testing
+    // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
-    sh "s3cmd del ${bucket}${localArtifact}"
 
     if (isRelease()) {
         bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
@@ -499,10 +498,9 @@ void publishRuntimeToS3(String extratag) {
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
     def localArtifact = "${artifact}"
 
-    // always upload and delete for testing
+    // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
-    sh "s3cmd del ${bucket}${localArtifact}"
 
     if (isRelease()) {
         bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
