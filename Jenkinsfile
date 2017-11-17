@@ -473,21 +473,22 @@ void publishToS3(String extratag, String dist) {
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
     def localArtifact = "src/interface_py/${dist}/${artifact}"
+
+    // always upload and delete for testing
+    def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    sh "s3cmd put ${localArtifact} ${bucket}"
+    sh "s3cmd del ${bucket}${localArtifact}"
+
     if (isRelease()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
-    //if (!(isRelease() || isBleedingEdge())) {
-    // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-    sh "s3cmd put ${localArtifact} ${bucket}"
-    //}
 }
 
 void publishRuntimeToS3(String extratag) {
@@ -497,21 +498,22 @@ void publishRuntimeToS3(String extratag) {
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
     def localArtifact = "${artifact}"
+
+    // always upload and delete for testing
+    def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    sh "s3cmd put ${localArtifact} ${bucket}"
+    sh "s3cmd del ${bucket}${localArtifact}"
+
     if (isRelease()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        def bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
-    //if (!(isRelease() || isBleedingEdge())) {
-    // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-    sh "s3cmd put ${localArtifact} ${bucket}"
-    //}
 }
 
 void runTests(String dockerimage, String extratag, String dist, String target) {
@@ -571,12 +573,13 @@ void buildRuntime(String dockerimage, String extratag) {
     //    def buckettype = "snapshots"
     //}
     def buckettype = "snapshots"
-    def versionTag = buildInfo.get().getVersion()
+    def versionTag = buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+    def fullVersionTag = buildInfo.get().getVersion()
 
     // Get source code
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh """
-            nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
+            nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${fullVersionTag}${extratag}/h2o4gpu-${fullVersionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
             nvidia-docker exec ${CONTAINER_NAME} rm -rf data
             nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -589,7 +592,7 @@ void buildRuntime(String dockerimage, String extratag) {
             nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
             nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
             nvidia-docker stop ${CONTAINER_NAME}
-            nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${versionTag}${extratag}-runtime.tar.gz
+            nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.gz
           """
     }
 }
