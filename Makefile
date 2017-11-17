@@ -408,6 +408,14 @@ dotestfast:
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
+dotestfast_nonccl:
+	rm -rf ./tmp/
+	mkdir -p ./tmp/
+	# can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests_open/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+
 dotestsmall:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null

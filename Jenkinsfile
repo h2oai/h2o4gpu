@@ -198,7 +198,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl2'
-                    runTests("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2", "dotestfast")
+                    runTests("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2", "dotestfast_nonccl")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -392,7 +392,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl4'
-                    runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast")
+                    runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
