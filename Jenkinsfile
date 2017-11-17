@@ -171,7 +171,7 @@ pipeline {
                             }
                             if (!(isRelease() || isBleedingEdge())) {
                                 // always upload for testing
-                                def bucket = "s3://artifacts.h2o.ai/releases/snapshots_other/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                                def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
                                 sh "s3cmd put ${localArtifact} ${bucket}"
                                 sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                             }
@@ -216,10 +216,20 @@ pipeline {
                     def extratag = "-${tag}-${cudatag}"
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     CONTAINER_NAME = "h2o4gpu-${versionTag}${extratag}-runtime-${SAFE_CHANGE_ID}-${env.BUILD_ID}"
+
+                    if (isRelease()) {
+                        def buckettype = "releases/stable"
+                    } else if (isBleedingEdge()) {
+                        def buckettype = "releases/bleeding-edge"
+                    }
+                    else {
+                        def buckettype = "snapshots/bleeding-edge"
+                    }
+
                     // Get source code
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         sh """
-                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl .
+                                nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${versionTag}${extratag}/h2o4gpu-${versionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
                                 nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
                                 nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                                 nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -258,7 +268,7 @@ pipeline {
                         }
                         if (!(isRelease() || isBleedingEdge())) {
                             // always upload for testing
-                            def bucket = "s3://artifacts.h2o.ai/releases/snapshots_other/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+                            def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
                             sh "s3cmd put ${localArtifact} ${bucket}"
                             sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
                         }
