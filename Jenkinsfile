@@ -111,7 +111,7 @@ pipeline {
 
 
 
-        stage("Full Test on Linux -nccl-cuda8) {
+        stage("Full Test on Linux -nccl-cuda8") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -153,7 +153,7 @@ pipeline {
             }
         }
 
-        stage("Pylint on Linux -nccl-cuda8) {
+        stage("Pylint on Linux -nccl-cuda8") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -185,7 +185,7 @@ pipeline {
         }
 
 
-        stage("Publish to S3 -nccl-cuda8) {
+        stage("Publish to S3 -nccl-cuda8") {
             agent {
                 label "linux"
             }
@@ -216,7 +216,7 @@ pipeline {
 
 
 
-        stage("Build Runtime Docker -nccl-cuda8) {
+        stage("Build Runtime Docker -nccl-cuda8") {
             agent {
                 label "nvidia-docker && (mr-dl11||mr-dl16||mr-dl10)"
             }
@@ -278,7 +278,7 @@ pipeline {
             }
         }
 
-        stage("Publish Runtime Docker for 0 to S3") {
+        stage("Publish Runtime Docker for -nccl-cuda8 to S3") {
             agent {
                 label "linux"
             }
