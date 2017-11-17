@@ -96,10 +96,14 @@ pipeline {
                             } bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${
                                 env.MAKE_OPTS
                             } AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} fullinstalljenkins${extratag} ; rm -rf build/VERSION.txt ; make build/VERSION.txt'
+                                nvidia-docker save opsh2oai/h2o4gpu-${extratag}-build > h2o4gpu-${extratag}-build.tar
+                                gzip h2o4gpu-${extratag}-build.tar
                                 """
                             stash includes: "src/interface_py/${dist}/*.whl", name: 'linux_whl'
                             stash includes: 'build/VERSION.txt', name: 'version_info'
+                            stash includes: "h2o4gpu-${extratag}-build.tar.gz", name: "docker-${extratag}-build"
                             // Archive artifacts
+                            arch "h2o4gpu-${extratag}-build.tar.gz"
                             arch "src/interface_py/${dist}/*.whl"
                         } finally {
                             sh "nvidia-docker stop ${CONTAINER_NAME}"
@@ -121,9 +125,8 @@ pipeline {
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
-                unstash 'version_info'
-                unstash 'linux_whl'
                 script {
+                    unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
 
                     def tag = "nccl"
@@ -131,9 +134,10 @@ pipeline {
                     def dist = "dist"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
+                    unstash "docker-${extratag}-build"
                     try {
                         sh """
-                            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --build-arg cuda=${dockerimage} .
+                            nvidia-docker load < h2o4gpu-${extratag}-runtime.tar.gz
                             nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
                             nvidia-docker exec ${CONTAINER_NAME} rm -rf data
                             nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
@@ -285,13 +289,13 @@ pipeline {
             }
 
             steps {
-                unstash 'version_info'
                 script {
                     def tag = "nccl"
                     def cudatag = "cuda8"
                     // derived tag
                     def extratag = "-${tag}-${cudatag}"
 
+                    unstash 'version_info'
                     def versionTag = utilsLib.getCommandOutput("cat build/VERSION.txt | tr '+' '-'")
                     unstash "docker-${versionTag}${extratag}-runtime"
                 }
