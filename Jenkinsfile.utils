@@ -7,7 +7,7 @@ void publishToS3(String extratag, String dist) {
     def utilsLib = new ai.h2o.ci.Utils()
     echo "Publishing artifact to S3"
 
-    buildInfo("h2o4gpu", utils.isRelease())
+    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
@@ -34,7 +34,7 @@ void publishRuntimeToS3(String extratag) {
     def utilsLib = new ai.h2o.ci.Utils()
     echo "Publishing runtime to S3"
 
-    buildInfo("h2o4gpu", utils.isRelease())
+    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
@@ -61,7 +61,7 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
     def utilsLib = new ai.h2o.ci.Utils()
     echo "Running tests"
 
-    buildInfo("h2o4gpu", utils.isRelease())
+    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
 
     try {
@@ -119,7 +119,7 @@ void buildRuntime(String dockerimage, String extratag) {
     //    def buckettype = "snapshots"
     //}
     def buckettype = "snapshots"
-    buildInfo("h2o4gpu", utils.isRelease())
+    buildInfo("h2o4gpu", isRelease())
     def fullVersionTag = buildInfo.get().getVersion()
     def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
