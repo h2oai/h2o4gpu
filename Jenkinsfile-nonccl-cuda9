@@ -125,11 +125,6 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                script {
-                    sh """
-                        mkdir -p build ; rm -rf build/VERSION.txt
-                    """
-                }
                 unstash 'linux_whl4'
                 unstash 'version_info'
                 script {

@@ -74,9 +74,9 @@ pipeline {
 
                 script {
                     def utils = load "${pwd()}/Jenkinsfile.utils"
-                    utils.utils.buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", 'linux_whl1')
+                    utils.buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", 'linux_whl1')
 
-                    utils.buildInfo("h2o4gpu", utils.isRelease())
+                    buildInfo("h2o4gpu", utils.isRelease())
 
                     script {
                         // Load the version file content
