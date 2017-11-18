@@ -55,13 +55,13 @@ pipeline {
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
         stage("Build Wheel on Linux -nonccl-cuda9") {
-            def utils = load "Jenkinsfile.utils"
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
             }
 
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -82,11 +82,11 @@ pipeline {
         }
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9") {
-            def utils = load "Jenkinsfile.utils"
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -108,11 +108,11 @@ pipeline {
         }
 
         stage("Build/Publish Runtime Docker -nonccl-cuda9") {
-            def utils = load "Jenkinsfile.utils"
             agent {
                 label "nvidia-docker"
             }
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {

@@ -57,9 +57,8 @@ pipeline {
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
             }
-            def utils = load "Jenkinsfile.utils"
-
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -95,8 +94,8 @@ pipeline {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
-            def utils = load "Jenkinsfile.utils"
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -121,8 +120,8 @@ pipeline {
             agent {
                 label "nvidia-docker"
             }
-            def utils = load "Jenkinsfile.utils"
             steps {
+                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
