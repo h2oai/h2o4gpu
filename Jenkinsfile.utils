@@ -1,13 +1,21 @@
 #!/usr/bin/env groovy
+@Library('test-shared-library') _
 
-import ai.h2o.ci.Utils
+def utilsLib = new Utils()
+CI_VERSION_SUFFIX = utilsLib.getCiVersionSuffix()
+SAFE_CHANGE_ID = changeId()
+CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${BUILD_TYPE}"
 
+String changeId() {
+    if (env.CHANGE_ID) {
+        return "-${env.CHANGE_ID}".toString()
+    }
+    return "-master"
+}
 
 void publishToS3(String extratag, String dist) {
-    def utilsLib = new ai.h2o.ci.Utils()
     echo "Publishing artifact to S3"
 
-    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
@@ -31,10 +39,8 @@ void publishToS3(String extratag, String dist) {
 }
 
 void publishRuntimeToS3(String extratag) {
-    def utilsLib = new ai.h2o.ci.Utils()
     echo "Publishing runtime to S3"
 
-    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
@@ -58,10 +64,8 @@ void publishRuntimeToS3(String extratag) {
 }
 
 void runTests(String dockerimage, String extratag, String dist, String target) {
-    def utilsLib = new ai.h2o.ci.Utils()
     echo "Running tests"
 
-    buildInfo("h2o4gpu", isRelease())
     def versionTag = buildInfo.get().getVersion()
 
     try {
@@ -85,7 +89,6 @@ void runTests(String dockerimage, String extratag, String dist, String target) {
 }
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
-    def utilsLib = new ai.h2o.ci.Utils()
     echo "Building on linux"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -109,7 +112,6 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
 }
 
 void buildRuntime(String dockerimage, String extratag) {
-    def utilsLib = new ai.h2o.ci.Utils()
     echo "Building runtime"
     //if (isRelease()) {
     //    def buckettype = "releases/stable"
@@ -146,12 +148,10 @@ void buildRuntime(String dockerimage, String extratag) {
 }
 
 def isRelease() {
-    def utilsLib = new ai.h2o.ci.Utils()
     return env.BRANCH_NAME.startsWith("rel")
 }
 
 def isBleedingEdge() {
-    def utilsLib = new ai.h2o.ci.Utils()
     return env.BRANCH_NAME.startsWith("master")
 }
 
