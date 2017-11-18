@@ -5,6 +5,9 @@
 import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
+def h2o4gpuUtils() {
+    return load("${pwd()}/Jenkinsfile.utils")
+}
 
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
@@ -38,8 +41,6 @@ pipeline {
     }
 
     stages {
-        def h2o4gpuUtils = load "${pwd()}/Jenkinsfile.utils"
-
         /////////////////////////////////////////////////////////////////////
         //
         // -nonccl-cuda9
@@ -67,7 +68,7 @@ pipeline {
                 }
 
                 script {
-                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl4')
+                    h2o4gpuUtils().buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl4')
                 }
             }
         }
@@ -85,12 +86,12 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl4'
-                    h2o4gpuUtils.runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
+                    h2o4gpuUtils().runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3("-nonccl-cuda9" , "dist3")
+                            h2o4gpuUtils().publishToS3("-nonccl-cuda9" , "dist3")
                         }
                     }
                 }
@@ -120,12 +121,12 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nonccl-cuda9")
+                    h2o4gpuUtils().buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nonccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        h2o4gpuUtils.publishRuntimeToS3("-nonccl-cuda9")
+                        h2o4gpuUtils().publishRuntimeToS3("-nonccl-cuda9")
                     }
                 }
                 }
