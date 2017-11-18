@@ -28,8 +28,6 @@ String changeId() {
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist","dist2","dist3","dist4"]
 
-def utils = load "Jenkinsfile.utils"
-
 pipeline {
     agent none
 
@@ -59,6 +57,7 @@ pipeline {
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
             }
+            def utils = load "Jenkinsfile.utils"
 
             steps {
                 dumpInfo 'Linux Build Info'
@@ -96,6 +95,7 @@ pipeline {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
+            def utils = load "Jenkinsfile.utils"
             steps {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
@@ -121,6 +121,7 @@ pipeline {
             agent {
                 label "nvidia-docker"
             }
+            def utils = load "Jenkinsfile.utils"
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout

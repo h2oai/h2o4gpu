@@ -28,7 +28,6 @@ String changeId() {
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist","dist2","dist3","dist4"]
 
-def utils = load "Jenkinsfile.utils"
 
 pipeline {
     agent none
@@ -56,6 +55,7 @@ pipeline {
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
         stage("Build Wheel on Linux -nonccl-cuda9") {
+            def utils = load "Jenkinsfile.utils"
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
@@ -82,6 +82,7 @@ pipeline {
         }
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9") {
+            def utils = load "Jenkinsfile.utils"
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
@@ -107,6 +108,7 @@ pipeline {
         }
 
         stage("Build/Publish Runtime Docker -nonccl-cuda9") {
+            def utils = load "Jenkinsfile.utils"
             agent {
                 label "nvidia-docker"
             }
