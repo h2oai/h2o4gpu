@@ -73,7 +73,7 @@ pipeline {
                 }
 
                 script {
-                    def utils = load "Jenkinsfile.utils"
+                    def utils = load "${pwd()}/Jenkinsfile.utils"
                     utils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl3')
                 }
             }
@@ -92,13 +92,13 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl3'
-                    def utils = load "Jenkinsfile.utils"
+                    def utils = load "${pwd()}/Jenkinsfile.utils"
                     utils.runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def utils = load "Jenkinsfile.utils"
+                            def utils = load "${pwd()}/Jenkinsfile.utils"
                             utils.publishToS3("-nccl-cuda9" , "dist4")
                         }
                     }
@@ -134,13 +134,13 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def utils = load "Jenkinsfile.utils"
+                    def utils = load "${pwd()}/Jenkinsfile.utils"
                     utils.buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def utils = load "Jenkinsfile.utils"
+                        def utils = load "${pwd()}/Jenkinsfile.utils"
                         utils.publishRuntimeToS3("-nccl-cuda9")
                     }
                 }
