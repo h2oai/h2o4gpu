@@ -5,8 +5,6 @@
 import ai.h2o.ci.Utils
 
 def utilsLib = new Utils()
-BUILD_TYPE = "nonccl-cuda9"
-def h2o4gpuUtils = load "${pwd()}/Jenkinsfile.utils"
 
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
@@ -36,9 +34,11 @@ pipeline {
 
     environment {
         MAKE_OPTS = "-s CI=1" // -s: silent mode
+        BUILD_TYPE = "nonccl-cuda9"
     }
 
     stages {
+        def h2o4gpuUtils = load "${pwd()}/Jenkinsfile.utils"
 
         /////////////////////////////////////////////////////////////////////
         //

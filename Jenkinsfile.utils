@@ -4,7 +4,7 @@
 def utilsLib = new Utils()
 CI_VERSION_SUFFIX = utilsLib.getCiVersionSuffix()
 SAFE_CHANGE_ID = changeId()
-CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${BUILD_TYPE}"
+CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${env.BUILD_TYPE}"
 
 String changeId() {
     if (env.CHANGE_ID) {
