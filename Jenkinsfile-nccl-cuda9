@@ -59,7 +59,6 @@ pipeline {
                 label "nvidia-docker && (mr-dl11 || mr-dl16)"
             }
             steps {
-                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -74,6 +73,7 @@ pipeline {
                 }
 
                 script {
+                    def utils = load "Jenkinsfile.utils"
                     utils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl3')
                 }
             }
@@ -84,7 +84,6 @@ pipeline {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16)"
             }
             steps {
-                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -93,11 +92,13 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl3'
+                    def utils = load "Jenkinsfile.utils"
                     utils.runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
+                            def utils = load "Jenkinsfile.utils"
                             utils.publishToS3("-nccl-cuda9" , "dist4")
                         }
                     }
@@ -110,7 +111,6 @@ pipeline {
                 label "nvidia-docker"
             }
             steps {
-                def utils = load "Jenkinsfile.utils"
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(100 /* seconds */, 3 /* retries */) {
@@ -134,11 +134,13 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
+                    def utils = load "Jenkinsfile.utils"
                     utils.buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def utils = load "Jenkinsfile.utils"
                         utils.publishRuntimeToS3("-nccl-cuda9")
                     }
                 }
