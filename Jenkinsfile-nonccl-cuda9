@@ -28,7 +28,7 @@ String changeId() {
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist","dist2","dist3","dist4"]
 
-// MAJOR NOTE: all other nonccl-cuda8, nccl-cuda9, nonccl-cuda9 are just copies of nccl-cuda8 but with test as fast
+def utils = load "Jenkinsfile.utils"
 
 pipeline {
     agent none
