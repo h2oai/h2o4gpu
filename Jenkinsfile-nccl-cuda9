@@ -64,6 +64,7 @@ pipeline {
                 }
 
                 script {
+                    def h2o4gpuUtils = load("./Jenkinsfile.utils")
                     h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl3')
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
@@ -94,11 +95,13 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl3'
+                    def h2o4gpuUtils = load("./Jenkinsfile.utils")
                     h2o4gpuUtils.runTests("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
+                            def h2o4gpuUtils = load("./Jenkinsfile.utils")
                             h2o4gpuUtils.publishToS3("-nccl-cuda9" , "dist4")
                         }
                     }
@@ -129,11 +132,13 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
+                    def h2o4gpuUtils = load("./Jenkinsfile.utils")
                     h2o4gpuUtils.buildRuntime("nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nccl-cuda9")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
+                        def h2o4gpuUtils = load("./Jenkinsfile.utils")
                         h2o4gpuUtils.publishRuntimeToS3("-nccl-cuda9")
                     }
                 }
