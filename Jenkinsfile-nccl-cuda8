@@ -3,9 +3,7 @@
 @Library('test-shared-library') _
 
 import ai.h2o.ci.Utils
-
 def utilsLib = new Utils()
-
 
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
