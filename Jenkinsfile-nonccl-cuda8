@@ -47,7 +47,7 @@ pipeline {
         /////////////////////////////////////////////////////////////////////
         stage("Build Wheel on Linux -nonccl-cuda8") {
             agent {
-                label "nvidia-docker && (mr-dl11)"
+                label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -84,7 +84,7 @@ pipeline {
 
         stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11)"
+                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
             steps {
                 dumpInfo 'Linux Test Info'
