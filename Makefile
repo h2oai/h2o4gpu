@@ -167,6 +167,7 @@ docker-build-nccl-cuda9:
 	H2O4GPU_BUILD="" \
 	H2O4GPU_SUFFIX="" \
 	makeopts="" \
+	dist="dist" \
 	bash scripts/make-devel-docker.sh
 
 

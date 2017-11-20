@@ -3,9 +3,11 @@ nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build -
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
 echo "Copying files"
-nvidia-docker exec ${CONTAINER_NAME} bash -c 'cp -a /dot/. ./'
+nvidia-docker exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 echo "setup pyenv, shallow clone, and make fullinstalljenkins"
-nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh ; make ${makeopts} fullinstalljenkins'${extratag}' '${H2O4GPU_BUILD}' '${H2O4GPU_SUFFIX}
+nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; ./scripts/gitshallow_submodules.sh ; make ${makeopts} fullinstalljenkins'${extratag}' '${H2O4GPU_BUILD}' '${H2O4GPU_SUFFIX}
+echo "Copying wheel"
+nvidia-docker cp -a ${CONTAINER_NAME}:repo/src/interface_py/${dist} src/interface_py/
 echo "Stopping docker"
 nvidia-docker stop ${CONTAINER_NAME}
 echo "DONE"
