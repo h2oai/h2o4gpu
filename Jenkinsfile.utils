@@ -19,7 +19,7 @@ String changeId() {
 void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     echo "Publishing artifact to S3"
 
-    def versionTag = buildInfo.get().getVersion()
+    def versionTag = buildInfo.getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
     def localArtifact = "src/interface_py/${dist}/${artifact}"
@@ -44,7 +44,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
 void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     echo "Publishing runtime to S3"
 
-    def versionTag = buildInfo.get().getVersion()
+    def versionTag = buildInfo.getVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
     def localArtifact = "${artifact}"
@@ -69,7 +69,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
-    def versionTag = buildInfo.get().getVersion()
+    def versionTag = buildInfo.getVersion()
 
     try {
         sh """
@@ -125,7 +125,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     //}
     def buckettype = "snapshots"
     buildInfo("h2o4gpu", isRelease())
-    def fullVersionTag = buildInfo.get().getVersion()
+    def fullVersionTag = buildInfo.getVersion()
     def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
 
