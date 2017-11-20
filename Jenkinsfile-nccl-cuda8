@@ -94,13 +94,13 @@ pipeline {
                     unstash 'version_info'
                     unstash 'linux_whl1'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.runTests("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", "dotest")
+                    h2o4gpuUtils.runTests(buildInfo, "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", "dotest")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
                             def h2o4gpuUtils = load "Jenkinsfile.utils"
-                            h2o4gpuUtils.publishToS3("-nccl-cuda8" , "dist")
+                            h2o4gpuUtils.publishToS3(buildInfo, "-nccl-cuda8" , "dist")
                         }
                     }
                 }
@@ -132,13 +132,13 @@ pipeline {
                 }
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildRuntime("nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "-nccl-cuda8")
+                    h2o4gpuUtils.buildRuntime(buildInfo, "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "-nccl-cuda8")
                 }
                 retryWithTimeout(200 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         def h2o4gpuUtils = load "Jenkinsfile.utils"
-                        h2o4gpuUtils.publishRuntimeToS3("-nccl-cuda8")
+                        h2o4gpuUtils.publishRuntimeToS3(buildInfo, "-nccl-cuda8")
                     }
                 }
                 }

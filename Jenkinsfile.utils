@@ -14,7 +14,7 @@ String changeId() {
     return "-master"
 }
 
-void publishToS3(String extratag, String dist) {
+void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     echo "Publishing artifact to S3"
 
     def versionTag = buildInfo.get().getVersion()
@@ -39,7 +39,7 @@ void publishToS3(String extratag, String dist) {
     }
 }
 
-void publishRuntimeToS3(String extratag) {
+void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     echo "Publishing runtime to S3"
 
     def versionTag = buildInfo.get().getVersion()
@@ -64,7 +64,7 @@ void publishRuntimeToS3(String extratag) {
     }
 }
 
-void runTests(String dockerimage, String extratag, String dist, String target) {
+void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
     def versionTag = buildInfo.get().getVersion()
@@ -112,7 +112,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     }
 }
 
-void buildRuntime(String dockerimage, String extratag) {
+void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     echo "Building runtime"
     //if (isRelease()) {
     //    def buckettype = "releases/stable"
