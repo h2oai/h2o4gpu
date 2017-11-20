@@ -67,6 +67,18 @@ pipeline {
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl4')
+
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+
+                    script {
+                        // Load the version file content
+                        buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+                        utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
+                        utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
+                                |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
+                                |""".stripMargin("|"))
+                    }
+
                 }
             }
         }
@@ -134,6 +146,7 @@ pipeline {
                 }
             }
         }
+
     } // end over stages
     post {
         failure {
@@ -156,3 +169,4 @@ pipeline {
         }
     }
 }
+
