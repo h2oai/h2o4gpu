@@ -141,6 +141,12 @@ buildquick: cpp c py
 
 install: pyinstall
 
+fullbuild: clean alldeps sync_open_data build
+	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
+fullbuild-nonccl: clean alldeps2 sync_open_data build
+	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+
+
 fullinstall: clean alldeps sync_open_data build install
 	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullinstall-nonccl: clean alldeps2 sync_open_data build install
@@ -148,18 +154,73 @@ fullinstall-nonccl: clean alldeps2 sync_open_data build install
 
 ####################################################
 # Docker stuff
-runtime:
-	@echo "+--Building Runtime Docker Image--+"
-	$(MAKE) fullinstall
-	nvidia-docker build -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
-	nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
-	gzip  h2o4gpu-cuda8-runtime.tar
-runtimecuda9:
-	@echo "+--Building Runtime Docker Image for cuda9--+"
-	$(MAKE) fullinstall-cuda9
-	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
-	nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
-	gzip  h2o4gpu-cuda9-runtime.tar
+
+docker-build-nccl-cuda9:
+	@echo "+-- Building Wheel in Docker (-nccl-cuda9) --+"
+	CONTAINER_NAME="localmake" \
+	versionTag="0.0.4" \
+	extratag="-nccl-cuda9" \
+	encodedFullVersionTag=0.0.4 \
+	fullVersionTag=0.0.4 \
+	buckettype="releases/bleeding-edge" \
+	dockerimage="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04" \
+	H2O4GPU_BUILD="" \
+	H2O4GPU_SUFFIX="" \
+	makeopts="" \
+	bash scripts/make-devel-docker.sh
+
+
+runtime: runtime-nccl
+
+runtime-nccl-cuda9: runtime-nccl_part1 runtime-nccl-cuda9-part2
+runtime-nccl-cuda8: runtime-nccl_part1 runtime-nccl-cuda8-part2
+runtime-nonccl-cuda9: runtime-nonccl_part1 runtime-nonccl-cuda9-part2
+runtime-nonccl-cuda8: runtime-nonccl_part1 runtime-nonccl-cuda8-part2
+
+runtime-nccl_part1:
+	@echo "+--Building Runtime Docker Image Part 1 (nccl) --+"
+	$(MAKE) fullbuild
+
+runtime-nccl_part1:
+	@echo "+--Building Runtime Docker Image Part 1 (-nonccl) --+"
+	$(MAKE) fullbuild-nonccl
+
+runtime-nccl-cuda9-part2:
+	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda9) --+"
+	CONTAINER_NAME="localmake" \
+	versionTag="0.0.4" \
+	extratag="-nccl-cuda9" \
+	encodedFullVersionTag=0.0.4 \
+	fullVersionTag=0.0.4 \
+	buckettype="releases/bleeding-edge" \
+	dockerimage="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04" \
+	bash scripts/make-runtime-docker.sh
+
+runtime-nccl-cuda8-part2:
+	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda8) --+"
+	CONTAINER_NAME="localmake" \
+	versionTag="0.0.4" \
+	extratag="-nccl-cuda8" \
+	encodedFullVersionTag=0.0.4 \
+	fullVersionTag=0.0.4 \
+	buckettype="releases/bleeding-edge" \
+	dockerimage="nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04" \
+	bash scripts/make-runtime-docker.sh
+
+docker-runtests-nccl-cuda8:
+	@echo "+-- Run tests in docker (-nccl-cuda8) --+"
+	CONTAINER_NAME="localmake" \
+	versionTag="0.0.4" \
+	extratag="-nccl-cuda8" \
+	encodedFullVersionTag=0.0.4 \
+	fullVersionTag=0.0.4 \
+	buckettype="releases/bleeding-edge" \
+	dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" \
+	H2O4GPU_BUILD="" \
+	H2O4GPU_SUFFIX="" \
+	target=fullinstalljenkins${extratag} \
+	dist="dist" \
+	bash scripts/make-runtests-docker.sh
 
 get_docker:
 	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
@@ -181,8 +242,8 @@ run_in_docker:
 
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
-	rm -f ./build
-	rm -rf ./results/ ./tmp/
+	-rm -rf ./build
+	-rm -rf ./results/ ./tmp/
 
 cleanbuild: cleancpp cleanc cleanpy
 
