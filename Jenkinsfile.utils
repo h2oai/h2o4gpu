@@ -124,7 +124,6 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     //    def buckettype = "snapshots"
     //}
     def buckettype = "snapshots"
-    buildInfo("h2o4gpu", isRelease())
     def fullVersionTag = buildInfo.getVersion()
     def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
