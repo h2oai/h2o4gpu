@@ -2,6 +2,8 @@
 @Library('test-shared-library') _
 
 import ai.h2o.ci.Utils
+import ai.h2o.ci.BuildInfo
+
 def utilsLib = new Utils()
 CI_VERSION_SUFFIX = utilsLib.getCiVersionSuffix()
 SAFE_CHANGE_ID = changeId()
