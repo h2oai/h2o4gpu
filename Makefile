@@ -163,7 +163,7 @@ docker-build-nccl-cuda9:
 	encodedFullVersionTag=0.0.4 \
 	fullVersionTag=0.0.4 \
 	buckettype="releases/bleeding-edge" \
-	dockerimage="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04" \
+	dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" \
 	H2O4GPU_BUILD="" \
 	H2O4GPU_SUFFIX="" \
 	makeopts="" \
@@ -236,6 +236,25 @@ run_in_docker:
 	-u `id -u`:`id -g` \
 	-v /home/$$USER/log:/log \
 	opsh2oai/h2o4gpu-0.0.4-nccl-cuda8-runtime:latest
+
+
+wheel_in_docker:
+	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+
+wheel_in_docker-cuda9:
+	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
+
+clean_in_docker:
+	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
+
+clean_in_docker-cuda9:
+	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
+	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make clean'
+
+###################
 
 #############################################
 
@@ -310,25 +329,6 @@ alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml 
 alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 
-###################
-
-wheel_in_docker:
-	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
-
-wheel_in_docker-cuda9:
-	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
-
-clean_in_docker:
-	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
-
-clean_in_docker-cuda9:
-	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make clean'
-
-###################
 xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
