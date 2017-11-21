@@ -3,7 +3,6 @@
 
 import ai.h2o.ci.BuildInfo
 
-CI_VERSION_SUFFIX = ciVersionSuffix()
 SAFE_CHANGE_ID = changeId()
 CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${env.BUILD_TYPE}"
 
@@ -104,7 +103,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
+                CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + ciVersionSuffix()} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
                """
             stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
