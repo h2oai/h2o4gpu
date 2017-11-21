@@ -48,7 +48,7 @@ sudo apt-get install libopenblas-dev
 Download the Python wheel file (For Python 3.6 on linux_x86_64 with CUDA 8):
 
   * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1/h2o4gpu-0.1.0-py36-none-any.whl)
 
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
