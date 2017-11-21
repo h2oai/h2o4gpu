@@ -228,7 +228,7 @@ docker-runtests-nccl-cuda9:
 	export H2O4GPU_SUFFIX="" ;\
 	export dist="dist" ;\
 	export target="dotest" ;\
-    bash scripts/make-docker-runtests.sh
+	bash scripts/make-docker-runtests.sh
 
 get_docker:
 	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
