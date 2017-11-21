@@ -67,7 +67,7 @@ RUN \
   chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt
 
-#Below will get the latest stable wheel file instead.
+#Below will get the latest wheel file instead.  Can also edit this to use a local wheel.
 RUN \
   . h2o4gpu_env/bin/activate && \
   echo "Bucket is $buckettype" && \
