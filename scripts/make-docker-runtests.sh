@@ -10,5 +10,8 @@ nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval "$(/root/.
 nvidia-docker exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
 echo "Docker devel test and pylint - pylint"
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)"  ;  /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; make pylint'
-echo "Docker devel test and pylint - stop"
-nvidia-docker stop ${CONTAINER_NAME}
+echo "Docker devel test and pylint - copy build reports"
+rm -rf build/test-reports ; mkdir -p build/test-reports/
+nvidia-docker cp -a ${CONTAINER_NAME}:repo/build/test-reports build/
+#echo "Docker devel test and pylint - stop"
+#nvidia-docker stop ${CONTAINER_NAME}
