@@ -177,6 +177,7 @@ run_in_docker: run_in_docker-nccl-cuda9
 
 docker-build-nccl-cuda9:
 	@echo "+-- Building Wheel in Docker (-nccl-cuda9) --+"
+	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
 	export versionTag="0.0.4" ;\
 	export extratag="-nccl-cuda9" ;\
@@ -244,11 +245,12 @@ run_in_docker-nccl-cuda9:
 	-v /home/$$USER/log:/log \
 	--entrypoint=./run.sh \
 	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
-	
-######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
+
+######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist)
 
 docker-build-nccl-cuda8:
 	@echo "+-- Building Wheel in Docker (-nccl-cuda8) --+"
+	rm -rf src/interface_py/dist/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
 	export versionTag="0.0.4" ;\
 	export extratag="-nccl-cuda8" ;\
@@ -256,7 +258,7 @@ docker-build-nccl-cuda8:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist1" ;\
+	export dist="dist" ;\
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-nccl-cuda8:
@@ -291,7 +293,7 @@ docker-runtests-nccl-cuda8:
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export extratag="-nccl-cuda8" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
-	export dist="dist1" ;\
+	export dist="dist" ;\
 	export target="dotest" ;\
 	bash scripts/make-docker-runtests.sh
 

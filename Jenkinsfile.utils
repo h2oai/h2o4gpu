@@ -81,6 +81,7 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
             throw error
     } finally {
         sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+        // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         arch 'tmp/*.log'
         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
     }
@@ -104,6 +105,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             throw error
         } finally {
             sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
     }
 }
@@ -125,6 +127,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
             throw error
         } finally {
             sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
     }
 }
