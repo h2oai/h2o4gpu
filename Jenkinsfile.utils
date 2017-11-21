@@ -105,7 +105,6 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
 
-    // Get source code
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh"
     }
