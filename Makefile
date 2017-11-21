@@ -208,8 +208,8 @@ docker-runtime-nccl-cuda8:
 	export CONTAINER_NAME="localmake-runtime" ;\
 	export versionTag="0.0.4" ;\
 	export extratag="-nccl-cuda8" ;\
-	export encodedFullVersionTag=0.0.4 ;\
-	export fullVersionTag=0.0.4 ;\
+	export encodedFullVersionTag="0.0.4" ;\
+	export fullVersionTag="0.0.4" ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04" ;\
 	bash scripts/make-docker-runtime.sh
@@ -219,8 +219,8 @@ docker-runtests-nccl-cuda9:
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export versionTag="0.0.4" ;\
 	export extratag="-nccl-cuda8" ;\
-	export encodedFullVersionTag=0.0.4 ;\
-	export fullVersionTag=0.0.4 ;\
+	export encodedFullVersionTag="0.0.4" ;\
+	export fullVersionTag="0.0.4" ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
