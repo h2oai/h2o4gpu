@@ -67,13 +67,6 @@ RUN \
   chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt
 
-#Below will get the latest wheel file instead.  Can also edit this to use a local wheel.
-RUN \
-  . h2o4gpu_env/bin/activate && \
-  echo "Bucket is $buckettype" && \
-  echo "Wheel is $wheel" && \
-  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/${buckettype}/ai/h2o/h2o4gpu/${wheel}
-
 # Add a canned jupyter notebook demo to the container
 RUN \
   mkdir -p jupyter/demos

@@ -130,7 +130,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
+                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} dist=${dist} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
         } catch (error) {
             throw error
