@@ -48,7 +48,7 @@ RUN \
   python -m pip install --upgrade pip && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev
+  apt-get install -y libopenblas-dev pbzip2
 
 RUN \
   mkdir h2o4gpu_env && \

@@ -56,7 +56,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     def versionTag = buildInfo.getVersion()
     def majorVersionTag = buildInfo.getMajorVersion()
     def artifactId = "h2o4gpu"
-    def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
+    def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.bz2"
     def localArtifact = "${artifact}"
 
     sh 'echo "S3runtime defs: $versionTag $artifactId $artifact $localArtifact" '
@@ -75,7 +75,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
-        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.gz"
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.bz2"
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }

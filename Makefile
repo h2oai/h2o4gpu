@@ -169,7 +169,7 @@ docker-build: docker-build-nccl-cuda9
 docker-runtime: docker-runtime-nccl-cuda9
 docker-runtests: docker-runtests-nccl-cuda9
 get_docker: get_docker-nccl-cuda9
-load_docker: load_docker-nccl-cuda9
+load_docker: docker-runtime-nccl-cuda9-load
 run_in_docker: run_in_docker-nccl-cuda9
 
 
@@ -200,7 +200,8 @@ docker-runtime-nccl-cuda9:
 	bash scripts/make-docker-runtime.sh
 
 docker-runtime-nccl-cuda9-load:
-	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
+	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2 | docker load
 
 .PHONY: docker-runtime-nccl-cuda9-run
 
@@ -225,10 +226,7 @@ docker-runtests-nccl-cuda9:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda9:
-	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
-
-load_docker-nccl-cuda9:
-	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
+	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2
 
 run_in_docker-nccl-cuda9:
 	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
@@ -273,7 +271,8 @@ docker-runtime-nccl-cuda8:
 	bash scripts/make-docker-runtime.sh
 
 docker-runtime-nccl-cuda8-load:
-	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
+	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2 | docker load
 
 .PHONY: docker-runtime-nccl-cuda8-run
 
@@ -298,10 +297,7 @@ docker-runtests-nccl-cuda8:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda8:
-	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
-
-load_docker-nccl-cuda8:
-	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
+	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2
 
 run_in_docker-nccl-cuda8:
 	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log

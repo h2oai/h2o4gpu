@@ -26,6 +26,6 @@ echo "Docker runtime - stopping docker"
 nvidia-docker stop ${CONTAINER_NAME}
 
 echo "Docker runtime - saving docker to local disk"
-nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.gz
+nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | pbzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
 
 echo "Docker runtime - END"
