@@ -61,9 +61,11 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
 
+                script {
+                    sh 'echo "Files and path:" && ls -l ./ && pwd'
+                }
 
                 script {
-                    ls -lart
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", 'linux_whl1')
 
