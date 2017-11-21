@@ -461,7 +461,7 @@ py3nvml_clean:
 	-pip uninstall -y py3nvml
 
 apply_py3nvml:
-	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
+	mkdir -p py3nvml ; cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
 
 
 liblightgbm: # only done if user directly requests, never an explicit dependency

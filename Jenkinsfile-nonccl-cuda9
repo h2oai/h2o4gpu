@@ -135,7 +135,7 @@ pipeline {
                 }
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nonccl-cuda9")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "dist3", "-nonccl-cuda9")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {

@@ -119,7 +119,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     }
 }
 
-void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
+void buildRuntime(BuildInfo buildInfo, String dockerimage, String dist, String extratag) {
     echo "Building runtime"
 
     def buckettype = "snapshots"
