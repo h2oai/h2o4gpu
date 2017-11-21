@@ -75,6 +75,8 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
         sh """
             CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh
            """
+    }  catch (Exception ex) {
+            throw ex
     } finally {
         docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
         arch 'tmp/*.log'
@@ -96,6 +98,8 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             stash includes: 'build/VERSION.txt', name: 'version_info'
             // Archive artifacts
             arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
+        }  catch (Exception ex) {
+            throw ex
         } finally {
             docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
         }
@@ -121,6 +125,8 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
             sh """
                 CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh
                """
+        } catch (Exception ex) {
+            throw ex
         } finally {
             docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
         }
