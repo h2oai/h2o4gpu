@@ -9,7 +9,7 @@ nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0x
 echo "Docker devel test and pylint - Copying files"
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo ; cd ./repo ; ln -sf /data . ; ln -sf /open_data .'
 
-echo "Docker devel test and pylint - setup pyenv, pip install from ${dist} wheel with versionTag=${versionTag}, make ${target}"
+echo "Docker devel test and pylint - setup pyenv, pip install wheel from ${dist}, make ${target}"
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean dist/*.whl before unstash in jenkins
