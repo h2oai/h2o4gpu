@@ -99,7 +99,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
                """
             stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
-            sh "echo "Archive artifacts""
+            sh "echo \"Archive artifacts\""
             arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
         }  catch (error) {
             throw error
