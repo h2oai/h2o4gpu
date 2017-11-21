@@ -87,6 +87,11 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
 
+    script {
+        sh 'echo "Files and path:" && ls -l ./ && pwd'
+        sh 'echo "Script Files:" && ls -l ./scripts/'
+    }
+
     def versionTag = "buildversion"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
