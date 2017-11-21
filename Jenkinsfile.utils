@@ -69,13 +69,10 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
-    def buckettype = "snapshots"
-    def fullVersionTag = buildInfo.getVersion()
-    def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = buildInfo.getVersion()
 
     try {
-        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} target=${target} dist=${dist} ./scripts/make-runtests.sh"
+        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh"
     } finally {
         arch 'tmp/*.log'
         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
@@ -85,13 +82,10 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
 
-    def buckettype = "snapshots"
-    def fullVersionTag = buildInfo.getVersion()
-    def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh"
+        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh"
         stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
