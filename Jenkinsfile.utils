@@ -72,8 +72,12 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
     def versionTag = buildInfo.getVersion()
 
     try {
-        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh"
+        sh """
+            ls -alrt .
+            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh
+           """
     } finally {
+        docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
         arch 'tmp/*.log'
         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
     }
@@ -85,7 +89,15 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     def versionTag = "buildversion" // unknown version so far
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh"
+    try {
+        sh """
+            ls -alrt .
+            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh
+           """
+    } finally {
+        docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
+    }
+
         stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
         stash includes: 'build/VERSION.txt', name: 'version_info'
         // Archive artifacts
@@ -108,7 +120,14 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh"
+    try {
+        sh """
+            ls -alrt .
+            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh
+           """
+        } finally {
+            docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
+        }
     }
 }
 
