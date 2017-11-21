@@ -73,17 +73,17 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
-    try {
+   // try {
         sh """
             CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
            """
-    } catch (error) {
-            throw error
-    } finally {
-        nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
-        arch 'tmp/*.log'
-        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-    }
+    //} catch (error) {
+    //        throw error
+    //} finally {
+    //    nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
+    //    arch 'tmp/*.log'
+    //    junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+   // }
 }
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
@@ -92,7 +92,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     def versionTag = "buildversion"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        try {
+        //try {
             sh """
                 CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
                """
@@ -100,11 +100,11 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             stash includes: 'build/VERSION.txt', name: 'version_info'
             // Archive artifacts
             arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
-        }  catch (error) {
-            throw error
-        } finally {
-            nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
-        }
+        //}  catch (error) {
+        //    throw error
+        //} finally {
+         //   nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
+        //}
     }
 }
 
@@ -123,15 +123,15 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        try {
+        //try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
+                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
-        } catch (error) {
-            throw error
-        } finally {
-            nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
-        }
+        //} catch (error) {
+        //    throw error
+        //} finally {
+        //    nvidia-docker stop ${CONTAINER_NAME} || true //&& nvidia-docker rm ${CONTAINER_NAME} || true
+        //}
     }
 }
 
