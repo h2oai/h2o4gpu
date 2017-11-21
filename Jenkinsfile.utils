@@ -71,17 +71,17 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 
     def versionTag = buildInfo.getVersion()
 
-    try {
+    //try {
         sh """
             CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh
            """
-    }  catch (Exception ex) {
-            throw ex
-    } finally {
-        docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
-        arch 'tmp/*.log'
-        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
-    }
+    //} catch (Exception ex) {
+//            throw ex
+//    } finally {
+//        docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
+//        arch 'tmp/*.log'
+//        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+//    }
 }
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
@@ -121,15 +121,15 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        try {
+//        try {
             sh """
                 CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh
                """
-        } catch (Exception ex) {
-            throw ex
-        } finally {
-            docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
-        }
+//        } catch (Exception ex) {
+//            throw ex
+//        } finally {
+//            docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
+//        }
     }
 }
 
