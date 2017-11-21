@@ -7,8 +7,9 @@ SAFE_CHANGE_ID = changeId()
 CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${env.BUILD_TYPE}"
 
 String ciVersionSuffix() {
-    def gitSha = env.GIT_COMMIT.substring(0,7)
-    return isRelease() ? "" : "${env.BRANCH_NAME}_${gitSha}"
+    // For some reason env.GIT_COMMIT is returning NULL
+    def shortCommit = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+    return isRelease() ? "" : "${env.BRANCH_NAME}_${shortCommit}"
 }
 
 String changeId() {
