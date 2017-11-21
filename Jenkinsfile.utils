@@ -24,6 +24,8 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
     def localArtifact = "src/interface_py/${dist}/${artifact}"
 
+    sh 'echo "S3 defs: $versionTag $artifactId $artifact $localArtifact" '
+
     // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
@@ -49,6 +51,8 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
     def localArtifact = "${artifact}"
 
+    sh 'echo "S3runtime defs: $versionTag $artifactId $artifact $localArtifact" '
+
     // always upload for testing
     def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
@@ -69,11 +73,9 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
-    def versionTag = "buildversion" // can use same container image as buildOnLinux created
-
     //try {
         sh """
-            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
+            CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
            """
     //} catch (error) {
 //            throw error
@@ -92,7 +94,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         //try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
+                CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
                """
             stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'

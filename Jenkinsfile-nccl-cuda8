@@ -92,6 +92,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl1'
+                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", "dotest")
                 }
