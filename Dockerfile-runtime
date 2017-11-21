@@ -64,6 +64,7 @@ RUN \
 COPY requirements_runtime.txt requirements.txt
 RUN \
   . h2o4gpu_env/bin/activate && \
+  chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt
 
 #Below will get the latest stable wheel file instead.
@@ -93,6 +94,11 @@ RUN \
 
 # Add shell wrapper
 COPY run.sh /run.sh
+
+RUN \
+  . h2o4gpu_env/bin/activate && \
+  chmod a+rwx run.sh
+
 
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT

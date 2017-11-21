@@ -8,6 +8,8 @@ echo "setup pyenv, shallow clone, and make fullinstalljenkins"
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; ./scripts/gitshallow_submodules.sh ; make ${makeopts} fullinstalljenkins'${extratag}' '${H2O4GPU_BUILD}' '${H2O4GPU_SUFFIX}
 echo "Copying wheel"
 nvidia-docker cp -a ${CONTAINER_NAME}:repo/src/interface_py/${dist} src/interface_py/
+echo "Copying VERSION.txt"
+mkdir -p build ; nvidia-docker cp ${CONTAINER_NAME}:repo/build/VERSION.txt build/
 echo "Stopping docker"
 nvidia-docker stop ${CONTAINER_NAME}
 echo "DONE"
