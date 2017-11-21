@@ -69,6 +69,9 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
+    def buckettype = "snapshots"
+    def fullVersionTag = buildInfo.getVersion()
+    def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = buildInfo.getVersion()
 
     try {
@@ -81,6 +84,11 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
+
+    def buckettype = "snapshots"
+    def fullVersionTag = buildInfo.getVersion()
+    def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
+    def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh"
