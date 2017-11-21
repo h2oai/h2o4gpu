@@ -214,9 +214,9 @@ docker-runtime-nccl-cuda8:
 	export dockerimage="nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04" ;\
 	bash scripts/make-docker-runtime.sh
 
+	#export target="fullinstalljenkins$${extratag}"
 docker-runtests-nccl-cuda9:
-	#export target="fullinstalljenkins$${extratag}" ;\
-	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
+    @echo "+-- Run tests in docker (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export versionTag="0.0.4" ;\
 	export extratag="-nccl-cuda8" ;\
