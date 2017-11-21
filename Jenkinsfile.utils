@@ -40,7 +40,8 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     if (isBleedingEdge()) {
         bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
-        def bleedingEdgeArtifact = "${artifactId}-${versionTag.split('\\+')?????????????????????????[0]?}-py36-none-any.whl"
+        def nonLocalVersionTag = versionTag.split('\\+')[0]
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-py36-none-any.whl"
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }
@@ -70,7 +71,8 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     if (isBleedingEdge()) {
         bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
-        def bleedingEdgeArtifact = "${artifactId}-${versionTag.split('\\+')?????????????????????????[0]?}-runtime.tar.gz"
+        def nonLocalVersionTag = versionTag.split('\\+')[0]
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.gz"
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }
