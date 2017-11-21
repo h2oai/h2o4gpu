@@ -151,10 +151,8 @@ pipeline {
         failure {
             node('linux') {
                 script {
-                    // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
-                    def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
                     emailext(
-                            to: "mateusz@h2o.ai, ${email}",
+                            to: "mateusz@h2o.ai, jmckinney@h2oai.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,
