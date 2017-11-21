@@ -82,6 +82,7 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
 
+    def fullVersionTag = buildInfo.getVersion()
     def versionTag = fullVersionTag.tokenize('+')[0]
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
