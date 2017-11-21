@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "Docker runtime - BEGIN"
+echo "Docker runtime - Will get wheel from S3 (i.e. not local wheel)"
 nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
 # -u `id -u`:`id -g` -d -t -w `pwd` -v `pwd`:`pwd`:rw
 echo "Runtime Docker - Run"
