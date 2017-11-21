@@ -324,7 +324,7 @@ run_in_docker-nccl-cuda8:
 
 
 
-clean: cleanbuild deps_clean xgboost_clean
+clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
@@ -384,13 +384,13 @@ private_deps_install:
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
-alldeps_install: deps_install apply_xgboost libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install2: deps_install apply_xgboost2 libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
-alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 
 xgboost_clean:
@@ -457,6 +457,13 @@ pipxgboost-nonccl-cuda9:
 	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
+py3nvml_clean:
+	-pip uninstall -y py3nvml
+
+apply_py3nvml:
+	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
+
+
 liblightgbm: # only done if user directly requests, never an explicit dependency
 	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
@@ -490,7 +497,7 @@ apply_sklearn_initmerge:
 
 #################### Jenkins specific
 
-cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean
+cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
 
 buildjenkins: update_submodule cpp c py
 
