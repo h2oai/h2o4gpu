@@ -90,7 +90,7 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     def versionTag = "buildversion"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        try {
+        //try {
             sh """
                 CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh
                """
@@ -98,11 +98,11 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             stash includes: 'build/VERSION.txt', name: 'version_info'
             // Archive artifacts
             arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
-        }  catch (Exception ex) {
-            throw ex
-        } finally {
-            docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
-        }
+        //}  catch (Exception ex) {
+        //    throw ex
+        //} finally {
+        //    docker stop ${CONTAINER_NAME} || true && docker rm ${CONTAINER_NAME} || true
+       // }
     }
 }
 
