@@ -31,17 +31,17 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     sh 'echo "S3 defs: $versionTag $artifactId $artifact $localArtifact" '
 
     // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+    def bucket = "s3://h2o-release.h2o.ai/h2o4gpu/snapshots/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
-        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release.h2o.ai/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
         def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-py36-none-any.whl"
@@ -62,17 +62,17 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     sh 'echo "S3runtime defs: $versionTag $artifactId $artifact $localArtifact" '
 
     // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+    def bucket = "s3://h2o-release.h2o.ai/h2o4gpu/snapshots/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
-        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release.h2o.ai/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
         def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.gz"
