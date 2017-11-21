@@ -255,6 +255,7 @@ run_in_docker-nccl-cuda9:
 	-p 8889:8889 \
 	-u `id -u`:`id -g` \
 	-v /home/$$USER/log:/log \
+	--entrypoint=./run.sh \
 	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
 
 
