@@ -169,7 +169,7 @@ docker-build-nccl-cuda9:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist" ;\
+	export dist="dist4" ;\
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-nccl-cuda9:
@@ -200,7 +200,7 @@ docker-runtime-nccl-cuda9-run:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist" ;\
+	export dist="dist4" ;\
 	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
 
 docker-runtime-nccl-cuda8:
@@ -226,7 +226,7 @@ docker-runtests-nccl-cuda9:
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
-	export dist="dist" ;\
+	export dist="dist4" ;\
 	export target="dotest" ;\
 	bash scripts/make-docker-runtests.sh
 
@@ -248,7 +248,7 @@ run_in_docker-nccl-cuda9:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist" ;\
+	export dist="dist4" ;\
 	nvidia-docker run \
 	--rm \
 	--name $${CONTAINER_NAME} \
