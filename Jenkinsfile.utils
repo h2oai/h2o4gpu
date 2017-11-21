@@ -82,8 +82,7 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
 
-    def fullVersionTag = buildInfo.getVersion()
-    def versionTag = fullVersionTag.tokenize('+')[0]
+    def versionTag = "buildversion" // unknown version so far
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         sh "CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh"
