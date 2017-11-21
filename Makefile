@@ -215,6 +215,7 @@ docker-runtime-nccl-cuda8:
 	bash scripts/make-docker-runtime.sh
 
 docker-runtests-nccl-cuda9:
+	#export target="fullinstalljenkins$${extratag}" ;\
 	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export versionTag="0.0.4" ;\
@@ -225,9 +226,9 @@ docker-runtests-nccl-cuda9:
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
-	export target="fullinstalljenkins$${extratag}" ;\
 	export dist="dist" ;\
-	bash scripts/make-docker-runtests.sh
+	export target="dotest" ;\
+    bash scripts/make-docker-runtests.sh
 
 get_docker:
 	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
