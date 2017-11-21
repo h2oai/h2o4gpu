@@ -657,7 +657,7 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt:
 	@echo "build_date=\"$(H2O4GPU_BUILD_DATE)\"" >> $@
 	@echo "build_user=\"`id -u -n`\"" >> $@
 	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
-	@echo "h2o4gpu_commit=\"$(H2OAI_COMMIT)\"" >> $@
+	@echo "h2o4gpu_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
 
 build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build
