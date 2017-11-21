@@ -8,7 +8,7 @@ echo "Docker devel - Copying files"
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 
 echo "setup pyenv, shallow clone, and make fullinstalljenkins with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
-nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; ./scripts/gitshallow_submodules.sh ; make ${makeopts} fullinstalljenkins'${extratag}' '${H2O4GPU_BUILD}' '${H2O4GPU_SUFFIX}
+nvidia-docker exec ${CONTAINER_NAME} bash -c "eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; ./scripts/gitshallow_submodules.sh ; make ${makeopts} fullinstalljenkins${extratag} H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
 
 echo "Docker devel - Clean local wheels and Copying wheel from docker"
 rm -rf src/interface_py/${dist}/*.whl
