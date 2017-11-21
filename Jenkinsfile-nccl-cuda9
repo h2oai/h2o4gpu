@@ -63,7 +63,7 @@ pipeline {
 
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl3')
+                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", 'linux_whl4')
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -92,7 +92,8 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    unstash 'linux_whl3'
+                    unstash 'linux_whl4'
+                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist4/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
@@ -124,7 +125,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                unstash 'linux_whl3'
+                unstash 'linux_whl4'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
@@ -150,7 +151,7 @@ pipeline {
             node('linux') {
                 script {
                     emailext(
-                            to: "mateusz@h2o.ai, jmckinney@h2oai.ai",
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,

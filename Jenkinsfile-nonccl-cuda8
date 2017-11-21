@@ -95,6 +95,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl2'
+                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist2/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nonccl-cuda8", "dist2", "dotestfast_nonccl")
                 }
@@ -152,7 +153,7 @@ pipeline {
             node('linux') {
                 script {
                     emailext(
-                            to: "mateusz@h2o.ai, jmckinney@h2oai.ai",
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,

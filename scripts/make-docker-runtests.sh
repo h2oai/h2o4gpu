@@ -19,6 +19,10 @@ echo "Docker devel test and pylint - copy build reports"
 rm -rf build/test-reports ; mkdir -p build/test-reports/
 nvidia-docker cp -a ${CONTAINER_NAME}:repo/build/test-reports build/
 
+echo "Docker devel test and pylint - copy logs for arch"
+rm -rf tmp ; mkdir -p tmp
+nvidia-docker cp -a ${CONTAINER_NAME}:repo/tmp ./
+
 echo "Docker devel test and pylint - pylint"
 nvidia-docker exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)"  ;  /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; make pylint'
