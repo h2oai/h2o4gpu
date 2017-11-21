@@ -66,16 +66,24 @@ H2O4GPU_BUILD ?= "LOCAL BUILD @ $(shell git rev-parse --short HEAD) build at $(H
 H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
 
 help:
-	@echo "make                 fullinstall"
-	@echo "make fullinstalldev  Clean everything, then compile and install project for development."
-	@echo "make fullinstall     Clean everything, then compile and install everything."
+	@echo " -------- Build and Install ---------"
 	@echo "make clean           Clean all build files."
-	@echo "make build           Build the whole project."
-	@echo "make sync_smalldata  Syncs the data needed for tests."
+	@echo "make                 fullinstall"
+	@echo "make fullinstall     Clean everything, then compile and install everything (with nccl in xgboost)."
+	@echo "make fullbuild       Clean, Install Deps, and Build the whole project."
+	@echo "make build           Just Build the whole project."
+	@echo " -------- Test ---------"
 	@echo "make test            Run tests."
 	@echo "make testbig         Run tests for big data."
 	@echo "make testperf        Run performance and accuracy tests."
 	@echo "make testbigperf     Run performance and accuracy tests for big data."
+	@echo " -------- Docker ---------"
+	@echo "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/"
+	@echo "make docker-runtime  Build runtime docker and save to local path"
+	@echo "make get_docker      Download runtime docker (e.g. instead of building it)"
+	@echo "make load_docker     Load runtime docker image"
+	@echo "make run_in_docker   Run jupyter notebook demo using runtime docker image already present"
+	@echo " -------- Pycharm Help ---------"
 	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
 	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
 
@@ -141,48 +149,180 @@ buildquick: cpp c py
 
 install: pyinstall
 
-fullinstall: clean alldeps sync_open_data build install
+fullbuild: clean alldeps sync_open_data build
+	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
+fullbuild-nonccl: clean alldeps2 sync_open_data build
+	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+
+#default is with nccl
+fullinstall: fullinstall-nccl
+fullinstall-nccl: clean alldeps sync_open_data build install
 	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullinstall-nonccl: clean alldeps2 sync_open_data build install
 	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 ####################################################
 # Docker stuff
-runtime:
-	@echo "+--Building Runtime Docker Image--+"
-	$(MAKE) fullinstall
-	nvidia-docker build -t opsh2oai/h2o4gpu-cuda8-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04 .
-	nvidia-docker save opsh2oai/h2o4gpu-cuda8-runtime > h2o4gpu-cuda8-runtime.tar
-	gzip  h2o4gpu-cuda8-runtime.tar
-runtimecuda9:
-	@echo "+--Building Runtime Docker Image for cuda9--+"
-	$(MAKE) fullinstall-cuda9
-	nvidia-docker build -t opsh2oai/h2o4gpu-cuda9-runtime:latest -f Dockerfile-runtime --build-arg cuda=nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04 .
-	nvidia-docker save opsh2oai/h2o4gpu-cuda9-runtime > h2o4gpu-cuda9-runtime.tar
-	gzip  h2o4gpu-cuda9-runtime.tar
 
-get_docker:
-	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
-load_docker:
-	nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.gz
-run_in_docker:
+# default for docker is nccl-cuda9
+docker-build: docker-build-nccl-cuda9
+docker-runtime: docker-runtime-nccl-cuda9
+docker-runtests: docker-runtests-nccl-cuda9
+get_docker: get_docker-nccl-cuda9
+load_docker: docker-runtime-nccl-cuda9-load
+run_in_docker: run_in_docker-nccl-cuda9
+
+
+############### CUDA9
+
+docker-build-nccl-cuda9:
+	@echo "+-- Building Wheel in Docker (-nccl-cuda9) --+"
+	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
+	export CONTAINER_NAME="localmake-build" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda9" ;\
+	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
+	export H2O4GPU_BUILD="" ;\
+	export H2O4GPU_SUFFIX="" ;\
+	export makeopts="" ;\
+	export dist="dist4" ;\
+	bash scripts/make-docker-devel.sh
+
+docker-runtime-nccl-cuda9:
+	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtime" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda9" ;\
+	export encodedFullVersionTag=0.0.4 ;\
+	export fullVersionTag=0.0.4 ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04" ;\
+	bash scripts/make-docker-runtime.sh
+
+docker-runtime-nccl-cuda9-load:
+	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2 | docker load
+
+.PHONY: docker-runtime-nccl-cuda9-run
+
+docker-runtime-nccl-cuda9-run:
+	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda9" ;\
+	export encodedFullVersionTag="0.0.4" ;\
+	export fullVersionTag="0.0.4" ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
+	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
+docker-runtests-nccl-cuda9:
+	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtests" ;\
+	export extratag="-nccl-cuda8" ;\
+	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
+	export dist="dist4" ;\
+	export target="dotest" ;\
+	bash scripts/make-docker-runtests.sh
+
+get_docker-nccl-cuda9:
+	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2
+
+run_in_docker-nccl-cuda9:
 	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
+	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda9" ;\
 	nvidia-docker run \
 	--rm \
-	--name h2o4gpu-nccl-cuda8 \
+	--name $${CONTAINER_NAME} \
 	-p 8888:8888 \
 	-p 8889:8889 \
 	-u `id -u`:`id -g` \
 	-v /home/$$USER/log:/log \
-	opsh2oai/h2o4gpu-0.0.4-nccl-cuda8-runtime:latest
+	--entrypoint=./run.sh \
+	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
+######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist)
+
+docker-build-nccl-cuda8:
+	@echo "+-- Building Wheel in Docker (-nccl-cuda8) --+"
+	rm -rf src/interface_py/dist/*.whl
+	export CONTAINER_NAME="localmake-build" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda8" ;\
+	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
+	export H2O4GPU_BUILD="" ;\
+	export H2O4GPU_SUFFIX="" ;\
+	export makeopts="" ;\
+	export dist="dist" ;\
+	bash scripts/make-docker-devel.sh
+
+docker-runtime-nccl-cuda8:
+	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda8) --+"
+	export CONTAINER_NAME="localmake-runtime" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda8" ;\
+	export encodedFullVersionTag=0.0.4 ;\
+	export fullVersionTag=0.0.4 ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04" ;\
+	bash scripts/make-docker-runtime.sh
+
+docker-runtime-nccl-cuda8-load:
+	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2 | docker load
+
+.PHONY: docker-runtime-nccl-cuda8-run
+
+docker-runtime-nccl-cuda8-run:
+	@echo "+-Running Docker Runtime Image (-nccl-cuda8) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda8" ;\
+	export encodedFullVersionTag="0.0.4" ;\
+	export fullVersionTag="0.0.4" ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
+	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
+docker-runtests-nccl-cuda8:
+	@echo "+-- Run tests in docker (-nccl-cuda8) --+"
+	export CONTAINER_NAME="localmake-runtests" ;\
+	export extratag="-nccl-cuda8" ;\
+	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
+	export dist="dist" ;\
+	export target="dotest" ;\
+	bash scripts/make-docker-runtests.sh
+
+get_docker-nccl-cuda8:
+	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2
+
+run_in_docker-nccl-cuda8:
+	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
+	@echo "+-Running Docker Runtime Image (-nccl-cuda8) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag="0.0.4" ;\
+	export extratag="-nccl-cuda8" ;\
+	nvidia-docker run \
+	--rm \
+	--name $${CONTAINER_NAME} \
+	-p 8888:8888 \
+	-p 8889:8889 \
+	-u `id -u`:`id -g` \
+	-v /home/$$USER/log:/log \
+	--entrypoint=./run.sh \
+	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
 
 #############################################
 
 
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
-	rm -f ./build
-	rm -rf ./results/ ./tmp/
+	-rm -rf ./build
+	-rm -rf ./results/ ./tmp/
 
 cleanbuild: cleancpp cleanc cleanpy
 
@@ -249,25 +389,6 @@ alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml 
 alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 
-###################
-
-wheel_in_docker:
-	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
-
-wheel_in_docker-cuda9:
-	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make update_submodule cpp c py'
-
-clean_in_docker:
-	docker build -t opsh2oai/h2o4gpu-build -f Dockerfile-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-build -c '. /h2oai_env/bin/activate; make clean'
-
-clean_in_docker-cuda9:
-	docker build -t opsh2oai/h2o4gpu-cuda9-build -f Dockerfile-cuda9-build .
-	docker run --rm -u `id -u`:`id -g` -v `pwd`:/work -w /work --entrypoint /bin/bash opsh2oai/h2o4gpu-cuda9-build -c '. /h2oai_env/bin/activate; make clean'
-
-###################
 xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
@@ -336,7 +457,7 @@ py3nvml_clean:
 	-pip uninstall -y py3nvml
 
 apply_py3nvml:
-	cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
+	mkdir -p py3nvml ; cd py3nvml # ; pip install -e git+https://github.com/fbcotter/py3nvml#egg=py3nvml --upgrade --root=.
 
 
 liblightgbm: # only done if user directly requests, never an explicit dependency
@@ -404,6 +525,7 @@ sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using
 
 ##################
 
+#WIP
 dotestdemos:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
@@ -442,28 +564,28 @@ dotestsmall:
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests_small 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests_small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests_big 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests_big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 
 #####################
 
 dotestperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-	bash tests_open/showresults.sh
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
+	bash tests_open/showresults.sh &> ./tmp/h2o4gpu-testperf-results.$(LOGEXT).log
 
 dotestsmallperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
-	bash tests_open/showresults.sh
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
+	bash tests_open/showresults.sh &> ./tmp/h2o4gpu-testsmallperf-results.$(LOGEXT).log
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
-	bash tests_open/showresults.sh # still just references results directory in base path
+	H2OGLM_PERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
+	bash tests_open/showresults.sh  &> ./tmp/h2o4gpu-testbigperf-results.$(LOGEXT).log # still just references results directory in base path
 
 ######################### use python instead of pytest (required in some cases if pytest leads to hang)
 
@@ -531,7 +653,7 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt:
 	@echo "build_date=\"$(H2O4GPU_BUILD_DATE)\"" >> $@
 	@echo "build_user=\"`id -u -n`\"" >> $@
 	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
-	@echo "h2o4gpu_commit=\"$(H2OAI_COMMIT)\"" >> $@
+	@echo "h2o4gpu_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
 
 build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build

@@ -48,7 +48,7 @@ RUN \
   python -m pip install --upgrade pip && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev
+  apt-get install -y libopenblas-dev pbzip2
 
 RUN \
   mkdir h2o4gpu_env && \
@@ -64,13 +64,8 @@ RUN \
 COPY requirements_runtime.txt requirements.txt
 RUN \
   . h2o4gpu_env/bin/activate && \
+  chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt
-
-#Below will get the latest stable wheel file instead.
-RUN \
-  . h2o4gpu_env/bin/activate && \
-  echo "Wheel is $wheel" && \
-  pip install --no-cache-dir https://s3.amazonaws.com/artifacts.h2o.ai/${buckettype}/ai/h2o/h2o4gpu/${wheel}
 
 # Add a canned jupyter notebook demo to the container
 RUN \
@@ -86,12 +81,17 @@ COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
-  chmod -R a+w /jupyter && \
+  chmod -R a+rwx /jupyter && \
   mkdir /scikit_learn_data && \
-  chmod -R a+w /scikit_learn_data
+  chmod -R a+rwx /scikit_learn_data
 
 # Add shell wrapper
 COPY run.sh /run.sh
+
+RUN \
+  . h2o4gpu_env/bin/activate && \
+  chmod a+rwx run.sh
+
 
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT

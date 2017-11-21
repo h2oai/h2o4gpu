@@ -10,12 +10,8 @@ import math
 import os
 import sys
 from time import time
-from ctypes import c_void_p
-import pytest
 import h2o4gpu
 import numpy as np
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from ..solvers.utils import finish
 
 
 def find_file(file):
@@ -52,8 +48,8 @@ def skip_if_no_smalldata():
     return False
 
 
-need_small_data = pytest.mark.skipif(
-    skip_if_no_smalldata(), reason="smalldata folder not found")
+#need_small_data = pytest.mark.skipif(
+#    skip_if_no_smalldata(), reason="smalldata folder not found")
 
 
 #assumes has intercept at last column already in xtrain and xtest
@@ -123,6 +119,7 @@ def run_glm_ptr(nFolds,
     double_precision = 0
     #variables
     if use_gpu == 1:
+        from ctypes import c_void_p
         a, b = c_void_p(train_data_mat_ptr.value), c_void_p(
             train_result_mat_ptr.value)
         c, d = c_void_p(test_data_mat_ptr.value), c_void_p(
@@ -193,6 +190,7 @@ def run_glm_ptr(nFolds,
                   'rm -f varimp.txt; '
                   'rm -f me*.txt; '
                   'rm -f stats.txt')
+    from ..solvers.utils import finish
     finish(enet)
 
     return pred_val, error_train, error_test
@@ -524,6 +522,7 @@ def run_glm(X,
                 string="Train",
                 store_full_path=enet.store_full_path))
 
+    from ..solvers.utils import finish
     finish(enet)
     print("Done Reporting")
 
@@ -594,6 +593,7 @@ def run_glm(X,
             if nfoldsh2o == 1:
                 nfoldsh2o = 0
             if family == "logistic":
+                from h2o.estimators.glm import H2OGeneralizedLinearEstimator
                 h2o_glm = H2OGeneralizedLinearEstimator(
                     intercept=fit_intercept,
                     lambda_search=True,
@@ -602,6 +602,7 @@ def run_glm(X,
                     family="binomial",
                     alpha=alpha_h2o)
             else:
+                from h2o.estimators.glm import H2OGeneralizedLinearEstimator
                 h2o_glm = H2OGeneralizedLinearEstimator(
                     intercept=fit_intercept,
                     lambda_search=True,

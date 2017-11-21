@@ -66,7 +66,7 @@ pipeline {
 
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl4')
+                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl3')
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -95,7 +95,8 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    unstash 'linux_whl4'
+                    unstash 'linux_whl3'
+                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist3/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
                 }
@@ -127,16 +128,16 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                unstash 'linux_whl4'
+                unstash 'linux_whl3'
                 unstash 'version_info'
                 script {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "-nonccl-cuda9")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "dist3", "-nonccl-cuda9")
                 }
-                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         def h2o4gpuUtils = load "Jenkinsfile.utils"
@@ -152,10 +153,8 @@ pipeline {
         failure {
             node('linux') {
                 script {
-                    // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
-                    def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
                     emailext(
-                            to: "mateusz@h2o.ai, ${email}",
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,
