@@ -25,7 +25,13 @@ nvidia-docker commit ${CONTAINER_NAME} opsh2oai/h2o4gpu-${versionTag}${extratag}
 echo "Docker runtime - stopping docker"
 nvidia-docker stop ${CONTAINER_NAME}
 
-echo "Docker runtime - saving docker to local disk"
-nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | pbzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
+if [ -z `command -v pbzip2` ]
+then
+    echo "Docker runtime - saving docker to local disk -- native system must have bzip2"
+    nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | bzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
+else
+    echo "Docker runtime - saving docker to local disk -- native system must have pbzip2"
+    nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | pbzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
+fi
 
 echo "Docker runtime - END"

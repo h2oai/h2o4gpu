@@ -88,7 +88,9 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
         sh """
             CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
            """
+            currentBuild.result = "SUCCESS"
     } catch (error) {
+            currentBuild.result = "FAILURE"
             throw error
     } finally {
         sh "nvidia-docker stop ${CONTAINER_NAME} || true"
@@ -110,7 +112,9 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
             stash includes: 'build/VERSION.txt', name: 'version_info'
             sh "echo \"Archive artifacts\""
             arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
+            currentBuild.result = "SUCCESS"
         }  catch (error) {
+            currentBuild.result = "FAILURE"
             throw error
         } finally {
             sh "nvidia-docker stop ${CONTAINER_NAME} || true"
@@ -132,7 +136,9 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String dist, String e
             sh """
                 CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} dist=${dist} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
+            currentBuild.result = "SUCCESS"
         } catch (error) {
+            currentBuild.result = "FAILURE"
             throw error
         } finally {
             sh "nvidia-docker stop ${CONTAINER_NAME} || true"
