@@ -73,7 +73,7 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 
     //try {
         sh """
-            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-runtests.sh
+            CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
            """
     //} catch (Exception ex) {
 //            throw ex
@@ -87,17 +87,12 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String d
 void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
     echo "Building on linux"
 
-    script {
-        sh 'echo "Files and path:" && ls -l ./ && pwd'
-        sh 'echo "Script Files:" && ls -l ./scripts/'
-    }
-
     def versionTag = "buildversion"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         //try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-devel-docker.sh
+                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
                """
             stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
@@ -128,7 +123,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
 //        try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-runtime-docker.sh
+                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} FullVersionTag=${FullVersionTag} buckettype=${buckettype} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
 //        } catch (Exception ex) {
 //            throw ex
