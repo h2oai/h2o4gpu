@@ -61,7 +61,6 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
 
-
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", 'linux_whl1')
@@ -93,6 +92,7 @@ pipeline {
                 script {
                     unstash 'version_info'
                     unstash 'linux_whl1'
+                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist", "dotest")
                 }
@@ -132,9 +132,9 @@ pipeline {
                 }
                 script {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "-nccl-cuda8")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "dist", "-nccl-cuda8")
                 }
-                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
                         def h2o4gpuUtils = load "Jenkinsfile.utils"
@@ -150,10 +150,8 @@ pipeline {
         failure {
             node('linux') {
                 script {
-                    // Hack - the email plugin finds 0 recipients for the first commit of each new PR build...
-                    def email = utilsLib.getCommandOutput("git --no-pager show -s --format='%ae'")
                     emailext(
-                            to: "mateusz@h2o.ai, ${email}",
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,

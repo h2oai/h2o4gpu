@@ -1,13 +1,16 @@
 #!/usr/bin/env groovy
 @Library('test-shared-library') _
 
-import ai.h2o.ci.Utils
 import ai.h2o.ci.BuildInfo
 
-def utilsLib = new Utils()
-CI_VERSION_SUFFIX = utilsLib.getCiVersionSuffix()
 SAFE_CHANGE_ID = changeId()
 CONTAINER_NAME = "h2o4gpu-build-${SAFE_CHANGE_ID}-${env.BUILD_ID}-${env.BUILD_TYPE}"
+
+String ciVersionSuffix() {
+    // For some reason env.GIT_COMMIT is returning NULL
+    def shortCommit = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+    return isRelease() ? "" : "${env.BRANCH_NAME}_${shortCommit}"
+}
 
 String changeId() {
     if (env.CHANGE_ID) {
@@ -20,24 +23,30 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     echo "Publishing artifact to S3"
 
     def versionTag = buildInfo.getVersion()
+    def majorVersionTag = buildInfo.getMajorVersion()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-py36-none-any.whl"
     def localArtifact = "src/interface_py/${dist}/${artifact}"
 
+    sh 'echo "S3 defs: $versionTag $artifactId $artifact $localArtifact" '
+
     // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    def bucket = "s3://h2o-release/h2o4gpu/snapshots/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
-        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-        sh "s3cmd put ${localArtifact} ${bucket}"
-        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+        bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+
+        def nonLocalVersionTag = versionTag.split('\\+')[0]
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-py36-none-any.whl"
+        sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
+        sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }
 }
 
@@ -45,47 +54,47 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     echo "Publishing runtime to S3"
 
     def versionTag = buildInfo.getVersion()
+    def majorVersionTag = buildInfo.getMajorVersion()
     def artifactId = "h2o4gpu"
-    def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.gz"
+    def artifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.bz2"
     def localArtifact = "${artifact}"
 
+    sh 'echo "S3runtime defs: $versionTag $artifactId $artifact $localArtifact" '
+
     // always upload for testing
-    def bucket = "s3://artifacts.h2o.ai/snapshots/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+    def bucket = "s3://h2o-release/h2o4gpu/snapshots/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
-        bucket = "s3://artifacts.h2o.ai/releases/stable/ai/h2o/${artifactId}/${versionTag}${extratag}/"
+        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
     if (isBleedingEdge()) {
-        bucket = "s3://artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/${artifactId}/${versionTag}${extratag}/"
-        sh "s3cmd put ${localArtifact} ${bucket}"
-        sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+        bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+
+        def nonLocalVersionTag = versionTag.split('\\+')[0]
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.bz2"
+        sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
+        sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }
 }
 
 void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
     echo "Running tests"
 
-    def versionTag = buildInfo.getVersion()
-
-    try {
+   try {
         sh """
-            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf py3nvml
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ; /root/.pyenv/bin/pyenv global 3.6.1; pip install `find src/interface_py/${dist} -name "*h2o4gpu-${versionTag}*.whl"`; make ${target}'
-            nvidia-docker exec ${CONTAINER_NAME} touch src/interface_py/h2o4gpu/__init__.py
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\"  ;  /root/.pyenv/bin/pyenv global 3.6.1; make pylint'
-            nvidia-docker stop ${CONTAINER_NAME}
-            """
+            CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
+           """
+            currentBuild.result = "SUCCESS"
+    } catch (error) {
+            currentBuild.result = "FAILURE"
+            throw error
     } finally {
+        sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+        // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         arch 'tmp/*.log'
         junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
     }
@@ -95,57 +104,46 @@ void buildOnLinux(String dockerimage, String extratag, String dist, String stash
     echo "Building on linux"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        sh """
-            nvidia-docker build  -t opsh2oai/h2o4gpu-${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
-            nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${extratag}-build
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'eval \"\$(/root/.pyenv/bin/pyenv init -)\" ; /root/.pyenv/bin/pyenv global 3.6.1; ./scripts/gitshallow_submodules.sh; make ${env.MAKE_OPTS} fullinstalljenkins${extratag} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + CI_VERSION_SUFFIX};'
-            nvidia-docker stop ${CONTAINER_NAME}
-            echo "Building on linux - stopped docker"
-           """
-
-        stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
-        stash includes: 'build/VERSION.txt', name: 'version_info'
-        // Archive artifacts
-        arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
+        try {
+            sh """
+                CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + ciVersionSuffix()} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
+               """
+            stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
+            stash includes: 'build/VERSION.txt', name: 'version_info'
+            sh "echo \"Archive artifacts\""
+            arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
+            currentBuild.result = "SUCCESS"
+        }  catch (error) {
+            currentBuild.result = "FAILURE"
+            throw error
+        } finally {
+            sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
+        }
     }
 }
 
-void buildRuntime(BuildInfo buildInfo, String dockerimage, String extratag) {
+void buildRuntime(BuildInfo buildInfo, String dockerimage, String dist, String extratag) {
     echo "Building runtime"
-    //if (isRelease()) {
-    //    def buckettype = "releases/stable"
-    //} else if (isBleedingEdge()) {
-    //    def buckettype = "releases/bleeding-edge"
-    //} else {
-    //    def buckettype = "snapshots"
-    //}
+
     def buckettype = "snapshots"
     def fullVersionTag = buildInfo.getVersion()
     def encodedFullVersionTag = fullVersionTag.replace("+", "%2B")
     def versionTag = fullVersionTag.tokenize('+')[0]
 
-    // Get source code
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-        sh """
-            nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} --build-arg wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-py36-none-any.whl --build-arg buckettype=${buckettype} .
-            nvidia-docker run  --init --rm --name ${CONTAINER_NAME} -d -t -u `id -u`:`id -g` -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -w `pwd` -v `pwd`:`pwd`:rw --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /data ./data
-            nvidia-docker exec ${CONTAINER_NAME} rm -rf open_data
-            nvidia-docker exec ${CONTAINER_NAME} ln -s /open_data ./open_data
-            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip freeze'
-            nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/demos ; python -c "exec(\\"from sklearn.datasets import fetch_covtype\\ncov = fetch_covtype()\\")"'
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /open_data/creditcard.csv .'
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-            nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-            nvidia-docker stop ${CONTAINER_NAME}
-            nvidia-docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | gzip > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.gz
-          """
+        try {
+            sh """
+                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} dist=${dist} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
+               """
+            currentBuild.result = "SUCCESS"
+        } catch (error) {
+            currentBuild.result = "FAILURE"
+            throw error
+        } finally {
+            sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
+        }
     }
 }
 

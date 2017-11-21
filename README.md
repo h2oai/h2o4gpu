@@ -48,7 +48,11 @@ sudo apt-get install libopenblas-dev
 Download the Python wheel file (For Python 3.6 on linux_x86_64 with CUDA 8):
 
   * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
-  * [Bleeding edge](https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * Bleeding edge:
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
 
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
