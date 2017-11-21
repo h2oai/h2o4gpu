@@ -225,7 +225,7 @@ docker-runtests-nccl-cuda9:
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
-	export target="fullinstalljenkins${extratag}" ;\
+	export target="fullinstalljenkins$${extratag}" ;\
 	export dist="dist" ;\
 	bash scripts/make-docker-runtests.sh
 
