@@ -83,6 +83,7 @@ help:
 	@echo "make get_docker      Download runtime docker (e.g. instead of building it)"
 	@echo "make load_docker     Load runtime docker image"
 	@echo "make run_in_docker   Run jupyter notebook demo using runtime docker image already present"
+	@echo "make docker-runtests Run tests in docker"
 	@echo " -------- Pycharm Help ---------"
 	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
 	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
@@ -215,7 +216,7 @@ docker-runtime-nccl-cuda9-run:
 docker-runtests-nccl-cuda9:
 	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtests" ;\
-	export extratag="-nccl-cuda8" ;\
+	export extratag="-nccl-cuda9" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export dist="dist4" ;\
 	export target="dotest" ;\
