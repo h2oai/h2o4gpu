@@ -6,19 +6,6 @@ import ai.h2o.ci.Utils
 def utilsLib = new Utils()
 
 
-// Just Notes:
-//def jobnums       = [0 , 1 , 2  , 3]
-//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
-//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
-//def dobuilds      = [1, 0, 0, 0]
-//def dofulltests   = [1, 0, 0, 0]
-//def dopytests     = [1, 0, 0, 0]
-//def doruntimes    = [1, 1, 1, 1]
-//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
-//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
-//def dists         = ["dist","dist2","dist3","dist4"]
-
-
 pipeline {
     agent none
 
@@ -95,8 +82,9 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist3/  || true; rm -rf src/interface_py/dist3/ || true'
                     unstash 'linux_whl3'
-                    sh 'echo "Stashed wheel file:" && ls -l src/interface_py/dist3/'
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist3/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
                 }
@@ -128,9 +116,11 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                unstash 'linux_whl3'
-                unstash 'version_info'
                 script {
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist3/  || true; rm -rf src/interface_py/dist3/ || true'
+                    unstash 'linux_whl3'
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist3/'
+                    unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
