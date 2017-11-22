@@ -128,7 +128,7 @@ def func(m=5000000, n=10, k=9):
 
     return h2o4gpu_mae, sklearn_mae
 
-def reconstruction_error(m=500000, n=10, k=9):
+def reconstruction_error(m=5000, n=10, k=9):
     h2o4gpu_mae_list = np.zeros(k, dtype=np.float64)
     sklearn_mae_list = np.zeros(k, dtype=np.float64)
     for i in range(1,k+1):
