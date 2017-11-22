@@ -47,7 +47,7 @@ sudo apt-get install libopenblas-dev
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
-  * [Stable](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+  * [Stable CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
   * Bleeding edge:
     * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
     * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
@@ -59,7 +59,7 @@ Download the Python wheel file (For Python 3.6 on linux_x86_64):
         pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
     ```
 
-The "nccl" (NCCL) versions give support to multi-GPU in xgboost and other algorithms.  The "nonccl" versions are provided
+The "nccl" (NCCL) versions give support to multi-GPU in xgboost and in other algorithms.  The "nonccl" versions are provided
 in case of system instability in production environments due to NCCL.
  
 Start a fresh pyenv or virtualenv session.
@@ -97,6 +97,12 @@ array([[ 1.,  1.  ],
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
 ## Running Jupyter Notebooks with Docker
+
+Requirements:
+
+* Nvidia drivers compatible with CUDA version used (e.g. 384+ for CUDA9)
+* [docker-ce 17](https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/)
+* [nvidia-docker 1.0](https://github.com/NVIDIA/nvidia-docker/tree/1.0)
 
 Download the Docker file (for linux_x86_64):
 
