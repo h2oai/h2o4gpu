@@ -61,7 +61,9 @@ def func(m=5000000, n=10, k=9):
 
 def run_bench(m=5000000, n=10, k=9):
     results = func(m, n, k)
-    assert results[0] <= results[1], "h2o4gpu tsvd is not faster than sklearn for m = %s and n = %s" % (m,n)
+    import os
+    if os.getenv("CHECKPERFORMANCE") is not None:
+        assert results[0] <= results[1], "h2o4gpu tsvd is not faster than sklearn for m = %s and n = %s" % (m,n)
     # filename = 'bench_results.csv'
     #
     # if os.path.exists(filename):
