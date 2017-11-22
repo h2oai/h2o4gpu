@@ -6,13 +6,12 @@
 #define tsvd_export
 #endif
 
+#include "../data/matrix.cuh"
+
 namespace tsvd
 {
 	extern "C"
 	{
-
-		typedef float  tsvd_float;
-
 		struct params
 		{
 			int X_n;
@@ -33,4 +32,6 @@ namespace tsvd
 
 		tsvd_export void truncated_svd(const double * _X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
 	}
+
+	tsvd_export void truncated_svd_matrix(Matrix<float> _X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
 }

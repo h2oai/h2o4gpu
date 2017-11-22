@@ -1,12 +1,14 @@
 #pragma once
-#include "utils.cuh"
-#include "device_context.cuh"
+#include "../tsvd/utils.cuh"
+#include "../device/device_context.cuh"
 #include "cusolverDn.h"
 #include <../../../cub/cub/cub.cuh>
-#include "tsvd.h"
 
 namespace tsvd
 {
+
+	typedef float  tsvd_float;
+
 	/**
 	 * \class	Matrix
 	 *

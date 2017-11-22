@@ -150,10 +150,12 @@ GPU_PRJ_OBJ=\
 	$(OBJDIR)/gpu/projector/projector_direct_dense.o
 
 GPU_KMEANS_HDR=gpu/kmeans/kmeans_labels.h gpu/kmeans/kmeans_centroids.h gpu/kmeans/kmeans_impl.h common/logger.h
-GPU_TSVD_HDR=gpu/tsvd/tsvd.h gpu/tsvd/matrix.cuh gpu/tsvd/utils.cuh gpu/tsvd/device_context.cuh
+GPU_TSVD_HDR=gpu/tsvd/tsvd.h gpu/data/matrix.cuh gpu/tsvd/utils.cuh gpu/device/device_context.cuh
+GPU_PCA_HDR=$(GPU_TSVD_HDR) gpu/pca/pca.h
 
 GPU_OBJ=$(OBJDIR)/gpu/tsvd/tsvd.o \
-        $(OBJDIR)/gpu/tsvd/matrix.o \
+        $(OBJDIR)/gpu/pca/pca.o \
+        $(OBJDIR)/gpu/data/matrix.o \
 	$(OBJDIR)/gpu/kmeans/kmeans_h2o4gpu.o \
 	$(OBJDIR)/gpu/kmeans/kmeans_labels.o \
 	$(OBJDIR)/gpu/h2o4gpuglm.o \
@@ -209,7 +211,13 @@ $(OBJDIR)/gpu: $(OBJDIR)
 $(OBJDIR)/gpu/kmeans: $(OBJDIR)
 	mkdir -p $@
 
+$(OBJDIR)/gpu/pca: $(OBJDIR)
+	mkdir -p $@
+
 $(OBJDIR)/gpu/tsvd: $(OBJDIR)
+	mkdir -p $@
+
+$(OBJDIR)/gpu/data: $(OBJDIR)
 	mkdir -p $@
 
 $(OBJDIR)/gpu/matrix: $(OBJDIR)/gpu
@@ -262,7 +270,7 @@ $(OBJDIR)/gpu/matrix/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/matrix Makefile config
 $(OBJDIR)/gpu/projector/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu/projector Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
-$(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk $(OBJDIR)/gpu/tsvd
+$(OBJDIR)/gpu/%.o: %.cu $(GPU_HDR) | $(OBJDIR)/gpu Makefile config2.mk $(OBJDIR)/gpu/tsvd $(OBJDIR)/gpu/pca $(OBJDIR)/gpu/data
 	$(CUXX) -Iinclude -Igpu/include $< $(CUFLAGS) $(IFLAGS) -dc -o $@
 
 $(OBJDIR)/gpu/kmeans/*.o: gpu/kmeans/*.cu $(GPU_KMEANS_HDR) | $(OBJDIR)/gpu/kmeans

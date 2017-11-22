@@ -1,8 +1,7 @@
 #include <cstdio>
 #include "cuda_runtime.h"
 #include "utils.cuh"
-#include "matrix.cuh"
-#include "device_context.cuh"
+#include "../device/device_context.cuh"
 #include "tsvd.h"
 #include <ctime>
 #include <thrust/iterator/counting_iterator.h>
@@ -241,11 +240,16 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<fl
  */
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
+    Matrix<float>X(_param.X_m, _param.X_n);
+	X.copy(_X);
+    truncated_svd(_X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
+}
+
+void truncated_svd_matrix(Matrix<float> X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
+{
 	try
 	{
-		//Take in X matrix and allocate for X^TX
-		Matrix<float>X(_param.X_m, _param.X_n);
-		X.copy(_X);
+		//Allocate matrix for X^TX
 		Matrix<float>XtX(_param.X_n, _param.X_n);
 
 		//create context
