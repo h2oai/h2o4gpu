@@ -95,8 +95,7 @@ sync_smalldata:
 
 sync_otherdata:
 	@echo "---- Synchronizing data dir in test/ ----"
-	mkdir -p $(DATA_DIR)
-	$(S3_CMD_LINE) sync --recursive "$(DATA_BUCKET)" "$(DATA_DIR)"
+	mkdir -p $(DATA_DIR) && cd $(DATA_DIR) ; $(S3_CMD_LINE) sync "$(DATA_BUCKET)" "$(DATA_DIR)"
 
 sync_open_data:
 	@echo "---- Synchronizing sklearn and other open data in home directory ----"
