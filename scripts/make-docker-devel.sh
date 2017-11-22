@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 echo "Docker devel - BEGIN"
 nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
