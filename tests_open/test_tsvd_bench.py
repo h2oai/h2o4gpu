@@ -15,7 +15,7 @@ def func(m=5000000, n=10, k=9):
     if os.getenv("CHECKPERFORMANCE") is not None:
         pass
     else:
-        m/=10 # reduce system memory requirements for basic tests, otherwise some tests eat too much system memory
+        m=int(m/10) # reduce system memory requirements for basic tests, otherwise some tests eat too much system memory
 
     np.random.seed(1234)
 
