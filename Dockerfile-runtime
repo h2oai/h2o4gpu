@@ -83,7 +83,9 @@ RUN \
   cd /jupyter/demos && \
   chmod -R a+rwx /jupyter && \
   mkdir /scikit_learn_data && \
-  chmod -R a+rwx /scikit_learn_data
+  chmod -R a+rwx /scikit_learn_data && \
+  mkdir -p /jupyter/scikit_learn_data/covertype && \
+  chmod -R a+rwx /jupyter/scikit_learn_data/covertype
 
 # Add shell wrapper
 COPY run.sh /run.sh

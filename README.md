@@ -47,7 +47,7 @@ sudo apt-get install libopenblas-dev
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
-  * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
+  * [Stable](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
   * Bleeding edge:
     * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
     * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
@@ -110,9 +110,9 @@ Load and run docker file (e.g. for nccl-cuda9):
 ```
 bzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
-find log -name jupyter* | xargs cat | grep token | grep http | grep -v NotebookApp
+find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
-This container has a /demos directory which contains Jupyter notebooks.  Copy/paste the http link shown into your browser.
+Copy/paste the http link shown into your browser.  This container has a /demos directory which contains Jupyter notebooks and some data.
 
 ## Plans and RoadMap
 

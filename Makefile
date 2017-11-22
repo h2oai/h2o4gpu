@@ -179,7 +179,7 @@ docker-build-nccl-cuda9:
 	@echo "+-- Building Wheel in Docker (-nccl-cuda9) --+"
 	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda9" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
@@ -191,27 +191,23 @@ docker-build-nccl-cuda9:
 docker-runtime-nccl-cuda9:
 	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtime" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda9" ;\
-	export encodedFullVersionTag=0.0.4 ;\
-	export fullVersionTag=0.0.4 ;\
+	export encodedFullVersionTag=0.1.0 ;\
+	export fullVersionTag=0.1.0 ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04" ;\
 	bash scripts/make-docker-runtime.sh
-
-docker-runtime-nccl-cuda9-load:
-	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
-	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 
 .PHONY: docker-runtime-nccl-cuda9-run
 
 docker-runtime-nccl-cuda9-run:
 	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtime-run" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda9" ;\
-	export encodedFullVersionTag="0.0.4" ;\
-	export fullVersionTag="0.0.4" ;\
+	export encodedFullVersionTag="0.1.0" ;\
+	export fullVersionTag="0.1.0" ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
 	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
@@ -226,23 +222,14 @@ docker-runtests-nccl-cuda9:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda9:
-	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2
+
+docker-runtime-nccl-cuda9-load:
+	pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
 
 run_in_docker-nccl-cuda9:
-	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
-	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
-	export CONTAINER_NAME="localmake-runtime-run" ;\
-	export versionTag="0.0.4" ;\
-	export extratag="-nccl-cuda9" ;\
-	nvidia-docker run \
-	--rm \
-	--name $${CONTAINER_NAME} \
-	-p 8888:8888 \
-	-p 8889:8889 \
-	-u `id -u`:`id -g` \
-	-v /home/$$USER/log:/log \
-	--entrypoint=./run.sh \
-	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+	-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
+	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
@@ -250,7 +237,7 @@ docker-build-nccl-cuda8:
 	@echo "+-- Building Wheel in Docker (-nccl-cuda8) --+"
 	rm -rf src/interface_py/dist/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda8" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
 	export H2O4GPU_BUILD="" ;\
@@ -262,27 +249,26 @@ docker-build-nccl-cuda8:
 docker-runtime-nccl-cuda8:
 	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda8) --+"
 	export CONTAINER_NAME="localmake-runtime" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda8" ;\
-	export encodedFullVersionTag=0.0.4 ;\
-	export fullVersionTag=0.0.4 ;\
+	export encodedFullVersionTag=0.1.0 ;\
+	export fullVersionTag=0.1.0 ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04" ;\
 	bash scripts/make-docker-runtime.sh
 
 docker-runtime-nccl-cuda8-load:
-	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz
-	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2 | nvidia-docker load
+	pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
 
 .PHONY: docker-runtime-nccl-cuda8-run
 
 docker-runtime-nccl-cuda8-run:
 	@echo "+-Running Docker Runtime Image (-nccl-cuda8) --+"
 	export CONTAINER_NAME="localmake-runtime-run" ;\
-	export versionTag="0.0.4" ;\
+	export versionTag="0.1.0" ;\
 	export extratag="-nccl-cuda8" ;\
-	export encodedFullVersionTag="0.0.4" ;\
-	export fullVersionTag="0.0.4" ;\
+	export encodedFullVersionTag="0.1.0" ;\
+	export fullVersionTag="0.1.0" ;\
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
 	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
@@ -297,23 +283,11 @@ docker-runtests-nccl-cuda8:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda8:
-	wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/h2o4gpu/0.0.4-nccl-cuda8/h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2
 
 run_in_docker-nccl-cuda8:
-	mkdir -p /home/$$USER/log ; chmod a+rwx /home/$$USER/log
-	@echo "+-Running Docker Runtime Image (-nccl-cuda8) --+"
-	export CONTAINER_NAME="localmake-runtime-run" ;\
-	export versionTag="0.0.4" ;\
-	export extratag="-nccl-cuda8" ;\
-	nvidia-docker run \
-	--rm \
-	--name $${CONTAINER_NAME} \
-	-p 8888:8888 \
-	-p 8889:8889 \
-	-u `id -u`:`id -g` \
-	-v /home/$$USER/log:/log \
-	--entrypoint=./run.sh \
-	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+	mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda8-runtime &
+	find log -name jupyter* | xargs cat | grep token | grep http | grep -v NotebookApp
 
 
 #############################################
