@@ -81,7 +81,7 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    sh 'echo "Before Stashed wheel file:" && ls -l src/interface_py/dist2/ && rm -rf src/interface_py/dist2/'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist2/  || true; rm -rf src/interface_py/dist2/ || true'
                     unstash 'linux_whl2'
                     sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist2/'
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
@@ -116,7 +116,7 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    sh 'echo "Before Stashed wheel file:" && ls -l src/interface_py/dist2/ && rm -rf src/interface_py/dist2/'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist2/  || true; rm -rf src/interface_py/dist2/ || true'
                     unstash 'linux_whl2'
                     sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist2/'
                     unstash 'version_info'
