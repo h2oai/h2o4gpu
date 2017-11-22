@@ -274,7 +274,10 @@ def run_glm(X,
 
     #Override run_h2o False default if environ exists
     if os.getenv("CHECKPERFORMANCE") is not None:
+        print("Doing performance testing")
         run_h2o = True
+    else:
+        print("Not Doing performance testing")
 
 #Setup Train / validation Set Split
     morig = X.shape[0]

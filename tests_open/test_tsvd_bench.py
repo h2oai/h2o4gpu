@@ -11,6 +11,11 @@ print(sys.path)
 logging.basicConfig(level=logging.DEBUG)
 
 def func(m=5000000, n=10, k=9):
+    import os
+    if os.getenv("CHECKPERFORMANCE") is not None:
+        pass
+    else:
+        m/=10 # reduce system memory requirements for basic tests, otherwise some tests eat too much system memory
 
     np.random.seed(1234)
 
@@ -81,6 +86,7 @@ def run_bench(m=5000000, n=10, k=9):
 #100K x 10K, k = 100 -> gpu took 80 sec,  sklearn took 738 sec (9x speed up)
 #5M x 100, k =5 -> gpu took 14 sec, sklearn took 57 sec (4x speed up)
 #5M x 10 -> gpu took 3 sec, sklearn took 2 sec (a little bit slower)
+# these currently take about 40-20GB system memory when doing sklearn tests
 def test_tsvd_error_k2(): run_bench(m=5000000, n=10, k=2)
 def test_tsvd_error_k5(): run_bench(m=5000000, n=100, k=5)
 def test_tsvd_error_k10(): run_bench(m=1000000, n=1000, k=10)
