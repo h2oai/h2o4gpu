@@ -58,6 +58,9 @@ Download the Python wheel file (For Python 3.6 on linux_x86_64):
     ```
         pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
     ```
+
+The "nccl" (NCCL) versions give support to multi-GPU in xgboost and other algorithms.  The "nonccl" versions are provided
+in case of system instability in production environments due to NCCL.
  
 Start a fresh pyenv or virtualenv session.
 
