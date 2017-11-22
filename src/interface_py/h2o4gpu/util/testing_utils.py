@@ -273,7 +273,7 @@ def run_glm(X,
     sys.stdout.flush()
 
     #Override run_h2o False default if environ exists
-    if os.getenv("H2OElasticNetH2O_PERFORMANCE") is not None:
+    if os.getenv("CHECKPERFORMANCE") is not None:
         run_h2o = True
 
 #Setup Train / validation Set Split
