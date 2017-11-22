@@ -15,7 +15,7 @@ SMALLDATA_BUCKET = s3://h2o-public-test-data/smalldata
 DATA_BUCKET = s3://h2o-datasets/h2o4gpu/data
 
 # Location of local directory with data
-DATA_DIR = ./
+DATA_DIR = data
 
 # Location of open data
 OPEN_DATA_BUCKET = s3://h2o-public-test-data/h2o4gpu/open_data
