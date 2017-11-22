@@ -38,20 +38,24 @@ def func(m=5000000, n=10, k=9):
     print("h2o4gpu tsvd Explained Variance Ratio")
     print(h2o4gpu_tsvd.explained_variance_ratio_)
 
-    print("\n")
-    print("sklearn run")
-    start_sk = time.time()
-    sklearn_tsvd.fit(X)
-    end_sk = time.time() - start_sk
-    print("Total time for sklearn is " + str(end_sk))
-    print("Sklearn Singular Values")
-    print(sklearn_tsvd.singular_values_)
-    print("Sklearn Components (V^T)")
-    print(sklearn_tsvd.components_)
-    print("Sklearn Explained Variance")
-    print(sklearn_tsvd.explained_variance_)
-    print("Sklearn Explained Variance Ratio")
-    print(sklearn_tsvd.explained_variance_ratio_)
+    # Override run_h2o False default if environ exists
+    import os
+    end_sk = time.time() - time.time()
+    if os.getenv("CHECKPERFORMANCE") is not None:
+        print("\n")
+        print("sklearn run")
+        start_sk = time.time()
+        sklearn_tsvd.fit(X)
+        end_sk = time.time() - start_sk
+        print("Total time for sklearn is " + str(end_sk))
+        print("Sklearn Singular Values")
+        print(sklearn_tsvd.singular_values_)
+        print("Sklearn Components (V^T)")
+        print(sklearn_tsvd.components_)
+        print("Sklearn Explained Variance")
+        print(sklearn_tsvd.explained_variance_)
+        print("Sklearn Explained Variance Ratio")
+        print(sklearn_tsvd.explained_variance_ratio_)
 
     return end_time, end_sk
 
