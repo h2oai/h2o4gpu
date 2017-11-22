@@ -1,5 +1,6 @@
 #!/bin/bash
 # Requires one has already done(e.g.): make docker-build-nccl-cuda9 to get wheel built or wheel was unstashed on jenkins
+set -e
 
 echo "Docker devel test and pylint - BEGIN"
 nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
