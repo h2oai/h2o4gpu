@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 echo "Docker runtime - BEGIN"
 
 echo "Docker runtime - Build"

@@ -167,3 +167,4 @@ class TestKmeans(object):
         end_sk = time.time()
 
         assert end_h2o - start_h2o <= end_sk - start_sk
+        assert False  # TODO remove - only to test `set -e` in scripts
