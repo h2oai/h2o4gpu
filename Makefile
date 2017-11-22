@@ -150,16 +150,16 @@ buildquick: cpp c py
 install: pyinstall
 
 fullbuild: clean alldeps sync_open_data build
-	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
+	rm -rf src/interface_py/dist1/* ; mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullbuild-nonccl: clean alldeps2 sync_open_data build
-	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+	rm -rf src/interface_py/dist2/* ; mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 #default is with nccl
 fullinstall: fullinstall-nccl
 fullinstall-nccl: clean alldeps sync_open_data build install
-	mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
+	rm -rf src/interface_py/dist1/* ; mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
 fullinstall-nonccl: clean alldeps2 sync_open_data build install
-	mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+	rm -rf src/interface_py/dist2/* ; mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
 ####################################################
 # Docker stuff
@@ -244,7 +244,7 @@ run_in_docker-nccl-cuda9:
 	--entrypoint=./run.sh \
 	opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
 
-######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist)
+######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
 docker-build-nccl-cuda8:
 	@echo "+-- Building Wheel in Docker (-nccl-cuda8) --+"
@@ -256,7 +256,7 @@ docker-build-nccl-cuda8:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist" ;\
+	export dist="dist1" ;\
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-nccl-cuda8:
@@ -292,7 +292,7 @@ docker-runtests-nccl-cuda8:
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export extratag="-nccl-cuda8" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
-	export dist="dist" ;\
+	export dist="dist1" ;\
 	export target="dotest" ;\
 	bash scripts/make-docker-runtests.sh
 
@@ -501,12 +501,16 @@ installjenkins: pyinstall
 
 # for nccl cuda8 build
 fullinstalljenkins-nccl-cuda8: cleanjenkins alldeps_private-nccl-cuda8 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
+
 # for nonccl cuda8 build
 fullinstalljenkins-nonccl-cuda8: cleanjenkins alldeps_private-nonccl-cuda8 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
+
 # for nccl cuda9 build
 fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
+
 # for nonccl cuda9 build
 fullinstalljenkins-nonccl-cuda9: cleanjenkins alldeps_private-nonccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/

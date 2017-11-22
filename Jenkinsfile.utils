@@ -1,6 +1,19 @@
 #!/usr/bin/env groovy
 @Library('test-shared-library') _
 
+// Just Notes:
+//def jobnums       = [0 , 1 , 2  , 3]
+//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+//def dobuilds      = [1, 0, 0, 0]
+//def dofulltests   = [1, 0, 0, 0]
+//def dopytests     = [1, 0, 0, 0]
+//def doruntimes    = [1, 1, 1, 1]
+//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
+//def dists         = ["dist1","dist2","dist3","dist4"]
+
+
 import ai.h2o.ci.BuildInfo
 
 SAFE_CHANGE_ID = changeId()
