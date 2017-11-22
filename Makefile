@@ -201,7 +201,7 @@ docker-runtime-nccl-cuda9:
 
 docker-runtime-nccl-cuda9-load:
 	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.gz
-	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2 | docker load
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 
 .PHONY: docker-runtime-nccl-cuda9-run
 
@@ -272,7 +272,7 @@ docker-runtime-nccl-cuda8:
 
 docker-runtime-nccl-cuda8-load:
 	#nvidia-docker load < h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz
-	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2 | docker load
+	pbzip2 -dc h2o4gpu-0.0.4-nccl-cuda8-runtime.tar.bz2 | nvidia-docker load
 
 .PHONY: docker-runtime-nccl-cuda8-run
 

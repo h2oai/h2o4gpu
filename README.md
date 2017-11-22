@@ -35,7 +35,7 @@ Ensure to reboot after installing the new nvidia drivers.
 Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 
 ```
-export CUDA_HOME=/usr/local/cuda
+export CUDA_HOME=/usr/local/cuda # or choose /usr/local/cuda9 for cuda9 and /usr/local/cuda8 for cuda8
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/extras/CUPTI/lib64
 ```
 
@@ -45,14 +45,14 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 sudo apt-get install libopenblas-dev
 ```
 
-Download the Python wheel file (For Python 3.6 on linux_x86_64 with CUDA 8):
+Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
   * [Stable](https://s3.amazonaws.com/artifacts.h2o.ai/releases/stable/ai/h2o/h2o4gpu/0.0.4/h2o4gpu-0.0.4-py36-none-any.whl)
   * Bleeding edge:
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-releases.h2o.ai/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
 
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
@@ -66,7 +66,7 @@ overwrite your py3nvml and xgboost installations to use our validated
 versions.
 
 ```
-pip install h2o4gpu-0.0.4-py36-none-any.whl
+pip install h2o4gpu-0.1.0-py36-none-any.whl
 ```
 
 Test your installation
@@ -87,37 +87,29 @@ Should give input/output of:
 >>> X = np.array([[1.,1.], [1.,4.], [1.,0.]])
 >>> model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
 >>> model.cluster_centers_
-array([[ 0.25,  0.  ],
-       [ 1.  ,  4.  ]])
+array([[ 1.,  1.  ],
+       [ 1.,  4.  ]])
 ```
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
 ## Running Jupyter Notebooks with Docker
-```
-#Build Docker image
-make runtime
 
-#Run docker image
-To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
-```
-This container has a /demos directory which contains Jupyter notebooks. You will need to make sure that port 8888 inside the container is exposed to reach it.
+Download the Docker file (for linux_x86_64):
 
-By default, the notebook is created with a token for security. You can find the token in the jupyter.log file:
+  * Bleeding edge:
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2)
 
+Load and run docker file (e.g. for nccl-cuda9):
 ```
-cat /some/local/log/YYYYMMDD-HHMMSS/jupyter.log 
+bzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
+mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
+find log -name jupyter* | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
-
-```
-...
-Copy/paste this URL into your browser when you connect for the first time,
-to login with a token:
-    http://localhost:8888/?token=93f7d1fd17ff1942717656f5f8a43ce63ffcc135afc1475a
-...
-```
-
-(Replace localhost and port 8888 with the IP address and host port where the container is exposed.)
+This container has a /demos directory which contains Jupyter notebooks.  Copy/paste the http link shown into your browser.
 
 ## Plans and RoadMap
 
