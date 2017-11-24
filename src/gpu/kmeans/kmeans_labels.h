@@ -261,8 +261,8 @@ namespace kmeans {
       );
 
       log_verbose(verbose,
-                  "Batch calculate distance - Free memory %ld | Required memory %ld | Runs %d",
-                  free_byte, required_byte, runs + 1
+                  "Batch calculate distance - Free memory %zu | Required memory %lf | Runs %d",
+                  free_byte, required_byte, runs
       );
 
       int offset = 0;
