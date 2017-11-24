@@ -142,7 +142,7 @@ void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
 
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
-    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
     int grid_size = std::ceil(static_cast<double>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(double);
@@ -209,7 +209,7 @@ void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
 
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
-    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
     int grid_size = std::ceil(static_cast<float>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(float);

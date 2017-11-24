@@ -55,11 +55,11 @@ void count_pts_per_centroid(
 
     size_t runs = std::ceil( required_byte / (double)free_byte );
     size_t offset = 0;
-    size_t rows_per_run = n / rows;
+    size_t rows_per_run = rows_per_gpu / runs;
     thrust::device_vector<T> pairwise_distances(rows_per_run * k);
     for(int run = 0; run < runs; run++) {
       if( run + 1 == runs ) {
-        rows_per_run = n % rows_per_run;
+        rows_per_run = rows_per_gpu % rows_per_run;
         pairwise_distances.resize(rows_per_run * k, (T)0.0);
       } else {
         thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
