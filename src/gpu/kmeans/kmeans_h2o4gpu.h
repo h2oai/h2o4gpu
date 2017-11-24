@@ -51,18 +51,20 @@ void count_pts_per_centroid(
     CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
     free_byte *= 0.8;
 
-    double required_byte = rows_per_gpu * k * sizeof(T);
+    size_t required_byte = rows_per_gpu * k * sizeof(T);
 
-    int runs = std::ceil( required_byte / free_byte );
-    int offset = 0;
+    size_t runs = std::ceil( required_byte / (double)free_byte );
+    size_t offset = 0;
+    size_t rows_per_run = n / rows;
+    thrust::device_vector<T> pairwise_distances(rows_per_run * k);
     for(int run = 0; run < runs; run++) {
-      int rows_per_run = free_byte / (k * sizeof(T));
-
-      if (run + 1 == runs) {
-        rows_per_run = rows_per_gpu % rows_per_run;
+      if( run + 1 == runs ) {
+        rows_per_run = n % rows_per_run;
+        pairwise_distances.resize(rows_per_run * k, (T)0.0);
+      } else {
+        thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
       }
 
-      thrust::device_vector<T> pairwise_distances(rows_per_run * k);
       kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, k,
                                           *data[i], offset,
                                           d_centroids,

@@ -120,7 +120,7 @@ int kmeans(
 
       detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
                                         *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
-                                        [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                        [&](int n, size_t offset, thrust::device_vector<T> &pairwise_distances) {
                                           detail::relabel(n, k, pairwise_distances, *labels[q], offset);
                                         }
       );
@@ -229,7 +229,7 @@ int kmeans(
 
     detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
                                       *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
-                                      [=](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                      [=](int n, size_t offset, thrust::device_vector<T> &pairwise_distances) {
                                         detail::relabel(n, k, pairwise_distances, *labels[q], offset);
                                       }
     );

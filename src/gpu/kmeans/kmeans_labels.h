@@ -10,6 +10,7 @@
 #include <cublas_v2.h>
 #include <cfloat>
 #include "kmeans_general.h"
+#include <thrust/fill.h>
 
 inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true) {
 	if (code != cudaSuccess) {
@@ -205,7 +206,7 @@ namespace kmeans {
 
 
     template<typename T>
-      void make_all_dots(int n, int k, int offset, thrust::device_vector<T>& data_dots,
+      void make_all_dots(int n, int k, size_t offset, thrust::device_vector<T>& data_dots,
           thrust::device_vector<T>& centroid_dots,
           thrust::device_vector<T>& dots) {
         int dev_num;
@@ -228,16 +229,16 @@ namespace kmeans {
       };
 
     template<typename T>
-      void calculate_distances(int verbose, int q, int n, int d, int k,
+      void calculate_distances(int verbose, int q, size_t n, int d, int k,
                                thrust::device_vector<T>& data,
-                               int data_offset,
+                               size_t data_offset,
                                thrust::device_vector<T>& centroids,
                                thrust::device_vector<T>& data_dots,
                                thrust::device_vector<T>& centroid_dots,
                                thrust::device_vector<T>& pairwise_distances);
 
     template<typename T, typename F>
-    void batch_calculate_distances(int verbose, int q, int n, int d, int k,
+    void batch_calculate_distances(int verbose, int q, size_t n, int d, int k,
                                            thrust::device_vector<T> &data,
                                            thrust::device_vector<T> &centroids,
                                            thrust::device_vector<T> &data_dots,
@@ -251,9 +252,9 @@ namespace kmeans {
       CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
       free_byte *= 0.8;
 
-      double required_byte = n * k * sizeof(T);
+      size_t required_byte = n * k * sizeof(T);
 
-      int runs = std::ceil( required_byte / free_byte );
+      size_t runs = std::ceil( required_byte / (double)free_byte );
 
       log_verbose(verbose,
                   "Batch calculate distance - Rows %ld | K %ld | Data size %d",
@@ -265,15 +266,16 @@ namespace kmeans {
                   free_byte, required_byte, runs
       );
 
-      int offset = 0;
+      size_t offset = 0;
+      size_t rows_per_run = n / runs;
+      thrust::device_vector<T> pairwise_distances(rows_per_run * k);
       for(int run = 0; run < runs; run++) {
-        int rows_per_run = free_byte / (k * sizeof(T));
-
         if( run + 1 == runs ) {
           rows_per_run = n % rows_per_run;
+          pairwise_distances.resize(rows_per_run * k, (T)0.0);
+        } else {
+            thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
         }
-
-        thrust::device_vector<T> pairwise_distances(rows_per_run * k);
 
         log_verbose(verbose,
                     "Batch calculate distance - Allocated"
@@ -322,7 +324,7 @@ namespace kmeans {
       void relabel(int n, int k,
                    thrust::device_vector<T>& pairwise_distances,
                    thrust::device_vector<int>& labels,
-                   int offset) {
+                   size_t offset) {
         int dev_num;
         safe_cuda(cudaGetDevice(&dev_num));
 #define MAX_BLOCK_THREADS2 256

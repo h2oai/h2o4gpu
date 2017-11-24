@@ -118,9 +118,9 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
 }
 
 template<>
-void calculate_distances<double>(int verbose, int q, int n, int d, int k,
+void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
                                  thrust::device_vector<double> &data,
-                                 int data_offset,
+                                 size_t data_offset,
                                  thrust::device_vector<double> &centroids,
                                  thrust::device_vector<double> &data_dots,
                                  thrust::device_vector<double> &centroid_dots,
@@ -185,9 +185,9 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
 }
 
 template<>
-void calculate_distances<float>(int verbose, int q, int n, int d, int k,
+void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
                                 thrust::device_vector<float> &data,
-                                int data_offset,
+                                size_t data_offset,
                                 thrust::device_vector<float> &centroids,
                                 thrust::device_vector<float> &data_dots,
                                 thrust::device_vector<float> &centroid_dots,

@@ -345,13 +345,13 @@ template<typename T>
 thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
                      thrust::device_vector<T> **data,
                      thrust::device_vector<T> **data_dots,
-                     int rows, int cols, int k, int num_gpu, T threshold) {
+                     size_t rows, int cols, int k, int num_gpu, T threshold) {
   if (seed < 0) {
     std::random_device rd;
     int seed = rd();
   }
 
-  int rows_per_gpu = rows / num_gpu;
+  size_t rows_per_gpu = rows / num_gpu;
 
   std::mt19937 gen(seed);
   std::uniform_int_distribution<> dis(0, rows - 1);
@@ -415,18 +415,19 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
       free_byte *= 0.8;
 
-      double required_byte = rows_per_gpu * potential_k_rows * sizeof(T);
+      size_t required_byte = rows_per_gpu * potential_k_rows * sizeof(T);
 
-      int runs = std::ceil( required_byte / free_byte );
-      int offset = 0;
+      size_t runs = std::ceil( required_byte / (double)free_byte );
+      size_t offset = 0;
+      size_t rows_per_run = rows_per_gpu / runs;
+      thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
       for(int run = 0; run < runs; run++) {
-        int rows_per_run = free_byte / (potential_k_rows * sizeof(T));
-
         if( run + 1 == runs ) {
           rows_per_run = rows_per_gpu % rows_per_run;
+          pairwise_distances.resize(rows_per_run * potential_k_rows, (T)0.0);
+        } else {
+            thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
         }
-
-        thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
 
         kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, potential_k_rows,
                                             *data[i], offset,
@@ -894,7 +895,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry,
 
     kmeans::detail::batch_calculate_distances(verbose, q, rows / n_gpu, cols, k,
                                       *d_data[q], *d_centroids[q], *data_dots[q], *centroid_dots[q],
-                                      [&](int n, int offset, thrust::device_vector<T> &pairwise_distances) {
+                                      [&](int n, size_t offset, thrust::device_vector<T> &pairwise_distances) {
                                         kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
                                       }
     );
