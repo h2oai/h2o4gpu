@@ -60,10 +60,9 @@ void count_pts_per_centroid(
     for(int run = 0; run < runs; run++) {
       if( run + 1 == runs ) {
         rows_per_run = rows_per_gpu % rows_per_run;
-        pairwise_distances.resize(rows_per_run * k, (T)0.0);
-      } else {
-        thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
       }
+
+      thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
 
       kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, k,
                                           *data[i], offset,

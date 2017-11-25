@@ -424,10 +424,9 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       for(int run = 0; run < runs; run++) {
         if( run + 1 == runs ) {
           rows_per_run = rows_per_gpu % rows_per_run;
-          d_all_costs.resize(rows_per_run * potential_k_rows, (T)0.0);
-        } else {
-            thrust::fill_n(d_all_costs.begin(), d_all_costs.size(), (T)0.0);
         }
+
+        thrust::fill_n(d_all_costs.begin(), d_all_costs.size(), (T)0.0);
 
         kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, potential_k_rows,
                                             *data[i], offset,

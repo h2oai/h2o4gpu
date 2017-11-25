@@ -272,10 +272,9 @@ namespace kmeans {
       for(int run = 0; run < runs; run++) {
         if( run + 1 == runs ) {
           rows_per_run = n % rows_per_run;
-          pairwise_distances.resize(rows_per_run * k, (T)0.0);
-        } else {
-            thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
         }
+
+        thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T)0.0);
 
         log_verbose(verbose,
                     "Batch calculate distance - Allocated"
