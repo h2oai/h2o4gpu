@@ -147,5 +147,5 @@ def get_compute_capability(gpu_id):
         from ctypes import c_int
         c_int_p = POINTER(c_int)
         lib.get_compute_capability(c_int(gpu_id), cast(addressof(device_major),c_int_p), cast(addressof(device_minor),c_int_p), cast(addressof(device_ratioperf),c_int_p))
-        print("device_major=%d device_minor=%d device_ratioperf=%d" % (device_major.value, device_minor.value, device_ratioperf.value))
+        #print("device_major=%d device_minor=%d device_ratioperf=%d" % (device_major.value, device_minor.value, device_ratioperf.value))
     return device_major.value, device_minor.value, device_ratioperf.value
