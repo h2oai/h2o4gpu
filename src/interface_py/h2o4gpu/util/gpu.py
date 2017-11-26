@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+
 #############################
 # Device utils
 
@@ -69,7 +70,7 @@ def _gpu_info_subprocess():
             if lencudavis == 0:
                 total_gpus = 0
             else:
-                total_gpus =\
+                total_gpus = \
                     min(total_gpus,
                         os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
 
@@ -117,7 +118,8 @@ def cudaresetdevice(gpu_id, n_gpus):
 
 def get_compute_capability(gpu_id):
     """
-    Gets the major cuda version, minor cuda version, and ratio of floating point single perf to double perf.
+    Gets the major cuda version, minor cuda version,
+     and ratio of floating point single perf to double perf.
 
     :param gpuU_id: int
         device number of GPU
@@ -138,14 +140,14 @@ def get_compute_capability(gpu_id):
     else:
         n_gpus = 0
 
-    from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
-        pointer, cast, addressof
+    from ctypes import c_int, POINTER, cast, addressof
     device_major = c_int(0)
     device_minor = c_int(0)
     device_ratioperf = c_int(0)
     if n_gpus > 0 and lib is not None:
-        from ctypes import c_int
         c_int_p = POINTER(c_int)
-        lib.get_compute_capability(c_int(gpu_id), cast(addressof(device_major),c_int_p), cast(addressof(device_minor),c_int_p), cast(addressof(device_ratioperf),c_int_p))
-        #print("device_major=%d device_minor=%d device_ratioperf=%d" % (device_major.value, device_minor.value, device_ratioperf.value))
+        lib.get_compute_capability(c_int(gpu_id),
+                                   cast(addressof(device_major), c_int_p),
+                                   cast(addressof(device_minor), c_int_p),
+                                   cast(addressof(device_ratioperf), c_int_p))
     return device_major.value, device_minor.value, device_ratioperf.value
