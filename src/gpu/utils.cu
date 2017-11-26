@@ -33,3 +33,24 @@ extern "C" {
   #ifdef __cplusplus
 }
 #endif
+
+
+
+
+#ifdef __cplusplus
+extern "C" {
+  #endif
+
+    int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
+        // http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html#group__CUDART__DEVICE_1g1bf9d625a931d657e08db2b4391170f0
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, d_idx);
+        *major = prop.major;
+        *minor = prop.minor;
+        *ratioperf = prop.singleToDoublePrecisionPerfRatio;
+        return(0);
+    }
+
+  #ifdef __cplusplus
+}
+#endif
