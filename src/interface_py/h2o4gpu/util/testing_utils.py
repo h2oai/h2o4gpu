@@ -805,7 +805,7 @@ def run_glm(X,
         #include asserts for timing
 
         #for pytest only:
-        if os.getenv("H2OElasticNetH2O_DISABLEPYTEST") is None:
+        if os.getenv("DISABLEPYTEST") is None:
             assert doassert == 0
 
     if len(np.shape(error_train)) == 2:
