@@ -319,6 +319,31 @@ void kmeans_plus_plus(
   }
 }
 
+template<typename T>
+struct min_calc_functor {
+  T* all_costs_ptr;
+  T* min_costs_ptr;
+  T max = std::numeric_limits<T>::max();
+  int potential_k_rows;
+  int rows_per_run;
+
+  min_calc_functor(T* _all_costs_ptr, T* _min_costs_ptr, int _potential_k_rows, int _rows_per_run) {
+    all_costs_ptr = _all_costs_ptr;
+    min_costs_ptr = _min_costs_ptr;
+    potential_k_rows = _potential_k_rows;
+    rows_per_run = _rows_per_run;
+  }
+
+  __host__ __device__
+  void operator()(int idx) const {
+    T best = max;
+    for (int j = 0; j < potential_k_rows; j++) {
+      best = min(best, std::abs(all_costs_ptr[j * rows_per_run + idx]));
+    }
+    min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
+  }
+};
+
 /**
  * K-Means|| initialization method implementation as described in "Scalable K-Means++".
  *
@@ -405,52 +430,20 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       // Compute all the costs to each potential centroid from previous iteration
       thrust::device_vector<T> centroid_dots(potential_k_rows);
 
-      // Get info about available memory
-      // This part of the algo can be very memory consuming
-      // We might need to batch it
-      // TODO not using batch_calculate_distances because nvcc is complaining about using the __device__
-      // lambda inside a lambda
-      size_t free_byte;
-      size_t total_byte;
-      CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
-      free_byte *= 0.8;
-
-      size_t required_byte = rows_per_gpu * potential_k_rows * sizeof(T);
-
-      size_t runs = std::ceil( required_byte / (double)free_byte );
-      size_t offset = 0;
-      size_t rows_per_run = rows_per_gpu / runs;
-      thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
-      for(int run = 0; run < runs; run++) {
-        if( run + 1 == runs && rows_per_gpu % rows_per_run != 0) {
-          rows_per_run = rows_per_gpu % rows_per_run;
-        }
-
-        thrust::fill_n(d_all_costs.begin(), d_all_costs.size(), (T)0.0);
-
-        kmeans::detail::calculate_distances(verbose, 0, rows_per_run, cols, potential_k_rows,
-                                            *data[i], offset,
-                                            d_potential_centroids,
-                                            *data_dots[i],
-                                            centroid_dots,
-                                            d_all_costs);
-
-        // Find the closest potential center cost for each row
-        auto min_cost_counter = thrust::make_counting_iterator(0);
-        auto all_costs_ptr = thrust::raw_pointer_cast(d_all_costs.data());
-        auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data() + offset);
-        T max = std::numeric_limits<T>::max();
-        thrust::for_each(min_cost_counter, min_cost_counter + rows_per_run, [=]
-        __device__(int idx){
-          T best = max;
-          for (int j = 0; j < potential_k_rows; j++) {
-            best = min(best, std::abs(all_costs_ptr[j * rows_per_run + idx]));
-          }
-
-          min_costs_ptr[idx] = min(min_costs_ptr[idx], best);
-        });
-        offset += rows_per_run;
-      }
+      kmeans::detail::batch_calculate_distances(verbose, 0, rows_per_gpu, cols, potential_k_rows,
+                                        *data[i], d_potential_centroids, *data_dots[i], centroid_dots,
+                                        [&](int rows_per_run, size_t offset, thrust::device_vector<T> &pairwise_distances) {
+                                          // Find the closest potential center cost for each row
+                                          auto min_cost_counter = thrust::make_counting_iterator(0);
+                                          auto all_costs_ptr = thrust::raw_pointer_cast(pairwise_distances.data());
+                                          auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data() + offset);
+                                          thrust::for_each(min_cost_counter,
+                                                           min_cost_counter + rows_per_run,
+                                                           // Functor instead of a lambda b/c nvcc is complaining about
+                                                           // nesting a __device__ lambda inside a regular lambda
+                                                           min_calc_functor<T>(all_costs_ptr, min_costs_ptr, potential_k_rows, rows_per_run));
+                                        }
+      );
 
       CUDACHECK(cudaDeviceSynchronize());
 
