@@ -422,7 +422,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
       size_t rows_per_run = rows_per_gpu / runs;
       thrust::device_vector<T> d_all_costs(rows_per_run * potential_k_rows);
       for(int run = 0; run < runs; run++) {
-        if( run + 1 == runs ) {
+        if( run + 1 == runs && rows_per_gpu % rows_per_run != 0) {
           rows_per_run = rows_per_gpu % rows_per_run;
         }
 

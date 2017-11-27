@@ -270,7 +270,7 @@ namespace kmeans {
       size_t rows_per_run = n / runs;
       thrust::device_vector<T> pairwise_distances(rows_per_run * k);
       for(int run = 0; run < runs; run++) {
-        if( run + 1 == runs ) {
+        if( run + 1 == runs && n % rows_per_run != 0) {
           rows_per_run = n % rows_per_run;
         }
 
