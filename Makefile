@@ -552,17 +552,17 @@ dotestbig:
 
 dotestperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
 	bash tests_open/showresults.sh &> ./tmp/h2o4gpu-testperf-results.$(LOGEXT).log
 
 dotestsmallperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests_small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
 	bash tests_open/showresults.sh &> ./tmp/h2o4gpu-testsmallperf-results.$(LOGEXT).log
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests_big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
 	bash tests_open/showresults.sh  &> ./tmp/h2o4gpu-testbigperf-results.$(LOGEXT).log # still just references results directory in base path
 
 ######################### use python instead of pytest (required in some cases if pytest leads to hang)
