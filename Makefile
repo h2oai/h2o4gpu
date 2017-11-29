@@ -388,17 +388,10 @@ libnccl2:
 	sudo apt install libnccl2 libnccl-dev
 
 # https://xgboost.readthedocs.io/en/latest/build.html
-libxgboost: libxgboostp1 libxgboostp2 libxgboostp3
-libxgboost2: libxgboostp1 libxgboostp2nonccl libxgboostp3
-
-libxgboostp1:
-	cd xgboost && git submodule init && git submodule update dmlc-core && git submodule update nccl && git submodule update cub && git submodule update rabit
-libxgboostp2:
-	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON -DUSE_NCCL=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
-libxgboostp2nonccl:
-	cd xgboost && mkdir -p build && cd build && cmake .. -DUSE_CUDA=ON $(XGB_CUDA) -DCMAKE_BUILD_TYPE=Release && make -j
-libxgboostp3:
-	cd xgboost/python-package ; rm -rf dist && python setup.py sdist bdist_wheel
+libxgboost:
+	cd xgboost ; make -f Makefile2 libxgboost
+libxgboost2:
+	cd xgboost ; make -f Makefile2 libxgboost2
 
 apply_xgboost: libxgboost pipxgboost
 apply_xgboost2: libxgboost2 pipxgboost
