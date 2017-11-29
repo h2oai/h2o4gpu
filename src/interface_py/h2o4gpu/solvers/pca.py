@@ -33,8 +33,10 @@ class PCAH2O(TruncatedSVDH2O):
     """
 
     def __init__(self, n_components=2, whiten=False):
-        self.n_components = n_components
+        super().__init__(n_components)
         self.whiten = whiten
+        self.n_components_ = n_components
+        self.mean_ = None
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -76,6 +78,7 @@ class PCAH2O(TruncatedSVDH2O):
                                       dtype=np.float64)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=np.float64)
+        mean = np.empty(X.shape[0], dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
@@ -85,11 +88,11 @@ class PCAH2O(TruncatedSVDH2O):
         lib = self._load_lib()
         lib.pca(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
                           _as_fptr(explained_variance),
-                          _as_fptr(explained_variance_ratio), param)
+                          _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
 
         # TODO mean_ and noise_variance_ calculation
         # can be done inside lib.pca if a bottleneck
-        # self.mean_ = np.mean(X, axis=0)
+        #self.mean_ = np.mean(X, axis=0)
         # n_samples, n_features = X.shape
         # total_var = np.var(X, ddof=1, axis=0)
         # if self.n_components_ < min(n_features, n_samples):
@@ -106,17 +109,10 @@ class PCAH2O(TruncatedSVDH2O):
         n = X.shape[1]
         self.explained_variance = self.singular_values_ ** 2 / (n-1) #To match sci-kit #TODO Port to cuda?
         self.explained_variance_ratio = explained_variance_ratio
+        self.mean_ = mean
 
         X_transformed = U * w
         return X_transformed
-
-    @property
-    def mean_(self):
-        return self.mean_
-
-    @property
-    def n_components_(self):
-        return self.n_components_
 
     @property
     def noise_variance_(self):

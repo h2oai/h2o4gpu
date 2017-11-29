@@ -32,6 +32,6 @@ namespace pca
 		 * \param 		  	_param
 		 */
 
-		pca_export void pca(const double * _X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+		pca_export void pca(const double * _X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param);
 	}
 }
