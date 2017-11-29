@@ -29,11 +29,29 @@ void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explaine
 		//create context
 		tsvd::DeviceContext context;
 
-        tsvd::normalize_columns(X, context);
+		//Get columnar means
+		tsvd::Matrix<float>XOnes(X.rows(), 1);
+		XOnes.fill(1.0f);
+		tsvd::Matrix<float>XColMean(X.columns(), 1);
+		tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+		float m = X.rows();
+		multiply(XColMean, 1/m, context);
+		std::cout << "Column Means:" << std::endl;
+		XColMean.print();
+
+		//Center matrix
+		tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
+		tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
+		std::cout << "OnesXMeanTranspose:" << std::endl;
+		OnesXMeanTranspose.print();
+		tsvd::Matrix<float>XCentered(X.rows(), X.columns());
+		tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
+		std::cout << "XCentered:" << std::endl;
+		XCentered.print();
 
         tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k};
 
-        tsvd::truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
+        tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
 
         if(_param.whiten) {
             // TODO whiten

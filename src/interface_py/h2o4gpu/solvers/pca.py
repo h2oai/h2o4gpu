@@ -32,9 +32,8 @@ class PCAH2O(TruncatedSVDH2O):
     """
 
     def __init__(self, n_components=2, whiten=False):
-        super().__init__(n_components)
+        self.n_components = n_components
         self.whiten = whiten
-        self.n_components_ = n_components
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -89,16 +88,16 @@ class PCAH2O(TruncatedSVDH2O):
 
         # TODO mean_ and noise_variance_ calculation
         # can be done inside lib.pca if a bottleneck
-        self.mean_ = np.mean(X, axis=0)
-        n_samples, n_features = X.shape
-        total_var = np.var(X, ddof=1, axis=0)
-        if self.n_components_ < min(n_features, n_samples):
-            self.noise_variance_ = \
-                (total_var.sum() - self.explained_variance_.sum())
-            self.noise_variance_ /= \
-                min(n_features, n_samples) - self.n_components
-        else:
-            self.noise_variance_ = 0.
+        # self.mean_ = np.mean(X, axis=0)
+        # n_samples, n_features = X.shape
+        # total_var = np.var(X, ddof=1, axis=0)
+        # if self.n_components_ < min(n_features, n_samples):
+        #     self.noise_variance_ = \
+        #         (total_var.sum() - self.explained_variance_.sum())
+        #     self.noise_variance_ /= \
+        #         min(n_features, n_samples) - self.n_components
+        # else:
+        #     self.noise_variance_ = 0.
 
         self._Q = Q
         self._w = w
