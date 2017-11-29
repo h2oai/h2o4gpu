@@ -118,9 +118,9 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
 }
 
 template<>
-void calculate_distances<double>(int verbose, int q, int n, int d, int k,
+void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
                                  thrust::device_vector<double> &data,
-                                 int data_offset,
+                                 size_t data_offset,
                                  thrust::device_vector<double> &centroids,
                                  thrust::device_vector<double> &data_dots,
                                  thrust::device_vector<double> &centroid_dots,
@@ -142,7 +142,7 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
 
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
-    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
     int grid_size = std::ceil(static_cast<double>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(double);
@@ -154,8 +154,6 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
-
-    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
@@ -180,14 +178,13 @@ void calculate_distances<double>(int verbose, int q, int n, int d, int k,
 
   #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
   #endif
 }
 
 template<>
-void calculate_distances<float>(int verbose, int q, int n, int d, int k,
+void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
                                 thrust::device_vector<float> &data,
-                                int data_offset,
+                                size_t data_offset,
                                 thrust::device_vector<float> &centroids,
                                 thrust::device_vector<float> &data_dots,
                                 thrust::device_vector<float> &centroid_dots,
@@ -209,7 +206,7 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
 
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
-    int block_rows = std::min(BLOCK_SIZE_MUL / k, n);
+    int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
     int grid_size = std::ceil(static_cast<float>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(float);
@@ -221,7 +218,6 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
-    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
@@ -246,7 +242,6 @@ void calculate_distances<float>(int verbose, int q, int n, int d, int k,
 
   #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
   #endif
 }
 

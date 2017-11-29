@@ -405,7 +405,6 @@ apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 pipxgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
-	cd xgboost/python-package/xgboost ; cp -a ../lib/libxgboost*.so .
 
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"

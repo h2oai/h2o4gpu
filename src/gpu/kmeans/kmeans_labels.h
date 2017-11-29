@@ -10,6 +10,7 @@
 #include <cublas_v2.h>
 #include <cfloat>
 #include "kmeans_general.h"
+#include <thrust/fill.h>
 
 inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true) {
 	if (code != cudaSuccess) {
@@ -171,7 +172,6 @@ namespace kmeans {
             thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
 
       }
@@ -205,7 +205,7 @@ namespace kmeans {
 
 
     template<typename T>
-      void make_all_dots(int n, int k, int offset, thrust::device_vector<T>& data_dots,
+      void make_all_dots(int n, int k, size_t offset, thrust::device_vector<T>& data_dots,
           thrust::device_vector<T>& centroid_dots,
           thrust::device_vector<T>& dots) {
         int dev_num;
@@ -223,80 +223,101 @@ namespace kmeans {
               thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
       };
 
     template<typename T>
-      void calculate_distances(int verbose, int q, int n, int d, int k,
+      void calculate_distances(int verbose, int q, size_t n, int d, int k,
                                thrust::device_vector<T>& data,
-                               int data_offset,
+                               size_t data_offset,
                                thrust::device_vector<T>& centroids,
                                thrust::device_vector<T>& data_dots,
                                thrust::device_vector<T>& centroid_dots,
                                thrust::device_vector<T>& pairwise_distances);
 
     template<typename T, typename F>
-    void batch_calculate_distances(int verbose, int q, int n, int d, int k,
+    void batch_calculate_distances(int verbose, int q, size_t n, int d, int k,
                                            thrust::device_vector<T> &data,
                                            thrust::device_vector<T> &centroids,
                                            thrust::device_vector<T> &data_dots,
                                            thrust::device_vector<T> &centroid_dots,
                                            F functor) {
-      // Get info about available memory
-      // This part of the algo can be very memory consuming
-      // We might need to batch it
-      size_t free_byte;
-      size_t total_byte;
-      CUDACHECK(cudaMemGetInfo( &free_byte, &total_byte ));
-      free_byte *= 0.8;
+      int fudges_size = 4;
+      double fudges[] = {1.0, 0.75, 0.5, 0.25};
+      for(const double fudge : fudges) {
+        try {
+          // Get info about available memory
+          // This part of the algo can be very memory consuming
+          // We might need to batch it
+          size_t free_byte;
+          size_t total_byte;
+          CUDACHECK(cudaMemGetInfo(&free_byte, &total_byte));
+          free_byte = free_byte * fudge;
 
-      double required_byte = n * k * sizeof(T);
+          size_t required_byte = n * k * sizeof(T);
 
-      int runs = std::ceil( required_byte / free_byte );
+          size_t runs = std::ceil(required_byte / (double) free_byte);
 
-      log_verbose(verbose,
-                  "Batch calculate distance - Rows %ld | K %ld | Data size %d",
-                  n, k, sizeof(T)
-      );
+          log_verbose(verbose,
+                      "Batch calculate distance - Rows %ld | K %ld | Data size %d",
+                      n, k, sizeof(T)
+          );
 
-      log_verbose(verbose,
-                  "Batch calculate distance - Free memory %zu | Required memory %lf | Runs %d",
-                  free_byte, required_byte, runs
-      );
+          log_verbose(verbose,
+                      "Batch calculate distance - Free memory %zu | Required memory %zu | Runs %d",
+                      free_byte, required_byte, runs
+          );
 
-      int offset = 0;
-      for(int run = 0; run < runs; run++) {
-        int rows_per_run = free_byte / (k * sizeof(T));
+          size_t offset = 0;
+          size_t rows_per_run = n / runs;
+          thrust::device_vector<T> pairwise_distances(rows_per_run * k);
 
-        if( run + 1 == runs ) {
-          rows_per_run = n % rows_per_run;
+          for (int run = 0; run < runs; run++) {
+            if (run + 1 == runs && n % rows_per_run != 0) {
+              rows_per_run = n % rows_per_run;
+            }
+
+            thrust::fill_n(pairwise_distances.begin(), pairwise_distances.size(), (T) 0.0);
+
+            log_verbose(verbose,
+                        "Batch calculate distance - Allocated"
+            );
+
+            kmeans::detail::calculate_distances(verbose, 0, rows_per_run, d, k,
+                                                data, offset,
+                                                centroids,
+                                                data_dots,
+                                                centroid_dots,
+                                                pairwise_distances);
+
+            log_verbose(verbose,
+                        "Batch calculate distance - Distances calculated"
+            );
+
+            functor(rows_per_run, offset, pairwise_distances);
+
+            log_verbose(verbose,
+                        "Batch calculate distance - Functor ran"
+            );
+
+            offset += rows_per_run;
+          }
+        } catch (const std::bad_alloc& e) {
+          cudaGetLastError();
+          if(fudges[fudges_size - 1] != fudge) {
+            log_warn(verbose,
+                      "Batch calculate distance - Failed to allocate memory for pairwise distances - retrying."
+            );
+            continue;
+          } else {
+            log_error(verbose,
+                      "Batch calculate distance - Failed to allocate memory for pairwise distances - exiting."
+            );
+            throw e;
+          }
         }
 
-        thrust::device_vector<T> pairwise_distances(rows_per_run * k);
-
-        log_verbose(verbose,
-                    "Batch calculate distance - Allocated"
-        );
-
-        kmeans::detail::calculate_distances(verbose, 0, rows_per_run, d, k,
-                                            data, offset,
-                                            centroids,
-                                            data_dots,
-                                            centroid_dots,
-                                            pairwise_distances);
-
-        log_verbose(verbose,
-                    "Batch calculate distance - Distances calculated"
-        );
-
-        functor(rows_per_run, offset, pairwise_distances);
-
-        log_verbose(verbose,
-                    "Batch calculate distance - Functor ran"
-        );
-
-        offset += rows_per_run;
+        return;
       }
     }
 
@@ -322,7 +343,7 @@ namespace kmeans {
       void relabel(int n, int k,
                    thrust::device_vector<T>& pairwise_distances,
                    thrust::device_vector<int>& labels,
-                   int offset) {
+                   size_t offset) {
         int dev_num;
         safe_cuda(cudaGetDevice(&dev_num));
 #define MAX_BLOCK_THREADS2 256
@@ -333,7 +354,6 @@ namespace kmeans {
             thrust::raw_pointer_cast(labels.data() + offset));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
       }
 
