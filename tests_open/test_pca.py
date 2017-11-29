@@ -24,7 +24,10 @@ def func(m=5000000, n=10, k=9):
     scikit_pca = PCA(n_components=k, svd_solver="arpack")
     scikit_pca.fit(X)
     h2o4gpu_pca.fit(X)
+
+    print("Mean")
     print(h2o4gpu_pca.mean_)
+    print(scikit_pca.mean_)
 
     print("Explained variance")
     print(h2o4gpu_pca.explained_variance_)

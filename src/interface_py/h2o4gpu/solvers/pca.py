@@ -90,9 +90,8 @@ class PCAH2O(TruncatedSVDH2O):
                           _as_fptr(explained_variance),
                           _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
 
-        # TODO mean_ and noise_variance_ calculation
+        # TODO noise_variance_ calculation
         # can be done inside lib.pca if a bottleneck
-        #self.mean_ = np.mean(X, axis=0)
         # n_samples, n_features = X.shape
         # total_var = np.var(X, ddof=1, axis=0)
         # if self.n_components_ < min(n_features, n_samples):
