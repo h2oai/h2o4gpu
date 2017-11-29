@@ -24,7 +24,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 120, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
         skipDefaultCheckout()
@@ -50,7 +50,7 @@ pipeline {
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
-                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     deleteDir()
                     checkout([
                             $class                           : 'GitSCM',
@@ -87,7 +87,7 @@ pipeline {
             steps {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
-                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
                 script {
@@ -98,7 +98,7 @@ pipeline {
                     def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nccl-cuda9", "dist4", "dotestfast")
                 }
-                retryWithTimeout(200 /* seconds */, 5 /* retries */) {
+                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
                             def h2o4gpuUtils = load "Jenkinsfile.utils"
@@ -116,7 +116,7 @@ pipeline {
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
-                retryWithTimeout(100 /* seconds */, 3 /* retries */) {
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     deleteDir()
                     checkout([
                             $class                           : 'GitSCM',
