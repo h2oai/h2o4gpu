@@ -143,7 +143,7 @@ void find_centroids(int q, int n, int d, int k,
                       labels.end(),
                       indices.begin());
   // TODO cub is faster but sort_by_key_int isn't sorting, possibly a bug
-  //  mycub::sort_by_key_int(labels, indices);
+//    mycub::sort_by_key_int(labels, indices);
 
 #if(CHECK)
   gpuErrchk(cudaGetLastError());
@@ -196,7 +196,6 @@ void find_centroids(int q, int n, int d, int k,
             thrust::raw_pointer_cast(centroids.data()));
 #if(CHECK)
     gpuErrchk(cudaGetLastError());
-    gpuErrchk(cudaDeviceSynchronize());
 #endif
   }
 }

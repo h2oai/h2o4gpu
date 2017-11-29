@@ -58,7 +58,6 @@ RUN \
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
-COPY requirements_h2o.txt requirements_h2o.txt
 RUN \
     chmod a+rwx / && \
     chmod -R a+rwx /root  && \
@@ -67,6 +66,5 @@ RUN \
     eval "$(/root/.pyenv/bin/pyenv init -)" && \
     /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools && \
-    cat requirements_h2o.txt | xargs -n 1 -L 1 pip install && \
-    cat requirements_buildonly.txt | xargs -n 1 -L 1 pip install && \
-    cat requirements_runtime.txt | xargs -n 1 -L 1 pip install
+    pip install -r requirements_buildonly.txt && \
+    pip install -r requirements_runtime.txt
