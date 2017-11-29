@@ -37,6 +37,7 @@ class PCAH2O(TruncatedSVDH2O):
         self.whiten = whiten
         self.n_components_ = n_components
         self.mean_ = None
+        self.noise_variance_ = None
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -78,7 +79,7 @@ class PCAH2O(TruncatedSVDH2O):
                                       dtype=np.float64)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=np.float64)
-        mean = np.empty(X.shape[0], dtype=np.float64)
+        mean = np.empty(X.shape[1], dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
@@ -90,32 +91,28 @@ class PCAH2O(TruncatedSVDH2O):
                           _as_fptr(explained_variance),
                           _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
 
-        # TODO noise_variance_ calculation
-        # can be done inside lib.pca if a bottleneck
-        # n_samples, n_features = X.shape
-        # total_var = np.var(X, ddof=1, axis=0)
-        # if self.n_components_ < min(n_features, n_samples):
-        #     self.noise_variance_ = \
-        #         (total_var.sum() - self.explained_variance_.sum())
-        #     self.noise_variance_ /= \
-        #         min(n_features, n_samples) - self.n_components
-        # else:
-        #     self.noise_variance_ = 0.
-
         self._w = w
         self._U, self._Q = svd_flip(U , Q) #TODO Port to cuda?
         self._X = X
-        n = X.shape[1]
+        n = X.shape[0]
         self.explained_variance = self.singular_values_ ** 2 / (n-1) #To match sci-kit #TODO Port to cuda?
         self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
+        # TODO noise_variance_ calculation
+        # can be done inside lib.pca if a bottleneck
+        n_samples, n_features = X.shape
+        total_var = np.var(X, ddof=1, axis=0)
+        if self.n_components_ < min(n_features, n_samples):
+            self.noise_variance_ = \
+                (total_var.sum() - self.explained_variance_.sum())
+            self.noise_variance_ /= \
+                min(n_features, n_samples) - self.n_components
+        else:
+            self.noise_variance_ = 0.
+
         X_transformed = U * w
         return X_transformed
-
-    @property
-    def noise_variance_(self):
-        return self.noise_variance_
 
     # Util to load gpu lib
     def _load_lib(self):
