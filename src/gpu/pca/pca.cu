@@ -17,7 +17,7 @@ namespace pca
  * @param _explained_variance_ratio
  * @param _param
  */
-void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param) {
+void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param) {
 	try {
 
 		//Take in X matrix and allocate for X^TX
@@ -36,6 +36,7 @@ void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explaine
 		tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
 		float m = X.rows();
 		multiply(XColMean, 1/m, context);
+		XColMean.copy_to_host(_mean);
 
 		//Center matrix
 		tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
