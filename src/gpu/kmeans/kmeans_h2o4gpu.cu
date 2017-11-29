@@ -420,6 +420,7 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
     T total_min_cost = 0.0;
 
     int new_potential_centroids = 0;
+    #pragma omp parallel for
     for (int i = 0; i < num_gpu; i++) {
       CUDACHECK(cudaSetDevice(i));
 
@@ -444,21 +445,24 @@ thrust::host_vector<T> kmeans_parallel(int verbose, int seed, const char ord,
                                                            min_calc_functor<T>(all_costs_ptr, min_costs_ptr, potential_k_rows, rows_per_run));
                                         }
       );
+    }
 
-      CUDACHECK(cudaDeviceSynchronize());
-
+    for (int i = 0; i < num_gpu; i++) {
+      CUDACHECK(cudaSetDevice(i));
       total_min_cost += thrust::reduce(
           d_min_costs[i].begin(),
           d_min_costs[i].end()
       );
-
     }
+
+    log_verbose(verbose, "KMeans|| - Total min cost from centers %g.", total_min_cost);
 
     if(total_min_cost == (T) 0.0) {
       continue;
     }
 
     std::set<int> copy_from_gpus;
+    #pragma omp parallel for
     for (int i = 0; i < num_gpu; i++) {
       CUDACHECK(cudaSetDevice(i));
 

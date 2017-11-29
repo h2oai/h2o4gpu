@@ -172,7 +172,6 @@ namespace kmeans {
             thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
 
       }
@@ -224,7 +223,6 @@ namespace kmeans {
               thrust::raw_pointer_cast(dots.data()));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
       };
 
@@ -359,7 +357,6 @@ namespace kmeans {
             thrust::raw_pointer_cast(labels.data() + offset));
 #if(CHECK)
         gpuErrchk( cudaGetLastError() );
-        gpuErrchk( cudaDeviceSynchronize() );
 #endif
       }
 

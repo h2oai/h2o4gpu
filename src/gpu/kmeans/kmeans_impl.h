@@ -111,19 +111,18 @@ int kmeans(
 
     if (*flag) continue;
 
+    safe_cuda(cudaSetDevice(dList[0]));
+    d_old_centroids = *centroids[dList[0]];
+
+    #pragma omp parallel for
     for (int q = 0; q < n_gpu; q++) {
       safe_cuda(cudaSetDevice(dList[q]));
-
-      if (0 == q) {
-        d_old_centroids = *centroids[q];
-      }
 
       detail::batch_calculate_distances(verbose, q, n / n_gpu, d, k,
                                         *data[q], *centroids[q], *data_dots[q], *centroid_dots[q],
                                         [&](int n, size_t offset, thrust::device_vector<T> &pairwise_distances) {
                                           detail::relabel(n, k, pairwise_distances, *labels[q], offset);
-                                        }
-      );
+                                        });
 
       log_verbose(verbose, "KMeans - Relabeled.");
 

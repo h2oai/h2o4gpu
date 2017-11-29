@@ -64,6 +64,7 @@ void count_pts_per_centroid(
     thrust::host_vector<T> &weights
 ) {
   int k = centroids.size() / cols;
+  #pragma omp parallel for
   for (int i = 0; i < num_gpu; i++) {
     thrust::host_vector<int> weights_tmp(weights.size());
 
@@ -84,8 +85,6 @@ void count_pts_per_centroid(
                                                 );
                                               }
     );
-
-    CUDACHECK(cudaDeviceSynchronize());
 
     kmeans::detail::memcpy(weights_tmp, counts);
     kmeans::detail::streamsync(i);

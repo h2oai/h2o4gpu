@@ -154,8 +154,6 @@ void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
-
-    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
@@ -180,7 +178,6 @@ void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
 
   #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
   #endif
 }
 
@@ -221,7 +218,6 @@ void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
             thrust::raw_pointer_cast(pairwise_distances.data()),
             alpha, beta, n, d, k, block_rows
     );
-    safe_cuda(cudaDeviceSynchronize());
   } else {
     cublasStatus_t stat = safe_cublas(cublasSgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
@@ -246,7 +242,6 @@ void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
 
   #if(CHECK)
   gpuErrchk(cudaGetLastError());
-  gpuErrchk(cudaDeviceSynchronize());
   #endif
 }
 
