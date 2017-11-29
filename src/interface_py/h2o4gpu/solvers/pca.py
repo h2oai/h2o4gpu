@@ -7,6 +7,7 @@ import numpy as np
 from ..libs.lib_pca import parameters
 from ..solvers.utils import _setter
 from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD, _as_fptr
+from ..utils.extmath import svd_flip
 
 
 class PCAH2O(TruncatedSVDH2O):
@@ -99,11 +100,11 @@ class PCAH2O(TruncatedSVDH2O):
         # else:
         #     self.noise_variance_ = 0.
 
-        self._Q = Q
         self._w = w
-        self._U = U
+        self._U, self._Q = svd_flip(U , Q) #TODO Port to cuda?
         self._X = X
-        self.explained_variance = explained_variance
+        n = X.shape[1]
+        self.explained_variance = self.singular_values_ ** 2 / (n-1) #To match sci-kit #TODO Port to cuda?
         self.explained_variance_ratio = explained_variance_ratio
 
         X_transformed = U * w

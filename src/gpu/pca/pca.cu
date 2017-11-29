@@ -36,18 +36,12 @@ void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explaine
 		tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
 		float m = X.rows();
 		multiply(XColMean, 1/m, context);
-		std::cout << "Column Means:" << std::endl;
-		XColMean.print();
 
 		//Center matrix
 		tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
 		tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
-		std::cout << "OnesXMeanTranspose:" << std::endl;
-		OnesXMeanTranspose.print();
 		tsvd::Matrix<float>XCentered(X.rows(), X.columns());
 		tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
-		std::cout << "XCentered:" << std::endl;
-		XCentered.print();
 
         tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k};
 
@@ -58,11 +52,11 @@ void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explaine
         }
 
 	} catch (const std::exception &e) {
-	    std::cerr << "tsvd error: " << e.what() << "\n";
+	    std::cerr << "pca error: " << e.what() << "\n";
 	} catch (std::string e) {
-	    std::cerr << "tsvd error: " << e << "\n";
+	    std::cerr << "pca error: " << e << "\n";
 	} catch (...) {
-		std::cerr << "tsvd error\n";
+		std::cerr << "pca error\n";
 	}
 }
 
