@@ -242,9 +242,9 @@ namespace kmeans {
                                            thrust::device_vector<T> &data_dots,
                                            thrust::device_vector<T> &centroid_dots,
                                            F functor) {
-      const int max_tries = 3;
-      int fudge = 1;
-      while(true) {
+      int fudges_size = 4;
+      double fudges[] = {1.0, 0.75, 0.5, 0.25};
+      for(const double fudge : fudges) {
         try {
           // Get info about available memory
           // This part of the algo can be very memory consuming
@@ -252,7 +252,7 @@ namespace kmeans {
           size_t free_byte;
           size_t total_byte;
           CUDACHECK(cudaMemGetInfo(&free_byte, &total_byte));
-          free_byte = free_byte * 0.8 / fudge;
+          free_byte = free_byte * fudge;
 
           size_t required_byte = n * k * sizeof(T);
 
@@ -304,17 +304,14 @@ namespace kmeans {
           }
         } catch (const std::bad_alloc& e) {
           cudaGetLastError();
-          if(fudge < max_tries) {
+          if(fudges[fudges_size - 1] != fudge) {
             log_warn(verbose,
-                      "Batch calculate distance - Failed to allocate memory for pairwise distances %d/%d - retrying.",
-                     fudge, max_tries
+                      "Batch calculate distance - Failed to allocate memory for pairwise distances - retrying."
             );
-            fudge += 1;
             continue;
           } else {
             log_error(verbose,
-                      "Batch calculate distance - Failed to allocate memory for pairwise distances %d times.",
-                      max_tries
+                      "Batch calculate distance - Failed to allocate memory for pairwise distances - exiting."
             );
             throw e;
           }
