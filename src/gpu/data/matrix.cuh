@@ -1,12 +1,14 @@
 #pragma once
-#include "utils.cuh"
-#include "device_context.cuh"
+#include "../tsvd/utils.cuh"
+#include "../device/device_context.cuh"
 #include "cusolverDn.h"
 #include <../../../cub/cub/cub.cuh>
-#include "tsvd.h"
 
 namespace tsvd
 {
+
+	typedef float  tsvd_float;
+
 	/**
 	 * \class	Matrix
 	 *
@@ -38,7 +40,7 @@ namespace tsvd
 		/**
 		 * \fn	Matrix(size_t m, size_t n)
 		 *
-		 * \brief	Constructor. Initialize tsvdrix with m rows and n columns in device memory.
+		 * \brief	Constructor. Initialize matrix with m rows and n columns in device memory.
 		 *
 		 * \param	m	Matrix rows.
 		 * \param	n	Matrix columns.
@@ -52,7 +54,7 @@ namespace tsvd
 		/**
 		 * \fn	Matrix(const Matrix<T>& M)
 		 *
-		 * \brief	Constructor. Initialise tsvdrix by copying existing tsvdrix.
+		 * \brief	Constructor. Initialise matrix by copying existing matrix.
 		 *
 		 * \param	M	The Matrix&lt;T&gt; to copy.
 		 */
@@ -116,7 +118,7 @@ namespace tsvd
 		/**
 		 * \fn	thrust::device_ptr<T> dptr()
 		 *
-		 * \brief	Get thrust device pointer to tsvdrix data. Useful for invoking thrust functions.
+		 * \brief	Get thrust device pointer to matrix data. Useful for invoking thrust functions.
 		 *
 		 * \return	A thrust::device_ptr&lt;T&gt;
 		 */
@@ -129,7 +131,7 @@ namespace tsvd
 		/**
 		 * \fn	thrust::device_ptr<T> dptr()
 		 *
-		 * \brief	Get const thrust device pointer to tsvdrix data. Useful for invoking thrust functions.
+		 * \brief	Get const thrust device pointer to matrix data. Useful for invoking thrust functions.
 		 *
 		 * \return	A thrust::device_ptr&lt;T&gt;
 		 */
@@ -142,7 +144,7 @@ namespace tsvd
 		/**
 		 * \fn	size_t rows() const
 		 *
-		 * \return	Number of tsvdrix rows.
+		 * \return	Number of matrix rows.
 		 */
 
 		size_t rows() const
@@ -153,7 +155,7 @@ namespace tsvd
 		/**
 		 * \fn	size_t columns() const
 		 *
-		 * \return	Number of tsvdrix columns.
+		 * \return	Number of matrix columns.
 		 */
 
 		size_t columns() const
@@ -164,7 +166,7 @@ namespace tsvd
 		/**
 		 * \fn	size_t size() const
 		 *
-		 * \return Number of tsvdrix elements (m*n).
+		 * \return Number of matrix elements (m*n).
 		 */
 
 		size_t size() const
@@ -175,7 +177,7 @@ namespace tsvd
 		/**
 		 * \fn	void zero()
 		 *
-		 * \brief	Zeroes tsvdrix elements.
+		 * \brief	Zeroes matrix elements.
 		 *
 		 */
 
@@ -187,7 +189,7 @@ namespace tsvd
 		/**
 		 * \fn	void fill(T val)
 		 *
-		 * \brief	Fills tsvdrix with given value.
+		 * \brief	Fills matrix with given value.
 		 *
 		 * \param	val	The value.
 		 */
@@ -200,7 +202,7 @@ namespace tsvd
 		/**
 		 * \fn	void random(int random_seed = 0)
 		 *
-		 * \brief	Fills tsvdrix elements with uniformly distributed numbers between 0-1.0
+		 * \brief	Fills matrix elements with uniformly distributed numbers between 0-1.0
 		 *
 		 * \param	random_seed	(Optional) The random seed.
 		 */
@@ -223,7 +225,7 @@ namespace tsvd
 		/**
 		 * \fn	void random_normal(int random_seed = 0)
 		 *
-		 * \brief	Fill tsvdrix with normally distributed random numbers between zero and one.
+		 * \brief	Fill matrix with normally distributed random numbers between zero and one.
 		 *
 		 * \param	random_seed	(Optional) The random seed.
 		 */
@@ -246,7 +248,7 @@ namespace tsvd
 		/**
 		 * \fn	void copy(const T*hptr)
 		 *
-		 * \brief	Copies from host pointer to tsvdrix. Assumes host pointer contains array of same size as tsvdrix.
+		 * \brief	Copies from host pointer to matrix. Assumes host pointer contains array of same size as matrix.
 		 *
 		 * \param	hptr	Host pointer.
 		 */
@@ -272,7 +274,7 @@ namespace tsvd
 
 		void copy(const Matrix<T>& M)
 		{
-			tsvd_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy tsvdrix. Dimensions are different.");
+			tsvd_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
 			thrust::copy(M.dptr(), M.dptr() + M.size(), this->dptr());
 		}
 
@@ -334,7 +336,7 @@ namespace tsvd
 	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context);
 
 	/**
-	 * \fn	void tsvdrix_sub(const Matrix<tsvd_float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context)
+	 * \fn	void matrix_sub(const Matrix<tsvd_float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context)
 	 *
 	 * \brief	Matrix subtraction. A - B = C.
 	 *
@@ -357,7 +359,7 @@ namespace tsvd
 	/**
 	 * \fn	void transpose(const Matrix<tsvd_float >&A, Matrix<tsvd_float >&B, DeviceContext& context)
 	 *
-	 * \brief	Transposes tsvdrix A into tsvdrix B.
+	 * \brief	Transposes matrix A into matrix B.
 	 *
 	 * \param 		  	A	   	The Matrix&lt;tsvd_float&gt; to process.
 	 * \param [in,out]	B	   	The Matrix&lt;tsvd_float&gt; to process.
@@ -384,7 +386,7 @@ namespace tsvd
 	 *
 	 * \brief	Calculate Moore-Penrose seudoinverse using the singular value decomposition method.
 	 *
-	 * \param 		  	A	   	Input tsvdrix.
+	 * \param 		  	A	   	Input matrix.
 	 * \param [in,out]	pinvA  	The pseudoinverse out.
 	 * \param [in,out]	context	Device context.
 	 */
@@ -394,11 +396,11 @@ namespace tsvd
 	/**
 	 * \fn	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, Matrix<tsvd_float>& ones, DeviceContext& context);
 	 *
-	 * \brief	Normalize tsvdrix columns.
+	 * \brief	Normalize matrix columns.
 	 *
 	 * \param [in,out]	M			 	The Matrix&lt;tsvd_float&gt; to process.
-	 * \param [in,out]	M_temp		 	Temporary storage tsvdrix of size >= M.
-	 * \param [in,out]	column_length	Temporary storage tsvdrix with one element per column.
+	 * \param [in,out]	M_temp		 	Temporary storage matrix of size >= M.
+	 * \param [in,out]	column_length	Temporary storage matrix with one element per column.
 	 * \param [in,out]	ones		 	Matrix of ones of length M.columns().
 	 * \param [in,out]	context		 	The context.
 	 */
