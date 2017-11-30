@@ -160,13 +160,14 @@ etc., where ptr stands for memory pointer.
 
 Among others, the solver can be used for the following classes of problems
 
-  + GLM: Lasso, Ridge Regression, Logistic Regression, Elastic Net Regulariation,
+  + GLM: Lasso, Ridge Regression, Logistic Regression, Elastic Net Regulariation
   + KMeans
   + Gradient Boosting Machine (GBM) via [XGBoost](https://devblogs.nvidia.com/parallelforall/gradient-boosting-decision-trees-xgboost-cuda/)
+  + Singular Value Decomposition(SVD) + Truncated Singular Value Decomposition
+  + Principal Components Analysis(PCA)
 
 Planned:
   + GLM: Linear SVM, Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
-  + SVD, PCA
 
 ## Benchmarks
 
