@@ -9,6 +9,7 @@
 #include <ctime>
 #include <cusparse.h>
 
+// TODO change this to h2o4gpu and move to gpu folder
 namespace tsvd
 {
 #define tsvd_error(x) error(x, __FILE__, __LINE__);
