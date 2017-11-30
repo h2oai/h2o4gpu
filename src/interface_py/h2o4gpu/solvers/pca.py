@@ -13,7 +13,8 @@ from ..utils.extmath import svd_flip
 class PCAH2O(TruncatedSVDH2O):
     """Principal Component Analysis (PCA)
 
-    Dimensionality reduction using truncated Singular Value Decomposition for GPU
+    Dimensionality reduction using truncated Singular Value Decomposition
+    for GPU
 
     This implementation uses the ARPACK implementation of the truncated SVD.
     Contrary to SVD, this estimator does center the data before computing
@@ -88,14 +89,15 @@ class PCAH2O(TruncatedSVDH2O):
 
         lib = self._load_lib()
         lib.pca(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
-                          _as_fptr(explained_variance),
-                          _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
+                _as_fptr(explained_variance),
+                _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
 
         self._w = w
-        self._U, self._Q = svd_flip(U , Q) #TODO Port to cuda?
+        self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
         self._X = X
         n = X.shape[0]
-        self.explained_variance = self.singular_values_ ** 2 / (n-1) #To match sci-kit #TODO Port to cuda?
+        # To match sci-kit #TODO Port to cuda?
+        self.explained_variance = self.singular_values_ ** 2 / (n - 1)
         self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
