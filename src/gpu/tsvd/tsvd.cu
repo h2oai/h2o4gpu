@@ -245,7 +245,7 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
     truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 }
 
-void truncated_svd_matrix(Matrix<float> X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
+void truncated_svd_matrix(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
 	try
 	{
