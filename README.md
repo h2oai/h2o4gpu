@@ -42,7 +42,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 - Install OpenBlas dev environment:
 
 ```
-sudo apt-get install libopenblas-dev
+sudo apt-get install libopenblas-dev pbzip2
 ```
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
@@ -114,7 +114,7 @@ Download the Docker file (for linux_x86_64):
 
 Load and run docker file (e.g. for nccl-cuda9):
 ```
-bzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
+pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
