@@ -26,9 +26,9 @@ An R API is in developement and will be released as a stand-alone R package in t
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
 
-* Nvidia GPU with Compute Capability>=3.5 ([Capability Lookup](https://developer.nvidia.com/cuda-gpus)).
+* Nvidia GPU with Compute Capability >= 3.5 ([Capability Lookup](https://developer.nvidia.com/cuda-gpus)).
 
-* For advanced features, like handling rows/32>2^16 in K-means, need Capability>=52
+* For advanced features, like handling rows/32 > 2^16 (i.e., rows > 2,097,152) in K-means, need Capability >= 5.2
 
 ## Installation
 
