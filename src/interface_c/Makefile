@@ -71,9 +71,15 @@ CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
+CULDFLAGS=-L$(CUDAHOME) -lcudart_static -lcudadevrt -lcublas_static -lcusolver_static -lcusparse_static -lcurand_static $(LINKFLAGS) $(DFLAGS)
 SHARED=so
 endif
+
+#ifeq ($(USEcudadevrt),1)
+#CULDFLAGS+=-lcudadevrt
+#endif
+
+
 
 # C++ Flags
 CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
@@ -112,7 +118,7 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
-PYCUDART=$(CUDAHOME)/libcudart.so
+PYCUDART=$(CUDAHOME)/libcudart_static.a
 
 
 .PHONY: default all clean cpulib gpulib

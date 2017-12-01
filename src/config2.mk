@@ -18,6 +18,7 @@ endif
 USEDEBUG=0
 USENVTX=0
 USENCCL=0
+USEcudadevrt=1
 
 
 $(warning USEICC is $(USEICC))

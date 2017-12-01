@@ -57,7 +57,7 @@ def _load_glm_lib(lib_path):
 # pylint: disable=broad-except
     except Exception as e:
         print("Exception")
-        print(e)
+        print(str(e))
         print('\nWarning: h2o4gpu_glm_lib shared object (dynamic library) %s '
               'failed to load. ' % lib_path)
         h2o4gpu_glm_lib = None

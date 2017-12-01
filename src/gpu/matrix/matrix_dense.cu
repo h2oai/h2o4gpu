@@ -906,7 +906,7 @@ void printMatrix2(int m, int n, const T*A, int lda, const char* name)
 /*
  * How to compile (assume cuda is installed at /usr/local/cuda/)
  *   nvcc -c -I/usr/local/cuda/include svd_example.cpp 
- *   g++ -fopenmp -o a.out svd_example.o -L/usr/local/cuda/lib64 -lcudart -lcublas -lcusolver
+ *   g++ -fopenmp -o a.out svd_example.o -L/usr/local/cuda/lib64 -lcudart_static -lcublas_static -lcusolver_static
  *
  */
 

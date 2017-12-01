@@ -141,11 +141,11 @@ alldeps_private-nccl-cuda9: deps_fetch private_deps_fetch private_deps_install a
 alldeps_private-nonccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nonccl-cuda9
 
 
-build: update_submodule cleanbuild cpp c py
+build: update_submodule cleanbuild c py cpp
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
 
-buildquick: cpp c py
+buildquick: c py cpp
 
 install: pyinstall
 

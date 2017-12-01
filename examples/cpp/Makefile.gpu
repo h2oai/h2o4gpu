@@ -62,6 +62,8 @@ endif
 
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
+#CULDFLAGS_=-lcudart_static -lcublas_static -lcudadevrt -lcusparse_static -lcusolver_static -lrt -I$(CUDA_HOME)/include $(LINKFLAGS) -lcurand_static -ldl $(CUDFLAGS)
+#CULDFLAGS_=-lcudart -lcudadevrt -lcublas -lcusparse -lcusolver -lrt -I$(CUDA_HOME)/include $(LINKFLAGS) -lcurand -ldl $(CUDFLAGS)
 CULDFLAGS_=-lcudart -lcudadevrt -lcublas -lcusparse -lcusolver -lrt -I$(CUDA_HOME)/include $(LINKFLAGS) -lcurand $(CUDFLAGS)
 ifeq ($(USENVTX),1)
 CULDFLAGS_+=-lnvToolsExt
@@ -69,6 +71,10 @@ endif
 ifeq ($(USENCCL),1)
 CULDFLAGS_+=-lnccl
 endif
+#ifeq ($(USEcudadevrt),1)
+#CULDFLAGS+=-lcudadevrt
+#endif
+
 
 
 # Check System Args.
