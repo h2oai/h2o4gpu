@@ -65,8 +65,8 @@ def wasStageSuccessful(String stageName) {
  */
 boolean rerun_disabled(final String commitMessage) {
     final String RERUN_KEYWORD = '!rerun'
-    final boolean master_or_rel = env.BRANCH_NAME.startsWith('master') || env.BRANCH_NAME.startsWith('rel')
-    return master_or_rel || commitMessage == null || !commitMessage.contains(RERUN_KEYWORD)
+    final boolean masterOrRel = env.BRANCH_NAME.startsWith('master') || env.BRANCH_NAME.startsWith('rel')
+    return masterOrRel || commitMessage == null || !commitMessage.contains(RERUN_KEYWORD)
 }
 
 String ciVersionSuffix() {
