@@ -5,6 +5,9 @@
 import ai.h2o.ci.Utils
 def utilsLib = new Utils()
 
+def commitMessage = ''
+def h2o4gpuUtils = null
+
 
 pipeline {
     agent none
@@ -52,7 +55,8 @@ pipeline {
                 }
 
                 script {
-                    def h2o4gpuUtils = load "Jenkinsfile.utils"
+                    commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl3')
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
@@ -74,6 +78,11 @@ pipeline {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
+            when {
+                expression {
+                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9")
+                }
+            }
             steps {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
@@ -85,13 +94,11 @@ pipeline {
                     sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist3/  || true; rm -rf src/interface_py/dist3/ || true'
                     unstash 'linux_whl3'
                     sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist3/'
-                    def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            def h2o4gpuUtils = load "Jenkinsfile.utils"
                             h2o4gpuUtils.publishToS3(buildInfo.get(), "-nonccl-cuda9" , "dist3")
                         }
                     }
@@ -124,13 +131,11 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    def h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "dist3", "-nonccl-cuda9")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        def h2o4gpuUtils = load "Jenkinsfile.utils"
                         h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "-nonccl-cuda9")
                     }
                 }
