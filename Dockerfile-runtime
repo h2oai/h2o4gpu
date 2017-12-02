@@ -79,7 +79,8 @@ COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans
 COPY examples/py/demos/H2O4GPU_KMeans_Quantization.ipynb /jupyter/demos/H2O4GPU_KMeans_Quantization.ipynb
 COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H2O-GLM-simple.ipynb
 COPY examples/py/demos/H2O4GPU_TruncatedSVD.ipynb /jupyter/demos/H2O4GPU_TruncatedSVD.ipynb
-
+COPY examples/py/demos/H2O4GPU_PCA.ipynb /jupyter/demos/H2O4GPU_PCA.ipynb
+COPY examples/py/demos/figures /jupyter/demos/figures
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
@@ -87,8 +88,12 @@ RUN \
   mkdir /scikit_learn_data && \
   chmod -R a+rwx /scikit_learn_data && \
   mkdir -p /jupyter/scikit_learn_data/covertype && \
-  chmod -R a+rwx /jupyter/scikit_learn_data/covertype
-
+  chmod -R a+rwx /jupyter/scikit_learn_data/covertype && \
+  mkdir -p /jupyter/scikit_learn_data/lfw_home && \
+  chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
+  HOME=/jupyter jupyter notebook --generate-config && \
+  sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
+  chmod -R a+rwx /jupyter/.jupyter
 # Add shell wrapper
 COPY run.sh /run.sh
 
