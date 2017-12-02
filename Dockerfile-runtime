@@ -79,7 +79,7 @@ COPY examples/py/demos/H2O4GPU_KMeans_Images.ipynb /jupyter/demos/H2O4GPU_KMeans
 COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H2O-GLM-simple.ipynb
 COPY examples/py/demos/H2O4GPU_TruncatedSVD.ipynb /jupyter/demos/H2O4GPU_TruncatedSVD.ipynb
 COPY examples/py/demos/H2O4GPU_PCA.ipynb /jupyter/demos/H2O4GPU_PCA.ipynb
-
+COPY examples/py/figures /jupyter/demos/demos/figures
 RUN \
   . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
