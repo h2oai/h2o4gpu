@@ -144,7 +144,7 @@ As noted above, there is an R API in development, which will be
 released as a stand-alone R package.  All algorithms supported by
 H2O4GPU will be exposed in both Python and R in the future.
 
-Another primary goal is to support all operations the GPU via the
+Another primary goal is to support all operations on the GPU via the
 [GOAI
 initiative](https://devblogs.nvidia.com/parallelforall/goai-open-gpu-accelerated-data-analytics/).
 This involves ensuring the GPU algorithms can take and return GPU
