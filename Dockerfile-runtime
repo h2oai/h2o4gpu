@@ -88,9 +88,10 @@ RUN \
   chmod -R a+rwx /scikit_learn_data && \
   mkdir -p /jupyter/scikit_learn_data/covertype && \
   chmod -R a+rwx /jupyter/scikit_learn_data/covertype && \
+  mkdir -p /jupyter/scikit_learn_data/lfw_home && \
+  chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
   HOME=/jupyter jupyter notebook --generate-config && \
   sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py
-
 # Add shell wrapper
 COPY run.sh /run.sh
 
