@@ -25,7 +25,7 @@ nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip 
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/china.jpg'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-    nvidia-docker exec ${CONTAINER_NAME} -u root bash -c 'cd /jupyter/ ; chmod -R a+rwx .'
+    nvidia-docker exec -u root ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; chmod -R a+rwx .'
 } || { # catch
    echo "Some Data Not Obtained"
 }
