@@ -161,9 +161,9 @@ class TestKmeans(object):
         kmeans_h2o.fit(X)
         end_h2o = time.time()
 
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, algorithm='full', n_jobs=-1)
-        start_sk = time.time()
-        kmeans_sk.fit(X)
-        end_sk = time.time()
-
-        assert end_h2o - start_h2o <= end_sk - start_sk
+        if os.getenv("CHECKPERFORMANCE") is not None:
+            kmeans_sk = skKMeans(n_init=1, n_clusters=centers, algorithm='full', n_jobs=-1)
+            start_sk = time.time()
+            kmeans_sk.fit(X)
+            end_sk = time.time()
+            assert end_h2o - start_h2o <= end_sk - start_sk
