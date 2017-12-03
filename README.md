@@ -107,14 +107,14 @@ Requirements:
 Download the Docker file (for linux_x86_64):
 
   * Bleeding edge:
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2)
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-nccl-cuda8-runtime.tar.bz2)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-nonccl-cuda8-0.1.0-runtime.tar.bz2)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-nonccl-cuda9-runtime.tar.bz2)
 
 Load and run docker file (e.g. for nccl-cuda9):
 ```
-pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
+pbzip2 -dc h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
