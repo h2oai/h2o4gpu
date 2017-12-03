@@ -183,4 +183,9 @@ allows the ML algorithm to be designed to have all inputs and outputs
 on the GPU, allow the ML algorithm to be a component within a pure GPU
 pipeline.
 
+### How is this different from GPUMLib, etc. ###
+
+[GPUMLib](http://gpumlib.sourceforge.net/) has ANN, SVM and matrix factorization algorithms,
+[GTSVM](http://ttic.uchicago.edu/~cotter/projects/gtsvm/) has kernelized SVMs, and
+[cuSVM](http://patternsonascreen.net/cuSVM.html) has SVMs for classification and regression.
 
