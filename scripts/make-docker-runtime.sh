@@ -19,14 +19,13 @@ nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip 
     #nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/ ; python ../scripts/fcov_get.py'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/covertype ; cp /open_data/covertype/* ./scikit_learn_data/covertype'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/lfw_home ; cp -af /open_data/lfw_home ./scikit_learn_data'
-    nvidia-docker exec ${CONTAINER_NAME} -u root bash -c 'cd /jupyter/ ; chmod -R a+rx ./scikit_learn_data'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/creditcard.csv .'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/Temples-shrines-and-castles-in-Japan-social-media-image.jpg'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/china.jpg'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
     nvidia-docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-    nvidia-docker exec ${CONTAINER_NAME} -u root bash -c 'cd /jupyter/ ; chmod -R a+rx .'
+    nvidia-docker exec ${CONTAINER_NAME} -u root bash -c 'cd /jupyter/ ; chmod -R a+rwx .'
 } || { # catch
    echo "Some Data Not Obtained"
 }
