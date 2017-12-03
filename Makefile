@@ -222,10 +222,10 @@ docker-runtests-nccl-cuda9:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda9:
-	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-runtime.tar.bz2
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2
 
 docker-runtime-nccl-cuda9-load:
-	pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
+	pbzip2 -dc h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 
 run_in_docker-nccl-cuda9:
 	-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
@@ -258,7 +258,7 @@ docker-runtime-nccl-cuda8:
 	bash scripts/make-docker-runtime.sh
 
 docker-runtime-nccl-cuda8-load:
-	pbzip2 -dc h2o4gpu-0.1.0-runtime.tar.bz2 | nvidia-docker load
+	pbzip2 -dc h2o4gpu-0.1.0-nccl-cuda8-runtime.tar.bz2 | nvidia-docker load
 
 .PHONY: docker-runtime-nccl-cuda8-run
 
@@ -283,7 +283,7 @@ docker-runtests-nccl-cuda8:
 	bash scripts/make-docker-runtests.sh
 
 get_docker-nccl-cuda8:
-	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-runtime.tar.bz2
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-nccl-cuda8-runtime.tar.bz2
 
 run_in_docker-nccl-cuda8:
 	mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda8-runtime &

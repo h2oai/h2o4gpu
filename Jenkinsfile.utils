@@ -138,7 +138,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
-        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-runtime.tar.bz2"
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}${extratag}-runtime.tar.bz2"
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
     }
