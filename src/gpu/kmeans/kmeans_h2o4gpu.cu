@@ -239,14 +239,11 @@ template<typename T>
 void add_centroid(int idx, int cols,
                   thrust::host_vector<T> &data,
                   thrust::host_vector<T> &weights,
-                  thrust::host_vector<T> &centroids) {
+                  std::vector<T> &centroids) {
   for (int i = 0; i < cols; i++) {
     centroids.push_back(data[idx * cols + i]);
   }
-  for (int i = cols - 1; i >= 0; i--) {
-    data.erase(data.begin() + idx * cols + i);
-  }
-  weights.erase(weights.begin() + idx);
+  weights[idx] = 0;
 }
 
 /**
@@ -269,24 +266,26 @@ void kmeans_plus_plus(
     int cols,
     thrust::host_vector<T> &centroids) {
 
+  std::vector<T> std_centroids(0);
+  std_centroids.reserve(k * cols);
+
   int centroid_idx = pick_point_idx_weighted(
       seed,
       (std::vector<T> *) NULL,
       weights
   );
 
-  add_centroid(centroid_idx, cols, data, weights, centroids);
-
-  log_verbose(verbose, "KMeans++ - Allocating memory %d | %d | %d", data.size(), cols, centroids.size());
+  add_centroid(centroid_idx, cols, data, weights, std_centroids);
 
   std::vector<T> best_pairwise_distances(data.size() / cols); // one for each row in data
   std::vector<T> std_data(data.begin(), data.end());
-  std::vector<T> std_centroids(centroids.begin(), centroids.end());
 
   compute_distances(std_data,
                     std_centroids,
                     best_pairwise_distances,
                     data.size() / cols, cols, 1);
+
+  std::vector<T> curr_pairwise_distances( std_data.size() / cols);
 
   for (int iter = 0; iter < k - 1; iter++) {
     log_verbose(verbose, "KMeans++ - Iteraton %d/%d.", iter, k-1);
@@ -297,26 +296,27 @@ void kmeans_plus_plus(
         weights
     );
 
-    add_centroid(centroid_idx, cols, data, weights, centroids);
+    add_centroid(centroid_idx, cols, data, weights, std_centroids);
 
-    best_pairwise_distances.erase(best_pairwise_distances.begin() + centroid_idx);
+    std::vector<T> most_recent_centroids;
+    most_recent_centroids.reserve(cols);
+    add_centroid(centroid_idx, cols, data, weights, most_recent_centroids);
 
-    // TODO necessary?
-    std_data = std::vector<T>(data.begin(), data.end());
-    std_centroids = std::vector<T>(centroids.begin() + cols * (iter + 1), centroids.end());
-
-    int centroids_nr = std_centroids.size() / cols;
-    std::vector<T> curr_pairwise_distances( centroids_nr * (std_data.size() / cols));
+    best_pairwise_distances[centroid_idx] = 0;
 
     compute_distances(std_data,
-                      std_centroids,
+                      most_recent_centroids,
                       curr_pairwise_distances,
                       std_data.size() / cols, cols, 1);
 
     for (int i = 0; i < curr_pairwise_distances.size(); i++) {
       best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
     }
+
+    std::fill(curr_pairwise_distances.begin(), curr_pairwise_distances.end(), (T)0.0);
   }
+
+  centroids.assign(std_centroids.begin(), std_centroids.end());
 }
 
 template<typename T>
