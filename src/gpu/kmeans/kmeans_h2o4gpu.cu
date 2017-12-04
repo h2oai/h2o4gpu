@@ -239,7 +239,7 @@ template<typename T>
 void add_centroid(int idx, int cols,
                   thrust::host_vector<T> &data,
                   thrust::host_vector<T> &weights,
-                  thrust::host_vector<T> &centroids) {
+                  std::vector<T> &centroids) {
   for (int i = 0; i < cols; i++) {
     centroids.push_back(data[idx * cols + i]);
   }
@@ -266,19 +266,20 @@ void kmeans_plus_plus(
     int cols,
     thrust::host_vector<T> &centroids) {
 
+  std::vector<T> std_centroids(0);
+  std_centroids.reserve(k * cols);
+
   int centroid_idx = pick_point_idx_weighted(
       seed,
       (std::vector<T> *) NULL,
       weights
   );
 
-  add_centroid(centroid_idx, cols, data, weights, centroids);
+  add_centroid(centroid_idx, cols, data, weights, std_centroids);
 
-  log_verbose(verbose, "KMeans++ - Allocating memory %d | %d | %d", data.size(), cols, centroids.size());
 
   std::vector<T> best_pairwise_distances(data.size() / cols); // one for each row in data
   std::vector<T> std_data(data.begin(), data.end());
-  std::vector<T> std_centroids(centroids.begin(), centroids.end());
 
   compute_distances(std_data,
                     std_centroids,
@@ -297,7 +298,7 @@ void kmeans_plus_plus(
         weights
     );
 
-    add_centroid(centroid_idx, cols, data, weights, centroids);
+    add_centroid(centroid_idx, cols, data, weights, std_centroids);
 
     best_pairwise_distances[centroid_idx] = 0;
 
@@ -312,6 +313,8 @@ void kmeans_plus_plus(
 
     std::fill(curr_pairwise_distances.begin(), curr_pairwise_distances.end(), (T)0.0);
   }
+
+  centroids.assign(std_centroids.begin(), std_centroids.end());
 }
 
 template<typename T>
