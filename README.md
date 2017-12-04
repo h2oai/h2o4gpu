@@ -47,12 +47,16 @@ sudo apt-get install libopenblas-dev pbzip2
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
-  * [Stable CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+  * Stable:
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
   * Bleeding edge:
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-py36-none-any.whl)
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-py36-none-any.whl)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda8/h2o4gpu-0.2.0-py36-none-any.whl)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-py36-none-any.whl)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0-py36-none-any.whl)
 
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
@@ -69,7 +73,7 @@ overwrite your py3nvml and xgboost installations to use our validated
 versions.
 
 ```
-pip install h2o4gpu-0.1.0-py36-none-any.whl
+pip install h2o4gpu-0.2.0-py36-none-any.whl
 ```
 
 Test your installation
@@ -107,15 +111,15 @@ Requirements:
 Download the Docker file (for linux_x86_64):
 
   * Bleeding edge:
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda8/h2o4gpu-0.1.0-nccl-cuda8-runtime.tar.bz2)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda8/h2o4gpu-nonccl-cuda8-0.1.0-runtime.tar.bz2)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nccl-cuda9/h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.1-nonccl-cuda9/h2o4gpu-0.1.0-nonccl-cuda9-runtime.tar.bz2)
+    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-nccl-cuda8-runtime.tar.bz2)
+    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda8/h2o4gpu-nonccl-cuda8-0.2.0-runtime.tar.bz2)
+    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-nccl-cuda9-runtime.tar.bz2)
+    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0-nonccl-cuda9-runtime.tar.bz2)
 
 Load and run docker file (e.g. for nccl-cuda9):
 ```
-pbzip2 -dc h2o4gpu-0.1.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.1.0-nccl-cuda9-runtime &
+pbzip2 -dc h2o4gpu-0.2.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
+mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0-nccl-cuda9-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
 Copy/paste the http link shown into your browser.  If the link shows no token or shows ... for token, try a token of "h2o" (without quotes).  If running on your own host, the weblink will look like http://localhost:8888:<token> with <token> replaced by the actual token.
