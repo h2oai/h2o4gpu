@@ -243,10 +243,7 @@ void add_centroid(int idx, int cols,
   for (int i = 0; i < cols; i++) {
     centroids.push_back(data[idx * cols + i]);
   }
-  for (int i = cols - 1; i >= 0; i--) {
-    data.erase(data.begin() + idx * cols + i);
-  }
-  weights.erase(weights.begin() + idx);
+  weights[idx] = 0;
 }
 
 /**
@@ -288,6 +285,9 @@ void kmeans_plus_plus(
                     best_pairwise_distances,
                     data.size() / cols, cols, 1);
 
+  int centroids_nr = std_centroids.size() / cols;
+  std::vector<T> curr_pairwise_distances( centroids_nr * (std_data.size() / cols));
+
   for (int iter = 0; iter < k - 1; iter++) {
     log_verbose(verbose, "KMeans++ - Iteraton %d/%d.", iter, k-1);
 
@@ -299,14 +299,7 @@ void kmeans_plus_plus(
 
     add_centroid(centroid_idx, cols, data, weights, centroids);
 
-    best_pairwise_distances.erase(best_pairwise_distances.begin() + centroid_idx);
-
-    // TODO necessary?
-    std_data = std::vector<T>(data.begin(), data.end());
-    std_centroids = std::vector<T>(centroids.begin() + cols * (iter + 1), centroids.end());
-
-    int centroids_nr = std_centroids.size() / cols;
-    std::vector<T> curr_pairwise_distances( centroids_nr * (std_data.size() / cols));
+    best_pairwise_distances[centroid_idx] = 0;
 
     compute_distances(std_data,
                       std_centroids,
@@ -316,6 +309,8 @@ void kmeans_plus_plus(
     for (int i = 0; i < curr_pairwise_distances.size(); i++) {
       best_pairwise_distances[i] = std::min(curr_pairwise_distances[i], best_pairwise_distances[i]);
     }
+
+    std::fill(curr_pairwise_distances.begin(), curr_pairwise_distances.end(), (T)0.0);
   }
 }
 
