@@ -42,7 +42,7 @@ class RandomForestClassifier(object):
             # XGBoost specific params
             subsample=1.0,  # h2o4gpu
             colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=100,  # h2o4gpu
+            num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
@@ -243,7 +243,7 @@ class RandomForestRegressor(object):
             # XGBoost specific params
             subsample=1.0,  # h2o4gpu
             colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=100,  # h2o4gpu
+            num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
@@ -638,7 +638,7 @@ class GradientBoostingRegressor(object):
             presort='auto',
             # XGBoost specific params
             colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=100,  # h2o4gpu
+            num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
