@@ -424,7 +424,7 @@ class GradientBoostingClassifier(object):
             presort='auto',
             # XGBoost specific params
             colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=100,  # h2o4gpu
+            num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
@@ -717,7 +717,7 @@ class GradientBoostingRegressor(object):
             random_state = 0
 
         import xgboost as xgb
-        self.model_h2o4gpu = xgb.XGBClassifier(
+        self.model_h2o4gpu = xgb.XGBRegressor(
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
             subsample=subsample,  # h2o4gpu
