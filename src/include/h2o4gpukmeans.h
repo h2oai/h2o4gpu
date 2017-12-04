@@ -15,7 +15,7 @@
 
 namespace h2o4gpukmeans {
 
-static const std::string H2O4GPUKMEANS_VERSION = "0.0.3";
+static const std::string H2O4GPUKMEANS_VERSION = "0.2.0";
 
 template<typename M>
 class H2O4GPUKMeans {
