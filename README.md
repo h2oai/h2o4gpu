@@ -116,7 +116,7 @@ Download the Docker file (for linux_x86_64):
     * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-nccl-cuda9-runtime.tar.bz2)
     * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0-nonccl-cuda9-runtime.tar.bz2)
 
-Load and run docker file (e.g. for nccl-cuda9):
+Load and run docker file (e.g. for bleeding-edge of nccl-cuda9):
 ```
 pbzip2 -dc h2o4gpu-0.2.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0-nccl-cuda9-runtime &
