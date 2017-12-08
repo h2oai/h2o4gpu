@@ -7,6 +7,8 @@
 #include <thrust/iterator/counting_iterator.h>
 #include<algorithm>
 #include <thrust/sequence.h>
+#include <thrust/inner_product.h>
+#include <thrust/transform_reduce.h>
 
 namespace tsvd
 {
@@ -228,6 +230,196 @@ void calculate_u(const Matrix<float> &X, const Matrix<float> &Q, const Matrix<fl
 }
 
 /**
+ * Obtain SVD attributes, which are as follows:
+ * 1.Singular Values
+ * 2.U matrix
+ * 3.Explained Variance
+ * 4.Explained Variance Ratio
+ */
+void get_tsvd_attr(Matrix<float> &X, Matrix<float> &Q, double* _Q, Matrix<float> &w, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param, DeviceContext &context){
+
+	//Obtain Q^T to obtain vector as row major order
+	Matrix<float>Qt(Q.columns(), Q.rows());
+	transpose(Q, Qt, context); //Needed for calculate_u()
+	Matrix<float>QtTrunc(_param.k, Qt.columns());
+	row_reverse_trunc_q(Qt, QtTrunc, context);
+	QtTrunc.copy_to_host(_Q); //Send to host
+
+	//Obtain square root of eigenvalues, which are singular values
+	w.transform([=]__device__(float elem){
+		if(elem > 0.0){
+			return std::sqrt(elem);
+		}else{
+			return 0.0f;
+		}
+	}
+	);
+
+	//Sort from biggest singular value to smallest
+	std::vector<double> w_temp(w.size());
+	w.copy_to_host(w_temp.data()); //Send to host
+	std::reverse(w_temp.begin(), w_temp.end());
+	std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
+	Matrix<float>sigma(_param.k, 1);
+	sigma.copy(w_temp.data());
+
+	//Get U matrix
+	Matrix<float>U(X.rows(), _param.k);
+	Matrix<float>QReversed(Q.rows(), Q.columns());
+	col_reverse_q(Q, QReversed, context);
+	calculate_u(X, QReversed, sigma, U, context);
+	U.copy_to_host(_U); //Send to host
+
+	//Explained Variance
+	Matrix<float>UmultSigma(U.rows(), U.columns());
+	//U * Sigma
+	multiply_diag(U, sigma, UmultSigma, context, false);
+
+	Matrix<float>UOnesSigma(UmultSigma.rows(), 1);
+	UOnesSigma.fill(1.0f);
+	Matrix<float>USigmaVar(_param.k, 1);
+	Matrix<float>USigmaColMean(_param.k, 1);
+	multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
+	float m_usigma = UmultSigma.rows();
+	multiply(USigmaColMean, 1/m_usigma, context);
+	calc_var_numerator(UmultSigma, USigmaColMean, USigmaVar, context);
+	multiply(USigmaVar, 1/m_usigma, context);
+	USigmaVar.copy_to_host(_explained_variance);
+
+	//Explained Variance Ratio
+	//Set aside matrix of 1's for getting sum of columnar variances
+	Matrix<float>XmultOnes(X.rows(), 1);
+	XmultOnes.fill(1.0f);
+	Matrix<float>XVar(X.columns(), 1);
+	Matrix<float>XColMean(X.columns(), 1);
+	multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
+	float m = X.rows();
+	multiply(XColMean, 1/m, context);
+	calc_var_numerator(X, XColMean, XVar, context);
+	multiply(XVar, 1/m, context);
+
+	Matrix<float>XVarSum(1,1);
+	multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
+	Matrix<float>ExplainedVarRatio(_param.k, 1);
+	divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
+	ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
+}
+
+/**
+ * Conduct truncated svd using cusolverDnSsyevd
+ *
+ * @param X
+ * @param _Q
+ * @param _w
+ * @param _U
+ * @param _explained_variance
+ * @param _explained_variance_ratio
+ * @param _param
+ */
+void cusolver_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param){
+	//Allocate matrix for X^TX
+	Matrix<float>XtX(_param.X_n, _param.X_n);
+
+	//Create context
+	DeviceContext context;
+
+	//Multiply X and Xt and output result to XtX
+	multiply(X, X, XtX, context, true, false, 1.0f);
+
+	//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
+	Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
+	Matrix<float>w(Q.rows(), 1);
+	calculate_eigen_pairs_exact(XtX, Q, w, context);
+
+	//Get tsvd attributes
+	get_tsvd_attr(X, Q, _Q, w, _w, _U, _explained_variance, _explained_variance_ratio, _param, context);
+}
+
+/**
+ * Conduct truncated svd using the power method
+ *
+ * @param X
+ * @param _Q
+ * @param _w
+ * @param _U
+ * @param _explained_variance
+ * @param _explained_variance_ratio
+ * @param _param
+ */
+void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param){
+	//Allocate matrix for X^TX
+	Matrix<float>M(_param.X_n, _param.X_n);
+
+	//Allocate matrix to be used in cublasSger outer product calculation
+	Matrix<float>A(M.rows(), M.columns());
+
+	//Create context
+	DeviceContext context;
+
+	//Multiply X and Xt and output result to XtX
+	multiply(X, X, M, context, true, false, 1.0f);
+
+//	//Temporary matrix whcih will be updated in power method iteratively
+//    Matrix<float>M(XtX.rows(), XtX.columns());
+//	M.copy(XtX);
+
+	//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
+	Matrix<float>Q(M.rows(), _param.k);
+	Matrix<float>w(_param.k, 1);
+	std::vector<double> w_temp(w.size());
+
+	/* Power Method for finding all eigenvectors/eigen values
+	 * Logic:
+	 *
+	 * Since the matrix is symmetric, there exists an orthogonal basis of eigenvectors. Once you have found an eigenvector, extend it to an orthogonal basis,
+	 * rewrite the matrix in terms of this basis and restrict to the orthogonal space of the known eigenvector.
+	 * This is comprised in the method of deflation:
+	 *     You first find the first eigenvector v1 (with a maximal λ1), by iterating xn+1=Axn/|Axn|with a "random" initial x0. Once you have found a good approximation
+	 *     for v1, you consider B=A−λ1|v1|2 * v1vT (this simple step replaces the "rewrite in terms of this basis" above). This is a matrix that behaves like A for anything
+	 *     orthogonal to v1 and zeroes out v1. Use the power method on B again, which will reveal v2, an eigenvector of a largest eigenvalue of B.
+	 *     Then switch to C=B−λ2|v2|2 * v2vT so on.
+	 */
+	Matrix<float>b_k(_param.X_n, 1);
+	Matrix<float>b_k1(_param.X_n, 1);
+	float tol = 1.0 - _param.tol;
+
+	for(int i = 0; i < _param.k; i ++){
+		//Set aside vector of randoms (n x 1)
+		b_k.random(i);
+
+		while(true){
+			multiply(M, b_k, b_k1, context);
+			normalize_vector(b_k, context);
+			normalize_vector(b_k1, context);
+			float result = thrust::inner_product(b_k1.dptr(), b_k1.dptr() + b_k1.size(), b_k.dptr(), 0.0f);
+			if(std::abs(result) >= tol){
+				break;
+			}
+			b_k.copy(b_k1);
+		}
+		//Obtain eigen value
+		multiply(M, b_k, b_k1, context);
+		float eigen_value = std::sqrt(thrust::inner_product(b_k1.dptr(), b_k1.dptr() + b_k1.size(), b_k1.dptr(), 0.0f));
+		w_temp[i] = eigen_value;
+
+		//Put eigen vector into Q (starting at last column of Q)
+		thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
+
+		//Get rid of eigen effect from original matrix (deflation)
+		multiply(A, 0.0, context);	
+		outer_product(A, eigen_value, b_k, b_k, context);
+		subtract(M, A, M, context);
+	}
+	//Fill in w from vector w_temp
+	std::reverse(w_temp.begin(), w_temp.end());
+	w.copy(w_temp.data());
+
+	//Get tsvd attributes
+	get_tsvd_attr(X, Q, _Q, w, _w, _U, _explained_variance, _explained_variance_ratio, _param, context);
+
+}
+
+/**
  * Conduct truncated SVD on a matrix
  *
  * @param _X
@@ -247,88 +439,14 @@ void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double*
 
 void truncated_svd_matrix(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
+	std::string algorithm(_param.algorithm);
 	try
 	{
-		//Allocate matrix for X^TX
-		Matrix<float>XtX(_param.X_n, _param.X_n);
-
-		//create context
-		DeviceContext context;
-
-		//Multiply X and Xt and output result to XtX
-		multiply(X, X, XtX, context, true, false, 1.0f);
-
-		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
-		Matrix<float>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
-		Matrix<float>w(Q.rows(), 1);
-		calculate_eigen_pairs_exact(XtX, Q, w, context);
-
-		//Obtain Q^T to obtain vector as row major order
-		Matrix<float>Qt(Q.columns(), Q.rows());
-		transpose(Q, Qt, context); //Needed for calculate_u()
-		Matrix<float>QtTrunc(_param.k, Qt.columns());
-		row_reverse_trunc_q(Qt, QtTrunc, context);
-		QtTrunc.copy_to_host(_Q); //Send to host
-
-		//Obtain square root of eigenvalues, which are singular values
-		w.transform([=]__device__(float elem){
-			if(elem > 0.0){
-				return std::sqrt(elem);
-			}else{
-				return 0.0f;
+		if(algorithm == "cusolver"){
+				cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
+			} else {
+				power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 			}
-		}
-		);
-
-		//Sort from biggest singular value to smallest
-		std::vector<double> w_temp(w.size());
-		w.copy_to_host(w_temp.data()); //Send to host
-		std::reverse(w_temp.begin(), w_temp.end());
-		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
-		Matrix<float>sigma(_param.k, 1);
-		sigma.copy(w_temp.data());
-
-		//Get U matrix
-		Matrix<float>U(X.rows(), _param.k);
-		Matrix<float>QReversed(Q.rows(), Q.columns());
-		col_reverse_q(Q, QReversed, context);
-		calculate_u(X, QReversed, sigma, U, context);
-		U.copy_to_host(_U); //Send to host
-
-		//Explained Variance
-		Matrix<float>UmultSigma(U.rows(), U.columns());
-		//U * Sigma
-		multiply_diag(U, sigma, UmultSigma, context, false);
-
-		Matrix<float>UOnesSigma(UmultSigma.rows(), 1);
-		UOnesSigma.fill(1.0f);
-		Matrix<float>USigmaVar(_param.k, 1);
-		Matrix<float>USigmaColMean(_param.k, 1);
-		multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
-		float m_usigma = UmultSigma.rows();
-		multiply(USigmaColMean, 1/m_usigma, context);
-		calc_var_numerator(UmultSigma, USigmaColMean, USigmaVar, context);
-		multiply(USigmaVar, 1/m_usigma, context);
-		USigmaVar.copy_to_host(_explained_variance);
-
-		//Explained Variance Ratio
-		//Set aside matrix of 1's for getting sum of columnar variances
-		Matrix<float>XmultOnes(X.rows(), 1);
-		XmultOnes.fill(1.0f);
-		Matrix<float>XVar(X.columns(), 1);
-		Matrix<float>XColMean(X.columns(), 1);
-		multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
-		float m = X.rows();
-		multiply(XColMean, 1/m, context);
-		calc_var_numerator(X, XColMean, XVar, context);
-		multiply(XVar, 1/m, context);
-
-		Matrix<float>XVarSum(1,1);
-		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
-		Matrix<float>ExplainedVarRatio(_param.k, 1);
-		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
-		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
-
 		}
 		catch (const std::exception &e)
 		{
