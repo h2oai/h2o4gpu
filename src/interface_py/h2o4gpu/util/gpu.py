@@ -4,7 +4,6 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
-
 #############################
 # Device utils
 
@@ -18,7 +17,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count, _ = gpu_info()
+    available_device_count, _ = get_gpu_info()
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -34,30 +33,46 @@ def device_count(n_gpus=0):
     return n_gpus, available_device_count
 
 
-def gpu_info():
+def get_gpu_info(return_usage=False):
     """Gets the GPU info.
 
     This runs in a sub-process to avoid mixing parent-child CUDA contexts.
-
-    :return:
-        Total number of GPUs and total available memory
-    """
-    from concurrent.futures import ProcessPoolExecutor
-    with ProcessPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_gpu_info_subprocess)
-        res = future.result()
-    return res
-
-
-def _gpu_info_subprocess():
-    """Gets the GPU info.
+    # get GPU info, but do in sub-process
+    # to avoid mixing parent-child cuda contexts
+    # https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
 
     :return:
         Total number of GPUs and total available memory
     """
     total_gpus = 0
     total_mem = 0
-    from py3nvml.py3nvml import NVMLError
+    usage = []
+    import concurrent.futures
+    from concurrent.futures import ProcessPoolExecutor
+    res = None
+    # sometimes hit broken process pool in cpu mode,
+    # so just return back no gpus.
+    try:
+        with ProcessPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(get_gpu_info_subprocess, return_usage)
+            res = future.result()
+        return res
+    except concurrent.futures.process.BrokenProcessPool:
+        if return_usage:
+            return (total_gpus, total_mem, usage)
+        return (total_gpus, total_mem)
+
+
+def get_gpu_info_subprocess(return_usage=False):
+    """Gets the GPU info in a subprocess
+
+    :return:
+        Total number of GPUs and total available memory
+         (and  optionally GPU usage)
+    """
+    total_gpus = 0
+    total_mem = 0
+    usage = []
     try:
         import py3nvml.py3nvml
         py3nvml.py3nvml.nvmlInit()
@@ -70,20 +85,27 @@ def _gpu_info_subprocess():
             if lencudavis == 0:
                 total_gpus = 0
             else:
-                total_gpus = \
-                    min(total_gpus,
-                        os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
+                total_gpus = min(
+                    total_gpus,
+                    os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
 
         total_mem = \
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
-    except NVMLError as e:
-        print("No GPU, setting total_gpus=0 and total_mem=0")
-        print(e)
-        import sys
-        sys.stdout.flush()
-    return total_gpus, total_mem
+
+        if return_usage:
+            for j in range(total_gpus):
+                handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
+                util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(handle)
+                usage.append(util.gpu)
+    # pylint: disable=bare-except
+    except:
+        pass
+
+    if return_usage:
+        return (total_gpus, total_mem, usage)
+    return (total_gpus, total_mem)
 
 
 def cudaresetdevice(gpu_id, n_gpus):
@@ -146,8 +168,8 @@ def get_compute_capability(gpu_id):
     device_ratioperf = c_int(0)
     if n_gpus > 0 and lib is not None:
         c_int_p = POINTER(c_int)
-        lib.get_compute_capability(c_int(gpu_id),
-                                   cast(addressof(device_major), c_int_p),
-                                   cast(addressof(device_minor), c_int_p),
-                                   cast(addressof(device_ratioperf), c_int_p))
+        lib.get_compute_capability(
+            c_int(gpu_id), cast(addressof(device_major), c_int_p),
+            cast(addressof(device_minor), c_int_p),
+            cast(addressof(device_ratioperf), c_int_p))
     return device_major.value, device_minor.value, device_ratioperf.value

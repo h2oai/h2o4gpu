@@ -6,14 +6,13 @@ import ctypes
 
 
 class parameters(ctypes.Structure):
-    _fields_ = [('X_n', ctypes.c_int),
-                ('X_m', ctypes.c_int),
-                ('k', ctypes.c_int),
-                ('algorithm', ctypes.c_char_p),
-                ('whiten', ctypes.c_bool)]
+    _fields_ = [('X_n', ctypes.c_int), ('X_m', ctypes.c_int), ('k',
+                                                               ctypes.c_int),
+                ('algorithm', ctypes.c_char_p), ('whiten', ctypes.c_bool)]
 
 
 class CPUlib:
+
     def __init__(self):
         pass
 
@@ -25,6 +24,7 @@ class CPUlib:
 
 
 class GPUlib:
+
     def __init__(self):
         pass
 
@@ -51,7 +51,6 @@ def _load_pca_lib(lib_path):
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              parameters]
-
 
     # pylint: disable=broad-except
     except Exception as e:

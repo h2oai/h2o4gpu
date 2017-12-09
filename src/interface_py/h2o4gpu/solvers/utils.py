@@ -9,8 +9,8 @@ from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, pointer
 import numpy as np
 from h2o4gpu.types import cptr
 
-
 # Data utils
+
 
 def _unicode_order(fortran):
     return ord('c') if fortran else ord('r')
@@ -271,9 +271,8 @@ def prepare_and_upload_data(self,
     # ################ #
 
     if m_valid >= 0 and m_valid_y >= 0 and m_valid != m_valid_y:
-        raise ValueError(
-            'valid_x and valid_y must have same number of rows, '
-            'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
+        raise ValueError('valid_x and valid_y must have same number of rows, '
+                         'but m_valid=%d m_valid_y=%d\n' % (m_valid, m_valid_y))
         # otherwise m_valid is used, and m_valid_y can be there
     # or not(sets whether do error or not)
     self.time_prepare = time.time() - time_prepare0
@@ -400,7 +399,7 @@ def upload_data(self,
         return a, b, c, d, e
 
     status = c_upload_data(
-        c_int(self._shared_a), # pylint: disable=W0212
+        c_int(self._shared_a),  # pylint: disable=W0212
         c_int(self.source_me),
         c_int(source_dev),
         c_size_t(m_train),
@@ -416,7 +415,8 @@ def upload_data(self,
         pointer(b),
         pointer(c),
         pointer(d),
-        pointer(e),)
+        pointer(e),
+    )
 
     assert status == 0, 'Failure uploading the data'
 
@@ -478,6 +478,7 @@ def finish(self):
 
 
 class _setter:
+
     def __init__(self, oself, e1, e2):
         self._e1 = e1
         self._e2 = e2

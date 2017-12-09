@@ -8,6 +8,7 @@ from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
 
+
 class Lasso(object):
     """H2O Lasso Regression Solver
 

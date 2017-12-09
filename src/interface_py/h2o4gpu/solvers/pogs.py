@@ -95,13 +95,13 @@ class BaseSolver(object):
             elif not self.double_precision:
                 self.work = self.lib.h2o4gpu_init_sparse_single(
                     self.wDev, self.order, self.m, self.n, A.nnz,
-                    cptr(A.data, c_float),
-                    cptr(A.indices, c_int), cptr(A.indptr, c_int))
+                    cptr(A.data, c_float), cptr(A.indices, c_int),
+                    cptr(A.indptr, c_int))
             else:
                 self.work = self.lib.h2o4gpu_init_sparse_double(
                     self.wDev, self.order, self.m, self.n, A.nnz,
-                    cptr(A.data, c_double),
-                    cptr(A.indices, c_int), cptr(A.indptr, c_int))
+                    cptr(A.data, c_double), cptr(A.indices, c_int),
+                    cptr(A.indptr, c_int))
 
         except AssertionError:
             print("Data must be a (m x n) numpy ndarray or scipy csc_matrix "
@@ -137,8 +137,7 @@ class BaseSolver(object):
                       "Call Solver.init( args... ) first")
                 return
             elif not self.double_precision:
-                self.lib.h2o4gpu_solve_single(self.work,
-                                              pointer(self.settings),
+                self.lib.h2o4gpu_solve_single(self.work, pointer(self.settings),
                                               pointer(self.solution),
                                               pointer(self.info),
                                               cptr(f.a, c_float),
@@ -154,8 +153,7 @@ class BaseSolver(object):
                                               cptr(g.e, c_float),
                                               cptr(g.h, c_int))
             else:
-                self.lib.h2o4gpu_solve_double(self.work,
-                                              pointer(self.settings),
+                self.lib.h2o4gpu_solve_double(self.work, pointer(self.settings),
                                               pointer(self.solution),
                                               pointer(self.info),
                                               cptr(f.a, c_double),
