@@ -203,12 +203,10 @@ def change_solution(py_solution, **kwargs):
 def make_solution(py_solution):
     if py_solution.double_precision:
         return SolutionD(
-            cptr(py_solution.x, c_double),
-            cptr(py_solution.y, c_double),
+            cptr(py_solution.x, c_double), cptr(py_solution.y, c_double),
             cptr(py_solution.mu, c_double), cptr(py_solution.nu, c_double))
     return SolutionS(
-        cptr(py_solution.x, c_float),
-        cptr(py_solution.y, c_float),
+        cptr(py_solution.x, c_float), cptr(py_solution.y, c_float),
         cptr(py_solution.mu, c_float), cptr(py_solution.nu, c_float))
 
 

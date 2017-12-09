@@ -155,8 +155,7 @@ class KMeansH2O(object):
         if isinstance(init, str) and init not in ['random', 'k-means++']:
             assert ValueError(
                 "Invalid initialization method. "
-                "Should be 'k-means++' or 'random' but got '%s'." % init
-            )
+                "Should be 'k-means++' or 'random' but got '%s'." % init)
 
         self.init = init
         self._n_clusters = n_clusters
@@ -364,11 +363,10 @@ class KMeansH2O(object):
         else:
             c_kmeans = lib.make_ptr_double_kmeans
 
-        c_kmeans(1, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
-                 rows, cols,
+        c_kmeans(1, self.verbose,
+                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                  c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                 self.tol, c_data, c_centroids, None,
-                 pointer(c_res))
+                 self.tol, c_data, c_centroids, None, pointer(c_res))
 
         preds = np.fromiter(
             cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
@@ -493,18 +491,18 @@ class KMeansH2O(object):
 
         if self.double_precision == 0:
             status = lib.make_ptr_float_kmeans(
-                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
-                rows, cols,
+                0, self.verbose,
+                self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None,
-                pointer(pred_centers), pointer(pred_labels))
+                self.tol, c_data_ptr, None, pointer(pred_centers),
+                pointer(pred_labels))
         else:
             status = lib.make_ptr_double_kmeans(
-                0, self.verbose, self.random_state, self._gpu_id, self.n_gpus,
-                rows, cols,
+                0, self.verbose,
+                self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None,
-                pointer(pred_centers), pointer(pred_labels))
+                self.tol, c_data_ptr, None, pointer(pred_centers),
+                pointer(pred_labels))
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
@@ -523,9 +521,7 @@ class KMeansH2O(object):
         self.cluster_centers_ = centroids
 
         labels = np.ctypeslib.as_array(
-            cast(pred_labels, POINTER(c_int)),
-            (rows,)
-        )
+            cast(pred_labels, POINTER(c_int)), (rows,))
         self.labels_ = np.reshape(labels, rows)
 
         return self.cluster_centers_, self.labels_
@@ -672,26 +668,17 @@ class KMeans(object):
             # pylint: disable=unidiomatic-typecheck
             if type(init) == type(example):
                 KMeans._print_verbose(
-                    verbose,
-                    0,
+                    verbose, 0,
                     "'init' as ndarray of centers not yet supported."
-                    "Running ScikitLearn CPU version."
-                )
+                    "Running ScikitLearn CPU version.")
                 self.do_sklearn = True
             # FIXME: Add n_init to h2o4gpu
             if n_init != 1:
-                KMeans._print_verbose(
-                    verbose,
-                    0,
-                    "'n_init' not supported. "
-                    "Running h2o4gpu with n_init = 1."
-                )
+                KMeans._print_verbose(verbose, 0, "'n_init' not supported. "
+                                      "Running h2o4gpu with n_init = 1.")
             if precompute_distances != "auto":
-                KMeans._print_verbose(
-                    verbose,
-                    0,
-                    "'precompute_distances' not used."
-                )
+                KMeans._print_verbose(verbose, 0,
+                                      "'precompute_distances' not used.")
         elif backend == 'sklearn':
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
@@ -733,18 +720,10 @@ class KMeans(object):
         # pylint: disable=protected-access
         if self.do_sklearn or self.model_h2o4gpu._load_lib() is None:
             self.model = self.model_sklearn
-            KMeans._print_verbose(
-                verbose,
-                0,
-                "Using ScikitLearn backend."
-            )
+            KMeans._print_verbose(verbose, 0, "Using ScikitLearn backend.")
         else:
             self.model = self.model_h2o4gpu
-            KMeans._print_verbose(
-                verbose,
-                0,
-                "Using h2o4gpu backend."
-            )
+            KMeans._print_verbose(verbose, 0, "Using h2o4gpu backend.")
 
     def fit(self, X, y=None):
         res = self.model.fit(X, y)

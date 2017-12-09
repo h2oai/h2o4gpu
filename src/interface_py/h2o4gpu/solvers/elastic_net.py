@@ -276,7 +276,6 @@ class ElasticNetH2O(object):
         if not (train_x is None and train_y is None and valid_x is None and
                 valid_y is None and sample_weight is None):
 
-
             self.prepare_and_upload_data = prepare_and_upload_data(
                 self,
                 train_x=train_x,
@@ -645,7 +644,8 @@ class ElasticNetH2O(object):
             pointer(valid_pred_vs_alpha),
             cast(addressof(count_full), c_size_t_p),
             cast(addressof(count_short), c_size_t_p),
-            cast(addressof(count_more), c_size_t_p),)
+            cast(addressof(count_more), c_size_t_p),
+        )
         #if should or user wanted to save or free data,
         #do that now that we are done using a, b, c, d, e
         #This means have to upload_data() again before fit_ptr
@@ -683,9 +683,11 @@ class ElasticNetH2O(object):
             print('count_full_value=%d '
                   'count_short_value=%d '
                   'count_more_value=%d '
-                  'num_all=%d num_all_other=%d' %
-                  (int(count_full_value), int(count_short_value),
-                   int(count_more_value), int(num_all), int(num_all_other)))
+                  'num_all=%d num_all_other=%d' % (int(count_full_value),
+                                                   int(count_short_value),
+                                                   int(count_more_value),
+                                                   int(num_all),
+                                                   int(num_all_other)))
             sys.stdout.flush()
             #TODO raise an exception instead
             exit(0)
@@ -742,8 +744,8 @@ class ElasticNetH2O(object):
                 cast(x_vs_alpha, POINTER(self.myctype)),
                 dtype=self.dtype,
                 count=count_short_value)
-            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew, (self.n_alphas,
-                                                                 num_all))
+            self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
+                                            (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[:, n + num_error:
@@ -772,7 +774,8 @@ class ElasticNetH2O(object):
                           count_short_value,
                           n,
                           num_all_other,
-                          m_valid,))
+                          m_valid,
+                      ))
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
                 np.fromiter(cast(valid_pred_vs_alpha,
@@ -829,7 +832,8 @@ class ElasticNetH2O(object):
                 valid_yptr,
                 self.e,
                 do_predict=1,
-                free_input_data=free_input_data,)
+                free_input_data=free_input_data,
+            )
         self.store_full_path = 0
         self._fitorpredict_ptr(
             self.source_dev,
@@ -843,7 +847,8 @@ class ElasticNetH2O(object):
             valid_xptr,
             valid_yptr,
             self.e,
-            do_predict=1,)
+            do_predict=1,
+        )
         #restore global variable
         self.store_full_path = oldstorefullpath
 
@@ -885,7 +890,8 @@ class ElasticNetH2O(object):
             valid_x,
             valid_y,
             sample_weight,
-            free_input_data=0,)
+            free_input_data=0,
+        )
         if valid_x is None:
             self.prediction = self.predict(
                 valid_x=train_x,
@@ -1342,8 +1348,8 @@ class ElasticNet(object):
                     if verbose:
                         print("WARNING:"
                               " The sklearn parameter " + params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will use Sklearn.")
+                              " has been changed from default to " +
+                              str(param) + ". Will use Sklearn.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':

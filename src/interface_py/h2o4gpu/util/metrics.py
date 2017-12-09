@@ -126,8 +126,8 @@ def ce(actual, predicted):
     :returns double
             The classification error between actual and predicted
     """
-    return (sum([1.0 for x, y in zip(actual, predicted)
-                 if x != y]) / len(actual))
+    return (
+        sum([1.0 for x, y in zip(actual, predicted) if x != y]) / len(actual))
 
 
 def ae(actual, predicted):

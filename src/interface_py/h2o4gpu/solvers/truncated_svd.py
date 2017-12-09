@@ -55,24 +55,23 @@ class TruncatedSVDH2O(object):
 
         """
         X = np.asfortranarray(X, dtype=np.float64)
-        Q = np.empty((self.n_components, X.shape[1]),
-                     dtype=np.float64, order='F')
-        U = np.empty((X.shape[0], self.n_components),
-                     dtype=np.float64, order='F')
+        Q = np.empty(
+            (self.n_components, X.shape[1]), dtype=np.float64, order='F')
+        U = np.empty(
+            (X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components,
-                                      dtype=np.float64)
-        explained_variance_ratio = np.empty(self.n_components,
-                                            dtype=np.float64)
+        explained_variance = np.empty(self.n_components, dtype=np.float64)
+        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
 
         lib = self._load_lib()
-        lib.truncated_svd(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
-                          _as_fptr(explained_variance),
-                          _as_fptr(explained_variance_ratio), param)
+        lib.truncated_svd(
+            _as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
+            _as_fptr(explained_variance), _as_fptr(explained_variance_ratio),
+            param)
 
         self._Q = Q
         self._w = w
@@ -261,8 +260,8 @@ class TruncatedSVD(object):
                     if verbose:
                         print("WARNING:"
                               " The sklearn parameter " + params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will run Sklearn TruncatedSVD.")
+                              " has been changed from default to " +
+                              str(param) + ". Will run Sklearn TruncatedSVD.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -281,8 +280,7 @@ class TruncatedSVD(object):
             n_iter=n_iter,
             random_state=random_state,
             tol=tol)
-        self.model_h2o4gpu = TruncatedSVDH2O(
-            n_components=n_components)
+        self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components)
 
         if self.do_sklearn:
             self.model = self.model_sklearn

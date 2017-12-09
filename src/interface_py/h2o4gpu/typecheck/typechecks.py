@@ -228,8 +228,8 @@ class NOT(MagicType):
     def name(self, src=None):
         """Return string representing the name of this type."""
         if len(self._types) > 1:
-            return "!(%s)" % str(
-                "|".join(_get_type_name(tt, src) for tt in self._types))
+            return "!(%s)" % str("|".join(
+                _get_type_name(tt, src) for tt in self._types))
         else:
             return "!" + _get_type_name(self._types[0], src)
 

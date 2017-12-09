@@ -71,15 +71,13 @@ class PCAH2O(TruncatedSVDH2O):
 
         """
         X = np.asfortranarray(X, dtype=np.float64)
-        Q = np.empty((self.n_components, X.shape[1]),
-                     dtype=np.float64, order='F')
-        U = np.empty((X.shape[0], self.n_components),
-                     dtype=np.float64, order='F')
+        Q = np.empty(
+            (self.n_components, X.shape[1]), dtype=np.float64, order='F')
+        U = np.empty(
+            (X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components,
-                                      dtype=np.float64)
-        explained_variance_ratio = np.empty(self.n_components,
-                                            dtype=np.float64)
+        explained_variance = np.empty(self.n_components, dtype=np.float64)
+        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         mean = np.empty(X.shape[1], dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
@@ -88,16 +86,17 @@ class PCAH2O(TruncatedSVDH2O):
         param.whiten = self.whiten
 
         lib = self._load_lib()
-        lib.pca(_as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
-                _as_fptr(explained_variance),
-                _as_fptr(explained_variance_ratio), _as_fptr(mean), param)
+        lib.pca(
+            _as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
+            _as_fptr(explained_variance), _as_fptr(explained_variance_ratio),
+            _as_fptr(mean), param)
 
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
         self._X = X
         n = X.shape[0]
         # To match sci-kit #TODO Port to cuda?
-        self.explained_variance = self.singular_values_ ** 2 / (n - 1)
+        self.explained_variance = self.singular_values_**2 / (n - 1)
         self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
@@ -180,8 +179,8 @@ class PCA(TruncatedSVD):
                     if verbose:
                         print("WARNING:"
                               " The sklearn parameter " + params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will run Sklearn PCA.")
+                              " has been changed from default to " +
+                              str(param) + ". Will run Sklearn PCA.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -201,12 +200,8 @@ class PCA(TruncatedSVD):
             svd_solver=svd_solver,
             tol=tol,
             iterated_power=iterated_power,
-            random_state=random_state
-        )
-        self.model_h2o4gpu = PCAH2O(
-            n_components=n_components,
-            whiten=whiten
-        )
+            random_state=random_state)
+        self.model_h2o4gpu = PCAH2O(n_components=n_components, whiten=whiten)
 
         if self.do_sklearn:
             self.model = self.model_sklearn

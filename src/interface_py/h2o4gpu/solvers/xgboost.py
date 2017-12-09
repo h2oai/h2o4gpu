@@ -78,10 +78,10 @@ class RandomForestClassifier(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter " +
-                              params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will run Sklearn RandomForestsClassifier.")
+                        print(
+                            "WARNING: The sklearn parameter " + params_string[i]
+                            + " has been changed from default to " + str(param)
+                            + ". Will run Sklearn RandomForestsClassifier.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -276,10 +276,10 @@ class RandomForestRegressor(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter " +
-                              params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will run Sklearn RandomForestRegressor.")
+                        print(
+                            "WARNING: The sklearn parameter " + params_string[i]
+                            + " has been changed from default to " + str(param)
+                            + ". Will run Sklearn RandomForestRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
@@ -675,10 +675,10 @@ class GradientBoostingRegressor(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print("WARNING: The sklearn parameter " +
-                              params_string[i] +
-                              " has been changed from default to " + str(param)
-                              + ". Will run Sklearn GradientBoostingRegressor.")
+                        print(
+                            "WARNING: The sklearn parameter " + params_string[i]
+                            + " has been changed from default to " + str(param)
+                            + ". Will run Sklearn GradientBoostingRegressor.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
