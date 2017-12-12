@@ -6,6 +6,8 @@
 \alias{predict}
 \alias{reexports}
 \alias{\%>\%}
+\alias{reexports}
+\alias{use_condaenv}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -14,6 +16,8 @@ below to see their documentation.
 
 \describe{
   \item{magrittr}{\code{\link[magrittr]{\%>\%}}}
+
+  \item{reticulate}{\code{\link[reticulate]{use_condaenv}}}
 
   \item{stats}{\code{\link[stats]{predict}}}
 }}
