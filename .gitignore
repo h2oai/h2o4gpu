@@ -162,3 +162,9 @@ xgboost
 py3nvml
 scikit-learn
 tests/googletest
+
+# R package
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata

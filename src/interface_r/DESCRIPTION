@@ -1,0 +1,26 @@
+Package: h2o4gpu
+Type: Package
+Title: h2o4gpu in R
+Version: 0.0.1.9999
+Authors@R: c(
+  person("Yuan  Tang", role = c("aut", "cre")),
+  person("H2O.AI", role = c("cph", "fnd"))
+)
+Description: h2o4gpu in R
+License: Apache License 2.0
+URL: https://github.com/h2oai/h2o4gpu
+BugReports: https://github.com/h2oai/h2o4gpu/issues
+SystemRequirements: Python (>= 3.6) with header files and shared library;
+    h2o4gpu (https://github.com/h2oai/h2o4gpu)
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.1)
+Imports:
+    reticulate
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 6.0.1
+Suggests:
+    testthat,
+    knitr
+VignetteBuilder: knitr
