@@ -3,9 +3,9 @@ Type: Package
 Title: h2o4gpu in R
 Version: 0.0.1.9999
 Authors@R: c(
-  person("Yuan  Tang", role = c("aut", "cre")),
-  person("H2O.AI", role = c("cph", "fnd"))
-)
+  person("Yuan", "Tang", role = c("aut", "cre"), email = "terrytangyuan@gmail.com"),
+  person("H2O.AI", role = c("cph", "fnd")))
+Maintainer: Yuan Tang <terrytangyuan@gmail.com>
 Description: h2o4gpu in R
 License: Apache License 2.0
 URL: https://github.com/h2oai/h2o4gpu
