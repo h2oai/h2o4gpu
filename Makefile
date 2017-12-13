@@ -147,7 +147,7 @@ build: update_submodule cleanbuild cpp c py
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
 
-buildquick: cpp c py
+buildquick: cpp cleanc c py
 
 install: pyinstall
 
