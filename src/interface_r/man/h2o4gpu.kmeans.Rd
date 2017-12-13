@@ -7,7 +7,8 @@
 h2o4gpu.kmeans(n_clusters = 8L, init = "k-means++", n_init = 1L,
   max_iter = 300L, tol = 1e-04, precompute_distances = "auto",
   verbose = 0, random_state = NULL, copy_x = TRUE, n_jobs = 1,
-  algorithm = "auto", gpu_id = 0, n_gpus = -1, do_checks = 1)
+  algorithm = "auto", gpu_id = 0, n_gpus = -1, do_checks = 1,
+  backend = "auto")
 }
 \description{
 K-Means clustering

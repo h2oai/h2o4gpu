@@ -15,3 +15,22 @@ fit <- function(object, ...) {
 #' @export
 stats::predict
 
+#' @export
+transform <- function(object, ...) {
+  UseMethod("transform")
+}
+
+#' @export
+score <- function(object, ...) {
+  UseMethod("score")
+}
+
+#' @export
+fit_transform <- function(object, ...) {
+  UseMethod("fit_transform")
+}
+
+#' @export
+fit_predict <- function(object, ...) {
+  UseMethod("fit_predict")
+}

@@ -15,7 +15,8 @@ h2o4gpu.kmeans <- function(
   algorithm = 'auto',
   gpu_id = 0,
   n_gpus = -1,
-  do_checks = 1
+  do_checks = 1,
+  backend = 'auto'
 ) {
   model <- h2o4gpu$KMeans(
     n_clusters = as.integer(n_clusters),
@@ -31,7 +32,8 @@ h2o4gpu.kmeans <- function(
     algorithm = algorithm,
     gpu_id = as.integer(gpu_id),
     n_gpus = as.integer(n_gpus),
-    do_checks = as.integer(do_checks)
+    do_checks = as.integer(do_checks),
+    backend = backend
   )
   h2o4gpu_model(model, "kmeans")
 }
