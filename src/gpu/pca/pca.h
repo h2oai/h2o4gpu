@@ -19,6 +19,7 @@ namespace pca
 			int X_m;
 			int k;
 			bool whiten;
+			const char* algorithm;
 		};
 
 		/**
