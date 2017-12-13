@@ -1,8 +1,6 @@
 context("Test h2o4gpu_model methods")
 
 test_that("kmeans model can be constructed and trained", {
-  use_condaenv("py36", conda = "/home/terry/miniconda3/envs/py36/bin/conda")
-  
   h2o4gpu <- reticulate::import("h2o4gpu")
   np <- reticulate::import("numpy")
   

@@ -18,6 +18,13 @@ h2o4gpu <- NULL
     
     on_load = function() {
       check_compatibility(displayed_warning)
+      search_env <- "r-h2o4gpu"
+      conda_path <- "/home/terry/miniconda3/bin/conda"
+      if (search_env %in% reticulate::conda_list(conda = conda_path)$name) {
+        use_condaenv(search_env, conda = conda_path)
+      } else {
+        message("h2o4gpu Python package is not installed. Please use install_h2o4gpu(path_to_wheel) to install.")
+      }
     },
     
     on_error = function(e) {
@@ -28,18 +35,7 @@ h2o4gpu <- NULL
   h2o4gpu <<- reticulate::import("h2o4gpu", delay_load = delay_load)
 }
 
+# Placeholder for now
 check_compatibility <- function(displayed_warning) {
-  
-}
 
-.onUnload <- function(libpath) {
-  
-}
-
-.onAttach <- function(libname, pkgname) {
-  
-}
-
-.onDetach <- function(libpath) {
-  
 }
