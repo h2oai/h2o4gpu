@@ -16,11 +16,6 @@ fit <- function(object, ...) {
 stats::predict
 
 #' @export
-transform <- function(object, ...) {
-  UseMethod("transform")
-}
-
-#' @export
 score <- function(object, ...) {
   UseMethod("score")
 }
