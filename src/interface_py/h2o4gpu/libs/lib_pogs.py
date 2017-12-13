@@ -76,8 +76,10 @@ def _load_pogs_lib(lib_path):
         h2o4gpu_pogs_lib.h2o4gpu_solve_double.restype = c_int
         h2o4gpu_pogs_lib.h2o4gpu_finish_single.restype = None
         h2o4gpu_pogs_lib.h2o4gpu_finish_double.restype = None
-
-    except OSError:
+    # pylint: disable=broad-except
+    except Exception as e:
+        print("Exception")
+        print(e)
         print('\nWarning: h2o4gpu_pogs_lib shared object (dynamic library) %s '
               'failed to load. ' % lib_path)
         h2o4gpu_pogs_lib = None
