@@ -8,6 +8,10 @@
 \alias{\%>\%}
 \alias{reexports}
 \alias{use_condaenv}
+\alias{reexports}
+\alias{use_python}
+\alias{reexports}
+\alias{use_virtualenv}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -17,7 +21,7 @@ below to see their documentation.
 \describe{
   \item{magrittr}{\code{\link[magrittr]{\%>\%}}}
 
-  \item{reticulate}{\code{\link[reticulate]{use_condaenv}}}
+  \item{reticulate}{\code{\link[reticulate]{use_condaenv}}, \code{\link[reticulate]{use_python}}, \code{\link[reticulate]{use_virtualenv}}}
 
   \item{stats}{\code{\link[stats]{predict}}}
 }}
