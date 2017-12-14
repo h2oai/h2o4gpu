@@ -9,22 +9,26 @@ np <- NULL
 
 .onLoad <- function(libname, pkgname) {
   
+  search_env <- "r-h2o4gpu"
   # delay load handler
   displayed_warning <- FALSE
+  
   delay_load <- list(
     
     priority = 5,
     
-    environment = "r-h2o4gpu",
+    environment = search_env,
     
     on_load = function() {
       check_compatibility(displayed_warning)
-      search_env <- "r-h2o4gpu"
-      conda_path <- "/home/terry/miniconda3/bin/conda"
-      if (search_env %in% reticulate::conda_list(conda = conda_path)$name) {
-        use_condaenv(search_env, conda = conda_path)
+      if (search_env %in% reticulate::conda_list()$name) {
+        # TODO: Support other load methods (future work)
+        use_condaenv(search_env)
       } else {
-        message("h2o4gpu Python package is not installed. Please use install_h2o4gpu(path_to_wheel) to install.")
+        message("h2o4gpu Python package is not installed. ",
+                "Please use install_h2o4gpu(wheel_path) to install. ",
+                "You can find suitable Python wheel for your environment here: ",
+                "https://github.com/h2oai/h2o4gpu#installation.")
       }
     },
     
@@ -34,7 +38,7 @@ np <- NULL
   )
   
   h2o4gpu <<- reticulate::import("h2o4gpu", delay_load = delay_load)
-  np <<- import("numpy", convert = FALSE, delay_load = TRUE)
+  np <<- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
 }
 
 # Placeholder for now
