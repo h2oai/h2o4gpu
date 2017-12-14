@@ -230,7 +230,13 @@ namespace tsvd
 		normalize_columns(M, M_temp, columns_length, ones, context);
 	}
 
-	void normalize_vector(Matrix<tsvd_float>& M, DeviceContext& context){
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context){
+        float norm2 = 0.0;
+        safe_cublas(cublasSnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
+        M.transform([=]__device__ (float val){return val * (1/norm2);});
+    }
+
+	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context){
 		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
 		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
 	}

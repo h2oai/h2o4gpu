@@ -381,33 +381,32 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 	 */
 	Matrix<float>b_k(_param.X_n, 1);
 	Matrix<float>b_k1(_param.X_n, 1);
-	float tol = 1.0 - _param.tol;
+	float tol = _param.tol;
 
 	for(int i = 0; i < _param.k; i ++){
 		//Set aside vector of randoms (n x 1)
 		b_k.random(i);
-
+		float previous_eigenvalue_estimate = FLT_MAX;
+		float eigen_value_estimate = FLT_MAX;
 		while(true){
 			multiply(M, b_k, b_k1, context);
-			normalize_vector(b_k, context);
-			normalize_vector(b_k1, context);
-			float result = thrust::inner_product(b_k1.dptr(), b_k1.dptr() + b_k1.size(), b_k.dptr(), 0.0f);
-			if(std::abs(result) >= tol){
+			cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate);
+			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= tol) {
 				break;
 			}
+			normalize_vector_cublas(b_k1, context);
 			b_k.copy(b_k1);
+			previous_eigenvalue_estimate = eigen_value_estimate;
 		}
 		//Obtain eigen value
-		multiply(M, b_k, b_k1, context);
-		float eigen_value = std::sqrt(thrust::inner_product(b_k1.dptr(), b_k1.dptr() + b_k1.size(), b_k1.dptr(), 0.0f));
-		w_temp[i] = eigen_value;
+		w_temp[i] = eigen_value_estimate;
 
 		//Put eigen vector into Q (starting at last column of Q)
 		thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
 
 		//Get rid of eigen effect from original matrix (deflation)
 		multiply(A, 0.0, context);	
-		outer_product(A, eigen_value, b_k, b_k, context);
+		outer_product(A, eigen_value_estimate, b_k, b_k, context);
 		subtract(M, A, M, context);
 	}
 	//Fill in w from vector w_temp

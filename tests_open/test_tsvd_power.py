@@ -2,11 +2,61 @@ import numpy as np
 import time
 import sys
 import logging
-from h2o4gpu.solvers import TruncatedSVDH2O
 import csv
+from h2o4gpu.solvers import TruncatedSVDH2O
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
+
+def func_bench(m=2000, n = 20, k = 5):
+    np.random.seed(1234)
+
+    X = np.random.rand(m,n)
+
+    #Warm start
+    W = np.random.rand(1000,5)
+    print('Cusolver Warm Start')
+    h2o4gpu_tsvd_cusolver = TruncatedSVDH2O(n_components=3, algorithm="cusolver")
+    h2o4gpu_tsvd_cusolver.fit(W)
+    print('Power Warm Start')
+    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=3, algorithm="power", tol = 0.0)
+    h2o4gpu_tsvd_power.fit(W)
+
+    print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix with k=" + str(k))
+    print("\n")
+
+    cusolver_sum_time = 0
+    power_sum_time = 0
+    for i in range(5):
+        start_time_cusolver = time.time()
+        print("CUSOLVER Bencmark on iteration " + str(i))
+        h2o4gpu_tsvd_cusolver.n_components = k
+        h2o4gpu_tsvd_cusolver.fit(X)
+        end_time_cusolver = time.time() - start_time_cusolver
+        cusolver_sum_time +=end_time_cusolver
+        print("Took cusolver " + str(end_time_cusolver) + " seconds on iteration " + str(i))
+
+        print("Sleep before Power on iteration " + str(i))
+        time.sleep(5)
+
+        start_time_power = time.time()
+        print("POWER Bencmark on iteration " + str(i))
+        h2o4gpu_tsvd_power.n_components = k
+        h2o4gpu_tsvd_power.fit(X)
+        end_time_power = time.time() - start_time_power
+        power_sum_time += end_time_power
+        print("Took power method " + str(end_time_power) + " seconds on iteration " + str(i))
+
+    #Benchmarks
+    ########################################################################
+    dim = str(m) + "by" + str(n)
+    with open('power_cusolver_avg_run.csv', 'a', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writerow(['cusolver', str(cusolver_sum_time/5), dim, str(k)])
+        csvwriter.writerow(['power', str(power_sum_time/5), dim, str(k)])
+        csvfile.close()
+    #########################################################################
 
 def func(m=2000, n = 20, k = 5):
     np.random.seed(1234)
@@ -29,18 +79,6 @@ def func(m=2000, n = 20, k = 5):
     h2o4gpu_tsvd_power.fit(X)
     end_time_power = time.time() - start_time_power
     print("Took power method " + str(end_time_power) + " seconds")
-
-    #Benchmarks
-    ########################################################################
-    # dim = str(m) + "by" + str(n)
-    # import csv
-    # with open('tsvd_bench.csv', 'a', newline='') as csvfile:
-    #     csvwriter = csv.writer(csvfile, delimiter=',',
-    #                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    #     csvwriter.writerow(['cusolver', str(end_time_cusolver), dim, str(k)])
-    #     csvwriter.writerow(['power', str(end_time_power), dim, str(k)])
-    #     csvfile.close()
-    #########################################################################
 
     print("h2o4gpu cusolver components")
     print(h2o4gpu_tsvd_cusolver.components_)

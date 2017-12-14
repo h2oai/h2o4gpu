@@ -413,7 +413,13 @@ namespace tsvd
 	/*
 	 * Add docs...
 	 */
-	void normalize_vector(Matrix<tsvd_float>& M, DeviceContext& context);
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context);
+
+
+	/*
+	 * Add docs...
+	 */
+	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context);
 
 	/**
 	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
