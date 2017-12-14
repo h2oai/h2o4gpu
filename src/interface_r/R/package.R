@@ -5,6 +5,7 @@
 NULL
 
 h2o4gpu <- NULL
+np <- NULL
 
 .onLoad <- function(libname, pkgname) {
   
@@ -33,6 +34,7 @@ h2o4gpu <- NULL
   )
   
   h2o4gpu <<- reticulate::import("h2o4gpu", delay_load = delay_load)
+  np <<- import("numpy", convert = FALSE, delay_load = TRUE)
 }
 
 # Placeholder for now

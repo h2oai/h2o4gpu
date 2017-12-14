@@ -10,7 +10,9 @@ resolve_model_input <- function(x) {
     x
   } else if (is.data.frame(x)) {
     as.matrix(x)
+  } else if (is.list(x)) {
+    np$array(x)
   } else {
-    stop(paste0("Input x of type: ", class(x), " is not currently supported."))
+    stop(paste0("Input x of type \"", class(x), "\" is not currently supported."))
   }
 }
