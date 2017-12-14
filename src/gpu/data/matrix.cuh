@@ -410,14 +410,24 @@ namespace tsvd
 
 	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context);
 
-	/*
-	 * Add docs...
+	/**
+	 * \fn	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizing cuBLAS
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
 	 */
 	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context);
 
 
-	/*
-	 * Add docs...
+	/**
+	 * \fn	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizng Thrust
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
 	 */
 	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context);
 

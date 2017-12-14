@@ -359,10 +359,6 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 	//Multiply X and Xt and output result to XtX
 	multiply(X, X, M, context, true, false, 1.0f);
 
-//	//Temporary matrix whcih will be updated in power method iteratively
-//    Matrix<float>M(XtX.rows(), XtX.columns());
-//	M.copy(XtX);
-
 	//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
 	Matrix<float>Q(M.rows(), _param.k);
 	Matrix<float>w(_param.k, 1);
@@ -381,7 +377,6 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 	 */
 	Matrix<float>b_k(_param.X_n, 1);
 	Matrix<float>b_k1(_param.X_n, 1);
-	float tol = _param.tol;
 
 	for(int i = 0; i < _param.k; i ++){
 		//Set aside vector of randoms (n x 1)
@@ -391,7 +386,7 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 		while(true){
 			multiply(M, b_k, b_k1, context);
 			cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate);
-			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= tol) {
+			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= _param.tol) {
 				break;
 			}
 			normalize_vector_cublas(b_k1, context);
