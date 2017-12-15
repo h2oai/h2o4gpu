@@ -9,7 +9,6 @@ np <- NULL
 
 .onLoad <- function(libname, pkgname) {
   
-  search_env <- "r-h2o4gpu"
   # delay load handler
   displayed_warning <- FALSE
   
@@ -17,19 +16,10 @@ np <- NULL
     
     priority = 5,
     
-    environment = search_env,
+    environment = "r-h2o4gpu",
     
     on_load = function() {
       check_compatibility(displayed_warning)
-      if (search_env %in% reticulate::conda_list()$name) {
-        # TODO: Support other load methods (future work)
-        use_condaenv(search_env)
-      } else {
-        message("h2o4gpu Python package is not installed. ",
-                "Please use install_h2o4gpu(wheel_path) to install. ",
-                "You can find suitable Python wheel for your environment here: ",
-                "https://github.com/h2oai/h2o4gpu#installation.")
-      }
     },
     
     on_error = function(e) {
