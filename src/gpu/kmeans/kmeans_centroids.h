@@ -84,9 +84,9 @@ __global__ void calculate_centroids(int n, int d, int k,
 
 template<typename T>
 __global__ void revert_zeroed_centroids(int d, int k,
-                                    T *tmp_centroids,
-                                    T *centroids,
-                                    int *counts) {
+                                        T *tmp_centroids,
+                                        T *centroids,
+                                        int *counts) {
   int global_id_x = threadIdx.x + blockIdx.x * blockDim.x;
   int global_id_y = threadIdx.y + blockIdx.y * blockDim.y;
   if ((global_id_x < d) && (global_id_y < k)) {
@@ -159,6 +159,10 @@ void find_centroids(int q, int n, int d, int k,
   int n_threads_y = 16; // TODO FIXME
   //XXX Number of blocks here is hard coded at 30
   //This should be taken care of more thoughtfully.
+
+  // TODO necessary?
+  cudaDeviceSynchronize();
+
   calculate_centroids << < dim3(1, 30), dim3(n_threads_x, n_threads_y), // TODO FIXME
       0, cuda_stream[dev_num] >> >
       (n, d, k,
@@ -168,9 +172,12 @@ void find_centroids(int q, int n, int d, int k,
           thrust::raw_pointer_cast(centroids.data()),
           thrust::raw_pointer_cast(counts.data()));
 
-  #if(CHECK)
+  // TODO necessary?
+  cudaDeviceSynchronize();
+
+#if(CHECK)
   gpuErrchk(cudaGetLastError());
-  #endif
+#endif
 
   // Scaling should take place on the GPU if n_gpus=1 so we don't
   // move centroids and counts between host and device all the time for nothing
@@ -184,9 +191,9 @@ void find_centroids(int q, int n, int d, int k,
             thrust::raw_pointer_cast(centroids.data()),
             thrust::raw_pointer_cast(counts.data()));
 
-    #if(CHECK)
+#if(CHECK)
     gpuErrchk(cudaGetLastError());
-    #endif
+#endif
 
     //Averages the centroids
     scale_centroids << < dim3((d - 1) / 32 + 1, (k - 1) / 32 + 1), dim3(32, 32), // TODO FIXME
