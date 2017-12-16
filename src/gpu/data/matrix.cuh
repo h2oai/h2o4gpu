@@ -12,7 +12,7 @@ namespace tsvd
 	/**
 	 * \class	Matrix
 	 *
-	 * \brief	Matrix type. Stores data internally in column major fortsvd.
+	 * \brief	Matrix type. Stores data internally in column major
 	 *
 	 */
 
@@ -306,6 +306,7 @@ namespace tsvd
 	};
 
 	void multiply_diag(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool left_diag);
+	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context);
 
 	/**
 	 * \fn	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_float alpha=1.0f);
@@ -408,6 +409,27 @@ namespace tsvd
 	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, const Matrix<tsvd_float>& ones, DeviceContext& context);
 
 	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context);
+
+	/**
+	 * \fn	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizing cuBLAS
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
+	 */
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context);
+
+
+	/**
+	 * \fn	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizng Thrust
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
+	 */
+	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context);
 
 	/**
 	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
