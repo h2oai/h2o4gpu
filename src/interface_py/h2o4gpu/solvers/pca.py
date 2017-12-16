@@ -39,6 +39,7 @@ class PCAH2O(TruncatedSVDH2O):
         self.n_components_ = n_components
         self.mean_ = None
         self.noise_variance_ = None
+        self.algorithm = "cusolver"
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -84,6 +85,7 @@ class PCAH2O(TruncatedSVDH2O):
         param.X_n = X.shape[1]
         param.k = self.n_components
         param.whiten = self.whiten
+        param.algorithm = self.algorithm.encode('utf-8')
 
         lib = self._load_lib()
         lib.pca(
