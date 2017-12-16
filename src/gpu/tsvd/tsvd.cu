@@ -386,7 +386,7 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 		while(true){
 			multiply(M, b_k, b_k1, context);
 			cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate);
-			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= _param.tol) {
+			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= (_param.tol * std::abs(previous_eigenvalue_estimate))) {
 				break;
 			}
 			normalize_vector_cublas(b_k1, context);
