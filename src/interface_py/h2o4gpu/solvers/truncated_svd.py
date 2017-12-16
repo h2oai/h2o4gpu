@@ -24,6 +24,7 @@ class TruncatedSVDH2O(object):
                            or “power” for the power method.
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
+                       Should be > 0.0 to ensure convergence.
 
     """
 
@@ -76,6 +77,9 @@ class TruncatedSVDH2O(object):
         param.k = self.n_components
         param.algorithm = self.algorithm.encode('utf-8')
         param.tol = self.tol
+
+        if param.tol <= 0.0:
+            raise ValueError("The `tol` parameter must be > 0.0")
 
         lib = self._load_lib()
         lib.truncated_svd(

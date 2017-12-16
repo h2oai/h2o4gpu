@@ -19,7 +19,7 @@ def func_bench(m=2000, n = 20, k = 5):
     h2o4gpu_tsvd_cusolver = TruncatedSVDH2O(n_components=3, algorithm="cusolver")
     h2o4gpu_tsvd_cusolver.fit(W)
     print('Power Warm Start')
-    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=3, algorithm="power", tol = 0.0)
+    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=3, algorithm="power", tol = 1e-5)
     h2o4gpu_tsvd_power.fit(W)
 
     print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix with k=" + str(k))
@@ -75,7 +75,7 @@ def func(m=2000, n = 20, k = 5):
 
     start_time_power = time.time()
     print("POWER")
-    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=k, algorithm="power", tol = 0.0)
+    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=k, algorithm="power", tol = 1e-5)
     h2o4gpu_tsvd_power.fit(X)
     end_time_power = time.time() - start_time_power
     print("Took power method " + str(end_time_power) + " seconds")
