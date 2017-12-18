@@ -44,7 +44,7 @@ void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explaine
 		tsvd::Matrix<float>XCentered(X.rows(), X.columns());
 		tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
 
-        tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k};
+        tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm};
 
         tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
 

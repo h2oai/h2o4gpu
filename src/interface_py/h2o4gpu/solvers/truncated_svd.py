@@ -17,12 +17,21 @@ class TruncatedSVDH2O(object):
     estimator does not center the data before computing the singular value
     decomposition.
 
-    :param: n_components Desired dimensionality of output data
+    :param: int n_components: Desired dimensionality of output data
+
+    :param: str algorithm: SVD solver to use.
+                           Either “cusolver” (similar to ARPACK)
+                           or “power” for the power method.
+
+    :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
+                       Should be > 0.0 to ensure convergence.
 
     """
 
-    def __init__(self, n_components=2):
+    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5):
         self.n_components = n_components
+        self.algorithm = algorithm
+        self.tol = tol
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -66,6 +75,11 @@ class TruncatedSVDH2O(object):
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
+        param.algorithm = self.algorithm.encode('utf-8')
+        param.tol = self.tol
+
+        if param.tol <= 0.0:
+            raise ValueError("The `tol` parameter must be > 0.0")
 
         lib = self._load_lib()
         lib.truncated_svd(

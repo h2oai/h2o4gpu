@@ -108,8 +108,10 @@ def _load_kmeans_lib(lib_path):
             c_void_pp
         ]  # result
         h2o4gpu_kmeans_lib.kmeans_transform_double.restype = c_int
-
-    except OSError:
+    # pylint: disable=broad-except
+    except Exception as e:
+        print("Exception")
+        print(e)
         print(
             '\nWarning: h2o4gpu_kmeans_lib shared object (dynamic library) %s '
             'failed to load. ' % lib_path)

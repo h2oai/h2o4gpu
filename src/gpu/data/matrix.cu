@@ -1,5 +1,6 @@
 #include "matrix.cuh"
 #include <algorithm>
+#include <thrust/inner_product.h>
 
 namespace tsvd
 {
@@ -222,27 +223,22 @@ namespace tsvd
 
 	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context)
 	{
-		Matrix<float>M_temp(1, M.rows());
-		thrust::transform(M.dptr(), M.dptr() + M.size(), M_temp.dptr(), sqr_op());
-		Matrix<float>column_length(1, M.columns());
-		auto d_column_length = column_length.data();
-		const tsvd_float alpha = 1.0f;
-		const tsvd_float beta = 0.0f;
-		Matrix<tsvd_float>ones(1,M.columns());
+		Matrix<float> M_temp(M.rows(), M.columns());
+		Matrix<float> columns_length(1, M.columns());
+		Matrix<float> ones(1, M.columns());
 		ones.fill(1.0f);
-		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), ones.data(), 1, &beta, d_column_length, 1));
+		normalize_columns(M, M_temp, columns_length, ones, context);
+	}
 
-		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(tsvd_float val)
-		                  {
-							  if (val == 0.0)
-							  {
-								  return 0.0;
-							  }
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context){
+        float norm2 = 0.0;
+        safe_cublas(cublasSnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
+        M.transform([=]__device__ (float val){return val * (1/norm2);});
+    }
 
-			                  return 1.0/ sqrt(val);
-		                  });
-
-		safe_cublas(cublasSdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
+	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context){
+		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
+		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
 	}
 
 	void f_normalize(Matrix<tsvd_float>& M, DeviceContext& context)
@@ -338,8 +334,11 @@ namespace tsvd
 		safe_cuda(cudaFree(d_work));
 		safe_cuda(cudaFree(dev_info));
 		safe_cuda(cudaGetLastError());
+	}
 
-
+	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context)
+	{
+		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
 }
