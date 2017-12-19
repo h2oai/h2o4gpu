@@ -147,8 +147,12 @@ int kmeans(
       for (int p = 0; p < k; p++) h_counts[p] = 0.0;
       for (int q = 0; q < n_gpu; q++) {
         safe_cuda(cudaSetDevice(dList[q]));
+        // Wait for all previous jobs to finish
+        cudaDeviceSynchronize();
         detail::memcpy(h_counts_tmp, *counts[q]);
         detail::streamsync(dList[q]);
+        // Don't start adding stuff before stream is actually done
+        cudaDeviceSynchronize();
         for (int p = 0; p < k; p++) h_counts[p] += h_counts_tmp[p];
       }
 
@@ -165,6 +169,8 @@ int kmeans(
         safe_cuda(cudaSetDevice(dList[q]));
         detail::memcpy(h_centroids_tmp, *centroids[q]);
         detail::streamsync(dList[q]);
+        // Don't start adding stuff before stream is actually done
+        cudaDeviceSynchronize();
         for (int p = 0; p < k; p++) {
           for (int r = 0; r < d; r++) {
             if (h_counts[p] != 0) {
@@ -188,20 +194,23 @@ int kmeans(
       for (int q = 0; q < n_gpu; q++) {
         safe_cuda(cudaSetDevice(dList[q]));
         detail::memcpy(*centroids[q], h_centroids);
+        cudaDeviceSynchronize();
       }
     }
+
 
     // whether to perform per iteration check
     if (do_per_iter_check) {
       safe_cuda(cudaSetDevice(dList[0]));
 
-      T squared_norm = thrust::inner_product(
+      double init = 0.0;
+      double squared_norm = thrust::inner_product(
           d_old_centroids.begin(), d_old_centroids.end(),
           (*centroids[0]).begin(),
-          (T) 0.0,
-          thrust::plus<T>(),
+          init,
+          thrust::plus<double>(),
           [=]__device__(T left, T right){
-            T diff = left - right;
+            double diff = double(left) - double(right);
             return diff * diff;
           }
       );

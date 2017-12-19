@@ -33,10 +33,9 @@ void update_centroid(int label, int dimension, int d,
                      T accumulator, T *centroids,
                      int count, int *counts) {
   int index = label * d + dimension;
-  T *target = centroids + index;
-  my_atomic_add(target, accumulator);
+  centroids[index] += accumulator;
   if (dimension == 0) {
-    atomicAdd(counts + label, count);
+    counts[label] += count;
   }
 }
 
@@ -46,39 +45,37 @@ __global__ void calculate_centroids(int n, int d, int k,
                                     int *ordered_labels,
                                     int *ordered_indices,
                                     T *centroids,
-                                    int *counts) {
-  int in_flight = blockDim.y * gridDim.y;
-  int labels_per_row = (n - 1) / in_flight + 1;
-  for (int dimension = threadIdx.x; dimension < d; dimension += blockDim.x) {
-    T accumulator = 0;
-    int count = 0;
-    int global_id = threadIdx.y + blockIdx.y * blockDim.y;
-    int start = global_id * labels_per_row;
-    int end = (global_id + 1) * labels_per_row;
-    end = (end > n) ? n : end;
-    int prior_label;
-    if (start < n) {
-      prior_label = ordered_labels[start];
+                                    int *counts,
+                                    int *label_starts) {
+  int cell = threadIdx.x + blockIdx.x * blockDim.x;
+  if (cell > d * k) {
+    return;
+  }
 
-      for (int label_number = start; label_number < end; label_number++) {
-        int label = ordered_labels[label_number];
-        if (label != prior_label) {
-          update_centroid(prior_label, dimension, d,
-                          accumulator, centroids,
-                          count, counts);
-          accumulator = 0;
-          count = 0;
-        }
+  int label_searched = cell / d - 1;
+  int dimension = cell % d;
+  int row = label_starts[label_searched];
 
-        T value = data[dimension + ordered_indices[label_number] * d];
-        accumulator += value;
-        prior_label = label;
-        count++;
-      }
-      update_centroid(prior_label, dimension, d,
-                      accumulator, centroids,
-                      count, counts);
-    }
+  if (row < 0 || row > n) {
+    return;
+  }
+
+  T accumulator = 0;
+  int count = 0;
+  int prev_label = ordered_labels[row];
+  while (row < n && prev_label == ordered_labels[row]) {
+    int label = ordered_labels[row];
+    T value = data[dimension + ordered_indices[row] * d];
+    accumulator += value;
+    prev_label = label;
+    count++;
+    row++;
+  }
+
+  if (0 != accumulator && 0 != count) {
+    update_centroid(label_searched, dimension, d,
+                    accumulator, centroids,
+                    count, counts);
   }
 }
 
@@ -154,23 +151,33 @@ void find_centroids(int q, int n, int d, int k,
   memzero(centroids);
   memzero(counts);
 
-  //Calculate centroids
-  int n_threads_x = 64; // TODO FIXME
-  int n_threads_y = 16; // TODO FIXME
-  //XXX Number of blocks here is hard coded at 30
-  //This should be taken care of more thoughtfully.
-
-  // TODO necessary?
   cudaDeviceSynchronize();
 
-  calculate_centroids << < dim3(1, 30), dim3(n_threads_x, n_threads_y), // TODO FIXME
+  const int BLOCK_SIZE_MUL = 128;
+  int total_threads = k * d;
+  int grid_size = std::ceil(static_cast<double>(total_threads) / BLOCK_SIZE_MUL);
+
+  thrust::device_vector<int> label_starts(k);
+  for(int li = 0; li < k; li++) {
+    thrust::device_vector<int>::iterator found = thrust::find_if(labels.begin(), labels.end(), [=]__device__(int searched) {
+      return searched == li;
+    });
+    int distance = thrust::distance(labels.begin(), found);
+    label_starts[li] = distance;
+  }
+
+  cudaDeviceSynchronize();
+
+  calculate_centroids << < grid_size, BLOCK_SIZE_MUL,
       0, cuda_stream[dev_num] >> >
       (n, d, k,
           thrust::raw_pointer_cast(data.data()),
           thrust::raw_pointer_cast(labels.data()),
           thrust::raw_pointer_cast(indices.data()),
           thrust::raw_pointer_cast(centroids.data()),
-          thrust::raw_pointer_cast(counts.data()));
+          thrust::raw_pointer_cast(counts.data()),
+          thrust::raw_pointer_cast(label_starts.data())
+      );
 
   // TODO necessary?
   cudaDeviceSynchronize();
