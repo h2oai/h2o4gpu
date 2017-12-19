@@ -47,8 +47,9 @@ pipeline {
                 script {
                     if (isRelease()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+                        localArtifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.bz2"
                         sh "s3cmd get ${bucket}/${localArtifact}"
-                        cp "${bleedingEdgeArtifact}" src/interface_py/dist1/
+                        cp "${localArtifact}" src/interface_py/dist1/
                     }
                     if (isBleedingEdge()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
