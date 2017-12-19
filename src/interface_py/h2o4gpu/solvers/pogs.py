@@ -115,6 +115,7 @@ class BaseSolver(object):
                   "cannot re-initialize without calling finish()")
 
     def fit(self, f, g, **kwargs):
+        """ Fit """
         try:
             # assert f,g types
             assert isinstance(f, FunctionVector)

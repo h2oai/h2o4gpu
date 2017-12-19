@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 import h2o4gpu
 from h2o4gpu.solvers import elastic_net
-from sklearn import linear_model
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
+from h2o4gpu import linear_model
+from h2o4gpu.metrics import r2_score
+from h2o4gpu.model_selection import train_test_split
 
 
 def generate_data(nrows, ncols, s=0):
@@ -76,13 +76,13 @@ def fit_model(X_train, y_train, X_test, y_test, reg_type='enet'):
                                             lambdas=lambdas,
                                             order=None)
 
-        reg_sklearn = linear_model.Lasso()
+        reg_sklearn = linear_model.LassoSklearn()
     elif reg_type == 'ridge':
         reg_h2o = h2o4gpu.Ridge()
-        reg_sklearn = linear_model.Ridge()
+        reg_sklearn = linear_model.RidgeSklearn()
     elif reg_type == 'enet':
         reg_h2o = h2o4gpu.ElasticNet()  # update when the wrapper is done
-        reg_sklearn = linear_model.ElasticNet()
+        reg_sklearn = linear_model.ElasticNetSklearn()
 
     start_h2o = time.time()
     reg_h2o.fit(X_train, y_train, free_input_data=1)

@@ -173,8 +173,7 @@ class LogisticRegression(object):
     def densify(self):
         if self.do_sklearn:
             return self.model.densify()
-        else:
-            pass
+        return None
 
     def get_params(self):
         return self.model.get_params()
@@ -210,8 +209,8 @@ class LogisticRegression(object):
     def sparsify(self):
         if self.do_sklearn:
             return self.model.sparsify()
-        else:
-            assert ValueError, "sparsify() is not yet supporte for h2o4gpu"
+        assert ValueError, "sparsify() is not yet supporte for h2o4gpu"
+        return None
 
     def set_attributes(self):
         """ set attributes for Logistic

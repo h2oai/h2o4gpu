@@ -37,8 +37,8 @@ def test_fit_simple_backupsklearn():
     print("h2o4gpu scikit wrapper score()")
     print(enet_wrapper.score(X, y))
 
-    from sklearn.linear_model.ridge import Ridge
-    enet_sk = Ridge(normalize=True, random_state=1234)
+    from h2o4gpu.linear_model.ridge import RidgeSklearn
+    enet_sk = RidgeSklearn(normalize=True, random_state=1234)
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")

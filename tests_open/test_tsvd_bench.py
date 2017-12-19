@@ -2,7 +2,7 @@ import numpy as np
 import time
 import sys
 import logging
-from sklearn.decomposition import TruncatedSVD as sklearnsvd
+from h2o4gpu.decomposition import TruncatedSVDSklearn as sklearnsvd
 from h2o4gpu.solvers import TruncatedSVDH2O
 
 

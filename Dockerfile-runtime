@@ -62,10 +62,12 @@ RUN \
 
 # Add requirements
 COPY requirements_runtime.txt requirements.txt
+COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
   . h2o4gpu_env/bin/activate && \
   chmod a+rwx requirements*.txt && \
-  pip install --no-cache-dir -r requirements.txt
+  pip install --no-cache-dir -r requirements.txt && \
+  pip install --no-cache-dir -r requirements_runtime_demos.txt
 
 # Add a canned jupyter notebook demo to the container
 RUN \
