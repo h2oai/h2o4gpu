@@ -44,16 +44,19 @@ pipeline {
             }
             steps {
                 // get the wheel from s3
+                dumpInfo 'Get wheel'
                 script {
+                    def versionTag = buildInfo.getVersion()
+                    def majorVersionTag = buildInfo.getMajorVersion()
+                    def artifactId = "h2o4gpu"
                     if (isRelease()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
-                        localArtifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.bz2"
+                        def localArtifact = "${artifactId}-${versionTag}${extratag}-runtime.tar.bz2"
                         sh "s3cmd get ${bucket}/${localArtifact}"
                         cp "${localArtifact}" src/interface_py/dist1/
                     }
                     if (isBleedingEdge()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
-
                         def nonLocalVersionTag = versionTag.split('\\+')[0]
                         def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}${extratag}-runtime.tar.bz2"
                         sh "s3cmd get ${bucket}${bleedingEdgeArtifact}"
@@ -66,10 +69,6 @@ pipeline {
                     checkout scm
                 }
                 script {
-                    //unstash 'version_info'
-                    //sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist1/ || true ; rm -rf src/interface_py/dist1/ || true'
-                    //unstash 'linux_whl1'
-                    //sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist1/'
                     h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist1", "dotest")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
