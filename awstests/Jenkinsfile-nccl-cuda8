@@ -47,7 +47,8 @@ pipeline {
                 script {
                     if (isRelease()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
-                        sh "s3cmd get ${bucket}"
+                        sh "s3cmd get ${bucket}/${localArtifact}"
+                        cp "${bleedingEdgeArtifact}" src/interface_py/dist1/
                     }
                     if (isBleedingEdge()) {
                         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
@@ -55,6 +56,7 @@ pipeline {
                         def nonLocalVersionTag = versionTag.split('\\+')[0]
                         def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}${extratag}-runtime.tar.bz2"
                         sh "s3cmd get ${bucket}${bleedingEdgeArtifact}"
+                        cp "${bleedingEdgeArtifact}" src/interface_py/dist1/
                     }
                 }
                 dumpInfo 'Linux Test Info'
