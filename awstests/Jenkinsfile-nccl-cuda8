@@ -1,0 +1,102 @@
+#!/usr/bin/groovy
+// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
+@Library('test-shared-library') _
+
+import ai.h2o.ci.Utils
+def utilsLib = new Utils()
+
+def commitMessage = ''
+def h2o4gpuUtils = null
+
+pipeline {
+    agent none
+
+    // Setup job options
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+
+    environment {
+        MAKE_OPTS = "-s CI=1" // -s: silent mode
+        BUILD_TYPE = "nccl-cuda8"
+    }
+
+    stages {
+        /////////////////////////////////////////////////////////////////////
+        //
+        // -nccl-cuda8
+        //
+        /////////////////////////////////////////////////////////////////////
+        // test on ec2 p32xlarge
+        stage("Full Test Wheel from S3 & S3up on Linux -nccl-cuda8") {
+            agent {
+                label "nvidia-docker && ec2P32xlarge"
+            }
+            when {
+                expression {
+                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Full Test Wheel & Pylint & S3up on Linux -nccl-cuda8")
+                }
+            }
+            steps {
+                // get the wheel from s3
+                script {
+                    if (isRelease()) {
+                        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+                        sh "s3cmd get ${bucket}"
+                    }
+                    if (isBleedingEdge()) {
+                        bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+
+                        def nonLocalVersionTag = versionTag.split('\\+')[0]
+                        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}${extratag}-runtime.tar.bz2"
+                        sh "s3cmd get ${bucket}${bleedingEdgeArtifact}"
+                    }
+                }
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    checkout scm
+                }
+                script {
+                    //unstash 'version_info'
+                    //sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist1/ || true ; rm -rf src/interface_py/dist1/ || true'
+                    //unstash 'linux_whl1'
+                    //sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist1/'
+                    h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "-nccl-cuda8", "dist1", "dotest")
+                }
+                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        script {
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), "-nccl-cuda8-ec2P32xlarge" , "dist1")
+                        }
+                    }
+                }
+            }
+        }
+
+    } // end over stages
+    post {
+        failure {
+            node('linux') {
+                script {
+                    emailext(
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                            subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                            body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                            attachLog: true,
+                            compressLog: true,
+                            recipientProviders: [
+                                    [$class: 'DevelopersRecipientProvider'],
+                            ]
+                    )
+                }
+            }
+        }
+    }
+}
+
