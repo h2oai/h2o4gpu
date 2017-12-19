@@ -58,6 +58,7 @@ RUN \
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
+COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
     chmod a+rwx / && \
     chmod -R a+rwx /root  && \
@@ -67,4 +68,5 @@ RUN \
     /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools && \
     pip install -r requirements_buildonly.txt && \
-    pip install -r requirements_runtime.txt
+    pip install -r requirements_runtime.txt && \
+    pip install -r requirements_runtime_demos.txt

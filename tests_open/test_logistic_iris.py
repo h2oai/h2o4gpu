@@ -10,7 +10,7 @@ import os
 import numpy as np
 import logging
 import pandas as pd
-from sklearn import datasets
+from h2o4gpu import datasets
 import h2o4gpu
 
 print(sys.path)

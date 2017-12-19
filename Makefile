@@ -324,8 +324,8 @@ deps_clean:
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
-	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
-	sed 's/==.*//g' requirements.txt > requirements_plain.txt
+	cat requirements_buildonly.txt requirements_runtime.txt requirements_runtime_demos.txt > requirements.txt
+	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
 	rm -rf requirements_plain.txt requirements.txt
 
