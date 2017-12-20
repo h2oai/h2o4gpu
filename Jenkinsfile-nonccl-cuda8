@@ -14,7 +14,7 @@ def cuda = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
 def cudart = "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04"
 def extratag = "-nonccl-cuda8"
 def linuxwheel = "linux_whl2"
-def testtype = "dotestfast"
+def testtype = "dotestfast_nonccl"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
 
