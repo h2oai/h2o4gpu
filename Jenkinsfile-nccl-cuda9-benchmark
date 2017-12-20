@@ -59,7 +59,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux") {
+        stage("Build Wheel on Linux nccl-cuda9-benchmark") {
 
             agent {
                 label "${labelbuild}"
@@ -98,7 +98,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9-benchmark") {
             agent {
                 label "${labeltest}"
             }
@@ -136,10 +136,14 @@ pipeline {
                 }
             }
         }
-        if (${doruntime} == 1) {
-        stage("Build/Publish Runtime Docker") {
+        stage("Build/Publish Runtime Docker nccl-cuda9-benchmark") {
             agent {
                 label "${labelruntime}"
+            }
+            when {
+                expression {
+                    return ${doruntime} == 1
+                }
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -180,24 +184,22 @@ pipeline {
                 }
             }
         }
-        }
-        if (${dobenchmark} == 1 && env.BRANCH_NAME == "master") {
-        stage("Benchmarking") {
+
+        stage("Benchmarking nccl-cuda9-benchmark") {
             agent {
                 label 'master'
             }
             when {
-                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() }
+                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && ${dobenchmark} == 1 && env.BRANCH_NAME == "master" }
             }
             steps {
                 script {
                     utilsLib.appendBuildDescription("BENCH \u2713")
                 }
 
-                echo banner("Triggering downstream jobs h2o4gpu-nccl-cuda9-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
-                build job: '/h2o4gpu-nccl-cuda9-benchmark', parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
+                echo banner("Triggering downstream jobs h2o4gpu${extratag}-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
+                build job: ""/h2o4gpu${extratag}-benchmark", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
             }
-        }
         }
 
     } // end over stages
