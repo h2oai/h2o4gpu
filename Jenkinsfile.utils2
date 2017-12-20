@@ -25,7 +25,7 @@ pipeline {
 
     environment {
         MAKE_OPTS = "-s CI=1" // -s: silent mode
-        BUILD_TYPE = ${BUILDTYPE}
+        BUILD_TYPE = "${BUILDTYPE}"
     }
 
     stages {
