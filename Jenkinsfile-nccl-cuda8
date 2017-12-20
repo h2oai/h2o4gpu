@@ -110,9 +110,9 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/"${dist}"/  || true; rm -rf src/interface_py/"${dist}"/ || true'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
                     unstash "${linuxwheel}"
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/"${dist}"/'
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/${dist}/'
                     h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${dist}", "${testtype}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
@@ -143,9 +143,9 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/"${dist}"/  || true; rm -rf src/interface_py/"${dist}"/ || true'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
                     unstash "${linuxwheel}"
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/"${dist}"'
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/${dist}'
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
