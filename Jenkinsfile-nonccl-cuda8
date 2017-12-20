@@ -16,7 +16,7 @@ def extratag = "-nonccl-cuda8"
 def linuxwheel = "linux_whl2"
 def testtype = "dotestfast_nonccl"
 
-//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
+//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
@@ -54,7 +54,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux") {
+        stage("Build Wheel on Linux nonccl-cuda8") {
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
@@ -93,7 +93,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nonccl-cuda8") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
@@ -132,7 +132,7 @@ pipeline {
             }
         }
 
-        stage("Build/Publish Runtime Docker") {
+        stage("Build/Publish Runtime Docker nonccl-cuda8") {
             agent {
                 label "nvidia-docker"
             }
