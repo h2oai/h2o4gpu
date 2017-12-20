@@ -16,17 +16,7 @@ def extratag = "-nccl-cuda9"
 def linuxwheel = 'linux_whl4'
 def testtype = "dotestfast"
 
-################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
-
-#!/usr/bin/groovy
-// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
-@Library('test-shared-library') _
-
-import ai.h2o.ci.Utils
-def utilsLib = new Utils()
-
-def commitMessage = ''
-def h2o4gpuUtils = null
+//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
 
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
