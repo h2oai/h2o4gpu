@@ -54,7 +54,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux ${BUILDTYPE}") {
+        stage("Build Wheel on Linux") {
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
@@ -93,13 +93,13 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux ${BUILDTYPE}") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
             when {
                 expression {
-                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux ${BUILDTYPE}")
+                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux")
                 }
             }
             steps {
@@ -125,7 +125,7 @@ pipeline {
             }
         }
 
-        stage("Build/Publish Runtime Docker ${BUILDTYPE}") {
+        stage("Build/Publish Runtime Docker") {
             agent {
                 label "nvidia-docker"
             }
