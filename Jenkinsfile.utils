@@ -205,4 +205,18 @@ def isBleedingEdge() {
 }
 
 
+def doTriggerBenchmarksJob() {
+
+    def changedFiles = buildInfo.get().getChangedFiles()
+    echo "Looking for 'src' in ${changedFiles.join(',')}"
+    // Trigger benchmarks only if the code change touches src
+    def doTrigger = changedFiles.any { filepath ->
+        filepath.contains("src")
+    }
+
+    return doTrigger && (isDevelBranch() || params.forceBenchmarking)
+}
+
+
+
 return this

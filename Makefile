@@ -483,6 +483,14 @@ fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenk
 fullinstalljenkins-nonccl-cuda9: cleanjenkins alldeps_private-nonccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
+# for nccl cuda9 build aws build/test
+fullinstalljenkins-nccl-cuda9-aws1: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist5/ && mv src/interface_py/dist/*.whl src/interface_py/dist5/
+
+# for nccl cuda9 build benchmark
+fullinstalljenkins-nccl-cuda9-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist6/ && mv src/interface_py/dist/*.whl src/interface_py/dist6/
+
 .PHONY: mrproper
 mrproper: clean
 	@echo "----- Cleaning properly -----"

@@ -8,17 +8,17 @@ def utilsLib = new Utils()
 def commitMessage = ''
 def h2o4gpuUtils = null
 
-def dist = "dist5"
-def BUILDTYPE = "nccl-cuda9-aws1"
+def dist = "dist6"
+def BUILDTYPE = "nccl-cuda9-benchmark"
 def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
 def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-def extratag = "-nccl-cuda9-aws1"
-def linuxwheel = "linux_whl5"
-def testtype = "dotest"
+def extratag = "-nccl-cuda9-benchmark"
+def linuxwheel = "linux_whl6"
+def testtype = "dotestperf"
 def labelbuild = "ec2P32xlarge"
 def labeltest = "ec2P32xlarge"
 def labelruntime = "ec2P32xlarge"
-def dobenchmark = 1
+def dobenchmark = 0
 def doruntime = 0
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
@@ -59,7 +59,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux nccl-cuda9-aws1") {
+        stage("Build Wheel on Linux") {
 
             agent {
                 label "${labelbuild}"
@@ -98,7 +98,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9-aws1") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux") {
             agent {
                 label "${labeltest}"
             }
@@ -136,9 +136,8 @@ pipeline {
                 }
             }
         }
-
         if (${doruntime} == 1) {
-        stage("Build/Publish Runtime Docker nccl-cuda9-aws1") {
+        stage("Build/Publish Runtime Docker") {
             agent {
                 label "${labelruntime}"
             }
@@ -183,7 +182,7 @@ pipeline {
         }
         }
         if (${dobenchmark} == 1 && env.BRANCH_NAME == "master") {
-        stage("Benchmarking nccl-cuda9-aws1") {
+        stage("Benchmarking") {
             agent {
                 label 'master'
             }
