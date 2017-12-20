@@ -16,5 +16,181 @@ def extratag = "-nonccl-cuda8"
 def linuxwheel = 'linux_whl2'
 def testtype = "dotestfast"
 
-evaluate(readFile "Jenkinsfile.utils2")
+################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
+
+#!/usr/bin/groovy
+// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
+@Library('test-shared-library') _
+
+import ai.h2o.ci.Utils
+def utilsLib = new Utils()
+
+def commitMessage = ''
+def h2o4gpuUtils = null
+
+// Just Notes:
+//def jobnums       = [0 , 1 , 2  , 3]
+//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+//def dobuilds      = [1, 0, 0, 0]
+//def dofulltests   = [1, 0, 0, 0]
+//def dopytests     = [1, 0, 0, 0]
+//def doruntimes    = [1, 1, 1, 1]
+//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
+//def dists         = ["dist","dist2","dist3","dist4"]
+
+pipeline {
+    agent none
+
+    // Setup job options
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+
+    environment {
+        MAKE_OPTS = "-s CI=1" // -s: silent mode
+        BUILD_TYPE = ${BUILDTYPE}
+    }
+
+    stages {
+        /////////////////////////////////////////////////////////////////////
+        //
+        //
+        //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
+        /////////////////////////////////////////////////////////////////////
+        stage("Build Wheel on Linux" + ${BUILDTYPE}) {
+
+            agent {
+                label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+            }
+            steps {
+                dumpInfo 'Linux Build Info'
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+
+                script {
+                    commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils.buildOnLinux(${cuda}, ${extratag}, ${dist}, ${linuxwheel})
+
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+
+                    script {
+                        // Load the version file content
+                        buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+                        utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
+                        utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
+                                |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
+                                |""".stripMargin("|"))
+                    }
+
+                }
+            }
+        }
+
+        stage("Fast Test Wheel & Pylint & S3up on Linux" + ${BUILDTYPE}) {
+            agent {
+                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+            }
+            when {
+                expression {
+                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux" + ${BUILDTYPE})
+                }
+            }
+            steps {
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    checkout scm
+                }
+                script {
+                    unstash 'version_info'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
+                    unstash ${linuxwheel}
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/${dist}/'
+                    h2o4gpuUtils.runTests(buildInfo.get(), ${cuda}, ${extratag}, ${dist}, ${testtype})
+                }
+                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        script {
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), ${extratag} , ${dist})
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("Build/Publish Runtime Docker" + ${BUILDTYPE}) {
+            agent {
+                label "nvidia-docker"
+            }
+            steps {
+                dumpInfo 'Linux Build Info'
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
+                    unstash ${linuxwheel}
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py${dist}'
+                    unstash 'version_info'
+                    sh 'echo "Stashed version file:" && ls -l build/'
+                }
+                script {
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cuda}, ${dist}, ${extratag})
+                }
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    script {
+                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), ${extratag})
+                    }
+                }
+                }
+            }
+        }
+
+    } // end over stages
+    post {
+        failure {
+            node('linux') {
+                script {
+                    emailext(
+                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                            subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                            body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                            attachLog: true,
+                            compressLog: true,
+                            recipientProviders: [
+                                    [$class: 'DevelopersRecipientProvider'],
+                            ]
+                    )
+                }
+            }
+        }
+    }
+}
+
 
