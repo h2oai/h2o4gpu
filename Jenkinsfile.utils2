@@ -130,7 +130,7 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cuda}, ${dist}, ${extratag})
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cudart}, ${dist}, ${extratag})
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {

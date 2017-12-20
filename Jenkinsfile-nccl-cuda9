@@ -13,7 +13,7 @@ def BUILDTYPE = "nccl-cuda9"
 def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
 def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
 def extratag = "-nccl-cuda9"
-def linuxwheel = 'linux_whl4'
+def linuxwheel = "linux_whl4"
 def testtype = "dotestfast"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2
@@ -150,7 +150,7 @@ pipeline {
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cuda}, ${dist}, ${extratag})
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cudart}, ${dist}, ${extratag})
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
