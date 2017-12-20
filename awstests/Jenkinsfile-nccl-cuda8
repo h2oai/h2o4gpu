@@ -35,7 +35,7 @@ pipeline {
         // test on ec2 p32xlarge
         stage("Full Test Wheel from S3 & S3up on Linux -nccl-cuda8") {
             agent {
-                label "nvidia-docker && ec2P32xlarge"
+                label "ec2P32xlarge"
             }
             when {
                 expression {
