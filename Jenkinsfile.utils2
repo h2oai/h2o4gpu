@@ -56,7 +56,7 @@ pipeline {
                 script {
                     commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux(${cuda}, ${extratag}, ${dist}, ${linuxwheel})
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -90,15 +90,15 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
-                    unstash ${linuxwheel}
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/${dist}/'
-                    h2o4gpuUtils.runTests(buildInfo.get(), ${cuda}, ${extratag}, ${dist}, ${testtype})
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/"${dist}"/  || true; rm -rf src/interface_py/"${dist}"/ || true'
+                    unstash "${linuxwheel}"
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/"${dist}"/'
+                    h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${dist}", "${testtype}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3(buildInfo.get(), ${extratag} , ${dist})
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${dist}")
                         }
                     }
                 }
@@ -123,19 +123,19 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/${dist}/  || true; rm -rf src/interface_py/${dist}/ || true'
-                    unstash ${linuxwheel}
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py${dist}'
+                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/"${dist}"/  || true; rm -rf src/interface_py/"${dist}"/ || true'
+                    unstash "${linuxwheel}"
+                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/"${dist}"'
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), ${cudart}, ${dist}, ${extratag})
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), ${extratag})
+                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "${extratag}")
                     }
                 }
                 }
@@ -162,3 +162,5 @@ pipeline {
         }
     }
 }
+
+
