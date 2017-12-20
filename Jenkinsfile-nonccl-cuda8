@@ -16,4 +16,5 @@ def extratag = "-nonccl-cuda8"
 def linuxwheel = 'linux_whl2'
 def testtype = "dotestfast"
 
-evaluate(new File("Jenkinsfile.utils2"))
+evaluate(readFile "Jenkinsfile.utils2")
+
