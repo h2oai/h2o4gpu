@@ -76,8 +76,8 @@ pipeline {
                 script {
                     commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    //h2o4gpuUtils.buildOnLinux(${cuda}, ${extratag}, ${dist}, ${linuxwheel})
-                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl3')
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
+                    //h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl3')
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
