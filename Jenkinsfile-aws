@@ -37,11 +37,6 @@ pipeline {
             agent {
                 label "ec2P32xlarge"
             }
-            when {
-                expression {
-                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Full Test Wheel & Pylint & S3up on Linux -nccl-cuda8")
-                }
-            }
             steps {
                 // get the wheel from s3
                 dumpInfo 'Get wheel'
