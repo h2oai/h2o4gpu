@@ -85,6 +85,8 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
 
 
 def munge(data_as_np, fit_intercept=False):
+    """Munge Data
+    """
     # If True, then append intercept term to
     # train_x array and valid_x array(if available)
     #
@@ -430,6 +432,8 @@ def upload_data(self,
 
 # Functions that free memory
 def free_data(self):
+    """Free Data
+    """
     # NOTE : For now, these are automatically freed
     # when done with fit-- ok, since not used again
 
@@ -478,6 +482,8 @@ def finish(self):
 
 
 class _setter:
+    """Setter
+    """
 
     def __init__(self, oself, e1, e2):
         self._e1 = e1

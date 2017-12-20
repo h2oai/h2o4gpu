@@ -8,6 +8,27 @@ def utilsLib = new Utils()
 def commitMessage = ''
 def h2o4gpuUtils = null
 
+def dist = "dist3"
+def BUILDTYPE = "nonccl-cuda9"
+def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
+def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
+def extratag = "-nonccl-cuda9"
+def linuxwheel = "linux_whl3"
+def testtype = "dotestfast_nonccl"
+
+//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
+
+// Just Notes:
+//def jobnums       = [0 , 1 , 2  , 3]
+//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+//def dobuilds      = [1, 0, 0, 0]
+//def dofulltests   = [1, 0, 0, 0]
+//def dopytests     = [1, 0, 0, 0]
+//def doruntimes    = [1, 1, 1, 1]
+//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
+//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
+//def dists         = ["dist1","dist2","dist3","dist4"]
 
 pipeline {
     agent none
@@ -24,22 +45,20 @@ pipeline {
 
     environment {
         MAKE_OPTS = "-s CI=1" // -s: silent mode
-        BUILD_TYPE = "nonccl-cuda9"
+        BUILD_TYPE = "${BUILDTYPE}"
     }
 
     stages {
         /////////////////////////////////////////////////////////////////////
         //
-        // -nonccl-cuda9
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux -nonccl-cuda9") {
+        stage("Build Wheel on Linux nonccl-cuda9") {
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
-
             steps {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
@@ -57,7 +76,7 @@ pipeline {
                 script {
                     commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux("nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", 'linux_whl3')
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -74,13 +93,13 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nonccl-cuda9") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
             when {
                 expression {
-                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux -nonccl-cuda9")
+                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux")
                 }
             }
             steps {
@@ -91,22 +110,29 @@ pipeline {
                 }
                 script {
                     unstash 'version_info'
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist3/  || true; rm -rf src/interface_py/dist3/ || true'
-                    unstash 'linux_whl3'
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist3/'
-                    h2o4gpuUtils.runTests(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "-nonccl-cuda9", "dist3", "dotestfast_nonccl")
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/${dist}/  || true
+                        rm -rf src/interface_py/${dist}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/${dist}/  || true
+                       """
+                    h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${dist}", "${testtype}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3(buildInfo.get(), "-nonccl-cuda9" , "dist3")
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${dist}")
                         }
                     }
                 }
             }
         }
 
-        stage("Build/Publish Runtime Docker -nonccl-cuda9") {
+        stage("Build/Publish Runtime Docker nonccl-cuda9") {
             agent {
                 label "nvidia-docker"
             }
@@ -124,19 +150,26 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    sh 'echo "Before Stashed wheel file:" ; ls -l src/interface_py/dist3/  || true; rm -rf src/interface_py/dist3/ || true'
-                    unstash 'linux_whl3'
-                    sh 'echo "After Stashed wheel file:" && ls -l src/interface_py/dist3/'
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/${dist}/  || true
+                        rm -rf src/interface_py/${dist}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/${dist}/  || true
+                       """
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "dist3", "-nonccl-cuda9")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                     script {
-                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "-nonccl-cuda9")
+                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "${extratag}")
                     }
                 }
                 }
@@ -163,4 +196,5 @@ pipeline {
         }
     }
 }
+
 

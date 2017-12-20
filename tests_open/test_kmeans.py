@@ -10,8 +10,8 @@ import time
 from h2o4gpu import KMeans
 from h2o4gpu.datasets import load_iris
 import numpy as np
-from sklearn.datasets.samples_generator import make_blobs
-from sklearn.metrics.cluster import v_measure_score
+from h2o4gpu.datasets.samples_generator import make_blobs
+from h2o4gpu.metrics.cluster import v_measure_score
 
 class TestKmeans(object):
     @classmethod
@@ -130,7 +130,7 @@ class TestKmeans(object):
         print("passed 2")
 
     def test_accuracy(self):
-        from sklearn.cluster import KMeans as skKMeans
+        from h2o4gpu.cluster import KMeansSklearn as skKMeans
         n_samples = 500000
         centers = 10
         X, true_labels = make_blobs(n_samples=n_samples, centers=centers,
@@ -148,7 +148,7 @@ class TestKmeans(object):
         assert accuracy_h2o - accuracy_sk >= -0.1
 
     def test_speed_vs_sk(self):
-        from sklearn.cluster import KMeans as skKMeans
+        from h2o4gpu.cluster import KMeansSklearn as skKMeans
         n_samples = 100000
         centers = 10
         X, true_labels = make_blobs(n_samples=n_samples, centers=centers,

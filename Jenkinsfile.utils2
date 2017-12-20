@@ -1,23 +1,3 @@
-#!/usr/bin/groovy
-// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
-@Library('test-shared-library') _
-
-import ai.h2o.ci.Utils
-def utilsLib = new Utils()
-
-def commitMessage = ''
-def h2o4gpuUtils = null
-
-def dist = "dist4"
-def BUILDTYPE = "nccl-cuda9"
-def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-def extratag = "-nccl-cuda9"
-def linuxwheel = "linux_whl4"
-def testtype = "dotestfast"
-
-//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
-
 // Just Notes:
 //def jobnums       = [0 , 1 , 2  , 3]
 //def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
@@ -54,7 +34,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux "nccl-cuda9") {
+        stage("Build Wheel on Linux") {
 
             agent {
                 label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
@@ -93,7 +73,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux "nccl-cuda9") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux") {
             agent {
                 label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
             }
@@ -132,7 +112,7 @@ pipeline {
             }
         }
 
-        stage("Build/Publish Runtime Docker "nccl-cuda9") {
+        stage("Build/Publish Runtime Docker") {
             agent {
                 label "nvidia-docker"
             }

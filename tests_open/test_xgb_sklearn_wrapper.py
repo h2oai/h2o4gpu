@@ -23,8 +23,8 @@ def test_drf_regressor_backupsklearn(backend='auto'):
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
-    from sklearn.ensemble import RandomForestRegressor
-    drf_sk = RandomForestRegressor(random_state=1234, oob_score=True, max_depth=3)
+    from h2o4gpu.ensemble import RandomForestRegressorSklearn
+    drf_sk = RandomForestRegressorSklearn(random_state=1234, oob_score=True, max_depth=3)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
@@ -76,8 +76,8 @@ def test_drf_classifier_backupsklearn(backend='auto'):
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
-    from sklearn.ensemble import RandomForestClassifier
-    drf_sk = RandomForestClassifier(random_state=1234, oob_score=True, max_depth=3)
+    from h2o4gpu.ensemble import RandomForestClassifierSklearn
+    drf_sk = RandomForestClassifierSklearn(random_state=1234, oob_score=True, max_depth=3)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
@@ -137,8 +137,8 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
     gbm.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
-    from sklearn.ensemble import GradientBoostingRegressor
-    gbm_sk = GradientBoostingRegressor(random_state=1234, max_depth=3)
+    from h2o4gpu.ensemble import GradientBoostingRegressorSklearn
+    gbm_sk = GradientBoostingRegressorSklearn(random_state=1234, max_depth=3)
     print("Scikit fit()")
     gbm_sk.fit(X, y)
 
@@ -187,8 +187,8 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
     gbm.fit(X, y)
 
     # Run Sklearn version of RandomForest Regression
-    from sklearn.ensemble import GradientBoostingClassifier
-    gbm_sk = GradientBoostingClassifier(random_state=1234, max_depth=3)
+    from h2o4gpu.ensemble import GradientBoostingClassifierSklearn
+    gbm_sk = GradientBoostingClassifierSklearn(random_state=1234, max_depth=3)
     print("Scikit fit()")
     gbm_sk.fit(X, y)
 
@@ -229,18 +229,18 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
 
 def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 def test_sklearn_drf_regression_sklearn(): test_drf_regressor_backupsklearn(backend='sklearn')
-def test_sklearn_drf_regresiion_h2o4gpu(): test_drf_regressor_backupsklearn(backend='h2o4gpu')
+def test_sklearn_drf_regression_h2o4gpu(): test_drf_regressor_backupsklearn(backend='h2o4gpu')
 
 def test_sklearn_drf_classification(): test_drf_classifier_backupsklearn()
 def test_sklearn_drf_classification_sklearn(): test_drf_classifier_backupsklearn(backend='sklearn')
-def test_sklearn_drf_regresiion_h2o4gpu(): test_drf_classifier_backupsklearn(backend='h2o4gpu')
+def test_sklearn_drf_regression_h2o4gpu(): test_drf_classifier_backupsklearn(backend='h2o4gpu')
 
 def test_sklearn_gbm_classification(): test_gbm_classifier_backupsklearn()
 def test_sklearn_gbm_classification_sklearn(): test_gbm_classifier_backupsklearn(backend='sklearn')
-def test_sklearn_gbm_regresiion_h2o4gpu(): test_gbm_classifier_backupsklearn(backend='h2o4gpu')
+def test_sklearn_gbm_regression_h2o4gpu(): test_gbm_classifier_backupsklearn(backend='h2o4gpu')
 
 def test_sklearn_gbm_regression(): test_gbm_regressor_backupsklearn()
 def test_sklearn_gbm_regression_sklearn(): test_gbm_regressor_backupsklearn(backend='sklearn')
-def test_sklearn_gbm_regresiion_h2o4gpu(): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
+def test_sklearn_gbm_regression_h2o4gpu(): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
 
 

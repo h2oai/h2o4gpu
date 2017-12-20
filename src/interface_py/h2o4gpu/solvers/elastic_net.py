@@ -11,8 +11,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from h2o4gpu.linear_model import coordinate_descent as sk
 from tabulate import tabulate
+from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
 
 from ..libs.lib_elastic_net import GPUlib, CPUlib

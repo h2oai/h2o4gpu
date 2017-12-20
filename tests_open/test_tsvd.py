@@ -2,10 +2,10 @@ import numpy as np
 import time
 import sys
 import logging
-from sklearn.decomposition import TruncatedSVD as sklearnsvd
+from h2o4gpu.decomposition import TruncatedSVDSklearn as sklearnsvd
 from h2o4gpu.solvers import TruncatedSVDH2O
 from scipy.sparse.linalg import svds
-from sklearn.utils.extmath import svd_flip
+from h2o4gpu.utils.extmath import svd_flip
 
 print(sys.path)
 

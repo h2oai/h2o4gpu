@@ -37,8 +37,8 @@ def test_fit_simple_backupsklearn():
     print("h2o4gpu scikit wrapper score()")
     print(enet_wrapper.score(X, y))
 
-    from sklearn.linear_model.base import LinearRegression
-    enet_sk = LinearRegression(normalize=True)
+    from h2o4gpu.linear_model.base import LinearRegressionSklearn
+    enet_sk = LinearRegressionSklearn(normalize=True)
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")

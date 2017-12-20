@@ -100,6 +100,12 @@ array([[ 1.,  1.  ],
 
 For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
 
+To run the demos using a local wheel run, at least download requirements_runtime_demos.txt from the github repo and do:
+```
+pip install -r requirements_runtime_demos.txt
+```
+and then run the jupyter notebook demos.
+
 ## Running Jupyter Notebooks with Docker
 
 Requirements:

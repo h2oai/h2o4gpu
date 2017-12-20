@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import logging
 from h2o4gpu.solvers.pca import PCAH2O
-from sklearn.decomposition import PCA
+from h2o4gpu.decomposition import PCASklearn
 
 print(sys.path)
 
@@ -18,7 +18,7 @@ def func(m=5000000, n=10, k=9):
     print(np.mean(X, axis=0))
 
     h2o4gpu_pca = PCAH2O(n_components=k)
-    scikit_pca = PCA(n_components=k, svd_solver="arpack")
+    scikit_pca = PCASklearn(n_components=k, svd_solver="arpack")
     scikit_pca.fit(X)
     h2o4gpu_pca.fit(X)
 
