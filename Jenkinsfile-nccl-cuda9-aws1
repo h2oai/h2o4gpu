@@ -54,7 +54,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux "nccl-cuda9-aws1") {
+        stage("Build Wheel on Linux nccl-cuda9-aws1") {
 
             agent {
                 label "ec2P32xlarge"
@@ -93,7 +93,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux "nccl-cuda9-aws1") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9-aws1") {
             agent {
                 label "ec2P32xlarge"
             }
@@ -132,7 +132,7 @@ pipeline {
             }
         }
 
-        stage("Build/Publish Runtime Docker "nccl-cuda9-aws1") {
+        stage("Build/Publish Runtime Docker nccl-cuda9-aws1") {
             agent {
                 label "ec2P32xlarge"
             }
