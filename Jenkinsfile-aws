@@ -26,6 +26,10 @@ pipeline {
         BUILD_TYPE = "nccl-cuda8"
     }
 
+    parameters {
+        string(name: 'VERSION', defaultValue:'latest', description: 'h2o4gpu build/VERSION.txt')
+    }
+
     stages {
         /////////////////////////////////////////////////////////////////////
         //
@@ -41,7 +45,10 @@ pipeline {
                 // get the wheel from s3
                 dumpInfo 'Get wheel'
                 script {
-                    def versionTag = buildInfo.getVersion()
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+                    buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+
+                    def versionTag = params.VERSION //buildInfo.getVersion() // from build/VERSION.txt
                     def majorVersionTag = buildInfo.getMajorVersion()
                     def artifactId = "h2o4gpu"
                     if (isRelease()) {
@@ -85,8 +92,9 @@ pipeline {
         failure {
             node('linux') {
                 script {
+                          //  to: "mateusz@h2o.ai, jmckinney@h2o.ai",
                     emailext(
-                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                            to: "magnus@h2o.ai",
                             subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                             body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                             attachLog: true,
