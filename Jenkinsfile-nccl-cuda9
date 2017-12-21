@@ -198,7 +198,7 @@ pipeline {
                 }
 
                 echo banner("Triggering downstream jobs h2o4gpu${extratag}-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
-                build job: ""/h2o4gpu${extratag}-benchmark", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
+                build job: "/h2o4gpu${extratag}-benchmark", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
             }
         }
 
