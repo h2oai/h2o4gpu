@@ -15,6 +15,11 @@ def cudart = "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04"
 def extratag = "-nccl-cuda8"
 def linuxwheel = "linux_whl1"
 def testtype = "dotest"
+def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labelruntime = "nvidia-docker"
+def dobenchmark = "0"
+def doruntime = "0"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
@@ -57,7 +62,7 @@ pipeline {
         stage("Build Wheel on Linux nccl-cuda8") {
 
             agent {
-                label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+                label "${labelbuild}"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -95,7 +100,7 @@ pipeline {
 
         stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda8") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+                label "${labeltest}"
             }
             when {
                 expression {
@@ -131,10 +136,14 @@ pipeline {
                 }
             }
         }
-
         stage("Build/Publish Runtime Docker nccl-cuda8") {
             agent {
-                label "nvidia-docker"
+                label "${labelruntime}"
+            }
+            when {
+                expression {
+                    return "${doruntime}" == "1"
+                }
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -173,6 +182,23 @@ pipeline {
                     }
                 }
                 }
+            }
+        }
+
+        stage("Benchmarking nccl-cuda8") {
+            agent {
+                label 'master'
+            }
+            when {
+                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master" }
+            }
+            steps {
+                script {
+                    utilsLib.appendBuildDescription("BENCH \u2713")
+                }
+
+                echo banner("Triggering downstream jobs h2o4gpu${extratag}-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
+                build job: "/h2o4gpu${extratag}-benchmark", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
             }
         }
 
