@@ -146,6 +146,31 @@ def get_compute_capability(gpu_id):
     :param gpuU_id: int
         device number of GPU
     """
+    device_major = -1
+    device_minor = -1
+    device_ratioperf = 1
+    import concurrent.futures
+    from concurrent.futures import ProcessPoolExecutor
+    res = None
+    # sometimes hit broken process pool in cpu mode,
+    # so return dummy values in that case
+    try:
+        with ProcessPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(get_compute_capability_subprocess, gpu_id)
+            res = future.result()
+        return res
+    except concurrent.futures.process.BrokenProcessPool:
+        return (device_major, device_minor, device_ratioperf)
+
+
+def get_compute_capability_subprocess(gpu_id):
+    """
+    Gets the major cuda version, minor cuda version,
+     and ratio of floating point single perf to double perf.
+
+    :param gpuU_id: int
+        device number of GPU
+    """
     n_gpus = -1
     (n_gpus, devices) = device_count(n_gpus)
     gpu_id = gpu_id % devices
