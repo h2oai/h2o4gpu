@@ -19,7 +19,7 @@ def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labelruntime = "nvidia-docker"
 def dobenchmark = "1"
-def doruntime = "0"
+def doruntime = "1"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
