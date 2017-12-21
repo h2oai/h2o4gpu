@@ -15,6 +15,11 @@ def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
 def extratag = "-nccl-cuda9"
 def linuxwheel = "linux_whl4"
 def testtype = "dotestfast"
+def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labelruntime = "nvidia-docker"
+def dobenchmark = "1"
+def doruntime = "0"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
@@ -54,10 +59,10 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux "nccl-cuda9") {
+        stage("Build Wheel on Linux nccl-cuda9") {
 
             agent {
-                label "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+                label "${labelbuild}"
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -93,9 +98,9 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux "nccl-cuda9") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9") {
             agent {
-                label "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+                label "${labeltest}"
             }
             when {
                 expression {
@@ -131,10 +136,14 @@ pipeline {
                 }
             }
         }
-
-        stage("Build/Publish Runtime Docker "nccl-cuda9") {
+        stage("Build/Publish Runtime Docker nccl-cuda9") {
             agent {
-                label "nvidia-docker"
+                label "${labelruntime}"
+            }
+            when {
+                expression {
+                    return "${doruntime}" == "1"
+                }
             }
             steps {
                 dumpInfo 'Linux Build Info'
@@ -173,6 +182,23 @@ pipeline {
                     }
                 }
                 }
+            }
+        }
+
+        stage("Benchmarking nccl-cuda9") {
+            agent {
+                label 'master'
+            }
+            when {
+                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master" }
+            }
+            steps {
+                script {
+                    utilsLib.appendBuildDescription("BENCH \u2713")
+                }
+
+                echo banner("Triggering downstream jobs h2o4gpu${extratag}-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
+                build job: "/h2o4gpu${extratag}-benchmark", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
             }
         }
 
