@@ -18,8 +18,8 @@ def testtype = "dotest"
 def labelbuild = "ec2P32xlarge"
 def labeltest = "ec2P32xlarge"
 def labelruntime = "ec2P32xlarge"
-def dobenchmark = 1
-def doruntime = 0
+def dobenchmark = "1"
+def doruntime = "0"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
@@ -142,7 +142,7 @@ pipeline {
             }
             when {
                 expression {
-                    return ${doruntime} == 1
+                    return "${doruntime}" == "1"
                 }
             }
             steps {
@@ -190,7 +190,7 @@ pipeline {
                 label 'master'
             }
             when {
-                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && ${dobenchmark} == 1 && env.BRANCH_NAME == "master" }
+                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master" }
             }
             steps {
                 script {

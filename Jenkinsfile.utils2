@@ -117,7 +117,7 @@ pipeline {
             }
             when {
                 expression {
-                    return ${doruntime} == 1
+                    return "${doruntime}" == "1"
                 }
             }
             steps {
@@ -165,7 +165,7 @@ pipeline {
                 label 'master'
             }
             when {
-                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && ${dobenchmark} == 1 && env.BRANCH_NAME == "master" }
+                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master" }
             }
             steps {
                 script {
