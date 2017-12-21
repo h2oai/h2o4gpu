@@ -214,7 +214,7 @@ def doTriggerBenchmarksJob() {
         filepath.contains("src")
     }
 
-    return doTrigger && (isDevelBranch() || params.forceBenchmarking)
+    return doTrigger && (isBleedingEdge() || params.forceBenchmarking)
 }
 
 
