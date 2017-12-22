@@ -129,6 +129,7 @@ fullpy: apply_sklearn_simple pylint
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
 
+
 ##############################################
 
 alldeps: deps_fetch alldeps_install
@@ -519,8 +520,10 @@ dotestdemos:
 dotest:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
-    # can't do -n auto due to limits on GPU memory
+  # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	# Test R package
+	/usr/bin/R-3.1.0 -e 'devtools::test("src/interface_r")'
 
 dotestfast:
 	rm -rf ./tmp/
