@@ -19,8 +19,8 @@ def testtype = "dotestperf"
 def labelbuild = "ec2P32xlarge"
 def labeltest = "ec2P32xlarge"
 def labelruntime = "ec2P32xlarge"
-def dobenchmark = 0
-def doruntime = 0
+def dobenchmark = "0"
+def doruntime = "0"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 
