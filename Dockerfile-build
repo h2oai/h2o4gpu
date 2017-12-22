@@ -77,4 +77,4 @@ RUN \
     apt-get update -y && \
     apt-get -y install libcurl4-openssl-dev libssl-dev && \
     scripts/install_r.sh 3.1.0 && \
-    /usr/bin/R-3.1.0 -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); install.packages(c("devtools", "roxygen2", "testthat", "magrittr")); devtools::install_github("rstudio/reticulate")'
+    /usr/bin/R-3.1.0 -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); install.packages(c("devtools", "testthat", "magrittr")); devtools::install_github(c("rstudio/reticulate", "klutometis/roxygen@v6.0.1")'
