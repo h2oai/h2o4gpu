@@ -96,6 +96,7 @@ H2O4GPU_HDR=\
 	include/matrix/matrix.h \
 	include/matrix/matrix_dense.h \
 	include/matrix/matrix_sparse.h \
+	include/metrics/metrics.h \
 	include/projector/projector_cgls.h \
 	include/projector/projector_direct.h
 
@@ -116,7 +117,8 @@ CPU_HDR=\
 	cpu/include/projector_helper.h
 CPU_MTX_OBJ=\
 	$(OBJDIR)/cpu/matrix/matrix_sparse.o \
-	$(OBJDIR)/cpu/matrix/matrix_dense.o
+	$(OBJDIR)/cpu/matrix/matrix_dense.o  \
+	$(OBJDIR)/cpu/metrics/metrics.o
 CPU_PRJ_OBJ=\
 	$(OBJDIR)/cpu/projector/projector_cgls.o \
 	$(OBJDIR)/cpu/projector/projector_direct_dense.o
@@ -168,7 +170,7 @@ GPU_OBJ=$(OBJDIR)/gpu/tsvd/tsvd.o \
 	$(OBJDIR)/common/utils.o
 
 # Set vpath for build
-VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
+VPATH=cpu cpu/metrics cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
 .PHONY: all default clean
 
@@ -199,6 +201,9 @@ $(OBJDIR)/cpu: $(OBJDIR)
 	mkdir -p $@
 
 $(OBJDIR)/cpu/matrix: $(OBJDIR)/cpu
+	mkdir -p $@
+
+$(OBJDIR)/cpu/metrics: $(OBJDIR)/cpu
 	mkdir -p $@
 
 $(OBJDIR)/cpu/projector: $(OBJDIR)/cpu
@@ -236,6 +241,9 @@ $(OBJDIR)/cpu/h2o4gpukmeans.o: cpu/h2o4gpukmeans.cpp $(H2O4GPUKMEANS_HDR) $(GSL_
 	$(CXX) -Iinclude -I/usr/local/cuda/include -Icpu/include $< $(CXXFLAGS) -c -o $@
 
 $(OBJDIR)/cpu/matrix/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/matrix Makefile config2.mk
+	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
+    
+$(OBJDIR)/cpu/metrics/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/metrics Makefile config2.mk
 	$(CXX) -Iinclude -Icpu/include $< $(CXXFLAGS) $(IFLAGS) -c -o $@
 
 $(OBJDIR)/cpu/projector/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu/projector Makefile config2.mk
