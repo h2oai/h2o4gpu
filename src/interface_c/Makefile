@@ -1,5 +1,18 @@
+NVCC_PRESENT := $(shell which nvcc 2> NULL)
+NVCC_CHECK := $(notdir $(NVCC_PRESENT))
+ifeq ($(NVCC_CHECK),nvcc)
+GPU:=1
+else
+GPU:=0
+endif
 
-include ../config2.mk
+ifeq ($(GPU),0)
+include ../cpu/config2.mk
+else
+include ../gpu/config2.mk
+endif
+
+$(warning GPU is $(GPU))
 
 H2O4GPUROOT=../
 
@@ -16,7 +29,6 @@ endif
 ICCSTUFF=-qopenmp
 #GCCSTUFF=-fopenmp -ggdb3 -lgomp
 GCCSTUFF=-fopenmp -lgomp
-
 
 # C++ Flags
 ifeq ($(USEICC),0)
@@ -52,10 +64,11 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
-CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
+CUDFLAGS=$(DFLAGS)
 
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
+ifeq ($(GPU),1)
 ifndef CUDAHOME
 ifeq ($(shell uname -s), Darwin)
 CUDAHOME=/usr/local/cuda/lib/
@@ -63,6 +76,8 @@ else
 CUDAHOME=/usr/local/cuda/lib64/
 endif
 endif
+endif
+
 
 # Check System Args.
 ifeq ($(shell uname -s), Darwin)
@@ -71,14 +86,24 @@ CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
 SHARED=so
+ifeq ($(GPU),1)
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
+else
+CULDFLAGS=-lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
+endif
 endif
 
+
+$(warning c++)
 # C++ Flags
+ifeq ($(GPU),1)
 CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
+endif
+else
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 endif
 
 # H2O4GPU static libraries
@@ -112,19 +137,30 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
+# only in case of tensorflow-gpu installation
+ifeq ($(GPU),1)
 PYCUDART=$(CUDAHOME)/libcudart.so
+endif
 
-
+ifeq ($(GPU),1)
 .PHONY: default all clean cpulib gpulib
 
 default: all
 
 all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
+else
+.PHONY: default all clean cpulib
+
+default: all
+
+all: cpulib ch2o4gpu_cpu h2o4gpu_c.o
+endif
 
 cpulib:
 	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
 gpulib:
+	$(warning GPULIB)
 	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
 ch2o4gpu_cpu: h2o4gpu_c.o  Makefile
@@ -133,9 +169,11 @@ ch2o4gpu_cpu: h2o4gpu_c.o  Makefile
 	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2O4GPULIB) $(LDFLAGS)
 
 ch2o4gpu_gpu: h2o4gpu_c.o Makefile
-	touch ch2o4gpu_gpu
-	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
-	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2O4GPULIB) $(PYCUDART) $(CULDFLAGS)
+	ifeq ($(GPU),1)
+		touch ch2o4gpu_gpu
+		$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
+		$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2O4GPULIB) $(PYCUDART) $(CULDFLAGS)
+	endif
 
 h2o4gpu_c.o: h2o4gpu_c.cpp h2o4gpu_c.h Makefile
 	$(CXX) $(CXXFLAGS) $< -c -o $@

@@ -3,6 +3,7 @@
  */
 #include "h2o4gpuglm.h"
 
+#include <numeric>
 #include <algorithm>
 #include <limits>
 #include <deque>

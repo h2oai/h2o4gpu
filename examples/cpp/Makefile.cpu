@@ -1,4 +1,4 @@
-include ../../src/config2.mk
+include ../../src/cpu/config2.mk
 
 # User Vars
 H2O4GPUROOT=../../src

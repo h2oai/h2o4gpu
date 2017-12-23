@@ -1,4 +1,4 @@
-include ../../src/config2.mk
+include ../../src/gpu/config2.mk
 
 
 

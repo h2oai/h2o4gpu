@@ -6,8 +6,9 @@
 #include "h2o4gpuglm.h"
 #include "h2o4gpu_c.h"
 #include <iostream>   //std::cout
-
+#ifdef USE_NVTX
 #include <nvToolsExt.h>
+#endif //USE_NVTX
 
 bool VerifyH2O4GPUWork(void * work){
   if (!work) { return false; }

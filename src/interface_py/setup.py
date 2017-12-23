@@ -66,7 +66,9 @@ class H2O4GPUInstall(install):
         self.copy_tree(self.build_lib, self.install_lib)
 
 # parse_requirements() returns generator of pip.req.InstallRequirement objects
-install_reqs = parse_requirements('../../requirements_runtime.txt', session='hack')
+
+install_reqs = parse_requirements(
+    filename='{}/../../requirements_runtime.txt'.format(os.path.dirname(os.path.abspath(__file__))), session='hack')
 
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
@@ -97,7 +99,7 @@ class BinaryDistribution(Distribution):
 
 # Read version
 about_info={}
-with open('__about__.py') as f: exec(f.read(), about_info)
+with open('{}/__about__.py'.format(os.path.dirname(os.path.abspath(__file__)))) as f: exec(f.read(), about_info)
 
 setup(
     name='h2o4gpu',

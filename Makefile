@@ -1,3 +1,18 @@
+##########################################################################
+# Main Makefile
+##########################################################################
+
+include Makefile_header.mk
+ROOT_DIR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+$(info ** <Makefile> **: $(ROOT_DIR))
+
+NVCC_PRESENT := $(shell which nvcc 2> NULL)
+NVCC_CHECK := $(notdir $(NVCC_PRESENT))
+ifeq ($(NVCC_CHECK),nvcc)
+GPU:=1
+else
+GPU:=0
+endif
 
 SHELL := /bin/bash # force avoidance of dash as shell
 # TODO(jon): ensure CPU-only can compile (i.e. no nvcc, etc.)
@@ -13,8 +28,13 @@ include $(VERSION)
 MAJOR_MINOR=$(shell echo $(BASE_VERSION) | sed 's/.*\(^[0-9][0-9]*\.[0-9][0-9]*\).*/\1/g' )
 
 # System specific stuff
-include src/config2.mk
+ifeq ($(GPU),1)
+include src/gpu/config2.mk
+else
+include src/cpu/config2.mk
+endif
 
+ifeq ($(GPU),1)
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
 $(warning Compiling with Cuda9 or higher)
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
@@ -22,6 +42,7 @@ else
 $(warning Compiling with Cuda8 or lower)
 # >=52 required for kmeans for larger data of size rows/32>2^16
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
+endif
 endif
 
 # Location of local directory with dependencies
@@ -68,39 +89,39 @@ H2O4GPU_BUILD ?= "LOCAL BUILD @ $(shell git rev-parse --short HEAD) build at $(H
 H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
 
 help:
-	@echo " -------- Build and Install ---------"
-	@echo "make clean           Clean all build files."
-	@echo "make                 fullinstall"
-	@echo "make fullinstall     Clean everything, then compile and install everything (with nccl in xgboost)."
-	@echo "make fullbuild       Clean, Install Deps, and Build the whole project."
-	@echo "make build           Just Build the whole project."
-	@echo " -------- Test ---------"
-	@echo "make test            Run tests."
-	@echo "make testbig         Run tests for big data."
-	@echo "make testperf        Run performance and accuracy tests."
-	@echo "make testbigperf     Run performance and accuracy tests for big data."
-	@echo " -------- Docker ---------"
-	@echo "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/"
-	@echo "make docker-runtime  Build runtime docker and save to local path"
-	@echo "make get_docker      Download runtime docker (e.g. instead of building it)"
-	@echo "make load_docker     Load runtime docker image"
-	@echo "make run_in_docker   Run jupyter notebook demo using runtime docker image already present"
-	@echo "make docker-runtests Run tests in docker"
-	@echo " -------- Pycharm Help ---------"
-	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
-	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
+	$(call inform, " -------- Build and Install ---------")
+	$(call inform, "make clean           Clean all build files.")
+	$(call inform, "make                 fullinstall")
+	$(call inform, "make fullinstall     Clean everything and then compile and install everything (with nccl in xgboost).")
+	$(call inform, "make fullbuild       Clean. Install Deps and Build the whole project.")
+	$(call inform, "make build           Just Build the whole project.")
+	$(call inform, " -------- Test ---------")
+	$(call inform, "make test            Run tests.")
+	$(call inform, "make testbig         Run tests for big data.")
+	$(call inform, "make testperf        Run performance and accuracy tests.")
+	$(call inform, "make testbigperf     Run performance and accuracy tests for big data.")
+	$(call inform, " -------- Docker ---------")
+	$(call inform, "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/")
+	$(call inform, "make docker-runtime  Build runtime docker and save to local path")
+	$(call inform, "make get_docker      Download runtime docker (e.g. instead of building it)")
+	$(call inform, "make load_docker     Load runtime docker image")
+	$(call inform, "make run_in_docker   Run jupyter notebook demo using runtime docker image already present")
+	$(call inform, "make docker-runtests Run tests in docker")
+	$(call inform, " -------- Pycharm Help ---------")
+	$(call inform, "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/")
+	$(call inform, "Example Pycharm working directory: /home/jon/h2o4gpu/")
 
 sync_smalldata:
-	@echo "---- Synchronizing test data ----"
+	$(call inform, "---- Synchronizing test data ----")
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-sign-request "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
 sync_otherdata:
-	@echo "---- Synchronizing data dir in test/ ----"
+	$(call inform, "---- Synchronizing data dir in test/ ----")
 	mkdir -p $(DATA_DIR) && $(S3_CMD_LINE) sync "$(DATA_BUCKET)" "$(DATA_DIR)"
 
 sync_open_data:
-	@echo "---- Synchronizing sklearn and other open data in home directory ----"
+	$(call inform, "---- Synchronizing sklearn and other open data in home directory ----")
 	mkdir -p $(OPEN_DATA_DIR)
 	$(S3_CMD_LINE) sync --no-sign-request "$(OPEN_DATA_BUCKET)" "$(OPEN_DATA_DIR)"
 
@@ -178,7 +199,7 @@ run_in_docker: run_in_docker-nccl-cuda9
 ############### CUDA9
 
 docker-build-nccl-cuda9:
-	@echo "+-- Building Wheel in Docker (-nccl-cuda9) --+"
+	$(call inform, "+-- Building Wheel in Docker (-nccl-cuda9) --+")
 	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
 	export versionTag=$(BASE_VERSION) ;\
@@ -191,7 +212,7 @@ docker-build-nccl-cuda9:
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-nccl-cuda9:
-	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda9) --+"
+	$(call inform, "+--Building Runtime Docker Image Part 2 (-nccl-cuda9) --+")
 	export CONTAINER_NAME="localmake-runtime" ;\
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-nccl-cuda9" ;\
@@ -204,7 +225,7 @@ docker-runtime-nccl-cuda9:
 .PHONY: docker-runtime-nccl-cuda9-run
 
 docker-runtime-nccl-cuda9-run:
-	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
+	$(call inform, "+-Running Docker Runtime Image (-nccl-cuda9) --+")
 	export CONTAINER_NAME="localmake-runtime-run" ;\
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-nccl-cuda9" ;\
@@ -215,7 +236,7 @@ docker-runtime-nccl-cuda9-run:
 	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
 
 docker-runtests-nccl-cuda9:
-	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
+	$(call inform, "+-- Run tests in docker (-nccl-cuda9) --+")
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export extratag="-nccl-cuda9" ;\
 	export dockerimage="nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04" ;\
@@ -236,7 +257,7 @@ run_in_docker-nccl-cuda9:
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
 docker-build-nccl-cuda8:
-	@echo "+-- Building Wheel in Docker (-nccl-cuda8) --+"
+	$(call inform, "+-- Building Wheel in Docker (-nccl-cuda8) --+")
 	rm -rf src/interface_py/dist/*.whl
 	export CONTAINER_NAME="localmake-build" ;\
 	export versionTag=$(BASE_VERSION) ;\
@@ -249,7 +270,7 @@ docker-build-nccl-cuda8:
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-nccl-cuda8:
-	@echo "+--Building Runtime Docker Image Part 2 (-nccl-cuda8) --+"
+	$(call inform, "+--Building Runtime Docker Image Part 2 (-nccl-cuda8) --+")
 	export CONTAINER_NAME="localmake-runtime" ;\
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-nccl-cuda8" ;\
@@ -265,7 +286,7 @@ docker-runtime-nccl-cuda8-load:
 .PHONY: docker-runtime-nccl-cuda8-run
 
 docker-runtime-nccl-cuda8-run:
-	@echo "+-Running Docker Runtime Image (-nccl-cuda8) --+"
+	$(call inform, "+-Running Docker Runtime Image (-nccl-cuda8) --+")
 	export CONTAINER_NAME="localmake-runtime-run" ;\
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-nccl-cuda8" ;\
@@ -276,7 +297,7 @@ docker-runtime-nccl-cuda8-run:
 	nvidia-docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
 
 docker-runtests-nccl-cuda8:
-	@echo "+-- Run tests in docker (-nccl-cuda8) --+"
+	$(call inform, "+-- Run tests in docker (-nccl-cuda8) --+")
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export extratag="-nccl-cuda8" ;\
 	export dockerimage="nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04" ;\
@@ -321,7 +342,7 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 ################
 
 deps_clean:
-	@echo "----- Cleaning deps -----"
+	$(call inform, "----- Cleaning deps -----")
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
 	cat requirements_buildonly.txt requirements_runtime.txt requirements_runtime_demos.txt > requirements.txt
@@ -330,18 +351,18 @@ deps_clean:
 	rm -rf requirements_plain.txt requirements.txt
 
 deps_fetch:
-	@echo "---- Fetch dependencies ---- "
+	$(call inform, "---- Fetch dependencies ---- ")
 	bash scripts/gitshallow_submodules.sh
 
 private_deps_fetch:
-	@echo "---- Fetch private dependencies ---- "
+	$(call inform, "---- Fetch private dependencies ---- ")
 	#@mkdir -p "$(DEPS_DIR)"
 	#$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
 	#@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
 	#@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
 
 deps_install:
-	@echo "---- Install dependencies ----"
+	$(call inform, "---- Install dependencies ----")
 	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
 	easy_install pip
 	easy_install setuptools
@@ -352,7 +373,7 @@ deps_install:
 #	pip install sphinxcontrib-osexample
 
 private_deps_install:
-	@echo "---- Install private dependencies ----"
+	$(call inform, "---- Install private dependencies ----"
 	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
 	#pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
 
@@ -405,20 +426,20 @@ apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 
 
 pipxgboost:
-	@echo "----- pip install xgboost built locally -----"
+	$(call inform, "----- pip install xgboost built locally -----")
 	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 pipxgboost-nccl-cuda8:
-	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
+	$(call inform, "----- pip install xgboost-nccl-cuda8 from S3 -----")
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost-nonccl-cuda8:
-	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
+	$(call inform, "----- pip install xgboost-nonccl-cuda8 from S3 -----")
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost-nccl-cuda9:
-	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
+	$(call inform, "----- pip install xgboost-nccl-cuda9 from S3 -----")
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 pipxgboost-nonccl-cuda9:
-	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
+	$(call inform, "----- pip install xgboost-nonccl-cuda9 from S3 -----")
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
@@ -429,13 +450,13 @@ apply_py3nvml:
 
 
 liblightgbm: # only done if user directly requests, never an explicit dependency
-	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
-	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
+	$(call warn, "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide") #with-gpu-support for details"
+	$(call warn,"sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake")
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; python setup.py install --precompile --gpu && cd ../ && pip install arff tqdm keras runipy h5py --upgrade
 
 libsklearn:	# assume already submodule gets sklearn
-	@echo "----- Make sklearn wheel -----"
+	$(call inform, "----- Make sklearn wheel -----")
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
 	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
