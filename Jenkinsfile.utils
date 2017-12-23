@@ -217,6 +217,97 @@ def doTriggerBenchmarksJob() {
     return doTrigger && (isBleedingEdge() || params.forceBenchmarking)
 }
 
+def doBuild() {
 
+    def changedFiles = buildInfo.get().getChangedFiles()
+    echo "Looking for 'src' in ${changedFiles.join(',')}"
+    // Check if the code change touches src
+    def doTrigger1 = changedFiles.any { filepath ->
+        filepath.contains("src")
+    }
+    def doTrigger2 = changedFiles.any { filepath ->
+        filepath.contains("scripts")
+    }
+    def doTrigger3 = changedFiles.any { filepath ->
+        filepath.contains("requirements")
+    }
+    def doTrigger4 = changedFiles.any { filepath ->
+        filepath.contains("make")
+    }
+    def doTrigger5 = changedFiles.any { filepath ->
+        filepath.contains("Jenkinsfile")
+    }
+    def doTrigger6 = changedFiles.any { filepath ->
+        filepath.contains("Dockerfile")
+    }
+    def doTrigger7 = changedFiles.any { filepath ->
+        filepath.contains("Makefile")
+    }
+
+    return 1 == 1 || doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7
+}
+
+def doTests() {
+
+    def changedFiles = buildInfo.get().getChangedFiles()
+    echo "Looking for 'tests' in ${changedFiles.join(',')}"
+    // Check if the code change touches tests_open
+    def doTrigger1 = changedFiles.any { filepath ->
+        filepath.contains("tests_open")
+    }
+    def doTrigger2 = changedFiles.any { filepath ->
+        filepath.contains("tests_big")
+    }
+    def doTrigger3 = changedFiles.any { filepath ->
+        filepath.contains("tests_small")
+    }
+    def doTrigger4 = changedFiles.any { filepath ->
+        filepath.contains("data")
+    }
+    def doTrigger5 = changedFiles.any { filepath ->
+        filepath.contains("open_data")
+    }
+    def doTrigger6 = changedFiles.any { filepath ->
+        filepath.contains("tools")
+    }
+
+    return 1 == 1 || doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doBuild()
+}
+
+def doTestperf() {
+
+    def changedFiles = buildInfo.get().getChangedFiles()
+    echo "Looking for 'testsxgboost' in ${changedFiles.join(',')}"
+    // Check if the code change touches tests_open
+    def doTrigger1 = changedFiles.any { filepath ->
+        filepath.contains("testsxgboost")
+    }
+    def doTrigger2 = changedFiles.any { filepath ->
+        filepath.contains("tests_big")
+    }
+    def doTrigger3 = changedFiles.any { filepath ->
+        filepath.contains("tests_small")
+    }
+
+    return 1 == 1 || doTrigger1 || doTrigger2 || doTrigger3 || doBuild() || doTests()
+}
+
+def doRuntime() {
+
+    def changedFiles = buildInfo.get().getChangedFiles()
+    echo "Looking for 'examples' in ${changedFiles.join(',')}"
+    // Check if the code change touches tests_open
+    def doTrigger1 = changedFiles.any { filepath ->
+        filepath.contains("examples")
+    }
+    def doTrigger2 = changedFiles.any { filepath ->
+        filepath.contains("tests_big")
+    }
+    def doTrigger3 = changedFiles.any { filepath ->
+        filepath.contains("tests_small")
+    }
+
+    return 1 == 1 || doTrigger1 || doTrigger2 || doTrigger3 || doBuild()
+}
 
 return this
