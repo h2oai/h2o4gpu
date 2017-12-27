@@ -20,6 +20,8 @@ ENV VECLIB_MAXIMUM_THREADS=32
 ENV PYENV_ROOT=$HOME/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
 
+# add-apt-repository ppa:fkrull/deadsnakes  && \
+
 # Setup Repos
 RUN \
   apt-get update -y && \
@@ -27,11 +29,10 @@ RUN \
   software-properties-common iputils-ping wget cpio net-tools build-essential \
   git zip dirmngr && \
   apt-get -y --no-install-recommends  install \
-      python3-dateutil \
-      python3-magic && \
+      python3-dateutil python3-magic s3cmd && \
   wget http://launchpadlibrarian.net/326935544/s3cmd_2.0.0-1_all.deb && \
   dpkg -i s3cmd_2.0.0-1_all.deb && \
-  add-apt-repository ppa:fkrull/deadsnakes  && \
+  add-apt-repository ppa:jonathonf/python-3.6 && \
   apt-get update -yqq && \
   curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
   apt-get -y --no-install-recommends  install \

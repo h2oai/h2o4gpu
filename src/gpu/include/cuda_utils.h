@@ -7,6 +7,7 @@
 #include "cuda_utils2.h"
 
 int checkwDev(int wDev){
+#ifdef DEBUG
   int nVis = 0;
 #pragma omp critical
   {
@@ -26,6 +27,9 @@ int checkwDev(int wDev){
     return(1);
   }
   else return(0);
+#else
+return(0);
+#endif
 }
 
 
