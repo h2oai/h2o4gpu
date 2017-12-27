@@ -3,7 +3,7 @@ context("Test h2o4gpu_model methods")
 source("helper-utils.R")
 
 test_generic_methods <- function(input) {
-  model <- h2o4gpu.kmeans(n_clusters = 2L, random_state = 1234L) %>% fit(input)
+  model <- h2o4gpu.kmeans(n_clusters = 2, random_state = 1234) %>% fit(input)
   expect_equal(dim(model$cluster_centers_), c(2, 2))
   expect_equal(dim(model %>% predict(input)), 3)
   expect_equal(dim(model %>% transform(input)), c(3, 2))
