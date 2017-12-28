@@ -245,9 +245,10 @@ def doBuild() {
         def doTrigger7 = changedFiles.any { filepath ->
             filepath.contains("Makefile")
         }
-
+        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7}"
         return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7
     } else {
+        echo "doBuild() No Triggers"
         return 1 == 1
     }
 }
@@ -276,9 +277,11 @@ def doTests() {
         def doTrigger6 = changedFiles.any { filepath ->
             filepath.startsWith("tools")
         }
-
-        doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doBuild()
+        def doTrigger7 = doBuild()
+        echo "doTests() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7}"
+        doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7
     } else {
+        echo "doTests() No Triggers"
         return 1 == 1
     }
 }
@@ -298,9 +301,12 @@ def doTestperf() {
         def doTrigger3 = changedFiles.any { filepath ->
             filepath.startsWith("tests_small")
         }
-
-        doTrigger1 || doTrigger2 || doTrigger3 || doBuild() || doTests()
+        def doTrigger4 = doBuild()
+        def doTrigger5 = doTests()
+        echo "doTests() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5}"
+        doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5
     } else {
+        echo "doTestperf() No Triggers"
         return 1 == 1
     }
 }
@@ -320,9 +326,11 @@ def doRuntime() {
         def doTrigger3 = changedFiles.any { filepath ->
             filepath.startsWith("tests_small")
         }
-
-        doTrigger1 || doTrigger2 || doTrigger3 || doBuild()
+        def doTrigger4 = doBuild()
+        echo "doRuntime() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4}"
+        doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4
     } else {
+        echo "doRuntime() No Triggers"
         return 1 == 1
     }
 }
