@@ -1,6 +1,5 @@
 # H2O4GPU
 
-
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
 ## FAQ
