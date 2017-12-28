@@ -46,7 +46,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 1, unit: 'DAYS')
+        timeout(time: 60, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
         skipDefaultCheckout()
@@ -81,7 +81,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                timeout(time: 1, unit: 'MINUTES') {
+                script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
                     commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
@@ -116,7 +116,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                timeout(time: 30, unit: 'MINUTES') {
+                script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
@@ -152,7 +152,7 @@ pipeline {
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
-                timeout(time: 30, unit: 'MINUTES') {
+                script {
                     unstash 'version_info'
                     sh """
                         echo "Before Stashed wheel file:"
@@ -199,7 +199,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                timeout(time: 2, unit: 'MINUTES') {
+                script {
                     sh """
                         echo "Before Stashed wheel file:"
                         ls -l src/interface_py/${dist}/  || true
@@ -213,7 +213,7 @@ pipeline {
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
-                timeout(time: 30, unit: 'MINUTES') {
+                script {
                     h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
