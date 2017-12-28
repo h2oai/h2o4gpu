@@ -207,7 +207,8 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return (${benchmark_commit_trigger} || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                    return ("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
                 }
             }
             steps {
