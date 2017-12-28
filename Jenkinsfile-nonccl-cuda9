@@ -84,7 +84,7 @@ pipeline {
                 script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
-                    commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
                     echo "Commit Message: ${commitMessage}"
                     benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
