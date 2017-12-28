@@ -84,6 +84,8 @@ pipeline {
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
                     commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
                     echo "Commit Message: ${commitMessage}"
+                    def benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
                 }
                 stash includes: "Jenkinsfile*", name: "jenkinsfiles"
             }
@@ -229,7 +231,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
+                    return (${benchmark_commit_trigger} || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
                 }
             }
             steps {
