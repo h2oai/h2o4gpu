@@ -278,7 +278,7 @@ def f1_opt(actual, predicted, sample_weight=None):
     """
     Computes the f1-score after optimal predictions thresholding.
 
-    This function maximizes the f1-score by means of 
+    This function maximizes the f1-score by means of
     optimal predictions thresholding.
 
     :param actual : list of binary numbers, numpy array
@@ -292,15 +292,14 @@ def f1_opt(actual, predicted, sample_weight=None):
     import h2o4gpu.util.roc_opt as roc_opt
     if sample_weight is None:
         return roc_opt.f1_opt(actual, predicted)
-    else:
-        return roc_opt.f1_opt(actual, predicted, sample_weight)
-        
+    return roc_opt.f1_opt(actual, predicted, sample_weight)
+
 
 def mcc_opt(actual, predicted, sample_weight=None):
     """
     Computes the MCC after optimal predictions thresholding.
 
-    This function maximizes the Matthews Correlation Coefficient (MCC) 
+    This function maximizes the Matthews Correlation Coefficient (MCC)
     by means of optimal predictions thresholding.
 
     :param actual : list of binary numbers, numpy array
@@ -314,5 +313,4 @@ def mcc_opt(actual, predicted, sample_weight=None):
     import h2o4gpu.util.roc_opt as roc_opt
     if sample_weight is None:
         return roc_opt.mcc_opt(actual, predicted)
-    else:
-        return roc_opt.mcc_opt(actual, predicted, sample_weight)
+    return roc_opt.mcc_opt(actual, predicted, sample_weight)
