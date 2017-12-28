@@ -86,14 +86,14 @@ pipeline {
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
                     commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
                     echo "Commit Message: ${commitMessage}"
-                    def benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
+                    benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
                 }
                 stash includes: "Jenkinsfile*", name: "jenkinsfiles"
             }
         }
         stage("Build Wheel on Linux nonccl-cuda9") {
-        
+
             agent {
                 label "${labelbuild}"
             }
