@@ -37,6 +37,8 @@ def doruntime = "1"
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist1","dist2","dist3","dist4"]
 
+def benchmark_commit_trigger
+
 pipeline {
     agent none
 
@@ -82,8 +84,10 @@ pipeline {
                 script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
-                    commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
                     echo "Commit Message: ${commitMessage}"
+                    benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
                 }
                 stash includes: "Jenkinsfile*", name: "jenkinsfiles"
             }
@@ -230,7 +234,8 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                    return ("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
                 }
             }
             steps {
