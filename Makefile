@@ -529,7 +529,7 @@ dotest:
   # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package
-	/usr/bin/R-3.1.0 -e 'devtools::test("src/interface_r")'
+	/usr/bin/R-3.1.0 -e 'options(repos = c(CRAN = "http://cran.rstudio.com")); install.packages(c("devtools", "testthat", "magrittr")); devtools::install_github(c("rstudio/reticulate", "klutometis/roxygen@v6.0.1")); devtools::test("src/interface_r")'
 
 dotestfast:
 	rm -rf ./tmp/
