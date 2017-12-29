@@ -29,4 +29,8 @@ notebook>=5.0.0
 # below for some tests
 numba>=0.35.0
 feather-format>=0.4.0
-aws>=0.2.5
+psutil>=5.4.2
+# below for sync with aws s3
+awscli>=1.11.148
+# for pycharm
+matplotlib>=2.0.0

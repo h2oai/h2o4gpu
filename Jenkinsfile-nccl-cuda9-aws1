@@ -3,7 +3,9 @@
 @Library('test-shared-library') _
 
 import ai.h2o.ci.Utils
+import static ai.h2o.ci.Utils.banner
 def utilsLib = new Utils()
+import ai.h2o.ci.BuildInfo
 
 def commitMessage = ''
 def h2o4gpuUtils = null
@@ -35,6 +37,8 @@ def doruntime = "0"
 //def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
 //def dists         = ["dist1","dist2","dist3","dist4"]
 
+def benchmark_commit_trigger
+
 pipeline {
     agent none
 
@@ -59,7 +63,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Build Wheel on Linux nccl-cuda9-aws1") {
+        stage("Git clone on Linux nccl-cuda9-aws1") {
 
             agent {
                 label "${labelbuild}"
@@ -77,9 +81,42 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-
                 script {
-                    commitMessage = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+                    commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
+                    echo "Commit Message: ${commitMessage}"
+                    benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                }
+                stash includes: "Jenkinsfile*", name: "jenkinsfiles"
+            }
+        }
+        stage("Build Wheel on Linux nccl-cuda9-aws1") {
+
+            agent {
+                label "${labelbuild}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    return h2o4gpuUtils.doBuild()
+                }
+            }
+            steps {
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
@@ -104,7 +141,9 @@ pipeline {
             }
             when {
                 expression {
-                    h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux")
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    return h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
             steps {
@@ -142,7 +181,9 @@ pipeline {
             }
             when {
                 expression {
-                    return "${doruntime}" == "1"
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    return "${doruntime}" == "1" && h2o4gpuUtils.doRuntime()
                 }
             }
             steps {
@@ -190,7 +231,12 @@ pipeline {
                 label 'master'
             }
             when {
-                expression { return h2o4gpuUtils.doTriggerBenchmarksJob() && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master" }
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                    return ("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
+                }
             }
             steps {
                 script {
@@ -207,16 +253,18 @@ pipeline {
         failure {
             node('linux') {
                 script {
-                    emailext(
-                            to: "mateusz@h2o.ai, jmckinney@h2o.ai",
-                            subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                            body: '''${JELLY_SCRIPT, template="html_gmail"}''',
-                            attachLog: true,
-                            compressLog: true,
-                            recipientProviders: [
-                                    [$class: 'DevelopersRecipientProvider'],
-                            ]
-                    )
+                    if(env.BRANCH_NAME == "master") {
+                        emailext(
+                                to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                                subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                                body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                                attachLog: true,
+                                compressLog: true,
+                                recipientProviders: [
+                                        [$class: 'DevelopersRecipientProvider'],
+                                ]
+                            )
+                    }
                 }
             }
         }
