@@ -76,5 +76,5 @@ RUN \
 COPY scripts/install_r.sh scripts/install_r.sh
 RUN \
     apt-get update -y && \
-    apt-get -y install libcurl4-openssl-dev libssl-dev && \
+    apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev && \
     scripts/install_r.sh 3.1.0
