@@ -1,5 +1,6 @@
 context("Test h2o4gpu_model methods")
 
+reticulate::use_virtualenv("h2o4gpu_env")
 np <- reticulate::import("numpy")
 
 test_generic_methods <- function(input) {
