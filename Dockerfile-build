@@ -53,8 +53,8 @@ RUN \
     rm -rf ~/.pyenv && \
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
     eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv install 3.6.1 && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
+    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
+    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
