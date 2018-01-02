@@ -1,6 +1,6 @@
 context("Test h2o4gpu_model methods")
 
-reticulate::use_virtualenv("h2o4gpu_env")
+reticulate::use_python("/root/.pyenv/versions/3.6.1/bin/python", required = TRUE)
 np <- reticulate::import("numpy")
 
 test_generic_methods <- function(input) {
