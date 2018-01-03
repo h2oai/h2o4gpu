@@ -467,6 +467,7 @@ buildjenkins: update_submodule cpp c py
 
 installjenkins: pyinstall
 
+######### h2o.ai systems
 # for nccl cuda8 build
 fullinstalljenkins-nccl-cuda8: cleanjenkins alldeps_private-nccl-cuda8 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
@@ -483,13 +484,18 @@ fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenk
 fullinstalljenkins-nonccl-cuda9: cleanjenkins alldeps_private-nonccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
+# for nccl cuda9 build benchmark
+fullinstalljenkins-nccl-cuda9-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist6/ && mv src/interface_py/dist/*.whl src/interface_py/dist6/
+
+########## AWS
 # for nccl cuda9 build aws build/test
 fullinstalljenkins-nccl-cuda9-aws1: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
 	mkdir -p src/interface_py/dist5/ && mv src/interface_py/dist/*.whl src/interface_py/dist5/
 
-# for nccl cuda9 build benchmark
-fullinstalljenkins-nccl-cuda9-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist6/ && mv src/interface_py/dist/*.whl src/interface_py/dist6/
+# for nccl cuda9 build benchmark on aws1
+fullinstalljenkins-nccl-cuda9-aws1-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+	mkdir -p src/interface_py/dist7/ && mv src/interface_py/dist/*.whl src/interface_py/dist7/
 
 .PHONY: mrproper
 mrproper: clean
