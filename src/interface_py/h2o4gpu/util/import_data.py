@@ -3,10 +3,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import sys
-import feather
-import numpy as np
-import pandas as pd
 
 
 def import_data(data_path,
@@ -52,11 +48,14 @@ def import_data(data_path,
 
     if use_pandas:
         print("Reading Data with Pandas")
+        import pandas as pd
         data = pd.read_csv(data_file)
     else:
         print("Reading Data with Feather")
+        import feather
         data = feather.read_dataframe(data_file)
     print(data.shape)
+    import numpy as np
     data_x = np.array(
         data.iloc[:, :data.shape[1] - 1],
         dtype='float32',
@@ -70,6 +69,7 @@ def import_data(data_path,
     morig = data_x.shape[0]
     norig = data_x.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
+    import sys
     sys.stdout.flush()
 
     #Do train / valid split
