@@ -99,7 +99,9 @@ class PCAH2O(TruncatedSVDH2O):
         n = X.shape[0]
         # To match sci-kit #TODO Port to cuda?
         self.explained_variance = self.singular_values_**2 / (n - 1)
-        self.explained_variance_ratio = explained_variance_ratio
+        total_var = np.var(X, ddof=1, axis=0)
+        self.explained_variance_ratio = self.explained_variance / total_var.sum()
+        #self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
         # TODO noise_variance_ calculation
