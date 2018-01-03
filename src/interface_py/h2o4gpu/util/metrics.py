@@ -272,3 +272,45 @@ def auc(actual, posterior):
                          (num_positive + 1) / 2.0) /
                         (num_negative * num_positive))
     return area_under_curve
+
+
+def f1_opt(actual, predicted, sample_weight=None):
+    """
+    Computes the f1-score after optimal predictions thresholding.
+
+    This function maximizes the f1-score by means of
+    optimal predictions thresholding.
+
+    :param actual : list of binary numbers, numpy array
+                    The ground truth value
+    :param predicted : int, float, list of numbers, numpy array
+                     The predicted value
+
+    :returns double
+             The optimal f1-score.
+    """
+    import h2o4gpu.util.roc_opt as roc_opt
+    if sample_weight is None:
+        return roc_opt.f1_opt(actual, predicted)
+    return roc_opt.f1_opt(actual, predicted, sample_weight)
+
+
+def mcc_opt(actual, predicted, sample_weight=None):
+    """
+    Computes the MCC after optimal predictions thresholding.
+
+    This function maximizes the Matthews Correlation Coefficient (MCC)
+    by means of optimal predictions thresholding.
+
+    :param actual : list of binary numbers, numpy array
+                    The ground truth value
+    :param predicted : int, float, list of numbers, numpy array
+                     The predicted value
+
+    :returns double
+             The optimal MCC.
+    """
+    import h2o4gpu.util.roc_opt as roc_opt
+    if sample_weight is None:
+        return roc_opt.mcc_opt(actual, predicted)
+    return roc_opt.mcc_opt(actual, predicted, sample_weight)
