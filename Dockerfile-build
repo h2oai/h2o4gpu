@@ -53,8 +53,8 @@ RUN \
     rm -rf ~/.pyenv && \
     git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
     eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv install 3.6.1 && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
+    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
+    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
@@ -71,3 +71,11 @@ RUN \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
     pip install -r requirements_runtime_demos.txt
+
+# Install R dependencies
+COPY scripts/install_r.sh scripts/install_r.sh
+RUN \
+    apt-get update -y && \
+    apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev && \
+    scripts/install_r.sh 3.1.0 && \
+    /usr/bin/R-3.1.0 -e 'lib <- "/usr/local/R/3.1.0/lib/R/library"; .libPaths(lib); options(repos = c(CRAN = "http://cran.rstudio.com")); install.packages(c("devtools", "testthat", "magrittr"), lib = lib); devtools::install_github(c("rstudio/reticulate", "klutometis/roxygen@v6.0.1"), lib = lib)'
