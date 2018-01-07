@@ -6,8 +6,8 @@ cd scikit-learn
 
 ########## DIRECTORIES and FILENAMES
 echo "Renaming paths and files"
-find ./ -execdir rename -v 's/sklearn/h2o4gpu/' '{}' \+
-find ./ -execdir rename -v 's/scikit-learn/h2o4gpu/' '{}' \+
+mv sklearn h2o4gpu
+mv doc/themes/scikit-learn doc/themes/h2o4gpu
 
 ########## FILE contents
 #files=`find -type f | grep -v pycache`
