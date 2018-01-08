@@ -1,6 +1,6 @@
 ## h2o4gpu - R Interface to H2O4GPU
 
-This directory contains the R package for H2O4GPU - a collection of GPU solvers by H2Oai. It builds upon the easy-to-use Scikit-learn API and its well-tested CPU-based algorithms. It can be used as a drop-in replacement for scikit-learn (i.e. import h2o4gpu as sklearn) with support for GPUs on selected (and ever-growing) algorithms. H2O4GPU inherits all the existing scikit-learn algorithms and falls-back to CPU aglorithms when the GPU algorithm does not support an important existing Scikit-learn class option.
+This directory contains the R package for H2O4GPU - a collection of GPU solvers by H2Oai.
 
 ### Installation
 
@@ -14,7 +14,7 @@ Finally, we can install `h2o4gpu` R package via the following:
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
-To test your installation, try the following example that builds a simple [XGBoost](https://github.com/dmlc/xgboost) random forest classifier utilizing GPU powers:
+To test your installation, try the following example that builds a simple [XGBoost](https://github.com/dmlc/xgboost) random forest classifier:
 
 ``` r
 require(h2o4gpu)
