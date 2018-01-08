@@ -83,4 +83,5 @@ RUN yum install -y openblas-devel
 
 RUN yum install -y centos-release-scl-rh && \
     yum install -y devtoolset-3
-    
+
+RUN yum install -y swig
