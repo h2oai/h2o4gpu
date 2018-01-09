@@ -12,7 +12,7 @@ existing scikit-learn algorithms and falls-back to CPU aglorithms when
 the GPU algorithm does not support an important existing Scikit-learn
 class option.
 
-An R API is in developement and will be released as a stand-alone R package in the future.
+An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r) and will be released as a stand-alone R package in the future.
 
 ## Requirements
 
