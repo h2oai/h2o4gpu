@@ -1,6 +1,6 @@
 # below for h2o4gpu
 pandas>=0.21.1
-numpy>=1.13.3
+numpy>=1.14.0
 python-dateutil>=2.6.1
 pytz>=2017.3
 scipy>=1.0.0
