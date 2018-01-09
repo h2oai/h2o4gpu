@@ -1,4 +1,5 @@
 // Just Notes:
+//
 //def jobnums       = [0 , 1 , 2  , 3]
 //def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
 //def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
