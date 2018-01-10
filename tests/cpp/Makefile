@@ -50,7 +50,7 @@ $(UTEST_OBJ_ROOT)/%.o: $(UTEST_ROOT)/%.cu
 	@mkdir -p $(@D)
 	$(CUXX) $(CUFLAGS) -I$(GTEST_INC) -o $@ -c $<
 
-UTEST_LIBS=-fopenmp -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lblas -lcurand
+UTEST_LIBS=-fopenmp -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -l$(OPENBLAS_PREFIX)blas -lcurand
 UTEST_LD= -L$(CUDA_PATH) -L$(LIB_FLAGS)
 
 UTEST_DEPS=$(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CPU_PRJ_OBJ)

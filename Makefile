@@ -657,5 +657,53 @@ ifeq ($(CI),)
 src/interface_py/h2o4gpu/BUILD_INFO.txt: .ALWAYS_REBUILD
 endif
 
+#----------------------------------------------------------------------
+# CentOS 7 build API BEGIN
+#
+# Summary
+#
+#     command:  make centos7_in_docker
+#     output:   dist/h2o4gpu*.whl
+#
+# Details
+#
+#     This is only supported in a docker environment.
+#
+#     The 'centos7' make target does the actual work.
+#
+#     The 'centos7_in_docker' make target sets up the docker environment
+#     and then invokes the work inside that environment.
+#
+#     The build output is put in the 'dist' directory in h2o4gpu level.
+#----------------------------------------------------------------------
+
+centos7_setup:
+	rm -fr /tmp/build
+	cp -a /dot/. /tmp/build
+
+centos7_build:
+	(cd /tmp/build && \
+         eval "$$(/root/.pyenv/bin/pyenv init -)" && \
+         /root/.pyenv/bin/pyenv global 3.6.1 && \
+         export IFLAGS="-I/usr/include/openblas" && \
+         export OPENBLAS_PREFIX="open" && \
+         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda8")
+	cp /tmp/build/src/interface_py/dist2/h2o4gpu*.whl dist
+	chmod o+rw dist/h2o4gpu*.whl
+
+centos7:
+	$(MAKE) centos7_setup
+	$(MAKE) centos7_build
+
+centos7_in_docker:
+	rm -fr dist
+	mkdir dist
+	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
+	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
+
+#----------------------------------------------------------------------
+# CentOS 7 build API END
+#----------------------------------------------------------------------
+
 .PHONY: ALWAYS_REBUILD
 .ALWAYS_REBUILD:

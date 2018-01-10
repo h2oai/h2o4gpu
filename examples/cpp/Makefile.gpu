@@ -35,7 +35,7 @@ GCCSTUFF=
 endif
 
 ifeq ($(USEMKL),0)
-MKLSTUFF=-lm -lblas#using GPU instead for blas
+MKLSTUFF=-lm -l$(OPENBLAS_PREFIX)blas#using GPU instead for blas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
