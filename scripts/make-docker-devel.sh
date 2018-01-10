@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+#--build-arg http_proxy=http://172.16.2.142:3128/
 echo "Docker devel - BEGIN"
 nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
