@@ -10,16 +10,16 @@ import ai.h2o.ci.BuildInfo
 def commitMessage = ''
 def h2o4gpuUtils = null
 
-def dist = "dist5"
-def BUILDTYPE = "nccl-cuda9-aws1"
+def dist = "dist3"
+def BUILDTYPE = "nonccl-cuda9"
 def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
 def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-def extratag = "-nccl-cuda9-aws1"
-def linuxwheel = "linux_whl5"
-def testtype = "dotest"
-def labelbuild = "ec2P32xlarge"
-def labeltest = "ec2P32xlarge"
-def labelruntime = "ec2P32xlarge"
-def dobenchmark = "1"
-def doruntime = "0"
+def extratag = "-nonccl-cuda9"
+def linuxwheel = "linux_whl3"
+def testtype = "dotestfast_nonccl"
+def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labelruntime = "nvidia-docker"
+def dobenchmark = "0"
+def doruntime = "1"
 

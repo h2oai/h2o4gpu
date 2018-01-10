@@ -149,7 +149,7 @@ pipeline {
                 }
             }
         }
-        stage("Build/Publish Runtime Docker") {
+        stage("Build/Publish Runtime Docker Linux") {
             agent {
                 label "${labelruntime}"
             }
@@ -200,7 +200,7 @@ pipeline {
             }
         }
 
-        stage("Benchmarking") {
+        stage("Benchmarking Linux") {
             agent {
                 label 'master'
             }

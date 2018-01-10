@@ -657,6 +657,10 @@ ifeq ($(CI),)
 src/interface_py/h2o4gpu/BUILD_INFO.txt: .ALWAYS_REBUILD
 endif
 
+
+Jenkinsfiles:
+    scripts/make_jenkinsfiles.sh
+
 #----------------------------------------------------------------------
 # CentOS 7 build API BEGIN
 #
