@@ -28,7 +28,7 @@ GCCSTUFF=
 endif
 
 ifeq ($(USEMKL),0)
-MKLSTUFF=-lm -lblas
+MKLSTUFF=-lm -l$(OPENBLAS_PREFIX)blas
 endif
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)
