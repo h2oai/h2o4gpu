@@ -5,7 +5,11 @@ have_h2o4gpu <- function() {
 }
 
 if (have_h2o4gpu()) {
-  reticulate::use_python("/root/.pyenv/versions/3.6.1/bin/python", required = TRUE)
+  # Currently pyenv is only available inside docker
+  py_env_binary <- "/root/.pyenv/versions/3.6.1/bin/python"
+  if (file.exists(py_env_binary)) {
+    reticulate::use_python(py_env_binary, required = TRUE)
+  }
   np <<- reticulate::import("numpy")
 }
 
