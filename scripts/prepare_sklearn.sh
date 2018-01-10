@@ -6,8 +6,20 @@ cd scikit-learn
 
 ########## DIRECTORIES and FILENAMES
 echo "Renaming paths and files"
-mv sklearn h2o4gpu
-mv doc/themes/scikit-learn doc/themes/h2o4gpu
+
+files=`find . -name 'sklearn'`
+for f in ${files}
+do
+    echo mv $f `echo $f | sed 's/sklearn/h2o4gpu/g'`
+    mv $f `echo $f | sed 's/sklearn/h2o4gpu/g'`
+done
+
+files=`find . -name 'scikit-learn'`
+for f in ${files}
+do
+    echo mv $f `echo $f | sed 's/scikit-learn/h2o4gpu/g'`
+    mv $f `echo $f | sed 's/scikit-learn/h2o4gpu/g'`
+done
 
 ########## FILE contents
 #files=`find -type f | grep -v pycache`
