@@ -180,9 +180,6 @@ Among others, the solver can be used for the following classes of problems
   + Singular Value Decomposition(SVD) + Truncated Singular Value Decomposition
   + Principal Components Analysis(PCA)
 
-Planned:
-  + GLM: Linear SVM, Huber Fitting, Total Variation Denoising, Optimal Control, Linear Programs and Quadratic Programs.
-
 ## Benchmarks
 
 Our benchmarking plan is to clearly highlight when modeling benefits
