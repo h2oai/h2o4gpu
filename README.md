@@ -128,7 +128,9 @@ pbzip2 -dc h2o4gpu-0.2.0-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0-nccl-cuda9-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
-Copy/paste the http link shown into your browser.  If the link shows no token or shows ... for token, try a token of "h2o" (without quotes).  If running on your own host, the weblink will look like http://localhost:8888:token with token replaced by the actual token.
+Copy/paste the http link shown into your browser.  If the "find" command doesn't work, look for the latest jupyter.log file and look at contents for the http link and token.
+
+If the link shows no token or shows ... for token, try a token of "h2o" (without quotes).  If running on your own host, the weblink will look like http://localhost:8888:token with token replaced by the actual token.
 
 This container has a /demos directory which contains Jupyter notebooks and some data.
 
