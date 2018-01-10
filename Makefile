@@ -407,20 +407,20 @@ apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 
 pipxgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && pip install xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	cd xgboost/python-package/dist && pip install xgboost-0.7-py3-none-any.whl --upgrade --target ../
 
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 pipxgboost-nonccl-cuda8:
 	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda8/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 pipxgboost-nccl-cuda9:
 	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 pipxgboost-nonccl-cuda9:
 	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
-	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.6-nonccl-cuda9/xgboost-0.6-py3-none-any.whl --upgrade --target ../
+	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
