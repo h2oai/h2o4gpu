@@ -245,8 +245,20 @@ def doBuild() {
         def doTrigger7 = changedFiles.any { filepath ->
             filepath.contains("Makefile")
         }
-        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7}"
-        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7
+        def doTrigger8 = changedFiles.any { filepath ->
+            filepath.contains("xgboost")
+        }
+        def doTrigger9 = changedFiles.any { filepath ->
+            filepath.contains("cub")
+        }
+        def doTrigger10 = changedFiles.any { filepath ->
+            filepath.contains("scikit-learn")
+        }
+        def doTrigger11 = changedFiles.any { filepath ->
+            filepath.contains("py3nvml")
+        }
+        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7} ${doTrigger8} ${doTrigger9} ${doTrigger10} ${doTrigger11}"
+        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7 || doTrigger8 || doTrigger9 || doTrigger10 || doTrigger11
     } else {
         echo "doBuild() No Triggers"
         return 1 == 1
