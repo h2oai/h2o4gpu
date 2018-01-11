@@ -34,9 +34,6 @@ prep:
 
 all: prep
 
-	#cat ../../requirements_buildonly.txt ../../requirements_runtime.txt > requirements.txt
-	#cat ../../requirements_runtime.txt > requirements.txt
-
 	# for incorporating xgboost and py3nvml builds
 	ln -sf ../../xgboost/python-package/xgboost .
 	ln -sf ../../py3nvml/py3nvml .
@@ -52,8 +49,8 @@ all: prep
 	python setup.py sdist bdist_wheel
 
 	# for pycharm
-	ln -sf $(thepwd)/build/lib/ch2o4gpu_cpu.so .
-	ln -sf $(thepwd)/build/lib/ch2o4gpu_gpu.so .
+	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
+	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
 
 
 install:
@@ -63,11 +60,6 @@ install:
 	find -name *.pyc | xargs rm -rf
 	find -name *__pycache__ | xargs rm -rf
 	python setup.py install
-
-#	python3 setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/
-#	python3 setup.py install
-#	rm -rf dist
-#	python3 setup.py sdist bdist_wheel
 
 clean:
 	rm -f h2o4gpu/BUILD_INFO.txt
