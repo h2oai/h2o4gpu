@@ -30,7 +30,9 @@ Ensure to reboot after installing the new nvidia drivers.
 
 * For advanced features, like handling rows/32 > 2^16 (i.e., rows > 2,097,152) in K-means, need Capability >= 5.2
 
-## Installation
+## User Installation
+
+Note: This installation is for users who download the wheel file and are not expecting to develop the code.  See [DEVEL.md](DEVEL.md) for developer installation.
 
 Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 
