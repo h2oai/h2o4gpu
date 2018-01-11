@@ -13,7 +13,7 @@ resolve_model_input <- function(x) {
   } else if (is.list(x)) {
     np$array(x)
   } else {
-    stop(paste0("Input x of type \"", class(x), "\" is not currently supported."))
+    stop(paste0('Input x of type "', class(x), '" is not currently supported.'))
   }
 }
 
@@ -21,6 +21,12 @@ resolve_model_y <- function(y) {
   if (is.null(y)) {
     NULL
   } else {
+    # Implicitly convert character and factor column to numeric
+    if (is.character(y) || is.factor(y)) {
+      warning('Your model input "y" is either character or factor. ',
+              'It will be converted to numeric column [0, 1, 2, ...] implicitly.')
+      y <- as.integer(as.factor(y)) - 1
+    }
     resolve_model_input(y)
   }
 }
