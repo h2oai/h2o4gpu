@@ -1,4 +1,9 @@
 #!/usr/bin/groovy
+
+//################ FILE IS AUTO-GENERATED from .base files
+//################ DO NOT MODIFY
+//################ See scripts/make_jenkinsfiles.sh
+
 // TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
 @Library('test-shared-library') _
 
@@ -24,8 +29,8 @@ def dobenchmark = "0"
 def doruntime = "1"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
-
 // Just Notes:
+//
 //def jobnums       = [0 , 1 , 2  , 3]
 //def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
 //def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
@@ -175,7 +180,7 @@ pipeline {
                 }
             }
         }
-        stage("Build/Publish Runtime Docker nonccl-cuda9") {
+        stage("Build/Publish Runtime Docker Linux nonccl-cuda9") {
             agent {
                 label "${labelruntime}"
             }
@@ -226,7 +231,7 @@ pipeline {
             }
         }
 
-        stage("Benchmarking nonccl-cuda9") {
+        stage("Benchmarking Linux nonccl-cuda9") {
             agent {
                 label 'master'
             }
