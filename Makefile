@@ -333,6 +333,7 @@ deps_clean:
 deps_fetch:
 	@echo "---- Fetch dependencies ---- "
 	bash scripts/gitshallow_submodules.sh
+	git submodule update
 
 private_deps_fetch:
 	@echo "---- Fetch private dependencies ---- "
@@ -592,29 +593,29 @@ dotestbigperfpython:
 
 testdemos: dotestdemos
 
-test: build dotest # faster if also run sync_open_data before doing this test, but can't always assume user has s3 creds setup (even needed for public repo on S3)
+test: buildquick dotest
 
 testquick: dotest
 
 ################ H2O.ai public tests for performance
 
-testperf: build dotestperf # faster if also run sync_open_data before doing this test
+testperf: buildquick dotestperf # faster if also run sync_open_data before doing this test
 
 ################### H2O.ai private tests for pass/fail
 
-testsmall: build sync_data dotestsmall
+testsmall: buildquick sync_data dotestsmall
 
 testsmallquick: dotestsmall
 
-testbig: build sync_data dotestbig
+testbig: buildquick sync_data dotestbig
 
 testbigquick: dotestbig
 
 ################ H2O.ai private tests for performance
 
-testsmallperf: build sync_data dotestsmallperf
+testsmallperf: buildquick sync_data dotestsmallperf
 
-testbigperf: build sync_data dotestbigperf
+testbigperf: buildquick sync_data dotestbigperf
 
 testsmallperfquick: dotestsmallperf
 
