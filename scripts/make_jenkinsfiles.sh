@@ -10,10 +10,17 @@ declare -a arr=("nccl-cuda8" "nonccl-cuda9" "nccl-cuda9" "nonccl-cuda9" "nccl-cu
 for i in "${arr[@]}"
 do
    echo "$i"
+   echo "#!/usr/bin/groovy" > Jenkinsfile-$i
+   echo "" >> Jenkinsfile-$i
+   echo "//################ FILE IS AUTO-GENERATED from .base files" >> Jenkinsfile-$i
+   echo "//################ DO NOT MODIFY" >> Jenkinsfile-$i
+   echo "//################ See scripts/make_jenkinsfiles.sh" >> Jenkinsfile-$i
+   echo "" >> Jenkinsfile-$i
+
    cat Jenkinsfile-$i.base >> Jenkinsfile-$i
    echo "//################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)" >> Jenkinsfile-$i
-   echo Jenkinsfile.utils2 >> Jenkinsfile-$i
-   sed -i 's/stage\(.*\)\"/stage\1 $i\"/g' Jenkinsfile-$i
+   cat Jenkinsfile.utils2 >> Jenkinsfile-$i
+   sed -i 's/stage\(.*\)\"/stage\1 '$i'\"/g' Jenkinsfile-$i
 
    if [[ $i == *"benchmark"* ]]; then
        echo "More for benchmarks"
