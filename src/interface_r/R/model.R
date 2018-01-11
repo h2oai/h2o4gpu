@@ -25,7 +25,7 @@ attach_attrs_to_model <- function(r_model_obj) {
 
 #' @export
 fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$fit(X = resolve_model_input(x), y = resolve_model_y(y), ...)
+  object$model$fit(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
   attach_attrs_to_model(object)
 }
 
@@ -41,15 +41,15 @@ transform.h2o4gpu_model <- function(object, x, ...) {
 
 #' @export
 score.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$score(X = resolve_model_input(x), y = resolve_model_y(y), ...)
+  object$model$score(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
 }
 
 #' @export
 fit_transform.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$fit_transform(X = resolve_model_input(x), y = resolve_model_y(y), ...)
+  object$model$fit_transform(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
 }
 
 #' @export
 fit_predict.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$fit_predict(X = resolve_model_input(x), y = resolve_model_y(y), ...)
+  object$model$fit_predict(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
 }
