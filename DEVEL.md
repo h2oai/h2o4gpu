@@ -26,10 +26,10 @@ pip install setuptools --no-cache-dir
 . .venv/bin/activate
 ```
 
-- Install OpenBlas dev environment and pbzip2:
+- Install required system (apt-get for Ubuntu) dependencies:
 
 ```
-sudo apt-get install -y libopenblas-dev pbzip2
+sudo apt-get install -y libopenblas-dev pbzip2 swig
 ```
 
 If you are using `conda`, you probably need to do:
