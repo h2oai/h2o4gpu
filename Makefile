@@ -152,16 +152,19 @@ cleanc:
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
-
+	
 xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
+	
+build: update_submodule cpp c py
 
-buildquick: cpp cleanc c py
-build: update_submodule buildquick
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
 
+buildquick: cpp cleanc c py
+
 install: pyinstall
+
 
 deps_clean:
 	@echo "----- Cleaning deps -----"
