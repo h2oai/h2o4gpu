@@ -21,7 +21,9 @@ An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
   or
-  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download) )
+  [CUDA 9.0](https://developer.nvidia.com/cuda-release-candidate-download) )
+
+NOTE: CUDA9.1 is not currently compatible with H2O4GPU.
 
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
