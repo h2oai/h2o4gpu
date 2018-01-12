@@ -86,6 +86,17 @@ git submodule update
 make fullinstall
 ```
 
+To compile your own xgboost (instead of using the pip install from aws s3 normally done), do:
+
+```
+git clone https://github.com/h2oai/xgboost
+cd xgboost
+git checkout h2oai
+make -f Makefile2
+pip install python-package/dist/xgboost-0.7-py3-none-any.whl --upgrade
+```
+Note: By default the GPU NCCL version is installed using your local cuda version.
+
 If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
 
