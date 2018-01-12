@@ -46,7 +46,6 @@ endif
 
 RANDOM := $(shell bash -c 'echo $$RANDOM')
 LOGEXT=$(RANDOM)$(shell date +'_%Y.%m.%d-%H:%M:%S')
-
 NUMPROCS := $(shell cat /proc/cpuinfo|grep processor|wc -l)
 
 #
@@ -67,12 +66,12 @@ H2O4GPU_BUILD_DATE := $(shell date)
 H2O4GPU_BUILD ?= "LOCAL BUILD @ $(shell git rev-parse --short HEAD) build at $(H2O4GPU_BUILD_DATE)"
 H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
 
+
 help:
 	@echo " -------- Build and Install ---------"
 	@echo "make clean           Clean all build files."
 	@echo "make                 fullinstall"
-	@echo "make fullinstall     Clean everything, then compile and install everything (with nccl in xgboost)."
-	@echo "make fullbuild       Clean, Install Deps, and Build the whole project."
+	@echo "make fullinstall     Clean everything, then compile and install everything (for cuda9 with nccl in xgboost)."
 	@echo "make build           Just Build the whole project."
 	@echo " -------- Test ---------"
 	@echo "make test            Run tests."
@@ -80,8 +79,8 @@ help:
 	@echo "make testperf        Run performance and accuracy tests."
 	@echo "make testbigperf     Run performance and accuracy tests for big data."
 	@echo " -------- Docker ---------"
-	@echo "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/"
-	@echo "make docker-runtime  Build runtime docker and save to local path"
+	@echo "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/ (for cuda9 with nccl in xgboost)."
+	@echo "make docker-runtime  Build runtime docker and save to local path (for cuda9 with nccl in xgboost)."
 	@echo "make get_docker      Download runtime docker (e.g. instead of building it)"
 	@echo "make load_docker     Load runtime docker image"
 	@echo "make run_in_docker   Run jupyter notebook demo using runtime docker image already present"
@@ -90,12 +89,13 @@ help:
 	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
 	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
 
-sync_smalldata:
+
+sync_small_data:
 	@echo "---- Synchronizing test data ----"
 	mkdir -p $(DATA_DIR)
 	$(S3_CMD_LINE) sync --no-sign-request "$(SMALLDATA_BUCKET)" "$(DATA_DIR)"
 
-sync_otherdata:
+sync_other_data:
 	@echo "---- Synchronizing data dir in test/ ----"
 	mkdir -p $(DATA_DIR) && $(S3_CMD_LINE) sync "$(DATA_BUCKET)" "$(DATA_DIR)"
 
@@ -132,19 +132,32 @@ pyinstall:
 
 ##############################################
 
-alldeps: deps_fetch alldeps_install
-alldeps2: deps_fetch alldeps_install2
+alldeps-nccl-cuda8: deps_fetch alldeps_install-nccl-cuda8
+alldeps-nonccl-cuda8: deps_fetch alldeps_install-nonccl-cuda8
+alldeps-nccl-cuda9: deps_fetch alldeps_install-nccl-cuda9
+alldeps-nonccl-cuda9: deps_fetch alldeps_install-nonccl-cuda9
 
-alldeps_private: deps_fetch private_deps_fetch private_deps_install alldeps_install
-alldeps_private2: deps_fetch private_deps_fetch private_deps_install alldeps_install2
+clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
+	-rm -rf ./build
+	-rm -rf ./results/ ./tmp/
 
-alldeps_private-nccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda8
-alldeps_private-nonccl-cuda8: deps_fetch private_deps_fetch private_deps_install alldeps_install-nonccl-cuda8
-alldeps_private-nccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nccl-cuda9
-alldeps_private-nonccl-cuda9: deps_fetch private_deps_fetch private_deps_install alldeps_install-nonccl-cuda9
+cleanbuild: cleancpp cleanc cleanpy
 
+cleancpp:
+	$(MAKE) -j clean -C src/
+	$(MAKE) -j clean -C examples/cpp/
 
-build: update_submodule cleanbuild cpp c py
+cleanc:
+	$(MAKE) -j clean -C src/interface_c
+
+cleanpy:
+	$(MAKE) -j clean -C src/interface_py
+	
+xgboost_clean:
+	-pip uninstall -y xgboost
+	rm -rf xgboost/build/
+	
+build: update_submodule cpp c py
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
 
@@ -152,17 +165,50 @@ buildquick: cpp cleanc c py
 
 install: pyinstall
 
-fullbuild: clean alldeps sync_open_data build
-	rm -rf src/interface_py/dist1/* ; mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
-fullbuild-nonccl: clean alldeps2 sync_open_data build
-	rm -rf src/interface_py/dist2/* ; mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
 
-#default is with nccl
-fullinstall: fullinstall-nccl
-fullinstall-nccl: clean alldeps sync_open_data build install
-	rm -rf src/interface_py/dist1/* ; mkdir -p src/interface_py/dist1/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist1/
-fullinstall-nonccl: clean alldeps2 sync_open_data build install
-	rm -rf src/interface_py/dist2/* ; mkdir -p src/interface_py/dist2/ && cp -a src/interface_py/dist/*.whl src/interface_py/dist2/
+deps_clean:
+	@echo "----- Cleaning deps -----"
+	rm -rf "$(DEPS_DIR)"
+	# sometimes --upgrade leaves extra packages around
+	cat requirements_buildonly.txt requirements_runtime.txt requirements_runtime_demos.txt > requirements.txt
+	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
+	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
+	rm -rf requirements_plain.txt requirements.txt
+
+deps_fetch:
+	@echo "---- Fetch dependencies ---- "
+	bash scripts/gitshallow_submodules.sh
+	git submodule update
+
+deps_install:
+	@echo "---- Install dependencies ----"
+	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
+	easy_install pip
+	easy_install setuptools
+	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
+	pip install -r requirements.txt --upgrade
+	rm -rf requirements.txt
+	# issue with their package, have to do this here (still fails sometimes, so remove)
+#	pip install sphinxcontrib-osexample
+
+alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+
+fullinstall: fullinstall-nccl-cuda9
+
+fullinstall-nccl-cuda8: clean alldeps-nccl-cuda8 build install
+	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
+
+fullinstall-nonccl-cuda8: clean alldeps-nonccl-cuda8 build install
+	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
+
+fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
+	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
+
+fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
+	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
 ####################################################
 # Docker stuff
@@ -292,27 +338,6 @@ run_in_docker-nccl-cuda8:
 	mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-nccl-cuda8-runtime &
 	find log -name jupyter* | xargs cat | grep token | grep http | grep -v NotebookApp
 
-
-#############################################
-
-
-
-clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
-	-rm -rf ./build
-	-rm -rf ./results/ ./tmp/
-
-cleanbuild: cleancpp cleanc cleanpy
-
-cleancpp:
-	$(MAKE) -j clean -C src/
-	$(MAKE) -j clean -C examples/cpp/
-
-cleanc:
-	$(MAKE) -j clean -C src/interface_c
-
-cleanpy:
-	$(MAKE) -j clean -C src/interface_py
-
 # uses https://github.com/Azure/fast_retraining
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)
 	bash testsxgboost/runtestxgboost.sh
@@ -320,56 +345,6 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 	bash tests_open/showresults.sh # same for all tests
 
 ################
-
-deps_clean:
-	@echo "----- Cleaning deps -----"
-	rm -rf "$(DEPS_DIR)"
-	# sometimes --upgrade leaves extra packages around
-	cat requirements_buildonly.txt requirements_runtime.txt requirements_runtime_demos.txt > requirements.txt
-	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
-	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) pip uninstall -y
-	rm -rf requirements_plain.txt requirements.txt
-
-deps_fetch:
-	@echo "---- Fetch dependencies ---- "
-	bash scripts/gitshallow_submodules.sh
-	git submodule update
-
-private_deps_fetch:
-	@echo "---- Fetch private dependencies ---- "
-	#@mkdir -p "$(DEPS_DIR)"
-	#$(S3_CMD_LINE) get "$(ARTIFACTS_BUCKET)/ai/h2o/pydatatable/$(PYDATATABLE_VERSION)/*.whl" "$(DEPS_DIR)/"
-	#@find "$(DEPS_DIR)" -name "*.whl" | grep -i $(PY_OS) > "$(DEPS_DIR)/requirements.txt"
-	#@echo "** Local Python dependencies list for $(OS) stored in $(DEPS_DIR)/requirements.txt"
-
-deps_install:
-	@echo "---- Install dependencies ----"
-	#-xargs -a requirements.txt -n 1 -P 1 pip install --upgrade
-	easy_install pip
-	easy_install setuptools
-	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
-	pip install -r requirements.txt --upgrade
-	rm -rf requirements.txt
-	# issue with their package, have to do this here (still fails sometimes, so remove)
-#	pip install sphinxcontrib-osexample
-
-private_deps_install:
-	@echo "---- Install private dependencies ----"
-	#-xargs -a "$(DEPS_DIR)/requirements.txt" -n 1 -P 1 pip install --upgrade
-	#pip install -r "$(DEPS_DIR)/requirements.txt" --upgrade
-
-alldeps_install: deps_install apply_xgboost apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install2: deps_install apply_xgboost2 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-
-alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-
-
-xgboost_clean:
-	-pip uninstall -y xgboost
-	rm -rf xgboost/build/
 
 # http://developer2.download.nvidia.com/compute/cuda/9.0/secure/rc/docs/sidebar/CUDA_Quick_Start_Guide.pdf?_ZyOB0PlGZzBUluXp3FtoWC-LMsTsc5H6SxIaU0i9pGNyWzZCgE-mhnAg2m66Nc3WMDvxWvvQWsXGMqr1hUliGOZvoothMTVnDe12dQQgxwS4Asjoz8XiOvPYOjV6yVQtkFhvDztUlJbNSD4srPWUU2-XegCRFII8_FIpxXERaWV
 libcuda9:
@@ -391,24 +366,10 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-# https://xgboost.readthedocs.io/en/latest/build.html
-libxgboost:
-	cd xgboost ; make -f Makefile2 libxgboost
-libxgboost2:
-	cd xgboost ; make -f Makefile2 libxgboost2
-
-apply_xgboost: libxgboost pipxgboost
-apply_xgboost2: libxgboost2 pipxgboost
-
 apply_xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
 apply_xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
 apply_xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
 apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
-
-
-pipxgboost:
-	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && pip install xgboost-0.7-py3-none-any.whl --upgrade --target ../
 
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
@@ -422,6 +383,7 @@ pipxgboost-nccl-cuda9:
 pipxgboost-nonccl-cuda9:
 	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
+
 
 py3nvml_clean:
 	-pip uninstall -y py3nvml
@@ -463,40 +425,24 @@ apply_sklearn_initmerge:
 
 #################### Jenkins specific
 
-cleanjenkins: mrproper cleancpp cleanc cleanpy xgboost_clean py3nvml_clean
-
-buildjenkins: update_submodule cpp c py
-
-installjenkins: pyinstall
-
 ######### h2o.ai systems
 # for nccl cuda8 build
-fullinstalljenkins-nccl-cuda8: cleanjenkins alldeps_private-nccl-cuda8 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
-
-# for nonccl cuda8 build
-fullinstalljenkins-nonccl-cuda8: cleanjenkins alldeps_private-nonccl-cuda8 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist2/ && mv src/interface_py/dist/*.whl src/interface_py/dist2/
-
-# for nccl cuda9 build
-fullinstalljenkins-nccl-cuda9: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist4/ && mv src/interface_py/dist/*.whl src/interface_py/dist4/
-
-# for nonccl cuda9 build
-fullinstalljenkins-nonccl-cuda9: cleanjenkins alldeps_private-nonccl-cuda9 buildjenkins installjenkins
-	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
+fullinstalljenkins-nccl-cuda8: mrproper fullinstall-nccl-cuda8
+fullinstalljenkins-nonccl-cuda8: mrproper fullinstall-nonccl-cuda8
+fullinstalljenkins-nccl-cuda9: mrproper fullinstall-nccl-cuda9
+fullinstalljenkins-nonccl-cuda9: mrproper fullinstall-nonccl-cuda9
 
 # for nccl cuda9 build benchmark
-fullinstalljenkins-nccl-cuda9-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+fullinstalljenkins-nccl-cuda9-benchmark: mrproper clean alldeps-nccl-cuda9 build install
 	mkdir -p src/interface_py/dist6/ && mv src/interface_py/dist/*.whl src/interface_py/dist6/
 
 ########## AWS
 # for nccl cuda9 build aws build/test
-fullinstalljenkins-nccl-cuda9-aws1: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+fullinstalljenkins-nccl-cuda9-aws1: mrproper clean alldeps-nccl-cuda9 build install
 	mkdir -p src/interface_py/dist5/ && mv src/interface_py/dist/*.whl src/interface_py/dist5/
 
 # for nccl cuda9 build benchmark on aws1
-fullinstalljenkins-nccl-cuda9-aws1-benchmark: cleanjenkins alldeps_private-nccl-cuda9 buildjenkins installjenkins
+fullinstalljenkins-nccl-cuda9-aws1-benchmark: mrproper clean alldeps-nccl-cuda9 build install
 	mkdir -p src/interface_py/dist7/ && mv src/interface_py/dist/*.whl src/interface_py/dist7/
 
 .PHONY: mrproper
@@ -504,12 +450,6 @@ mrproper: clean
 	@echo "----- Cleaning properly -----"
 	git clean -f -d -x
 
-#################### H2O.ai specific
-
-fullinstallprivate: clean alldeps_private build sync_data install
-fullinstallprivate2: clean alldeps_private2 build sync_data install
-
-sync_data: sync_otherdata sync_open_data # sync_smalldata  # not currently using smalldata
 
 ##################
 
@@ -603,19 +543,19 @@ testperf: buildquick dotestperf # faster if also run sync_open_data before doing
 
 ################### H2O.ai private tests for pass/fail
 
-testsmall: buildquick sync_data dotestsmall
+testsmall: buildquick sync_open_data sync_other_data dotestsmall
 
 testsmallquick: dotestsmall
 
-testbig: buildquick sync_data dotestbig
+testbig: buildquick sync_open_data sync_other_data dotestbig
 
 testbigquick: dotestbig
 
 ################ H2O.ai private tests for performance
 
-testsmallperf: buildquick sync_data dotestsmallperf
+testsmallperf: buildquick sync_open_data sync_other_data dotestsmallperf
 
-testbigperf: buildquick sync_data dotestbigperf
+testbigperf: buildquick sync_open_data sync_other_data dotestbigperf
 
 testsmallperfquick: dotestsmallperf
 
