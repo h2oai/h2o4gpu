@@ -26,10 +26,10 @@ pip install setuptools --no-cache-dir
 . .venv/bin/activate
 ```
 
-- Install OpenBlas dev environment and pbzip2:
+- Install required system (apt-get for Ubuntu) dependencies:
 
 ```
-sudo apt-get install -y libopenblas-dev pbzip2
+sudo apt-get install -y libopenblas-dev pbzip2 swig
 ```
 
 If you are using `conda`, you probably need to do:
@@ -85,6 +85,17 @@ git pull
 git submodule update
 make fullinstall
 ```
+
+To compile your own xgboost (instead of using the pip install from aws s3 normally done), do:
+
+```
+git clone https://github.com/h2oai/xgboost
+cd xgboost
+git checkout h2oai
+make -f Makefile2
+pip install python-package/dist/xgboost-0.7-py3-none-any.whl --upgrade
+```
+Note: By default the GPU NCCL version is installed using your local cuda version.
 
 If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
