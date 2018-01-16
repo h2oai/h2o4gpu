@@ -15,6 +15,7 @@ MAJOR_MINOR=$(shell echo $(BASE_VERSION) | sed 's/.*\(^[0-9][0-9]*\.[0-9][0-9]*\
 # System specific stuff
 include src/config2.mk
 
+ifdef CUDA_HOME
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
 $(warning Compiling with Cuda9 or higher)
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
@@ -22,6 +23,7 @@ else
 $(warning Compiling with Cuda8 or lower)
 # >=52 required for kmeans for larger data of size rows/32>2^16
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
+endif
 endif
 
 # Location of local directory with dependencies
@@ -72,6 +74,7 @@ help:
 	@echo "make clean           Clean all build files."
 	@echo "make                 fullinstall"
 	@echo "make fullinstall     Clean everything, then compile and install everything (for cuda9 with nccl in xgboost)."
+	@echo "make cpu-fullinstall Clean everything, then compile and isntall everything only with CPU"
 	@echo "make build           Just Build the whole project."
 	@echo " -------- Test ---------"
 	@echo "make test            Run tests."
@@ -136,6 +139,7 @@ alldeps-nccl-cuda8: deps_fetch alldeps_install-nccl-cuda8
 alldeps-nonccl-cuda8: deps_fetch alldeps_install-nonccl-cuda8
 alldeps-nccl-cuda9: deps_fetch alldeps_install-nccl-cuda9
 alldeps-nonccl-cuda9: deps_fetch alldeps_install-nonccl-cuda9
+alldeps-cpuonly: deps_fetch alldeps_install-cpuonly
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	-rm -rf ./build
@@ -196,8 +200,11 @@ alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml 
 alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-cpuonly: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 fullinstall: fullinstall-nccl-cuda9
+
+cpu-fullinstall: fullinstall-cpuonly
 
 fullinstall-nccl-cuda8: clean alldeps-nccl-cuda8 build install
 	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
@@ -210,6 +217,8 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
+	
+fullinstall-cpuonly: clean alldeps-cpuonly build install
 
 ####################################################
 # Docker stuff
@@ -338,6 +347,66 @@ get_docker-nccl-cuda8:
 run_in_docker-nccl-cuda8:
 	mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-nccl-cuda8-runtime &
 	find log -name jupyter* | xargs cat | grep token | grep http | grep -v NotebookApp
+
+
+############### CPU
+
+docker-build-cpu:
+	@echo "+-- Building Wheel in Docker (-cpu) --+"
+	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
+	export CONTAINER_NAME="localmake-build" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export dockerimage="ubuntu:latest" ;\
+	export H2O4GPU_BUILD="" ;\
+	export H2O4GPU_SUFFIX="" ;\
+	export makeopts="" ;\
+	export dist="dist4" ;\
+	bash scripts/make-docker-devel.sh
+
+docker-runtime-cpu:
+	@echo "+--Building Runtime Docker Image Part 2 (-cpu) --+"
+	export CONTAINER_NAME="localmake-runtime" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export encodedFullVersionTag=$(BASE_VERSION) ;\
+	export fullVersionTag=$(BASE_VERSION) ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="ubuntu:latest" ;\
+	bash scripts/make-docker-runtime.sh
+
+.PHONY: docker-runtime-cpu-run
+
+docker-runtime-cpu-run:
+	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export encodedFullVersionTag=$(BASE_VERSION) ;\
+	export fullVersionTag=$(BASE_VERSION) ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="ubuntu:latest" ;\
+	docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
+docker-runtests-cpu:
+	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtests" ;\
+	export extratag="-nccl-cuda9" ;\
+	export dockerimage="ubuntu:latest" ;\
+	export dist="dist4" ;\
+	export target="dotest" ;\
+	bash scripts/make-docker-runtests.sh
+
+get_docker-cpu:
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/$(MAJOR_MINOR)-nccl-cuda9/h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2
+
+docker-runtime-nccl-cuda9-load:
+	pbzip2 -dc h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2 | docker load
+
+run_in_docker-cpu:
+	-mkdir -p log ; docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-cpu-runtime &
+	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
+
 
 # uses https://github.com/Azure/fast_retraining
 testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make liblightgbm)

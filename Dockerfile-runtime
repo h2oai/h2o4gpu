@@ -1,10 +1,13 @@
 #How to run:
 #To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
 #To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
+# or without nvidia: docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
 
+ARG layer
+ARG version
 
-ARG cuda
-FROM $cuda
+FROM $layer:$version
+# e.g. FROM ubuntu:latest
 
 ARG wheel
 ENV wheel=${wheel}
@@ -15,14 +18,15 @@ ENV buckettype=${buckettype}
 MAINTAINER H2o.ai <ops@h2o.ai>
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=/usr/local/cuda/bin:$PATH
-ENV LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
-ENV CUDADIR=/usr/local/cuda/include/
-ENV OMP_NUM_THREADS=32
-ENV MKL_NUM_THREADS=32
-ENV VECLIB_MAXIMUM_THREADS=32
+
+RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
+	export PATH=/usr/local/cuda/bin:$PATH && \
+	export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 && \
+	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE && \
+	export CUDADIR=/usr/local/cuda/include/ && \
+	export OMP_NUM_THREADS=32 && \
+	export MKL_NUM_THREADS=32 && \
+	export VECLIB_MAXIMUM_THREADS=32ů fi
 
 # add-apt-repository ppa:fkrull/deadsnakes  && \
 

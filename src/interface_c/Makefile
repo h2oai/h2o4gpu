@@ -6,7 +6,6 @@ H2O4GPUROOT=../
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
 
-
 ifeq ($(USEICC),0) # assumes only gnu not pgi
 #MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
 MKLSTUFF=-lmkl_def -lmkl_avx -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
@@ -52,31 +51,42 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
-CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
-
-
+CUDFLAGS=$(DFLAGS)
+ifdef CUDA_HOME
+CUDFLAGS+=-DHAVECUDA -DCUDCHECKERR
+endif
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
-ifndef CUDAHOME
+# MM
+# 3. Set CUDA_LIB = $CUDA_HOME/lib(64)
+ifdef CUDA_HOME
 ifeq ($(shell uname -s), Darwin)
-CUDAHOME=/usr/local/cuda/lib/
+CUDA_LIB=/usr/local/cuda/lib/
 else
-CUDAHOME=/usr/local/cuda/lib64/
+CUDA_LIB=/usr/local/cuda/lib64/
 endif
 endif
 
 # Check System Args.
 ifeq ($(shell uname -s), Darwin)
 LDFLAGS=-lm -framework Accelerate
-CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
+ifdef CUDA_HOME
+CULDFLAGS=-L$(CUDA_LIB) -L/usr/local/lib $(CULDFLAGS_)
+endif
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
+ifdef CUDA_HOME
+CULDFLAGS=-L$(CUDA_LIB) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
+endif
 SHARED=so
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDA_LIB)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
+ifndef CUDA_HOME
+CXXFLAGS-=-I$(CUDA_LIB)/../include
+
+endif
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
 endif
@@ -112,14 +122,22 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
-PYCUDART=$(CUDAHOME)/libcudart.so
+ifdef CUDA_HOME
+PYCUDART=$(CUDA_LIB)/libcudart.so
+endif
 
 
-.PHONY: default all clean cpulib gpulib
+.PHONY: default
 
 default: all
 
+cpuonly: cpulib ch2o4gpu_cpu h2o4gpu_c.o
+
+ifdef CUDA_HOME
 all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
+else
+all: cpuonly
+endif
 
 cpulib:
 	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
