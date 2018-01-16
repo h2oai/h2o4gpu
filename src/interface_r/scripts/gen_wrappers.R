@@ -11,7 +11,7 @@ library(roxygen2)
 pkg_location <- "~/h2o4gpu/src/interface_r"
 
 # Note: Code below should not be changed unless necessary
-source(file.path(pkg_location, "R/gen_wrapper_utils.R"))
+source(file.path(pkg_location, "scripts/gen_wrapper_utils.R"))
 h2o4gpu <- import("h2o4gpu")
 common_nullabl_int_params <- c("random_state")
 
