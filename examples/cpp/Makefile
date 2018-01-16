@@ -9,7 +9,11 @@ endif
 
 .PHONY: all default clean run runcpu ../../src/build/cpu/h2o4gpu.a ../../src/build/gpu/h2o4gpu.a
 
+ifdef CUDA_HOME
 all: cpuall gpuall
+else
+all: cpuall
+endif
 
 default: gpuall
 

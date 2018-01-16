@@ -50,8 +50,9 @@ all: prep
 
 	# for pycharm
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
+ifdef CPU_HOME
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
-
+endif
 
 install:
 	-cd ../.. && pip uninstall -y h2o4gpu
