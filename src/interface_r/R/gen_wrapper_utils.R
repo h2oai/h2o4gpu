@@ -12,9 +12,12 @@ gen_wrapper <- function(
   if (is.null(r_function)) {
     r_function <- docs$name
   }
+
+  # Generate function signature
   signature <- sub(paste0(docs$name, "\\("),
-                   paste(r_function, "<- function("), docs$signature)
-  write(paste(signature, "{"), file = con)
+                   paste(r_function, "<- function(\n\t"), docs$signature)
+  signature <- gsub(', ', ',\n\t', signature)
+  write(paste(signature, "{\n"), file = con)
   
   # Execution of Python API
   write(paste0("  model <- ", python_function, "("), file = con)
@@ -54,7 +57,7 @@ gen_wrapper <- function(
   }
   write(paste0('  h2o4gpu_model(model, ', class_tags, ')'), file = con)
 
-  write("}", file = con)
+  write("}\n", file = con)
   close(con)
   class(wrapper) <- c("py_wrapper", "character")
   wrapper
