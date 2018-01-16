@@ -26,3 +26,12 @@ test_succeeds("Random Forest classifier works correctly with factor labels", {
   y <- iris$Species
   test_random_forest_classifier(x, y)
 })
+
+test_succeeds("Random Forest regressor works correctly", {
+  x <- longley[1:6]
+  y <- longley$Employed
+  model <- h2o4gpu.random_forest_regressor() %>% fit(x, y)
+  predictions <- model %>% predict(x)
+  expect_true(0 < predictions && predictions < 100)
+  expect_error(h2o4gpu.random_forest_regressor() %>% fit(x, as.character(y)), regexp = 'Your model input "y" is non-numeric')
+})
