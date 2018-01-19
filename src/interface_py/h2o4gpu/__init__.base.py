@@ -20,6 +20,8 @@ from .solvers.xgboost import RandomForestClassifier
 from .solvers.xgboost import GradientBoostingClassifier
 from .solvers.xgboost import GradientBoostingRegressor
 from .solvers.kmeans import KMeans
+from .solvers.pca import PCA
+from .solvers.truncated_svd import TruncatedSVD
 from .typecheck import typechecks
 from .typecheck import compatibility
 from . import h2o4gpu_exceptions
