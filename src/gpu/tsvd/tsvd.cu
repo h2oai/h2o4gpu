@@ -426,6 +426,7 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
  */
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
+	cudaSetDevice(_param.gpu_id);
     Matrix<float>X(_param.X_m, _param.X_n);
 	X.copy(_X);
     truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);

@@ -26,12 +26,16 @@ class TruncatedSVDH2O(object):
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
 
+    :param gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run.
+
     """
 
-    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5):
+    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5, gpu_id=0):
         self.n_components = n_components
         self.algorithm = algorithm
         self.tol = tol
+        self.gpu_id = gpu_id
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -77,6 +81,7 @@ class TruncatedSVDH2O(object):
         param.k = self.n_components
         param.algorithm = self.algorithm.encode('utf-8')
         param.tol = self.tol
+        param.gpu_id = self.gpu_id
 
         if param.tol <= 0.0:
             raise ValueError("The `tol` parameter must be > 0.0")
