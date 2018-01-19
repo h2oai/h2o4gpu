@@ -31,7 +31,8 @@ class TruncatedSVDH2O(object):
 
     """
 
-    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5, gpu_id=0):
+    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5,
+                 gpu_id=0):
         self.n_components = n_components
         self.algorithm = algorithm
         self.tol = tol
