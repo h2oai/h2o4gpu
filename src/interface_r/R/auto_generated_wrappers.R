@@ -53,7 +53,7 @@ h2o4gpu.random_forest_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, classifier)
+  h2o4gpu_model(model, c("classifier"))
 }
 
 #' @export
@@ -107,7 +107,7 @@ h2o4gpu.random_forest_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
@@ -163,7 +163,7 @@ h2o4gpu.gradient_boosting_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, classifier)
+  h2o4gpu_model(model, c("classifier"))
 }
 
 #' @export
@@ -221,7 +221,7 @@ h2o4gpu.gradient_boosting_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
@@ -249,7 +249,7 @@ h2o4gpu.linear_regressor <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
@@ -293,7 +293,7 @@ h2o4gpu.logistic_regressor <- function(
     glm_stop_early_error_fraction = glm_stop_early_error_fraction,
     backend = backend
   )
-  h2o4gpu_model(model, classifier)
+  h2o4gpu_model(model, c("classifier"))
 }
 
 #' @export
@@ -333,7 +333,7 @@ h2o4gpu.lasso_regressor <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
@@ -367,7 +367,7 @@ h2o4gpu.ridge_regressor <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
@@ -411,7 +411,7 @@ h2o4gpu.elastic_net_regressor <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, regressor)
+  h2o4gpu_model(model, c("regressor"))
 }
 
 #' @export
