@@ -19,7 +19,7 @@ Depends:
     R (>= 3.1)
 Imports:
     magrittr,
-    reticulate
+    reticulate (>= 1.4)
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.0.1
 Suggests:

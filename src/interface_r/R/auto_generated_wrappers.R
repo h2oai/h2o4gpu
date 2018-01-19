@@ -53,7 +53,7 @@ h2o4gpu.random_forest_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("classifier"))
+  h2o4gpu_model(model, classifier)
 }
 
 #' @export
@@ -107,7 +107,7 @@ h2o4gpu.random_forest_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("regressor"))
+  h2o4gpu_model(model, regressor)
 }
 
 #' @export
@@ -163,7 +163,7 @@ h2o4gpu.gradient_boosting_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("classifier"))
+  h2o4gpu_model(model, classifier)
 }
 
 #' @export
@@ -221,7 +221,197 @@ h2o4gpu.gradient_boosting_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("regressor"))
+  h2o4gpu_model(model, regressor)
+}
+
+#' @export
+h2o4gpu.linear_regressor <- function(
+	fit_intercept = TRUE,
+	normalize = FALSE,
+	copy_X = TRUE,
+	n_jobs = 1L,
+	n_gpus = -1L,
+	tol = 0.0001,
+	glm_stop_early = TRUE,
+	glm_stop_early_error_fraction = 1.0,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$LinearRegression(
+    fit_intercept = fit_intercept,
+    normalize = normalize,
+    copy_X = copy_X,
+    n_jobs = as.integer(n_jobs),
+    n_gpus = as.integer(n_gpus),
+    tol = tol,
+    glm_stop_early = glm_stop_early,
+    glm_stop_early_error_fraction = glm_stop_early_error_fraction,
+    verbose = verbose,
+    backend = backend
+  )
+  h2o4gpu_model(model, regressor)
+}
+
+#' @export
+h2o4gpu.logistic_regressor <- function(
+	penalty = "l2",
+	dual = FALSE,
+	tol = 0.01,
+	C = 1.0,
+	fit_intercept = TRUE,
+	intercept_scaling = 1.0,
+	class_weight = NULL,
+	random_state = NULL,
+	solver = "liblinear",
+	max_iter = 5000L,
+	multi_class = "ovr",
+	verbose = 0L,
+	warm_start = FALSE,
+	n_jobs = 1L,
+	n_gpus = -1L,
+	glm_stop_early = TRUE,
+	glm_stop_early_error_fraction = 1.0,
+	backend = "auto") {
+
+  model <- h2o4gpu$LogisticRegression(
+    penalty = penalty,
+    dual = dual,
+    tol = tol,
+    C = C,
+    fit_intercept = fit_intercept,
+    intercept_scaling = intercept_scaling,
+    class_weight = class_weight,
+    random_state = as_nullable_integer(random_state),
+    solver = solver,
+    max_iter = as.integer(max_iter),
+    multi_class = multi_class,
+    verbose = as.integer(verbose),
+    warm_start = warm_start,
+    n_jobs = as.integer(n_jobs),
+    n_gpus = as.integer(n_gpus),
+    glm_stop_early = glm_stop_early,
+    glm_stop_early_error_fraction = glm_stop_early_error_fraction,
+    backend = backend
+  )
+  h2o4gpu_model(model, classifier)
+}
+
+#' @export
+h2o4gpu.lasso_regressor <- function(
+	alpha = 1.0,
+	fit_intercept = TRUE,
+	normalize = FALSE,
+	precompute = FALSE,
+	copy_X = TRUE,
+	max_iter = 5000L,
+	tol = 0.01,
+	warm_start = FALSE,
+	positive = FALSE,
+	random_state = NULL,
+	selection = "cyclic",
+	n_gpus = -1L,
+	glm_stop_early = TRUE,
+	glm_stop_early_error_fraction = 1.0,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$Lasso(
+    alpha = alpha,
+    fit_intercept = fit_intercept,
+    normalize = normalize,
+    precompute = precompute,
+    copy_X = copy_X,
+    max_iter = as.integer(max_iter),
+    tol = tol,
+    warm_start = warm_start,
+    positive = positive,
+    random_state = as_nullable_integer(random_state),
+    selection = selection,
+    n_gpus = as.integer(n_gpus),
+    glm_stop_early = glm_stop_early,
+    glm_stop_early_error_fraction = glm_stop_early_error_fraction,
+    verbose = verbose,
+    backend = backend
+  )
+  h2o4gpu_model(model, regressor)
+}
+
+#' @export
+h2o4gpu.ridge_regressor <- function(
+	alpha = 1.0,
+	fit_intercept = TRUE,
+	normalize = FALSE,
+	copy_X = TRUE,
+	max_iter = 5000L,
+	tol = 0.01,
+	solver = "auto",
+	random_state = NULL,
+	n_gpus = -1L,
+	glm_stop_early = TRUE,
+	glm_stop_early_error_fraction = 1.0,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$Ridge(
+    alpha = alpha,
+    fit_intercept = fit_intercept,
+    normalize = normalize,
+    copy_X = copy_X,
+    max_iter = as.integer(max_iter),
+    tol = tol,
+    solver = solver,
+    random_state = as_nullable_integer(random_state),
+    n_gpus = as.integer(n_gpus),
+    glm_stop_early = glm_stop_early,
+    glm_stop_early_error_fraction = glm_stop_early_error_fraction,
+    verbose = verbose,
+    backend = backend
+  )
+  h2o4gpu_model(model, regressor)
+}
+
+#' @export
+h2o4gpu.elastic_net_regressor <- function(
+	alpha = 1.0,
+	l1_ratio = 0.5,
+	fit_intercept = TRUE,
+	normalize = FALSE,
+	precompute = FALSE,
+	max_iter = 5000L,
+	copy_X = TRUE,
+	tol = 0.01,
+	warm_start = FALSE,
+	positive = FALSE,
+	random_state = NULL,
+	selection = "cyclic",
+	n_gpus = -1L,
+	lambda_stop_early = TRUE,
+	glm_stop_early = TRUE,
+	glm_stop_early_error_fraction = 1.0,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$ElasticNet(
+    alpha = alpha,
+    l1_ratio = l1_ratio,
+    fit_intercept = fit_intercept,
+    normalize = normalize,
+    precompute = precompute,
+    max_iter = as.integer(max_iter),
+    copy_X = copy_X,
+    tol = tol,
+    warm_start = warm_start,
+    positive = positive,
+    random_state = as_nullable_integer(random_state),
+    selection = selection,
+    n_gpus = as.integer(n_gpus),
+    lambda_stop_early = lambda_stop_early,
+    glm_stop_early = glm_stop_early,
+    glm_stop_early_error_fraction = glm_stop_early_error_fraction,
+    verbose = verbose,
+    backend = backend
+  )
+  h2o4gpu_model(model, regressor)
 }
 
 #' @export
@@ -257,6 +447,54 @@ h2o4gpu.kmeans <- function(
     gpu_id = as.integer(gpu_id),
     n_gpus = as.integer(n_gpus),
     do_checks = as.integer(do_checks),
+    backend = backend
+  )
+  h2o4gpu_model(model, NULL)
+}
+
+#' @export
+h2o4gpu.pca <- function(
+	n_components = 2L,
+	copy = TRUE,
+	whiten = FALSE,
+	svd_solver = "arpack",
+	tol = 0.0,
+	iterated_power = "auto",
+	random_state = NULL,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$PCA(
+    n_components = as.integer(n_components),
+    copy = copy,
+    whiten = whiten,
+    svd_solver = svd_solver,
+    tol = tol,
+    iterated_power = iterated_power,
+    random_state = as_nullable_integer(random_state),
+    verbose = verbose,
+    backend = backend
+  )
+  h2o4gpu_model(model, NULL)
+}
+
+#' @export
+h2o4gpu.truncated_svd <- function(
+	n_components = 2L,
+	algorithm = "arpack",
+	n_iter = 5L,
+	random_state = NULL,
+	tol = 0.0,
+	verbose = FALSE,
+	backend = "auto") {
+
+  model <- h2o4gpu$TruncatedSVD(
+    n_components = as.integer(n_components),
+    algorithm = algorithm,
+    n_iter = as.integer(n_iter),
+    random_state = as_nullable_integer(random_state),
+    tol = tol,
+    verbose = verbose,
     backend = backend
   )
   h2o4gpu_model(model, NULL)

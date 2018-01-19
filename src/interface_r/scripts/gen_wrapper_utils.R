@@ -3,7 +3,8 @@ gen_wrapper <- function(
   python_function,
   r_function = NULL,
   additional_int_params = NULL,
-  nullable_int_params = NULL) {
+  nullable_int_params = NULL,
+  class_tags = NULL) {
 
   docs <- reticulate::py_function_docs(python_function)
   con <- textConnection("wrapper", "w")
@@ -48,13 +49,6 @@ gen_wrapper <- function(
   }
 
   # Attach additional class information
-  if (grepl("classifier", python_function, ignore.case = TRUE)) {
-    class_tags <- 'c("classifier")'
-  } else if (grepl("regressor", python_function, ignore.case = TRUE)) {
-    class_tags <- 'c("regressor")'
-  } else {
-    class_tags <- 'NULL'
-  }
   write(paste0('  h2o4gpu_model(model, ', class_tags, ')'), file = con)
 
   write("}\n", file = con)
