@@ -8,7 +8,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000, n=10, k=9):
+def func(m=5000, n=10, k=9, algorithm="cusolver"):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
@@ -22,7 +22,9 @@ def func(m=5000, n=10, k=9):
     print("\n")
     print("Sklearn run through h2o4gpu wrapper")
 
-    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm="arpack", random_state=42, verbose=True)
+    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, random_state=42, verbose=True)
+    if algorithm == "cusolver":
+        assert h2o4gpu_tsvd_sklearn_wrapper.algorithm == "arpack", "algorithm should be arpack for default scikit"
     h2o4gpu_tsvd_sklearn_wrapper.fit(X)
 
     print("h2o4gpu tsvd Singular Values")
@@ -52,3 +54,4 @@ def func(m=5000, n=10, k=9):
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_)
 
 def test_tsvd_error_k2(): func(n=50, k=2)
+def test_tsvd_error_k2_cusolver(): func(n=50, k=2, algorithm="cusolver")
