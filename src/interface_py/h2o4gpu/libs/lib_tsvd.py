@@ -7,7 +7,8 @@ import ctypes
 
 class parameters(ctypes.Structure):
     _fields_ = [('X_n', ctypes.c_int), ('X_m', ctypes.c_int),
-                ('k', ctypes.c_int), ('algorithm', ctypes.c_char_p)]
+                ('k', ctypes.c_int), ('algorithm', ctypes.c_char_p),
+                ('tol', ctypes.c_float), ('gpu_id', ctypes.c_int)]
 
 
 class CPUlib:

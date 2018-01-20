@@ -19,6 +19,7 @@ namespace tsvd
 			int k;
 			const char* algorithm;
 			float tol;
+			int gpu_id;
 		};
 
 		/**
