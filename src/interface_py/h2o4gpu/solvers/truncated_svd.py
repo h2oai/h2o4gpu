@@ -271,7 +271,8 @@ class TruncatedSVD(object):
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-            params_string = ['algorithm', 'n_iter', 'random_state', 'tol', 'gpu_id']
+            params_string = ['algorithm', 'n_iter', 'random_state', 'tol',
+                             'gpu_id']
             params = [algorithm, n_iter, random_state, tol, gpu_id]
             params_default = ['cusolver', 5, None, 1E-5, 0]
 
@@ -302,8 +303,9 @@ class TruncatedSVD(object):
             n_iter=n_iter,
             random_state=random_state,
             tol=tol)
-        self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components, algorithm = algorithm,
-                                             tol = tol, gpu_id = gpu_id)
+        self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components,
+                                             algorithm=algorithm,
+                                             tol=tol, gpu_id=gpu_id)
 
         if self.do_sklearn:
             if self.model_sklearn.algorithm == "cusolver":
