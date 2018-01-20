@@ -21,7 +21,9 @@ from .solvers.xgboost import GradientBoostingClassifier
 from .solvers.xgboost import GradientBoostingRegressor
 from .solvers.kmeans import KMeans
 from .solvers.pca import PCA
+from .solvers.pca import PCAH2O
 from .solvers.truncated_svd import TruncatedSVD
+from .solvers.truncated_svd import TruncatedSVDH2O
 from .typecheck import typechecks
 from .typecheck import compatibility
 from . import h2o4gpu_exceptions
