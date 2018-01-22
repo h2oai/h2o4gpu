@@ -25,6 +25,7 @@ def testtype = "dotest"
 def labelbuild = "ec2P32xlarge"
 def labeltest = "ec2P32xlarge"
 def labelruntime = "ec2P32xlarge"
+def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "0"
 
@@ -106,7 +107,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return h2o4gpuUtils.doBuild()
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild()
                 }
             }
             steps {
@@ -140,7 +141,7 @@ pipeline {
             }
         }
 
-        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9-aws1") {
+        stage("Test Wheel & Pylint & S3up on Linux nccl-cuda9-aws1") {
             agent {
                 label "${labeltest}"
             }
@@ -148,7 +149,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
             steps {
@@ -240,7 +241,7 @@ pipeline {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
-                    return ("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
+                    return "${doingbenchmark}" == "1" || (("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master")
                 }
             }
             steps {
