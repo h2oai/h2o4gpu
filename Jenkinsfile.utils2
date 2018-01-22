@@ -20,7 +20,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 60, unit: 'MINUTES')
+        timeout(time: 120, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
         skipDefaultCheckout()
@@ -78,7 +78,7 @@ pipeline {
                     return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild()
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 // Do checkout
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     deleteDir()
@@ -120,7 +120,7 @@ pipeline {
                     return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
@@ -160,7 +160,7 @@ pipeline {
                     return "${doruntime}" == "1" && h2o4gpuUtils.doRuntime()
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
