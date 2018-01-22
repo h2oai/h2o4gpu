@@ -19,6 +19,7 @@ def testtype = "dotest"
 def labelbuild = "ec2P32xlarge"
 def labeltest = "ec2P32xlarge"
 def labelruntime = "ec2P32xlarge"
+def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "0"
 
