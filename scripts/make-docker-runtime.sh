@@ -5,7 +5,7 @@ echo "Docker runtime - BEGIN"
 echo "Docker runtime - Build"
 # wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-cp36-cp36m-linux_x86_64.whl # use this if want to pull from s3 in Dockerfile-runtime
 #  --build-arg http_proxy=http://172.16.2.142:3128/
-nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg cuda=${dockerimage} .
+nvidia-docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg http_proxy=http://172.16.2.142:3128/ --build-arg cuda=${dockerimage} .
 # -u `id -u`:`id -g` -d -t -w `pwd` -v `pwd`:`pwd`:rw
 
 echo "Runtime Docker - Run"

@@ -4,7 +4,7 @@ set -e
 
 echo "Docker devel test and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
+nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg http_proxy=http://172.16.2.142:3128/ --build-arg cuda=${dockerimage} .
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
