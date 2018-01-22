@@ -20,7 +20,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 60, unit: 'MINUTES')
+        timeout(time: 200, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
         skipDefaultCheckout()
@@ -90,7 +90,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                script {
+                retryWithTimeout(2400 /* seconds */, 0 /* retries */) {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
@@ -126,7 +126,7 @@ pipeline {
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
-                script {
+                retryWithTimeout(2400 /* seconds */, 0 /* retries */) {
                     unstash 'version_info'
                     sh """
                         echo "Before Stashed wheel file:"
@@ -187,7 +187,7 @@ pipeline {
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
-                script {
+                retryWithTimeout(2400 /* seconds */, 0 /* retries */) {
                     h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
