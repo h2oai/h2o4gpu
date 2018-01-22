@@ -110,7 +110,7 @@ pipeline {
                     return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild()
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 // Do checkout
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     deleteDir()
@@ -122,7 +122,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                timeout(time: 60, unit: 'MINUTES') {
+                script {
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
 
@@ -152,13 +152,13 @@ pipeline {
                     return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
                     checkout scm
                 }
-                timeout(time: 60, unit: 'MINUTES') {
+                script {
                     unstash 'version_info'
                     sh """
                         echo "Before Stashed wheel file:"
@@ -192,7 +192,7 @@ pipeline {
                     return "${doruntime}" == "1" && h2o4gpuUtils.doRuntime()
                 }
             }
-            steps {
+            timeout(time: 60, unit: 'MINUTES') {
                 dumpInfo 'Linux Build Info'
                 // Do checkout
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
@@ -205,7 +205,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                timeout(time: 60, unit: 'MINUTES') {
+                script {
                     sh """
                         echo "Before Stashed wheel file:"
                         ls -l src/interface_py/${dist}/  || true
