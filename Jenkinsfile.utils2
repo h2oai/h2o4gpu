@@ -173,7 +173,7 @@ pipeline {
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
-                retryWithTimeout(2400 /* seconds */, 0 /* retries */) {
+                script {
                     sh """
                         echo "Before Stashed wheel file:"
                         ls -l src/interface_py/${dist}/  || true
@@ -187,7 +187,7 @@ pipeline {
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
-                script {
+                retryWithTimeout(2400 /* seconds */, 0 /* retries */) {
                     h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
