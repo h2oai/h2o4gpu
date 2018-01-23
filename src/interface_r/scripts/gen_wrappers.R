@@ -2,10 +2,11 @@
 # * Ensure you have the following R libraries installed via the following:
 #   `devtools::install_github("rstudio/reticulate"); install.packages(c("stringr", "roxygen2))`
 # * Change variable `pkg_location` below to point to your R package directory
-# * Run `use_condaenv()` or `use_python()` from reticulate to activate the
+# * Run `use_condaenv()`, `use_python()`, or `use_virtualenv()` from reticulate to activate the
 #   environment with h2o4gpu installed. 
 #   e.g. use_condaenv("r-h2o4gpu", conda = "~/miniconda3/envs/py36/bin/conda")
 library(reticulate)
+#use_virtual_env() or use_condaenv() or use_python()
 library(stringr)
 library(roxygen2)
 pkg_location <- "~/h2o4gpu/src/interface_r"
