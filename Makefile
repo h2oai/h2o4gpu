@@ -73,6 +73,7 @@ help:
 	@echo "make                 fullinstall"
 	@echo "make fullinstall     Clean everything, then compile and install everything (for cuda9 with nccl in xgboost)."
 	@echo "make build           Just Build the whole project."
+	@echo "make daal-install 	Install Intel DAAL library with PyDAAL"
 	@echo " -------- Test ---------"
 	@echo "make test            Run tests."
 	@echo "make testbig         Run tests for big data."
@@ -210,6 +211,9 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
+daal-install:
+	@echo "+-- Installing Intel Daal --+"
+	bash scripts/daal/daal_preinstalled_packages.sh
 ####################################################
 # Docker stuff
 
