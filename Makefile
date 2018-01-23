@@ -82,6 +82,7 @@ help:
 	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
 	$(call inform, "make cpu-fullinstall Clean everything then compile and isntall everything only with CPU")
 	$(call inform, "make build           Just Build the whole project.")
+	$(call inform, "make daal-install    Install Intel DAAL library with PyDAAL")
 	$(call inform, " -------- Test ---------")
 	$(call inform, "make test            Run tests.")
 	$(call inform, "make testbig         Run tests for big data.")
@@ -126,13 +127,13 @@ cpp:
 c:
 	$(MAKE) -j all -C src/interface_c
 
-py: apply-sklearn_simple build/VERSION.txt
+py: apply_sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
 pylint:
 	$(MAKE) pylint -C src/interface_py
 
-fullpy: apply-sklearn_simple pylint
+fullpy: apply_sklearn_simple pylint
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
@@ -166,40 +167,15 @@ xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
 
-buildquick: cpp cleanc c py
-build: update_submodule buildquick
+build: update_submodule cpp c py
+
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
+
+buildquick: cpp cleanc c py
 
 install: pyinstall
 
-### for direct building of xgboost
-# https://xgboost.readthedocs.io/en/latest/build.html
-libxgboost-nccl-local:
-	cd xgboost ; make -f Makefile2 libxgboost
-libxgboost-nonccl-local:
-	cd xgboost ; make -f Makefile2 libxgboost2
-libxgboost-cpu-local:
-	cd xgboost ; make -f Makefile2 libxgboost-cpu
 
-apply-xgboost-nccl-local: libxgboost-nccl-local pipxgboost
-apply-xgboost-nonccl-local: libxgboost-nonccl-local pipxgboost
-apply-xgboost-cpu-local: libxgboost-cpu-local pipxgboost
-
-pipxgboost:
-	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && pip install xgboost-0.7-py3-none-any.whl --upgrade --target ../
-
-alldeps-nccl-local: deps_fetch alldeps-install-nccl-local
-alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
-alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
-
-# lib for sklearn because don't want to fully apply yet
-alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
-alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
-alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-
-##### dependencies
 deps_clean:
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
@@ -222,24 +198,15 @@ deps_install:
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
-	bash scripts/install_r_deps.sh
 	# issue with their package, have to do this here (still fails sometimes, so remove)
 #	pip install sphinxcontrib-osexample
 
-# lib for sklearn because don't want to fully apply yet
-alldeps_install-nccl-cuda8: deps_install apply-xgboost-nccl-cuda8 apply_py3nvml libsklearn
-alldeps_install-nonccl-cuda8: deps_install apply-xgboost-nonccl-cuda8 apply_py3nvml libsklearn
-alldeps_install-nccl-cuda9: deps_install apply-xgboost-nccl-cuda9 apply_py3nvml libsklearn
-alldeps_install-nonccl-cuda9: deps_install apply-xgboost-nonccl-cuda9 apply_py3nvml libsklearn
+alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
 
 fullinstall: fullinstall-nccl-cuda9
-fullinstalllocal: fullinstall-nccl-local
-cpu-fullinstall: fullinstall-cpuonly
-
-fullinstall-nccl-local: clean alldeps-nccl-local build install
-	mkdir -p src/interface_py/dist-nccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nccl-local/
-fullinstall-nonccl-local: clean alldeps-nonccl-local build install
-	mkdir -p src/interface_py/dist-nonccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nonccl-local/
 
 fullinstall-nccl-cuda8: clean alldeps-nccl-cuda8 build install
 	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
@@ -253,9 +220,6 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
-fullinstall-cpuonly: clean alldeps-cpuonly build install
-	mkdir -p src/interface_py/dist-cpuonly-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-cpuonly-local/
-	
 ####################################################
 # Docker stuff
 
@@ -325,63 +289,6 @@ docker-runtime-nccl-cuda9-load:
 run_in_docker-nccl-cuda9:
 	-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-nccl-cuda9-runtime &
 	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
-
-
-############### CPU
-docker-build-cpu:
-	@echo "+-- Building Wheel in Docker (-cpu) --+"
-	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
-	export CONTAINER_NAME="localmake-build" ;\
-	export versionTag=$(BASE_VERSION) ;\
-	export extratag="-cpu" ;\
-	export dockerimage="ubuntu:16.04" ;\
-	export H2O4GPU_BUILD="" ;\
-	export H2O4GPU_SUFFIX="" ;\
-	export makeopts="" ;\
-	export dist="dist8" ;\
-	bash scripts/make-docker-devel.sh
-
-docker-runtime-cpu:
-	@echo "+--Building Runtime Docker Image Part 2 (-cpu) --+"
-	export CONTAINER_NAME="localmake-runtime" ;\
-	export versionTag=$(BASE_VERSION) ;\
-	export extratag="-cpu" ;\
-	export encodedFullVersionTag=$(BASE_VERSION) ;\
-	export fullVersionTag=$(BASE_VERSION) ;\
-	export buckettype="releases/bleeding-edge" ;\
-	export dockerimage="ubuntu:16.04" ;\
-	bash scripts/make-docker-runtime.sh
-	
-docker-runtime-cpu-run:
-	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
-	export CONTAINER_NAME="localmake-runtime-run" ;\
-	export versionTag=$(BASE_VERSION) ;\
-	export extratag="-cpu" ;\
-	export encodedFullVersionTag=$(BASE_VERSION) ;\
-	export fullVersionTag=$(BASE_VERSION) ;\
-	export buckettype="releases/bleeding-edge" ;\
-	export dockerimage="ubuntu:16.04" ;\
-	docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
-
-docker-runtests-cpu:
-	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
-	export CONTAINER_NAME="localmake-runtests" ;\
-	export extratag="-cpu" ;\
-	export dockerimage="ubuntu:16.04" ;\
-	export dist="dist4" ;\
-	export target="dotest" ;\
-	bash scripts/make-docker-runtests.sh
-
-get_docker-cpu:
-	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/$(MAJOR_MINOR)-cpu/h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2
-
-docker-runtime-cpu-load:
-	pbzip2 -dc h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2 | docker load
-
-run_in_docker-cpu:
-	-mkdir -p log ; docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-cpu-runtime &
-	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
-	
 
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
@@ -469,21 +376,21 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-apply-xgboost-nccl-cuda8: apply-xgboost-nccl-local    #pipxgboost-nccl-cuda8
-apply-xgboost-nonccl-cuda8: apply-xgboost-nonccl-local #pipxgboost-nonccl-cuda8
-apply-xgboost-nccl-cuda9: apply-xgboost-nccl-local #pipxgboost-nccl-cuda9
-apply-xgboost-nonccl-cuda9: apply-xgboost-nonccl-local #pipxgboost-nonccl-cuda9
+apply_xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
+apply_xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
+apply_xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
+apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 
-pipxgboost-nccl-cuda8: pipxgboost
+pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nonccl-cuda8: pipxgboost
+pipxgboost-nonccl-cuda8:
 	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nccl-cuda9: pipxgboost
+pipxgboost-nccl-cuda9:
 	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nonccl-cuda9: pipxgboost
+pipxgboost-nonccl-cuda9:
 	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 
@@ -506,9 +413,9 @@ libsklearn:	# assume already submodule gets sklearn
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
 	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
-apply-sklearn: libsklearn apply-sklearn_simple
+apply_sklearn: libsklearn apply_sklearn_simple
 
-apply-sklearn_simple:
+apply_sklearn_simple:
     #	bash ./scripts/apply_sklearn.sh
     ## apply sklearn
 	bash ./scripts/apply_sklearn_pipinstall.sh
@@ -517,13 +424,13 @@ apply-sklearn_simple:
     # handle base __init__.py file appending
 	bash ./scripts/apply_sklearn_initmerge.sh
 
-apply-sklearn_pipinstall:
+apply_sklearn_pipinstall:
 	bash ./scripts/apply_sklearn_pipinstall.sh
 
-apply-sklearn_link:
+apply_sklearn_link:
 	bash ./scripts/apply_sklearn_link.sh
 
-apply-sklearn_initmerge:
+apply_sklearn_initmerge:
 	bash ./scripts/apply_sklearn_initmerge.sh
 
 #################### Jenkins specific
@@ -574,31 +481,31 @@ dotest:
   # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package
-	R -e 'devtools::test("src/interface_r")'
+	/usr/bin/R-3.1.0 -e 'devtools::test("src/interface_r")'
 
 dotestfast:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests_open/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests_open/gbm/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests_open/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests_open/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestfast_nonccl:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
 	# can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests_open/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests_open/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests_open/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests_open/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestsmall:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests_small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
+	pytest -s --verbose --durations=10 -n 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests_small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
@@ -735,8 +642,8 @@ centos7_build:
          /root/.pyenv/bin/pyenv global 3.6.1 && \
          export IFLAGS="-I/usr/include/openblas" && \
          export OPENBLAS_PREFIX="open" && \
-         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-local")
-	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
+         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda8")
+	cp /tmp/build/src/interface_py/dist2/h2o4gpu*.whl dist
 	chmod o+rw dist/h2o4gpu*.whl
 
 centos7:
