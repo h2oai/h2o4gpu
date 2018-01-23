@@ -481,12 +481,13 @@ h2o4gpu.pca <- function(
 #' @export
 h2o4gpu.truncated_svd <- function(
 	n_components = 2L,
-	algorithm = "arpack",
+	algorithm = "cusolver",
 	n_iter = 5L,
 	random_state = NULL,
-	tol = 0.0,
+	tol = 1e-05,
 	verbose = FALSE,
-	backend = "auto") {
+	backend = "auto",
+	gpu_id = 0L) {
 
   model <- h2o4gpu$TruncatedSVD(
     n_components = as.integer(n_components),
@@ -495,7 +496,8 @@ h2o4gpu.truncated_svd <- function(
     random_state = as_nullable_integer(random_state),
     tol = tol,
     verbose = verbose,
-    backend = backend
+    backend = backend,
+    gpu_id = as.integer(gpu_id)
   )
   h2o4gpu_model(model, NULL)
 }
