@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+
 #############################
 # Device utils
 
@@ -96,7 +97,8 @@ def get_gpu_info_subprocess(return_usage=False):
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
 
-        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName(py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
+        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName\
+            (py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
 
         if return_usage:
             for j in range(total_gpus):
