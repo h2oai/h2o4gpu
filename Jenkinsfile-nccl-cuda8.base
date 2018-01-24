@@ -19,7 +19,6 @@ def testtype = "dotest"
 def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labelruntime = "nvidia-docker"
-def doingbenchmark = "0"
 def dobenchmark = "0"
 def doruntime = "1"
 

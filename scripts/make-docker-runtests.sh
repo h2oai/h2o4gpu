@@ -4,7 +4,7 @@ set -e
 
 echo "Docker devel test and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg http_proxy=http://172.16.2.142:3128/ --build-arg cuda=${dockerimage} .
+nvidia-docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg cuda=${dockerimage} .
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 nvidia-docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
@@ -17,11 +17,6 @@ echo "Docker devel test and pylint - setup pyenv, pip install wheel from ${dist}
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean ${dist}/*.whl before unstash in jenkins
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; pip install `find /dot/src/interface_py/'${dist}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
-
-echo "Docker devel test and pylint - copy any dat results"
-rm -rf results ; mkdir -p results/
-touch results/emptyresults.dat
-nvidia-docker cp -a ${CONTAINER_NAME}:repo/results results/
 
 echo "Docker devel test and pylint - copy build reports"
 rm -rf build/test-reports ; mkdir -p build/test-reports/
