@@ -9,7 +9,8 @@
 For `pyenv` go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv. Then run, e.g.:
 
 ````
-pyenv install 3.6.1
+
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 pyenv global 3.6.1
 ````
 

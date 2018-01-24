@@ -16,7 +16,7 @@ An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree
 
 ## Requirements
 
-* PC with Ubuntu 16.04+ w/ GCC4.9+
+* PC with Ubuntu 16.04+ w/ GCC4.9+ and numpy 1.14.x
 
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
