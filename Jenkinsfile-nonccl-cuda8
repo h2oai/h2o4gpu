@@ -15,19 +15,19 @@ import ai.h2o.ci.BuildInfo
 def commitMessage = ''
 def h2o4gpuUtils = null
 
-def dist = "dist6"
-def BUILDTYPE = "nccl-cuda9-benchmark"
-def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-def extratag = "-nccl-cuda9-benchmark"
-def linuxwheel = "linux_whl6"
-def testtype = "dotestperf"
-def labelbuild = "mr-dl3"
-def labeltest = "mr-dl3"
-def labelruntime = "mr-dl3"
-def doingbenchmark = "1"
+def dist = "dist2"
+def BUILDTYPE = "nonccl-cuda8"
+def cuda = "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04"
+def cudart = "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04"
+def extratag = "-nonccl-cuda8"
+def linuxwheel = "linux_whl2"
+def testtype = "dotestfast_nonccl"
+def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
+def labelruntime = "nvidia-docker"
+def doingbenchmark = "0"
 def dobenchmark = "0"
-def doruntime = "0"
+def doruntime = "1"
 
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 // Just Notes:
@@ -69,7 +69,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Git clone on Linux nccl-cuda9-benchmark") {
+        stage("Git clone on Linux nonccl-cuda8") {
 
             agent {
                 label "${labelbuild}"
@@ -98,7 +98,7 @@ pipeline {
                 stash includes: "Jenkinsfile*", name: "jenkinsfiles"
             }
         }
-        stage("Build Wheel on Linux nccl-cuda9-benchmark") {
+        stage("Build Wheel on Linux nonccl-cuda8") {
 
             agent {
                 label "${labelbuild}"
@@ -141,7 +141,7 @@ pipeline {
             }
         }
 
-        stage("Test Wheel & Pylint & S3up on Linux nccl-cuda9-benchmark") {
+        stage("Test Wheel & Pylint & S3up on Linux nonccl-cuda8") {
             agent {
                 label "${labeltest}"
             }
@@ -181,7 +181,7 @@ pipeline {
                 }
             }
         }
-        stage("Build/Publish Runtime Docker Linux nccl-cuda9-benchmark") {
+        stage("Build/Publish Runtime Docker Linux nonccl-cuda8") {
             agent {
                 label "${labelruntime}"
             }
@@ -232,7 +232,7 @@ pipeline {
             }
         }
 
-        stage("Benchmarking Linux nccl-cuda9-benchmark") {
+        stage("Benchmarking Linux nonccl-cuda8") {
             agent {
                 label 'master'
             }
