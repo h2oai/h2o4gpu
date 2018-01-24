@@ -111,7 +111,7 @@ setup(
     author_email='h2ostream@googlegroups.com',
     url='http://h2o.ai',
     distclass=BinaryDistribution,
-    #platforms=['linux_x86_64'], # scikit-learn: h2o4gpu-0.20.dev0-cp36-cp36m-linux_x86_64.whl
+    # platforms=['linux_x86_64'], # scikit-learn: h2o4gpu-0.20.dev0-cp36-cp36m-linux_x86_64.whl
     # from:
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=packages,
@@ -123,8 +123,8 @@ setup(
     cmdclass={'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
     
     ext_modules=[
-    Extension(name='h2o4gpu.util._roc_opt',
-              sources=['h2o4gpu/util/roc_opt.i', '../cpu/metrics/metrics.cpp'],
+    Extension(name='h2o4gpu.util._daicx',
+              sources=['h2o4gpu/util/daicx.i', '../cpu/metrics/metrics.cpp'],
               include_dirs=[numpy.get_include(), '../include/'],
               extra_compile_args=swig_extra_compile_args,
               extra_link_args=swig_extra_link_args,
