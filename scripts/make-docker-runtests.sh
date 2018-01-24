@@ -18,11 +18,6 @@ echo "Docker devel test and pylint - setup pyenv, pip install wheel from ${dist}
 # Just ensure clean ${dist}/*.whl before unstash in jenkins
 nvidia-docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; pip install `find /dot/src/interface_py/'${dist}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
 
-echo "Docker devel test and pylint - copy any dat results"
-rm -rf results ; mkdir -p results/
-touch results/emptyresults.dat
-nvidia-docker cp -a ${CONTAINER_NAME}:repo/results results/
-
 echo "Docker devel test and pylint - copy build reports"
 rm -rf build/test-reports ; mkdir -p build/test-reports/
 nvidia-docker cp -a ${CONTAINER_NAME}:repo/build/test-reports build/

@@ -152,11 +152,11 @@ cleanc:
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
-
+	
 xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
-
+	
 build: update_submodule cpp c py
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
@@ -599,7 +599,7 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt: .ALWAYS_REBUILD
 endif
 
 Jenkinsfiles:
-	bash scripts/make_jenkinsfiles.sh
+	scripts/make_jenkinsfiles.sh
 
 #----------------------------------------------------------------------
 # CentOS 7 build API BEGIN

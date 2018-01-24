@@ -19,7 +19,6 @@ def testtype = "dotestperf"
 def labelbuild = "mr-dl3"
 def labeltest = "mr-dl3"
 def labelruntime = "mr-dl3"
-def doingbenchmark = "1"
 def dobenchmark = "0"
 def doruntime = "0"
 

@@ -25,7 +25,6 @@ def testtype = "dotestfast"
 def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
 def labelruntime = "nvidia-docker"
-def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "1"
 
@@ -107,7 +106,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild()
+                    return h2o4gpuUtils.doBuild()
                 }
             }
             steps {
@@ -141,7 +140,7 @@ pipeline {
             }
         }
 
-        stage("Test Wheel & Pylint & S3up on Linux nccl-cuda9") {
+        stage("Fast Test Wheel & Pylint & S3up on Linux nccl-cuda9") {
             agent {
                 label "${labeltest}"
             }
@@ -149,7 +148,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
+                    return h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
             steps {
@@ -241,7 +240,7 @@ pipeline {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
-                    return "${doingbenchmark}" == "1" || (("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master")
+                    return ("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master"
                 }
             }
             steps {
