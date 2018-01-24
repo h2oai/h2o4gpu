@@ -75,7 +75,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "Jenkinsfile.utils"
-                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild()
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests()
                 }
             }
             steps {
