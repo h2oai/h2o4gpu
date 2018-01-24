@@ -17,7 +17,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count, _ = get_gpu_info()
+    available_device_count, _, _ = get_gpu_info()
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -46,6 +46,7 @@ def get_gpu_info(return_usage=False):
     """
     total_gpus = 0
     total_mem = 0
+    gpu_type = 0
     usage = []
     import concurrent.futures
     from concurrent.futures import ProcessPoolExecutor
@@ -59,8 +60,8 @@ def get_gpu_info(return_usage=False):
         return res
     except concurrent.futures.process.BrokenProcessPool:
         if return_usage:
-            return (total_gpus, total_mem, usage)
-        return (total_gpus, total_mem)
+            return (total_gpus, total_mem, gpu_type, usage)
+        return (total_gpus, total_mem, gpu_type)
 
 
 def get_gpu_info_subprocess(return_usage=False):
@@ -72,6 +73,7 @@ def get_gpu_info_subprocess(return_usage=False):
     """
     total_gpus = 0
     total_mem = 0
+    gpu_type = 0
     usage = []
     try:
         import py3nvml.py3nvml
@@ -94,6 +96,8 @@ def get_gpu_info_subprocess(return_usage=False):
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
 
+        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName(py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
+
         if return_usage:
             for j in range(total_gpus):
                 handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
@@ -104,8 +108,8 @@ def get_gpu_info_subprocess(return_usage=False):
         pass
 
     if return_usage:
-        return (total_gpus, total_mem, usage)
-    return (total_gpus, total_mem)
+        return (total_gpus, total_mem, gpu_type, usage)
+    return (total_gpus, total_mem, gpu_type)
 
 
 def cudaresetdevice(gpu_id, n_gpus):
