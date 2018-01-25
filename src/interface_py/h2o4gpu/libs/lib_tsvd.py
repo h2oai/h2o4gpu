@@ -8,7 +8,10 @@ import ctypes
 class parameters(ctypes.Structure):
     _fields_ = [('X_n', ctypes.c_int), ('X_m', ctypes.c_int),
                 ('k', ctypes.c_int), ('algorithm', ctypes.c_char_p),
-                ('tol', ctypes.c_float), ('gpu_id', ctypes.c_int)]
+                ('n_iter', ctypes.c_int), ('random_state', ctypes.c_int),
+                ('tol', ctypes.c_float),
+                ('verbose', ctypes.c_int),
+                ('gpu_id', ctypes.c_int)]
 
 
 class CPUlib:
