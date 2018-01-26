@@ -185,6 +185,7 @@ deps_install:
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
+	bash scripts/install_r_deps.sh
 	# issue with their package, have to do this here (still fails sometimes, so remove)
 #	pip install sphinxcontrib-osexample
 
@@ -467,7 +468,7 @@ dotest:
   # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package
-	/usr/bin/R-3.1.0 -e 'devtools::test("src/interface_r")'
+	R -e 'devtools::test("src/interface_r")'
 
 dotestfast:
 	rm -rf ./tmp/
