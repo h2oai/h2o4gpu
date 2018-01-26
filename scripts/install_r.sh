@@ -3,7 +3,7 @@
 set -e
 
 R_VERSION=$1
-R_VERSION_HOME="/usr/local/R/${R_VERSION}"
+R_VERSION_HOME="/usr/local/R"
 
 # Create temporary directory
 mkdir -p $HOME/R_tmp
@@ -27,9 +27,9 @@ cd ../..
 rm -rf $HOME/R_tmp
 
 # Create symbolic link
-ln -s ${R_VERSION_HOME}/bin/R /usr/bin/R-${R_VERSION}
-ln -s ${R_VERSION_HOME}/bin/Rscript /usr/bin/Rscript-${R_VERSION}
-echo The R-${R_VERSION} executable is now available in /usr/bin/R-${R_VERSION}
+ln -s ${R_VERSION_HOME}/bin/R /usr/bin/R
+ln -s ${R_VERSION_HOME}/bin/Rscript /usr/bin/Rscript
+echo The R-${R_VERSION} executable is now available in /usr/bin/R
 
 # Create dirs for current R and make them writable
 mkdir -p /usr/local/R/current/bin/
