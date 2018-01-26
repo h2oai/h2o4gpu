@@ -24,11 +24,9 @@ def test_fit_linear_regression():
             normalize=False,
             verbose=True,
             backend='daal')
-    print("Training stage: ")
     trained = solver.fit(trainData, trainDependentVariables)
-    #print(DLR.print_table(trained))
-    print("Prediction Stage: ")
+    DLR.print_table(trained.getBeta(), "Linear Regression coefficients:")
     prediction = solver.predict(testData)
-    print(prediction)
+    DLR.print_table(prediction, "Linear Regression prediction results: (first 10 rows):", 10)
 
 test_fit_linear_regression()
