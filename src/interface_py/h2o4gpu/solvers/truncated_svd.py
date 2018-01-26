@@ -26,7 +26,7 @@ class TruncatedSVDH2O(object):
     :param: int n_iter: number of iterations (only relevant for power method)
             Should be large number to run indefinitely
 
-    :param: int random_date: seed (None for auto-generated)
+    :param: int random_state: seed (None for auto-generated)
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
