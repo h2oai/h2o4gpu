@@ -30,7 +30,8 @@ class TruncatedSVDH2O(object):
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
-                       Should be 0.0 to effectively ignore and only base convergence upon n_iter
+                       Should be 0.0 to effectively ignore
+                        and only base convergence upon n_iter
 
     :param: bool verbose: Verbose or not
 
@@ -39,7 +40,8 @@ class TruncatedSVDH2O(object):
 
     """
 
-    def __init__(self, n_components=2, algorithm="power", n_iter=100, random_state=None, tol=1e-5,
+    def __init__(self, n_components=2, algorithm="power",
+                 n_iter=100, random_state=None, tol=1e-5,
                  verbose=False, gpu_id=0):
         self.n_components = n_components
         self.algorithm = algorithm
@@ -47,7 +49,7 @@ class TruncatedSVDH2O(object):
         if random_state is not None:
             self.random_state = random_state
         else:
-            self.random_state = np.random.randint(0, 2**32-1)
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
         self.tol = tol
         self.verbose = verbose
         self.gpu_id = gpu_id
@@ -280,11 +282,10 @@ class TruncatedSVD(object):
         if random_state is not None:
             self.random_state = random_state
         else:
-            self.random_state = np.random.randint(0, 2**32-1)
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
         self.tol = tol
         self.verbose = 1 if verbose else 0
         self.gpu_id = gpu_id
-
 
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
@@ -327,15 +328,16 @@ class TruncatedSVD(object):
             random_state=random_state,
             tol=tol)
         self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components,
-                                             algorithm=algorithm,
-                                             n_iter=n_iter,
-                                             random_state=random_state,
-                                             tol=tol, verbose=verbose, gpu_id=gpu_id)
+                                            algorithm=algorithm,
+                                            n_iter=n_iter,
+                                            random_state=random_state,
+                                            tol=tol, verbose=verbose, gpu_id=gpu_id)
 
         if self.do_sklearn:
-            if self.model_sklearn.algorithm == "cusolver" or self.model_sklearn.algorithm == "power":
-                self.model_sklearn.algorithm = "arpack" #Default scikit
-                self.algorithm = "arpack" #Default scikit
+            if self.model_sklearn.algorithm == "cusolver" \
+                    or self.model_sklearn.algorithm == "power":
+                self.model_sklearn.algorithm = "arpack"  # Default scikit
+                self.algorithm = "arpack"  # Default scikit
             self.model = self.model_sklearn
         else:
             self.model = self.model_h2o4gpu

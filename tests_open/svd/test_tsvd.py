@@ -99,7 +99,8 @@ def func(m=5000000, n=10, k=9):
     reconstruct_sklearn = sklearn_tsvd.inverse_transform(sklearn_tsvd.fit_transform(X))
     reconstruct_h2o4gpu_manual = np.sum([np.outer(h2o4gpu_tsvd.U[:, i], h2o4gpu_tsvd.components_[i, :]) * si for i, si in enumerate(h2o4gpu_tsvd.singular_values_)], axis=0)
     print("Check inverse_transform() vs manual reconstruction for h2o4gpu")
-    assert np.allclose(reconstruct_h2o4gpu, reconstruct_h2o4gpu_manual)
+    rtol=1E-2
+    assert np.allclose(reconstruct_h2o4gpu, reconstruct_h2o4gpu_manual, rtol=rtol)
     #reconstruct_sklearn_manual = np.sum([np.outer(U[:, i], sklearn_tsvd.components_[i, :]) * si for i, si in enumerate(sklearn_tsvd.singular_values_)], axis=0)
     print("original X")
     print(X)

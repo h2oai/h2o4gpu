@@ -6,7 +6,7 @@ default: all
 pylint:
 	@status=0; \
 	for py in $$(find h2o4gpu -name "*.py" -type f); do \
-		if [ "$$py" == "h2o4gpu/__init__.py" ] || [ "$$py" == "h2o4gpu/util/daicx.py" ]; \
+		if [ "$$py" == "h2o4gpu/__init__.py" ] || [ "$$py" == "h2o4gpu/util/daicx.py" ] || [ "$$py" == "h2o4gpu/util/roc_opt.py" ]; \
 		then echo "Skip $$py"; \
 		else echo $$py; \
 		mkdir -p ../pylint.d ; PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -rn $$py; \
