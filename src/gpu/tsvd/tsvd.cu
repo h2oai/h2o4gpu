@@ -401,7 +401,8 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 		thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
 
 		//Get rid of eigen effect from original matrix (deflation)
-		multiply(A, 0.0, context);	
+		//multiply(A, 0.0, context);
+		A.zero();
 		outer_product(A, eigen_value_estimate, b_k, b_k, context);
 		subtract(M, A, M, context);
 	}
