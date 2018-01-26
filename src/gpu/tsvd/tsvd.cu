@@ -359,6 +359,20 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 	//Multiply X and Xt and output result to XtX
 	multiply(X, X, M, context, true, false, 1.0f);
 
+    {
+    fprintf(stderr,"APPLE1: %zu\n", M.size()); fflush(stderr);
+    float h_M[M.size()];
+    cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+    fprintf(stderr,"APPLE1b %zu\n", M.size()); fflush(stderr);
+    for(size_t j=0;j<M.size();j++){
+       fprintf(stderr,"APPLE1c: %zu\n", j); fflush(stderr);
+        if(!isfinite(h_M[j])){
+            fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+        }
+    }
+    }
+
+
 	//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
 	Matrix<float>Q(M.rows(), _param.k);
 	Matrix<float>w(_param.k, 1);
@@ -377,34 +391,342 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 	 */
 	Matrix<float>b_k(_param.X_n, 1);
 	Matrix<float>b_k1(_param.X_n, 1);
+	b_k1.zero();
+
+    {
+    fprintf(stderr,"QAPPLE1: %zu\n", M.size()); fflush(stderr);
+    float h_M[M.size()];
+    cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+    fprintf(stderr,"QAPPLE1b %zu\n", M.size()); fflush(stderr);
+    for(size_t j=0;j<M.size();j++){
+       fprintf(stderr,"QAPPLE1c: %zu\n", j); fflush(stderr);
+        if(!isfinite(h_M[j])){
+            fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+        }
+    }
+    }
 
 	for(int i = 0; i < _param.k; i ++){
 		//Set aside vector of randoms (n x 1)
 		b_k.random(_param.random_state + i);
+		
+        {
+        fprintf(stderr,"HERE0: %zu\n", b_k.size()); fflush(stderr);
+        float h_b_k[b_k.size()];
+        cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"HERE0b %zu\n", b_k.size()); fflush(stderr);
+        for(size_t j=0;j<b_k.size();j++){
+           fprintf(stderr,"HERE0c: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_b_k[j])){
+                fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
+
+		
 		float previous_eigenvalue_estimate = FLT_MAX;
 		float eigen_value_estimate = FLT_MAX;
 		for(int iter=0; iter<_param.n_iter;iter++){
     		fprintf(stderr,"k=%d/%d iter=%d/%d\n",i,_param.k,iter,_param.n_iter); fflush(stderr);
+
+            {
+            fprintf(stderr,"DOG0: %zu\n", b_k1.size()); fflush(stderr);
+            float h_b_k1[b_k1.size()];
+            cudaMemcpy(&h_b_k1, b_k1.data(), b_k1.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOG1b %zu\n", b_k1.size()); fflush(stderr);
+            for(size_t j=0;j<b_k1.size();j++){
+               fprintf(stderr,"DOG1c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k1[j])){
+                    fprintf(stderr,"found nan in h_b_k1 %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"DOGZ: %d %d : %zu\n", i, iter, M.size()); fflush(stderr);
+            float h_M[M.size()];
+            cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOGZb %zu\n", M.size()); fflush(stderr);
+            for(size_t j=0;j<M.size();j++){
+               fprintf(stderr,"DOGZc: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_M[j])){
+                    fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+
+    		// M = 50x50
+    		// b_k = 50x1
 			multiply(M, b_k, b_k1, context);
+			
+            {
+            fprintf(stderr,"DOG1: %zu\n", b_k1.size()); fflush(stderr);
+            float h_b_k1[b_k1.size()];
+            cudaMemcpy(&h_b_k1, b_k1.data(), b_k1.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOG1b %zu\n", b_k1.size()); fflush(stderr);
+            for(size_t j=0;j<b_k1.size();j++){
+               fprintf(stderr,"DOG1c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k1[j])){
+                    fprintf(stderr,"found nan in h_b_k1 %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"DOG2: %zu\n", b_k.size()); fflush(stderr);
+            float h_b_k[b_k.size()];
+            cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOG2b %zu\n", b_k.size()); fflush(stderr);
+            for(size_t j=0;j<b_k.size();j++){
+               fprintf(stderr,"DOG2c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k[j])){
+                    fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+			
+			
 			cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate);
+			
+            {
+            fprintf(stderr,"CAT1: %zu\n", b_k1.size()); fflush(stderr);
+            float h_b_k1[b_k1.size()];
+            cudaMemcpy(&h_b_k1, b_k1.data(), b_k1.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"CAT1b %zu\n", b_k1.size()); fflush(stderr);
+            for(size_t j=0;j<b_k1.size();j++){
+               fprintf(stderr,"CAT1c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k1[j])){
+                    fprintf(stderr,"found nan in h_b_k1 %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"CAT2: %zu\n", b_k.size()); fflush(stderr);
+            float h_b_k[b_k.size()];
+            cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"CAT2b %zu\n", b_k.size()); fflush(stderr);
+            for(size_t j=0;j<b_k.size();j++){
+               fprintf(stderr,"CAT2c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k[j])){
+                    fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+			
+
+            {
+            fprintf(stderr,"HERE1: %zu\n", b_k1.size()); fflush(stderr);
+            float h_b_k1[b_k1.size()];
+            cudaMemcpy(&h_b_k1, b_k1.data(), b_k1.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"HERE1b %zu\n", b_k1.size()); fflush(stderr);
+            for(size_t j=0;j<b_k1.size();j++){
+               fprintf(stderr,"HERE1c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k1[j])){
+                    fprintf(stderr,"found nan in h_b_k1 %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"HERE2: %zu\n", b_k.size()); fflush(stderr);
+            float h_b_k[b_k.size()];
+            cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"HERE2b %zu\n", b_k.size()); fflush(stderr);
+            for(size_t j=0;j<b_k.size();j++){
+               fprintf(stderr,"HERE2c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k[j])){
+                    fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"DOGQ: %d %d : %zu\n", i, iter, M.size()); fflush(stderr);
+            float h_M[M.size()];
+            cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOGQb %zu\n", M.size()); fflush(stderr);
+            for(size_t j=0;j<M.size();j++){
+               fprintf(stderr,"DOGQc: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_M[j])){
+                    fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
 			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= (_param.tol * std::abs(previous_eigenvalue_estimate))) {
 				break;
 			}
 			normalize_vector_cublas(b_k1, context);
+
+            {
+            fprintf(stderr,"DOGT: %d %d : %zu\n", i, iter, M.size()); fflush(stderr);
+            float h_M[M.size()];
+            cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOGTb %zu\n", M.size()); fflush(stderr);
+            for(size_t j=0;j<M.size();j++){
+               fprintf(stderr,"DOGTc: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_M[j])){
+                    fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"HERE3: %zu\n", b_k1.size()); fflush(stderr);
+            float h_b_k1[b_k1.size()];
+            cudaMemcpy(&h_b_k1, b_k1.data(), b_k1.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"HERE3b %zu\n", b_k1.size()); fflush(stderr);
+            for(size_t j=0;j<b_k1.size();j++){
+               fprintf(stderr,"HERE3c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k1[j])){
+                    fprintf(stderr,"found nan in h_b_k1 %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
 			b_k.copy(b_k1);
+
+            {
+            fprintf(stderr,"HERE4: %zu\n", b_k.size()); fflush(stderr);
+            float h_b_k[b_k.size()];
+            cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"HERE4b %zu\n", b_k.size()); fflush(stderr);
+            for(size_t j=0;j<b_k.size();j++){
+               fprintf(stderr,"HERE4c: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_b_k[j])){
+                    fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+            {
+            fprintf(stderr,"DOGA: %d %d : %zu\n", i, iter, M.size()); fflush(stderr);
+            float h_M[M.size()];
+            cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr,"DOGAb %zu\n", M.size()); fflush(stderr);
+            for(size_t j=0;j<M.size();j++){
+               fprintf(stderr,"DOGAc: %zu\n", j); fflush(stderr);
+                if(!isfinite(h_M[j])){
+                    fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+                }
+            }
+            }
+
+
 			previous_eigenvalue_estimate = eigen_value_estimate;
 			fprintf(stderr,"%g %g : %g < %g * %g\n",eigen_value_estimate, previous_eigenvalue_estimate, std::abs(eigen_value_estimate - previous_eigenvalue_estimate),_param.tol,std::abs(previous_eigenvalue_estimate)); fflush(stderr);
 		}
 		//Obtain eigen value
 		w_temp[i] = eigen_value_estimate;
 
+        {
+        fprintf(stderr,"QDOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_M[M.size()];
+        cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"QDOGZb %zu\n", M.size()); fflush(stderr);
+        for(size_t j=0;j<M.size();j++){
+           fprintf(stderr,"QDOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_M[j])){
+                fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
 		//Put eigen vector into Q (starting at last column of Q)
 		thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
 
+        {
+        fprintf(stderr,"YHERE4: %zu\n", b_k.size()); fflush(stderr);
+        float h_b_k[b_k.size()];
+        cudaMemcpy(&h_b_k, b_k.data(), b_k.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"YHERE4b %zu\n", b_k.size()); fflush(stderr);
+        for(size_t j=0;j<b_k.size();j++){
+           fprintf(stderr,"YHERE4c: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_b_k[j])){
+                fprintf(stderr,"found nan in h_b_k %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
+
+        {
+        fprintf(stderr,"Q1DOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_M[M.size()];
+        cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"Q1DOGZb %zu\n", M.size()); fflush(stderr);
+        for(size_t j=0;j<M.size();j++){
+           fprintf(stderr,"Q1DOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_M[j])){
+                fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
 		//Get rid of eigen effect from original matrix (deflation)
-		multiply(A, 0.0, context);	
+		//multiply(A, 0.0, context);
+		A.zero();
+
+        {
+        fprintf(stderr,"Q3DOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_A[A.size()];
+        cudaMemcpy(&h_A, A.data(), A.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"Q3DOGZb %zu\n", A.size()); fflush(stderr);
+        for(size_t j=0;j<A.size();j++){
+           fprintf(stderr,"Q3DOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_A[j])){
+                fprintf(stderr,"found nan in h_A %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
+
+        {
+        fprintf(stderr,"Q2DOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_M[M.size()];
+        cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"Q2DOGZb %zu\n", M.size()); fflush(stderr);
+        for(size_t j=0;j<M.size();j++){
+           fprintf(stderr,"Q2DOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_M[j])){
+                fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
+
 		outer_product(A, eigen_value_estimate, b_k, b_k, context);
+
+        {
+        fprintf(stderr,"Q3DOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_M[M.size()];
+        cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"Q3DOGZb %zu\n", M.size()); fflush(stderr);
+        for(size_t j=0;j<M.size();j++){
+           fprintf(stderr,"Q3DOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_M[j])){
+                fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
 		subtract(M, A, M, context);
+
+        {
+        fprintf(stderr,"Q4DOGZ: %d : %zu\n", i, M.size()); fflush(stderr);
+        float h_M[M.size()];
+        cudaMemcpy(&h_M, M.data(), M.size()*sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr,"Q4DOGZb %zu\n", M.size()); fflush(stderr);
+        for(size_t j=0;j<M.size();j++){
+           fprintf(stderr,"Q4DOGZc: %zu\n", j); fflush(stderr);
+            if(!isfinite(h_M[j])){
+                fprintf(stderr,"found nan in h_M %zu\n", j); fflush(stderr);
+            }
+        }
+        }
+
 	}
 	//Fill in w from vector w_temp
 	std::reverse(w_temp.begin(), w_temp.end());
