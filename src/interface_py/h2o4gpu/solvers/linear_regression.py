@@ -183,6 +183,7 @@ class LinearRegression(object):
     def set_attributes(self):
         """ set attributes for Linear Regression
         """
+        if self.do_daal: return
         from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 

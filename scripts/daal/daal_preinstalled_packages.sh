@@ -7,6 +7,10 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "DIR** $DIR"
 
+_pwd=$PWD
+_indel_dall_tar="https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz"
+_daal_root="$HOME/daal"
+
 check_python_version() { 
 	# check if in virtual environment, otherwise it won't work
 	if [[ "$VIRTUAL_ENV" != "" ]]
@@ -25,29 +29,20 @@ check_python_version() {
 	
 }
 
-install_daal_env() { 
-	_daal_targz=""
-	current_dir=$PWD
-	if [  -z "$1" ]; then
-		_daal_targz="$DIR/daal.tar.gz"
-		echo "** $_daal_targz"
+download_intel_daal_tar() {
+	echo "Download"
+	# multithreaded download
+	if [ $(dpkg-query -W -f='${Status}' axel 2>/dev/null | grep -c "ok installed") -eq 0 ];
+	then
+		apt-get install axel -y;
 	fi
-	
-	if [ ! -f $_daal_targz ]; then
-		echo "File <daal.tar.gz> not found!"
-		exit 1
-	fi
-	
-	mkdir -p $HOME/daal 
-	tar -zxvf $_daal_targz -C $HOME
-	source $HOME/daal/bin/daalvars.sh
-	echo "** Installing PyDAAL wheel"
-	source "$VIRTUAL_ENV/bin/activate"
-	pip -V
-	pip install $HOME/daal/bin/pydaal-*.whl
-	echo "** Intel DAAL installed"	
+	cd /tmp/ && axel -a -n 20 $_indel_dall_tar && tar -xzvf daal-linux_x86_64.tar.gz -C $HOME	
+	echo "For permanent Intel DAAL setup add to your .bashrc or .profile: LD_LIBRARY_PATH=$_daal_root/lib:\$LD_LIBRARY_PATH"
+	cd $_daal_root && pip install pydaal-2018*.whl && export LD_LIBRARY_PATH=$_daal_root/lib:$LD_LIBRARY_PATH && cd $PWD
+	echo "Your environment is all set up for Intel DAAL"
 }
 
+
 check_python_version
-install_daal_env "$@"
+download_intel_daal_tar
 

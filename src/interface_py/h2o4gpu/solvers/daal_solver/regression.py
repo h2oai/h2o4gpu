@@ -10,8 +10,7 @@ from daal_solver import utils as daal_utils
 
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
-from daal.data_management import HomogenNumericTable
-import numpy as np
+from daal.data_management import HomogenNumericTable, NumericTable
 import warnings
 
 
@@ -69,7 +68,6 @@ class LinearRegression:
         # return trained model
         self.model = res.get(linear_training.model)
         return self.model
-
 
 
     def get_beta(self):
@@ -136,6 +134,8 @@ class LinearRegression:
             
             
     @staticmethod
-    def print_table(daal_table):
-        daal_utils.printNumericTable(daal_table) 
+    def print_table(daal_table, message='', num_printed_rows=0, num_printed_cols=0,
+                      interval=10):
         
+        assert type(daal_table) is NumericTable, "requires a daal.data_management.NumericTable"
+        daal_utils.printNumericTable(daal_table, message, num_printed_rows, num_printed_cols, interval) 
