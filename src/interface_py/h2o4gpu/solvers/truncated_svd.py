@@ -328,10 +328,12 @@ class TruncatedSVD(object):
             random_state=random_state,
             tol=tol)
         self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components,
-                                            algorithm=algorithm,
-                                            n_iter=n_iter,
-                                            random_state=random_state,
-                                            tol=tol, verbose=verbose, gpu_id=gpu_id)
+                                             algorithm=algorithm,
+                                             n_iter=n_iter,
+                                             random_state=random_state,
+                                             tol=tol,
+                                             verbose=verbose,
+                                             gpu_id=gpu_id)
 
         if self.do_sklearn:
             if self.model_sklearn.algorithm == "cusolver" \
