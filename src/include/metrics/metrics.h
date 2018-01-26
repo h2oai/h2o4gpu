@@ -13,6 +13,9 @@ namespace h2o4gpu {
   double f1_opt(double *y, int n, double *yhat, int m);
   double f1_opt(double *y, int n, double *yhat, int m, double* w, int l);
   
+  void confusion_matrices(double *y, int n, double *yhat, int m, double *cm, int k, int j);
+  void confusion_matrices(double *y, int n, double *yhat, int m, double* w, int l, double *cm, int k, int j);
+  
 }
 
 #endif

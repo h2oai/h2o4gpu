@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
+import pandas as pd
 
 
 def ll(actual, predicted):
@@ -276,23 +277,25 @@ def auc(actual, posterior):
 
 def f1_opt(actual, predicted, sample_weight=None):
     """
-    Computes the f1-score after optimal predictions thresholding.
+    Computes the F1-score after optimal predictions thresholding.
 
-    This function maximizes the f1-score by means of
+    This function maximizes the F1-score by means of
     optimal predictions thresholding.
 
-    :param actual : list of binary numbers, numpy array
+    :param actual : numpy array
                     The ground truth value
-    :param predicted : int, float, list of numbers, numpy array
-                     The predicted value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
 
     :returns double
-             The optimal f1-score.
+             The optimal F1-score
     """
-    import h2o4gpu.util.roc_opt as roc_opt
+    import h2o4gpu.util.daicx as daicx
     if sample_weight is None:
-        return roc_opt.f1_opt(actual, predicted)
-    return roc_opt.f1_opt(actual, predicted, sample_weight)
+        return daicx.f1_opt(actual, predicted)
+    return daicx.f1_opt(actual, predicted, sample_weight)
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -302,15 +305,45 @@ def mcc_opt(actual, predicted, sample_weight=None):
     This function maximizes the Matthews Correlation Coefficient (MCC)
     by means of optimal predictions thresholding.
 
-    :param actual : list of binary numbers, numpy array
+    :param actual : numpy array
                     The ground truth value
-    :param predicted : int, float, list of numbers, numpy array
-                     The predicted value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
 
     :returns double
-             The optimal MCC.
+             The optimal MCC
     """
-    import h2o4gpu.util.roc_opt as roc_opt
+    import h2o4gpu.util.daicx as daicx
     if sample_weight is None:
-        return roc_opt.mcc_opt(actual, predicted)
-    return roc_opt.mcc_opt(actual, predicted, sample_weight)
+        return daicx.mcc_opt(actual, predicted)
+    return daicx.mcc_opt(actual, predicted, sample_weight)
+
+
+def confusion_matrices(actual, predicted, sample_weight=None):
+    """
+    Computes confusion matrices for DAICX analysis.
+
+    This function cumputes confusion matrices
+    for all possible prediction thresholds.
+
+    :param actual : numpy array
+                    The ground truth value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
+
+    :returns pandas DataFrame
+             Confusion matrices for each unique predicted value as threshold
+    """
+    import h2o4gpu.util.daicx as daicx
+    cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1']
+
+    res = np.zeros((actual.shape[0], len(cm_stats_cols)))
+    if sample_weight is None:
+        daicx.confusion_matrices(actual, predicted, res)
+    else:
+        daicx.confusion_matrices(actual, predicted, sample_weight, res)
+    return pd.DataFrame(res[~np.all(res == 0, axis=1)], columns=cm_stats_cols)
