@@ -23,19 +23,35 @@ class TruncatedSVDH2O(object):
                            Either “cusolver” (similar to ARPACK)
                            or “power” for the power method.
 
+    :param: int n_iter: number of iterations (only relevant for power method)
+            Should be large number to run indefinitely
+
+    :param: int random_state: seed (None for auto-generated)
+
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
+                       Should be 0.0 to effectively ignore
+                        and only base convergence upon n_iter
+
+    :param: bool verbose: Verbose or not
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
 
     """
 
-    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5,
-                 gpu_id=0):
+    def __init__(self, n_components=2, algorithm="power",
+                 n_iter=100, random_state=None, tol=1e-5,
+                 verbose=False, gpu_id=0):
         self.n_components = n_components
         self.algorithm = algorithm
+        self.n_iter = n_iter
+        if random_state is not None:
+            self.random_state = random_state
+        else:
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
         self.tol = tol
+        self.verbose = verbose
         self.gpu_id = gpu_id
 
     # pylint: disable=unused-argument
@@ -82,10 +98,15 @@ class TruncatedSVDH2O(object):
         param.k = self.n_components
         param.algorithm = self.algorithm.encode('utf-8')
         param.tol = self.tol
+        param.n_iter = self.n_iter
+        param.random_state = self.random_state
+        param.verbose = 1 if self.verbose else 0
         param.gpu_id = self.gpu_id
 
-        if param.tol <= 0.0:
-            raise ValueError("The `tol` parameter must be > 0.0")
+        if param.tol < 0.0:
+            raise ValueError("The `tol` parameter must be >= 0.0")
+        if param.n_iter < 1:
+            raise ValueError("The `n_iter` parameter must be > 1")
 
         lib = self._load_lib()
         lib.truncated_svd(
@@ -248,7 +269,7 @@ class TruncatedSVD(object):
 
     def __init__(self,
                  n_components=2,
-                 algorithm="cusolver",
+                 algorithm="power",
                  n_iter=5,
                  random_state=None,
                  tol=1E-5,
@@ -258,8 +279,12 @@ class TruncatedSVD(object):
         self.algorithm = algorithm
         self.n_components = n_components
         self.n_iter = n_iter
-        self.random_state = random_state
+        if random_state is not None:
+            self.random_state = random_state
+        else:
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
         self.tol = tol
+        self.verbose = 1 if verbose else 0
         self.gpu_id = gpu_id
 
         import os
@@ -271,14 +296,13 @@ class TruncatedSVD(object):
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-            params_string = ['algorithm', 'n_iter', 'random_state', 'tol',
-                             'gpu_id']
-            params = [algorithm, n_iter, random_state, tol, gpu_id]
-            params_default = ['cusolver', 5, None, 1E-5, 0]
+            params_string = ['algorithm']
+            params = [algorithm]
+            params_gpu = [['cusolver', 'power']]
 
             i = 0
             for param in params:
-                if param != params_default[i]:
+                if param not in params_gpu[i]:
                     self.do_sklearn = True
                     if verbose:
                         print("WARNING:"
@@ -305,12 +329,17 @@ class TruncatedSVD(object):
             tol=tol)
         self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components,
                                              algorithm=algorithm,
-                                             tol=tol, gpu_id=gpu_id)
+                                             n_iter=n_iter,
+                                             random_state=random_state,
+                                             tol=tol,
+                                             verbose=verbose,
+                                             gpu_id=gpu_id)
 
         if self.do_sklearn:
-            if self.model_sklearn.algorithm == "cusolver":
-                self.model_sklearn.algorithm = "arpack" #Default scikit
-                self.algorithm = "arpack" #Default scikit
+            if self.model_sklearn.algorithm == "cusolver" \
+                    or self.model_sklearn.algorithm == "power":
+                self.model_sklearn.algorithm = "arpack"  # Default scikit
+                self.algorithm = "arpack"  # Default scikit
             self.model = self.model_sklearn
         else:
             self.model = self.model_h2o4gpu
