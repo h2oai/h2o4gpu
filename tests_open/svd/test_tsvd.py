@@ -25,7 +25,7 @@ def func(m=5000000, n=10, k=9):
     print("\n")
     print("h2o4gpu tsvd run")
     start_time = time.time()
-    h2o4gpu_tsvd = TruncatedSVDH2O(n_components=k, algorithm='cusolver')# just change to power to see failure.
+    h2o4gpu_tsvd = TruncatedSVDH2O(n_components=k, algorithm='power')# just change to power to see failure.
     h2o4gpu_tsvd.fit(X)
     end_time = time.time() - start_time
     print("Total time for h2o4gpu tsvd is " + str(end_time))
