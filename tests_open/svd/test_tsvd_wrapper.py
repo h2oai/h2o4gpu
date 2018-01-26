@@ -23,8 +23,6 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print("Sklearn run through h2o4gpu wrapper")
 
     h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, random_state=42, verbose=True)
-    if algorithm == "cusolver":
-        assert h2o4gpu_tsvd_sklearn_wrapper.algorithm == "arpack", "algorithm should be arpack for default scikit"
     h2o4gpu_tsvd_sklearn_wrapper.fit(X)
 
     print("h2o4gpu tsvd Singular Values")
@@ -48,10 +46,24 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
 
-    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_)
-    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_, sklearn_tsvd.components_)
-    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_, sklearn_tsvd.explained_variance_)
-    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_)
+    if algorithm=='arpack':
+        rtol = 1E-5
+    else:
+        rtol = 1E-2
+    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
+    if algorithm=='arpack':
+        rtol = 1E-5
+    else:
+        rtol = 1E-1
+    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_, sklearn_tsvd.components_, rtol=rtol)
+    if algorithm=='arpack':
+        rtol = 1E-5
+    else:
+        rtol = 0.5
+    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_, sklearn_tsvd.explained_variance_, rtol=rtol)
+    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_, rtol=rtol)
+
 
 def test_tsvd_error_k2(): func(n=50, k=2)
 def test_tsvd_error_k2_cusolver(): func(n=50, k=2, algorithm="cusolver")
+def test_tsvd_error_k2_arpack(): func(n=50, k=2, algorithm="arpack")

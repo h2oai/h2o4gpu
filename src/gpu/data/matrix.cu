@@ -1,6 +1,7 @@
 #include "matrix.cuh"
 #include <algorithm>
 #include <thrust/inner_product.h>
+#include <stdio.h>
 
 namespace tsvd
 {
@@ -17,8 +18,12 @@ namespace tsvd
 		safe_cublas(cublasSdgmm(context.cublas_handle, mode, m, n, A.data(), lda, B.data(), incx, C.data(), ldc));
 	}
 
+// A: mxk
+// B: kxn
+// C: mxn
 	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a, bool transpose_b, tsvd_float alpha)
 	{
+	    fprintf(stderr,"MUL1\n"); fflush(stderr);
 		cublasOperation_t op_a = transpose_a ? CUBLAS_OP_T : CUBLAS_OP_N;
 		cublasOperation_t op_b = transpose_b ? CUBLAS_OP_T : CUBLAS_OP_N;
 
@@ -30,12 +35,28 @@ namespace tsvd
 		int lda = transpose_a ? k : m;
 		int ldb = transpose_b ? n : k;
 		int ldc = m;
+	    fprintf(stderr,"MUL1: %d %d %d : %d %d %d\n", m,n,k,lda,ldb,ldc); fflush(stderr);
 
-		safe_cublas(cublasSgemm(context.cublas_handle, op_a, op_b, m, n, k, &alpha, A.data(), lda, B.data(), ldb, &beta, C.data(), ldc));
+
+		safe_cublas(cublasSgemm(context.cublas_handle,
+		                        op_a,
+		                        op_b,
+		                        m,
+		                        n,
+		                        k,
+		                        &alpha,
+		                        A.data(),
+		                        lda,
+		                        B.data(),
+		                        ldb,
+		                        &beta,
+		                        C.data(),
+		                        ldc));
 	}
 
 	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context)
 	{
+	    fprintf(stderr,"MUL2\n"); fflush(stderr);
 		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (tsvd_float val)
 		                  {
 			                  return val * a;

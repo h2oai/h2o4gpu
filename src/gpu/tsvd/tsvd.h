@@ -18,7 +18,10 @@ namespace tsvd
 			int X_m;
 			int k;
 			const char* algorithm;
+			int n_iter;
+			int random_state;
 			float tol;
+			int verbose;
 			int gpu_id;
 		};
 

@@ -145,9 +145,9 @@ class TestGlmSklearn(object):
     
         t1 = time.time()
         print("Start ElasticNetH2O")
-        rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
-                                        nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=10, name=name, tolerance=0.2, tol=1E-2, tol_seek_factor=1.0)
+        rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=1, nfolds=1,
+                                        nalpha=1,
+                                        validFraction=validFraction, verbose=10, name=name, tolerance=0.2, tol=1E-1, tol_seek_factor=1.0)
         print("End ElasticNetH2O")
     
         # check rmse
