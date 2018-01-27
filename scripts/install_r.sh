@@ -18,7 +18,7 @@ rm R-${R_VERSION}.tar.gz
 # Configure and make
 cd R-${R_VERSION}
 ./configure --prefix=${R_VERSION_HOME} --with-x=no --enable-utf
-make
+make -j
 make install
 chmod a+w -R ${R_VERSION_HOME}/lib/R/library
 

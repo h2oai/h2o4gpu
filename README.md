@@ -32,6 +32,8 @@ Ensure to reboot after installing the new nvidia drivers.
 
 * For advanced features, like handling rows/32 > 2^16 (i.e., rows > 2,097,152) in K-means, need Capability >= 5.2
 
+* For building the R package, `libcurl4-openssl-dev`, `libssl-dev`, and `libxml2-dev` are needed.
+
 ## User Installation
 
 Note: This installation is for users who download the wheel file and are not expecting to develop the code.  See [DEVEL.md](DEVEL.md) for developer installation.
@@ -47,6 +49,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 
 ```
 sudo apt-get install libopenblas-dev pbzip2
+```
+
+If you are building the h2o4gpu R package, it is necessary to install the following dependencies:
+
+```
+sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
