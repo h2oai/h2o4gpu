@@ -2,10 +2,6 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "Installing necessary apt-get dependencies..."
-apt-get update -y
-apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
-
 R_BIN=$(which R)
 if [[ $? != 0 ]]; then
   echo "R is not installed. Installing..."

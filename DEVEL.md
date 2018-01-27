@@ -33,6 +33,12 @@ pip install setuptools --no-cache-dir
 sudo apt-get install -y libopenblas-dev pbzip2 swig
 ```
 
+If you are building the h2o4gpu R package, it is necessary to install the following dependencies:
+
+```
+sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
+```
+
 If you are using `conda`, you probably need to do:
 ```
 conda install libgcc
