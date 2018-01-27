@@ -89,6 +89,9 @@ class TruncatedSVDH2O(object):
                          dense array.
 
         """
+        import scipy
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = scipy.sparse.csr_matrix.todense(X)
         X = np.asfortranarray(X, dtype=np.float64)
         Q = np.empty(
             (self.n_components, X.shape[1]), dtype=np.float64, order='F')
