@@ -5,7 +5,7 @@
 """
 import ctypes
 import numpy as np
-from ..libs.lib_tsvd import parameters
+from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
 
 
@@ -97,7 +97,7 @@ class TruncatedSVDH2O(object):
         w = np.empty(self.n_components, dtype=np.float64)
         explained_variance = np.empty(self.n_components, dtype=np.float64)
         explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
-        param = parameters()
+        param = parameters_svd()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
@@ -154,6 +154,34 @@ class TruncatedSVDH2O(object):
 
         """
         return np.dot(X, self.components_)
+    @classmethod
+    def _get_param_names(cls):
+        """Get parameter names for the estimator"""
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
+        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
+        if init is object.__init__:
+            # No explicit constructor to introspect
+            return []
+
+        # introspect the constructor arguments to find the model parameters
+        # to represent
+        from h2o4gpu.utils.fixes import signature
+        init_signature = signature(init)
+        # Consider the constructor parameters excluding 'self'
+        parameters = [p for p in init_signature.parameters.values()
+                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        for p in parameters:
+            if p.kind == p.VAR_POSITIONAL:
+                raise RuntimeError("scikit-learn estimators should always "
+                                   "specify their parameters in the signature"
+                                   " of their __init__ (no varargs)."
+                                   " %s with constructor %s doesn't "
+                                   " follow this convention."
+                                   % (cls, init_signature))
+        # Extract and sort argument names excluding 'self'
+        return sorted([p.name for p in parameters])
+
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.

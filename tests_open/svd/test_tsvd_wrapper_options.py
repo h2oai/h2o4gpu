@@ -30,6 +30,7 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(sklearn_tsvd.explained_variance_)
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
+    print(sklearn_tsvd.get_params())
 
     print("GPU run through h2o4gpu wrapper")
     h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=[algorithm, 'randomized'], random_state=42, verbose=True, n_iter=500, tol=1E-7)
@@ -42,6 +43,7 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_)
     print("h2o4gpu tsvd Explained Variance Ratio")
     print(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_)
+    print(h2o4gpu_tsvd_sklearn_wrapper.get_params())
 
     rtol = 0.5
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
@@ -63,6 +65,7 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(sklearn_tsvd2.explained_variance_)
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd2.explained_variance_ratio_)
+    print(sklearn_tsvd2.get_params())
 
     print("Sklearn run through h2o4gpu wrapper using n_gpus=0")
     #FAILS to agree, seems cusolver solution is diverging or (unlikely) bug in randomized in same way.
@@ -77,6 +80,8 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(h2o4gpu_tsvd_sklearn_wrapper2.explained_variance_)
     print("h2o4gpu tsvd Explained Variance Ratio")
     print(h2o4gpu_tsvd_sklearn_wrapper2.explained_variance_ratio_)
+    print(h2o4gpu_tsvd_sklearn_wrapper2.get_params())
+
 
     rtol = 1E-2
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper2.singular_values_, sklearn_tsvd2.singular_values_, rtol=rtol)
