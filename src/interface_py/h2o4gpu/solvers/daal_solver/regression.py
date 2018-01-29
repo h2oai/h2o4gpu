@@ -5,8 +5,7 @@ Created on Jan 21, 2018
 '''
 import sys
 
-sys.path.insert(0,'..')
-from daal_solver import utils as daal_utils
+from .utils import *
 
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
@@ -138,4 +137,4 @@ class LinearRegression:
                       interval=10):
         
         assert type(daal_table) is NumericTable, "requires a daal.data_management.NumericTable"
-        daal_utils.printNumericTable(daal_table, message, num_printed_rows, num_printed_cols, interval) 
+        printNumericTable(daal_table, message, num_printed_rows, num_printed_cols, interval) 

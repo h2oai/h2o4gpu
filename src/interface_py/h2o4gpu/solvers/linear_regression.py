@@ -6,7 +6,7 @@
 # pylint: disable=unused-import
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
-
+from daal_solver import DaalRegression
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -76,11 +76,7 @@ class LinearRegression(object):
             self.do_daal = True
             self.backend = 'daal'
             
-        # not bild for testing purposes
-        import sys
-        sys.path.insert(0,'..')
-        from daal_solver.regression import LinearRegression as DLR
-        self.model_daal = DLR(fit_intercept=fit_intercept,
+        self.model_daal = DaalRegression(fit_intercept=fit_intercept,
                                                normalize=normalize)
         
         self.model_sklearn = sk.LinearRegressionSklearn(

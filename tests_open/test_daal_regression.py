@@ -5,11 +5,8 @@ import sys
 
 seeded = RandomState(42)
 
-sys.path.insert(0,'../../src/interface_py/h2o4gpu/solvers')
-
-
-from linear_regression import LinearRegression
-from daal_solver.regression import LinearRegression as DLR
+from h2o4gpu.solvers.linear_regression import LinearRegression
+from h2o4gpu.solvers import DLR 
    
 def test_fit_linear_regression():
     
