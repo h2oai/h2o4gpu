@@ -15,7 +15,9 @@ MAJOR_MINOR=$(shell echo $(BASE_VERSION) | sed 's/.*\(^[0-9][0-9]*\.[0-9][0-9]*\
 # System specific stuff
 include src/config2.mk
 
-ifdef CUDA_HOME
+NVCC := $(shell command -v nvcc 2> /dev/null)
+
+ifdef NVCC
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
 $(warning Compiling with Cuda9 or higher)
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
@@ -361,7 +363,7 @@ docker-build-cpu:
 	export H2O4GPU_BUILD="" ;\
 	export H2O4GPU_SUFFIX="" ;\
 	export makeopts="" ;\
-	export dist="dist4" ;\
+	export dist="dist8" ;\
 	bash scripts/make-docker-devel.sh
 
 docker-runtime-cpu:

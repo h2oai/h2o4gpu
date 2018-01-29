@@ -1,5 +1,6 @@
 SHELL := /bin/bash # force avoidance of dash as shell
 thepwd = "$(shell pwd)"
+NVCC := $(shell command -v nvcc 2> /dev/null)
 
 default: all
 
@@ -50,7 +51,7 @@ all: prep
 
 	# for pycharm
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
-ifdef CPU_HOME
+ifdef NVCC
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
 endif
 

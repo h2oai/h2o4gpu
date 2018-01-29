@@ -16,6 +16,7 @@ ICCSTUFF=-qopenmp
 #GCCSTUFF=-fopenmp -ggdb3 -lgomp
 GCCSTUFF=-fopenmp -lgomp
 
+NVCC := $(shell command -v nvcc 2> /dev/null)
 
 # C++ Flags
 ifeq ($(USEICC),0)
@@ -52,13 +53,13 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 CUDFLAGS=$(DFLAGS)
-ifdef CUDA_HOME
+ifdef NVCC
 CUDFLAGS+=-DHAVECUDA -DCUDCHECKERR
 endif
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
 # MM
 # 3. Set CUDA_LIB = $CUDA_HOME/lib(64)
-ifdef CUDA_HOME
+ifdef NVCC
 ifeq ($(shell uname -s), Darwin)
 CUDA_LIB=/usr/local/cuda/lib/
 else
@@ -69,13 +70,13 @@ endif
 # Check System Args.
 ifeq ($(shell uname -s), Darwin)
 LDFLAGS=-lm -framework Accelerate
-ifdef CUDA_HOME
+ifdef NVCC
 CULDFLAGS=-L$(CUDA_LIB) -L/usr/local/lib $(CULDFLAGS_)
 endif
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-ifdef CUDA_HOME
+ifdef NVCC
 CULDFLAGS=-L$(CUDA_LIB) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
 endif
 SHARED=so
@@ -83,7 +84,7 @@ endif
 
 # C++ Flags
 CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDA_LIB)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
-ifndef CUDA_HOME
+ifdef NVCC
 CXXFLAGS-=-I$(CUDA_LIB)/../include
 
 endif
@@ -122,7 +123,7 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
-ifdef CUDA_HOME
+ifdef NVCC
 PYCUDART=$(CUDA_LIB)/libcudart.so
 endif
 
@@ -133,7 +134,7 @@ default: all
 
 cpuonly: cpulib ch2o4gpu_cpu h2o4gpu_c.o
 
-ifdef CUDA_HOME
+ifdef NVCC
 all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
 else
 all: cpuonly

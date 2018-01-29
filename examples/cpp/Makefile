@@ -5,11 +5,13 @@ ifndef N
 N=1
 endif
 
+NVCC := $(shell command -v nvcc 2> /dev/null)
+
 #.NOTPARALLEL:
 
 .PHONY: all default clean run runcpu ../../src/build/cpu/h2o4gpu.a ../../src/build/gpu/h2o4gpu.a
 
-ifdef CUDA_HOME
+ifdef NVCC
 all: cpuall gpuall
 else
 all: cpuall

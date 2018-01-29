@@ -1,5 +1,6 @@
 # For GPU case, must modify /usr/local/cuda/include/host_config.h to add && __ICC != 1700 to #error about unsupported ICC configuration
 ICCFILE := $(shell command -v icpc 2> /dev/null)
+NVCC := $(shell command -v nvcc 2> /dev/null)
 
 ifdef ICCFILE
 USEICC=1
@@ -32,7 +33,7 @@ $(warning USENCCL is $(USENCCL))
 #TARGET=gpulib
 #$(warning R TARGET is $(TARGET))
 
-ifdef CUDA_HOME
+ifdef NVCC
 # CUDA Flags
 CUDA_LIB=$(CUDA_HOME)/lib64
 CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
@@ -68,5 +69,5 @@ NVCC_GENCODE ?= -gencode=arch=compute_35,code=sm_35 \
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
 endif
 else
-$(warning No CUDA_HOME set)
+$(warning No CUDA found.)
 endif
