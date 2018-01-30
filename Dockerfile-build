@@ -78,11 +78,9 @@ RUN \
 #	axel -a -n 20 https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz && \
 #	tar xzvf daal-linux_x86_64.tar.gz -C $HOME && \
 #	rm -vrf daal-linux_x86_64.tar.gz && \
-	echo "** DAAL Loaded **"
 	ADD /scripts/daal/install_daal_in_docker.sh /scripts/daal/install_daal_in_docker.sh
 	RUN chmod +x /scripts/daal/install_daal_in_docker.sh
 	CMD ["/scripts/daal/install_daal_in_docker.sh"]
-	echo "** DAAL installed **"
 	
 # Install R dependencies
 COPY scripts/install_r.sh scripts/install_r.sh
