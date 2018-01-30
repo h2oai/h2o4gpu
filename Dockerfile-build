@@ -45,7 +45,7 @@ RUN \
   python -m pip install --upgrade pip && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev && \
+  apt-get install -y libopenblas-dev axel && \
   apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev swig
 
 RUN \
@@ -56,6 +56,24 @@ RUN \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
+
+##
+RUN \
+	axel -a -n 20 "https://s3.amazonaws.com/intel-daal/daal-linux_x86_64__cp36.tar.gz" && tar xzvf daal-linux_x86_64__cp36.tar.gz -C $HOME && \
+	rm -rf daal-linux_x86_64__cp36.tar.gz && \
+	eval "$(/root/.pyenv/bin/pyenv init -)" && \
+	pip install $HOME/daal/pydaal-2018.0.1.20171012-cp36-none-linux_x86_64.whl & \
+	ln -sf $HOME/daal/lib/libtbb.so.2 /usr/lib/libtbb.so.2
+	ln -sf $HOME/daal/lib/libtbb.so /usr/lib/libtbb.so
+	ln -sf $HOME/daal/lib/libtbbmalloc.so.2 /usr/lib/libtbbmalloc.so.2
+	ln -sf $HOME/daal/lib/libtbbmalloc.so /usr/lib/libtbbmalloc.so
+	ln -sf $HOME/daal/lib/libdaal_sequential.so /usr/lib/libdaal_sequential.so
+	ln -sf $HOME/daal/lib/libdaal_core.so /usr/lib/libdaal_core.so
+	ln -sf $HOME/daal/lib/libdaal_thread.so /usr/lib/libdaal_thread.so
+	
+ENV LD_LIBRARY_PATH=$HOME/daal/lib:$LD_LIBRARY_PATH
+
+##
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
@@ -72,6 +90,16 @@ RUN \
     pip install -r requirements_runtime.txt && \
     pip install -r requirements_runtime_demos.txt
 
+# Install Daal library
+#RUN \
+#	mkdir -p $HOME/daal && \
+#	axel -a -n 20 https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz && \
+#	tar xzvf daal-linux_x86_64.tar.gz -C $HOME && \
+#	rm -vrf daal-linux_x86_64.tar.gz && \
+#ADD /scripts/daal/install_daal_in_docker.sh /scripts/daal/install_daal_in_docker.sh
+#RUN chmod +x /scripts/daal/install_daal_in_docker.sh
+#CMD ["/scripts/daal/install_daal_in_docker.sh"]
+	
 # Install R dependencies
 COPY scripts/install_r.sh scripts/install_r.sh
 RUN \
