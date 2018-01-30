@@ -72,6 +72,11 @@ RUN \
     pip install -r requirements_runtime.txt && \
     pip install -r requirements_runtime_demos.txt
 
+    
+# Install Daal library
+RUN \
+	./scripts/daal/install_daal_in_docker.sh
+	
 # Install R dependencies
 COPY scripts/install_r.sh scripts/install_r.sh
 RUN \
