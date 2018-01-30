@@ -72,10 +72,10 @@ RUN \
     pip install -r requirements_runtime.txt && \
     pip install -r requirements_runtime_demos.txt
 
-    
+RUN cat /etc/apt/apt.conf
 # Install Daal library
 RUN \
-	apt-get install axel -y && \
+	apt-get install -y axel && \
 	mkdir -p $HOME/daal && \
 	cd /tmp axel -a -n 20 https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz && \
 	tar -xzvf daal-linux_x86_64.tar.gz - C $HOME && \
