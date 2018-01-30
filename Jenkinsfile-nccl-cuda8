@@ -261,7 +261,7 @@ pipeline {
                 script {
                     if(env.BRANCH_NAME == "master") {
                         emailext(
-                                to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                                to: "monika@h2o.ai",
                                 subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
                                 body: '''${JELLY_SCRIPT, template="html_gmail"}''',
                                 attachLog: true,
