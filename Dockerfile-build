@@ -60,7 +60,7 @@ RUN \
 ##
 COPY /scripts/daal/install_daal_in_docker.sh /scripts/daal/install_daal_in_docker.sh
 RUN chmod +x /scripts/daal/install_daal_in_docker.sh
-RUN /scripts/daal/install_daal_in_docker.sh"
+RUN /scripts/daal/install_daal_in_docker.sh
 ##
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
