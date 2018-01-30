@@ -6,7 +6,7 @@
 # pylint: disable=unused-import
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
-from h2o4gpu.solvers import DLR
+from h2o4gpu.solvers.daal_solver.regression import LinearRegression as DLR
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
