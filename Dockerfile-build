@@ -81,8 +81,9 @@ RUN \
 
     
 # Install Daal library
-RUN \
-	./scripts/daal/install_daal_in_docker.sh
+ADD /scripts/daal/install_daal_in_docker.sh /scripts/daal/install_daal_in_docker.sh
+RUN chmod +x /scripts/daal/install_daal_in_docker.sh
+CMD ["/scripts/daal/install_daal_in_docker.sh"]
 	
 # Install R dependencies
 COPY scripts/install_r.sh scripts/install_r.sh
