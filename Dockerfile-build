@@ -58,9 +58,12 @@ RUN \
     pip install setuptools --no-cache-dir
 
 ##
-COPY /scripts/daal/install_daal_in_docker.sh /scripts/daal/install_daal_in_docker.sh
-RUN chmod +x /scripts/daal/install_daal_in_docker.sh
-RUN /scripts/daal/install_daal_in_docker.sh
+RUN \
+	axel -a -n 20 $_indel_dall_tar && tar xzvf daal-linux_x86_64.tar.gz -C $HOME \
+	rm -rf daal-linux_x86_64.tar.gz \
+	pip install daal-linux_x86_64.tar.gz
+ENV LD_LIBRARY_PATH=$HOME/daal/lib:$LD_LIBRARY_PATH
+
 ##
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
