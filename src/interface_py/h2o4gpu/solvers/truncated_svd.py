@@ -127,7 +127,8 @@ class TruncatedSVDH2O(object):
         self._U = U
         self._X = X
         X_transformed = U * w
-        if self.algorithm != "power": #TODO Investigate why explained variance/ratio are off in cuda
+        # TODO Investigate why explained variance/ratio are off in cuda
+        if self.algorithm != "power":
             self.explained_variance = explained_variance
             self.explained_variance_ratio = explained_variance_ratio
         else:
