@@ -24,3 +24,21 @@ test_succeeds <- function(desc, expr) {
     expect_error(force(expr), NA)
   })
 }
+
+simple_dataset <- function(type = c("unsupervised", "classification", "regression")) {
+  if (type == "unsupervised") {
+    x <- structure(c(1, 1, 1, 1, 4, 0), .Dim = c(3L, 2L))
+    y <- NULL
+  } else if (type == "classification") {
+    x <- iris[1:4]
+    y <- as.integer(iris$Species) - 1
+  } else {
+    x <- longley[1:6]
+    y <- longley$Employed
+  }
+  return(
+    list(
+      x = x,
+      y = y
+    ))
+}
