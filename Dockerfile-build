@@ -66,8 +66,8 @@ RUN \
 
 ##
 RUN \
-	axel -a -n 20 "https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz" && tar xzvf daal-linux_x86_64.tar.gz -C $HOME \
-	rm -rf daal-linux_x86_64.tar.gz \
+	axel -a -n 20 "https://s3.amazonaws.com/intel-daal/daal-linux_x86_64.tar.gz" && tar xzvf daal-linux_x86_64.tar.gz -C $HOME && \
+	rm -rf daal-linux_x86_64.tar.gz && \
 	pip install daal-linux_x86_64.tar.gz
 ENV LD_LIBRARY_PATH=$HOME/daal/lib:$LD_LIBRARY_PATH
 
