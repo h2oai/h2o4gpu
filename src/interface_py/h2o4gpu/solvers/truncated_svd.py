@@ -5,7 +5,7 @@
 """
 import ctypes
 import numpy as np
-from ..libs.lib_tsvd import parameters
+from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
 
 
@@ -23,19 +23,40 @@ class TruncatedSVDH2O(object):
                            Either “cusolver” (similar to ARPACK)
                            or “power” for the power method.
 
+    :param: int n_iter: number of iterations (only relevant for power method)
+            Should be large number to run indefinitely
+
+    :param: int random_state: seed (None for auto-generated)
+
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
+                       Should be 0.0 to effectively ignore
+                        and only base convergence upon n_iter
+
+    :param: bool verbose: Verbose or not
+
+    :param n_gpus : int, optional, default: 1
+        How many gpus to use.  If 0, use CPU backup method.
+        Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.
 
     :param gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
 
     """
 
-    def __init__(self, n_components=2, algorithm="cusolver", tol=1e-5,
-                 gpu_id=0):
+    def __init__(self, n_components=2, algorithm="power",
+                 n_iter=100, random_state=None, tol=1e-5,
+                 verbose=0, n_gpus=1, gpu_id=0):
         self.n_components = n_components
         self.algorithm = algorithm
+        self.n_iter = n_iter
+        if random_state is not None:
+            self.random_state = random_state
+        else:
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
         self.tol = tol
+        self.verbose = verbose
+        self.n_gpus = n_gpus
         self.gpu_id = gpu_id
 
     # pylint: disable=unused-argument
@@ -68,6 +89,9 @@ class TruncatedSVDH2O(object):
                          dense array.
 
         """
+        import scipy
+        if isinstance(X, scipy.sparse.csr.csr_matrix):
+            X = scipy.sparse.csr_matrix.todense(X)
         X = np.asfortranarray(X, dtype=np.float64)
         Q = np.empty(
             (self.n_components, X.shape[1]), dtype=np.float64, order='F')
@@ -76,16 +100,21 @@ class TruncatedSVDH2O(object):
         w = np.empty(self.n_components, dtype=np.float64)
         explained_variance = np.empty(self.n_components, dtype=np.float64)
         explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
-        param = parameters()
+        param = parameters_svd()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
         param.algorithm = self.algorithm.encode('utf-8')
         param.tol = self.tol
+        param.n_iter = self.n_iter
+        param.random_state = self.random_state
+        param.verbose = 1 if self.verbose else 0
         param.gpu_id = self.gpu_id
 
-        if param.tol <= 0.0:
-            raise ValueError("The `tol` parameter must be > 0.0")
+        if param.tol < 0.0:
+            raise ValueError("The `tol` parameter must be >= 0.0")
+        if param.n_iter < 1:
+            raise ValueError("The `n_iter` parameter must be > 1")
 
         lib = self._load_lib()
         lib.truncated_svd(
@@ -97,10 +126,15 @@ class TruncatedSVDH2O(object):
         self._w = w
         self._U = U
         self._X = X
-        self.explained_variance = explained_variance
-        self.explained_variance_ratio = explained_variance_ratio
-
         X_transformed = U * w
+        # TODO Investigate why explained variance/ratio are off in cuda
+        if self.algorithm != "power":
+            self.explained_variance = explained_variance
+            self.explained_variance_ratio = explained_variance_ratio
+        else:
+            self.explained_variance = np.var(X_transformed, axis=0)
+            full_var = np.var(X, axis=0).sum()
+            self.explained_variance_ratio = self.explained_variance / full_var
         return X_transformed
 
     def transform(self, X):
@@ -128,6 +162,34 @@ class TruncatedSVDH2O(object):
 
         """
         return np.dot(X, self.components_)
+    @classmethod
+    def _get_param_names(cls):
+        """Get parameter names for the estimator"""
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
+        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
+        if init is object.__init__:
+            # No explicit constructor to introspect
+            return []
+
+        # introspect the constructor arguments to find the model parameters
+        # to represent
+        from h2o4gpu.utils.fixes import signature
+        init_signature = signature(init)
+        # Consider the constructor parameters excluding 'self'
+        parameters = [p for p in init_signature.parameters.values()
+                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+        for p in parameters:
+            if p.kind == p.VAR_POSITIONAL:
+                raise RuntimeError("scikit-learn estimators should always "
+                                   "specify their parameters in the signature"
+                                   " of their __init__ (no varargs)."
+                                   " %s with constructor %s doesn't "
+                                   " follow this convention."
+                                   % (cls, init_signature))
+        # Extract and sort argument names excluding 'self'
+        return sorted([p.name for p in parameters])
+
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -248,18 +310,33 @@ class TruncatedSVD(object):
 
     def __init__(self,
                  n_components=2,
-                 algorithm="cusolver",
+                 algorithm="power",
                  n_iter=5,
                  random_state=None,
                  tol=1E-5,
                  verbose=False,
                  backend='auto',
+                 n_gpus=1,
                  gpu_id=0):
-        self.algorithm = algorithm
+        if isinstance(algorithm, list):
+            self.algorithm = algorithm[0]
+        else:
+            self.algorithm = algorithm
         self.n_components = n_components
-        self.n_iter = n_iter
-        self.random_state = random_state
-        self.tol = tol
+        if isinstance(n_iter, list):
+            self.n_iter = n_iter[0]
+        else:
+            self.n_iter = n_iter
+        if random_state is not None:
+            self.random_state = random_state
+        else:
+            self.random_state = np.random.randint(0, 2 ** 32 - 1)
+        if isinstance(tol, list):
+            self.tol = tol[0]
+        else:
+            self.tol = tol
+        self.verbose = 1 if verbose else 0
+        self.n_gpus = n_gpus
         self.gpu_id = gpu_id
 
         import os
@@ -271,46 +348,65 @@ class TruncatedSVD(object):
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-            params_string = ['algorithm', 'n_iter', 'random_state', 'tol',
-                             'gpu_id']
-            params = [algorithm, n_iter, random_state, tol, gpu_id]
-            params_default = ['cusolver', 5, None, 1E-5, 0]
+            params_string = ['algorithm']
+            params = [self.algorithm]
+            params_gpu = [['cusolver', 'power']]
 
             i = 0
             for param in params:
-                if param != params_default[i]:
+                if param not in params_gpu[i]:
                     self.do_sklearn = True
                     if verbose:
                         print("WARNING:"
-                              " The sklearn parameter " + params_string[i] +
-                              " has been changed from default to " +
-                              str(param) + ". Will run Sklearn TruncatedSVD.")
+                              " The parameter " + params_string[i]
+                              + "is "
+                              + str(param)
+                              + " and not supported by GPU."
+                              + "Will run Sklearn TruncatedSVD.")
                     self.do_sklearn = True
                 i = i + 1
         elif backend == 'sklearn':
             self.do_sklearn = True
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
+        if n_gpus == 0:
+            # we don't have CPU back-end for SVD yet.
+            self.do_sklearn = True
+        if n_gpus != 0:
+            # sklearn can't do GPUs
+            self.do_sklearn = False
+
+        sklearn_algorithm = "arpack"  # Default scikit
+        sklearn_n_iter = 5
+        sklearn_tol = 1E-5
         if self.do_sklearn:
             self.backend = 'sklearn'
+            if isinstance(algorithm, list):
+                sklearn_algorithm = algorithm[1]
+            if isinstance(n_iter, list):
+                sklearn_n_iter = n_iter[1]
+            if isinstance(tol, list):
+                sklearn_tol = tol[1]
         else:
             self.backend = 'h2o4gpu'
 
         from h2o4gpu.decomposition.truncated_svd import TruncatedSVDSklearn
         self.model_sklearn = TruncatedSVDSklearn(
-            n_components=n_components,
-            algorithm=algorithm,
-            n_iter=n_iter,
-            random_state=random_state,
-            tol=tol)
-        self.model_h2o4gpu = TruncatedSVDH2O(n_components=n_components,
-                                             algorithm=algorithm,
-                                             tol=tol, gpu_id=gpu_id)
+            n_components=self.n_components,
+            algorithm=sklearn_algorithm,
+            n_iter=sklearn_n_iter,
+            random_state=self.random_state,
+            tol=sklearn_tol)
+        self.model_h2o4gpu = TruncatedSVDH2O(n_components=self.n_components,
+                                             algorithm=self.algorithm,
+                                             n_iter=self.n_iter,
+                                             random_state=self.random_state,
+                                             tol=self.tol,
+                                             verbose=self.verbose,
+                                             gpu_id=self.gpu_id)
 
+        # select final model type
         if self.do_sklearn:
-            if self.model_sklearn.algorithm == "cusolver":
-                self.model_sklearn.algorithm = "arpack" #Default scikit
-                self.algorithm = "arpack" #Default scikit
             self.model = self.model_sklearn
         else:
             self.model = self.model_h2o4gpu

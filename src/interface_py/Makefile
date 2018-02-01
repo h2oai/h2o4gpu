@@ -6,7 +6,7 @@ default: all
 pylint:
 	@status=0; \
 	for py in $$(find h2o4gpu -name "*.py" -type f); do \
-		if [ "$$py" == "h2o4gpu/__init__.py" ] || [ "$$py" == "h2o4gpu/util/roc_opt.py" ]; \
+		if [ "$$py" == "h2o4gpu/__init__.py" ] || [ "$$py" == "h2o4gpu/util/daicx.py" ] || [ "$$py" == "h2o4gpu/util/roc_opt.py" ]; \
 		then echo "Skip $$py"; \
 		else echo $$py; \
 		mkdir -p ../pylint.d ; PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -rn $$py; \
@@ -59,7 +59,9 @@ install:
 	-cd ../.. && pip uninstall -y py3nvml
 	find -name *.pyc | xargs rm -rf
 	find -name *__pycache__ | xargs rm -rf
-	python setup.py install
+	# something wrong with below
+	#python setup.py install
+	pip install dist/h2o4gpu*.whl --upgrade
 
 clean:
 	rm -f h2o4gpu/BUILD_INFO.txt

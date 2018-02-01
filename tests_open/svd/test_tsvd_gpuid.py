@@ -16,7 +16,7 @@ def func(m=5000, n=10, k=9):
 
     gpu_id = 0
 
-    total_gpu, total_mem = gpu.get_gpu_info()
+    total_gpu, total_mem, gpu_type = gpu.get_gpu_info()
 
     if(total_gpu > 0):
         gpu_id = 1 #Use second gpu

@@ -9,7 +9,8 @@
 For `pyenv` go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv. Then run, e.g.:
 
 ````
-pyenv install 3.6.1
+
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
 pyenv global 3.6.1
 ````
 
@@ -30,6 +31,12 @@ pip install setuptools --no-cache-dir
 
 ```
 sudo apt-get install -y libopenblas-dev pbzip2 swig
+```
+
+If you are building the h2o4gpu R package, it is necessary to install the following dependencies:
+
+```
+sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
 If you are using `conda`, you probably need to do:
@@ -72,11 +79,14 @@ cd h2o4gpu
 make fullinstall
 ```
 
-This installs full h2o4gpu as user. It also compiles a python wheel
+This installs full h2o4gpu as user. It compiles a python wheel
 and puts it in
 $BASE/src/interface_py/dist/h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl .  One
-can share this wheel and have someone install it as: pip install
-h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl
+can share this wheel and have someone install it as: `pip install
+h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl`.
+
+This also downloads and installs the necessary dependencies and then builds the R packge using [install_r_deps.sh](https://github.com/h2oai/h2o4gpu/blob/master/scripts/install_r_deps.sh) script.
+You can rebuild the R package using this script.
 
 If already have repository and want to get updates, do:
 ```

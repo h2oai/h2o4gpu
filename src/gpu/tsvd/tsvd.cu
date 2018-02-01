@@ -380,10 +380,11 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 
 	for(int i = 0; i < _param.k; i ++){
 		//Set aside vector of randoms (n x 1)
-		b_k.random(i);
+		b_k.random(_param.random_state + i);
 		float previous_eigenvalue_estimate = FLT_MAX;
 		float eigen_value_estimate = FLT_MAX;
-		while(true){
+		for(int iter=0; iter<_param.n_iter;iter++){
+    		//fprintf(stderr,"k=%d/%d iter=%d/%d\n",i,_param.k,iter,_param.n_iter); fflush(stderr);
 			multiply(M, b_k, b_k1, context);
 			cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate);
 			if(std::abs(eigen_value_estimate - previous_eigenvalue_estimate) <= (_param.tol * std::abs(previous_eigenvalue_estimate))) {
@@ -400,7 +401,8 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
 		thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
 
 		//Get rid of eigen effect from original matrix (deflation)
-		multiply(A, 0.0, context);	
+		//multiply(A, 0.0, context);
+		A.zero();
 		outer_product(A, eigen_value_estimate, b_k, b_k, context);
 		subtract(M, A, M, context);
 	}
@@ -426,6 +428,9 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
  */
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
+    if(_param.verbose==1){
+        fprintf(stderr,"algorithm %s: %d %d %d\n",_param.algorithm, _param.k,_param.n_iter,_param.gpu_id); fflush(stderr);
+    }
 	safe_cuda(cudaSetDevice(_param.gpu_id));
     Matrix<float>X(_param.X_m, _param.X_n);
 	X.copy(_X);
@@ -438,23 +443,29 @@ void truncated_svd_matrix(Matrix<float> &X, double* _Q, double* _w, double* _U, 
 	try
 	{
 		if(algorithm == "cusolver"){
-				cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-			} else {
-				power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-			}
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "tsvd error: " << e.what() << "\n";
-		}
-		catch (std::string e)
-		{
-			std::cerr << "tsvd error: " << e << "\n";
-		}
-		catch (...)
-		{
-			std::cerr << "tsvd error\n";
+            if(_param.verbose==1){
+             fprintf(stderr,"algorithm is cusolver: %d %d\n",_param.k,_param.n_iter); fflush(stderr);
+            }
+            cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
+        }
+        else {
+            if(_param.verbose==1){
+             fprintf(stderr,"algorithm is power: %d %d\n",_param.k,_param.n_iter); fflush(stderr);
+            }
+            power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 		}
 	}
-
+    catch (const std::exception &e)
+      {
+        std::cerr << "tsvd error: " << e.what() << "\n";
+      }
+    catch (std::string e)
+      {
+        std::cerr << "tsvd error: " << e << "\n";
+      }
+    catch (...)
+      {
+        std::cerr << "tsvd error\n";
+      }
+}
 }

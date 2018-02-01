@@ -16,7 +16,7 @@ An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree
 
 ## Requirements
 
-* PC with Ubuntu 16.04+ w/ GCC4.9+
+* PC with Ubuntu 16.04+ w/ GCC4.9+ and numpy 1.14.x
 
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
@@ -31,6 +31,8 @@ Ensure to reboot after installing the new nvidia drivers.
 * Nvidia GPU with Compute Capability >= 3.5 ([Capability Lookup](https://developer.nvidia.com/cuda-gpus)).
 
 * For advanced features, like handling rows/32 > 2^16 (i.e., rows > 2,097,152) in K-means, need Capability >= 5.2
+
+* For building the R package, `libcurl4-openssl-dev`, `libssl-dev`, and `libxml2-dev` are needed.
 
 ## User Installation
 
@@ -47,6 +49,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_
 
 ```
 sudo apt-get install libopenblas-dev pbzip2
+```
+
+If you are building the h2o4gpu R package, it is necessary to install the following dependencies:
+
+```
+sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):

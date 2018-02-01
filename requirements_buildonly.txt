@@ -22,6 +22,8 @@ cmake>=0.8.0
 Cython>=0.25.2
 # for make testperf
 h2o>=3.16.0.2
+pandas>=0.22.0
+numpy>=1.14.0
 # for some utilities
 nbconvert>=5.2.1
 nbformat>=4.3.0
