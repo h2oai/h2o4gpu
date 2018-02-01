@@ -12,6 +12,7 @@ from ..solvers.linear_regression import LinearRegression
 from ..solvers.lasso import Lasso
 from ..solvers.ridge import Ridge
 from ..solvers.kmeans import KMeans
+from ..solvers.kmeans import KMeansH2O
 from ..solvers.pca import PCA
 from ..solvers.pca import PCAH2O
 from ..solvers.xgboost import RandomForestRegressor
