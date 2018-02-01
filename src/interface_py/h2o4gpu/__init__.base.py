@@ -20,6 +20,7 @@ from .solvers.xgboost import RandomForestClassifier
 from .solvers.xgboost import GradientBoostingClassifier
 from .solvers.xgboost import GradientBoostingRegressor
 from .solvers.kmeans import KMeans
+from .solvers.kmeans import KMeansH2O
 from .solvers.pca import PCA
 from .solvers.pca import PCAH2O
 from .solvers.truncated_svd import TruncatedSVD

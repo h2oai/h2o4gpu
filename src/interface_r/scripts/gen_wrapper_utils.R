@@ -22,6 +22,8 @@ gen_wrapper <- function(
       # Generate function signature
       signature <- sub(paste0(docs$name, "\\("),
                        paste(r_function, "<- function(\n\t"), docs$signature)
+      signature <- gsub(', backend = "auto"', "", signature)
+      signature <- gsub('family = "elasticnet",', "", signature)
       signature <- gsub(', ', ',\n\t', signature)
       write_line(paste(signature, "{\n"))
       
@@ -46,7 +48,17 @@ gen_wrapper <- function(
             param <- paste0("as_nullable_integer(", param, ")")
           }
           suffix <- ifelse(i < length(params), ",", "\n  )")
-          write_line(paste0("    ", params[[i]], " = ", param, suffix))
+          if(param == "backend"){
+            write_line(paste0("    ", params[[i]], " = ", '"h2o4gpu"', suffix))
+          } else if (param == "family" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")){
+            if(r_function == "h2o4gpu.elastic_net_classifier"){
+              write_line(paste0("    ", params[[i]], " = ", '"logistic"', suffix))
+            } else {
+              write_line(paste0("    ", params[[i]], " = ", '"elasticnet"', suffix))
+            }
+          } else {
+            write_line(paste0("    ", params[[i]], " = ", param, suffix))
+          }
         }
       } else {
         write_line(")")
