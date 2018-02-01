@@ -42,3 +42,37 @@ simple_dataset <- function(type = c("unsupervised", "classification", "regressio
       y = y
     ))
 }
+
+test_classifier <- function(classifier_func, classifier_name) {
+  test_succeeds(paste0("Test ", classifier_name), {
+    dataset <- simple_dataset("classification")
+    x <- dataset$x
+    y <- dataset$y
+    model <- classifier_func() %>% fit(x, y)
+    predictions <- model %>% predict(x)
+    expect_equal(max(predictions), 1)
+    expect_equal(min(predictions), 0)
+    expect_true(model %>% score(x, y) > 0.90)
+  })
+}
+
+test_regressor <- function(regressor_func, regressor_name) {
+  test_succeeds(paste0("Test ", regressor_name), {
+    dataset <- simple_dataset("regression")
+    x <- dataset$x
+    y <- dataset$y
+    model <- regressor_func() %>% fit(x, y)
+    predictions <- model %>% predict(x)
+    expect_true(0 < predictions && predictions < 100)
+  })
+}
+
+test_unsupervised <- function(model_func, model_name) {
+  test_succeeds(paste0("Test ", model_name), {
+    dataset <- simple_dataset("unsupervised")
+    x <- dataset$x
+    model <- model_func() %>% fit(x)
+    expect_equal(dim(model %>% predict(x)), nrow(x))
+    expect_equal(dim(model %>% transform(x)), dim(x))
+  })
+}
