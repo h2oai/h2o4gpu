@@ -158,11 +158,11 @@ cleanc:
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
-	
+
 xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
-	
+
 build: update_submodule cpp c py
 
 buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
@@ -177,9 +177,12 @@ libxgboost-nccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost
 libxgboost-nonccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost2
+libxgboost-cpu-local:
+	cd xgboost ; make -f Makefile2 libxgboost-cpu
 
 apply-xgboost-nccl-local: libxgboost-nccl-local pipxgboost
 apply-xgboost-nonccl-local: libxgboost-nonccl-local pipxgboost
+apply-xgboost-cpu-local: libxgboost-cpu-local pipxgboost
 
 pipxgboost:
 	@echo "----- pip install xgboost built locally -----"
@@ -187,10 +190,12 @@ pipxgboost:
 
 alldeps-nccl-local: deps_fetch alldeps-install-nccl-local
 alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
+alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 
 # lib for sklearn because don't want to fully apply yet
 alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
 alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
+alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
 
 ##### dependencies
 deps_clean:
@@ -224,17 +229,18 @@ alldeps_install-nccl-cuda8: deps_install apply-xgboost-nccl-cuda8 apply_py3nvml 
 alldeps_install-nonccl-cuda8: deps_install apply-xgboost-nonccl-cuda8 apply_py3nvml libsklearn
 alldeps_install-nccl-cuda9: deps_install apply-xgboost-nccl-cuda9 apply_py3nvml libsklearn
 alldeps_install-nonccl-cuda9: deps_install apply-xgboost-nonccl-cuda9 apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn
+alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
 
 fullinstall: fullinstall-nccl-cuda9
 fullinstalllocal: fullinstall-nccl-local
+fullinstallcpulocal: fullinstall-cpu-local
 
 fullinstall-nccl-local: clean alldeps-nccl-local build install
 	mkdir -p src/interface_py/dist-nccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nccl-local/
 fullinstall-nonccl-local: clean alldeps-nonccl-local build install
 	mkdir -p src/interface_py/dist-nonccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nonccl-local/
 
-cpu-fullinstall: fullinstall-cpuonly
+fullinstall-cpu-local: fullinstall-cpuonly
 
 fullinstall-nccl-cuda8: clean alldeps-nccl-cuda8 build install
 	mkdir -p src/interface_py/dist1/ && mv src/interface_py/dist/*.whl src/interface_py/dist1/
@@ -247,7 +253,7 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
-	
+
 fullinstall-cpuonly: clean alldeps-cpuonly build install
 
 ####################################################
