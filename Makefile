@@ -537,6 +537,7 @@ fullinstalljenkins-nccl-cuda8: mrproper fullinstall-nccl-cuda8
 fullinstalljenkins-nonccl-cuda8: mrproper fullinstall-nonccl-cuda8
 fullinstalljenkins-nccl-cuda9: mrproper fullinstall-nccl-cuda9
 fullinstalljenkins-nonccl-cuda9: mrproper fullinstall-nonccl-cuda9
+fullinstalljenkins-cpu-local: mrproper fullinstall-cpu-local
 
 # for nccl cuda9 build benchmark
 fullinstalljenkins-nccl-cuda9-benchmark: mrproper clean alldeps-nccl-cuda9 build install
@@ -550,6 +551,8 @@ fullinstalljenkins-nccl-cuda9-aws1: mrproper clean alldeps-nccl-cuda9 build inst
 # for nccl cuda9 build benchmark on aws1
 fullinstalljenkins-nccl-cuda9-aws1-benchmark: mrproper clean alldeps-nccl-cuda9 build install
 	mkdir -p src/interface_py/dist7/ && mv src/interface_py/dist/*.whl src/interface_py/dist7/
+
+
 
 .PHONY: mrproper
 mrproper: clean
