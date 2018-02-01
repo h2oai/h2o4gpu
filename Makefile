@@ -123,13 +123,13 @@ cpp:
 c:
 	$(MAKE) -j all -C src/interface_c
 
-py: apply_sklearn_simple build/VERSION.txt
+py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
 pylint:
 	$(MAKE) pylint -C src/interface_py
 
-fullpy: apply_sklearn_simple pylint
+fullpy: apply-sklearn_simple pylint
 
 pyinstall:
 	$(MAKE) -j install -C src/interface_py
@@ -171,7 +171,28 @@ buildquick: cpp cleanc c py
 
 install: pyinstall
 
+### for direct building of xgboost
+# https://xgboost.readthedocs.io/en/latest/build.html
+libxgboost-nccl-local:
+	cd xgboost ; make -f Makefile2 libxgboost
+libxgboost-nonccl-local:
+	cd xgboost ; make -f Makefile2 libxgboost2
 
+apply-xgboost-nccl-local: libxgboost-nccl-local pipxgboost
+apply-xgboost-nonccl-local: libxgboost-nonccl-local pipxgboost
+
+pipxgboost:
+	@echo "----- pip install xgboost built locally -----"
+	cd xgboost/python-package/dist && pip install xgboost-0.7-py3-none-any.whl --upgrade --target ../
+
+alldeps-nccl-local: deps_fetch alldeps-install-nccl-local
+alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
+
+# lib for sklearn because don't want to fully apply yet
+alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
+alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
+
+##### dependencies
 deps_clean:
 	@echo "----- Cleaning deps -----"
 	rm -rf "$(DEPS_DIR)"
@@ -198,13 +219,20 @@ deps_install:
 	# issue with their package, have to do this here (still fails sometimes, so remove)
 #	pip install sphinxcontrib-osexample
 
-alldeps_install-nccl-cuda8: deps_install apply_xgboost-nccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda8: deps_install apply_xgboost-nonccl-cuda8 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nccl-cuda9: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-nonccl-cuda9: deps_install apply_xgboost-nonccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
-alldeps_install-cpuonly: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn # lib for sklearn because don't want to fully apply yet
+# lib for sklearn because don't want to fully apply yet
+alldeps_install-nccl-cuda8: deps_install apply-xgboost-nccl-cuda8 apply_py3nvml libsklearn
+alldeps_install-nonccl-cuda8: deps_install apply-xgboost-nonccl-cuda8 apply_py3nvml libsklearn
+alldeps_install-nccl-cuda9: deps_install apply-xgboost-nccl-cuda9 apply_py3nvml libsklearn
+alldeps_install-nonccl-cuda9: deps_install apply-xgboost-nonccl-cuda9 apply_py3nvml libsklearn
+alldeps_install-cpuonly: deps_install apply_xgboost-nccl-cuda9 apply_py3nvml libsklearn
 
 fullinstall: fullinstall-nccl-cuda9
+fullinstalllocal: fullinstall-nccl-local
+
+fullinstall-nccl-local: clean alldeps-nccl-local build install
+	mkdir -p src/interface_py/dist-nccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nccl-local/
+fullinstall-nonccl-local: clean alldeps-nonccl-local build install
+	mkdir -p src/interface_py/dist-nonccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nonccl-local/
 
 cpu-fullinstall: fullinstall-cpuonly
 
@@ -438,10 +466,10 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-apply_xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
-apply_xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
-apply_xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
-apply_xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
+apply-xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
+apply-xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
+apply-xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
+apply-xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
 
 pipxgboost-nccl-cuda8:
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
@@ -475,9 +503,9 @@ libsklearn:	# assume already submodule gets sklearn
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
 	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && python setup.py sdist bdist_wheel
 
-apply_sklearn: libsklearn apply_sklearn_simple
+apply-sklearn: libsklearn apply-sklearn_simple
 
-apply_sklearn_simple:
+apply-sklearn_simple:
     #	bash ./scripts/apply_sklearn.sh
     ## apply sklearn
 	bash ./scripts/apply_sklearn_pipinstall.sh
@@ -486,13 +514,13 @@ apply_sklearn_simple:
     # handle base __init__.py file appending
 	bash ./scripts/apply_sklearn_initmerge.sh
 
-apply_sklearn_pipinstall:
+apply-sklearn_pipinstall:
 	bash ./scripts/apply_sklearn_pipinstall.sh
 
-apply_sklearn_link:
+apply-sklearn_link:
 	bash ./scripts/apply_sklearn_link.sh
 
-apply_sklearn_initmerge:
+apply-sklearn_initmerge:
 	bash ./scripts/apply_sklearn_initmerge.sh
 
 #################### Jenkins specific
@@ -703,8 +731,8 @@ centos7_build:
          /root/.pyenv/bin/pyenv global 3.6.1 && \
          export IFLAGS="-I/usr/include/openblas" && \
          export OPENBLAS_PREFIX="open" && \
-         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda8")
-	cp /tmp/build/src/interface_py/dist2/h2o4gpu*.whl dist
+         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-local")
+	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
 	chmod o+rw dist/h2o4gpu*.whl
 
 centos7:

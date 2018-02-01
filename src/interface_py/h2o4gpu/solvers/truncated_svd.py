@@ -126,10 +126,15 @@ class TruncatedSVDH2O(object):
         self._w = w
         self._U = U
         self._X = X
-        self.explained_variance = explained_variance
-        self.explained_variance_ratio = explained_variance_ratio
-
         X_transformed = U * w
+        # TODO Investigate why explained variance/ratio are off in cuda
+        if self.algorithm != "power":
+            self.explained_variance = explained_variance
+            self.explained_variance_ratio = explained_variance_ratio
+        else:
+            self.explained_variance = np.var(X_transformed, axis=0)
+            full_var = np.var(X, axis=0).sum()
+            self.explained_variance_ratio = self.explained_variance / full_var
         return X_transformed
 
     def transform(self, X):
