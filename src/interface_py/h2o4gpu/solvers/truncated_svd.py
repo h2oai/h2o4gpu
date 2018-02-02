@@ -311,7 +311,7 @@ class TruncatedSVD(object):
     def __init__(self,
                  n_components=2,
                  algorithm="power",
-                 n_iter=5,
+                 n_iter=100,
                  random_state=None,
                  tol=1E-5,
                  verbose=False,

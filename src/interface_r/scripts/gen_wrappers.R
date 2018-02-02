@@ -49,35 +49,17 @@ write_wrapper("h2o4gpu$GradientBoostingRegressor",
             class_tags = 'c("regressor")',
             file_name = file_name)
 
-write_wrapper("h2o4gpu$LinearRegression",
-            r_function = "h2o4gpu.linear_regressor",
-            nullable_int_params = common_nullabl_int_params,
-            class_tags = 'c("regressor")',
-            file_name = file_name)
-
-write_wrapper("h2o4gpu$LogisticRegression",
-            r_function = "h2o4gpu.logistic_regressor",
-            nullable_int_params = common_nullabl_int_params,
-            class_tags = 'c("classifier")',
-            file_name = file_name)
-
-write_wrapper("h2o4gpu$Lasso",
-            r_function = "h2o4gpu.lasso_regressor",
-            nullable_int_params = common_nullabl_int_params,
-            class_tags = 'c("regressor")',
-            file_name = file_name)
-
-write_wrapper("h2o4gpu$Ridge",
-            r_function = "h2o4gpu.ridge_regressor",
-            nullable_int_params = common_nullabl_int_params,
-            class_tags = 'c("regressor")',
-            file_name = file_name)
-
 write_wrapper("h2o4gpu$ElasticNet",
             r_function = "h2o4gpu.elastic_net_regressor",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("regressor")',
             file_name = file_name)
+
+write_wrapper("h2o4gpu$ElasticNet",
+              r_function = "h2o4gpu.elastic_net_classifier",
+              nullable_int_params = common_nullabl_int_params,
+              class_tags = 'c("classifier")',
+              file_name = file_name)
 
 # Unsupervised models
 
