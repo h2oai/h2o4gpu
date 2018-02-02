@@ -48,9 +48,6 @@ gen_wrapper <- function(
             param <- paste0("as_nullable_integer(", param, ")")
           }
           suffix <- ifelse(i < length(params), ",", "\n  )")
-          # if(param == "backend"){
-          #   write_line(paste0("    ", params[[i]], " = ", '"h2o4gpu"', suffix))
-          # } else 
           if (param == "family" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")){
             if(r_function == "h2o4gpu.elastic_net_classifier"){
               write_line(paste0("    ", params[[i]], " = ", '"logistic"', suffix))
