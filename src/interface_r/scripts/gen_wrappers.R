@@ -49,13 +49,13 @@ write_wrapper("h2o4gpu$GradientBoostingRegressor",
             class_tags = 'c("regressor")',
             file_name = file_name)
 
-write_wrapper("h2o4gpu$ElasticNetH2O",
+write_wrapper("h2o4gpu$ElasticNet",
             r_function = "h2o4gpu.elastic_net_regressor",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("regressor")',
             file_name = file_name)
 
-write_wrapper("h2o4gpu$ElasticNetH2O",
+write_wrapper("h2o4gpu$ElasticNet",
               r_function = "h2o4gpu.elastic_net_classifier",
               nullable_int_params = common_nullabl_int_params,
               class_tags = 'c("classifier")',
@@ -63,19 +63,19 @@ write_wrapper("h2o4gpu$ElasticNetH2O",
 
 # Unsupervised models
 
-write_wrapper("h2o4gpu$KMeansH2O",
+write_wrapper("h2o4gpu$KMeans",
             r_function = "h2o4gpu.kmeans",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
             file_name = file_name)
 
-write_wrapper("h2o4gpu$PCAH2O",
+write_wrapper("h2o4gpu$PCA",
             r_function = "h2o4gpu.pca",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
             file_name = file_name)
 
-write_wrapper("h2o4gpu$TruncatedSVDH2O",
+write_wrapper("h2o4gpu$TruncatedSVD",
             r_function = "h2o4gpu.truncated_svd",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
