@@ -1390,26 +1390,6 @@ class ElasticNet(object):
             random_state=random_state,
             selection=selection)
 
-        # Equivalent Lasso parameters for h2o4gpu
-
-        # Logic about l1_ratio:
-        # The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1.
-        #  For l1_ratio = 0 the penalty is an L2 penalty.
-        # For l1_ratio = 1 it is an L1 penalty.
-        # For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
-        #alpha_min = alpha_max = l1_ratio
-
-        # Other parameters
-        # n_threads = None
-        # n_alphas = 1
-        # n_lambdas = 1
-        # n_folds = 1
-        # lambda_max = alpha
-        # lambda_min_ratio = 1.0
-        # store_full_path = 1
-        # alphas = None
-        # lambdas = None
-
         self.model_h2o4gpu = ElasticNetH2O(
             gpu_id=gpu_id,
             tol_seek_factor=tol_seek_factor,
