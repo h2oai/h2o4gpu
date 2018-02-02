@@ -1352,9 +1352,16 @@ class ElasticNet(object):
         self.do_sklearn = False
         if backend == 'auto':
 
-            params_string = ['normalize', 'positive', 'selection']
-            params = [normalize, positive, selection]
-            params_default = [False, False, 'cyclic']
+            params_string = ['alpha', 'l1_ratio', 'normalize', 'precompute',
+                             'max_iter', 'copy_X',
+                             'warm_start', 'positive',
+                             'random_state', 'selection']
+            params = [alpha, l1_ratio, normalize, precompute,
+                      max_iter, copy_X,
+                      warm_start, positive,
+                      random_state, selection]
+            params_default = [1.0, 0.5, False, False, 5000, True,
+                              False, False, None, 'cyclic']
 
             i = 0
             for param in params:
