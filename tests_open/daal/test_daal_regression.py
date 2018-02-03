@@ -59,7 +59,7 @@ def test_fit_linear_regression_daal_vs_sklearn():
     #prediction = solver.predict(testData)
     #DLR.print_table(prediction, "Linear Regression prediction results: (first 10 rows):", 10)
 
-def test_linear_regression_normalized(): test_fit_linear_regression()
+def test_linear_regression_normalized(): test_fit_linear_regression_daal_vs_sklearn()
 
 if __name__ == '__main__':
     test_linear_regression_normalized()
