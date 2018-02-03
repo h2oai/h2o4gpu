@@ -3,7 +3,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-# pylint: disable=unused-import
+from __future__ import print_function
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter

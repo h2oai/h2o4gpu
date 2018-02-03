@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # pylint: disable=unused-import
+from __future__ import print_function
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
 from h2o4gpu.solvers.daal_solver.regression import LinearRegression as DLR
@@ -41,7 +42,7 @@ class LinearRegression(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
-        
+
         self.do_daal = False
         self.do_sklearn = False
 
@@ -75,10 +76,10 @@ class LinearRegression(object):
         elif backend == 'daal':
             self.do_daal = True
             self.backend = 'daal'
-            
+
         self.model_daal = DaalRegression(fit_intercept=fit_intercept,
-                                               normalize=normalize)
-        
+                                         normalize=normalize)
+
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
             normalize=normalize,

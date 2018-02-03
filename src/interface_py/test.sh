@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 exec 3>&1
 
@@ -13,6 +13,7 @@ for py in `find h2o4gpu -name "*.py" -type f`; do
 		if [ $tmp -ne 0 ]; then
 			echo "STATUS=$?, STDERR: $stderr, file: $py"
 			status=$tmp; 
+			exit $status
 		fi; 
 	fi; 
 done; 
