@@ -100,7 +100,6 @@ RUN \
 #CMD ["/scripts/daal/install_daal_in_docker.sh"]
 	
 # Install R dependencies and h2o4gpu R package
-=======
 COPY scripts/install_r.sh scripts/install_r.sh
 COPY scripts/install_r_deps.sh scripts/install_r_deps.sh
 RUN \
