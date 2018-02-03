@@ -3,7 +3,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-
 import warnings
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
@@ -16,16 +15,16 @@ class LinearRegression(object):
     library
     '''
 
-    def __init__(self, fit_intercept=True, normalize=False):
+    def __init__(self, fit_intercept=True, normalize=True):
         '''
         :param model: 'normalEquation' or
         'qr - quadratic regression normalization
         '''
 
         if normalize:
-            method = 'qr'
-        else:
             method = 'normalEquation'
+        else:
+            method = 'qr'
 
         self.method = method
         self.model = None
