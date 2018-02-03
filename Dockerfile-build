@@ -80,7 +80,6 @@ RUN \
 	
 ENV LD_LIBRARY_PATH=$HOME/daal/lib:$LD_LIBRARY_PATH
 
-##
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
