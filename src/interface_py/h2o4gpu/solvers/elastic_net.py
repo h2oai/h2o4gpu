@@ -1305,26 +1305,41 @@ class ElasticNet(object):
         Saves as attribute for actual backend used.
 
     """
-
     def __init__(
             self,
-            alpha=1.0,  #h2o4gpu
-            l1_ratio=0.5,  #h2o4gpu
-            fit_intercept=True,  #h2o4gpu
-            normalize=False,
-            precompute=False,
-            max_iter=5000,  #h2o4gpu
-            copy_X=True,
-            tol=1e-2,  #h2o4gpu
-            warm_start=False,
-            positive=False,
-            random_state=None,
-            selection='cyclic',
+            alpha=1.0, #scikit
+            l1_ratio=0.5, #scikit
+            fit_intercept=True, #h2o4gpu and scikit
+            normalize=False, #scikit
+            precompute=False, #scikit
+            max_iter=5000, #scikit
+            copy_X=True, #scikit
+            tol=1e-2, #h2o4gpu and scikit
+            warm_start=False, #scikit
+            positive=False, #scikit
+            random_state=None, #scikit
+            selection='cyclic', #scikit
             n_gpus=-1,  # h2o4gpu
             lambda_stop_early=True,  # h2o4gpu
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  #h2o4gpu
-            verbose=False,
+            verbose=False, #h2o4gpu
+            n_threads=None, #h2o4gpu
+            gpu_id=0, #h2o4gpu
+            lambda_min_ratio=1E-7, #h2o4gpu
+            n_lambdas=100, #h2o4gpu
+            n_folds=5, #h2o4gpu
+            n_alphas=5, #h2o4gpu
+            tol_seek_factor=1E-1, #h2o4gpu
+            family='elasticnet', #h2o4gpu
+            store_full_path=0, #h2o4gpu
+            lambda_max=None, #h2o4gpu
+            alpha_max=1.0, #h2o4gpu
+            alpha_min=0.0, #h2o4gpu
+            alphas=None, #h2o4gpu
+            lambdas=None, #h2o4gpu
+            double_precision=None, #h2o4gpu
+            order=None, #h2o4gpu
             backend='auto'):  # h2o4gpu
 
         import os
@@ -1338,9 +1353,16 @@ class ElasticNet(object):
         self.do_sklearn = False
         if backend == 'auto':
 
-            params_string = ['normalize', 'positive', 'selection']
-            params = [normalize, positive, selection]
-            params_default = [False, False, 'cyclic']
+            params_string = ['alpha', 'l1_ratio', 'normalize', 'precompute',
+                             'max_iter', 'copy_X',
+                             'warm_start', 'positive',
+                             'random_state', 'selection']
+            params = [alpha, l1_ratio, normalize, precompute,
+                      max_iter, copy_X,
+                      warm_start, positive,
+                      random_state, selection]
+            params_default = [1.0, 0.5, False, False, 5000, True,
+                              False, False, None, 'cyclic']
 
             i = 0
             for param in params:
@@ -1376,29 +1398,13 @@ class ElasticNet(object):
             random_state=random_state,
             selection=selection)
 
-        # Equivalent Lasso parameters for h2o4gpu
-
-        # Logic about l1_ratio:
-        # The ElasticNet mixing parameter,with 0 <= l1_ratio <= 1.
-        #  For l1_ratio = 0 the penalty is an L2 penalty.
-        # For l1_ratio = 1 it is an L1 penalty.
-        # For 0 < l1_ratio < 1, the penalty is a combination of L1 and L2.
-        alpha_min = alpha_max = l1_ratio
-
-        # Other parameters
-        n_threads = None
-        n_alphas = 1
-        n_lambdas = 1
-        n_folds = 1
-        lambda_max = alpha
-        lambda_min_ratio = 1.0
-        store_full_path = 1
-        alphas = None
-        lambdas = None
-
         self.model_h2o4gpu = ElasticNetH2O(
+            gpu_id=gpu_id,
+            tol_seek_factor=tol_seek_factor,
+            family=family,
             n_threads=n_threads,
             n_gpus=n_gpus,
+            double_precision=double_precision,
             fit_intercept=fit_intercept,
             lambda_min_ratio=lambda_min_ratio,
             n_lambdas=n_lambdas,
@@ -1416,7 +1422,7 @@ class ElasticNet(object):
             alpha_min=alpha_min,
             alphas=alphas,
             lambdas=lambdas,
-            order=None)
+            order=order)
 
         if self.do_sklearn:
             if verbose:
