@@ -2,6 +2,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 import ctypes
 
 
@@ -14,7 +15,7 @@ class parameters(ctypes.Structure):
                 ('gpu_id', ctypes.c_int)]
 
 
-class CPUlib:
+class CPUlib(object):
 
     def __init__(self):
         pass
@@ -26,7 +27,7 @@ class CPUlib:
         return _load_tsvd_lib(cpu_lib_path())
 
 
-class GPUlib:
+class GPUlib(object):
 
     def __init__(self):
         pass

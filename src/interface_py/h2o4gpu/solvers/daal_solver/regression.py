@@ -1,8 +1,9 @@
-'''
-Created on Jan 21, 2018
+#- * - encoding : utf - 8 - * -
+"""
+:copyright: 2017 H2O.ai, Inc.
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 
-@author: monika
-'''
 import warnings
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction

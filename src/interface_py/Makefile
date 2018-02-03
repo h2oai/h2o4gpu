@@ -9,18 +9,7 @@ thepwd = "$(shell pwd)"
 default: all
 
 pylint:
-	@status=0; \
-	for py in $$(find h2o4gpu -name "*.py" -type f); do \
-		if [ "$$py" == "h2o4gpu/__init__.py" ] || [ "$$py" == "h2o4gpu/util/daicx.py" ] || [ "$$py" == "h2o4gpu/util/roc_opt.py" ]; \
-		then echo "Skip $$py"; \
-		else echo $$py; \
-		mkdir -p ../pylint.d ; PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -rn $$py; \
-		tmp=$$?; \
-		if [ $$tmp -ne 0 ]; then status=$$tmp; fi; \
-		fi; \
-	done; \
-	rm -rf ../pylint.d; \
-	exit $$status
+	$$SHELL test.sh
 
 pyformat:
 	@status=0; \

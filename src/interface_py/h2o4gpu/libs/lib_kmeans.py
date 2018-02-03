@@ -2,11 +2,12 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 from ctypes import c_int, c_size_t, c_float, c_double, cdll
 from h2o4gpu.types import c_float_p, c_void_pp, c_double_p
 
 
-class CPUlib:
+class CPUlib(object):
 
     def __init__(self):
         pass
@@ -18,7 +19,7 @@ class CPUlib:
         return _load_kmeans_lib(cpu_lib_path())
 
 
-class GPUlib:
+class GPUlib(object):
 
     def __init__(self):
         pass

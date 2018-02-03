@@ -21,8 +21,8 @@ class TruncatedSVDH2O(object):
     :param: int n_components: Desired dimensionality of output data
 
     :param: str algorithm: SVD solver to use.
-                           Either “cusolver” (similar to ARPACK)
-                           or “power” for the power method.
+                           Either "cusolver" (similar to ARPACK)
+                           or "power" for the power method.
 
     :param: int n_iter: number of iterations (only relevant for power method)
             Should be at most 2147483647 due to INT_MAX in C++ backend.
