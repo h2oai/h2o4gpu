@@ -27,7 +27,7 @@ test_succeeds <- function(desc, expr) {
 
 simple_dataset <- function(type = c("unsupervised", "classification", "regression")) {
   if (type == "unsupervised") {
-    x <- structure(c(1, 1, 1, 1, 4, 0), .Dim = c(3L, 2L))
+    x <- structure(c(1, 1, 1, 1, 4, 0, 6, 7, 8, 9, 1, 2, 2, 3, 4, 5), .Dim = c(8L, 2L))
     y <- NULL
   } else if (type == "classification") {
     x <- iris[1:4]
@@ -73,6 +73,6 @@ test_unsupervised <- function(model_func, model_name) {
     x <- dataset$x
     model <- model_func() %>% fit(x)
     expect_equal(dim(model %>% predict(x)), nrow(x))
-    expect_equal(dim(model %>% transform(x)), dim(x))
+    expect_equal(nrow(model %>% transform(x)), nrow(x))
   })
 }

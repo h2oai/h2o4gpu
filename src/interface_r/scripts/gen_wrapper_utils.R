@@ -88,11 +88,11 @@ gen_wrapper_test <- function(r_function = "h2o4gpu.random_forest_classifier", cl
 # Append the wrapper 
 write_wrapper <- function(python_function,
                           file_name,
+                          test_script_file_name,
                           r_function = NULL,
                           additional_int_params = NULL,
                           nullable_int_params = NULL,
-                          class_tags = NULL,
-                          test_script_file_name = "tests/testthat/auto_generated_wrappers_test.R") {
+                          class_tags = NULL) {
   # Write the wrapper
   write(
     gen_wrapper(

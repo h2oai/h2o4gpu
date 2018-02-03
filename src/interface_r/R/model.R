@@ -12,7 +12,7 @@ attach_attrs_to_model <- function(r_model_obj) {
   attrs_exclude_from_attach <- c(
     "fit", "fit_predict", "fit_transform", "score", "predict", "transform",
     "init")
-  if(grepl("H2O", as.character(r_model_obj$model))){
+  if (grepl("H2O", as.character(r_model_obj$model))){
     model_attrs <- names(r_model_obj$model)
   } else {
     model_attrs <- names(r_model_obj$model$model)
@@ -22,7 +22,7 @@ attach_attrs_to_model <- function(r_model_obj) {
     lapply(
       model_attrs[!model_attrs %in% attrs_exclude_from_attach],
       function(attrib) {
-        if(grepl("H2O", as.character(r_model_obj$model))){
+        if (grepl("H2O", as.character(r_model_obj$model))){
           r_model_obj[[attrib]] <<- r_model_obj$model[[attrib]]
         } else { 
           r_model_obj[[attrib]] <<- r_model_obj$model$model[[attrib]]
