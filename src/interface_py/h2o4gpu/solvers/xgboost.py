@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import print_function
+import xgboost as xgb
 
 class RandomForestClassifier(object):
     """H2O RandomForestClassifier Solver
