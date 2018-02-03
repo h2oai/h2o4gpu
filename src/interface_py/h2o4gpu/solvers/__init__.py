@@ -3,7 +3,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import xgboost as xgb
 from ..solvers.pogs import Pogs
 from ..solvers.elastic_net import ElasticNetH2O
 from ..solvers.elastic_net import ElasticNet
