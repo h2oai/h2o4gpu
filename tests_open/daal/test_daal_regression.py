@@ -5,10 +5,11 @@ ElasticNetH2O solver tests using Kaggle datasets.
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import numpy as np
 from numpy.random import RandomState
 import sys
 import time
+import os
+import numpy as np
 import h2o4gpu
 import logging
 
