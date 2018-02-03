@@ -78,7 +78,7 @@ class LinearRegression(object):
             self.backend = 'daal'
 
         self.model_daal = DLR(fit_intercept=fit_intercept,
-                                         normalize=normalize)
+                              normalize=normalize)
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
