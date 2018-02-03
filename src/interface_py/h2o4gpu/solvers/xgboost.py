@@ -3,8 +3,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
-import xgboost as xgb
+
 
 class RandomForestClassifier(object):
     """H2O RandomForestClassifier Solver
@@ -118,6 +117,7 @@ class RandomForestClassifier(object):
         if random_state is None:
             random_state = 0
 
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBClassifier(
             n_estimators=n_estimators,  # h2o4gpu
             max_depth=max_depth,  # h2o4gpu
@@ -314,6 +314,7 @@ class RandomForestRegressor(object):
         if random_state is None:
             random_state = 0
 
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBRegressor(
             n_estimators=n_estimators,  # h2o4gpu
             max_depth=max_depth,  # h2o4gpu
@@ -497,6 +498,7 @@ class GradientBoostingClassifier(object):
         if random_state is None:
             random_state = 0
 
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBClassifier(
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
@@ -712,6 +714,7 @@ class GradientBoostingRegressor(object):
         if random_state is None:
             random_state = 0
 
+        import xgboost as xgb
         self.model_h2o4gpu = xgb.XGBRegressor(
             learning_rate=learning_rate,  # h2o4gpu
             n_estimators=n_estimators,  # h2o4gpu
