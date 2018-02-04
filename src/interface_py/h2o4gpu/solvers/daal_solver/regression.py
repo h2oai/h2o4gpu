@@ -15,7 +15,7 @@ class Method(Enum):
     Method solver for IntelDAAL
     '''
     least_squares = linear_training.qrDense
-    normal_eqation = linear_training.normEqDense
+    normal_equation = linear_training.normEqDense
 
 class LinearRegression(object):
     '''Linear Regression based on DAAL
@@ -29,9 +29,9 @@ class LinearRegression(object):
         :param in kwargs: method: normalEquation, qr=least squares
         '''
         if 'method' in kwargs and kwargs['method'] in Method:
-            self.method = kwargs['method']
+            self.method = kwargs['method'].value
         else:
-            self.method = Method.normal_eqation
+            self.method = Method.normal_equation.value
 
         self.normalize = normalize
         self.model = None
