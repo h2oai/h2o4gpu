@@ -4,18 +4,18 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import warnings
+from enum import Enum
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
-from enum import Enum
 from .utils import printNumericTable
 
 class Method(Enum):
     '''
     Method solver for IntelDAAL
     '''
-    least_squares=linear_training.qrDense
-    normal_eqation=linear_training.normEqDense
+    least_squares = linear_training.qrDense
+    normal_eqation = linear_training.normEqDense
 
 class LinearRegression(object):
     '''Linear Regression based on DAAL
@@ -24,7 +24,6 @@ class LinearRegression(object):
 
     def __init__(self, fit_intercept=True, normalize=False, **kwargs):
         '''
-        
         :param fit_intercept: calculate all betas by default
         :param normalize: TODO@monika: normalize must be implemented
         :param in kwargs: method: normalEquation, qr=least squares
