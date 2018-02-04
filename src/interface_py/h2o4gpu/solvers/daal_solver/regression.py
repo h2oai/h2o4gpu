@@ -7,26 +7,34 @@ import warnings
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
+from enum import Enum
 from .utils import printNumericTable
 
+class Method(Enum):
+    '''
+    Method solver for IntelDAAL
+    '''
+    least_squares=linear_training.qrDense
+    normal_eqation=linear_training.normEqDense
 
 class LinearRegression(object):
     '''Linear Regression based on DAAL
     library
     '''
 
-    def __init__(self, fit_intercept=True, normalize=True):
+    def __init__(self, fit_intercept=True, normalize=False, **kwargs):
         '''
-        :param model: 'normalEquation' or
-        'qr - quadratic regression normalization
+        
+        :param fit_intercept: calculate all betas by default
+        :param normalize: TODO@monika: normalize must be implemented
+        :param in kwargs: method: normalEquation, qr=least squares
         '''
-
-        if normalize:
-            method = 'normalEquation'
+        if 'method' in kwargs and kwargs['method'] in Method:
+            self.method = kwargs['method']
         else:
-            method = 'qr'
+            self.method = Method.normal_eqation
 
-        self.method = method
+        self.normalize = normalize
         self.model = None
         self.parameters = ['intercept'] if fit_intercept else []
         self.train_data_array = None
@@ -50,12 +58,8 @@ class LinearRegression(object):
         Input = HomogenNumericTable(X)#, ntype = np.float32)
         Responses = HomogenNumericTable(y)#, ntype = np.float32)
         # Training object with/without normalization
-        if self.method == "qr":
-            linear_training_algorithm = \
-            linear_training.Batch(method=linear_training.qrDense)
-        else:
-            linear_training_algorithm = \
-            linear_training.Batch(method=linear_training.normEqDense)
+        linear_training_algorithm = linear_training.Batch(
+            method=self.method)
 
         # set input values
         linear_training_algorithm.input.set(linear_training.data, Input)

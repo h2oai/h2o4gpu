@@ -30,7 +30,7 @@ def test_fit_linear_regression_daal_vs_sklearn():
 
     solver_daal = LinearRegression(
         fit_intercept=True,
-        normalize=True,
+        normalize=False,
         verbose=True,
         backend='daal')
 
@@ -53,7 +53,7 @@ def test_fit_linear_regression_daal_vs_sklearn():
         start_sk = time.time()
         kmeans_sk.fit(X)
         end_sk = time.time()
-        #assert end_daal - start_daal <= end_sklearn - start_sklearn
+        assert end_daal - start_daal <= end_sklearn - start_sklearn
 
     #DLR.print_table(trained.getBeta(), "Linear Regression coefficients:")
     #prediction = solver.predict(testData)
