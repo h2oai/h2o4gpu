@@ -36,7 +36,8 @@ class LinearRegression(object):
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  # h2o4gpu
             verbose=False,
-            backend='auto'):
+            backend='auto',
+            **kwargs):
 
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
@@ -78,7 +79,8 @@ class LinearRegression(object):
             self.backend = 'daal'
 
         self.model_daal = DLR(fit_intercept=fit_intercept,
-                              normalize=normalize)
+                              normalize=normalize,
+                              **kwargs)
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
