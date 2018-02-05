@@ -84,6 +84,11 @@ def get_gpu_info_subprocess(return_usage=False):
         import os
         cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
         if cudavis is not None:
+            # prune away white-space, non-numerics, except commas for simple checking
+            cudavis = "".join(cudavis.split())
+            import re
+            cudavis = re.sub("[^0-9,]", "", cudavis)
+
             lencudavis = len(cudavis)
             if lencudavis == 0:
                 total_gpus = 0
