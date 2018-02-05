@@ -122,7 +122,7 @@ update_submodule:
 
 cpp:
 	$(MAKE) -j all -C src/
-	$(MAKE) -j all -C examples/cpp/
+	$(MAKE) --debug=v -j all -C examples/cpp/
 
 c:
 	$(MAKE) -j all -C src/interface_c
