@@ -1,3 +1,8 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE_ART_THOU := $(location)
+$(info ** -> $(WHERE_ART_THOU))
+$(info ** ------------------------------------------------------------------ **)
+
 UTEST_ROOT=../tests/cpp
 UTEST_OBJ_ROOT=$(UTEST_ROOT)/build
 UNITTEST=$(UTEST_OBJ_ROOT)/cpp_tests

@@ -1,3 +1,7 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE_ART_THOU := $(location)
+$(info ** -> $(WHERE_ART_THOU))
+$(info ** ------------------------------------------------------------------ **)
 
 include ../config2.mk
 
