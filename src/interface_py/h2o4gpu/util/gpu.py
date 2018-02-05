@@ -84,7 +84,8 @@ def get_gpu_info_subprocess(return_usage=False):
         import os
         cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
         if cudavis is not None:
-            # prune away white-space, non-numerics, except commas for simple checking
+            # prune away white-space, non-numerics,
+            # except commas for simple checking
             cudavis = "".join(cudavis.split())
             import re
             cudavis = re.sub("[^0-9,]", "", cudavis)
@@ -102,7 +103,7 @@ def get_gpu_info_subprocess(return_usage=False):
                 py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
                  range(total_gpus)])
 
-        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName\
+        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName \
             (py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
 
         if return_usage:
