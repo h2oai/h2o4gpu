@@ -121,7 +121,7 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	$(MAKE) -j all -C src/
+	$(MAKE) --debug=v -j all -C src/
 	$(MAKE) --debug=v -j all -C examples/cpp/
 
 c:
