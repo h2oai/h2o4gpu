@@ -1,3 +1,9 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE_ART_THOU := $(location)
+$(info ** -> $(WHERE_ART_THOU))
+$(info ** ------------------------------------------------------------------ **)
+
+
 SHELL := /bin/bash # force avoidance of dash as shell
 include config2.mk
 
