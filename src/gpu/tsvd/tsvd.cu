@@ -428,9 +428,6 @@ void power_tsvd(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _e
  */
 void truncated_svd(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 {
-    if(_param.verbose==1){
-        fprintf(stderr,"algorithm %s: %d %d %d\n",_param.algorithm, _param.k,_param.n_iter,_param.gpu_id); fflush(stderr);
-    }
 	safe_cuda(cudaSetDevice(_param.gpu_id));
     Matrix<float>X(_param.X_m, _param.X_n);
 	X.copy(_X);
@@ -444,13 +441,13 @@ void truncated_svd_matrix(Matrix<float> &X, double* _Q, double* _w, double* _U, 
 	{
 		if(algorithm == "cusolver"){
             if(_param.verbose==1){
-             fprintf(stderr,"algorithm is cusolver: %d %d\n",_param.k,_param.n_iter); fflush(stderr);
+             fprintf(stderr,"Algorithm is cusolver with k = %d\n",_param.k); fflush(stderr);
             }
             cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
         }
         else {
             if(_param.verbose==1){
-             fprintf(stderr,"algorithm is power: %d %d\n",_param.k,_param.n_iter); fflush(stderr);
+             fprintf(stderr,"Algorithm is power with k = %d and number of iterations = %d\n",_param.k,_param.n_iter); fflush(stderr);
             }
             power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 		}
