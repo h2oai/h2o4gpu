@@ -1,3 +1,7 @@
+write_line <- function(text) {
+  cat(text, sep = "\n")
+}
+
 # Utility function to generate the R wrappers for different models
 gen_wrapper <- function(
   python_function,
@@ -5,10 +9,6 @@ gen_wrapper <- function(
   additional_int_params = NULL,
   nullable_int_params = NULL,
   class_tags = NULL) {
-
-  write_line <- function(text) {
-    cat(text, sep = "\n")
-  }
 
   capture.output(
     {
@@ -70,13 +70,30 @@ gen_wrapper <- function(
   )
 }
 
+gen_wrapper_test <- function(r_function = "h2o4gpu.random_forest_classifier", class_tags = 'c("classifier")') {
+  capture.output(
+    {
+      if (grepl("classifier", class_tags)) {
+        test_func_name <- 'test_classifier'
+      } else if (grepl("regressor", class_tags)) {
+        test_func_name <- 'test_regressor'
+      } else {
+        test_func_name <- 'test_unsupervised'
+      }
+      write_line(paste0(test_func_name, '(', r_function, ", \"", r_function, "\")"))
+    }
+  )  
+}
+
 # Append the wrapper 
 write_wrapper <- function(python_function,
                           file_name,
+                          test_script_file_name,
                           r_function = NULL,
                           additional_int_params = NULL,
                           nullable_int_params = NULL,
                           class_tags = NULL) {
+  # Write the wrapper
   write(
     gen_wrapper(
       python_function,
@@ -87,4 +104,11 @@ write_wrapper <- function(python_function,
       ),
     file = file_name,
     append = TRUE)
+  
+  # Write the test for the wrapper
+  write(
+    gen_wrapper_test(r_function, class_tags),
+    file = test_script_file_name,
+    append = TRUE
+  )
 }
