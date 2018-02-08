@@ -3,6 +3,9 @@ WHERE_ART_THOU := $(location)
 $(info ** -> $(WHERE_ART_THOU))
 $(info ** ------------------------------------------------------------------ **)
 
+
+
+
 UTEST_ROOT=../tests/cpp
 UTEST_OBJ_ROOT=$(UTEST_ROOT)/build
 UNITTEST=$(UTEST_OBJ_ROOT)/cpp_tests
@@ -11,6 +14,7 @@ HOST_OS := $(shell uname -s 2>/dev/null | tr "[:upper:]" "[:lower:]")
 
 ARCH := $(shell getconf LONG_BIT)
 
+ifdef NVCC
 ifeq ($(HOST_OS),darwin)
 	CUDA_PATH ?= /usr/local/cuda
 	LIB_FLAGS := $(CUDA_PATH)/lib
@@ -19,6 +23,7 @@ else
 	LIB_FLAGS_32 := $(CUDA_PATH)/lib
 	LIB_FLAGS_64 := $(CUDA_PATH)/lib64
 	LIB_FLAGS := $(LIB_FLAGS_$(ARCH))
+endif
 endif
 
 ############### Builds Google Test lib
@@ -63,8 +68,13 @@ UTEST_DEPS=$(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ)
 $(UNITTEST): $(UNITTEST_OBJ) $(UTEST_DEPS) $(UTEST_OBJ_ROOT)/gtest_main.a
 	$(CXX) $(UTEST_DEPS) $(UNITTEST_OBJ) -o $@ $(UTEST_LIBS) $(UTEST_LD) $(UTEST_OBJ_ROOT)/gtest_main.a -lpthread
 
+ifdef NVCC
 ALL_TEST=$(UNITTEST)
 ALL_TEST_OBJ=$(UNITTEST_OBJ)
+else
+ALL_TEST=
+ALL_TEST_OBJ=
+endif
 
 clean_cpp_tests:
 	rm -rf $(UTEST_OBJ_ROOT)
