@@ -27,7 +27,6 @@ def labelruntime = "docker"
 def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "1"
-
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 // Just Notes:
 //

@@ -1,14 +1,23 @@
 location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
-WHERE_ART_THOU := $(location)
-$(info ** -> $(WHERE_ART_THOU))
+WHERE := $(location)
+$(info ** -> $(WHERE))
 $(info ** ------------------------------------------------------------------ **)
 
+include ../../Makefile_header.mk
 include ../config2.mk
+
+NVCC := $(shell command -v nvcc 2> /dev/null)
+ifdef NVCC
+$(info ** -> NVIDIA found, GPU used.)
+else
+$(info ** -> NVIDIA not found, CPU used instead.)
+endif
 
 H2O4GPUROOT=../
 
 GITHASH := $(shell git rev-parse --short HEAD 2> /dev/null)
 HASH=-D_GITHASH_=\"$(GITHASH)\"
+
 
 ifeq ($(USEICC),0) # assumes only gnu not pgi
 #MKLSTUFF=-lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -liomp5 -lpthread
@@ -20,7 +29,6 @@ ICCSTUFF=-qopenmp
 #GCCSTUFF=-fopenmp -ggdb3 -lgomp
 GCCSTUFF=-fopenmp -lgomp
 
-NVCC := $(shell command -v nvcc 2> /dev/null)
 
 # C++ Flags
 ifeq ($(USEICC),0)
@@ -56,44 +64,52 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
-CUDFLAGS=$(DFLAGS)
 ifdef NVCC
-CUDFLAGS+=-DHAVECUDA -DCUDCHECKERR
+CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
 endif
+
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
-# MM
-# 3. Set CUDA_LIB = $CUDA_HOME/lib(64)
 ifdef NVCC
+ifndef CUDAHOME
 ifeq ($(shell uname -s), Darwin)
-CUDA_LIB=/usr/local/cuda/lib/
+CUDAHOME=/usr/local/cuda/lib/
 else
-CUDA_LIB=/usr/local/cuda/lib64/
+CUDAHOME=/usr/local/cuda/lib64/
+endif
 endif
 endif
 
 # Check System Args.
+ifdef NVCC
 ifeq ($(shell uname -s), Darwin)
 LDFLAGS=-lm -framework Accelerate
-ifdef NVCC
-CULDFLAGS=-L$(CUDA_LIB) -L/usr/local/lib $(CULDFLAGS_)
-endif
+CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
 SHARED=dylib
 else
 LDFLAGS=$(LINKFLAGS)
-ifdef NVCC
-CULDFLAGS=-L$(CUDA_LIB) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
-endif
+CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
 SHARED=so
+endif
+else
+ifeq ($(shell uname -s), Darwin)
+LDFLAGS=-lm -framework Accelerate
+CULDFLAGS=-L/usr/local/lib $(CULDFLAGS_)
+SHARED=dylib
+else
+LDFLAGS=$(LINKFLAGS)
+CULDFLAGS=$(LINKFLAGS) $(DFLAGS)
+SHARED=so
+endif
 endif
 
 # C++ Flags
-CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDA_LIB)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifdef NVCC
-CXXFLAGS-=-I$(CUDA_LIB)/../include
-
-endif
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
+endif
+else
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 endif
 
 # H2O4GPU static libraries
@@ -127,21 +143,20 @@ CUH2O4GPULIB=\
 	$(H2O4GPUROOT)/build/common/utils.o
 
 # Python-required CUDA runtime library
+PYCUDART=$(CUDAHOME)/libcudart.so
+
 ifdef NVCC
-PYCUDART=$(CUDA_LIB)/libcudart.so
-endif
-
-
-.PHONY: default
+.PHONY: default all clean cpulib gpulib
+else
+.PHONY: default all clean cpulib
+endif 
 
 default: all
-
-cpuonly: cpulib ch2o4gpu_cpu h2o4gpu_c.o
 
 ifdef NVCC
 all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
 else
-all: cpuonly
+all: cpulib ch2o4gpu_cpu h2o4gpu_c.o
 endif
 
 cpulib:

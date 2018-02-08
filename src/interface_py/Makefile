@@ -1,11 +1,10 @@
 location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
-WHERE_ART_THOU := $(location)
-$(info ** -> $(WHERE_ART_THOU))
+WHERE := $(location)
+$(info ** -> $(WHERE))
 $(info ** ------------------------------------------------------------------ **)
 
 SHELL := /bin/bash # force avoidance of dash as shell
 thepwd = "$(shell pwd)"
-NVCC := $(shell command -v nvcc 2> /dev/null)
 
 default: all
 
@@ -56,9 +55,8 @@ all: prep
 
 	# for pycharm
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
-ifdef NVCC
 	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
-endif
+
 
 install:
 	-cd ../.. && pip uninstall -y h2o4gpu
