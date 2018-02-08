@@ -21,4 +21,3 @@ def labelruntime = "docker"
 def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "1"
-
