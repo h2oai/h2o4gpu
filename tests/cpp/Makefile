@@ -3,8 +3,7 @@ WHERE_ART_THOU := $(location)
 $(info ** -> $(WHERE_ART_THOU))
 $(info ** ------------------------------------------------------------------ **)
 
-
-
+NVCC := $(shell command -v nvcc 2> /dev/null)
 
 UTEST_ROOT=../tests/cpp
 UTEST_OBJ_ROOT=$(UTEST_ROOT)/build
