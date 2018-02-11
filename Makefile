@@ -469,21 +469,21 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-apply-xgboost-nccl-cuda8: pipxgboost-nccl-cuda8
-apply-xgboost-nonccl-cuda8:  pipxgboost-nonccl-cuda8
-apply-xgboost-nccl-cuda9:  pipxgboost-nccl-cuda9
-apply-xgboost-nonccl-cuda9:  pipxgboost-nonccl-cuda9
+apply-xgboost-nccl-cuda8: apply-xgboost-nccl-local    #pipxgboost-nccl-cuda8
+apply-xgboost-nonccl-cuda8: apply-xgboost-nonccl-local #pipxgboost-nonccl-cuda8
+apply-xgboost-nccl-cuda9: apply-xgboost-nccl-local #pipxgboost-nccl-cuda9
+apply-xgboost-nonccl-cuda9: apply-xgboost-nonccl-local #pipxgboost-nonccl-cuda9
 
-pipxgboost-nccl-cuda8:
+pipxgboost-nccl-cuda8: pipxgboost
 	@echo "----- pip install xgboost-nccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nonccl-cuda8:
+pipxgboost-nonccl-cuda8: pipxgboost
 	@echo "----- pip install xgboost-nonccl-cuda8 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda8/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nccl-cuda9:
+pipxgboost-nccl-cuda9: pipxgboost
 	@echo "----- pip install xgboost-nccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
-pipxgboost-nonccl-cuda9:
+pipxgboost-nonccl-cuda9: pipxgboost
 	@echo "----- pip install xgboost-nonccl-cuda9 from S3 -----"
 	mkdir -p xgboost/python-package/dist ; cd xgboost/python-package/dist && pip install https://s3.amazonaws.com/artifacts.h2o.ai/releases/bleeding-edge/ai/h2o/xgboost/0.7-nonccl-cuda9/xgboost-0.7-py3-none-any.whl --upgrade --target ../
 
