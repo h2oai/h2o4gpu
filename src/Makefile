@@ -69,6 +69,9 @@ DFLAGS+=-DUSE_NVTX=1
 endif
 
 ifdef NVCC
+$(info *** => CUDA_HOME is in $(CUDA_HOME))
+CUDA_HOME ?= /usr/local/cuda
+$(info *** => CUDA_HOME is in $(CUDA_HOME))
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -I/usr/include/openblas
 else
 CUDFLAGS=$(DFLAGS) -I/usr/include/openblas
