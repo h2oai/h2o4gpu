@@ -14,6 +14,9 @@ HOST_OS := $(shell uname -s 2>/dev/null | tr "[:upper:]" "[:lower:]")
 ARCH := $(shell getconf LONG_BIT)
 
 ifdef NVCC
+$(info *** => NVCC is in $(NVCC))
+$(info *** => CUDA_PATH in $(CUDA_PATH))
+
 ifeq ($(HOST_OS),darwin)
 	CUDA_PATH ?= /usr/local/cuda
 	LIB_FLAGS := $(CUDA_PATH)/lib
