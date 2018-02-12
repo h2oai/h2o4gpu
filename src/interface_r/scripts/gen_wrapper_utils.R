@@ -8,7 +8,8 @@ gen_wrapper <- function(
   r_function = NULL,
   additional_int_params = NULL,
   nullable_int_params = NULL,
-  class_tags = NULL) {
+  class_tags = NULL,
+  description = NULL) {
 
   capture.output(
     {
@@ -63,7 +64,7 @@ gen_wrapper <- function(
       }
       
       # Attach additional class information
-      write_line(paste0('  h2o4gpu_model(model, ', class_tags, ')'))
+      write_line(paste0('  h2o4gpu_model(model, ', class_tags, ', \"', description, '\")'))
       
       write_line("}\n")
     }
@@ -92,7 +93,8 @@ write_wrapper <- function(python_function,
                           r_function = NULL,
                           additional_int_params = NULL,
                           nullable_int_params = NULL,
-                          class_tags = NULL) {
+                          class_tags = NULL,
+                          description = NULL) {
   # Write the wrapper
   write(
     gen_wrapper(
@@ -100,7 +102,8 @@ write_wrapper <- function(python_function,
       r_function,
       additional_int_params,
       nullable_int_params,
-      class_tags
+      class_tags,
+      description
       ),
     file = file_name,
     append = TRUE)

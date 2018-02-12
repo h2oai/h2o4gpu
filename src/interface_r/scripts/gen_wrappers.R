@@ -45,42 +45,48 @@ write_wrapper("h2o4gpu$RandomForestClassifier",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("classifier")',
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Random Forest Classifier")
 
 write_wrapper("h2o4gpu$RandomForestRegressor",
             r_function = "h2o4gpu.random_forest_regressor",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("regressor")',
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Random Forest Regressor")
 
 write_wrapper("h2o4gpu$GradientBoostingClassifier",
             r_function = "h2o4gpu.gradient_boosting_classifier",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("classifier")',
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Gradient Boosting Classifier")
 
 write_wrapper("h2o4gpu$GradientBoostingRegressor",
             r_function = "h2o4gpu.gradient_boosting_regressor",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("regressor")',
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Gradient Boosting Regressor")
 
 write_wrapper("h2o4gpu$ElasticNet",
             r_function = "h2o4gpu.elastic_net_regressor",
             nullable_int_params = common_nullabl_int_params,
             class_tags = 'c("regressor")',
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Elastic Net Regressor")
 
 write_wrapper("h2o4gpu$ElasticNet",
               r_function = "h2o4gpu.elastic_net_classifier",
               nullable_int_params = common_nullabl_int_params,
               class_tags = 'c("classifier")',
               file_name = file_name,
-              test_script_file_name = test_script_file_name)
+              test_script_file_name = test_script_file_name,
+              description = "Elastic Net Classifier")
 
 # Unsupervised models
 
@@ -89,21 +95,24 @@ write_wrapper("h2o4gpu$KMeans",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "KMeans Clustering")
 
 write_wrapper("h2o4gpu$PCA",
             r_function = "h2o4gpu.pca",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Principal Components Analysis")
 
 write_wrapper("h2o4gpu$TruncatedSVD",
             r_function = "h2o4gpu.truncated_svd",
             nullable_int_params = common_nullabl_int_params,
             class_tags = "NULL",
             file_name = file_name,
-            test_script_file_name = test_script_file_name)
+            test_script_file_name = test_script_file_name,
+            description = "Truncated Singular-value Decomposition")
 
 # Regenerate NAMESPACE and .Rd files
 roxygen2::roxygenise(pkg_location)
