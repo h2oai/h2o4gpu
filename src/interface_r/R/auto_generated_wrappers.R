@@ -439,7 +439,7 @@ h2o4gpu.pca <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, NULL, "Principal Components Analysis")
+  h2o4gpu_model(model, NULL, "Principal Components Analysis (PCA)")
 }
 
 #' @export
@@ -465,6 +465,6 @@ h2o4gpu.truncated_svd <- function(
     n_gpus = as.integer(n_gpus),
     gpu_id = as.integer(gpu_id)
   )
-  h2o4gpu_model(model, NULL, "Truncated Singular-value Decomposition")
+  h2o4gpu_model(model, NULL, "Truncated Singular Value Decomposition (TruncatedSVD)")
 }
 

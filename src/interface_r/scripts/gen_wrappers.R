@@ -104,7 +104,7 @@ write_wrapper("h2o4gpu$PCA",
             class_tags = "NULL",
             file_name = file_name,
             test_script_file_name = test_script_file_name,
-            description = "Principal Components Analysis")
+            description = "Principal Components Analysis (PCA)")
 
 write_wrapper("h2o4gpu$TruncatedSVD",
             r_function = "h2o4gpu.truncated_svd",
@@ -112,7 +112,7 @@ write_wrapper("h2o4gpu$TruncatedSVD",
             class_tags = "NULL",
             file_name = file_name,
             test_script_file_name = test_script_file_name,
-            description = "Truncated Singular-value Decomposition")
+            description = "Truncated Singular Value Decomposition (TruncatedSVD)")
 
 # Regenerate NAMESPACE and .Rd files
 roxygen2::roxygenise(pkg_location)
