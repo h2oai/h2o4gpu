@@ -57,7 +57,7 @@ h2o4gpu.random_forest_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("classifier"))
+  h2o4gpu_model(model, c("classifier"), "Random Forest Classifier")
 }
 
 #' @export
@@ -111,7 +111,7 @@ h2o4gpu.random_forest_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("regressor"))
+  h2o4gpu_model(model, c("regressor"), "Random Forest Regressor")
 }
 
 #' @export
@@ -167,7 +167,7 @@ h2o4gpu.gradient_boosting_classifier <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("classifier"))
+  h2o4gpu_model(model, c("classifier"), "Gradient Boosting Classifier")
 }
 
 #' @export
@@ -225,7 +225,7 @@ h2o4gpu.gradient_boosting_regressor <- function(
     predictor = predictor,
     backend = backend
   )
-  h2o4gpu_model(model, c("regressor"))
+  h2o4gpu_model(model, c("regressor"), "Gradient Boosting Regressor")
 }
 
 #' @export
@@ -300,7 +300,7 @@ h2o4gpu.elastic_net_regressor <- function(
     order = order,
     backend = backend
   )
-  h2o4gpu_model(model, c("regressor"))
+  h2o4gpu_model(model, c("regressor"), "Elastic Net Regressor")
 }
 
 #' @export
@@ -375,7 +375,7 @@ h2o4gpu.elastic_net_classifier <- function(
     order = order,
     backend = backend
   )
-  h2o4gpu_model(model, c("classifier"))
+  h2o4gpu_model(model, c("classifier"), "Elastic Net Classifier")
 }
 
 #' @export
@@ -413,7 +413,7 @@ h2o4gpu.kmeans <- function(
     do_checks = as.integer(do_checks),
     backend = backend
   )
-  h2o4gpu_model(model, NULL)
+  h2o4gpu_model(model, NULL, "KMeans Clustering")
 }
 
 #' @export
@@ -439,7 +439,7 @@ h2o4gpu.pca <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, NULL)
+  h2o4gpu_model(model, NULL, "Principal Components Analysis (PCA)")
 }
 
 #' @export
@@ -465,6 +465,6 @@ h2o4gpu.truncated_svd <- function(
     n_gpus = as.integer(n_gpus),
     gpu_id = as.integer(gpu_id)
   )
-  h2o4gpu_model(model, NULL)
+  h2o4gpu_model(model, NULL, "Truncated Singular Value Decomposition (TruncatedSVD)")
 }
 
