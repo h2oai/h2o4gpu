@@ -112,9 +112,16 @@ class TruncatedSVDH2O(object):
         param.gpu_id = self.gpu_id
 
         if param.tol < 0.0:
-            raise ValueError("The `tol` parameter must be >= 0.0")
+            raise ValueError("The `tol` parameter must be >= 0.0 "
+                             "but got " + str(param.tol))
         if param.n_iter < 1:
-            raise ValueError("The `n_iter` parameter must be > 1")
+            raise ValueError("The `n_iter` parameter must be > 1 "
+                             "but got " + str(param.n_iter))
+        if param.n_iter > 2147483647:
+            raise ValueError("The `n_iter parameter cannot exceed "
+                             "the value for "
+                             "C++ INT_MAX (2147483647) "
+                             "but got`" + str(self.n_iter))
 
         lib = self._load_lib()
         lib.truncated_svd(
