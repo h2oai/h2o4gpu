@@ -22,8 +22,7 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(X)
     print("\n")
     print("Sklearn run through h2o4gpu wrapper")
-
-    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, random_state=42, verbose=True, n_iter=100)
+    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, tol = 1E-50, n_iter=20000000, random_state=42, verbose=True)
     h2o4gpu_tsvd_sklearn_wrapper.fit(X)
 
     print("h2o4gpu tsvd Singular Values")
@@ -47,21 +46,19 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
 
-    if algorithm=='arpack':
-        rtol = 1E-5
-    else:
-        rtol = 1E-2
+    rtol = 1E-2
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
-    if algorithm=='arpack':
-        rtol = 1E-5
-    else:
-        rtol = 1E-1
+
+    rtol = 1E-1
+    #Check components for first singular value
+    assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[0], sklearn_tsvd.components_[0], rtol=rtol)
+
+    #Check components for second signular value
     #TODO (navdeep) Why does this not match?
-    #assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_, sklearn_tsvd.components_, rtol=rtol)
-    if algorithm=='arpack':
-        rtol = 1E-5
-    else:
-        rtol = 0.5
+    if algorithm != "power":
+        assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[1], sklearn_tsvd.components_[1], rtol=rtol)
+
+    rtol = 0.5
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_, sklearn_tsvd.explained_variance_, rtol=rtol)
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_, rtol=rtol)
 
