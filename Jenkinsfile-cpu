@@ -15,20 +15,18 @@ import ai.h2o.ci.BuildInfo
 def commitMessage = ''
 def h2o4gpuUtils = null
 
-def dist = "dist4"
-def BUILDTYPE = "nccl-cuda9"
-def cuda = "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"
-def cudart = "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
-def extratag = "-nccl-cuda9"
-def linuxwheel = "linux_whl4"
-def testtype = "dotest"
-def labelbuild = "nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
-def labeltest = "gpu && nvidia-docker && (mr-dl11 || mr-dl16 || mr-dl10)"
-def labelruntime = "nvidia-docker"
+def dist = "dist8"
+def BUILDTYPE = "cpu"
+def cuda = "ubuntu:16.04"
+def extratag = "-cpu"
+def linuxwheel = "linux_whl2"
+def testtype = "dotestfast_nonccl"
+def labelbuild = "docker && linux"
+def labeltest = "docker"
+def labelruntime = "docker"
 def doingbenchmark = "0"
 def dobenchmark = "1"
 def doruntime = "1"
-
 //################ BELOW IS COPY/PASTE of Jenkinsfile.utils2 (except stage names)
 // Just Notes:
 //
@@ -69,7 +67,7 @@ pipeline {
         //
         //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
         /////////////////////////////////////////////////////////////////////
-        stage("Git clone on Linux nccl-cuda9") {
+        stage("Git clone on Linux cpu") {
 
             agent {
                 label "${labelbuild}"
@@ -98,7 +96,7 @@ pipeline {
                 stash includes: "Jenkinsfile*", name: "jenkinsfiles"
             }
         }
-        stage("Build Wheel on Linux nccl-cuda9") {
+        stage("Build Wheel on Linux cpu") {
 
             agent {
                 label "${labelbuild}"
@@ -141,7 +139,7 @@ pipeline {
             }
         }
 
-        stage("Test Wheel & Pylint & S3up on Linux nccl-cuda9") {
+        stage("Test Wheel & Pylint & S3up on Linux cpu") {
             agent {
                 label "${labeltest}"
             }
@@ -181,7 +179,7 @@ pipeline {
                 }
             }
         }
-        stage("Build/Publish Runtime Docker Linux nccl-cuda9") {
+        stage("Build/Publish Runtime Docker Linux cpu") {
             agent {
                 label "${labelruntime}"
             }
@@ -232,7 +230,7 @@ pipeline {
             }
         }
 
-        stage("Benchmarking Linux nccl-cuda9") {
+        stage("Benchmarking Linux cpu") {
             agent {
                 label 'master'
             }

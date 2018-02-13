@@ -1,3 +1,10 @@
+include Makefile_header.mk
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE := $(location)
+$(info ** -> $(WHERE))
+$(info ** ------------------------------------------------------------------ **)
+NVCC := $(shell command -v nvcc 2> /dev/null)
+
 SHELL := /bin/bash # force avoidance of dash as shell
 # TODO(jon): ensure CPU-only can compile (i.e. no nvcc, etc.)
 #
@@ -14,6 +21,7 @@ MAJOR_MINOR=$(shell echo $(BASE_VERSION) | sed 's/.*\(^[0-9][0-9]*\.[0-9][0-9]*\
 # System specific stuff
 include src/config2.mk
 
+ifdef NVCC
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
 $(warning Compiling with Cuda9 or higher)
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
@@ -21,6 +29,7 @@ else
 $(warning Compiling with Cuda8 or lower)
 # >=52 required for kmeans for larger data of size rows/32>2^16
 XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
+endif
 endif
 
 # Location of local directory with dependencies
@@ -67,27 +76,27 @@ H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
 
 
 help:
-	@echo " -------- Build and Install ---------"
-	@echo "make clean           Clean all build files."
-	@echo "make                 fullinstall"
-	@echo "make fullinstall     Clean everything, then compile and install everything (for cuda9 with nccl in xgboost)."
-	@echo "make build           Just Build the whole project."
-	@echo " -------- Test ---------"
-	@echo "make test            Run tests."
-	@echo "make testbig         Run tests for big data."
-	@echo "make testperf        Run performance and accuracy tests."
-	@echo "make testbigperf     Run performance and accuracy tests for big data."
-	@echo " -------- Docker ---------"
-	@echo "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/ (for cuda9 with nccl in xgboost)."
-	@echo "make docker-runtime  Build runtime docker and save to local path (for cuda9 with nccl in xgboost)."
-	@echo "make get_docker      Download runtime docker (e.g. instead of building it)"
-	@echo "make load_docker     Load runtime docker image"
-	@echo "make run_in_docker   Run jupyter notebook demo using runtime docker image already present"
-	@echo "make docker-runtests Run tests in docker"
-	@echo " -------- Pycharm Help ---------"
-	@echo "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/"
-	@echo "Example Pycharm working directory: /home/jon/h2o4gpu/"
-
+	$(call inform, " -------- Build and Install ---------")
+	$(call inform, "make clean           Clean all build files.")
+	$(call inform, "make                 fullinstall")
+	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
+	$(call inform, "make cpu-fullinstall Clean everything then compile and isntall everything only with CPU")
+	$(call inform, "make build           Just Build the whole project.")
+	$(call inform, " -------- Test ---------")
+	$(call inform, "make test            Run tests.")
+	$(call inform, "make testbig         Run tests for big data.")
+	$(call inform, "make testperf        Run performance and accuracy tests.")
+	$(call inform, "make testbigperf     Run performance and accuracy tests for big data.")
+	$(call inform, " -------- Docker ---------")
+	$(call inform, "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/ (for cuda9 with nccl in xgboost).")
+	$(call inform, "make docker-runtime  Build runtime docker and save to local path (for cuda9 with nccl in xgboost).")
+	$(call inform, "make get_docker      Download runtime docker (e.g. instead of building it)")
+	$(call inform, "make load_docker     Load runtime docker image")
+	$(call inform, "make run_in_docker   Run jupyter notebook demo using runtime docker image already present")
+	$(call inform, "make docker-runtests Run tests in docker")
+	$(call inform, " -------- Pycharm Help ---------")
+	$(call inform, "Example Pycharm environment flags: PYTHONPATH=/home/jon/h2o4gpu/src/interface_py:/home/jon/h2o4gpu;PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04//lib/:/home/jon/lib:/opt/rstudio-1.0.136/bin/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64::/home/jon/lib/:$LD_LIBRARY_PATH;LLVM4=/opt/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/")
+	$(call inform, "Example Pycharm working directory: /home/jon/h2o4gpu/")
 
 sync_small_data:
 	@echo "---- Synchronizing test data ----"
@@ -135,6 +144,7 @@ alldeps-nccl-cuda8: deps_fetch alldeps_install-nccl-cuda8
 alldeps-nonccl-cuda8: deps_fetch alldeps_install-nonccl-cuda8
 alldeps-nccl-cuda9: deps_fetch alldeps_install-nccl-cuda9
 alldeps-nonccl-cuda9: deps_fetch alldeps_install-nonccl-cuda9
+alldeps-cpuonly: deps_fetch alldeps_install-cpuonly
 
 clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	-rm -rf ./build
@@ -168,9 +178,12 @@ libxgboost-nccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost
 libxgboost-nonccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost2
+libxgboost-cpu-local:
+	cd xgboost ; make -f Makefile2 libxgboost-cpu
 
 apply-xgboost-nccl-local: libxgboost-nccl-local pipxgboost
 apply-xgboost-nonccl-local: libxgboost-nonccl-local pipxgboost
+apply-xgboost-cpu-local: libxgboost-cpu-local pipxgboost
 
 pipxgboost:
 	@echo "----- pip install xgboost built locally -----"
@@ -178,10 +191,13 @@ pipxgboost:
 
 alldeps-nccl-local: deps_fetch alldeps-install-nccl-local
 alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
+alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 
 # lib for sklearn because don't want to fully apply yet
 alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
 alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
+alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
+alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
 
 ##### dependencies
 deps_clean:
@@ -218,6 +234,7 @@ alldeps_install-nonccl-cuda9: deps_install apply-xgboost-nonccl-cuda9 apply_py3n
 
 fullinstall: fullinstall-nccl-cuda9
 fullinstalllocal: fullinstall-nccl-local
+cpu-fullinstall: fullinstall-cpuonly
 
 fullinstall-nccl-local: clean alldeps-nccl-local build install
 	mkdir -p src/interface_py/dist-nccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nccl-local/
@@ -236,6 +253,9 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
+fullinstall-cpuonly: clean alldeps-cpuonly build install
+	mkdir -p src/interface_py/dist-cpuonly-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-cpuonly-local/
+	
 ####################################################
 # Docker stuff
 
@@ -305,6 +325,63 @@ docker-runtime-nccl-cuda9-load:
 run_in_docker-nccl-cuda9:
 	-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-nccl-cuda9-runtime &
 	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
+
+
+############### CPU
+docker-build-cpu:
+	@echo "+-- Building Wheel in Docker (-cpu) --+"
+	rm -rf src/interface_py/dist/*.whl ; rm -rf src/interface_py/dist4/*.whl
+	export CONTAINER_NAME="localmake-build" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export dockerimage="ubuntu:16.04" ;\
+	export H2O4GPU_BUILD="" ;\
+	export H2O4GPU_SUFFIX="" ;\
+	export makeopts="" ;\
+	export dist="dist8" ;\
+	bash scripts/make-docker-devel.sh
+
+docker-runtime-cpu:
+	@echo "+--Building Runtime Docker Image Part 2 (-cpu) --+"
+	export CONTAINER_NAME="localmake-runtime" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export encodedFullVersionTag=$(BASE_VERSION) ;\
+	export fullVersionTag=$(BASE_VERSION) ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="ubuntu:16.04" ;\
+	bash scripts/make-docker-runtime.sh
+	
+docker-runtime-cpu-run:
+	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtime-run" ;\
+	export versionTag=$(BASE_VERSION) ;\
+	export extratag="-cpu" ;\
+	export encodedFullVersionTag=$(BASE_VERSION) ;\
+	export fullVersionTag=$(BASE_VERSION) ;\
+	export buckettype="releases/bleeding-edge" ;\
+	export dockerimage="ubuntu:16.04" ;\
+	docker run --init --rm --name $${CONTAINER_NAME} -d -t -u `id -u`:`id -g` --entrypoint=bash opsh2oai/h2o4gpu-$${versionTag}$${extratag}-runtime:latest
+
+docker-runtests-cpu:
+	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
+	export CONTAINER_NAME="localmake-runtests" ;\
+	export extratag="-cpu" ;\
+	export dockerimage="ubuntu:16.04" ;\
+	export dist="dist4" ;\
+	export target="dotest" ;\
+	bash scripts/make-docker-runtests.sh
+
+get_docker-cpu:
+	wget https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/$(MAJOR_MINOR)-cpu/h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2
+
+docker-runtime-cpu-load:
+	pbzip2 -dc h2o4gpu-$(BASE_VERSION)-cpu-runtime.tar.bz2 | docker load
+
+run_in_docker-cpu:
+	-mkdir -p log ; docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-cpu-runtime &
+	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
+	
 
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
@@ -457,6 +534,7 @@ fullinstalljenkins-nccl-cuda8: mrproper fullinstall-nccl-cuda8
 fullinstalljenkins-nonccl-cuda8: mrproper fullinstall-nonccl-cuda8
 fullinstalljenkins-nccl-cuda9: mrproper fullinstall-nccl-cuda9
 fullinstalljenkins-nonccl-cuda9: mrproper fullinstall-nonccl-cuda9
+fullinstalljenkins-cpu: mrproper fullinstall-cpu-local
 
 # for nccl cuda9 build benchmark
 fullinstalljenkins-nccl-cuda9-benchmark: mrproper clean alldeps-nccl-cuda9 build install

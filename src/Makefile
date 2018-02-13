@@ -1,8 +1,16 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE_ART_THOU := $(location)
+$(info ** -> $(WHERE_ART_THOU))
+$(info ** ------------------------------------------------------------------ **)
+
+
 SHELL := /bin/bash # force avoidance of dash as shell
 include config2.mk
 
-ifndef CUDA_HOME
-$(error CUDA_HOME is not set)
+NVCC := $(shell command -v nvcc 2> /dev/null)
+
+ifndef NVCC
+$(info ** No CUDA found, only build with CPU.)
 endif
 
 # Bulid directory
@@ -60,7 +68,15 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
+ifdef NVCC
+$(info *** => CUDA_HOME is in $(CUDA_HOME))
+CUDA_HOME ?= /usr/local/cuda
+$(info *** => CUDA_HOME is in $(CUDA_HOME))
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -I/usr/include/openblas
+else
+CUDFLAGS=$(DFLAGS) -I/usr/include/openblas
+endif
+
 ifeq ($(USENVTX),1)
 CUDFLAGS+=-I/usr/local/cuda/include
 endif
@@ -78,10 +94,13 @@ OPENMP=-qopenmp
 NVCCEXTRA=-ccbin=icpc
 endif
 
+
+CUFLAGS=$(IFLAGS) -std=c++11 $(OPTFLAG) $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
+ifdef NVCC
 # Assume installed nccl into $(CUDA_HOME) and moved libraries in lib to lib64
 CUXX=$(CUDA_HOME)/bin/nvcc --expt-relaxed-constexpr --expt-extended-lambda $(NVCCEXTRA) -L$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/include -I$(CUB_HOME) -lineinfo
-CUFLAGS=$(IFLAGS) -std=c++11 $(OPTFLAG) $(HASH) -Xcompiler -fPIC -Xcompiler $(OPENMP) $(RINCLUDEHOME) $(CUDFLAGS)
 CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas -lcusolver -lcusparse $(NVCC_GENCODE)
+endif
 #-gencode arch=compute_20,code=sm_20
 
 # Load local (e.g. R) specific config
@@ -172,7 +191,11 @@ VPATH=cpu cpu/matrix cpu/projector gpu gpu/matrix gpu/projector
 
 .PHONY: all default clean
 
+ifdef NVCC
 all: gpulib cpulib
+else
+all: cpulib
+endif
 
 default: gpulib
 

@@ -1,5 +1,17 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE := $(location)
+$(info ** -> $(WHERE))
+$(info ** ------------------------------------------------------------------ **)
 
+include ../../Makefile_header.mk
 include ../config2.mk
+
+NVCC := $(shell command -v nvcc 2> /dev/null)
+ifdef NVCC
+$(info ** -> NVIDIA found, GPU used.)
+else
+$(info ** -> NVIDIA not found, CPU used instead.)
+endif
 
 H2O4GPUROOT=../
 
@@ -52,10 +64,12 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
+ifdef NVCC
 CUDFLAGS=$(DFLAGS) -DHAVECUDA -DCUDCHECKERR
-
+endif
 
 # 3. Set CUDA_HOME= path/to/CUDA/libraries/
+ifdef NVCC
 ifndef CUDAHOME
 ifeq ($(shell uname -s), Darwin)
 CUDAHOME=/usr/local/cuda/lib/
@@ -63,8 +77,10 @@ else
 CUDAHOME=/usr/local/cuda/lib64/
 endif
 endif
+endif
 
 # Check System Args.
+ifdef NVCC
 ifeq ($(shell uname -s), Darwin)
 LDFLAGS=-lm -framework Accelerate
 CULDFLAGS=-L$(CUDAHOME) -L/usr/local/lib $(CULDFLAGS_)
@@ -74,11 +90,26 @@ LDFLAGS=$(LINKFLAGS)
 CULDFLAGS=-L$(CUDAHOME) -lcudart -lcudadevrt -lcublas -lcusolver -lcusparse -lcurand $(LINKFLAGS) $(DFLAGS)
 SHARED=so
 endif
+else
+ifeq ($(shell uname -s), Darwin)
+LDFLAGS=-lm -framework Accelerate
+CULDFLAGS=-L/usr/local/lib $(CULDFLAGS_)
+SHARED=dylib
+else
+LDFLAGS=$(LINKFLAGS)
+CULDFLAGS=$(LINKFLAGS) $(DFLAGS)
+SHARED=so
+endif
+endif
 
 # C++ Flags
+ifdef NVCC
 CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -I$(CUDAHOME)/../include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 ifeq ($(USENVTX),1)
 CXXFLAGS+=-I/usr/local/cuda/include/
+endif
+else
+CXXFLAGS=$(IFLAGS) $(OPTFLAG) $(HASH) -I$(H2O4GPUROOT)/include -std=c++11 -Wall -Wconversion -fPIC $(LINKFLAGS)  $(DFLAGS)
 endif
 
 # H2O4GPU static libraries
@@ -114,12 +145,19 @@ CUH2O4GPULIB=\
 # Python-required CUDA runtime library
 PYCUDART=$(CUDAHOME)/libcudart.so
 
-
+ifdef NVCC
 .PHONY: default all clean cpulib gpulib
+else
+.PHONY: default all clean cpulib
+endif 
 
 default: all
 
+ifdef NVCC
 all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
+else
+all: cpulib ch2o4gpu_cpu h2o4gpu_c.o
+endif
 
 cpulib:
 	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
