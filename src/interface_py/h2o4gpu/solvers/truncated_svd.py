@@ -24,14 +24,14 @@ class TruncatedSVDH2O(object):
                            or “power” for the power method.
 
     :param: int n_iter: number of iterations (only relevant for power method)
-            Should be large number to run indefinitely
+            Should be at most 2147483647 due to INT_MAX in C++ backend.
 
     :param: int random_state: seed (None for auto-generated)
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
                        Should be 0.0 to effectively ignore
-                        and only base convergence upon n_iter
+                       and only base convergence upon n_iter
 
     :param: bool verbose: Verbose or not
 
