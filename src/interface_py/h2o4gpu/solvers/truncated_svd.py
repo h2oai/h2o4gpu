@@ -24,14 +24,14 @@ class TruncatedSVDH2O(object):
                            or "power" for the power method.
 
     :param: int n_iter: number of iterations (only relevant for power method)
-            Should be large number to run indefinitely
+            Should be at most 2147483647 due to INT_MAX in C++ backend.
 
     :param: int random_state: seed (None for auto-generated)
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
                        Should be 0.0 to effectively ignore
-                        and only base convergence upon n_iter
+                       and only base convergence upon n_iter
 
     :param: bool verbose: Verbose or not
 
@@ -112,9 +112,16 @@ class TruncatedSVDH2O(object):
         param.gpu_id = self.gpu_id
 
         if param.tol < 0.0:
-            raise ValueError("The `tol` parameter must be >= 0.0")
+            raise ValueError("The `tol` parameter must be >= 0.0 "
+                             "but got " + str(param.tol))
         if param.n_iter < 1:
-            raise ValueError("The `n_iter` parameter must be > 1")
+            raise ValueError("The `n_iter` parameter must be > 1 "
+                             "but got " + str(param.n_iter))
+        if param.n_iter > 2147483647:
+            raise ValueError("The `n_iter parameter cannot exceed "
+                             "the value for "
+                             "C++ INT_MAX (2147483647) "
+                             "but got`" + str(self.n_iter))
 
         lib = self._load_lib()
         lib.truncated_svd(
@@ -127,14 +134,8 @@ class TruncatedSVDH2O(object):
         self._U = U
         self._X = X
         X_transformed = U * w
-        # TODO Investigate why explained variance/ratio are off in cuda
-        if self.algorithm != "power":
-            self.explained_variance = explained_variance
-            self.explained_variance_ratio = explained_variance_ratio
-        else:
-            self.explained_variance = np.var(X_transformed, axis=0)
-            full_var = np.var(X, axis=0).sum()
-            self.explained_variance_ratio = self.explained_variance / full_var
+        self.explained_variance = explained_variance
+        self.explained_variance_ratio = explained_variance_ratio
         return X_transformed
 
     def transform(self, X):
