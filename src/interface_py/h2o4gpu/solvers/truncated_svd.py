@@ -4,9 +4,11 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import ctypes
+import time
 import numpy as np
 from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
+from ..utils.extmath import svd_flip
 
 
 class TruncatedSVDH2O(object):
@@ -129,13 +131,24 @@ class TruncatedSVDH2O(object):
             _as_fptr(explained_variance), _as_fptr(explained_variance_ratio),
             param)
 
-        self._Q = Q
         self._w = w
-        self._U = U
         self._X = X
-        X_transformed = U * w
-        self.explained_variance = explained_variance
-        self.explained_variance_ratio = explained_variance_ratio
+        self._U, self._Q = svd_flip(U, Q)
+        X_transformed = self._U * self._w
+        # TODO Investigate why explained variance/ratio are off in CUDA
+        if self.algorithm not in ("power", "cusolver"):
+            self.explained_variance = explained_variance
+            self.explained_variance_ratio = explained_variance_ratio
+        else:
+            start_ev = time.time()
+            self.explained_variance = np.var(X_transformed, axis=0)
+            print("Time taken for explained variance : " + str(time.time()-start_ev))
+            start_var = time.time()
+            full_var = np.var(X, axis=0).sum()
+            print("Time taken for full variance : " + str(time.time() - start_var))
+            start_evr = time.time()
+            self.explained_variance_ratio = self.explained_variance / full_var
+            print("Time taken for explained variance ratio : " + str(time.time() - start_evr))
         return X_transformed
 
     def transform(self, X):
