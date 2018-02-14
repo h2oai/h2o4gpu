@@ -44,10 +44,10 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
 
-    rtol = 1E-2
+    rtol = 1E-5
+
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
 
-    rtol = 1E-1
     #Check components for first singular value
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[0], sklearn_tsvd.components_[0], rtol=rtol)
 
@@ -60,7 +60,6 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
         print("Max diff of power components")
         print(str(np.max(h2o4gpu_tsvd_sklearn_wrapper.components_[1]-sklearn_tsvd.components_[1])))
 
-    rtol = 1E-4
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_, sklearn_tsvd.explained_variance_, rtol=rtol)
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_, rtol=rtol)
 
