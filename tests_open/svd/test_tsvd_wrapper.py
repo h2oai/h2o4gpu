@@ -3,7 +3,6 @@ import sys
 import logging
 from h2o4gpu.decomposition import TruncatedSVDSklearn as sklearnsvd
 from h2o4gpu.solvers import TruncatedSVD
-import pytest
 
 print(sys.path)
 
@@ -14,17 +13,14 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
 
     X = np.random.rand(m, n)
 
-    # Exact scikit impl
-    sklearn_tsvd = sklearnsvd(algorithm="arpack", n_components=k, random_state=42)
-
     print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
     print("Original X Matrix")
     print(X)
-    print("\n")
-    print("Sklearn run through h2o4gpu wrapper")
-    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, tol = 1E-50, n_iter=20000000, random_state=42, verbose=True)
-    h2o4gpu_tsvd_sklearn_wrapper.fit(X)
 
+    print("\n")
+    print("H2O4GPU run")
+    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVD(n_components=k, algorithm=algorithm, tol = 1E-50, n_iter=200, random_state=42, verbose=True)
+    h2o4gpu_tsvd_sklearn_wrapper.fit(X)
     print("h2o4gpu tsvd Singular Values")
     print(h2o4gpu_tsvd_sklearn_wrapper.singular_values_)
     print("h2o4gpu tsvd Components (V^T)")
@@ -35,7 +31,9 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_)
 
     print("\n")
-    print("sklearn run")
+    print("Sklearn run")
+    # Exact scikit impl
+    sklearn_tsvd = sklearnsvd(algorithm="arpack", n_components=k, random_state=42)
     sklearn_tsvd.fit(X)
     print("Sklearn Singular Values")
     print(sklearn_tsvd.singular_values_)
@@ -46,19 +44,22 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
 
-    rtol = 1E-2
+    rtol = 1E-5
+
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
 
-    rtol = 1E-1
     #Check components for first singular value
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[0], sklearn_tsvd.components_[0], rtol=rtol)
 
-    #Check components for second signular value
+    #Check components for second singular value
     #TODO (navdeep) Why does this not match?
     if algorithm != "power":
-        assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[1], sklearn_tsvd.components_[1], rtol=rtol)
+        assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.components_[1], sklearn_tsvd.components_[1], rtol=.7)
 
-    rtol = 0.5
+    if algorithm == "power":
+        print("Max diff of power components")
+        print(str(np.max(h2o4gpu_tsvd_sklearn_wrapper.components_[1]-sklearn_tsvd.components_[1])))
+
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_, sklearn_tsvd.explained_variance_, rtol=rtol)
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.explained_variance_ratio_, sklearn_tsvd.explained_variance_ratio_, rtol=rtol)
 
