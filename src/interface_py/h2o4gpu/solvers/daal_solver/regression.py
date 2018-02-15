@@ -9,6 +9,8 @@ from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
+from src.interface_py.h2o4gpu.solvers.daal_solver.data.IInput import HomogenousDaalData
+from src.interface_py.h2o4gpu.solvers.daal_solver.normalize import zscore
 
 class Method(Enum):
     '''
@@ -24,8 +26,9 @@ class LinearRegression(object):
 
     def __init__(self, fit_intercept=True, normalize=False, **kwargs):
         '''
+        normalize is implemented only for zscore, shouldn't be used with least squares
         :param fit_intercept: calculate all betas by default
-        :param normalize: TODO@monika: normalize must be implemented
+        :param normalize: zscore used
         :param in kwargs: method: normalEquation, qr=least squares
         '''
         if 'method' in kwargs and kwargs['method'] in Method:
@@ -54,8 +57,14 @@ class LinearRegression(object):
         '''
 
         # Training data and responses
-        Input = HomogenNumericTable(X)#, ntype = np.float32)
-        Responses = HomogenNumericTable(y)#, ntype = np.float32)
+        Input = HomogenousDaalData(X).getNumericTable()
+        if self.normalize:
+            Input = zscore(Input)
+        
+        Responses = HomogenousDaalData(y).getNumericTable()
+        
+        # Input = HomogenNumericTable(X)#, ntype = np.float32)
+        # Responses = HomogenNumericTable(y)#, ntype = np.float32)
         # Training object with/without normalization
         linear_training_algorithm = linear_training.Batch(
             method=self.method)
