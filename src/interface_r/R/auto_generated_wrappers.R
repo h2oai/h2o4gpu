@@ -4,6 +4,8 @@
 # Instead, modify scripts/gen_wrappers.R which automatically generates this file
 # ------------------------------------------------------------------------------- 
 
+#' @description Random Forest Classifier
+#' @title Random Forest Classifier
 #' @export
 h2o4gpu.random_forest_classifier <- function(
 	n_estimators = 10L,
@@ -60,6 +62,8 @@ h2o4gpu.random_forest_classifier <- function(
   h2o4gpu_model(model, c("classifier"), "Random Forest Classifier")
 }
 
+#' @description Random Forest Regressor
+#' @title Random Forest Regressor
 #' @export
 h2o4gpu.random_forest_regressor <- function(
 	n_estimators = 10L,
@@ -114,6 +118,8 @@ h2o4gpu.random_forest_regressor <- function(
   h2o4gpu_model(model, c("regressor"), "Random Forest Regressor")
 }
 
+#' @description Gradient Boosting Classifier
+#' @title Gradient Boosting Classifier
 #' @export
 h2o4gpu.gradient_boosting_classifier <- function(
 	loss = "deviance",
@@ -170,6 +176,8 @@ h2o4gpu.gradient_boosting_classifier <- function(
   h2o4gpu_model(model, c("classifier"), "Gradient Boosting Classifier")
 }
 
+#' @description Gradient Boosting Regressor
+#' @title Gradient Boosting Regressor
 #' @export
 h2o4gpu.gradient_boosting_regressor <- function(
 	loss = "ls",
@@ -228,6 +236,8 @@ h2o4gpu.gradient_boosting_regressor <- function(
   h2o4gpu_model(model, c("regressor"), "Gradient Boosting Regressor")
 }
 
+#' @description Elastic Net Regressor
+#' @title Elastic Net Regressor
 #' @export
 h2o4gpu.elastic_net_regressor <- function(
 	alpha = 1.0,
@@ -303,6 +313,8 @@ h2o4gpu.elastic_net_regressor <- function(
   h2o4gpu_model(model, c("regressor"), "Elastic Net Regressor")
 }
 
+#' @description Elastic Net Classifier
+#' @title Elastic Net Classifier
 #' @export
 h2o4gpu.elastic_net_classifier <- function(
 	alpha = 1.0,
@@ -378,6 +390,8 @@ h2o4gpu.elastic_net_classifier <- function(
   h2o4gpu_model(model, c("classifier"), "Elastic Net Classifier")
 }
 
+#' @description KMeans Clustering
+#' @title KMeans Clustering
 #' @export
 h2o4gpu.kmeans <- function(
 	n_clusters = 8L,
@@ -416,6 +430,8 @@ h2o4gpu.kmeans <- function(
   h2o4gpu_model(model, NULL, "KMeans Clustering")
 }
 
+#' @description Principal Components Analysis (PCA)
+#' @title Principal Components Analysis (PCA)
 #' @export
 h2o4gpu.pca <- function(
 	n_components = 2L,
@@ -442,6 +458,8 @@ h2o4gpu.pca <- function(
   h2o4gpu_model(model, NULL, "Principal Components Analysis (PCA)")
 }
 
+#' @description Truncated Singular Value Decomposition (TruncatedSVD)
+#' @title Truncated Singular Value Decomposition (TruncatedSVD)
 #' @export
 h2o4gpu.truncated_svd <- function(
 	n_components = 2L,
