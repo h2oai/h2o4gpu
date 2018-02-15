@@ -35,7 +35,10 @@ attach_attrs_to_model <- function(r_model_obj) {
 }
 
 #' @export
-print.h2o4gpu_model <- function(object, ...) {
+print.h2o4gpu_model <- function(x, ...) {
+  # Note that the x is essentially the model object
+  # The signature only contains x so it's consistent with the built=in print S3 generic method
+  object <- x
   cat(paste0("Algorithm: ", object$description, "\n\n"))
   params <- object$params
   param_names <- names(params)
