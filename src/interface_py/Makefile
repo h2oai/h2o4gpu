@@ -1,3 +1,8 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE := $(location)
+$(info ** -> $(WHERE))
+$(info ** ------------------------------------------------------------------ **)
+
 SHELL := /bin/bash # force avoidance of dash as shell
 thepwd = "$(shell pwd)"
 

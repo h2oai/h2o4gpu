@@ -1,3 +1,10 @@
+location = $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+WHERE := $(location)
+$(info ** -> $(WHERE))
+$(info ** ------------------------------------------------------------------ **)
+
+NVCC := $(shell command -v nvcc 2> /dev/null)
+
 # User Vars
 H2O4GPUROOT=../../src
 
@@ -7,11 +14,15 @@ endif
 
 #.NOTPARALLEL:
 
+ifdef NVCC
 .PHONY: all default clean run runcpu ../../src/build/cpu/h2o4gpu.a ../../src/build/gpu/h2o4gpu.a
-
 all: cpuall gpuall
-
 default: gpuall
+else
+.PHONY: all default clean run runcpu ../../src/build/cpu/h2o4gpu.a
+all: cpuall
+default: cpuall
+endif
 
 SOURCESALT=elastic_net.cpp run_all.cpp
 SOURCESPTR=elastic_net_ptr_driver.cpp run_all.cpp

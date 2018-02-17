@@ -7,6 +7,7 @@ import ctypes
 import numpy as np
 from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
+from ..utils.extmath import svd_flip
 
 
 class TruncatedSVDH2O(object):
@@ -24,14 +25,14 @@ class TruncatedSVDH2O(object):
                            or "power" for the power method.
 
     :param: int n_iter: number of iterations (only relevant for power method)
-            Should be large number to run indefinitely
+            Should be at most 2147483647 due to INT_MAX in C++ backend.
 
     :param: int random_state: seed (None for auto-generated)
 
     :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
                        Should be > 0.0 to ensure convergence.
                        Should be 0.0 to effectively ignore
-                        and only base convergence upon n_iter
+                       and only base convergence upon n_iter
 
     :param: bool verbose: Verbose or not
 
@@ -112,9 +113,16 @@ class TruncatedSVDH2O(object):
         param.gpu_id = self.gpu_id
 
         if param.tol < 0.0:
-            raise ValueError("The `tol` parameter must be >= 0.0")
+            raise ValueError("The `tol` parameter must be >= 0.0 "
+                             "but got " + str(param.tol))
         if param.n_iter < 1:
-            raise ValueError("The `n_iter` parameter must be > 1")
+            raise ValueError("The `n_iter` parameter must be > 1 "
+                             "but got " + str(param.n_iter))
+        if param.n_iter > 2147483647:
+            raise ValueError("The `n_iter parameter cannot exceed "
+                             "the value for "
+                             "C++ INT_MAX (2147483647) "
+                             "but got`" + str(self.n_iter))
 
         lib = self._load_lib()
         lib.truncated_svd(
@@ -122,19 +130,30 @@ class TruncatedSVDH2O(object):
             _as_fptr(explained_variance), _as_fptr(explained_variance_ratio),
             param)
 
-        self._Q = Q
         self._w = w
-        self._U = U
         self._X = X
-        X_transformed = U * w
-        # TODO Investigate why explained variance/ratio are off in cuda
-        if self.algorithm != "power":
+        self._U, self._Q = svd_flip(U, Q)
+        X_transformed = self._U * self._w
+        # TODO Investigate why explained variance/ratio are off in CUDA
+        if self.algorithm not in ("power", "cusolver"):
             self.explained_variance = explained_variance
             self.explained_variance_ratio = explained_variance_ratio
         else:
-            self.explained_variance = np.var(X_transformed, axis=0)
-            full_var = np.var(X, axis=0).sum()
-            self.explained_variance_ratio = self.explained_variance / full_var
+            # start_ev = time.time()
+            self.explained_variance = \
+                np.var(X_transformed, axis=0)
+            # print("Time taken for explained variance :
+            # " + str(time.time()-start_ev))
+            # start_var = time.time()
+            full_var = \
+                np.var(X, axis=0).sum()
+            # print("Time taken for full variance : "
+            # + str(time.time() - start_var))
+            # start_evr = time.time()
+            self.explained_variance_ratio = \
+                self.explained_variance / full_var
+            # print("Time taken for explained variance ratio : "
+            # + str(time.time() - start_evr))
         return X_transformed
 
     def transform(self, X):
