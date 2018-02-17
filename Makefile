@@ -730,13 +730,8 @@ centos7_setup:
 	cp -a /dot/. /tmp/build
 
 centos7_build:
-	(cd /tmp/build && \
-         eval "$$(/root/.pyenv/bin/pyenv init -)" && \
-         /root/.pyenv/bin/pyenv global 3.6.1 && \
-         export IFLAGS="-I/usr/include/openblas" && \
-         export OPENBLAS_PREFIX="open" && \
-         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-local")
-	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
+	IFLAGS="-I/usr/include/openblas" OPENBLAS_PREFIX="open" $(MAKE) fullinstall-nonccl-local
+	cp ./src/interface_py/dist2/h2o4gpu*.whl dist
 	chmod o+rw dist/h2o4gpu*.whl
 
 centos7:
@@ -748,6 +743,27 @@ centos7_in_docker:
 	mkdir dist
 	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
 	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
+
+centos7_cuda9_build:
+	(cd /tmp/build && \
+         eval "$$(/root/.pyenv/bin/pyenv init -)" && \
+         /root/.pyenv/bin/pyenv global 3.6.1 && \
+         export IFLAGS="-I/usr/include/openblas" && \
+         export OPENBLAS_PREFIX="open" && \
+         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda9 build")
+	mkdir dist
+	cp /tmp/build/src/interface_py/dist2/h2o4gpu*.whl dist/
+	chmod o+rw dist/h2o4gpu*.whl
+
+centos7_cuda9:
+	$(MAKE) centos7_setup
+	$(MAKE) centos7_cuda9_build
+
+centos7_cuda9_in_docker:
+	rm -fr dist
+	mkdir dist
+	docker build -t opsh2oai/h2o4gpu-build-centos7-cuda9 -f Dockerfile-build-centos7-cuda9 .
+	nvidia-docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7-cuda9 -c 'make centos7_cuda9'
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END

@@ -13,39 +13,27 @@ ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
 ENV PYENV_ROOT=$HOME/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
+RUN yum install -y wget bzip2 && \
+  wget https://repo.continuum.io/miniconda/Miniconda3-4.3.27-Linux-x86_64.sh && \ 
+  bash Miniconda3-4.3.27-Linux-x86_64.sh -b -p /opt/h2oai/dai/python && \ 
+  wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/x86_64-centos7/llvm.tar.bz2 && \
+  tar xvf llvm.tar.bz2 && \
+  cp -r llvm/* /opt/h2oai/dai/ && \
+  rm -rf llvm*
+
+RUN yum groupinstall -y "Development Tools"
+ENV LLVM4=/opt/h2oai/dai
+ENV PATH=/opt/h2oai/dai/python/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
+ENV PATH=$LLVM4/bin:$PATH
+ENV LD_LIBRARY_PATH=$LLVM4/lib
+COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/gcc
+COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/g++
+COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/x86_64-conda_cos6-linux-gnu-gcc
+ENV PATH=/opt/h2oai/gcc_wrapper:$PATH
+RUN ln /usr/bin/ar $LLVM4/bin/x86_64-conda_cos6-linux-gnu-ar
 
 RUN \
-  yum install -y curl \
-  yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
-  yum install -y python36u
-
-RUN \
-  yum install -y git
-
-RUN \
-  yum install -y make
-
-RUN \
-  yum install -y \
-    openssl-devel \
-    zlib-devel \
-    bzip2-devel \
-    readline-devel \
-    libsqlite3x-devel \
-    wget \
-    curl \
-    llvm \
-    ncurses-devel \
-    xz-devel \
-    tk-devel
-
-RUN \
-    mkdir -p .pylint.d && \
-    rm -rf ~/.pyenv && \
-    git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
-    eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv install 3.6.1 && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
@@ -56,8 +44,6 @@ RUN \
     chmod -R a+rwx /root  && \
     chmod ugo+s /root/ && \
     mkdir -p /root/.cache/ && \
-    eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools && \
     pip install -r requirements_buildonly.txt && \
     pip install -r requirements_runtime.txt && \
@@ -66,22 +52,14 @@ RUN \
 ENV GIT_COMMITER_NAME=h2o4gpu
 ENV GIT_COMMITER_EMAIL=h2o4gpu@h2o.ai
 
-RUN yum install -y which
-RUN yum erase -y git
-RUN yum install -y git2u
-RUN yum install -y ccache
-
 RUN yum install -y sudo man
 
-RUN \
-    eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
-    pip install --upgrade pip && \
-    pip install --upgrade setuptools
+RUN yum install -y atlas-devel blas-devel && \
+  wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz && \
+  tar xvf v0.2.20.tar.gz && \
+  rm v0.2.20.tar.gz && \
+  cd OpenBLAS-0.2.20 && make CBLAS_ONLY=1 && make PREFIX=/usr/local install
 
-RUN yum install -y openblas-devel
-
-RUN yum install -y centos-release-scl-rh && \
-    yum install -y devtoolset-3
-
-RUN yum install -y swig
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/x86_64-conda_cos6-linux-gnu-c++
+RUN yum install -y which
