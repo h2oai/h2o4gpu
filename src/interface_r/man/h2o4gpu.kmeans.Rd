@@ -2,7 +2,7 @@
 % Please edit documentation in R/auto_generated_wrappers.R
 \name{h2o4gpu.kmeans}
 \alias{h2o4gpu.kmeans}
-\title{KMeans Clustering}
+\title{K-means Clustering}
 \usage{
 h2o4gpu.kmeans(n_clusters = 8L, init = "k-means++", n_init = 1L,
   max_iter = 300L, tol = 1e-04, precompute_distances = "auto",
@@ -11,5 +11,5 @@ h2o4gpu.kmeans(n_clusters = 8L, init = "k-means++", n_init = 1L,
   backend = "h2o4gpu")
 }
 \description{
-KMeans Clustering
+K-means Clustering
 }

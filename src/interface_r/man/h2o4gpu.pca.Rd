@@ -2,12 +2,12 @@
 % Please edit documentation in R/auto_generated_wrappers.R
 \name{h2o4gpu.pca}
 \alias{h2o4gpu.pca}
-\title{Principal Components Analysis (PCA)}
+\title{Principal Component Analysis (PCA)}
 \usage{
 h2o4gpu.pca(n_components = 2L, copy = TRUE, whiten = FALSE,
   svd_solver = "arpack", tol = 0, iterated_power = "auto",
   random_state = NULL, verbose = FALSE, backend = "h2o4gpu")
 }
 \description{
-Principal Components Analysis (PCA)
+Principal Component Analysis (PCA)
 }

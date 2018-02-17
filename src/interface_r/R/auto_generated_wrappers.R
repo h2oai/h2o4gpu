@@ -390,8 +390,8 @@ h2o4gpu.elastic_net_classifier <- function(
   h2o4gpu_model(model, c("classifier"), "Elastic Net Classifier")
 }
 
-#' @description KMeans Clustering
-#' @title KMeans Clustering
+#' @description K-means Clustering
+#' @title K-means Clustering
 #' @export
 h2o4gpu.kmeans <- function(
 	n_clusters = 8L,
@@ -427,11 +427,11 @@ h2o4gpu.kmeans <- function(
     do_checks = as.integer(do_checks),
     backend = backend
   )
-  h2o4gpu_model(model, NULL, "KMeans Clustering")
+  h2o4gpu_model(model, NULL, "K-means Clustering")
 }
 
-#' @description Principal Components Analysis (PCA)
-#' @title Principal Components Analysis (PCA)
+#' @description Principal Component Analysis (PCA)
+#' @title Principal Component Analysis (PCA)
 #' @export
 h2o4gpu.pca <- function(
 	n_components = 2L,
@@ -455,7 +455,7 @@ h2o4gpu.pca <- function(
     verbose = verbose,
     backend = backend
   )
-  h2o4gpu_model(model, NULL, "Principal Components Analysis (PCA)")
+  h2o4gpu_model(model, NULL, "Principal Component Analysis (PCA)")
 }
 
 #' @description Truncated Singular Value Decomposition (TruncatedSVD)
