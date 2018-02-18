@@ -5,11 +5,13 @@
 """
 
 from daal.data_management import (AOSNumericTable, FileDataSource,
-                                  DataSource, HomogenNumericTable)
+                                  DataSource, HomogenNumericTable,
+                                  BlockDescriptor, readOnly)
 import abc
 import numpy as np
 import pandas as pd
 import os
+from daal import data_management
 
 class IInput(object):
     '''
@@ -19,6 +21,22 @@ class IInput(object):
     @abc.abstractclassmethod
     def getNumericTable(self, **kwargs):
         pass
+    
+    @staticmethod
+    def getNumpyArray(nT):  # @DontTrace
+        '''
+        returns Numpy array
+        :param nT: daal numericTable as input
+        :return: numpy array
+        '''
+        if not isinstance(nT, data_management.NumericTable):
+            raise ValueError("getNumpyError, nT is not Numeric table, but {}".format(str(type(nT))))
+        
+        block = BlockDescriptor()
+        nT.getBlockOfRows(0, nT.getNumberOfRows(), readOnly, block)
+        np_array = block.getArray()
+        nT.releaseBlockOfRows(block)
+        return np_array
     
 
 class HomogenousDaalData(IInput):
