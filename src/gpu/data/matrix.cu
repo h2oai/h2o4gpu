@@ -17,6 +17,19 @@ namespace tsvd
 		safe_cublas(cublasSdgmm(context.cublas_handle, mode, m, n, A.data(), lda, B.data(), incx, C.data(), ldc));
 	}
 
+	void multiply_diag(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool left_diag)
+	{
+		cublasSideMode_t mode = left_diag ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT;
+
+		int m = C.rows();
+		int n = C.columns();
+		int lda = m;
+		int incx = 1; //Review what this should be...
+		int ldc = m;
+
+		safe_cublas(cublasDdgmm(context.cublas_handle, mode, m, n, A.data(), lda, B.data(), incx, C.data(), ldc));
+	}
+
 	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a, bool transpose_b, tsvd_float alpha)
 	{
 		cublasOperation_t op_a = transpose_a ? CUBLAS_OP_T : CUBLAS_OP_N;
@@ -34,9 +47,35 @@ namespace tsvd
 		safe_cublas(cublasSgemm(context.cublas_handle, op_a, op_b, m, n, k, &alpha, A.data(), lda, B.data(), ldb, &beta, C.data(), ldc));
 	}
 
+	void multiply(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool transpose_a, bool transpose_b, tsvd_double alpha)
+	{
+		cublasOperation_t op_a = transpose_a ? CUBLAS_OP_T : CUBLAS_OP_N;
+		cublasOperation_t op_b = transpose_b ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+		const tsvd_double beta = 0;
+
+		int m = C.rows();
+		int n = C.columns();
+		int k = transpose_a ? A.rows() : A.columns();
+		int lda = transpose_a ? k : m;
+		int ldb = transpose_b ? n : k;
+		int ldc = m;
+
+		safe_cublas(cublasDgemm(context.cublas_handle, op_a, op_b, m, n, k, &alpha, A.data(), lda, B.data(), ldb, &beta, C.data(), ldc));
+	}
+
 	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context)
 	{
 		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (tsvd_float val)
+		                  {
+			                  return val * a;
+		                  }
+		);
+	}
+
+	void multiply(Matrix<tsvd_double>& A, const tsvd_double a, DeviceContext& context)
+	{
+		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (tsvd_double val)
 		                  {
 			                  return val * a;
 		                  }
@@ -55,12 +94,36 @@ namespace tsvd
 		                 });
 	}
 
+	void subtract(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context)
+	{
+		auto counting = thrust::make_counting_iterator(0);
+		const tsvd_double* d_A = A.data();
+		const tsvd_double* d_B = B.data();
+		tsvd_double* d_C = C.data();
+		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
+		                 {
+			                 d_C[idx] = d_A[idx] - d_B[idx];
+		                 });
+	}
+
 	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context)
 	{
 		auto counting = thrust::make_counting_iterator(0);
 		const tsvd_float* d_A = A.data();
 		const tsvd_float* d_B = B.data();
 		tsvd_float* d_C = C.data();
+		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
+		                 {
+			                 d_C[idx] = d_A[idx] + d_B[idx];
+		                 });
+	}
+
+	void add(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context)
+	{
+		auto counting = thrust::make_counting_iterator(0);
+		const tsvd_double* d_A = A.data();
+		const tsvd_double* d_B = B.data();
+		tsvd_double* d_C = C.data();
 		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
 		                 {
 			                 d_C[idx] = d_A[idx] + d_B[idx];
@@ -75,6 +138,166 @@ namespace tsvd
 		safe_cublas(cublasSgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
 	}
 
+	void transpose(const Matrix<tsvd_double>& A, Matrix<tsvd_double>& B, DeviceContext& context)
+	{
+		tsvd_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
+		const tsvd_double alpha = 1.0f;
+		const tsvd_double beta = 0.0f;
+		safe_cublas(cublasDgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
+	}
+
+	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, const Matrix<tsvd_float>& ones, DeviceContext& context)
+	{
+		thrust::transform(M.dptr(), M.dptr() + M.size(), M_temp.dptr(), sqr_op());
+		auto d_column_length = column_length.data();
+		auto d_ones = ones.data();
+		const tsvd_float alpha = 1.0f;
+		const tsvd_float beta = 0.0f;
+		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), d_ones, 1, &beta, d_column_length, 1));
+
+		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(tsvd_float val)
+		                  {
+							  if (val == 0.0)
+							  {
+								  return 0.0;
+							  }
+
+			                  return 1.0/ sqrt(val);
+		                  });
+
+		safe_cublas(cublasSdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
+	}
+
+	void normalize_columns(Matrix<tsvd_double>& M, Matrix<tsvd_double>& M_temp, Matrix<tsvd_double>& column_length, const Matrix<tsvd_double>& ones, DeviceContext& context)
+	{
+		thrust::transform(M.dptr(), M.dptr() + M.size(), M_temp.dptr(), sqr_op());
+		auto d_column_length = column_length.data();
+		auto d_ones = ones.data();
+		const tsvd_double alpha = 1.0f;
+		const tsvd_double beta = 0.0f;
+		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), d_ones, 1, &beta, d_column_length, 1));
+
+		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(tsvd_double val)
+		                  {
+							  if (val == 0.0)
+							  {
+								  return 0.0;
+							  }
+
+			                  return 1.0/ sqrt(val);
+		                  });
+
+		safe_cublas(cublasDdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
+	}
+
+	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context)
+	{
+		Matrix<float> M_temp(M.rows(), M.columns());
+		Matrix<float> columns_length(1, M.columns());
+		Matrix<float> ones(1, M.columns());
+		ones.fill(1.0f);
+		normalize_columns(M, M_temp, columns_length, ones, context);
+	}
+
+	void normalize_columns(Matrix<tsvd_double>& M, DeviceContext& context)
+	{
+		Matrix<float> M_temp(M.rows(), M.columns());
+		Matrix<float> columns_length(1, M.columns());
+		Matrix<float> ones(1, M.columns());
+		ones.fill(1.0f);
+		normalize_columns(M, M_temp, columns_length, ones, context);
+	}
+
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context){
+        float norm2 = 0.0;
+        safe_cublas(cublasSnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
+        M.transform([=]__device__ (float val){return val * (1/norm2);});
+    }
+
+	void normalize_vector_cublas(Matrix<tsvd_double>& M, DeviceContext& context){
+        float norm2 = 0.0;
+        safe_cublas(cublasDnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
+        M.transform([=]__device__ (float val){return val * (1/norm2);});
+    }
+
+	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context){
+		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
+		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
+	}
+
+	void normalize_vector_thrust(Matrix<tsvd_double>& M, DeviceContext& context){
+		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
+		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
+	}
+
+	void residual(const Matrix<tsvd_float>& X, const Matrix<tsvd_float>& D, const Matrix<tsvd_float>& S, Matrix<tsvd_float>& R, DeviceContext& context)
+	{
+		multiply(D, S, R, context);
+		subtract(X, R, R, context);
+	}
+
+	void residual(const Matrix<tsvd_double>& X, const Matrix<tsvd_double>& D, const Matrix<tsvd_double>& S, Matrix<tsvd_double>& R, DeviceContext& context)
+	{
+		multiply(D, S, R, context);
+		subtract(X, R, R, context);
+	}
+
+	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context)
+	{
+		tsvd_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		tsvd_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		tsvd_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+
+		int lwork;
+		safe_cusolver(cusolverDnSsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
+
+		float *d_work;
+		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
+
+		int *dev_info = NULL;
+		safe_cuda(cudaMalloc ((void**)&dev_info, sizeof(int)));
+		Q.copy(X);
+		safe_cusolver(cusolverDnSsyevd(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, Q.rows(), Q.data(), Q.columns(), w.data(), d_work, lwork, dev_info));
+		safe_cuda(cudaDeviceSynchronize());
+		safe_cuda(cudaFree(d_work));
+		safe_cuda(cudaFree(dev_info));
+		safe_cuda(cudaGetLastError());
+	}
+
+	void calculate_eigen_pairs_exact(const Matrix<tsvd_double>& X, Matrix<tsvd_double>& Q, Matrix<tsvd_double>& w, DeviceContext& context)
+	{
+		tsvd_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		tsvd_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		tsvd_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+
+		int lwork;
+		safe_cusolver(cusolverDnDsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
+
+		float *d_work;
+		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
+
+		int *dev_info = NULL;
+		safe_cuda(cudaMalloc ((void**)&dev_info, sizeof(int)));
+		Q.copy(X);
+		safe_cusolver(cusolverDnDsyevd(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, Q.rows(), Q.data(), Q.columns(), w.data(), d_work, lwork, dev_info));
+		safe_cuda(cudaDeviceSynchronize());
+		safe_cuda(cudaFree(d_work));
+		safe_cuda(cudaFree(dev_info));
+		safe_cuda(cudaGetLastError());
+	}
+
+	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context)
+	{
+		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+	}
+
+	void outer_product(Matrix<tsvd_double>& A, float eigen_value, const Matrix<tsvd_double>& eigen_vector, const Matrix<tsvd_double>& eigen_vector_transpose, DeviceContext& context)
+	{
+		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+	}
+
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	//Stricly floating point operations that are not used
 	void linear_solve(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& X, const Matrix<tsvd_float>& B, DeviceContext& context)
 	{
 		tsvd_check(A.rows()>= A.columns(),"Linear solve requires m >= n");
@@ -199,48 +422,6 @@ namespace tsvd
 		thrust::copy(pinvA_extended.dptr(), pinvA_extended.dptr() + pinvA.size(), pinvA.dptr());
 	}
 
-	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, const Matrix<tsvd_float>& ones, DeviceContext& context)
-	{
-		thrust::transform(M.dptr(), M.dptr() + M.size(), M_temp.dptr(), sqr_op());
-		auto d_column_length = column_length.data();
-		auto d_ones = ones.data();
-		const tsvd_float alpha = 1.0f;
-		const tsvd_float beta = 0.0f;
-		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), d_ones, 1, &beta, d_column_length, 1));
-
-		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(tsvd_float val)
-		                  {
-							  if (val == 0.0)
-							  {
-								  return 0.0;
-							  }
-
-			                  return 1.0/ sqrt(val);
-		                  });
-
-		safe_cublas(cublasSdgmm(context.cublas_handle, CUBLAS_SIDE_RIGHT, M.rows(), M.columns(), M.data(), M.rows(), d_column_length, 1, M.data(), M.rows()));
-	}
-
-	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context)
-	{
-		Matrix<float> M_temp(M.rows(), M.columns());
-		Matrix<float> columns_length(1, M.columns());
-		Matrix<float> ones(1, M.columns());
-		ones.fill(1.0f);
-		normalize_columns(M, M_temp, columns_length, ones, context);
-	}
-
-	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context){
-        float norm2 = 0.0;
-        safe_cublas(cublasSnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
-        M.transform([=]__device__ (float val){return val * (1/norm2);});
-    }
-
-	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context){
-		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
-		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
-	}
-
 	void f_normalize(Matrix<tsvd_float>& M, DeviceContext& context)
 	{
 		Matrix<tsvd_float> temp(M.rows(), M.columns());
@@ -306,39 +487,6 @@ namespace tsvd
 		                  });
 
 		cudaFree(d_temp_storage);
-	}
-
-	void residual(const Matrix<tsvd_float>& X, const Matrix<tsvd_float>& D, const Matrix<tsvd_float>& S, Matrix<tsvd_float>& R, DeviceContext& context)
-	{
-		multiply(D, S, R, context);
-		subtract(X, R, R, context);
-	}
-
-	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context)
-	{
-		tsvd_check(X.rows() == X.columns(), "X must be a symmetric matrix");
-		tsvd_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
-		tsvd_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
-
-		int lwork;
-		safe_cusolver(cusolverDnSsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
-
-		float *d_work;
-		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
-
-		int *dev_info = NULL;
-		safe_cuda(cudaMalloc ((void**)&dev_info, sizeof(int)));
-		Q.copy(X);
-		safe_cusolver(cusolverDnSsyevd(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, Q.rows(), Q.data(), Q.columns(), w.data(), d_work, lwork, dev_info));
-		safe_cuda(cudaDeviceSynchronize());
-		safe_cuda(cudaFree(d_work));
-		safe_cuda(cudaFree(dev_info));
-		safe_cuda(cudaGetLastError());
-	}
-
-	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context)
-	{
-		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
 }
