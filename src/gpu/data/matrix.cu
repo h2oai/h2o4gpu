@@ -175,7 +175,7 @@ namespace tsvd
 		auto d_ones = ones.data();
 		const tsvd_double alpha = 1.0f;
 		const tsvd_double beta = 0.0f;
-		safe_cublas(cublasSgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), d_ones, 1, &beta, d_column_length, 1));
+		safe_cublas(cublasDgemv(context.cublas_handle, CUBLAS_OP_T, M.rows(), M.columns(), &alpha, M_temp.data(), M.rows(), d_ones, 1, &beta, d_column_length, 1));
 
 		thrust::transform(column_length.dptr(), column_length.dptr() + column_length.size(), column_length.dptr(), [=]__device__(tsvd_double val)
 		                  {
@@ -201,9 +201,9 @@ namespace tsvd
 
 	void normalize_columns(Matrix<tsvd_double>& M, DeviceContext& context)
 	{
-		Matrix<float> M_temp(M.rows(), M.columns());
-		Matrix<float> columns_length(1, M.columns());
-		Matrix<float> ones(1, M.columns());
+		Matrix<double> M_temp(M.rows(), M.columns());
+		Matrix<double> columns_length(1, M.columns());
+		Matrix<double> ones(1, M.columns());
 		ones.fill(1.0f);
 		normalize_columns(M, M_temp, columns_length, ones, context);
 	}
@@ -215,7 +215,7 @@ namespace tsvd
     }
 
 	void normalize_vector_cublas(Matrix<tsvd_double>& M, DeviceContext& context){
-        float norm2 = 0.0;
+        double norm2 = 0.0;
         safe_cublas(cublasDnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
         M.transform([=]__device__ (float val){return val * (1/norm2);});
     }
@@ -273,7 +273,7 @@ namespace tsvd
 		int lwork;
 		safe_cusolver(cusolverDnDsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
 
-		float *d_work;
+		double *d_work;
 		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
 
 		int *dev_info = NULL;
@@ -291,9 +291,9 @@ namespace tsvd
 		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
-	void outer_product(Matrix<tsvd_double>& A, float eigen_value, const Matrix<tsvd_double>& eigen_vector, const Matrix<tsvd_double>& eigen_vector_transpose, DeviceContext& context)
+	void outer_product(Matrix<tsvd_double>& A, double eigen_value, const Matrix<tsvd_double>& eigen_vector, const Matrix<tsvd_double>& eigen_vector_transpose, DeviceContext& context)
 	{
-		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+		safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
