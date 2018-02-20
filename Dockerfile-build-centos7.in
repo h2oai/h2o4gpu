@@ -66,8 +66,6 @@ RUN yum install -y swig atlas-devel blas-devel && \
 
 ENV OPENBLAS_PREFIX=open
 RUN yum install -y libstdc++ libc libgomp
-ENV CC=/usr/bin/gcc
-ENV CXX=/usr/bin/g++
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-c++
 RUN yum install -y which

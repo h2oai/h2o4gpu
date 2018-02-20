@@ -725,6 +725,54 @@ Jenkinsfiles:
 #     The build output is put in the 'dist' directory in h2o4gpu level.
 #----------------------------------------------------------------------
 
+DIST_DIR = dist
+
+ARCH := $(shell arch)
+PLATFORM := $(ARCH)-centos7
+
+CONTAINER_NAME_SUFFIX ?= -$(USER)
+CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
+
+PROJECT_VERSION := $(BASE_VERSION)
+BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH_NAME_SUFFIX = -$(BRANCH_NAME)
+BUILD_NUM ?= local
+BUILD_NUM_SUFFIX = -$(BUILD_NUM)
+CONTAINER_TAG = $(PROJECT_VERSION)$(BRANCH_NAME_SUFFIX)$(BUILD_NUM_SUFFIX)
+
+CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
+
+ARCH_SUBST = undefined
+FROM_SUBST = undefined
+ifeq ($(ARCH),x86_64)
+    FROM_SUBST = nvidia\/cuda:8.0-cudnn5-devel-centos7
+    ARCH_SUBST = $(ARCH)
+endif
+ifeq ($(ARCH),ppc64le)
+    FROM_SUBST = nvidia\/cuda-ppc64le:8.0-cudnn5-devel-centos7
+    ARCH_SUBST = $(ARCH)
+endif
+
+Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
+	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
+
+centos7_in_docker: Dockerfile-build-centos7.$(PLATFORM)
+	mkdir -p $(DIST_DIR)/$(PLATFORM)
+	docker build \
+		-t $(CONTAINER_NAME_TAG) \
+		-f Dockerfile-build-centos7.$(PLATFORM) \
+		.
+	docker run \
+		--rm \
+		--init \
+		-v `pwd`:/dot \
+		-w /dot \
+		--entrypoint /bin/bash \
+		$(CONTAINER_NAME_TAG) \
+		-c 'make centos7'
+	echo $(CONTAINER_TAG) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
+
+
 centos7_setup:
 	rm -fr /tmp/build
 	cp -a /dot/. /tmp/build
@@ -738,11 +786,11 @@ centos7:
 	$(MAKE) centos7_setup
 	$(MAKE) centos7_build
 
-centos7_in_docker:
-	rm -fr dist
-	mkdir dist
-	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
-	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
+#centos7_in_docker:
+#	rm -fr dist
+#	mkdir dist
+#	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
+#	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
 
 centos7_cuda9_build:
 	(cd /tmp/build && \
