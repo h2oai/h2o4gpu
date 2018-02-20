@@ -8,6 +8,7 @@ from src.interface_py.h2o4gpu.solvers.daal_solver.data.IInput import HomogenousD
     IInput
 from daal.algorithms import svd
 import numpy as np
+from h2o4gpu.utils.validation import check_array
 
 __all__ = ['SVD']
 
@@ -61,4 +62,37 @@ class SVD(BaseEstimator):
         full_var = np.var(X, axis=0).sum()
         self.explained_variance_ratio_ = exp_var / full_var
         return X_transformed
-                                           
+                                        
+    def transform(self, X):
+        """Perform dimensionality reduction on X.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape (n_samples, n_features)
+            New data.
+
+        Returns
+        -------
+        X_new : array, shape (n_samples, n_components)
+            Reduced version of X. This will always be a dense array.
+        """
+        X = check_array(X, accept_sparse='csr')
+        return safe_sparse_dot(X, self.components_.T)
+
+    def inverse_transform(self, X):
+        """Transform X back to its original space.
+
+        Returns an array X_original whose transform would be X.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_components)
+            New data.
+
+        Returns
+        -------
+        X_original : array, shape (n_samples, n_features)
+            Note that this is always a dense array.
+        """
+        X = check_array(X)
+        return np.dot(X, self.components_)   

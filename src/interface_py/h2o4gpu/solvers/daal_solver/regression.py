@@ -9,8 +9,8 @@ from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
-from src.interface_py.h2o4gpu.solvers.daal_solver.data.IInput import HomogenousDaalData
-from src.interface_py.h2o4gpu.solvers.daal_solver.normalize import zscore
+from .normalize import zscore
+from .data.IInput import HomogenousDaalData
 
 class Method(Enum):
     '''
