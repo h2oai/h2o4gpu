@@ -20,6 +20,7 @@ skip_if_no_h2o4gpu <- function() {
 
 test_succeeds <- function(desc, expr) {
   test_that(desc, {
+    skip_on_cran()
     skip_if_no_h2o4gpu()
     expect_error(force(expr), NA)
   })
