@@ -286,14 +286,14 @@ namespace tsvd
 		safe_cuda(cudaGetLastError());
 	}
 
-	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context)
+	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float eigen_value_estimate, DeviceContext& context)
 	{
-		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+		safe_cublas(cublasSdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate));
 	}
 
-	void outer_product(Matrix<tsvd_double>& A, double eigen_value, const Matrix<tsvd_double>& eigen_vector, const Matrix<tsvd_double>& eigen_vector_transpose, DeviceContext& context)
+	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double eigen_value_estimate, DeviceContext& context)
 	{
-		safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
+		safe_cublas(cublasDdot(context.cublas_handle, b_k1.rows(), b_k1.data(), 1.0, b_k.data(), 1.0, &eigen_value_estimate));
 	}
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------

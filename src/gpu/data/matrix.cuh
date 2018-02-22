@@ -309,9 +309,6 @@ namespace tsvd
 	void multiply_diag(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool left_diag);
 	void multiply_diag(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool left_diag);
 
-	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context);
-	void outer_product(Matrix<tsvd_double>& A, float eigen_value, const Matrix<tsvd_double>& eigen_vector, const Matrix<tsvd_double>& eigen_vector_transpose, DeviceContext& context);
-
 	/**
 	 * \fn	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_float alpha=1.0f);
 	 *
@@ -507,6 +504,9 @@ namespace tsvd
 
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context);
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_double>& X, Matrix<tsvd_double>& Q, Matrix<tsvd_double>& w, DeviceContext& context);
+
+	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float eigen_value_estimate, DeviceContext& context);
+	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double eigen_value_estimate, DeviceContext& context);
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	//Stricly floating point operations that are not used
