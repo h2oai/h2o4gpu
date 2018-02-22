@@ -505,8 +505,8 @@ namespace tsvd
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context);
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_double>& X, Matrix<tsvd_double>& Q, Matrix<tsvd_double>& w, DeviceContext& context);
 
-	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float eigen_value_estimate, DeviceContext& context);
-	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double eigen_value_estimate, DeviceContext& context);
+	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float* eigen_value_estimate, DeviceContext& context);
+	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double* eigen_value_estimate, DeviceContext& context);
 
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	//Stricly floating point operations that are not used
