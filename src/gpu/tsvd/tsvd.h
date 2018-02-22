@@ -71,7 +71,7 @@ namespace tsvd
 	}
 
 	template<typename T>
-	void truncated_svd_matrix(Matrix<T> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
+	tsvd_export void truncated_svd_matrix(Matrix<T> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param)
 	{
 		std::string algorithm(_param.algorithm);
 		try
@@ -102,8 +102,5 @@ namespace tsvd
 			std::cerr << "tsvd error\n";
 		  }
 	}
-
-	tsvd_export void truncated_svd_matrix(Matrix<float> &X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
-	tsvd_export void truncated_svd_matrix(Matrix<double> &X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
 
 }
