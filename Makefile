@@ -769,7 +769,7 @@ centos7_in_docker: Dockerfile-build-centos7.$(PLATFORM)
 		-w /dot \
 		--entrypoint /bin/bash \
 		$(CONTAINER_NAME_TAG) \
-		-c 'make centos7'
+		-c 'NO_OMP_PRAGMA=1 make centos7'
 	echo $(CONTAINER_TAG) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 
 
@@ -778,8 +778,8 @@ centos7_setup:
 	cp -a /dot/. /tmp/build
 
 centos7_build:
-	IFLAGS="-I/usr/include/openblas" OPENBLAS_PREFIX="open" $(MAKE) fullinstall-nonccl-local
-	cp ./src/interface_py/dist2/h2o4gpu*.whl dist
+	 IFLAGS="-I/usr/include/openblas" OPENBLAS_PREFIX="open" $(MAKE) fullinstall-nonccl-local
+	cp ./src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist
 	chmod o+rw dist/h2o4gpu*.whl
 
 centos7:
@@ -800,7 +800,7 @@ centos7_cuda9_build:
          export OPENBLAS_PREFIX="open" && \
          scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda9 build")
 	mkdir dist
-	cp /tmp/build/src/interface_py/dist2/h2o4gpu*.whl dist/
+	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
 	chmod o+rw dist/h2o4gpu*.whl
 
 centos7_cuda9:

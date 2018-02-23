@@ -54,6 +54,10 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
+ifdef NO_OMP_PRAGMA
+DFLAGS+=-DNO_OMP_PRAGMA
+endif
+
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2O4GPUROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
 ifeq ($(USENVTX),1)
