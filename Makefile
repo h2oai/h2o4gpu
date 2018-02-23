@@ -710,8 +710,11 @@ Jenkinsfiles:
 #
 # Summary
 #
-#     command:  make centos7_in_docker
-#     output:   dist/h2o4gpu*.whl
+#     command:  make centos7_cuda8_in_docker
+#     output:   dist/x86_64-centos7-cuda8/h2o4gpu*.whl
+#
+#     command:  make centos7_cuda9_in_docker
+#     output:   dist/x86_64-centos7-cuda9/h2o4gpu*.whl
 #
 # Details
 #
@@ -719,7 +722,7 @@ Jenkinsfiles:
 #
 #     The 'centos7' make target does the actual work.
 #
-#     The 'centos7_in_docker' make target sets up the docker environment
+#     The 'centos7_cudaN_in_docker' make target sets up the docker environment
 #     and then invokes the work inside that environment.
 #
 #     The build output is put in the 'dist' directory in h2o4gpu level.
@@ -728,7 +731,7 @@ Jenkinsfiles:
 DIST_DIR = dist
 
 ARCH := $(shell arch)
-PLATFORM := $(ARCH)-centos7
+PLATFORM = $(ARCH)-centos7-$(CUDA_VERSION)
 
 CONTAINER_NAME_SUFFIX ?= -$(USER)
 CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
@@ -745,11 +748,11 @@ CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
 ARCH_SUBST = undefined
 FROM_SUBST = undefined
 ifeq ($(ARCH),x86_64)
-    FROM_SUBST = nvidia\/cuda:8.0-cudnn5-devel-centos7
+    FROM_SUBST = nvidia\/cuda:$(CUDA_VERSION)-cudnn$(CUDNN_VERSION)-devel-centos7
     ARCH_SUBST = $(ARCH)
 endif
 ifeq ($(ARCH),ppc64le)
-    FROM_SUBST = nvidia\/cuda-ppc64le:8.0-cudnn5-devel-centos7
+    FROM_SUBST = nvidia\/cuda-ppc64le:$(CUDA_VERSION)-cudnn$(CUDNN_VERSION)-devel-centos7
     ARCH_SUBST = $(ARCH)
 endif
 
@@ -758,7 +761,17 @@ fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
 Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
 	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
 
-centos7_in_docker: Dockerfile-build-centos7.$(PLATFORM)
+centos7_cuda8_in_docker: CUDA_VERSION=8.0
+centos7_cuda8_in_docker: CUDNN_VERSION=5
+centos7_cuda8_in_docker:
+	$(MAKE) CUDA_VERSION=$(CUDA_VERSION) CUDNN_VERSION=$(CUDNN_VERSION) centos7_in_docker_impl
+
+centos7_cuda9_in_docker: CUDA_VERSION=9.0
+centos7_cuda8_in_docker: CUDNN_VERSION=7
+centos7_cuda9_in_docker:
+	$(MAKE) CUDA_VERSION=$(CUDA_VERSION) CUDNN_VERSION=$(CUDNN_VERSION) centos7_in_docker_impl
+
+centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 	mkdir -p $(DIST_DIR)/$(PLATFORM)
 	docker build \
 		-t $(CONTAINER_NAME_TAG) \
@@ -774,46 +787,20 @@ centos7_in_docker: Dockerfile-build-centos7.$(PLATFORM)
 		-c 'NO_OMP_PRAGMA=1 make centos7'
 	echo $(CONTAINER_TAG) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 
-
 centos7_setup:
 	rm -fr /tmp/build
 	cp -a /dot/. /tmp/build
 
 centos7_build:
-	 IFLAGS="-I/usr/include/openblas" OPENBLAS_PREFIX="open" $(MAKE) fullinstall-nonccl-local
-	cp ./src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist
-	chmod o+rw dist/h2o4gpu*.whl
+	IFLAGS="-I/usr/include/openblas" OPENBLAS_PREFIX="open" $(MAKE) fullinstall-nonccl-local
+	mkdir -p dist/$(PLATFORM)
+	chmod -R o+rwx dist/$(PLATFORM)
+	cp ./src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/$(PLATFORM)
+	chmod -R o+rwx dist/$(PLATFORM)
 
 centos7:
 	$(MAKE) centos7_setup
 	$(MAKE) centos7_build
-
-#centos7_in_docker:
-#	rm -fr dist
-#	mkdir dist
-#	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
-#	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
-
-centos7_cuda9_build:
-	(cd /tmp/build && \
-         eval "$$(/root/.pyenv/bin/pyenv init -)" && \
-         /root/.pyenv/bin/pyenv global 3.6.1 && \
-         export IFLAGS="-I/usr/include/openblas" && \
-         export OPENBLAS_PREFIX="open" && \
-         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-cuda9 build")
-	mkdir dist
-	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
-	chmod o+rw dist/h2o4gpu*.whl
-
-centos7_cuda9:
-	$(MAKE) centos7_setup
-	$(MAKE) centos7_cuda9_build
-
-centos7_cuda9_in_docker:
-	rm -fr dist
-	mkdir dist
-	docker build -t opsh2oai/h2o4gpu-build-centos7-cuda9 -f Dockerfile-build-centos7-cuda9 .
-	nvidia-docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7-cuda9 -c 'make centos7_cuda9'
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END
