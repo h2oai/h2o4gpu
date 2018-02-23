@@ -748,11 +748,11 @@ CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
 ARCH_SUBST = undefined
 FROM_SUBST = undefined
 ifeq ($(ARCH),x86_64)
-    FROM_SUBST = nvidia\/cuda:$(CUDA_VERSION)-cudnn$(CUDNN_VERSION)-devel-centos7
+    FROM_SUBST = nvidia\/cuda:$(MY_CUDA_VERSION)-cudnn$(MY_CUDNN_VERSION)-devel-centos7
     ARCH_SUBST = $(ARCH)
 endif
 ifeq ($(ARCH),ppc64le)
-    FROM_SUBST = nvidia\/cuda-ppc64le:$(CUDA_VERSION)-cudnn$(CUDNN_VERSION)-devel-centos7
+    FROM_SUBST = nvidia\/cuda-ppc64le:$(MY_CUDA_VERSION)-cudnn$(MY_CUDNN_VERSION)-devel-centos7
     ARCH_SUBST = $(ARCH)
 endif
 
