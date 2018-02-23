@@ -4,7 +4,7 @@
 # jenkins that stage names have to be static text labels
 
 ## declare an array variable
-declare -a arr=("nccl-cuda8" "nonccl-cuda9" "nccl-cuda9" "cpu" "nonccl-cuda9" "nccl-cuda9-aws1" "nccl-cuda9-benchmark" "nccl-cuda9-aws1-benchmark" "cpu")
+declare -a arr=("nccl-cuda8" "nonccl-cuda9" "nccl-cuda9" "cpu" "nonccl-cuda9" "nccl-cuda9-aws1" "nccl-cuda9-benchmark" "nccl-cuda9-aws1-benchmark" "cpu" "nonccl-cuda8-centos")
 
 ## now loop through the above array
 for i in "${arr[@]}"

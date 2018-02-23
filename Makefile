@@ -753,6 +753,8 @@ ifeq ($(ARCH),ppc64le)
     ARCH_SUBST = $(ARCH)
 endif
 
+fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
+
 Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
 	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
 
