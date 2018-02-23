@@ -255,7 +255,7 @@ fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 
 fullinstall-cpuonly: clean alldeps-cpuonly build install
 	mkdir -p src/interface_py/dist-cpuonly-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-cpuonly-local/
-	
+
 ####################################################
 # Docker stuff
 
@@ -351,7 +351,7 @@ docker-runtime-cpu:
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="ubuntu:16.04" ;\
 	bash scripts/make-docker-runtime.sh
-	
+
 docker-runtime-cpu-run:
 	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtime-run" ;\
@@ -381,7 +381,7 @@ docker-runtime-cpu-load:
 run_in_docker-cpu:
 	-mkdir -p log ; docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-cpu-runtime &
 	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
-	
+
 
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
@@ -573,8 +573,8 @@ dotest:
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-	# Test R package
-	R -e 'devtools::test("src/interface_r")'
+	# Test R package when appropriate
+	bash scripts/test_r_pkg.sh
 
 dotestfast:
 	rm -rf ./tmp/

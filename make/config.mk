@@ -28,8 +28,12 @@ OPEN_DATA_DIR = open_data
 #
 #PYDATATABLE_VERSION = 0.1.0+master.97
 
-
 #
 # XGBoost
 #
 XGBOOST_VERSION = 0.6
+
+#
+# R package Configurations
+#
+INSTALL_R = 1
