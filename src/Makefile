@@ -68,6 +68,10 @@ ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
 
+ifdef NO_OMP_PRAGMA
+DFLAGS+=-DNO_OMP_PRAGMA
+endif
+
 ifdef NVCC
 $(info *** => CUDA_HOME is in $(CUDA_HOME))
 CUDA_HOME ?= /usr/local/cuda
