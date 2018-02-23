@@ -9,7 +9,7 @@ else
   echo "INSTALL_R is set to be non-zero. Installing R dependencies..."
   if [[ $? != 0 ]]; then
     echo "R is not installed. Installing..."
-    $DIR/install_r.sh 3.1.0
+    $DIR/install_r.sh $R_VERSION
   else
     echo "R is installed."
   fi
