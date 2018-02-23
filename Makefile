@@ -767,7 +767,7 @@ centos7_cuda8_in_docker:
 	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
 centos7_cuda9_in_docker: MY_CUDA_VERSION=9.0
-centos7_cuda8_in_docker: MY_CUDNN_VERSION=7
+centos7_cuda9_in_docker: MY_CUDNN_VERSION=7
 centos7_cuda9_in_docker:
 	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
