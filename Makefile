@@ -222,7 +222,7 @@ deps_install:
 	cat requirements_buildonly.txt requirements_runtime.txt > requirements.txt
 	pip install -r requirements.txt --upgrade
 	rm -rf requirements.txt
-	bash scripts/install_r_deps.sh
+#	bash scripts/install_r_deps.sh
 	# issue with their package, have to do this here (still fails sometimes, so remove)
 #	pip install sphinxcontrib-osexample
 
@@ -731,7 +731,7 @@ Jenkinsfiles:
 DIST_DIR = dist
 
 ARCH := $(shell arch)
-PLATFORM = $(ARCH)-centos7-$(CUDA_VERSION)
+PLATFORM = $(ARCH)-centos7-$(MY_CUDA_VERSION)
 
 CONTAINER_NAME_SUFFIX ?= -$(USER)
 CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
@@ -761,15 +761,15 @@ fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
 Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
 	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
 
-centos7_cuda8_in_docker: CUDA_VERSION=8.0
-centos7_cuda8_in_docker: CUDNN_VERSION=5
+centos7_cuda8_in_docker: MY_CUDA_VERSION=8.0
+centos7_cuda8_in_docker: MY_CUDNN_VERSION=5
 centos7_cuda8_in_docker:
-	$(MAKE) CUDA_VERSION=$(CUDA_VERSION) CUDNN_VERSION=$(CUDNN_VERSION) centos7_in_docker_impl
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
-centos7_cuda9_in_docker: CUDA_VERSION=9.0
-centos7_cuda8_in_docker: CUDNN_VERSION=7
+centos7_cuda9_in_docker: MY_CUDA_VERSION=9.0
+centos7_cuda8_in_docker: MY_CUDNN_VERSION=7
 centos7_cuda9_in_docker:
-	$(MAKE) CUDA_VERSION=$(CUDA_VERSION) CUDNN_VERSION=$(CUDNN_VERSION) centos7_in_docker_impl
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
 centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 	mkdir -p $(DIST_DIR)/$(PLATFORM)
@@ -783,8 +783,11 @@ centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 		-v `pwd`:/dot \
 		-w /dot \
 		--entrypoint /bin/bash \
+		-e "MY_CUDA_VERSION=$(MY_CUDA_VERSION)" \
+		-e "MY_CUDNN_VERSION=$(MY_CUDNN_VERSION)" \
+		-e "NO_OMP_PRAGMA=1" \
 		$(CONTAINER_NAME_TAG) \
-		-c 'NO_OMP_PRAGMA=1 make centos7'
+		-c 'make centos7'
 	echo $(CONTAINER_TAG) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 
 centos7_setup:
@@ -801,6 +804,26 @@ centos7_build:
 centos7:
 	$(MAKE) centos7_setup
 	$(MAKE) centos7_build
+
+mrproper_in_docker: MY_CUDA_VERSION=8.0
+mrproper_in_docker: MY_CUDNN_VERSION=5
+mrproper_in_docker:
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) mrproper_in_docker_impl
+
+mrproper_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
+	mkdir -p $(DIST_DIR)/$(PLATFORM)
+	docker build \
+		-t $(CONTAINER_NAME_TAG) \
+		-f Dockerfile-build-centos7.$(PLATFORM) \
+		.
+	docker run \
+		--rm \
+		--init \
+		-v `pwd`:/dot \
+		-w /dot \
+		--entrypoint /bin/bash \
+		$(CONTAINER_NAME_TAG) \
+		-c 'git clean -f -d -x'
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END
