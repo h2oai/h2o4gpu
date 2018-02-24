@@ -97,6 +97,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
+RUN sed -i 's/cmake/# cmake/' requirements_buildonly.txt
 RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
