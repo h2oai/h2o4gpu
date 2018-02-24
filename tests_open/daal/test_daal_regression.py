@@ -13,7 +13,7 @@ import logging
 from daal.data_management import HomogenNumericTable
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
-from h2o4gpu.solvers.daal_solver.data import IInput
+from h2o4gpu.solvers.daal_solver.daal_data import IInput
 from numpy.linalg.tests.test_linalg import assert_almost_equal
 from numpy.ma.testutils import assert_array_almost_equal
 from h2o4gpu.utils.testing import assert_equal

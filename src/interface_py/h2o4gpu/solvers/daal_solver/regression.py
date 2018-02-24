@@ -9,7 +9,7 @@ from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
-from .data import IInput
+from .daal_data import IInput
 
 class Method(Enum):
     '''
