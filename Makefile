@@ -793,6 +793,7 @@ centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 centos7_setup:
 	rm -fr /tmp/build
 	cp -a /dot/. /tmp/build
+	sed -i 's/cmake/# cmake/' /tmp/build/requirements_buildonly.txt
 
 centos7_build:
 	(cd /tmp/build && \
