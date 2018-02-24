@@ -3,7 +3,8 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from daal.algorithms.normalization import minmax, zscore
+from daal.algorithms.normalization import minmax
+from daal.algorithms.normalization import zscore as daal_zscore
 
 def min_max(nT, lBound=-1.0, uBound=1.0):
     '''
@@ -13,7 +14,7 @@ def min_max(nT, lBound=-1.0, uBound=1.0):
     :param uBound:
     :return normalized data
     '''
-    
+
     algorithm = minmax.Batch(method=minmax.defaultDense)
     algorithm.parameter.lowerBound = lBound
     algorithm.parameter.upperBound = uBound
@@ -27,8 +28,8 @@ def zscore(nT):
     :param nT: nuemricTable data format
     :return normalized data
     '''
-    
+
     algorithm = zscore.Batch(method=zscore.defaultDense)
     algorithm.input.set(zscore.data, nT)
     result = algorithm.compute()
-    return result.get(zscore.normalizedData)
+    return result.get(daal_zscore.normalizedData)
