@@ -95,18 +95,16 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	rm -rf Pillow-5.0.0*; \
 	fi'
 
-
 RUN \
     chmod a+rwx / && \
     chmod -R a+rwx /root  && \
     chmod ugo+s /root/ && \
-    mkdir -p /root/.cache/ && \
-    pip install numpy && \ 
-    pip install setuptools llvmlite==0.20.0 scikit-build scipy && \
-    pip install -r requirements_buildonly.txt && \
-    pip install -r requirements_runtime.txt && \
-    pip install -r requirements_runtime_demos.txt
-
+    mkdir -p /root/.cache/
+RUN pip install numpy
+RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
+RUN pip install -r requirements_buildonly.txt
+RUN pip install -r requirements_runtime.txt
+RUN pip install -r requirements_runtime_demos.txt
 
 RUN yum install -y which
 
