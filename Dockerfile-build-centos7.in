@@ -2,7 +2,7 @@ FROM FROM_SUBST
  
 MAINTAINER H2o.ai <ops@h2o.ai>
 
-ENV CUDA_HOME=/usr/local/cuda-8.0
+ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=/usr/local/cuda/bin:$PATH
 ENV LD_LIBRARY_PATH_MORE=/usr/lib/gcc/ppc64le-redhat-linux/4.8.2/:/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ENV LD_LIBRARY_PATH=/lib64:$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
