@@ -63,15 +63,14 @@ RUN yum install -y \
   freetype-devel
 
 ENV PATH=/usr/local/bin:$PATH
-RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	wget https://cmake.org/files/v3.10/cmake-3.10.1.tar.gz && \
-	tar xvf cmake-3.10.1.tar.gz && \
-	cd $HOME/cmake-3.10.1 && \
-	./configure && \
-	make -j6 install && \
-	cd $HOME && \
-	rm -rf cmake-3*; \
-	fi'
+RUN \
+    wget https://cmake.org/files/v3.10/cmake-3.10.1.tar.gz && \
+    tar xvf cmake-3.10.1.tar.gz && \
+    cd $HOME/cmake-3.10.1 && \
+    ./configure && \
+    make -j6 install && \
+    cd $HOME && \
+    rm -rf cmake-3*
 
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
