@@ -140,7 +140,7 @@ class TruncatedSVDH2O(object):
 
         lib = self._load_lib()
         if self.double_precision == 1:
-            lib.truncated_svd(
+            lib.truncated_svd_double(
                 cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double), cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
                 cptr(explained_variance, ctypes.c_double), cptr(explained_variance_ratio, ctypes.c_double),
                 param)

@@ -274,7 +274,7 @@ namespace tsvd
 		safe_cusolver(cusolverDnDsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
 
 		double *d_work;
-		safe_cuda(cudaMalloc(&d_work, sizeof(float) * lwork));
+		safe_cuda(cudaMalloc(&d_work, sizeof(double) * lwork));
 
 		int *dev_info = NULL;
 		safe_cuda(cudaMalloc ((void**)&dev_info, sizeof(int)));
