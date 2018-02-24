@@ -815,7 +815,8 @@ centos7:
 
 # Note:  We don't actually need to run mrproper in docker (as root) because
 #        the build step runs as the user.  But keep the API for consistency.
-mrproper_in_docker: mrproper
+mrproper_in_docker:
+	git clean -f -d -x
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END
