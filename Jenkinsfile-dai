@@ -1,0 +1,120 @@
+#!/usr/bin/groovy
+//------------------------------------------------------------------------------
+//  This Source Code Form is subject to the terms of the Mozilla Public
+//  License, v. 2.0. If a copy of the MPL was not distributed with this
+//  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//------------------------------------------------------------------------------
+@Library('test-shared-library') _
+
+import ai.h2o.ci.Utils
+def utilsLib = new Utils()
+
+pipeline {
+    agent none
+
+    // Setup job options
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(daysToKeepStr: '30'))
+    }
+
+    stages {
+        stage('Build') {
+            parallel {
+                stage('Build on x86_64-centos7-cuda8') {
+                    agent {
+                        label "docker"
+                    }
+                    steps {
+                        dumpInfo 'x86_64-centos7-cuda8 Build Info'
+                        script {
+                            sh """
+                                make mrproper_in_docker
+                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                            """
+                        }
+                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda8'
+                    }
+                }
+                stage('Build on x86_64-centos7-cuda9') {
+                    agent {
+                        label "docker"
+                    }
+                    steps {
+                        dumpInfo 'x86_64-centos7-cuda9 Build Info'
+                        script {
+                            sh """
+                                make mrproper_in_docker
+                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                            """
+                        }
+                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9'
+                    }
+                }
+                stage('Build on ppc64le-centos7-cuda8') {
+                    agent {
+                        label "ibm-power"
+                    }
+                    steps {
+                        dumpInfo 'ppc64le-centos7-cuda8 Build Info'
+                        script {
+                            sh """
+                                make mrproper_in_docker
+                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                            """
+                        }
+                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda8'
+                    }
+                }
+                stage('Build on ppc64le-centos7-cuda9') {
+                    agent {
+                        label "ibm-power"
+                    }
+                    steps {
+                        dumpInfo 'ppc64le-centos7-cuda9 Build Info'
+                        script {
+                            sh """
+                                make mrproper_in_docker
+                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                            """
+                        }
+                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9'
+                    }
+                }
+            }
+        }
+
+        stage('Publish centos7 snapshot to S3') {
+            when {
+                branch 'master'
+            }
+            agent {
+                label "linux && docker"
+            }
+            steps {
+                sh "make mrproper"
+                unstash 'x86_64-centos7-cuda8'
+                unstash 'x86_64-centos7-cuda9'
+                unstash 'ppc64le-centos7-cuda8'
+                unstash 'ppc64le-centos7-cuda9'
+                sh 'echo "Stashed files:" && find dist'
+                script {
+                    docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
+                        docker.image('s3cmd').inside {
+                            def versionText = utilsLib.getCommandOutput("cat dist/x86_64-centos7-cuda8/VERSION.txt")
+                            s3up {
+                                localArtifact = 'dist/*'
+                                artifactId = "tomk-test-h2o4gpu"
+                                version = versionText
+                                keepPrivate = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
