@@ -9,7 +9,7 @@ from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
-from .data.IInput import HomogenousDaalData
+from .data import IInput
 
 class Method(Enum):
     '''
@@ -60,9 +60,9 @@ class LinearRegression(object):
         '''
 
         # Training data and responses
-        Input = HomogenousDaalData(X).getNumericTable()
+        Input = IInput.HomogenousDaalData(X).getNumericTable()
 
-        Responses = HomogenousDaalData(y).getNumericTable()
+        Responses = IInput.HomogenousDaalData(y).getNumericTable()
 
         # Training object with/without normalization
         linear_training_algorithm = linear_training.Batch(
