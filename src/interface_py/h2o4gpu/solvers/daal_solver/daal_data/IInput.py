@@ -4,23 +4,22 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+#import abc
+import os
 from daal.data_management import (AOSNumericTable, FileDataSource,
                                   DataSource, HomogenNumericTable,
-                                  BlockDescriptor, readOnly)
-import abc
+                                  BlockDescriptor, readOnly, NumericTable)
 import numpy as np
 import pandas as pd
-import os
-from daal import data_management
 
 class IInput(object):
     '''
     Abstract class for generic input data in daal library
     '''
 
-    @abc.abstractclassmethod
+    #@abc.abstractclassmethod
     def getNumericTable(self, **kwargs):
-        pass
+        raise NotImplementedError()
 
     @staticmethod
     def getNumpyArray(nT):  # @DontTrace
@@ -29,7 +28,7 @@ class IInput(object):
         :param nT: daal numericTable as input
         :return: numpy array
         '''
-        if not isinstance(nT, data_management.NumericTable):
+        if not isinstance(nT, NumericTable):
             raise ValueError("getNumpyError, nT is not Numeric table, but {}".
                              format(str(type(nT))))
 
@@ -56,7 +55,7 @@ class HomogenousDaalData(IInput):
     Converts numpy, pandas, csv-file to daal_solver NumericTables
     e.g. np.array([[1,2,3],[4,5,6]])
          pd.DataFrame(values)
-         'example.csv'       
+         'example.csv'
     '''
 
     def __init__(self, indata=None):
@@ -69,6 +68,10 @@ class HomogenousDaalData(IInput):
             self._categorize(indata)
 
     def _categorize(self, indata):
+        '''
+        decide what data type is input
+        :param indata:
+        '''
 
         if isinstance(indata, np.ndarray):
             self.informat = 'numpy'
@@ -78,31 +81,39 @@ class HomogenousDaalData(IInput):
             if os.path.isfile(input):
                 self.informat = 'csv'
             else:
-                raise ValueError("DaalData error in intialization, no valid format given.")
+                raise ValueError("DaalData error in intialization,\
+                no valid format given.")
         else:
-            raise ValueError("DaalData error in intialization, no valid format given.")
+            raise ValueError("DaalData error in intialization,\
+            no valid format given.")
         self.indata = indata
 
-    def getNumericTable(self):
+    def getNumericTable(self, **kwargs):
         if self.informat == 'numpy':
             return HomogenNumericTable(self.indata)
         elif self.informat == 'pandas':
             array = self.indata.as_matrix()
             return HomogenNumericTable(array)
         elif self.informat == 'csv':
-            dataSource = FileDataSource(self.indata, DataSource.doAllocateNumericTable,
-                                        DataSource.doDictionaryFormContext)
+            dataSource =  \
+            FileDataSource(self.indata,
+                           DataSource.doAllocateNumericTable,
+                           DataSource.doDictionaryFormContext)
             dataSource.loadDataBlock()
-            return dataSource.getNumericTable()  
+            return dataSource.getNumericTable()
+        else:
+            raise ValueError("Cannot identify input type.")
+
 
 class HeterogenousDaalData(HomogenousDaalData):
     '''
     Heterogenous data with numpy:
-    np.array([(1,2.3),(2,-1,-0.9)],dtype=('x',np.float32), ('y', np.float64)])
+    np.array([(1,2.3),(2,-1,-0.9)],
+    dtype=('x',np.float32), ('y', np.float64)])
     '''
 
     def __init__(self, indata=None):
-        super(HeterogenousDaalData, self).__init__(indata)
+        HomogenousDaalData.__init__(indata)
 
     def __call__(self, indata):
         HomogenousDaalData.__call__(self, indata)
@@ -125,18 +136,23 @@ class HeterogenousDaalData(HomogenousDaalData):
         if self.informat == 'numpy':
             return AOSNumericTable(self.indata)
         elif self.informat == 'pandas':
-            array = self._getStructureArray(self.indata, dtypes=self.indata.dtypes)
+            array = self._getStructureArray(
+                self.indata,
+                dtypes=self.indata.dtypes)
             return AOSNumericTable(array)
         elif self.informat == 'csv':
-            dataSource = FileDataSource(self.indata,
-                                        DataSource.notAllocateNumericTable,
-                                        DataSource.doDictionaryFromContext)
+            dataSource = FileDataSource(
+                self.indata,
+                DataSource.notAllocateNumericTable,
+                DataSource.doDictionaryFromContext)
 
-            if not 'nRows' in kwargs and not 'dtype' in kwargs:
-                raise ValueError("HeterogenousDaalData, for csv file,  \
+            if 'nRows' not in kwargs and 'dtype' not in kwargs:
+                raise ValueError("HeterogenousDaalData, for csv file, \
                 'nrows' and 'dtypes' must be specified.")
             nRows = kwargs['nRows']
             dtype = kwargs['dtype']
             array = np.empty([nRows,], dtype=dtype)
             nT = AOSNumericTable(array)
-            return dataSource.loadDataBlock(nRows,nT)
+            return dataSource.loadDataBlock(nRows, nT)
+        else:
+            return None
