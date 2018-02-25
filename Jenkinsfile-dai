@@ -94,7 +94,7 @@ pipeline {
                 label "linux && docker"
             }
             steps {
-                sh "make mrproper"
+                sh "rm -rf dist"
                 unstash 'x86_64-centos7-cuda8'
                 unstash 'x86_64-centos7-cuda9'
                 unstash 'ppc64le-centos7-cuda8'
