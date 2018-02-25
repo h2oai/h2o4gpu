@@ -96,7 +96,7 @@ write_wrapper("h2o4gpu$KMeans",
             class_tags = "NULL",
             file_name = file_name,
             test_script_file_name = test_script_file_name,
-            description = "KMeans Clustering")
+            description = "K-means Clustering")
 
 write_wrapper("h2o4gpu$PCA",
             r_function = "h2o4gpu.pca",
@@ -104,7 +104,7 @@ write_wrapper("h2o4gpu$PCA",
             class_tags = "NULL",
             file_name = file_name,
             test_script_file_name = test_script_file_name,
-            description = "Principal Components Analysis (PCA)")
+            description = "Principal Component Analysis (PCA)")
 
 write_wrapper("h2o4gpu$TruncatedSVD",
             r_function = "h2o4gpu.truncated_svd",
