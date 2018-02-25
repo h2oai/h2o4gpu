@@ -1,0 +1,69 @@
+---
+title: "H2O4GPU: Machine Learning with GPUs in R"
+author: "Navdeep Gill, Erin LeDell, Yuan Tang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+## Installation
+
+First, please follow the instruction [here](https://github.com/h2oai/h2o4gpu#installation) to build the H2O4GPU Python package.
+
+Then install `devtools` R package via `install.packages("devtools")` if you haven't done it yet.
+
+Finally, we can install `h2o4gpu` R package via the following:
+
+```
+library(devtools)
+devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
+```
+
+## Train & Evaluate a Model
+
+Here's a quick demo of how to train and evaluate a GPU-based Random Forest model:
+```{r, echo=FALSE, results='foo'}
+library(h2o4gpu)
+
+# Setup dataset
+x <- iris[1:4]
+y <- as.integer(iris$Species) - 1
+# TO DO: use a different dataset and split into train/test
+
+# Initialize and train the classifier
+model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
+
+# Make predictions
+predictions <- model %>% predict(x)
+
+# Score the model (uses Python scikit-learn score)
+# Not sure yet if we should keep score()
+model %>% score(x, y)
+
+# Compute AUC using Metrics package
+library(Metrics)
+auc(actual = y, prdictions = predictions)
+```
+
+### Training
+
+TO DO: Finish
+
+### Model Evaluation
+
+The **h2o4gpu** Python module includes some scikit-learn functionality, including metrics functions.  Since the **h2o4gpu** R package wraps the **h2o4gpu** Python module, we have some of these scikit-learn functions right in R.
+
+One thing it includes is the [`score()`](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.score) method for all the supervised algorithms.
+
+The `score()` method returns different output based on the type of problem.  For example, with a Random Forest classifier, the `score()` function:
+
+- Returns the mean accuracy on the given test data and labels.
+- In multi-label classification, this is the subset accuracy which is a harsh metric since you require for each sample that each label set be correctly predicted.  
+
+TO DO: Finish
+
