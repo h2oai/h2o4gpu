@@ -67,6 +67,9 @@ endif
 ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
+ifeq ($(USEPARALLEL),0)
+DFLAGS+=-DUSEPARALLEL=0
+endif
 
 ifdef NVCC
 $(info *** => CUDA_HOME is in $(CUDA_HOME))
