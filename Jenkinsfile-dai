@@ -23,7 +23,7 @@ pipeline {
     stages {
         stage('Build') {
             parallel {
-                stage('Build on x86_64-centos7-cuda8') {
+                stage('Build on x86_64-centos7-cuda8.0') {
                     agent {
                         label "docker"
                     }
@@ -35,10 +35,10 @@ pipeline {
                                 make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
                             """
                         }
-                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda8'
+                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda8.0'
                     }
                 }
-                stage('Build on x86_64-centos7-cuda9') {
+                stage('Build on x86_64-centos7-cuda9.0') {
                     agent {
                         label "docker"
                     }
@@ -50,10 +50,10 @@ pipeline {
                                 make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
                             """
                         }
-                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9'
+                        stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9.0'
                     }
                 }
-                stage('Build on ppc64le-centos7-cuda8') {
+                stage('Build on ppc64le-centos7-cuda8.0') {
                     agent {
                         label "ibm-power"
                     }
@@ -65,10 +65,10 @@ pipeline {
                                 make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
                             """
                         }
-                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda8'
+                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda8.0'
                     }
                 }
-                stage('Build on ppc64le-centos7-cuda9') {
+                stage('Build on ppc64le-centos7-cuda9.0') {
                     agent {
                         label "ibm-power"
                     }
@@ -80,7 +80,7 @@ pipeline {
                                 make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
                             """
                         }
-                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9'
+                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9.0'
                     }
                 }
             }
@@ -95,15 +95,15 @@ pipeline {
             }
             steps {
                 sh "rm -rf dist"
-                unstash 'x86_64-centos7-cuda8'
-                unstash 'x86_64-centos7-cuda9'
-                unstash 'ppc64le-centos7-cuda8'
-                unstash 'ppc64le-centos7-cuda9'
+                unstash 'x86_64-centos7-cuda8.0'
+                unstash 'x86_64-centos7-cuda9.0'
+                unstash 'ppc64le-centos7-cuda8.0'
+                unstash 'ppc64le-centos7-cuda9.0'
                 sh 'echo "Stashed files:" && find dist'
                 script {
                     docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
                         docker.image('s3cmd').inside {
-                            def versionText = utilsLib.getCommandOutput("cat dist/x86_64-centos7-cuda8/VERSION.txt")
+                            def versionText = utilsLib.getCommandOutput("cat dist/x86_64-centos7-cuda8.0/VERSION.txt")
                             s3up {
                                 localArtifact = 'dist/*'
                                 artifactId = "h2o4gpu"

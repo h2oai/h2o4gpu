@@ -731,7 +731,7 @@ Jenkinsfiles:
 DIST_DIR = dist
 
 ARCH := $(shell arch)
-PLATFORM = $(ARCH)-centos7-$(MY_CUDA_VERSION)
+PLATFORM = $(ARCH)-centos7-cuda$(MY_CUDA_VERSION)
 
 CONTAINER_NAME_SUFFIX ?= -$(USER)
 CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
@@ -789,7 +789,7 @@ centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 		-e "MY_CUDNN_VERSION=$(MY_CUDNN_VERSION)" \
 		$(CONTAINER_NAME_TAG) \
 		-c 'make centos7'
-	echo $(CONTAINER_TAG) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
+	echo $(VERSION) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 
 centos7_setup:
 	rm -fr /tmp/build
@@ -820,8 +820,13 @@ centos7:
 mrproper_in_docker:
 	git clean -f -d -x
 
+printvars: MY_CUDA_VERSION=8.0
+printvars: MY_CUDNN_VERSION=5
 printvars:
+	@echo $(PLATFORM)
+	@echo $(PROJECT_VERSION)
 	@echo $(VERSION)
+	@echo $(CONTAINER_TAG)
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END
