@@ -21,3 +21,9 @@ fit_transform <- function(object, ...) {
 fit_predict <- function(object, ...) {
   UseMethod("fit_predict")
 }
+
+# Note that we are redefining `transform` generic method here to override `base::transform`'s signature.
+#' @export
+transform <- function(object, ...) {
+  UseMethod("transform")
+}
