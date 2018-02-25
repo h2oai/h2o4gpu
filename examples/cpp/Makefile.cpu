@@ -53,9 +53,6 @@ endif
 ifeq ($(USENVTX),1)
 DFLAGS+=-DUSE_NVTX=1
 endif
-ifeq ($(USEPARALLEL),0)
-DFLAGS+=-DUSEPARALLEL=0
-endif
 
 
 CXXFLAGS=$(IFLAGS) -g -O3 $(HASH) -I$(H2O4GPUROOT)/include  -std=c++11 -Wall -Wconversion -fPIC  $(LINKFLAGS) $(DFLAGS)
