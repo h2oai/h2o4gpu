@@ -4,7 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from h2o4gpu.base import BaseEstimator
-from src.interface_py.h2o4gpu.solvers.daal_solver.data.IInput import HomogenousDaalData,\
+from src.interface_py.h2o4gpu.solvers.daal_solver.daal_data.IInput import HomogenousDaalData,\
     IInput
 from daal.algorithms import svd
 import numpy as np
