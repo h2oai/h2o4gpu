@@ -201,7 +201,7 @@ def test_intercept_flag(rows=10, columns=9):
     regression = ScikitLinearRegression()
     regression.fit(x, y)
 
-    scikit_incercept = regression.intercept_
+    scikit_intercept = regression.intercept_
     assert_array_almost_equal(scikit_intercept, [daal_intercept])
 
 

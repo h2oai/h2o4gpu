@@ -29,7 +29,7 @@ def zscore(nT):
     :return normalized data
     '''
 
-    algorithm = daal_zscore.Batch(method=zscore.defaultDense)
+    algorithm = daal_zscore.Batch(method=daal_zscore.defaultDense)
     algorithm.input.set(zscore.data, nT)
     result = algorithm.compute()
     return result.get(daal_zscore.normalizedData)
