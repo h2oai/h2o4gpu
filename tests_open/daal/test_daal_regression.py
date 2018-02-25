@@ -16,7 +16,6 @@ from daal.algorithms.linear_regression import prediction as linear_prediction
 from h2o4gpu.solvers.daal_solver.daal_data import IInput
 from numpy.linalg.tests.test_linalg import assert_almost_equal
 from numpy.ma.testutils import assert_array_almost_equal
-from h2o4gpu.utils.testing import assert_equal
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -109,7 +108,7 @@ def test_overfitting(rows, columns):
     for the last second cases, one has to use ridgit regression, lasso, or 
     reduct dimension (subset selection, e.g. scikit does this approach)
     '''
-    assert(rows > columns, "More features than data points in linear regression!")
+    assert rows > columns, "More features than data points in linear regression!"
 
 def get_daal_prediction(x, y):
     ntX = HomogenNumericTable(x)
@@ -177,7 +176,8 @@ def test_coeff_size(rows=10, columns=9):
     beta_coeff = model.getBeta()
     np_beta = IInput.getNumpyArray(beta_coeff)
 
-    assert_equal(y.shape, np_beta.shape)
+    assert y.shape == np_beta.shape, "Dependent variable size must have\
+        the same size as Beta coefficient"
 
 def test_intercept_flag(rows=10, columns=9):
     inout = get_random_array(rows, columns)

@@ -12,7 +12,7 @@ from h2o4gpu.solvers.daal_solver.utils.helper_module import print_name
 from scipy import stats
 from daal.data_management import HomogenNumericTable
 from h2o4gpu.solvers.daal_solver.normalize import zscore
-from h2o4gpu.solvers.daal_solver.data import IInput
+from h2o4gpu.solvers.daal_solver.daal_data import IInput
 from numpy.ma.testutils import assert_array_almost_equal
 
 logging.basicConfig(level=logging.DEBUG)
