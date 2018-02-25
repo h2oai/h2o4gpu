@@ -7,10 +7,10 @@
 #import abc
 import os
 from daal.data_management import (AOSNumericTable, FileDataSource,
-                                  DataSource, HomogenNumericTable,
-                                  BlockDescriptor, readOnly, NumericTable)
+                                  DataSource, HomogenNumericTable)
 import numpy as np
 import pandas as pd
+
 
 class IInput(object):
     '''
@@ -21,34 +21,6 @@ class IInput(object):
     def getNumericTable(self, **kwargs):
         raise NotImplementedError()
 
-    @staticmethod
-    def getNumpyArray(nT):  # @DontTrace
-        '''
-        returns Numpy array
-        :param nT: daal numericTable as input
-        :return: numpy array
-        '''
-        if not isinstance(nT, NumericTable):
-            raise ValueError("getNumpyError, nT is not Numeric table, but {}".
-                             format(str(type(nT))))
-
-        block = BlockDescriptor()
-        nT.getBlockOfRows(0, nT.getNumberOfRows(), readOnly, block)
-        np_array = block.getArray()
-        nT.releaseBlockOfRows(block)
-        return np_array
-
-    @staticmethod
-    def getNumpyShape(nP):
-        '''
-        returns Numpy shape
-        :param nP:
-        :return: shape
-        '''
-        try:
-            return (nP.shape[0], nP.shape[1])
-        except IndexError:
-            return (1, nP.shape[0])
 
 class HomogenousDaalData(IInput):
     '''

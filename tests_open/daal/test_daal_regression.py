@@ -13,7 +13,7 @@ import logging
 from daal.data_management import HomogenNumericTable
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
-from h2o4gpu.solvers.daal_solver.daal_data import IInput
+from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray, getNumpyShape
 from numpy.linalg.tests.test_linalg import assert_almost_equal
 from numpy.ma.testutils import assert_array_almost_equal
 
@@ -76,7 +76,7 @@ def test_linear_regression_simple():
     result = lr_alg.compute()
     model = result.get(linear_training.model)
     beta_coeff = model.getBeta()
-    np_beta_coeff = IInput.getNumpyArray(beta_coeff)
+    np_beta_coeff = getNumpyArray(beta_coeff)
 
     res_beta_coeff = np.array([0,1]).reshape(1,2)
 
@@ -87,7 +87,7 @@ def test_linear_regression_simple():
     lr_alg_predict.input.setModel(linear_prediction.model, model)
     lr_alg_predict.input.setTable(linear_prediction.data, nt_x)
     result = lr_alg_predict.compute()
-    np_predict = IInput.getNumpyArray(result.get(linear_prediction.prediction))
+    np_predict = getNumpyArray(result.get(linear_prediction.prediction))
     assert_array_almost_equal(x, np_predict)
 
 def get_random_array(rows=10, columns=9):
@@ -125,7 +125,7 @@ def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     lr_predict.input.setTable(linear_prediction.data, ntX)
     result = lr_predict.compute()
 
-    np_predicted = IInput.getNumpyArray(result.get(linear_prediction.prediction))
+    np_predicted = getNumpyArray(result.get(linear_prediction.prediction))
     # assert the same as the initial dependent variable
     assert_array_almost_equal(y, np_predicted)
     return np_predicted
@@ -174,7 +174,7 @@ def test_coeff_size(rows=10, columns=9):
     result = lr_train.compute()
     model = result.get(linear_training.model)
     beta_coeff = model.getBeta()
-    np_beta = IInput.getNumpyArray(beta_coeff)
+    np_beta = getNumpyArray(beta_coeff)
 
     assert y.shape == np_beta.shape, "Dependent variable size must have\
         the same size as Beta coefficient"
@@ -194,7 +194,7 @@ def test_intercept_flag(rows=10, columns=9):
     result = lr_train.compute()
     model = result.get(linear_training.model)
     beta_coeff = model.getBeta()
-    np_beta = IInput.getNumpyArray(beta_coeff)
+    np_beta = getNumpyArray(beta_coeff)
     daal_intercept = np_beta[0,0]
 
     from sklearn.linear_model.base import LinearRegression as ScikitLinearRegression
@@ -212,7 +212,7 @@ def test_linear_regression_param():
     test_linear_regression_against_scikit(rows=30, columns=20)
     test_linear_regression_against_scikit(rows=300, columns=200)
 def test_beta(): 
-    test_coeff_size(x, y)
+    test_coeff_size(x=10, y=9)
     test_intercept_flag(rows=10, columns=9)
 
 if __name__ == '__main__':
