@@ -176,7 +176,7 @@ def test_coeff_size(rows=10, columns=9):
     beta_coeff = model.getBeta()
     np_beta = getNumpyArray(beta_coeff)
 
-    assert y.shape == np_beta.shape, "Dependent variable size must have\
+    assert y.transpose().shape == np_beta.shape, "Dependent variable size must have\
         the same size as Beta coefficient"
 
 def test_intercept_flag(rows=10, columns=9):
@@ -201,7 +201,7 @@ def test_intercept_flag(rows=10, columns=9):
     regression = ScikitLinearRegression()
     regression.fit(x, y)
 
-    scikit_incercept - regression.intercept_
+    scikit_incercept = regression.intercept_
     assert_array_almost_equal(scikit_intercept, [daal_intercept])
 
 
