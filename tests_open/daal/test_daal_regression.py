@@ -96,7 +96,7 @@ def get_random_array(rows=10, columns=9):
 
     return (x,y)
 
-def test_overfitting(rows, columns):
+def test_overfitting(rows=10, columns=9):
     '''
     overfitting - more features than data points
     for n(number of observation) > p (number of variables)
@@ -110,7 +110,7 @@ def test_overfitting(rows, columns):
     '''
     assert rows > columns, "More features than data points in linear regression!"
 
-def get_daal_prediction(x, y):
+def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     ntX = HomogenNumericTable(x)
     ntY = HomogenNumericTable(y)
 
@@ -130,7 +130,7 @@ def get_daal_prediction(x, y):
     assert_array_almost_equal(y, np_predicted)
     return np_predicted
 
-def get_scikit_prediction(x, y):
+def get_scikit_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     
     from sklearn.linear_model.base import LinearRegression as ScikitLinearRegression
     
