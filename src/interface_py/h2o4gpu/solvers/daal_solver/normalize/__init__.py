@@ -30,6 +30,6 @@ def zscore(nT):
     '''
 
     algorithm = daal_zscore.Batch(method=daal_zscore.defaultDense)
-    algorithm.input.set(zscore.data, nT)
+    algorithm.input.set(daal_zscore.data, nT)
     result = algorithm.compute()
     return result.get(daal_zscore.normalizedData)
