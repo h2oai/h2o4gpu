@@ -208,7 +208,7 @@ def test_intercept_flag(rows=10, columns=9):
 def test_linear_regression_normalized(): test_fit_linear_regression_daal_vs_sklearn()
 def test_linear_regression(): test_linear_regression_simple()
 def test_linear_regression_param_3_2(): test_linear_regression_against_scikit(rows=3, columns=2)
-def test_linear_regression_with_sc(): test_linear_regression_against_scikit(rows=300, columns=200)
+def test_linear_regression_with_sc(): test_linear_regression_against_scikit()
 def test_beta(): 
     test_coeff_size(rows=10, columns=9)
     test_intercept_flag(rows=10, columns=9)
