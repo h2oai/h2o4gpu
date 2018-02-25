@@ -738,10 +738,11 @@ CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
 
 PROJECT_VERSION := $(BASE_VERSION)
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
-BRANCH_NAME_SUFFIX = -$(BRANCH_NAME)
+BRANCH_NAME_SUFFIX = +$(BRANCH_NAME)
 BUILD_NUM ?= local
-BUILD_NUM_SUFFIX = -$(BUILD_NUM)
-CONTAINER_TAG = $(PROJECT_VERSION)$(BRANCH_NAME_SUFFIX)$(BUILD_NUM_SUFFIX)
+BUILD_NUM_SUFFIX = .$(BUILD_NUM)
+VERSION = $(PROJECT_VERSION)$(BRANCH_NAME_SUFFIX)$(BUILD_NUM_SUFFIX)
+CONTAINER_TAG := $(shell echo $(VERSION) | sed 's/+/-/g')
 
 CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
 
@@ -818,6 +819,9 @@ centos7:
 #        the build step runs as the user.  But keep the API for consistency.
 mrproper_in_docker:
 	git clean -f -d -x
+
+printvars:
+	@echo $(VERSION)
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END

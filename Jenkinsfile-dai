@@ -106,7 +106,7 @@ pipeline {
                             def versionText = utilsLib.getCommandOutput("cat dist/x86_64-centos7-cuda8/VERSION.txt")
                             s3up {
                                 localArtifact = 'dist/*'
-                                artifactId = "tomk-test-h2o4gpu"
+                                artifactId = "h2o4gpu"
                                 version = versionText
                                 keepPrivate = false
                             }
