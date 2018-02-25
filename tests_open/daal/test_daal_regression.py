@@ -121,7 +121,7 @@ def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     model = result.get(linear_training.model)
 
     lr_predict = linear_prediction.Batch()
-    lr_predict.input.set(linear_prediction.model, model)
+    lr_predict.input.setModel(linear_prediction.model, model)
     lr_predict.input.setTable(linear_prediction.data, ntX)
     result = lr_predict.compute()
 
@@ -207,10 +207,9 @@ def test_intercept_flag(rows=10, columns=9):
 
 def test_linear_regression_normalized(): test_fit_linear_regression_daal_vs_sklearn()
 def test_linear_regression(): test_linear_regression_simple()
-def test_linear_regression_param():
-    test_linear_regression_against_scikit(rows=3, columns=2)
-    test_linear_regression_against_scikit(rows=30, columns=20)
-    test_linear_regression_against_scikit(rows=300, columns=200)
+def test_linear_regression_param_3_2(): test_linear_regression_against_scikit(rows=3, columns=2)
+def test_lienar_regression_param_30_20(): test_linear_regression_against_scikit(rows=30, columns=20)
+def test_linear_regression_with_sc(): test_linear_regression_against_scikit(rows=300, columns=200)
 def test_beta(): 
     test_coeff_size(rows=10, columns=9)
     test_intercept_flag(rows=10, columns=9)
