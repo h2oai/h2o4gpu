@@ -8,7 +8,6 @@ ElasticNetH2O solver tests using Kaggle datasets.
 import numpy as np
 import h2o4gpu
 import logging
-from h2o4gpu.solvers.daal_solver.utils.helper_module import print_name
 from scipy import stats
 from daal.data_management import HomogenNumericTable
 from h2o4gpu.solvers.daal_solver.normalize import zscore
@@ -17,7 +16,6 @@ from numpy.ma.testutils import assert_array_almost_equal
 
 logging.basicConfig(level=logging.DEBUG)
 
-@print_name
 def test_zscore_single():
 
     input = np.random.rand(10,1)
@@ -29,7 +27,6 @@ def test_zscore_single():
     
     assert_array_almost_equal(sc_zscore, np_da_zscore)
 
-@print_name
 def test_zscore_multicolumns():
 
     input = np.random.rand(10,3)

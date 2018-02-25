@@ -212,7 +212,7 @@ def test_linear_regression_param():
     test_linear_regression_against_scikit(rows=30, columns=20)
     test_linear_regression_against_scikit(rows=300, columns=200)
 def test_beta(): 
-    test_coeff_size(x=10, y=9)
+    test_coeff_size(rows=10, columns=9)
     test_intercept_flag(rows=10, columns=9)
 
 if __name__ == '__main__':
