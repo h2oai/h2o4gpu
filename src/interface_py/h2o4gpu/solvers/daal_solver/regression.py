@@ -9,14 +9,18 @@ from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
-from .normalize import zscore
-from .data.IInput import HomogenousDaalData
+from .daal_data import IInput
 
 class Method(Enum):
     '''
-    Method solver for IntelDAAL, qrDense is fortran projection matrix method (faster)
+    Method solver for IntelDAAL
+    data: {(x1,y1),...,(xm,ym)} and a tentative function (model) to
+    fit the data against in form of : f(x) = c1f1(x)+...+cnfn(x), to
+    find the response vector, here are used two methods: normal equation and
+    QR decomposition - used by default for its numerical stability
+    and performance - intelDaal QR decomposition written in Fortran.
     '''
-    least_squares = linear_training.qrDense
+    qr_dense = linear_training.qrDense
     normal_equation = linear_training.normEqDense
 
 class LinearRegression(object):
@@ -26,15 +30,14 @@ class LinearRegression(object):
 
     def __init__(self, fit_intercept=True, normalize=False, **kwargs):
         '''
-        normalize is implemented only for zscore, shouldn't be used with least squares
         :param fit_intercept: calculate all betas by default
-        :param normalize: zscore used
-        :param in kwargs: method: normalEquation, qr=least squares
+        :param normalize: z-score used for independent variables
+        :param in kwargs: method: normalEquation, QR
         '''
         if 'method' in kwargs and kwargs['method'] in Method:
             self.method = kwargs['method'].value
         else:
-            self.method = Method.normal_equation.value
+            self.method = Method.qr_dense.value
 
         self.normalize = normalize
         self.model = None
@@ -57,14 +60,12 @@ class LinearRegression(object):
         '''
 
         # Training data and responses
-        Input = HomogenousDaalData(X).getNumericTable()
+        Input = IInput.HomogenousDaalData(X).getNumericTable()
         if self.normalize:
             Input = zscore(Input)
-        
-        Responses = HomogenousDaalData(y).getNumericTable()
-        
-        # Input = HomogenNumericTable(X)#, ntype = np.float32)
-        # Responses = HomogenNumericTable(y)#, ntype = np.float32)
+
+        Responses = IInput.HomogenousDaalData(y).getNumericTable()
+
         # Training object with/without normalization
         linear_training_algorithm = linear_training.Batch(
             method=self.method)
@@ -73,6 +74,9 @@ class LinearRegression(object):
         linear_training_algorithm.input.set(linear_training.data, Input)
         linear_training_algorithm.input.set(linear_training.dependentVariables,
                                             Responses)
+        # check if intercept flag is set
+        linear_training_algorithm.parameter.interceptFlag = True \
+            if 'intercept' in self.parameters else True
         # calculate
         res = linear_training_algorithm.compute()
         # return trained model
