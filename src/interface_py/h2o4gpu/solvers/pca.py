@@ -6,7 +6,7 @@
 import numpy as np
 from ..libs.lib_pca import parameters
 from ..solvers.utils import _setter
-from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD, _as_fptr
+from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD, _as_dptr
 from ..utils.extmath import svd_flip
 
 
@@ -89,9 +89,9 @@ class PCAH2O(TruncatedSVDH2O):
 
         lib = self._load_lib()
         lib.pca(
-            _as_fptr(X), _as_fptr(Q), _as_fptr(w), _as_fptr(U),
-            _as_fptr(explained_variance), _as_fptr(explained_variance_ratio),
-            _as_fptr(mean), param)
+            _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
+            _as_dptr(explained_variance), _as_dptr(explained_variance_ratio),
+            _as_dptr(mean), param)
 
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?

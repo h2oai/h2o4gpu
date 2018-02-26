@@ -97,7 +97,11 @@ class TruncatedSVDH2O(object):
             X = scipy.sparse.csr_matrix.todense(X)
 
         X = self._check_double(X)
-        X = np.asfortranarray(X, dtype=np.float64)
+        if self.double_precision == 1:
+            X = np.asfortranarray(X, dtype=np.float64)
+        else:
+            X = np.asfortranarray(X, dtype=np.float32)
+
         if self.double_precision == 1:
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float64, order='F')
@@ -145,9 +149,13 @@ class TruncatedSVDH2O(object):
                 cptr(explained_variance, ctypes.c_double), cptr(explained_variance_ratio, ctypes.c_double),
                 param)
         else:
+            # lib.truncated_svd(
+            #     _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
+            #     _as_dptr(explained_variance), _as_dptr(explained_variance_ratio),
+            #     param)
             lib.truncated_svd_float(
-                cptr(X), cptr(Q), cptr(w), cptr(U),
-                cptr(explained_variance), cptr(explained_variance_ratio),
+                cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float), cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
+                cptr(explained_variance, ctypes.c_float), cptr(explained_variance_ratio, ctypes.c_float),
                 param)
 
         self._w = w
@@ -352,14 +360,8 @@ class TruncatedSVDH2O(object):
 
         return gpu_lib
 
-
-# Util to send pointers to backend
 def _as_dptr(x):
-    return x.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-
-def _as_fptr(x):
     return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-
 
 class TruncatedSVD(object):
     """
