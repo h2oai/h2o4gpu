@@ -93,8 +93,6 @@ def func(m=5000, n=10, k=9, algorithm="cusolver", convert_to_float32=False):
 
 
 def test_tsvd_error_k2_cusolver_wrappertest(): func(n=50, k=2, algorithm="cusolver")
-@pytest.mark.skip("Failing")
-def test_tsvd_error_k2_power_wrappertest(): func(n=50, k=2, algorithm="power")
 def test_tsvd_error_k2_cusolver_wrappertest_float32(): func(n=50, k=2, algorithm="cusolver", convert_to_float32=True)
 @pytest.mark.skip("Failing")
-def test_tsvd_error_k2_power_wrappertest_float32(): func(n=50, k=2, algorithm="power", convert_to_float32=True)
+def test_tsvd_error_k2_power_wrappertest(): func(n=50, k=2, algorithm="power")

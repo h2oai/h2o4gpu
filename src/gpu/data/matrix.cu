@@ -4,6 +4,49 @@
 
 namespace tsvd
 {
+	template<typename T, typename U>
+	void multiply(Matrix<T>& A, const U a, DeviceContext& context)
+	{
+		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (U val)
+						  {
+							  return val * a;
+						  }
+		);
+	}
+
+	template<typename T>
+	void subtract(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context)
+	{
+		auto counting = thrust::make_counting_iterator(0);
+		const T* d_A = A.data();
+		const T* d_B = B.data();
+		T* d_C = C.data();
+		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
+						 {
+							 d_C[idx] = d_A[idx] - d_B[idx];
+						 });
+	}
+
+	template<typename T>
+	void add(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context)
+	{
+		auto counting = thrust::make_counting_iterator(0);
+		const T* d_A = A.data();
+		const T* d_B = B.data();
+		T* d_C = C.data();
+		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
+						 {
+							 d_C[idx] = d_A[idx] + d_B[idx];
+						 });
+	}
+
+
+	template<typename T>
+	void normalize_vector_thrust(Matrix<T>& M, DeviceContext& context){
+		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
+		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
+	}
+
 	void multiply_diag(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool left_diag)
 	{
 		cublasSideMode_t mode = left_diag ? CUBLAS_SIDE_LEFT : CUBLAS_SIDE_RIGHT;
@@ -62,72 +105,6 @@ namespace tsvd
 		int ldc = m;
 
 		safe_cublas(cublasDgemm(context.cublas_handle, op_a, op_b, m, n, k, &alpha, A.data(), lda, B.data(), ldb, &beta, C.data(), ldc));
-	}
-
-	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context)
-	{
-		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (tsvd_float val)
-		                  {
-			                  return val * a;
-		                  }
-		);
-	}
-
-	void multiply(Matrix<tsvd_double>& A, const tsvd_double a, DeviceContext& context)
-	{
-		thrust::transform(A.dptr(), A.dptr() + A.size(), A.dptr(), [=]__device__ (tsvd_double val)
-		                  {
-			                  return val * a;
-		                  }
-		);
-	}
-
-	void subtract(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context)
-	{
-		auto counting = thrust::make_counting_iterator(0);
-		const tsvd_float* d_A = A.data();
-		const tsvd_float* d_B = B.data();
-		tsvd_float* d_C = C.data();
-		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
-		                 {
-			                 d_C[idx] = d_A[idx] - d_B[idx];
-		                 });
-	}
-
-	void subtract(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context)
-	{
-		auto counting = thrust::make_counting_iterator(0);
-		const tsvd_double* d_A = A.data();
-		const tsvd_double* d_B = B.data();
-		tsvd_double* d_C = C.data();
-		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
-		                 {
-			                 d_C[idx] = d_A[idx] - d_B[idx];
-		                 });
-	}
-
-	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context)
-	{
-		auto counting = thrust::make_counting_iterator(0);
-		const tsvd_float* d_A = A.data();
-		const tsvd_float* d_B = B.data();
-		tsvd_float* d_C = C.data();
-		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
-		                 {
-			                 d_C[idx] = d_A[idx] + d_B[idx];
-		                 });
-	}
-
-	void add(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context)
-	{
-		auto counting = thrust::make_counting_iterator(0);
-		const tsvd_double* d_A = A.data();
-		const tsvd_double* d_B = B.data();
-		tsvd_double* d_C = C.data();
-		thrust::for_each(counting, counting + A.rows() * A.columns(), [=]__device__(int idx)
-		                 {
-			                 d_C[idx] = d_A[idx] + d_B[idx];
-		                 });
 	}
 
 	void transpose(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& B, DeviceContext& context)
@@ -219,16 +196,6 @@ namespace tsvd
         safe_cublas(cublasDnrm2(context.cublas_handle, M.rows(), M.data(), 1.0, &norm2));
         M.transform([=]__device__ (float val){return val * (1/norm2);});
     }
-
-	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context){
-		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
-		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
-	}
-
-	void normalize_vector_thrust(Matrix<tsvd_double>& M, DeviceContext& context){
-		float M_inner = thrust::inner_product(M.dptr(), M.dptr() + M.size(), M.dptr(), 0.0f); //Will allocate memory for every call to fxn.
-		M.transform([=]__device__ (float val){return val / std::sqrt(M_inner);});
-	}
 
 	void residual(const Matrix<tsvd_float>& X, const Matrix<tsvd_float>& D, const Matrix<tsvd_float>& S, Matrix<tsvd_float>& R, DeviceContext& context)
 	{
@@ -490,3 +457,17 @@ namespace tsvd
 	}
 
 }
+
+//Orignal Impl
+template void tsvd::multiply<double>(Matrix<double>& A, const float a, DeviceContext& context);
+
+//Impl for floats and doubles
+template void tsvd::multiply<float>(Matrix<float>& A, const float a, DeviceContext& context);
+template void tsvd::multiply<double>(Matrix<double>& A, const double a, DeviceContext& context);
+template void tsvd::subtract<float>(const Matrix<float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context);
+template void tsvd::subtract<double>(const Matrix<double>& A, const Matrix<double>& B, Matrix<double>& C, DeviceContext& context);
+template void tsvd::add<float>(const Matrix<float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context);
+template void tsvd::add<double>(const Matrix<double>& A, const Matrix<double>& B, Matrix<double>& C, DeviceContext& context);
+template void tsvd::normalize_vector_thrust<float>(Matrix<float>& M, DeviceContext& context);
+template void tsvd::normalize_vector_thrust<double>(Matrix<double>& M, DeviceContext& context);
+

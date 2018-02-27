@@ -351,19 +351,8 @@ namespace tsvd
 	 * \param [in,out]	context	The context.
 	 */
 
-	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context);
-
-	/**
-	 * \fn	void multiply(Matrix<tsvd_double>& A, const tsvd_double a ,DeviceContext& context);
-	 *
-	 * \brief	Matrix scalar multiplication.
-	 *
-	 * \param [in,out]	A	   	The Matrix&lt;float&gt; to process.
-	 * \param 		  	a	   	The scalar.
-	 * \param [in,out]	context	The context.
-	 */
-
-	void multiply(Matrix<tsvd_double>& A, const tsvd_double a, DeviceContext& context);
+	template<typename T, typename U>
+	void multiply(Matrix<T>& A, const U a, DeviceContext& context);
 
 	/**
 	 * \fn	void matrix_sub(const Matrix<tsvd_float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context)
@@ -372,16 +361,8 @@ namespace tsvd
 	 *
 	 */
 
-	void subtract(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
-
-	/**
-	 * \fn	void matrix_sub(const Matrix<tsvd_double>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context)
-	 *
-	 * \brief	Matrix subtraction. A - B = C.
-	 *
-	 */
-
-	void subtract(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context);
+	template<typename T>
+	void subtract(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context);
 
 	/**
 	 * \fn	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
@@ -394,20 +375,8 @@ namespace tsvd
 	 * \param [in,out]	context	The context.
 	 */
 
-	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
-
-	/**
-	 * \fn	void add(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context);
-	 *
-	 * \brief	Matrix addition. A + B = C
-	 *
-	 * \param 		  	A	   	The Matrix&lt;tsvd_double&gt; to process.
-	 * \param 		  	B	   	The Matrix&lt;tsvd_double&gt; to process.
-	 * \param [in,out]	C	   	The Matrix&lt;tsvd_double&gt; to process.
-	 * \param [in,out]	context	The context.
-	 */
-
-	void add(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context);
+	template<typename T>
+	void add(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context);
 
 	/**
 	 * \fn	void transpose(const Matrix<tsvd_float >&A, Matrix<tsvd_float >&B, DeviceContext& context)
@@ -480,17 +449,9 @@ namespace tsvd
 	 * \param [in,out]	M	    The vector to process
 	 * \param [in,out]	context	Device context.
 	 */
-	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context);
 
-	/**
-	 * \fn	void normalize_vector_thrust(Matrix<tsvd_double>& M, DeviceContext& context)
-	 *
-	 * \brief	Normalize a vector utilizng Thrust
-	 *
-	 * \param [in,out]	M	    The vector to process
-	 * \param [in,out]	context	Device context.
-	 */
-	void normalize_vector_thrust(Matrix<tsvd_double>& M, DeviceContext& context);
+	template<typename T>
+	void normalize_vector_thrust(Matrix<T>& M, DeviceContext& context);
 
 	/**
 	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
