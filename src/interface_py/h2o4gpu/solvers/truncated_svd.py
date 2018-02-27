@@ -109,7 +109,8 @@ class TruncatedSVDH2O(object):
                 (X.shape[0], self.n_components), dtype=np.float64, order='F')
             w = np.empty(self.n_components, dtype=np.float64)
             explained_variance = np.empty(self.n_components, dtype=np.float64)
-            explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
+            explained_variance_ratio = np.empty(self.n_components,
+                                                dtype=np.float64)
         else:
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float32, order='F')
@@ -117,8 +118,9 @@ class TruncatedSVDH2O(object):
                 (X.shape[0], self.n_components), dtype=np.float32, order='F')
             w = np.empty(self.n_components, dtype=np.float32)
             explained_variance = np.empty(self.n_components, dtype=np.float32)
-            explained_variance_ratio = np.empty(self.n_components, dtype=np.float32)
-            
+            explained_variance_ratio = np.empty(self.n_components,
+                                                dtype=np.float32)
+
         param = parameters_svd()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
@@ -145,13 +147,17 @@ class TruncatedSVDH2O(object):
         lib = self._load_lib()
         if self.double_precision == 1:
             lib.truncated_svd_double(
-                cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double), cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
-                cptr(explained_variance, ctypes.c_double), cptr(explained_variance_ratio, ctypes.c_double),
+                cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double),
+                cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
+                cptr(explained_variance, ctypes.c_double),
+                cptr(explained_variance_ratio, ctypes.c_double),
                 param)
         else:
             lib.truncated_svd_float(
-                cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float), cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
-                cptr(explained_variance, ctypes.c_float), cptr(explained_variance_ratio, ctypes.c_float),
+                cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float),
+                cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
+                cptr(explained_variance, ctypes.c_float),
+                cptr(explained_variance_ratio, ctypes.c_float),
                 param)
 
         self._w = w
@@ -226,12 +232,12 @@ class TruncatedSVDH2O(object):
                 "Unsupported data type %s, "
                 "should be either np.float32 or np.float64" % data.dtype)
         return data
-    
+
     def _print_verbose(self, level, msg):
         if self.verbose > level:
             print(msg)
             sys.stdout.flush()
-    
+
     @classmethod
     def _get_param_names(cls):
         """Get parameter names for the estimator"""
