@@ -149,10 +149,6 @@ class TruncatedSVDH2O(object):
                 cptr(explained_variance, ctypes.c_double), cptr(explained_variance_ratio, ctypes.c_double),
                 param)
         else:
-            # lib.truncated_svd(
-            #     _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
-            #     _as_dptr(explained_variance), _as_dptr(explained_variance_ratio),
-            #     param)
             lib.truncated_svd_float(
                 cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float), cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
                 cptr(explained_variance, ctypes.c_float), cptr(explained_variance_ratio, ctypes.c_float),
@@ -210,8 +206,6 @@ class TruncatedSVDH2O(object):
         """
         return np.dot(X, self.components_)
 
-    # FIXME : This function duplicates others
-    # in solvers / utils.py as used in GLM
     def _check_double(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
