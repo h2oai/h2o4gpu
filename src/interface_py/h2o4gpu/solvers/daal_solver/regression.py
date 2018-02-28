@@ -4,9 +4,12 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import warnings
+import numpy as np
 from enum import Enum
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
+from daal.algorithms.ridge_regression import training as ridge_training
+from daal.algorithms.ridge_regression import prediction as ridge_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
 from .daal_data import IInput
@@ -165,3 +168,125 @@ class LinearRegression(object):
                         "requires a daal.data_management.NumericTable"
         printNumericTable(daal_table, message, num_printed_rows,
                           num_printed_cols, interval)
+
+
+class RidgeRegression(object):
+    
+    def __init__(self, fit_intercept=True, normalize=False, **kwargs):
+        '''
+        :param kwargs: alpha: Regularization parameter, a small positive
+        value with default 1.0
+        :param fit_intercept:
+        :param normalize:
+        '''
+        
+        self.normalize = normalize
+        self.model = None
+        self.parameters = ['intercept'] if fit_intercept else []
+        self.train_data_array = None
+        self.response_data_array = None
+        self.alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 1.0
+
+    def fit(self, X, y=None):
+
+        '''
+        masquerade function for train()
+        '''
+        return self.train(X, y)
+
+    def train(self, X, y=None):
+        '''
+        :param X: training data
+        :param y: dependent variables (responses)
+        :return: Ridge Regression model object
+        '''
+
+        # Training data and responses
+        Input = IInput.HomogenousDaalData(X).getNumericTable()
+
+        Responses = IInput.HomogenousDaalData(y).getNumericTable()
+
+        # Training object with normalization
+        ridge_training_algorithm = ridge_training.Batch()
+
+        # set input values
+        ridge_training_algorithm.input.set(ridge_training.data, Input)
+        ridge_training_algorithm.input.set(ridge_training.dependentVariables,
+                                            Responses)
+        # check if intercept flag is set
+        ridge_training_algorithm.parameter.interceptFlag = True \
+            if 'intercept' in self.parameters else True
+        # set parameter
+        alpha_nt = HomogenNumericTable(np.array([self.alpha], ndmin=2))
+        ridge_training_algorithm.parameter.ridgeParameters = alpha_nt
+        # calculate
+        res = ridge_training_algorithm.compute()
+        # return trained model
+        self.model = res.get(ridge_training.model)
+        return self.model
+
+    def get_beta(self):
+
+        '''
+        :return: Linear Regression coefficients
+        '''
+
+        if self.model is None:
+            warnings.warn("The training model is not calculated yet.",
+                          UserWarning)
+        return self.model.getBeta()
+
+    def predict(self, X):
+        '''
+        Make prediction for X - unseen data using a trained model
+        :param X:new data
+        intercept: from parameters, a boolean indicating
+        if calculate Beta0 (intercept)
+        '''
+
+        Data = HomogenNumericTable(X)
+        ridge_prediction_algorithm = \
+            ridge_prediction.Batch_Float64DefaultDense()
+        # set input
+        ridge_prediction_algorithm.input.setModel(
+            ridge_prediction.model, self.model)
+        ridge_prediction_algorithm.input.setTable(
+            ridge_prediction.data, Data)
+
+        if 'intercept' in self.parameters:
+            ridge_prediction_algorithm.parameter.interceptFlag = True
+        # calculate
+        res = ridge_prediction_algorithm.compute()
+        return res.get(ridge_prediction.prediction)
+
+    def _score(self,
+               predicted_response,
+               true_responses=None):
+        '''
+        :param X: not needed for DAAL, only dependent variables
+        for calculation used
+        :param y:
+        :param smaple_weight:
+        '''
+
+        if true_responses is None:
+            true_responses = self.response_data_array
+
+        rs = ((true_responses - predicted_response) ** 2).sum(axis=0)
+        ts = ((true_responses - true_responses.mean(axis=0)) ** 2).sum(axis=0)
+        return 1-rs/ts
+
+    def get_params(self):
+        return self.parameters
+
+    def set_params(self, **params):
+        '''
+        params for prediction
+        '''
+        # TODO: list of parameters for Linear Regression
+        if 'intercept' in params and 'intercept' not in self.parameters:
+            self.parameters.append('intercept')
+
+    def set_attributes(self):
+        warnings.warn("DAAL Linear Regression doesn't have any attributes",\
+                      UserWarning)

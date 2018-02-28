@@ -21,4 +21,5 @@ from ..solvers.xgboost import GradientBoostingRegressor
 from ..solvers.truncated_svd import TruncatedSVDH2O
 from ..solvers.truncated_svd import TruncatedSVD
 from ..solvers.daal_solver.regression import LinearRegression as DLR
+from ..solvers.daal_solver.regression import RidgeRegression as DRR
 from ..solvers import daal_solver
