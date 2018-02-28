@@ -11,10 +11,13 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000000, n=10, k=9):
+def func(m=5000000, n=10, k=9, convert_to_float32=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
+
+    if convert_to_float32:
+        X = X.astype(np.float32)
 
     # Exact scikit impl
     sklearn_tsvd = sklearnsvd(algorithm="arpack", n_components=k, random_state=42)
@@ -129,12 +132,12 @@ def func(m=5000000, n=10, k=9):
 
     return h2o4gpu_mae, sklearn_mae
 
-def reconstruction_error(m=5000, n=10, k=9):
+def reconstruction_error(m=5000, n=10, k=9, convert_to_float32=False):
     h2o4gpu_mae_list = np.zeros(k, dtype=np.float64)
     sklearn_mae_list = np.zeros(k, dtype=np.float64)
     for i in range(1,k+1):
-        h2o4gpu_mae_list[i-1] = func(m, n, i)[0]
-        sklearn_mae_list[i-1] = func(m, n, i)[1]
+        h2o4gpu_mae_list[i-1] = func(m, n, i, convert_to_float32=convert_to_float32)[0]
+        sklearn_mae_list[i-1] = func(m, n, i, convert_to_float32=convert_to_float32)[1]
     print("H2O4GPU MAE across k")
     print(h2o4gpu_mae_list)
     #Sort in descending order and check error goes down as k increases
@@ -148,3 +151,5 @@ def reconstruction_error(m=5000, n=10, k=9):
 
 def test_tsvd_error_k2(): reconstruction_error(n=50, k=5)
 def test_tsvd_error_k5(): reconstruction_error(n=100, k=7)
+def test_tsvd_error_k2_float32(): reconstruction_error(n=50, k=5, convert_to_float32= True)
+def test_tsvd_error_k5_float32(): reconstruction_error(n=100, k=7, convert_to_float32=True)
