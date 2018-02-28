@@ -53,10 +53,6 @@ def test_fit_linear_regression_daal_vs_sklearn():
     print("DONE.")
 
     if os.getenv("CHECKPERFORMANCE") is not None:
-        kmeans_sk = skKMeans(n_init=1, n_clusters=centers, algorithm='full', n_jobs=-1)
-        start_sk = time.time()
-        kmeans_sk.fit(X)
-        end_sk = time.time()
         assert end_daal - start_daal <= end_sklearn - start_sklearn
 
     #DLR.print_table(trained.getBeta(), "Linear Regression coefficients:")
@@ -69,7 +65,7 @@ def test_linear_regression_simple():
     y = x
 
     nt_x = nt_y = HomogenNumericTable(x)
-    \
+
     lr_alg = linear_training.Batch()
     lr_alg.input.set(linear_training.data, nt_x)
     lr_alg.input.set(linear_training.dependentVariables, nt_y)

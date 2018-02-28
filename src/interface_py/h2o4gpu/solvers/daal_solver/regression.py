@@ -4,8 +4,8 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import warnings
-import numpy as np
 from enum import Enum
+import numpy as np
 from daal.algorithms.linear_regression import training as linear_training
 from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.algorithms.ridge_regression import training as ridge_training
@@ -171,7 +171,10 @@ class LinearRegression(object):
 
 
 class RidgeRegression(object):
-    
+    '''Ridge Regression based on DAAL
+    library
+    '''
+
     def __init__(self, fit_intercept=True, normalize=False, **kwargs):
         '''
         :param kwargs: alpha: Regularization parameter, a small positive
@@ -179,7 +182,7 @@ class RidgeRegression(object):
         :param fit_intercept:
         :param normalize:
         '''
-        
+
         self.normalize = normalize
         self.model = None
         self.parameters = ['intercept'] if fit_intercept else []
@@ -212,7 +215,7 @@ class RidgeRegression(object):
         # set input values
         ridge_training_algorithm.input.set(ridge_training.data, Input)
         ridge_training_algorithm.input.set(ridge_training.dependentVariables,
-                                            Responses)
+                                           Responses)
         # check if intercept flag is set
         ridge_training_algorithm.parameter.interceptFlag = True \
             if 'intercept' in self.parameters else True
