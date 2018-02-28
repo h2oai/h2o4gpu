@@ -16,12 +16,13 @@ from daal.algorithms.ridge_regression import prediction as ridge_prediction
 from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray, getNumpyShape
 from numpy.linalg.tests.test_linalg import assert_almost_equal
 from numpy.ma.testutils import assert_array_almost_equal
+from sklearn.linear_model import Ridge as ScikitRidgeRegression
 
 logging.basicConfig(level=logging.DEBUG)
 
 seeded = RandomState(42)
 
-from h2o4gpu.solvers.linear_regression import RidgeRegression
+from h2o4gpu.solvers.ridge import Ridge
 from h2o4gpu.solvers import DRR
 
 def test_fit_ridge_regression_daal_vs_sklearn():
@@ -32,7 +33,7 @@ def test_fit_ridge_regression_daal_vs_sklearn():
     testData = seeded.rand(50,10)
     testDependentVariables = seeded.rand(50,2)
 
-    solver_daal = RidgeRegression(
+    solver_daal = Ridge(
         fit_intercept=True,
         normalize=False,
         verbose=True,
@@ -42,8 +43,9 @@ def test_fit_ridge_regression_daal_vs_sklearn():
     solver_daal.fit(trainData, trainDependentVariables)
     end_daal = time.time()
 
-    solver_sk = RidgeRegression(alpha=1.0)
-    reg.fit(trainData, trainDependentVariables)
+    solver_sk = ScikitRidgeRegression(alpha=1.0)
+    start_sklearn = time.time()
+    solver_sk.fit(trainData, trainDependentVariables)
     end_sklearn = time.time()
     
     print("TEST FIT Sklearn vs Daal of Ridge Regression")
@@ -131,8 +133,6 @@ def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
 
 def get_scikit_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
 
-    from sklearn.linear_model import Ridge as ScikitRidgeRegression
-
     regression = ScikitRidgeRegression(alpha=1.0)
     regression.fit(x, y)
 
@@ -207,7 +207,6 @@ def test_intercept_flag(rows=10, columns=9):
     np_beta = getNumpyArray(beta_coeff)
     daal_intercept = np_beta[0,0]
 
-    from sklearn.linear_model import Ridge as ScikitRidgeRegression
     regression = ScikitRidgeRegression(alpha=1.0, fit_intercept=True)
     regression.fit(x, y)
 
