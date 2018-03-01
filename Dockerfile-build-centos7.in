@@ -60,7 +60,9 @@ COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 
 RUN yum install -y \
   libpng-devel \
-  freetype-devel
+  freetype-devel \
+  epel-release \
+  axel
 
 ENV PATH=/usr/local/bin:$PATH
 RUN \
@@ -93,6 +95,12 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	cd $HOME && \
 	rm -rf Pillow-5.0.0*; \
 	fi'
+
+# Install Daal library
+COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
+RUN \
+	chmod +x scripts/daal/install_daal.sh && \
+	scripts/daal/install_daal.sh
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
