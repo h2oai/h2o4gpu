@@ -75,7 +75,7 @@ def func(m=2000, n = 20, k = 5):
 
     start_time_power = time.time()
     print("POWER")
-    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=k, algorithm="power", tol = 1E-50, n_iter=20000000, random_state=42, verbose=True)
+    h2o4gpu_tsvd_power = TruncatedSVDH2O(n_components=k, algorithm="power", tol = 1E-50, n_iter=2000, random_state=42, verbose=True)
     h2o4gpu_tsvd_power.fit(X)
     end_time_power = time.time() - start_time_power
     print("Took power method " + str(end_time_power) + " seconds")

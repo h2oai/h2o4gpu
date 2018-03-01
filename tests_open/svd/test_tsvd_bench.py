@@ -10,7 +10,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000000, n=10, k=9):
+def func(m=5000000, n=10, k=9, convert_to_float32=False):
     import os
     if os.getenv("CHECKPERFORMANCE") is not None:
         pass
@@ -20,6 +20,9 @@ def func(m=5000000, n=10, k=9):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
+
+    if convert_to_float32:
+        X = X.astype(np.float32)
 
     # Exact scikit impl
     sklearn_tsvd = sklearnsvd(algorithm="randomized", n_components=k, random_state=42)
@@ -64,8 +67,8 @@ def func(m=5000000, n=10, k=9):
 
     return end_time, end_sk
 
-def run_bench(m=5000000, n=10, k=9):
-    results = func(m, n, k)
+def run_bench(m=5000000, n=10, k=9, convert_to_float32=False):
+    results = func(m, n, k, convert_to_float32=convert_to_float32)
     import os
     if os.getenv("CHECKPERFORMANCE") is not None:
         assert results[0] <= results[1], "h2o4gpu tsvd is not faster than sklearn for m = %s and n = %s" % (m,n)
@@ -91,3 +94,7 @@ def test_tsvd_error_k2(): run_bench(m=5000000, n=10, k=2)
 def test_tsvd_error_k5(): run_bench(m=5000000, n=100, k=5)
 def test_tsvd_error_k10(): run_bench(m=1000000, n=1000, k=10)
 def test_tsvd_error_k100(): run_bench(m=100000, n=10000, k=100)
+def test_tsvd_error_k2_float32(): run_bench(m=5000000, n=10, k=2, convert_to_float32=True)
+def test_tsvd_error_k5_float32(): run_bench(m=5000000, n=100, k=5, convert_to_float32=True)
+def test_tsvd_error_k10_float32(): run_bench(m=1000000, n=1000, k=10, convert_to_float32=True)
+def test_tsvd_error_k100_float32(): run_bench(m=100000, n=10000, k=100, convert_to_float32=True)

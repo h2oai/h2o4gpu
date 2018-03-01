@@ -8,6 +8,7 @@ namespace tsvd
 {
 
 	typedef float  tsvd_float;
+	typedef double tsvd_double;
 
 	/**
 	 * \class	Matrix
@@ -215,7 +216,7 @@ namespace tsvd
 			                  [=]__device__(int idx)
 			                  {
 				                  thrust::default_random_engine randEng(random_seed);
-				                  thrust::uniform_real_distribution<tsvd_float> uniDist;
+				                  thrust::uniform_real_distribution<T> uniDist;
 				                  randEng.discard(idx);
 				                  return uniDist(randEng);
 			                  }
@@ -238,7 +239,7 @@ namespace tsvd
 			                  [=]__device__(int idx)
 			                  {
 				                  thrust::default_random_engine randEng(random_seed);
-				                  thrust::normal_distribution<tsvd_float> dist;
+				                  thrust::normal_distribution<T> dist;
 				                  randEng.discard(idx);
 				                  return dist(randEng);
 			                  }
@@ -306,7 +307,7 @@ namespace tsvd
 	};
 
 	void multiply_diag(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool left_diag);
-	void outer_product(Matrix<tsvd_float>& A, float eigen_value, const Matrix<tsvd_float>& eigen_vector, const Matrix<tsvd_float>& eigen_vector_transpose, DeviceContext& context);
+	void multiply_diag(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool left_diag);
 
 	/**
 	 * \fn	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_float alpha=1.0f);
@@ -325,6 +326,22 @@ namespace tsvd
 	void multiply(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_float alpha = 1.0f);
 
 	/**
+	 * \fn	void multiply(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_double alpha=1.0f);
+	 *
+	 * \brief	Matrix multiplication. ABa = C. A or B may be transposed. a is a scalar.
+	 *
+	 * \param 		  	A		   	The Matrix&lt;float&gt; to process.
+	 * \param 		  	B		   	The Matrix&lt;tsvd_double&gt; to process.
+	 * \param [in,out]	C		   	The Matrix&lt;float&gt; to process.
+	 * \param [in,out]	context	   	The context.
+	 * \param 		  	transpose_a	(Optional) True to transpose a.
+	 * \param 		  	transpose_b	(Optional) True to transpose b.
+	 * \param 		  	alpha	   	(Optional) The alpha.
+	 */
+
+	void multiply(const Matrix<tsvd_double>& A, const Matrix<tsvd_double>& B, Matrix<tsvd_double>& C, DeviceContext& context, bool transpose_a = false, bool transpose_b = false, tsvd_double alpha = 1.0f);
+
+	/**
 	 * \fn	void multiply(Matrix<tsvd_float>& A, const tsvd_float a ,DeviceContext& context);
 	 *
 	 * \brief	Matrix scalar multiplication.
@@ -334,7 +351,8 @@ namespace tsvd
 	 * \param [in,out]	context	The context.
 	 */
 
-	void multiply(Matrix<tsvd_float>& A, const tsvd_float a, DeviceContext& context);
+	template<typename T, typename U>
+	void multiply(Matrix<T>& A, const U a, DeviceContext& context);
 
 	/**
 	 * \fn	void matrix_sub(const Matrix<tsvd_float>& A, const Matrix<float>& B, Matrix<float>& C, DeviceContext& context)
@@ -343,7 +361,8 @@ namespace tsvd
 	 *
 	 */
 
-	void subtract(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
+	template<typename T>
+	void subtract(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context);
 
 	/**
 	 * \fn	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
@@ -356,7 +375,9 @@ namespace tsvd
 	 * \param [in,out]	context	The context.
 	 */
 
-	void add(const Matrix<tsvd_float>& A, const Matrix<tsvd_float>& B, Matrix<tsvd_float>& C, DeviceContext& context);
+	template<typename T>
+	void add(const Matrix<T>& A, const Matrix<T>& B, Matrix<T>& C, DeviceContext& context);
+
 	/**
 	 * \fn	void transpose(const Matrix<tsvd_float >&A, Matrix<tsvd_float >&B, DeviceContext& context)
 	 *
@@ -368,6 +389,88 @@ namespace tsvd
 	 */
 
 	void transpose(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& B, DeviceContext& context);
+
+	/**
+	 * \fn	void transpose(const Matrix<tsvd_double >&A, Matrix<tsvd_double >&B, DeviceContext& context)
+	 *
+	 * \brief	Transposes matrix A into matrix B.
+	 *
+	 * \param 		  	A	   	The Matrix&lt;tsvd_double&gt; to process.
+	 * \param [in,out]	B	   	The Matrix&lt;tsvd_double&gt; to process.
+	 * \param [in,out]	context	The context.
+	 */
+
+	void transpose(const Matrix<tsvd_double>& A, Matrix<tsvd_double>& B, DeviceContext& context);
+
+	/**
+	 * \fn	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, Matrix<tsvd_float>& ones, DeviceContext& context);
+	 *
+	 * \brief	Normalize matrix columns.
+	 *
+	 * \param [in,out]	M			 	The Matrix&lt;tsvd_float&gt; to process.
+	 * \param [in,out]	M_temp		 	Temporary storage matrix of size >= M.
+	 * \param [in,out]	column_length	Temporary storage matrix with one element per column.
+	 * \param [in,out]	ones		 	Matrix of ones of length M.columns().
+	 * \param [in,out]	context		 	The context.
+	 */
+
+	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, const Matrix<tsvd_float>& ones, DeviceContext& context);
+	void normalize_columns(Matrix<tsvd_double>& M, Matrix<tsvd_double>& M_temp, Matrix<tsvd_double>& column_length, const Matrix<tsvd_double>& ones, DeviceContext& context);
+
+	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context);
+	void normalize_columns(Matrix<tsvd_double>& M, DeviceContext& context);
+
+	/**
+	 * \fn	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizing cuBLAS
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
+	 */
+	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context);
+
+	/**
+	 * \fn	void normalize_vector_cublas(Matrix<tsvd_double>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizing cuBLAS
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
+	 */
+	void normalize_vector_cublas(Matrix<tsvd_double>& M, DeviceContext& context);
+
+
+	/**
+	 * \fn	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context)
+	 *
+	 * \brief	Normalize a vector utilizng Thrust
+	 *
+	 * \param [in,out]	M	    The vector to process
+	 * \param [in,out]	context	Device context.
+	 */
+
+	template<typename T>
+	void normalize_vector_thrust(Matrix<T>& M, DeviceContext& context);
+
+	/**
+	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
+	 *
+	 * \brief	Calculate residual R = X - DS
+	 *
+	 */
+
+	void residual(const Matrix<tsvd_float>& X, const Matrix<tsvd_float>& D, const Matrix<tsvd_float>& S, Matrix<tsvd_float>& R, DeviceContext& context);
+	void residual(const Matrix<tsvd_double>& X, const Matrix<tsvd_double>& D, const Matrix<tsvd_double>& S, Matrix<tsvd_double>& R, DeviceContext& context);
+
+	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context);
+	void calculate_eigen_pairs_exact(const Matrix<tsvd_double>& X, Matrix<tsvd_double>& Q, Matrix<tsvd_double>& w, DeviceContext& context);
+
+	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float* eigen_value_estimate, DeviceContext& context);
+	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double* eigen_value_estimate, DeviceContext& context);
+
+	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	//Stricly floating point operations that are not used
 
 	/**
 	 * \fn	void linear_solve(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& X, const Matrix<tsvd_float>& B, DeviceContext& context)
@@ -393,54 +496,5 @@ namespace tsvd
 	 */
 
 	void pseudoinverse(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& pinvA, DeviceContext& context);
-
-	/**
-	 * \fn	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, Matrix<tsvd_float>& ones, DeviceContext& context);
-	 *
-	 * \brief	Normalize matrix columns.
-	 *
-	 * \param [in,out]	M			 	The Matrix&lt;tsvd_float&gt; to process.
-	 * \param [in,out]	M_temp		 	Temporary storage matrix of size >= M.
-	 * \param [in,out]	column_length	Temporary storage matrix with one element per column.
-	 * \param [in,out]	ones		 	Matrix of ones of length M.columns().
-	 * \param [in,out]	context		 	The context.
-	 */
-
-	void normalize_columns(Matrix<tsvd_float>& M, Matrix<tsvd_float>& M_temp, Matrix<tsvd_float>& column_length, const Matrix<tsvd_float>& ones, DeviceContext& context);
-
-	void normalize_columns(Matrix<tsvd_float>& M, DeviceContext& context);
-
-	/**
-	 * \fn	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context)
-	 *
-	 * \brief	Normalize a vector utilizing cuBLAS
-	 *
-	 * \param [in,out]	M	    The vector to process
-	 * \param [in,out]	context	Device context.
-	 */
-	void normalize_vector_cublas(Matrix<tsvd_float>& M, DeviceContext& context);
-
-
-	/**
-	 * \fn	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context)
-	 *
-	 * \brief	Normalize a vector utilizng Thrust
-	 *
-	 * \param [in,out]	M	    The vector to process
-	 * \param [in,out]	context	Device context.
-	 */
-	void normalize_vector_thrust(Matrix<tsvd_float>& M, DeviceContext& context);
-
-	/**
-	 * \fn	void residual(const Matrix<tsvd_float >&X, const Matrix<tsvd_float >&D, const Matrix<tsvd_float >&S, Matrix<tsvd_float >&R, DeviceContext & context);
-	 *
-	 * \brief	Calculate residual R = X - DS
-	 *
-	 */
-
-	void residual(const Matrix<tsvd_float>& X, const Matrix<tsvd_float>& D, const Matrix<tsvd_float>& S, Matrix<tsvd_float>& R, DeviceContext& context);
-
-	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context);
-
 
 }
