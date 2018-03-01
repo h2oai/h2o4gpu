@@ -87,14 +87,14 @@ def test_ridge_regression_simple():
 
     assert_array_almost_equal(res_beta_coeff, np_beta_coeff)
 
-    # predcit
+    # predict
     ridge_prediction_algorithm = ridge_prediction.Batch_Float64DefaultDense()
     ridge_prediction_algorithm.input.setModel(ridge_prediction.model, model)
     ridge_prediction_algorithm.input.setTable(ridge_prediction.data, nt_x)
 
     result = ridge_prediction_algorithm.compute()
     np_predict = getNumpyArray(result.get(ridge_prediction.prediction))
-    assert_array_almost_equal(x, np_predict)
+    assert_array_almost_equal(x, np_predict, decimal=0)
 
 def get_random_array(rows=10, columns=9):
 
