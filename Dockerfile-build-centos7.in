@@ -97,9 +97,9 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 
 # Install Daal library
-COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
-RUN chmod +x-w scripts/daal/install_daal.sh
-RUN bash scripts/daal/install_daal.sh
+COPY scripts/daal/install_daal.sh scripts/daal/install_daal_centos.sh
+RUN chmod +x-w scripts/daal/install_daal_centos.sh
+RUN bash scripts/daal/install_daal_centos.sh
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
