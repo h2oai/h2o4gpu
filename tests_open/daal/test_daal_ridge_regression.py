@@ -66,14 +66,15 @@ def test_ridge_regression_simple():
 
     ridge_training_algorithm = ridge_training.Batch()
     # set input values
-    ridge_training_algorithm.input.set(ridge_training.data, Input)
+    ridge_training_algorithm.input.set(ridge_training.data, nt_x)
     ridge_training_algorithm.input.set(ridge_training.dependentVariables,
-                                        Responses)
+                                        nt_y)
     # check if intercept flag is set
     #ridge_training_algorithm.parameter.interceptFlag = True \
     #    if 'intercept' in self.parameters else True
     # set parameter
-    alpha_nt = HomogenNumericTable(np.array([self.alpha], ndmin=2))
+    alpha = 1.0
+    alpha_nt = HomogenNumericTable(np.array([alpha], ndmin=2))
     ridge_training_algorithm.parameter.ridgeParameters = alpha_nt
     # calculate
     res = ridge_training_algorithm.compute()
@@ -82,7 +83,7 @@ def test_ridge_regression_simple():
     beta_coeff = model.getBeta()
     np_beta_coeff = getNumpyArray(beta_coeff)
 
-    res_beta_coeff = np.array([0.294, 0.824]).reshape(1,2)
+    res_beta_coeff = np.array([0.294118, 0.823529]).reshape(1,2)
 
     assert_array_almost_equal(res_beta_coeff, np_beta_coeff)
 
@@ -133,7 +134,7 @@ def get_daal_prediction(x=np.arange(10).reshape(10,1), y=np.arange(10).reshape(1
 
 def get_scikit_prediction(x=np.arange(10).reshape(10,1), y=np.arange(10).reshape(10,1)):
 
-    regression = ScikitRidgeRegression(alpha=1.0)
+    regression = ScikitRidgeRegression(alpha=0.0)
     regression.fit(x, y)
 
     return regression.predict(x)
@@ -158,7 +159,6 @@ def test_coeff_size(rows=10, columns=9):
     is the same number as size of data sample
     '''
     inout = get_random_array(rows, columns)
-    test_overfitting(rows, columns)
     x = inout[0]
     y = inout[1]
 
@@ -184,7 +184,6 @@ def test_coeff_size(rows=10, columns=9):
 
 def test_intercept_flag(rows=10, columns=9):
     inout = get_random_array(rows, columns)
-    test_overfitting(rows, columns)
     x = inout[0]
     y = inout[1]
 
