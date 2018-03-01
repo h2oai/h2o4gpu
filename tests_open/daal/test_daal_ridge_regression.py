@@ -28,7 +28,7 @@ from h2o4gpu.solvers import DRR
 def test_fit_ridge_regression_daal_vs_sklearn():
 
     trainData = seeded.rand(200,10)
-    trainDependentVariables = seeeded.rand(200,2)
+    trainDependentVariables = seeded.rand(200,2)
 
     testData = seeded.rand(50,10)
     testDependentVariables = seeded.rand(50,2)
@@ -104,7 +104,7 @@ def get_random_array(rows=10, columns=9):
 
 # remark: we do not need test for overfitting, Ridge Regression helps here
 
-def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
+def get_daal_prediction(x=np.arange(10).reshape(10,1), y=np.arange(10).reshape(10,1)):
 
     ntX = HomogenNumericTable(x)
     ntY = HomogenNumericTable(y)
@@ -114,7 +114,7 @@ def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     ridge_training_algorithm.input.set(ridge_training.dependentVariables, ntY)
 
     # set parameter
-    alpha = 1.0
+    alpha = 0.0
     alpha_nt = HomogenNumericTable(np.array([alpha], ndmin=2))
     ridge_training_algorithm.parameter.ridgeParameters = alpha_nt
 
@@ -131,7 +131,7 @@ def get_daal_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
     assert_array_almost_equal(y, np_predicted)
     return np_predicted
 
-def get_scikit_prediction(x=np.array([1,2,3]), y=np.array([1,2,3])):
+def get_scikit_prediction(x=np.arange(10).reshape(10,1), y=np.arange(10).reshape(10,1)):
 
     regression = ScikitRidgeRegression(alpha=1.0)
     regression.fit(x, y)
