@@ -52,12 +52,12 @@ gen_wrapper <- function(
           suffix <- ifelse(i < length(params), ",", "\n  )")
           if (param == "family" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")){
             if(r_function == "h2o4gpu.elastic_net_classifier"){
-              write_line(paste0("    ", params[[i]], " = ", '"logistic"', suffix))
+              write_line(paste0("    ", param, " = ", '"logistic"', suffix))
             } else {
-              write_line(paste0("    ", params[[i]], " = ", '"elasticnet"', suffix))
+              write_line(paste0("    ", param, " = ", '"elasticnet"', suffix))
             }
           } else {
-            write_line(paste0("    ", params[[i]], " = ", param, suffix))
+            write_line(paste0("    ", param, " = ", param, suffix))
           }
         }
       } else {
