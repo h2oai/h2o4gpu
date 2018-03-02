@@ -99,6 +99,8 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 
 # Install Daal library
+
+RUN aria2c -x20 "https://s3.amazonaws.com/intel-daal/daal-linux_x86_64__cp36.tar.gz"
 COPY scripts/daal/install_daal.sh scripts/daal/install_daal_centos7.sh
 RUN chmod +x-w scripts/daal/install_daal_centos7.sh
 RUN bash scripts/daal/install_daal_centos7.sh

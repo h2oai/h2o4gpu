@@ -8,7 +8,8 @@ set -e
 
 _intel_dall_tar="https://s3.amazonaws.com/intel-daal/daal-linux_x86_64__cp36.tar.gz"
 
-aria2c -x20 $_intel_dall_tar && tar xzvf daal-linux_x86_64__cp36.tar.gz -C $HOME &&
+#aria2c -x20 $_intel_dall_tar && 
+tar xzvf daal-linux_x86_64__cp36.tar.gz -C $HOME &&
 rm -rf daal-linux_x86_64__cp36.tar.gz &&
 pip install $HOME/daal/pydaal-2018.0.1.20171012-cp36-none-linux_x86_64.whl &&
 ln -sf $HOME/daal/lib/libtbb.so.2 /usr/lib/libtbb.so.2 &&
