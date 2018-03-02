@@ -1,6 +1,6 @@
 #!/bin/bash
 #===============================================================================
-# name: install_daal_centos.sh
+# name: install_daal_centos7.sh
 #
 # installs to the system intel daal libraries and pydaal (python version of daal)
 #===============================================================================
