@@ -109,7 +109,7 @@ RUN tar xzvf daal-centos7_x86_64__cp36.tar.gz -C $HOME && \
 	ln -sf $HOME/daal/lib/libtbbmalloc.so /usr/lib/libtbbmalloc.so && \
 	ln -sf $HOME/daal/lib/libdaal_sequential.so /usr/lib/libdaal_sequential.so && \
 	ln -sf $HOME/daal/lib/libdaal_core.so /usr/lib/libdaal_core.so && \
-	ln -sf $HOME/daal/lib/libdaal_thread.so /usr/lib/libdaal_thread.so \
+	ln -sf $HOME/daal/lib/libdaal_thread.so /usr/lib/libdaal_thread.so
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
