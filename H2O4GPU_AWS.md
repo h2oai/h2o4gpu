@@ -1,4 +1,4 @@
-# H2O4GPU Installation
+# H2O4GPU Installation on Amazon Web Services (AWS)
 
 This describes how to install H2O4GPU on a fresh AWS Ubuntu 16.0.4 GPU instance (tested on g3.4x, which has one Tesla M60).
 
