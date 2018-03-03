@@ -36,7 +36,9 @@ Ensure to reboot after installing the new nvidia drivers.
 
 ## User Installation
 
-Note: This installation is for users who download the wheel file and are not expecting to develop the code.  See [DEVEL.md](DEVEL.md) for developer installation.
+* Note: This installation is for users who download the wheel file and are not expecting to develop the code.  See [DEVEL.md](DEVEL.md) for developer installation.
+
+* Instructions for instaling on Amazon Web Services can be found [here](H2O4GPU_AWS.md)
 
 Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 
