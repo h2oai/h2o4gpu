@@ -101,7 +101,9 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 # Install Daal library
 RUN conda config --add channels intel
 RUN conda config --get channels
-RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal
+RUN conda update conda -y
+RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal -y
+
 RUN conda env list
 RUN source activate intelpython
 RUN conda install -c intel pydaal
