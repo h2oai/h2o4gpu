@@ -99,6 +99,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 
 # Install Daal library
+RUN conda install -c intel pydaal
 RUN echo "------------------ python version detection -------------------"
 RUN echo "--- pip version $(pip -V)"
 RUN echo "--- python version $(python -V)"
