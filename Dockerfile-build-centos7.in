@@ -102,7 +102,8 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 RUN echo "------------------ python version detection -------------------"
 RUN echo "--- pip version $(pip -V)"
 RUN echo "--- python version $(python -V)"
-RUN echo "+++ upgrading pip $(python -m pip install -upgrade pip)"
+RUN echo -e "import platform\nprint(platform.platform())" | python
+RUN echo "+++ upgrading pip $(python -m pip install --upgrade pip)"
 RUN echo "--- current dir $(pwd)"
 RUN echo -e "from wheel.pep425tags import get_supported\n[print('-'.join(t)) for t in get_supported()]" | python
 RUN echo "---------------------------------------------------------------"
