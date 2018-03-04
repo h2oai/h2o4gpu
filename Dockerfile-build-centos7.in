@@ -99,6 +99,8 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 
 # Install Daal library
+RUN echo "------------------ python version detection -------------------"
+RUN echo -e "from wheel.pep425tags import get_supported\n[print('-'.join(t)) for t in get_supported()]" | python
 RUN pwd
 RUN python -V
 RUN pip -V
