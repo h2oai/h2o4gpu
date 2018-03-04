@@ -108,7 +108,7 @@ RUN conda create -n intelpython --override-channels --channel intel python=3.6 i
 
 RUN conda env list
 RUN source activate intelpython
-RUN conda install -c intel pydaal
+#RUN conda install -c intel pydaal
 RUN echo "------------------ python version detection -------------------"
 RUN echo "--- pip version $(pip -V)"
 RUN echo "--- python version $(python -V)"
