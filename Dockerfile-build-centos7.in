@@ -103,9 +103,10 @@ RUN conda update conda -y
 RUN conda config --add channels intel 
 RUN conda config --add channels conda-forge
 RUN conda config --get channels
-RUN conda install -c intel pydaal
+RUN conda install pydaal -y
+#RUN conda install -c intel pydaal -y
 #RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal -y
-RUN conda env list
+#RUN conda env list
 #RUN source activate intelpython
 #RUN conda install -c intel pydaal
 
