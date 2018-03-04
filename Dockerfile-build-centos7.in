@@ -63,8 +63,8 @@ RUN yum install -y \
   freetype-devel 
   
 #RUN rpm -ivh ftp://fr2.rpmfind.net/linux/dag/redhat/el6/en/x86_64/dag/RPMS/axel-2.4-1.el6.rf.x86_64.rpm
-RUN yum install epel-release -y
-RUN yum install aria2 -y
+#RUN yum install epel-release -y
+#RUN yum install aria2 -y
 
 ENV PATH=/usr/local/bin:$PATH
 RUN \
@@ -103,12 +103,12 @@ RUN conda update conda -y
 RUN conda config --add channels intel 
 RUN conda config --add channels conda-forge
 RUN conda config --get channels
-
-RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal -y
-
+RUN conda install -c intel pydaal
+#RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal -y
 RUN conda env list
-RUN source activate intelpython
+#RUN source activate intelpython
 #RUN conda install -c intel pydaal
+
 RUN echo "------------------ python version detection -------------------"
 RUN echo "--- pip version $(pip -V)"
 RUN echo "--- python version $(python -V)"
