@@ -4,7 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 try:
-    return __import__('daal')
+    __import__('daal')
 except ImportError:
     import platform
     print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
