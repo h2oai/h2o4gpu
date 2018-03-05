@@ -98,22 +98,19 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	rm -rf Pillow-5.0.0*; \
 	fi'
 
-# Install Daal library
-RUN conda update conda -y
-RUN conda config --add channels intel 
-RUN conda config --add channels conda-forge
-RUN conda config --get channels
-RUN conda install pydaal -y
-#RUN conda install -c intel pydaal -y
-#RUN conda create -n intelpython --override-channels --channel intel python=3.6 intelpython scipy pydaal -y
-#RUN conda env list
-#RUN source activate intelpython
-#RUN conda install -c intel pydaal
+# Install Daal library (ppc64le is not supported yet)
+RUN bash -c 'if ! (( `arch` = "ppc64le" )); then \
+		conda update conda -y && \
+		conda config --add channels intel && \ 
+		conda config --add channels conda-forge && \
+		conda config --get channels && \
+		conda install pydaal -y; \
+	fi'
 
 RUN echo "------------------ python version detection -------------------"
 RUN echo "--- pip version $(pip -V)"
 RUN echo "--- python version $(python -V)"
-RUN echo -e "import platform\nprint(platform.platform())" | python
+RUN echo -e "import platform\nprint(platform.platform())\nprint(platform.architecture())" | python
 RUN echo "+++ upgrading pip $(python -m pip install --upgrade pip)"
 RUN echo "--- current dir $(pwd)"
 RUN echo -e "from wheel.pep425tags import get_supported\n[print('-'.join(t)) for t in get_supported()]" | python
