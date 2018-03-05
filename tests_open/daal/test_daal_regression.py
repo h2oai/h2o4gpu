@@ -8,7 +8,6 @@ try:
 except ImportError:
     import platform
     print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
-    return None
 else:
     from numpy.random import RandomState
     import sys

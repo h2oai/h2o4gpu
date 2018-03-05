@@ -10,7 +10,6 @@ try:
 except ImportError:
     import platform
     print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
-    return None
 else:
     import numpy as np
     import h2o4gpu
