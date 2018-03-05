@@ -19,8 +19,8 @@ class H2O4GPUBuild(build):
     def run(self):
         """Run the compilation"""
         NVCC = os.popen("which nvcc").read() != ""
-        CPULIB = 'ch2o4gpu_cpu'
-        GPULIB = 'ch2o4gpu_gpu'
+        CPULIB = '_ch2o4gpu_cpu'
+        GPULIB = '_ch2o4gpu_gpu'
         EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
         # run original build code

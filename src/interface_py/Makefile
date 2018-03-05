@@ -54,9 +54,8 @@ all: prep
 	python setup.py sdist bdist_wheel
 
 	# for pycharm
-	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
-	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
-
+	ln -sf $(thepwd)/../interface_c/_ch2o4gpu_cpu.so .
+	ln -sf $(thepwd)/../interface_c/_ch2o4gpu_gpu.so .
 
 install:
 	-cd ../.. && pip uninstall -y h2o4gpu
@@ -78,5 +77,3 @@ clean:
 	pip install numpy
 	python setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
 	cd h2o4gpu && find -L -name *.pyc | xargs rm -rf
-
-

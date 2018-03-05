@@ -13,9 +13,16 @@ class CPUlib:
 
     @staticmethod
     def get():
-        from h2o4gpu.libs.lib_utils import cpu_lib_path
-
-        return _load_kmeans_lib(cpu_lib_path())
+        try:
+            from h2o4gpu.libs.ch2o4gpu_cpu import swig_import_helper
+            print("Returning CPU library")
+            return swig_import_helper()
+        except Exception as e:
+            print("Failed to load CPU")
+            print(e)
+            return None
+        #from h2o4gpu.libs.lib_utils import cpu_lib_path
+        #return _load_kmeans_lib(cpu_lib_path())
 
 
 class GPUlib:
@@ -25,9 +32,16 @@ class GPUlib:
 
     @staticmethod
     def get():
-        from h2o4gpu.libs.lib_utils import gpu_lib_path
-
-        return _load_kmeans_lib(gpu_lib_path())
+        try:
+            from h2o4gpu.libs.ch2o4gpu_gpu import swig_import_helper
+            print("Returning GPU library")
+            return swig_import_helper()
+        except Exception as e:
+            print("Failed to load GPU")
+            print(e)
+            return None
+        #from h2o4gpu.libs.lib_utils import gpu_lib_path
+        #return _load_kmeans_lib(gpu_lib_path())
 
 
 def _load_kmeans_lib(lib_path):

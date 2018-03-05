@@ -157,9 +157,9 @@ endif
 default: all
 
 ifdef NVCC
-all: cpulib gpulib ch2o4gpu_cpu ch2o4gpu_gpu h2o4gpu_c.o
+all: cpulib gpulib _ch2o4gpu_cpu _ch2o4gpu_gpu h2o4gpu_c.o
 else
-all: cpulib ch2o4gpu_cpu h2o4gpu_c.o
+all: cpulib _ch2o4gpu_cpu h2o4gpu_c.o
 endif
 
 cpulib:
@@ -168,13 +168,13 @@ cpulib:
 gpulib:
 	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 
-ch2o4gpu_cpu: h2o4gpu_c.o  Makefile
-	touch ch2o4gpu_cpu
+_ch2o4gpu_cpu: h2o4gpu_c.o  Makefile
+	touch _ch2o4gpu_cpu
 	$(MAKE) cpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CXXFLAGS) -shared -o $@.$(SHARED) $< $(H2O4GPULIB) $(LDFLAGS)
 
-ch2o4gpu_gpu: h2o4gpu_c.o Makefile
-	touch ch2o4gpu_gpu
+_ch2o4gpu_gpu: h2o4gpu_c.o Makefile
+	touch _ch2o4gpu_gpu
 	$(MAKE) gpulib -C $(H2O4GPUROOT) IFLAGS=$(IFLAGS)
 	$(CXX) $(CUDFLAGS) -shared -o $@.$(SHARED) $< $(CUH2O4GPULIB) $(PYCUDART) $(CULDFLAGS)
 
@@ -183,6 +183,6 @@ h2o4gpu_c.o: h2o4gpu_c.cpp h2o4gpu_c.h Makefile
 
 clean:
 	rm -fv *.o *.so *.dylib
-	rm -rf ch2o4gpu_cpu ch2o4gpu_gpu
+	rm -rf _ch2o4gpu_cpu _ch2o4gpu_gpu
 
 

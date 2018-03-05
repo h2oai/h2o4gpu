@@ -19,6 +19,10 @@ src/interface_py/h2o4gpu/naive_bayes.py
 src/interface_py/h2o4gpu/pipeline.py
 src/interface_py/h2o4gpu/random_projection.py
 
+#swig
+src/swig/*.py
+src/swig/*_wrap.c
+
 #Sphinx docs
 _build
 src/interface_py/docs/source
@@ -65,8 +69,8 @@ examples/py/Untitled.ipynb
 examples/py/Untitled2.ipynb
 examples/py/alpha
 examples/py/preds
-src/interface_c/ch2o4gpu_cpu
-src/interface_c/ch2o4gpu_gpu
+src/interface_c/_ch2o4gpu_cpu
+src/interface_c/_ch2o4gpu_gpu
 src/py3nvml/
 tmp/
 tests/results
@@ -107,8 +111,6 @@ examples/py/ipums_feather
 *.app
 
 # CUDA #
-*.i
-*.ii
 *.ptx
 *.cubin
 *.fatbin

@@ -106,6 +106,8 @@ CUFLAGS += -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR) -lcublas -lcuso
 endif
 #-gencode arch=compute_20,code=sm_20
 
+PYINC=$(shell python3.6-config --cflags)
+
 # Load local (e.g. R) specific config
 include config.mk
 
@@ -202,12 +204,21 @@ endif
 
 default: gpulib
 
+#SWIG
+genswig:
+	swig -python -outdir interface_py/h2o4gpu/libs swig/ch2o4gpu_gpu.i
+	swig -python -outdir interface_py/h2o4gpu/libs swig/ch2o4gpu_cpu.i
+
+cleanswig:
+	rm -f interface_py/h2o4gpu/libs/ch2o4gpu_*.py
+	rm -f swig/*_wrap.c
+
 # Build all
-cpulib: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ)
+cpulib: $(CPU_OBJ) $(CPU_MTX_OBJ) $(CPU_PRJ_OBJ) $(OBJDIR)/cpu/ch2o4gpu_cpu_wrap.o
 	touch cpulib
 	ar cr $(OBJDIR)/cpu/h2o4gpu.a $^
 
-gpulib: $(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CPU_PRJ_OBJ)
+gpulib: $(OBJDIR)/gpu/h2o4gpu_link.o $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) $(CPU_PRJ_OBJ) $(OBJDIR)/gpu/ch2o4gpu_gpu_wrap.o
 	touch gpulib
 	ar cr $(OBJDIR)/gpu/h2o4gpu.a $^
 
@@ -252,7 +263,11 @@ $(OBJDIR)/gpu/matrix: $(OBJDIR)/gpu
 $(OBJDIR)/gpu/projector: $(OBJDIR)/gpu
 	mkdir -p $@
 
-
+# H2O4GPU CPU SWIG
+$(OBJDIR)/cpu/ch2o4gpu_cpu_wrap.o: genswig
+	$(CXX) -c -fPIC swig/ch2o4gpu_cpu_wrap.c $(PYINC) -o $@
+	#TODO ?? -dlink
+	#TODO nr2 generalize Python include
 
 # H2O4GPU CPU objects
 $(OBJDIR)/cpu/h2o4gpu.o: cpu/h2o4gpuglm.cpp $(H2O4GPU_HDR) $(GSL_HDR) | $(OBJDIR)/cpu Makefile config2.mk
@@ -277,6 +292,12 @@ $(OBJDIR)/cpu/elastic_net_ptr.o: common/elastic_net_ptr.cpp common/elastic_net_p
 # H2O4GPU GPU objects
 $(OBJDIR)/gpu/h2o4gpu_link.o: $(GPU_OBJ) $(GPU_MTX_OBJ) $(GPU_PRJ_OBJ) | $(OBJDIR) Makefile config2.mk
 	$(CUXX) $(CUFLAGS) $^ -dlink -o $@
+
+# H2O4GPU GPU SWIG
+$(OBJDIR)/gpu/ch2o4gpu_gpu_wrap.o: genswig
+	$(CXX) -c -fPIC swig/ch2o4gpu_gpu_wrap.c $(PYINC)  -o $@
+	#TODO ?? -dlink
+	#TODO nr2 generalize Python include
 
 $(OBJDIR)/gpu/h2o4gpu.o: gpu/h2o4gpuglm.cu $(H2O4GPU_HDR) $(CML_HDR) $(GSL_HDR) | $(OBJDIR)/gpu Makefile config2.mk
 	$(CUXX) -Iinclude -Igpu/include -Icpu/include $< $(CUFLAGS) -dc -o $@
@@ -331,8 +352,7 @@ $(OBJDIR)/cpu/%.o: %.cpp $(CPU_HDR) | $(OBJDIR)/cpu Makefile config2.mk
 $(OBJDIR)/common/logger.o: common/logger.cpp common/logger.h | $(OBJDIR)/common Makefile config2.mk
 	$(CXX) $(CXXFLAGS) $< -c $(CXXFLAGS) -o $@
 
-
-clean:
+clean: cleanswig
 	rm -rf h2o4gpu.a build/ *.dSYM
 	find -name "*.so" -delete
 	find -name "*.a" -delete

@@ -481,8 +481,8 @@ class KMeansH2O(object):
         else:
             c_init = 0
 
-        pred_centers = c_void_p(0)
-        pred_labels = c_void_p(0)
+        pred_centers = None
+        pred_labels = None
 
         lib = self._load_lib()
 
@@ -493,21 +493,21 @@ class KMeansH2O(object):
             status = lib.make_ptr_float_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None, pointer(pred_centers),
-                pointer(pred_labels))
+                data_ord, self._n_clusters, self._max_iter, c_init,
+                self.tol, data, None, pred_centers,
+                pred_labels)
         else:
             status = lib.make_ptr_double_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None, pointer(pred_centers),
-                pointer(pred_labels))
+                self.tol, c_data_ptr, None, pred_centers,
+                pred_labels)
         if status:
             raise ValueError('KMeans failed in C++ library.')
 
         centroids = np.fromiter(
-            cast(pred_centers, POINTER(data_ctype)),
+            pred_centers,
             dtype=data_ctype,
             count=self._n_clusters * cols)
         centroids = np.reshape(centroids, (self._n_clusters, cols))
@@ -520,8 +520,10 @@ class KMeansH2O(object):
 
         self.cluster_centers_ = centroids
 
-        labels = np.ctypeslib.as_array(
-            cast(pred_labels, POINTER(c_int)), (rows,))
+        labels = np.fromiter(
+            pred_labels,
+            dtype=c_int,
+            count=rows)
         self.labels_ = np.reshape(labels, rows)
 
         return self.cluster_centers_, self.labels_
