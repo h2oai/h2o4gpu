@@ -16,8 +16,8 @@ RUN yum clean packages
 RUN yum clean headers
 RUN yum clean metadata
 
-#RUN \
-#    yum groupinstall -y "Development Tools"
+RUN \
+    yum groupinstall -y "Development Tools"
 
 RUN \
     yum install -y \
