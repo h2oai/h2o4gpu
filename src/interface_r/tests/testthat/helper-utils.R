@@ -1,7 +1,7 @@
 # Util Functions
 
 have_h2o4gpu <- function() {
-  reticulate::py_module_available("h2o4gpu")
+  reticulate::py_available() && reticulate::py_module_available("h2o4gpu")
 }
 
 if (have_h2o4gpu()) {
