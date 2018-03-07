@@ -11,7 +11,12 @@ ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
 ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
-RUN yum clean metadata \
+
+RUN yum clean packages
+RUN yum clean headers
+RUN yum clean metadata
+
+RUN \
     yum groupinstall -y "Development Tools"
 
 RUN \
