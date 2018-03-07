@@ -7,7 +7,6 @@
 from __future__ import print_function
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
-from h2o4gpu.solvers.daal_solver.regression import LinearRegression as DLR
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -75,12 +74,23 @@ class LinearRegression(object):
             self.do_sklearn = False
             self.backend = 'h2o4gpu'
         elif backend == 'daal':
-            self.do_daal = True
-            self.backend = 'daal'
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.regression import LinearRegression as DLR
+                self.do_daal = True
+                self.backend = 'daal'
 
-        self.model_daal = DLR(fit_intercept=fit_intercept,
-                              normalize=normalize,
-                              **kwargs)
+                self.model_daal = DLR(fit_intercept=fit_intercept,
+                                      normalize=normalize,
+                                      **kwargs)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
