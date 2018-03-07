@@ -76,7 +76,8 @@ class LinearRegression(object):
         elif backend == 'daal':
             from h2o4gpu import DAAL_SUPPORTED
             if DAAL_SUPPORTED:
-                from h2o4gpu.solvers.daal_solver.regression import LinearRegression as DLR
+                from h2o4gpu.solvers.daal_solver.regression \
+                    import LinearRegression as DLR
                 self.do_daal = True
                 self.backend = 'daal'
 
