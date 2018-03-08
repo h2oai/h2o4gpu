@@ -17,13 +17,12 @@ ENV VECLIB_MAXIMUM_THREADS=32
 #RUN yum clean metadata
 
 RUN \
-    { \ #try
-		yum groupinstall -y "Development Tools" } || { \ #catch
+		yum groupinstall -y "Development Tools" 2>/dev/null || ( \
+		echo "clear cache - automatic fix applying"; \
 		yum clean packages; \
 		yum clean headers; \
 		yum clean metadata; \
-		yum groupinstall -y "Development Tools" 
-	}
+		yum groupinstall -y "Development Tools"; )
 
 RUN \
     yum install -y \
