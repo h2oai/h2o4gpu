@@ -772,6 +772,11 @@ centos7_cuda9_in_docker: MY_CUDNN_VERSION=7
 centos7_cuda9_in_docker:
 	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
+centos7_cuda91_in_docker: MY_CUDA_VERSION=9.1
+centos7_cuda91_in_docker: MY_CUDNN_VERSION=7
+centos7_cuda91_in_docker:
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+
 centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 	mkdir -p $(DIST_DIR)/$(PLATFORM)
 	docker build \
