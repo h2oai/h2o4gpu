@@ -12,10 +12,6 @@ ENV MKL_NUM_THREADS=32
 ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
 
-#RUN yum clean packages
-#RUN yum clean headers
-#RUN yum clean metadata
-
 RUN \
 		yum groupinstall -y "Development Tools" 2>/dev/null || ( \
 		echo "clear cache - automatic fix applying"; \
@@ -24,6 +20,7 @@ RUN \
 		yum clean metadata; \
 		yum groupinstall -y "Development Tools"; )
 
+RUN yum install -y ccache
 RUN \
     yum install -y \
         ncurses-devel \
