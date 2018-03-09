@@ -93,10 +93,12 @@ class RandomForestClassifier(object):
         Threshold for early stopping in tree growth. A node will split
         if its impurity is above the threshold, otherwise it is a leaf.
 
-        .. deprecated:: 0.19
-           ``min_impurity_split`` has been deprecated in favor of
-           ``min_impurity_decrease`` in 0.19 and will be removed in 0.21.
-           Use ``min_impurity_decrease`` instead.
+    bootstrap : boolean, optional (default=True)
+        Whether bootstrap samples are used when building trees.
+
+    oob_score : bool, optional (default=False)
+        whether to use out-of-bag samples to estimate
+        the R^2 on unseen data.
 
     n_jobs : integer, optional (default=1)
         The number of jobs to run in parallel for both `fit` and `predict`.
@@ -457,10 +459,12 @@ class RandomForestRegressor(object):
         Threshold for early stopping in tree growth. A node will split
         if its impurity is above the threshold, otherwise it is a leaf.
 
-        .. deprecated:: 0.19
-           ``min_impurity_split`` has been deprecated in favor of
-           ``min_impurity_decrease`` in 0.19 and will be removed in 0.21.
-           Use ``min_impurity_decrease`` instead.
+    bootstrap : boolean, optional (default=True)
+        Whether bootstrap samples are used when building trees.
+
+    oob_score : bool, optional (default=False)
+        whether to use out-of-bag samples to estimate
+        the R^2 on unseen data.
 
     n_jobs : integer, optional (default=1)
         The number of jobs to run in parallel for both `fit` and `predict`.
@@ -479,32 +483,6 @@ class RandomForestRegressor(object):
         When set to ``True``, reuse the solution of the previous call to fit
         and add more estimators to the ensemble, otherwise, just fit a whole
         new forest.
-
-    class_weight : dict, list of dicts, "balanced",
-        "balanced_subsample" or None, optional (default=None)
-        Weights associated with classes in the form ``{class_label: weight}``.
-        If not given, all classes are supposed to have weight one. For
-        multi-output problems, a list of dicts can be provided in the same
-        order as the columns of y.
-
-        Note that for multioutput (including multilabel) weights should be
-        defined for each class of every column in its own dict. For example,
-        for four-class multilabel classification weights should be
-        [{0: 1, 1: 1}, {0: 1, 1: 5}, {0: 1, 1: 1}, {0: 1, 1: 1}] instead of
-        [{1:1}, {2:5}, {3:1}, {4:1}].
-
-        The "balanced" mode uses the values of y to automatically adjust
-        weights inversely proportional to class frequencies in the input data
-        as ``n_samples / (n_classes * np.bincount(y))``
-
-        The "balanced_subsample" mode is the same as "balanced" except that
-        weights are computed based on the bootstrap sample for every tree
-        grown.
-
-        For multi-output, the weights of each column of y will be multiplied.
-
-        Note that these weights will be multiplied with sample_weight (passed
-        through the fit method) if sample_weight is specified.
 
     subsample : float
         Subsample ratio of the training instance.
@@ -532,7 +510,7 @@ class RandomForestRegressor(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in RandomForestRegressor solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
@@ -875,7 +853,7 @@ class GradientBoostingClassifier(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in GradientBoostingClassifier solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
@@ -1208,6 +1186,10 @@ class GradientBoostingRegressor(object):
         valid partition of the node samples is found, even if it requires to
         effectively inspect more than ``max_features`` features.
 
+    alpha : float (default=0.9)
+        The alpha-quantile of the huber loss function and the quantile
+        loss function. Only if ``loss='huber'`` or ``loss='quantile'``.
+
     verbose : int, default: 0
         Enable verbose output. If 1 then it prints progress and performance
         once in a while (the more trees the lower the frequency). If greater
@@ -1252,7 +1234,7 @@ class GradientBoostingRegressor(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in GradientBoostingRegressor solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
