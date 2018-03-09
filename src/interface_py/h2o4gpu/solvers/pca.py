@@ -1,4 +1,5 @@
 # - * - encoding : utf - 8 - * -
+# pylint: disable=fixme, line-too-long
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -16,13 +17,16 @@ class PCAH2O(TruncatedSVDH2O):
     Dimensionality reduction using truncated Singular Value Decomposition
     for GPU
 
-    This implementation uses the ARPACK implementation of the truncated SVD.
+    This implementation uses the Cusolver implementation of the truncated SVD.
     Contrary to SVD, this estimator does center the data before computing
     the singular value decomposition.
 
-    :param: n_components Desired dimensionality of output data
+    Parameters
+    ----------
+    n_components: int, Default=2
+        Desired dimensionality of output data
 
-    :param: whiten : bool, optional
+    whiten : bool, optional
         When True (False by default) the `components_` vectors are multiplied
         by the square root of (n_samples) and divided by the singular values to
         ensure uncorrelated outputs with unit component-wise variances.
@@ -131,18 +135,68 @@ class PCAH2O(TruncatedSVDH2O):
 
 class PCA(TruncatedSVD):
     """
-        PCA Wrapper
+    PCA Wrapper
 
-        Selects between h2o4gpu.decomposition.PCASklearn
-        and h2o4gpu.solvers.pca.PCAH2O
+    Selects between h2o4gpu.decomposition.PCASklearn
+    and h2o4gpu.solvers.pca.PCAH2O
 
-        Documentation:
-        import h2o4gpu.decomposition ;
-        help(h2o4gpu.decomposition.PCASklearn)
-        help(h2o4gpu.solvers.pca.PCA)
+    Parameters
+    ----------
+    n_components: int, Default=2
+        Desired dimensionality of output data
 
-    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
-        'h2o4gpu'.  Default is 'auto'.
+    copy : bool (default True)
+        If False, data passed to fit are overwritten and running
+        fit(X).transform(X) will not yield the expected results,
+        use fit_transform(X) instead.
+
+    whiten : bool, optional
+        When True (False by default) the `components_` vectors are multiplied
+        by the square root of (n_samples) and divided by the singular values to
+        ensure uncorrelated outputs with unit component-wise variances.
+
+        Whitening will remove some information from the transformed signal
+        (the relative variance scales of the components) but can sometime
+        improve the predictive accuracy of the downstream estimators by
+        making their data respect some hard-wired assumptions.
+
+    svd_solver : string {'auto', 'full', 'arpack', 'randomized'}
+        auto :
+            the solver is selected by a default policy based on `X.shape` and
+            `n_components`: if the input data is larger than 500x500 and the
+            number of components to extract is lower than 80% of the smallest
+            dimension of the data, then the more efficient 'randomized'
+            method is enabled. Otherwise the exact full SVD is computed and
+            optionally truncated afterwards.
+        full :
+            run exact full SVD calling the standard LAPACK solver via
+            `scipy.linalg.svd` and select the components by postprocessing
+        arpack :
+            run SVD truncated to n_components calling ARPACK solver via
+            `scipy.sparse.linalg.svds`. It requires strictly
+            0 < n_components < X.shape[1]
+        randomized :
+            run randomized SVD by the method of Halko et al.
+
+    tol : float >= 0, optional (default .0)
+        Tolerance for singular values computed by svd_solver == 'arpack'.
+
+    iterated_power : int >= 0, or 'auto', (default 'auto')
+        Number of iterations for the power method computed by
+        svd_solver == 'randomized'.
+
+    random_state : int, RandomState instance or None, optional (default None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
+
+    verbose: bool
+        Verbose or not
+
+    backend : string, (Default="auto")
+        Which backend to use.
+        Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
     """
