@@ -14,8 +14,13 @@ gen_wrapper <- function(
   capture.output(
     {
       docs <- reticulate::py_function_docs(python_function)
+      #dput(docs)
       write_line(paste0("#' @description ", description))
       write_line(paste0("#' @title ", description))
+      write_line("#' ")
+      for(i in 1:length(docs$parameters)) {
+        write_line(paste0("#' @param ", " ", docs$sections[i]))
+      }
       write_line("#' @export")
       if (is.null(r_function)) {
         r_function <- docs$name
