@@ -20,7 +20,6 @@ RUN \
 		yum clean metadata; \
 		yum groupinstall -y "Development Tools"; )
 
-RUN yum install -y ccache
 RUN \
     yum install -y \
         ncurses-devel \
