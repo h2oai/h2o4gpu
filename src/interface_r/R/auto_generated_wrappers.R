@@ -6,6 +6,31 @@
 
 #' @description Random Forest Classifier
 #' @title Random Forest Classifier
+#' 
+#' @param  n_estimators The number of trees in the forest.
+#' @param  criterion The function to measure the quality of a split. Supported criteria are "gini" for the Gini impurity and "entropy" for the information gain. Note: this parameter is tree-specific.
+#' @param  max_depth The maximum depth of the tree. If NULL, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+#' @param  min_samples_split The minimum number of samples required to split an internal node:
+#' @param  min_samples_leaf The minimum number of samples required to be at a leaf node:
+#' @param  min_weight_fraction_leaf The minimum weighted fraction of the sum total of weights (of all the input samples) required to be at a leaf node. Samples have equal weight when sample_weight is not provided.
+#' @param  max_features The number of features to consider when looking for the best split:
+#' @param  max_leaf_nodes Grow trees with ``max_leaf_nodes`` in best-first fashion. Best nodes are defined as relative reduction in impurity. If NULL then unlimited number of leaf nodes.
+#' @param  min_impurity_decrease A node will be split if this split induces a decrease of the impurity greater than or equal to this value.
+#' @param  min_impurity_split Threshold for early stopping in tree growth. A node will split if its impurity is above the threshold, otherwise it is a leaf.
+#' @param  bootstrap Whether bootstrap samples are used when building trees.
+#' @param  oob_score whether to use out-of-bag samples to estimate the R^2 on unseen data.
+#' @param  n_jobs The number of jobs to run in parallel for both `fit` and `predict`. If -1, then the number of jobs is set to the number of cores.
+#' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`.
+#' @param  verbose Controls the verbosity of the tree building process.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just fit a whole new forest.
+#' @param  class_weight "balanced_subsample" or NULL, optional (default=NULL) Weights associated with classes in the form ``{class_label: weight}``. If not given, all classes are supposed to have weight one. For multi-output problems, a list of dicts can be provided in the same order as the columns of y.
+#' @param  subsample Subsample ratio of the training instance.
+#' @param  colsample_bytree Subsample ratio of columns when constructing each tree.
+#' @param  num_parallel_tree Number of trees to grow per round
+#' @param  tree_method The tree construction algorithm used in XGBoost Distributed and external memory version only support approximate algorithm. Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’} ‘auto’: Use heuristic to choose faster one. - For small to medium dataset, exact greedy will be used. - For very large-dataset, approximate algorithm will be chosen. - Because old behavior is always use exact greedy in single machine, - user will get a message when approximate algorithm is chosen to notify this choice. ‘exact’: Exact greedy algorithm. ‘approx’: Approximate greedy algorithm using sketching and histogram. ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching. ‘gpu_exact’: GPU implementation of exact algorithm. ‘gpu_hist’: GPU implementation of hist algorithm.
+#' @param  n_gpus Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+#' @param  predictor The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.random_forest_classifier <- function(
 	n_estimators = 10L,
@@ -64,6 +89,30 @@ h2o4gpu.random_forest_classifier <- function(
 
 #' @description Random Forest Regressor
 #' @title Random Forest Regressor
+#' 
+#' @param  n_estimators The number of trees in the forest.
+#' @param  criterion The function to measure the quality of a split. Supported criteria are "mse" for the mean squared error, which is equal to variance reduction as feature selection criterion, and "mae" for the mean absolute error.
+#' @param  max_depth The maximum depth of the tree. If NULL, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+#' @param  min_samples_split The minimum number of samples required to split an internal node:
+#' @param  min_samples_leaf The minimum number of samples required to be at a leaf node:
+#' @param  min_weight_fraction_leaf The minimum weighted fraction of the sum total of weights (of all the input samples) required to be at a leaf node. Samples have equal weight when sample_weight is not provided.
+#' @param  max_features The number of features to consider when looking for the best split:
+#' @param  max_leaf_nodes Grow trees with ``max_leaf_nodes`` in best-first fashion. Best nodes are defined as relative reduction in impurity. If NULL then unlimited number of leaf nodes.
+#' @param  min_impurity_decrease A node will be split if this split induces a decrease of the impurity greater than or equal to this value.
+#' @param  min_impurity_split Threshold for early stopping in tree growth. A node will split if its impurity is above the threshold, otherwise it is a leaf.
+#' @param  bootstrap Whether bootstrap samples are used when building trees.
+#' @param  oob_score whether to use out-of-bag samples to estimate the R^2 on unseen data.
+#' @param  n_jobs The number of jobs to run in parallel for both `fit` and `predict`. If -1, then the number of jobs is set to the number of cores.
+#' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`.
+#' @param  verbose Controls the verbosity of the tree building process.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just fit a whole new forest.
+#' @param  subsample Subsample ratio of the training instance.
+#' @param  colsample_bytree Subsample ratio of columns when constructing each tree.
+#' @param  num_parallel_tree Number of trees to grow per round
+#' @param  tree_method The tree construction algorithm used in XGBoost Distributed and external memory version only support approximate algorithm. Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’} ‘auto’: Use heuristic to choose faster one. - For small to medium dataset, exact greedy will be used. - For very large-dataset, approximate algorithm will be chosen. - Because old behavior is always use exact greedy in single machine, - user will get a message when approximate algorithm is chosen to notify this choice. ‘exact’: Exact greedy algorithm. ‘approx’: Approximate greedy algorithm using sketching and histogram. ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching. ‘gpu_exact’: GPU implementation of exact algorithm. ‘gpu_hist’: GPU implementation of hist algorithm.
+#' @param  n_gpus Number of gpu's to use in RandomForestRegressor solver. Default is -1.
+#' @param  predictor The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.random_forest_regressor <- function(
 	n_estimators = 10L,
@@ -120,6 +169,31 @@ h2o4gpu.random_forest_regressor <- function(
 
 #' @description Gradient Boosting Classifier
 #' @title Gradient Boosting Classifier
+#' 
+#' @param  loss loss function to be optimized. 'deviance' refers to deviance (= logistic regression) for classification with probabilistic outputs. For loss 'exponential' gradient boosting recovers the AdaBoost algorithm.
+#' @param  learning_rate learning rate shrinks the contribution of each tree by `learning_rate`. There is a trade-off between learning_rate and n_estimators.
+#' @param  n_estimators The number of boosting stages to perform. Gradient boosting is fairly robust to over-fitting so a large number usually results in better performance.
+#' @param  subsample The fraction of samples to be used for fitting the individual base learners. If smaller than 1.0 this results in Stochastic Gradient Boosting. `subsample` interacts with the parameter `n_estimators`. Choosing `subsample < 1.0` leads to a reduction of variance and an increase in bias.
+#' @param  criterion The function to measure the quality of a split. Supported criteria are "friedman_mse" for the mean squared error with improvement score by Friedman, "mse" for mean squared error, and "mae" for the mean absolute error. The default value of "friedman_mse" is generally the best as it can provide a better approximation in some cases.
+#' @param  min_samples_split The minimum number of samples required to split an internal node:
+#' @param  min_samples_leaf The minimum number of samples required to be at a leaf node:
+#' @param  min_weight_fraction_leaf The minimum weighted fraction of the sum total of weights (of all the input samples) required to be at a leaf node. Samples have equal weight when sample_weight is not provided.
+#' @param  max_depth maximum depth of the individual regression estimators. The maximum depth limits the number of nodes in the tree. Tune this parameter for best performance; the best value depends on the interaction of the input variables.
+#' @param  min_impurity_decrease A node will be split if this split induces a decrease of the impurity greater than or equal to this value.
+#' @param  min_impurity_split Threshold for early stopping in tree growth. A node will split if its impurity is above the threshold, otherwise it is a leaf.
+#' @param  init An estimator object that is used to compute the initial predictions. ``init`` has to provide ``fit`` and ``predict``. If NULL it uses ``loss.init_estimator``.
+#' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`.
+#' @param  max_features The number of features to consider when looking for the best split:
+#' @param  verbose Enable verbose output. If 1 then it prints progress and performance once in a while (the more trees the lower the frequency). If greater than 1 then it prints progress and performance for every tree.
+#' @param  max_leaf_nodes Grow trees with ``max_leaf_nodes`` in best-first fashion. Best nodes are defined as relative reduction in impurity. If NULL then unlimited number of leaf nodes.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just erase the previous solution.
+#' @param  presort Whether to presort the data to speed up the finding of best splits in fitting. Auto mode by default will use presorting on dense data and default to normal sorting on sparse data. Setting presort to true on sparse data will raise an error.
+#' @param  colsample_bytree Subsample ratio of columns when constructing each tree.
+#' @param  num_parallel_tree Number of trees to grow per round
+#' @param  tree_method The tree construction algorithm used in XGBoost Distributed and external memory version only support approximate algorithm. Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’} ‘auto’: Use heuristic to choose faster one. - For small to medium dataset, exact greedy will be used. - For very large-dataset, approximate algorithm will be chosen. - Because old behavior is always use exact greedy in single machine, - user will get a message when approximate algorithm is chosen to notify this choice. ‘exact’: Exact greedy algorithm. ‘approx’: Approximate greedy algorithm using sketching and histogram. ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching. ‘gpu_exact’: GPU implementation of exact algorithm. ‘gpu_hist’: GPU implementation of hist algorithm.
+#' @param  n_gpus Number of gpu's to use in GradientBoostingClassifier solver. Default is -1.
+#' @param  predictor The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.gradient_boosting_classifier <- function(
 	loss = "deviance",
@@ -178,6 +252,32 @@ h2o4gpu.gradient_boosting_classifier <- function(
 
 #' @description Gradient Boosting Regressor
 #' @title Gradient Boosting Regressor
+#' 
+#' @param  loss loss function to be optimized. 'ls' refers to least squares regression. 'lad' (least absolute deviation) is a highly robust loss function solely based on order information of the input variables. 'huber' is a combination of the two. 'quantile' allows quantile regression (use `alpha` to specify the quantile).
+#' @param  learning_rate learning rate shrinks the contribution of each tree by `learning_rate`. There is a trade-off between learning_rate and n_estimators.
+#' @param  n_estimators The number of boosting stages to perform. Gradient boosting is fairly robust to over-fitting so a large number usually results in better performance.
+#' @param  subsample The fraction of samples to be used for fitting the individual base learners. If smaller than 1.0 this results in Stochastic Gradient Boosting. `subsample` interacts with the parameter `n_estimators`. Choosing `subsample < 1.0` leads to a reduction of variance and an increase in bias.
+#' @param  criterion The function to measure the quality of a split. Supported criteria are "friedman_mse" for the mean squared error with improvement score by Friedman, "mse" for mean squared error, and "mae" for the mean absolute error. The default value of "friedman_mse" is generally the best as it can provide a better approximation in some cases.
+#' @param  min_samples_split The minimum number of samples required to split an internal node:
+#' @param  min_samples_leaf The minimum number of samples required to be at a leaf node:
+#' @param  min_weight_fraction_leaf The minimum weighted fraction of the sum total of weights (of all the input samples) required to be at a leaf node. Samples have equal weight when sample_weight is not provided.
+#' @param  max_depth maximum depth of the individual regression estimators. The maximum depth limits the number of nodes in the tree. Tune this parameter for best performance; the best value depends on the interaction of the input variables.
+#' @param  min_impurity_decrease A node will be split if this split induces a decrease of the impurity greater than or equal to this value.
+#' @param  min_impurity_split Threshold for early stopping in tree growth. A node will split if its impurity is above the threshold, otherwise it is a leaf.
+#' @param  init An estimator object that is used to compute the initial predictions. ``init`` has to provide ``fit`` and ``predict``. If NULL it uses ``loss.init_estimator``.
+#' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`.
+#' @param  max_features The number of features to consider when looking for the best split:
+#' @param  alpha The alpha-quantile of the huber loss function and the quantile loss function. Only if ``loss='huber'`` or ``loss='quantile'``.
+#' @param  verbose Enable verbose output. If 1 then it prints progress and performance once in a while (the more trees the lower the frequency). If greater than 1 then it prints progress and performance for every tree.
+#' @param  max_leaf_nodes Grow trees with ``max_leaf_nodes`` in best-first fashion. Best nodes are defined as relative reduction in impurity. If NULL then unlimited number of leaf nodes.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just erase the previous solution.
+#' @param  presort Whether to presort the data to speed up the finding of best splits in fitting. Auto mode by default will use presorting on dense data and default to normal sorting on sparse data. Setting presort to true on sparse data will raise an error.
+#' @param  colsample_bytree Subsample ratio of columns when constructing each tree.
+#' @param  num_parallel_tree Number of trees to grow per round
+#' @param  tree_method The tree construction algorithm used in XGBoost Distributed and external memory version only support approximate algorithm. Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’} ‘auto’: Use heuristic to choose faster one. - For small to medium dataset, exact greedy will be used. - For very large-dataset, approximate algorithm will be chosen. - Because old behavior is always use exact greedy in single machine, - user will get a message when approximate algorithm is chosen to notify this choice. ‘exact’: Exact greedy algorithm. ‘approx’: Approximate greedy algorithm using sketching and histogram. ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching. ‘gpu_exact’: GPU implementation of exact algorithm. ‘gpu_hist’: GPU implementation of hist algorithm.
+#' @param  n_gpus Number of gpu's to use in GradientBoostingRegressor solver. Default is -1.
+#' @param  predictor The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.gradient_boosting_regressor <- function(
 	loss = "ls",
@@ -238,6 +338,41 @@ h2o4gpu.gradient_boosting_regressor <- function(
 
 #' @description Elastic Net Regressor
 #' @title Elastic Net Regressor
+#' 
+#' @param  alpha Constant that multiplies the penalty terms. Defaults to 1.0. See the notes for the exact mathematical meaning of this parameter.``alpha = 0`` is equivalent to an ordinary least square, solved by the :class:`LinearRegressionSklearn` object. For numerical reasons, using ``alpha = 0`` with the ``LassoSklearn`` object is not advised. Given this, you should use the :class:`LinearRegressionSklearn` object.
+#' @param  l1_ratio The ElasticNetSklearn mixing parameter, with ``0 <= l1_ratio <= 1``. For ``l1_ratio = 0`` the penalty is an L2 penalty. ``For l1_ratio = 1`` it is an L1 penalty. For ``0 < l1_ratio < 1``, the penalty is a combination of L1 and L2.
+#' @param  fit_intercept Whether the intercept should be estimated or not. If ``FALSE``, the data is assumed to be already centered.
+#' @param  normalize This parameter is ignored when ``fit_intercept`` is set to FALSE. If TRUE, the regressors X will be normalized before regression by subtracting the mean and dividing by the l2-norm. If you wish to standardize, please use :class:`h2o4gpu.preprocessing.StandardScaler` before calling ``fit`` on an estimator with ``normalize=FALSE``.
+#' @param  precompute Whether to use a precomputed Gram matrix to speed up calculations. The Gram matrix can also be passed as argument. For sparse input this option is always ``TRUE`` to preserve sparsity.
+#' @param  max_iter The maximum number of iterations
+#' @param  copy_X If ``TRUE``, X will be copied; else, it may be overwritten.
+#' @param  tol The tolerance for the optimization: if the updates are smaller than ``tol``, the optimization code checks the dual gap for optimality and continues until it is smaller than ``tol``.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit as initialization, otherwise, just erase the previous solution.
+#' @param  positive When set to ``TRUE``, forces the coefficients to be positive.
+#' @param  random_state The seed of the pseudo random number generator that selects a random feature to update. If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`. Used when ``selection`` == 'random'.
+#' @param  selection If set to 'random', a random coefficient is updated every iteration rather than looping over features sequentially by default. This (setting to 'random') often leads to significantly faster convergence especially when tol is higher than 1e-4.
+#' @param  n_gpus Number of gpu's to use in GLM solver.
+#' @param  lambda_stop_early Stop early when there is no more relative improvement on train or validation.
+#' @param  glm_stop_early Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.
+#' @param  glm_stop_early_error_fraction Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
+#' @param  verbose Print verbose information to the console if set to > 0.
+#' @param  n_threads Number of threads to use in the gpu. Each thread is an independent model builder.
+#' @param  gpu_id ID of the GPU on which the algorithm should run.
+#' @param  lambda_min_ratio Minimum lambda ratio to maximum lambda, used in lambda search.
+#' @param  n_lambdas Number of lambdas to be used in a search.
+#' @param  n_folds Number of cross validation folds.
+#' @param  n_alphas Number of alphas to be used in a search.
+#' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
+#' @param  family "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+#' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
+#' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
+#' @param  alpha_max Maximum alpha.
+#' @param  alpha_min Minimum alpha.
+#' @param  alphas overrides n_alphas, alpha_min, and alpha_max.
+#' @param  lambdas overrides n_lambdas, lambda_max, and lambda_min_ratio.
+#' @param  double_precision Internally set unless using _ptr methods. Value can either be 0 (float32) or 1(float64)
+#' @param  order Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.elastic_net_regressor <- function(
 	alpha = 1.0,
@@ -315,6 +450,41 @@ h2o4gpu.elastic_net_regressor <- function(
 
 #' @description Elastic Net Classifier
 #' @title Elastic Net Classifier
+#' 
+#' @param  alpha Constant that multiplies the penalty terms. Defaults to 1.0. See the notes for the exact mathematical meaning of this parameter.``alpha = 0`` is equivalent to an ordinary least square, solved by the :class:`LinearRegressionSklearn` object. For numerical reasons, using ``alpha = 0`` with the ``LassoSklearn`` object is not advised. Given this, you should use the :class:`LinearRegressionSklearn` object.
+#' @param  l1_ratio The ElasticNetSklearn mixing parameter, with ``0 <= l1_ratio <= 1``. For ``l1_ratio = 0`` the penalty is an L2 penalty. ``For l1_ratio = 1`` it is an L1 penalty. For ``0 < l1_ratio < 1``, the penalty is a combination of L1 and L2.
+#' @param  fit_intercept Whether the intercept should be estimated or not. If ``FALSE``, the data is assumed to be already centered.
+#' @param  normalize This parameter is ignored when ``fit_intercept`` is set to FALSE. If TRUE, the regressors X will be normalized before regression by subtracting the mean and dividing by the l2-norm. If you wish to standardize, please use :class:`h2o4gpu.preprocessing.StandardScaler` before calling ``fit`` on an estimator with ``normalize=FALSE``.
+#' @param  precompute Whether to use a precomputed Gram matrix to speed up calculations. The Gram matrix can also be passed as argument. For sparse input this option is always ``TRUE`` to preserve sparsity.
+#' @param  max_iter The maximum number of iterations
+#' @param  copy_X If ``TRUE``, X will be copied; else, it may be overwritten.
+#' @param  tol The tolerance for the optimization: if the updates are smaller than ``tol``, the optimization code checks the dual gap for optimality and continues until it is smaller than ``tol``.
+#' @param  warm_start When set to ``TRUE``, reuse the solution of the previous call to fit as initialization, otherwise, just erase the previous solution.
+#' @param  positive When set to ``TRUE``, forces the coefficients to be positive.
+#' @param  random_state The seed of the pseudo random number generator that selects a random feature to update. If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`. Used when ``selection`` == 'random'.
+#' @param  selection If set to 'random', a random coefficient is updated every iteration rather than looping over features sequentially by default. This (setting to 'random') often leads to significantly faster convergence especially when tol is higher than 1e-4.
+#' @param  n_gpus Number of gpu's to use in GLM solver.
+#' @param  lambda_stop_early Stop early when there is no more relative improvement on train or validation.
+#' @param  glm_stop_early Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.
+#' @param  glm_stop_early_error_fraction Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
+#' @param  verbose Print verbose information to the console if set to > 0.
+#' @param  n_threads Number of threads to use in the gpu. Each thread is an independent model builder.
+#' @param  gpu_id ID of the GPU on which the algorithm should run.
+#' @param  lambda_min_ratio Minimum lambda ratio to maximum lambda, used in lambda search.
+#' @param  n_lambdas Number of lambdas to be used in a search.
+#' @param  n_folds Number of cross validation folds.
+#' @param  n_alphas Number of alphas to be used in a search.
+#' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
+#' @param  family "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
+#' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
+#' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
+#' @param  alpha_max Maximum alpha.
+#' @param  alpha_min Minimum alpha.
+#' @param  alphas overrides n_alphas, alpha_min, and alpha_max.
+#' @param  lambdas overrides n_lambdas, lambda_max, and lambda_min_ratio.
+#' @param  double_precision Internally set unless using _ptr methods. Value can either be 0 (float32) or 1(float64)
+#' @param  order Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.elastic_net_classifier <- function(
 	alpha = 1.0,
@@ -392,6 +562,22 @@ h2o4gpu.elastic_net_classifier <- function(
 
 #' @description K-means Clustering
 #' @title K-means Clustering
+#' 
+#' @param  n_clusters The number of clusters to form as well as the number of centroids to generate.
+#' @param  init Method for initialization, defaults to 'random': 'k-means++' : selects initial cluster centers for k-mean clustering in a smart way to speed up convergence. *Not supported yet* - if chosen we will use SKLearn's methods. 'random': choose k observations (rows) at random from data for the initial centroids. If an ndarray is passed, it should be of shape (n_clusters, n_features) and gives the initial centers. *Not supported yet* - if chosen we will use SKLearn's methods.
+#' @param  n_init Number of time the k-means algorithm will be run with different centroid seeds. The final results will be the best output of n_init consecutive runs in terms of inertia. *Not supported yet* - always runs 1.
+#' @param  max_iter Maximum number of iterations of the algorithm.
+#' @param  tol Relative tolerance to declare convergence.
+#' @param  precompute_distances Precompute distances (faster but takes more memory). 'auto' : do not precompute distances if n_samples * n_clusters > 12 million. This corresponds to about 100MB overhead per job using double precision. TRUE : always precompute distances FALSE : never precompute distances *Not supported yet* - always uses auto if running h2o4gpu version.
+#' @param  verbose Logger verbosity level.
+#' @param  random_state random_state for RandomState. Must be convertible to 32 bit unsigned integers.
+#' @param  copy_x When pre-computing distances it is more numerically accurate to center the data first. If copy_x is TRUE, then the original data is not modified. If FALSE, the original data is modified, and put back before the function returns, but small numerical differences may be introduced by subtracting and then adding the data mean. *Not supported yet* - always uses TRUE if running h2o4gpu version.
+#' @param  n_jobs The number of jobs to use for the computation. This works by computing each of the n_init runs in parallel. If -1 all CPUs are used. If 1 is given, no parallel computing code is used at all, which is useful for debugging. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used. *Not supported yet* - CPU backend not yet implemented.
+#' @param  algorithm K-means algorithm to use. The classical EM-style algorithm is "full". The "elkan" variation is more efficient by using the triangle inequality, but currently doesn't support sparse data. "auto" chooses "elkan" for dense data and "full" for sparse data. *Not supported yet* - always uses full if running h2o4gpu version.
+#' @param  gpu_id ID of the GPU on which the algorithm should run.
+#' @param  n_gpus Number of GPUs on which the algorithm should run. < 0 means all possible GPUs on the machine. 0 means no GPUs, run on CPU.
+#' @param  do_checks If set to 0 GPU error check will not be performed.
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.kmeans <- function(
 	n_clusters = 8L,
@@ -432,6 +618,16 @@ h2o4gpu.kmeans <- function(
 
 #' @description Principal Component Analysis (PCA)
 #' @title Principal Component Analysis (PCA)
+#' 
+#' @param  n_components Desired dimensionality of output data
+#' @param  copy If FALSE, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected results, use fit_transform(X) instead.
+#' @param  whiten When TRUE (FALSE by default) the `components_` vectors are multiplied by the square root of (n_samples) and divided by the singular values to ensure uncorrelated outputs with unit component-wise variances.
+#' @param  svd_solver auto : the solver is selected by a default policy based on `X.shape` and `n_components`: if the input data is larger than 500x500 and the number of components to extract is lower than 80% of the smallest dimension of the data, then the more efficient 'randomized' method is enabled. Otherwise the exact full SVD is computed and optionally truncated afterwards. full : run exact full SVD calling the standard LAPACK solver via `scipy.linalg.svd` and select the components by postprocessing arpack : run SVD truncated to n_components calling ARPACK solver via `scipy.sparse.linalg.svds`. It requires strictly 0 < n_components < X.shape[1] randomized : run randomized SVD by the method of Halko et al.
+#' @param  tol Tolerance for singular values computed by svd_solver == 'arpack'.
+#' @param  iterated_power Number of iterations for the power method computed by svd_solver == 'randomized'.
+#' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
+#' @param  verbose Verbose or not
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.pca <- function(
 	n_components = 2L,
@@ -460,6 +656,16 @@ h2o4gpu.pca <- function(
 
 #' @description Truncated Singular Value Decomposition (TruncatedSVD)
 #' @title Truncated Singular Value Decomposition (TruncatedSVD)
+#' 
+#' @param  n_components Desired dimensionality of output data
+#' @param  algorithm SVD solver to use. H2O4GPU options: Either “cusolver” (similar to ARPACK) or “power” for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).
+#' @param  n_iter number of iterations (only relevant for power method) Should be at most 2147483647 due to INT_MAX in C++ backend.
+#' @param  random_state seed (NULL for auto-generated)
+#' @param  tol Tolerance for "power" method. Ignored by "cusolver". Should be > 0.0 to ensure convergence. Should be 0.0 to effectively ignore and only base convergence upon n_iter
+#' @param  verbose Verbose or not
+#' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
+#' @param  n_gpus How many gpus to use. If 0, use CPU backup method. Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.
+#' @param  gpu_id ID of the GPU on which the algorithm should run.
 #' @export
 h2o4gpu.truncated_svd <- function(
 	n_components = 2L,

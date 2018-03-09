@@ -8,6 +8,25 @@ h2o4gpu.truncated_svd(n_components = 2L, algorithm = "power",
   n_iter = 100L, random_state = NULL, tol = 1e-05, verbose = FALSE,
   backend = "h2o4gpu", n_gpus = 1L, gpu_id = 0L)
 }
+\arguments{
+\item{n_components}{Desired dimensionality of output data}
+
+\item{algorithm}{SVD solver to use. H2O4GPU options: Either “cusolver” (similar to ARPACK) or “power” for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).}
+
+\item{n_iter}{number of iterations (only relevant for power method) Should be at most 2147483647 due to INT_MAX in C++ backend.}
+
+\item{random_state}{seed (NULL for auto-generated)}
+
+\item{tol}{Tolerance for "power" method. Ignored by "cusolver". Should be > 0.0 to ensure convergence. Should be 0.0 to effectively ignore and only base convergence upon n_iter}
+
+\item{verbose}{Verbose or not}
+
+\item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+
+\item{n_gpus}{How many gpus to use. If 0, use CPU backup method. Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.}
+
+\item{gpu_id}{ID of the GPU on which the algorithm should run.}
+}
 \description{
 Truncated Singular Value Decomposition (TruncatedSVD)
 }
