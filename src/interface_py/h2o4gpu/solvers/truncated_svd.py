@@ -1,4 +1,5 @@
 # - * - encoding : utf - 8 - * -
+# pylint: disable=fixme, line-too-long
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -20,29 +21,36 @@ class TruncatedSVDH2O(object):
     estimator does not center the data before computing the singular value
     decomposition.
 
-    :param: int n_components: Desired dimensionality of output data
+    Parameters
+    ----------
+    n_components: int, Default=2
+        Desired dimensionality of output data
+        
+    algorithm: string, Default="power"
+        SVD solver to use.
+        Either “cusolver” (similar to ARPACK)
+        or “power” for the power method.
 
-    :param: str algorithm: SVD solver to use.
-                           Either "cusolver" (similar to ARPACK)
-                           or "power" for the power method.
+    n_iter: int, Default=100
+        number of iterations (only relevant for power method)
+        Should be at most 2147483647 due to INT_MAX in C++ backend.
 
-    :param: int n_iter: number of iterations (only relevant for power method)
-            Should be at most 2147483647 due to INT_MAX in C++ backend.
+    int random_state: seed (None for auto-generated)
 
-    :param: int random_state: seed (None for auto-generated)
+    float tol: float, Default=1E-5
+        Tolerance for "power" method. Ignored by "cusolver".
+        Should be > 0.0 to ensure convergence.
+        Should be 0.0 to effectively ignore
+        and only base convergence upon n_iter
 
-    :param: float tol: Tolerance for "power" method. Ignored by "cusolver".
-                       Should be > 0.0 to ensure convergence.
-                       Should be 0.0 to effectively ignore
-                       and only base convergence upon n_iter
+    verbose: bool
+        Verbose or not
 
-    :param: bool verbose: Verbose or not
-
-    :param n_gpus : int, optional, default: 1
+    n_gpus : int, optional, default: 1
         How many gpus to use.  If 0, use CPU backup method.
         Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.
 
-    :param gpu_id : int, optional, default: 0
+    gpu_id : int, optional, default: 0
         ID of the GPU on which the algorithm should run.
 
     """
@@ -365,19 +373,53 @@ def _as_dptr(x):
 
 class TruncatedSVD(object):
     """
-        Truncated SVD Wrapper
+    Truncated SVD Wrapper
 
-        Selects between h2o4gpu.decomposition.TruncatedSVDSklearn
-        and h2o4gpu.solvers.truncated_svd.TruncatedSVDH2O
+    Selects between h2o4gpu.decomposition.TruncatedSVDSklearn
+    and h2o4gpu.solvers.truncated_svd.TruncatedSVDH2O
 
-        Documentation:
-        import h2o4gpu.decomposition ;
-        help(h2o4gpu.decomposition.TruncatedSVDSklearn)
-        help(h2o4gpu.solvers.truncated_svd.TruncatedSVD)
+    Parameters
+    ----------
+    n_components: int, Default=2
+        Desired dimensionality of output data
 
-    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
-        'h2o4gpu'.  Default is 'auto'.
+    algorithm: string, Default="power"
+        SVD solver to use.
+        H2O4GPU options:
+            Either “cusolver” (similar to ARPACK)
+            or “power” for the power method.
+        SKlearn options:
+            Either "arpack" for the ARPACK wrapper in SciPy
+            (scipy.sparse.linalg.svds), or "randomized" for the randomized
+            algorithm due to Halko (2009).
+
+    n_iter: int, Default=100
+        number of iterations (only relevant for power method)
+        Should be at most 2147483647 due to INT_MAX in C++ backend.
+
+    random_state: int, Default=None
+        seed (None for auto-generated)
+
+    tol: float, Default=1E-5
+        Tolerance for "power" method. Ignored by "cusolver".
+        Should be > 0.0 to ensure convergence.
+        Should be 0.0 to effectively ignore
+        and only base convergence upon n_iter
+
+    verbose: bool
+        Verbose or not
+
+    backend : string, (Default="auto")
+        Which backend to use.
+        Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
+
+    n_gpus : int, optional, default: 1
+        How many gpus to use.  If 0, use CPU backup method.
+        Currently SVD only uses 1 GPU, so >1 has no effect compared to 1.
+
+    gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run.
 
     """
 
