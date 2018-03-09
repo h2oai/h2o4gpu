@@ -25,7 +25,7 @@ class TruncatedSVDH2O(object):
     ----------
     n_components: int, Default=2
         Desired dimensionality of output data
-        
+
     algorithm: string, Default="power"
         SVD solver to use.
         Either “cusolver” (similar to ARPACK)
