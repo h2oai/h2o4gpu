@@ -19,7 +19,7 @@ gen_wrapper <- function(
       write_line(paste0("#' @title ", description))
       write_line("#' ")
       for(i in 1:length(docs$parameters)) {
-        write_line(paste0("#' @param ", " ", docs$sections[i]))
+        write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
       }
       write_line("#' @export")
       if (is.null(r_function)) {
