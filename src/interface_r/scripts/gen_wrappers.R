@@ -7,7 +7,6 @@
 #   e.g. use_condaenv("r-h2o4gpu", conda = "~/miniconda3/envs/py36/bin/conda")
 library(reticulate)
 #use_virtual_env() or use_condaenv() or use_python()
-use_virtualenv("/home/navdeep/h2o4gpu/h2o4gpu_env")
 library(stringr)
 library(roxygen2)
 pkg_location <- "~/h2o4gpu/src/interface_r"
