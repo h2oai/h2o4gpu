@@ -532,7 +532,7 @@ class RandomForestRegressor(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in RandomForestRegressor solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
@@ -875,7 +875,7 @@ class GradientBoostingClassifier(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in GradientBoostingClassifier solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
@@ -1252,7 +1252,7 @@ class GradientBoostingRegressor(object):
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
-        Number of gpu's to use in RandomForestClassifier solver. Default is -1.
+        Number of gpu's to use in GradientBoostingRegressor solver. Default is -1.
 
     predictor : string [default='gpu_predictor']
         The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
