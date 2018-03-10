@@ -38,13 +38,16 @@ class Ridge(object):
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  #h2o4gpu
             verbose=False,
-            backend='auto'):  # h2o4gpu
+            backend='auto',
+            **kwargs):  # h2o4gpu
 
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
 
+        self.do_daal = False
+        self.do_sklearn = False
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
@@ -66,12 +69,29 @@ class Ridge(object):
                 i = i + 1
         elif backend == 'sklearn':
             self.do_sklearn = True
+            self.backend = 'sklearn'
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-        if self.do_sklearn:
-            self.backend = 'sklearn'
-        else:
             self.backend = 'h2o4gpu'
+        elif backend == 'daal':
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.regression \
+                        import LinearRegression as DRR
+                self.do_daal = True
+                self.backend = 'daal'
+
+                self.model_daal = DRR(fit_intercept=fit_intercept,
+                                      normalize=normalize,
+                                      **kwargs)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,
@@ -123,6 +143,10 @@ class Ridge(object):
             if verbose:
                 print("Running sklearn Ridge Regression")
             self.model = self.model_sklearn
+        elif self.do_daal:
+            if verbose:
+                print("Running PyDAAL Ridge Regression")
+            self.model = self.model_daal
         else:
             if verbose:
                 print("Running h2o4gpu Ridge Regression")
