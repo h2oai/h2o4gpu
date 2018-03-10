@@ -52,7 +52,7 @@ RUN \
   python -m pip install --upgrade pip && \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev axel && \
+  apt-get install -y libopenblas-dev && \
   apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev swig
 
 RUN \
@@ -63,12 +63,6 @@ RUN \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
-
-# Install Daal library
-COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
-RUN \
-	chmod +x scripts/daal/install_daal.sh && \
-	scripts/daal/install_daal.sh
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
 COPY requirements_runtime.txt requirements_runtime.txt
@@ -85,8 +79,9 @@ RUN \
     pip install -r requirements_runtime.txt && \
     pip install -r requirements_runtime_demos.txt
 
-# Install R dependencies and h2o4gpu R package
+# Install R dependencies and h2o4gpu R package when appropriate
 COPY scripts/install_r.sh scripts/install_r.sh
+COPY scripts/test_r_pkg.sh scripts/test_r_pkg.sh
 COPY scripts/install_r_deps.sh scripts/install_r_deps.sh
 RUN \
     apt-get update -y && \

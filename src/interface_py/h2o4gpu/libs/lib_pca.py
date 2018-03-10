@@ -2,7 +2,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
 import ctypes
 
 
@@ -12,7 +11,7 @@ class parameters(ctypes.Structure):
                 ('algorithm', ctypes.c_char_p), ('whiten', ctypes.c_bool)]
 
 
-class CPUlib(object):
+class CPUlib:
 
     def __init__(self):
         pass
@@ -24,7 +23,7 @@ class CPUlib(object):
         return _load_pca_lib(cpu_lib_path())
 
 
-class GPUlib(object):
+class GPUlib:
 
     def __init__(self):
         pass

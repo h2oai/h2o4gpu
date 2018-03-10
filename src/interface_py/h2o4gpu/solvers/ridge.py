@@ -3,11 +3,9 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
 # pylint: disable=unused-import
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import ridge as sk
-from h2o4gpu.solvers.daal_solver.regression import RidgeRegression as DRR
 from ..solvers.utils import _setter
 
 
@@ -40,16 +38,13 @@ class Ridge(object):
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  #h2o4gpu
             verbose=False,
-            backend='auto',
-            **kwargs):  # h2o4gpu
+            backend='auto'):  # h2o4gpu
 
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
 
-        self.do_daal = False
-        self.do_sklearn = False
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
@@ -71,17 +66,12 @@ class Ridge(object):
                 i = i + 1
         elif backend == 'sklearn':
             self.do_sklearn = True
-            self.backend = 'sklearn'
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
+        if self.do_sklearn:
+            self.backend = 'sklearn'
+        else:
             self.backend = 'h2o4gpu'
-        elif backend == 'daal':
-            self.do_daal = True
-            self.backend = 'daal'
-
-        self.model_daal = DRR(fit_intercept=fit_intercept,
-                              normalize=normalize,
-                              **kwargs)
 
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,
@@ -133,10 +123,6 @@ class Ridge(object):
             if verbose:
                 print("Running sklearn Ridge Regression")
             self.model = self.model_sklearn
-        elif self.do_daal:
-            if verbose:
-                print("Running PyDAAL Ridge Regression")
-            self.model = self.model_daal
         else:
             if verbose:
                 print("Running h2o4gpu Ridge Regression")

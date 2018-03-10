@@ -4,7 +4,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import print_function
 import sys
 import time
 from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
@@ -119,10 +118,10 @@ class ElasticNetH2O(object):
            row 'r' or column 'c' major order.
        """
 
-    class info(object):
+    class info:
         pass
 
-    class solution(object):
+    class solution:
         pass
 
     def __init__(self,
