@@ -7,12 +7,12 @@ from ctypes import POINTER, c_int, c_int32, c_uint, c_void_p, c_float, \
 from numpy import zeros, ones, inf
 
 
-class H2OConstants:
+class H2OConstants(object):
     COL_MAJ = c_int(0)
     ROW_MAJ = c_int(1)
 
 
-class H2OFunctions:
+class H2OFunctions(object):
     """
     Constants representing functions used internally in C/C++
     """
@@ -34,7 +34,7 @@ class H2OFunctions:
     ZERO = c_int(15)
 
 
-class H2OStatus:
+class H2OStatus(object):
     """
     Constants representing statuses returned from C/C++
     """
@@ -46,7 +46,7 @@ class H2OStatus:
     ERROR = 'H2O4GPU_ERROR'
 
 
-class H2OSolverDefault:
+class H2OSolverDefault(object):
     """
     Constants representing defaults used in our solvers
     """

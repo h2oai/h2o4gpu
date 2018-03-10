@@ -4,6 +4,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 import numpy as np
 from ..libs.lib_pca import parameters
 from ..solvers.utils import _setter
@@ -38,7 +39,7 @@ class PCAH2O(TruncatedSVDH2O):
     """
 
     def __init__(self, n_components=2, whiten=False):
-        super().__init__(n_components)
+        super(PCAH2O, self).__init__(n_components)
         self.whiten = whiten
         self.n_components_ = n_components
         self.mean_ = None
@@ -212,7 +213,11 @@ class PCA(TruncatedSVD):
                  random_state=None,
                  verbose=False,
                  backend='auto'):
-        super().__init__(n_components, random_state, tol, verbose, backend)
+        super(PCA, self).__init__(n_components,
+                                  random_state,
+                                  tol,
+                                  verbose,
+                                  backend)
         self.svd_solver = svd_solver
         self.whiten = whiten
 

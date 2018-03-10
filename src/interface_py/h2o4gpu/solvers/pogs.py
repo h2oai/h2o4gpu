@@ -3,6 +3,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 from ctypes import c_int, c_float, c_double, pointer
 from numpy import ndarray
 from scipy.sparse.csc import csc_matrix
