@@ -82,6 +82,7 @@ help:
 	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
 	$(call inform, "make cpu-fullinstall Clean everything then compile and isntall everything only with CPU")
 	$(call inform, "make build           Just Build the whole project.")
+	$(call inform, "make daal-install    Install Intel DAAL library with PyDAAL")
 	$(call inform, " -------- Test ---------")
 	$(call inform, "make test            Run tests.")
 	$(call inform, "make testbig         Run tests for big data.")
@@ -178,12 +179,9 @@ libxgboost-nccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost
 libxgboost-nonccl-local:
 	cd xgboost ; make -f Makefile2 libxgboost2
-libxgboost-cpu-local:
-	cd xgboost ; make -f Makefile2 libxgboost-cpu
 
 apply-xgboost-nccl-local: libxgboost-nccl-local pipxgboost
 apply-xgboost-nonccl-local: libxgboost-nonccl-local pipxgboost
-apply-xgboost-cpu-local: libxgboost-cpu-local pipxgboost
 
 pipxgboost:
 	@echo "----- pip install xgboost built locally -----"
@@ -191,13 +189,10 @@ pipxgboost:
 
 alldeps-nccl-local: deps_fetch alldeps-install-nccl-local
 alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
-alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 
 # lib for sklearn because don't want to fully apply yet
 alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
 alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
-alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
 
 ##### dependencies
 deps_clean:
@@ -234,7 +229,6 @@ alldeps_install-nonccl-cuda9: deps_install apply-xgboost-nonccl-cuda9 apply_py3n
 
 fullinstall: fullinstall-nccl-cuda9
 fullinstalllocal: fullinstall-nccl-local
-cpu-fullinstall: fullinstall-cpuonly
 
 fullinstall-nccl-local: clean alldeps-nccl-local build install
 	mkdir -p src/interface_py/dist-nccl-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-nccl-local/
@@ -325,7 +319,6 @@ docker-runtime-nccl-cuda9-load:
 run_in_docker-nccl-cuda9:
 	-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-nccl-cuda9-runtime &
 	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
-
 
 ############### CPU
 docker-build-cpu:

@@ -4,10 +4,9 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # pylint: disable=unused-import
+from __future__ import print_function
 from h2o4gpu.solvers import elastic_net
 from h2o4gpu.linear_model import base as sk
-from ..solvers.utils import _setter
-
 
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
@@ -36,12 +35,16 @@ class LinearRegression(object):
             glm_stop_early=True,  # h2o4gpu
             glm_stop_early_error_fraction=1.0,  # h2o4gpu
             verbose=False,
-            backend='auto'):
+            backend='auto',
+            **kwargs):
 
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+
+        self.do_daal = False
+        self.do_sklearn = False
 
         if backend == 'auto':
             # Fall back to Sklearn
@@ -66,12 +69,29 @@ class LinearRegression(object):
                 i = i + 1
         elif backend == 'sklearn':
             self.do_sklearn = True
+            self.backend = 'sklearn'
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-        if self.do_sklearn:
-            self.backend = 'sklearn'
-        else:
             self.backend = 'h2o4gpu'
+        elif backend == 'daal':
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.regression \
+                    import LinearRegression as DLR
+                self.do_daal = True
+                self.backend = 'daal'
+
+                self.model_daal = DLR(fit_intercept=fit_intercept,
+                                      normalize=normalize,
+                                      **kwargs)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,
@@ -128,19 +148,25 @@ class LinearRegression(object):
             if verbose:
                 print("Running sklearn Linear Regression")
             self.model = self.model_sklearn
+        elif self.do_daal:
+            if verbose:
+                print("Running PyDAAL Linear Regression")
+            self.model = self.model_daal
         else:
             if verbose:
                 print("Running h2o4gpu Linear Regression")
             self.model = self.model_h2o4gpu
         self.verbose = verbose
 
-    def fit(self, X, y=None, sample_weight=None):
+    def fit(self, X, y=None, sample_weight=None): # train
         if self.do_sklearn:
             res = self.model.fit(X, y, sample_weight)
             self.set_attributes()
-            return res
-        res = self.model.fit(X, y)
-        self.set_attributes()
+        elif self.do_daal:
+            res = self.model.fit(X, y)
+        else:
+            res = self.model.fit(X, y)
+            self.set_attributes()
         return res
 
     def get_params(self):
@@ -153,6 +179,7 @@ class LinearRegression(object):
 
     def score(self, X, y, sample_weight=None):
         # TODO add for h2o4gpu
+        # TODO score for DAAL? input parameters are not clear
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
@@ -166,6 +193,8 @@ class LinearRegression(object):
     def set_attributes(self):
         """ set attributes for Linear Regression
         """
+        if self.do_daal: return
+        from ..solvers.utils import _setter
         s = _setter(oself=self, e1=NameError, e2=AttributeError)
 
         s('oself.coef_ = oself.model.coef_')
