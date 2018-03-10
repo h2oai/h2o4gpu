@@ -146,13 +146,6 @@ If the link shows no token or shows ... for token, try a token of "h2o" (without
 
 This container has a /demos directory which contains Jupyter notebooks and some data.
 
-## Installing IntelDAAL
-
-Register and download the IntelDAAL installer:
-
-	* [IntelDAAL install guide] (https://software.intel.com/en-us/articles/intel-daal-2018-install-guide)
-
-
 ## Plans and RoadMap
 
 The vision is to develop fast GPU algorithms to complement the CPU

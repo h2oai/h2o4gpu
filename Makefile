@@ -82,7 +82,6 @@ help:
 	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
 	$(call inform, "make cpu-fullinstall Clean everything then compile and isntall everything only with CPU")
 	$(call inform, "make build           Just Build the whole project.")
-  $(call inform, "make daal-install 	 Install Intel DAAL library with PyDAAL")
 	$(call inform, " -------- Test ---------")
 	$(call inform, "make test            Run tests.")
 	$(call inform, "make testbig         Run tests for big data.")
@@ -254,10 +253,6 @@ fullinstall-nccl-cuda9: clean alldeps-nccl-cuda9 build install
 fullinstall-nonccl-cuda9: clean alldeps-nonccl-cuda9 build install
 	mkdir -p src/interface_py/dist3/ && mv src/interface_py/dist/*.whl src/interface_py/dist3/
 
-daal-install:
-	@echo "+-- Installing Intel Daal --+"
-	bash scripts/daal/daal_preinstalled_packages.sh
-
 fullinstall-cpuonly: clean alldeps-cpuonly build install
 	mkdir -p src/interface_py/dist-cpuonly-local/ && mv src/interface_py/dist/*.whl src/interface_py/dist-cpuonly-local/
 
@@ -356,7 +351,7 @@ docker-runtime-cpu:
 	export buckettype="releases/bleeding-edge" ;\
 	export dockerimage="ubuntu:16.04" ;\
 	bash scripts/make-docker-runtime.sh
-	
+
 docker-runtime-cpu-run:
 	@echo "+-Running Docker Runtime Image (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtime-run" ;\
@@ -386,7 +381,7 @@ docker-runtime-cpu-load:
 run_in_docker-cpu:
 	-mkdir -p log ; docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-$(BASE_VERSION)-cpu-runtime &
 	-find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
-	
+
 
 ######### CUDA8 (copy/paste above, and then replace cuda9 -> cuda8 and cuda:9.0-cudnn7 -> cuda:8.0-cudnn5 and dist4->dist1)
 
@@ -578,8 +573,8 @@ dotest:
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
 	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests_open 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
-	# Test R package
-	R -e 'devtools::test("src/interface_r")'
+	# Test R package when appropriate
+	bash scripts/test_r_pkg.sh
 
 dotestfast:
 	rm -rf ./tmp/
@@ -715,8 +710,11 @@ Jenkinsfiles:
 #
 # Summary
 #
-#     command:  make centos7_in_docker
-#     output:   dist/h2o4gpu*.whl
+#     command:  make centos7_cuda8_in_docker
+#     output:   dist/x86_64-centos7-cuda8/h2o4gpu*.whl
+#
+#     command:  make centos7_cuda9_in_docker
+#     output:   dist/x86_64-centos7-cuda9/h2o4gpu*.whl
 #
 # Details
 #
@@ -724,7 +722,7 @@ Jenkinsfiles:
 #
 #     The 'centos7' make target does the actual work.
 #
-#     The 'centos7_in_docker' make target sets up the docker environment
+#     The 'centos7_cudaN_in_docker' make target sets up the docker environment
 #     and then invokes the work inside that environment.
 #
 #     The build output is put in the 'dist' directory in h2o4gpu level.
@@ -797,6 +795,7 @@ centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 		$(CONTAINER_NAME_TAG) \
 		-c 'make centos7'
 	echo $(VERSION) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
+
 centos7_setup:
 	rm -fr /tmp/build
 	cp -a /dot/. /tmp/build
