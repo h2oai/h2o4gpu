@@ -80,7 +80,7 @@ class Ridge(object):
                         import LinearRegression as DRR
                 self.do_daal = True
                 self.backend = 'daal'
-    
+
                 self.model_daal = DRR(fit_intercept=fit_intercept,
                                       normalize=normalize,
                                       **kwargs)
