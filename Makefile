@@ -730,29 +730,109 @@ Jenkinsfiles:
 #     The build output is put in the 'dist' directory in h2o4gpu level.
 #----------------------------------------------------------------------
 
+DIST_DIR = dist
+
+ARCH := $(shell arch)
+PLATFORM = $(ARCH)-centos7-cuda$(MY_CUDA_VERSION)
+
+CONTAINER_NAME_SUFFIX ?= -$(USER)
+CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
+
+PROJECT_VERSION := $(BASE_VERSION)
+BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH_NAME_SUFFIX = +$(BRANCH_NAME)
+BUILD_NUM ?= local
+BUILD_NUM_SUFFIX = .$(BUILD_NUM)
+VERSION = $(PROJECT_VERSION)$(BRANCH_NAME_SUFFIX)$(BUILD_NUM_SUFFIX)
+CONTAINER_TAG := $(shell echo $(VERSION) | sed 's/+/-/g')
+
+CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
+
+ARCH_SUBST = undefined
+FROM_SUBST = undefined
+ifeq ($(ARCH),x86_64)
+    FROM_SUBST = nvidia\/cuda:$(MY_CUDA_VERSION)-cudnn$(MY_CUDNN_VERSION)-devel-centos7
+    ARCH_SUBST = $(ARCH)
+endif
+ifeq ($(ARCH),ppc64le)
+    FROM_SUBST = nvidia\/cuda-ppc64le:$(MY_CUDA_VERSION)-cudnn$(MY_CUDNN_VERSION)-devel-centos7
+    ARCH_SUBST = $(ARCH)
+endif
+
+fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
+
+Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
+	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
+
+centos7_cuda8_in_docker: MY_CUDA_VERSION=8.0
+centos7_cuda8_in_docker: MY_CUDNN_VERSION=5
+centos7_cuda8_in_docker:
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+
+centos7_cuda9_in_docker: MY_CUDA_VERSION=9.0
+centos7_cuda9_in_docker: MY_CUDNN_VERSION=7
+centos7_cuda9_in_docker:
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+
+centos7_cuda91_in_docker: MY_CUDA_VERSION=9.1
+centos7_cuda91_in_docker: MY_CUDNN_VERSION=7
+centos7_cuda91_in_docker:
+	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+
+centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
+	mkdir -p $(DIST_DIR)/$(PLATFORM)
+	docker build \
+		-t $(CONTAINER_NAME_TAG) \
+		-f Dockerfile-build-centos7.$(PLATFORM) \
+		.
+	docker run \
+		--rm \
+		--init \
+		-u `id -u`:`id -g` \
+		-v `pwd`:/dot \
+		-w /dot \
+		--entrypoint /bin/bash \
+		-e "MY_CUDA_VERSION=$(MY_CUDA_VERSION)" \
+		-e "MY_CUDNN_VERSION=$(MY_CUDNN_VERSION)" \
+		$(CONTAINER_NAME_TAG) \
+		-c 'make centos7'
+	echo $(VERSION) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 centos7_setup:
 	rm -fr /tmp/build
 	cp -a /dot/. /tmp/build
+	sed -i 's/cmake/# cmake/' /tmp/build/requirements_buildonly.txt
 
 centos7_build:
 	(cd /tmp/build && \
-         eval "$$(/root/.pyenv/bin/pyenv init -)" && \
-         /root/.pyenv/bin/pyenv global 3.6.1 && \
-         export IFLAGS="-I/usr/include/openblas" && \
-         export OPENBLAS_PREFIX="open" && \
-         scl enable devtoolset-3 "make fullinstalljenkins-nonccl-local")
-	cp /tmp/build/src/interface_py/dist-nonccl-local/h2o4gpu*.whl dist/
-	chmod o+rw dist/h2o4gpu*.whl
+	 IFLAGS="-I/usr/include/openblas" \
+	 OPENBLAS_PREFIX="open" \
+	 USEPARALLEL=0 \
+	 $(MAKE) \
+		deps_fetch \
+		apply-xgboost-nonccl-local \
+		apply_py3nvml \
+		libsklearn \
+		build)
+	mkdir -p dist/$(PLATFORM)
+	cp /tmp/build/src/interface_py/dist/h2o4gpu*.whl dist/$(PLATFORM)
+	chmod -R o+rwx dist/$(PLATFORM)
 
 centos7:
 	$(MAKE) centos7_setup
 	$(MAKE) centos7_build
 
-centos7_in_docker:
-	rm -fr dist
-	mkdir dist
-	docker build -t opsh2oai/h2o4gpu-build-centos7 -f Dockerfile-build-centos7 .
-	docker run --init --rm -v `pwd`:/dot -w /dot --entrypoint /bin/bash opsh2oai/h2o4gpu-build-centos7 -c 'make centos7'
+# Note:  We don't actually need to run mrproper in docker (as root) because
+#        the build step runs as the user.  But keep the API for consistency.
+mrproper_in_docker:
+	git clean -f -d -x
+
+printvars: MY_CUDA_VERSION=8.0
+printvars: MY_CUDNN_VERSION=5
+printvars:
+	@echo $(PLATFORM)
+	@echo $(PROJECT_VERSION)
+	@echo $(VERSION)
+	@echo $(CONTAINER_TAG)
 
 #----------------------------------------------------------------------
 # CentOS 7 build API END
