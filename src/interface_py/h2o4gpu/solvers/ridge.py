@@ -78,8 +78,8 @@ class Ridge(object):
             self.backend = 'daal'
 
             self.model_daal = DRR(fit_intercept=fit_intercept,
-                              normalize=normalize,
-                              **kwargs)
+                                  normalize=normalize,
+                                  **kwargs)
 
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,
