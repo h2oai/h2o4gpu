@@ -33,3 +33,10 @@ OPEN_DATA_DIR = open_data
 # XGBoost
 #
 XGBOOST_VERSION = 0.6
+
+#
+# R package Configurations
+#
+INSTALL_R = 1
+R_VERSION = 3.1.0
+
