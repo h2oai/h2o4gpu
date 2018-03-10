@@ -715,8 +715,11 @@ Jenkinsfiles:
 #
 # Summary
 #
-#     command:  make centos7_in_docker
-#     output:   dist/h2o4gpu*.whl
+#     command:  make centos7_cuda8_in_docker
+#     output:   dist/x86_64-centos7-cuda8/h2o4gpu*.whl
+#
+#     command:  make centos7_cuda9_in_docker
+#     output:   dist/x86_64-centos7-cuda9/h2o4gpu*.whl
 #
 # Details
 #
@@ -724,7 +727,7 @@ Jenkinsfiles:
 #
 #     The 'centos7' make target does the actual work.
 #
-#     The 'centos7_in_docker' make target sets up the docker environment
+#     The 'centos7_cudaN_in_docker' make target sets up the docker environment
 #     and then invokes the work inside that environment.
 #
 #     The build output is put in the 'dist' directory in h2o4gpu level.
