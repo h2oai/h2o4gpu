@@ -149,6 +149,10 @@ class LinearRegression(object):
             if verbose:
                 print("Running sklearn Linear Regression")
             self.model = self.model_sklearn
+        elif self.do_daal:
+            if verbose:
+                print("Running PyDAAL Linear Regression")
+            self.model = self.model_daal
         else:
             if verbose:
                 print("Running h2o4gpu Linear Regression")
@@ -159,9 +163,11 @@ class LinearRegression(object):
         if self.do_sklearn:
             res = self.model.fit(X, y, sample_weight)
             self.set_attributes()
-            return res
-        res = self.model.fit(X, y)
-        self.set_attributes()
+        elif self.do_daal:
+            res = self.model.fit(X, y)
+        else:
+            res = self.model.fit(X, y)
+            self.set_attributes()
         return res
 
     def get_params(self):
@@ -174,6 +180,7 @@ class LinearRegression(object):
 
     def score(self, X, y, sample_weight=None):
         # TODO add for h2o4gpu
+        # TODO score for DAAL? input parameters are not clear
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:

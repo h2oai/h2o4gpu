@@ -28,3 +28,4 @@ except ImportError:
     print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
 else:
     from ..solvers.daal_solver.regression import LinearRegression as DLR
+    from ..solvers.daal_solver.regression import RidgeRegression as DRR
