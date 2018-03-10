@@ -74,12 +74,24 @@ class Ridge(object):
             self.do_sklearn = False
             self.backend = 'h2o4gpu'
         elif backend == 'daal':
-            self.do_daal = True
-            self.backend = 'daal'
-
-            self.model_daal = DRR(fit_intercept=fit_intercept,
-                                  normalize=normalize,
-                                  **kwargs)
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.regression \
+                        import LinearRegression as DRR
+                self.do_daal = True
+                self.backend = 'daal'
+    
+                self.model_daal = DRR(fit_intercept=fit_intercept,
+                                      normalize=normalize,
+                                      **kwargs)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'h2o4gpu'
 
         self.model_sklearn = sk.RidgeSklearn(
             alpha=alpha,
