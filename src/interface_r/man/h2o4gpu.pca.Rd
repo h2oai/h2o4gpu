@@ -8,6 +8,25 @@ h2o4gpu.pca(n_components = 2L, copy = TRUE, whiten = FALSE,
   svd_solver = "arpack", tol = 0, iterated_power = "auto",
   random_state = NULL, verbose = FALSE, backend = "h2o4gpu")
 }
+\arguments{
+\item{n_components}{Desired dimensionality of output data}
+
+\item{copy}{If FALSE, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected results, use fit_transform(X) instead.}
+
+\item{whiten}{When TRUE (FALSE by default) the \code{components_} vectors are multiplied by the square root of (n_samples) and divided by the singular values to ensure uncorrelated outputs with unit component-wise variances.}
+
+\item{svd_solver}{auto : the solver is selected by a default policy based on \code{X.shape} and \code{n_components}: if the input data is larger than 500x500 and the number of components to extract is lower than 80% of the smallest dimension of the data, then the more efficient 'randomized' method is enabled. Otherwise the exact full SVD is computed and optionally truncated afterwards. full : run exact full SVD calling the standard LAPACK solver via \code{scipy.linalg.svd} and select the components by postprocessing arpack : run SVD truncated to n_components calling ARPACK solver via \code{scipy.sparse.linalg.svds}. It requires strictly 0 < n_components < X.shape\link{1} randomized : run randomized SVD by the method of Halko et al.}
+
+\item{tol}{Tolerance for singular values computed by svd_solver == 'arpack'.}
+
+\item{iterated_power}{Number of iterations for the power method computed by svd_solver == 'randomized'.}
+
+\item{random_state}{If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by \code{np.random}. Used when \code{svd_solver} == 'arpack' or 'randomized'.}
+
+\item{verbose}{Verbose or not}
+
+\item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+}
 \description{
 Principal Component Analysis (PCA)
 }
