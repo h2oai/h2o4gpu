@@ -68,7 +68,8 @@ print.h2o4gpu_model <- function(x, ...) {
 #' to be used in building the model.
 #' @param y A vector of numeric values to be used as response variable in building the model. 
 #' Note that if the vector is character or factor, it will be converted to numeric column 
-#' (e.g. 0, 1, 2, ...) implicitly. For unsupervised models, this argument can be ignore.
+#' (e.g. 0, 1, 2, ...) implicitly. For unsupervised models, this argument can be ignored or
+#' specified as `NULL`.
 #' @param ... Additional arguments (unused for now).
 #' 
 #' @export
