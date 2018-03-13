@@ -14,6 +14,8 @@ class option.
 
 An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r) and will be released as a stand-alone R package in the future.
 
+Daal library added for CPU, currently supported only x86_64 architecture.
+
 ## Requirements
 
 * PC with Ubuntu 16.04+ w/ GCC4.9+ and numpy 1.14.x

@@ -11,8 +11,14 @@ ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
 ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
+
 RUN \
-    yum groupinstall -y "Development Tools"
+    yum groupinstall -y "Development Tools" 2>/dev/null || ( \
+    echo "clear cache - automatic fix applying for yum cache"; \
+    yum clean packages; \
+    yum clean headers; \
+    yum clean metadata; \
+    yum groupinstall -y "Development Tools"; )
 
 RUN \
     yum install -y \
@@ -93,6 +99,15 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	cd $HOME && \
 	rm -rf Pillow-5.0.0*; \
 	fi'
+
+# Install PyDAAL in case of x86_64 with conda
+RUN bash -c 'if [ ! $(arch) = "ppc64le" ]; then \
+				conda update conda -y && \
+				conda config --add channels intel && \
+				conda config --add channels conda-forge && \
+				conda config --get channels && \
+				conda install pydaal -y; \
+			fi'
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
