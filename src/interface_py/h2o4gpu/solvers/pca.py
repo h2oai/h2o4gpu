@@ -35,15 +35,24 @@ class PCAH2O(TruncatedSVDH2O):
         (the relative variance scales of the components) but can sometime
         improve the predictive accuracy of the downstream estimators by
         making their data respect some hard-wired assumptions.
+
+    verbose: bool
+        Verbose or not
+
+    gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run.
     """
 
-    def __init__(self, n_components=2, whiten=False):
+    def __init__(self, n_components=2, whiten=False,
+                 verbose=0, gpu_id=0):
         super().__init__(n_components)
         self.whiten = whiten
         self.n_components_ = n_components
         self.mean_ = None
         self.noise_variance_ = None
         self.algorithm = "cusolver"
+        self.verbose = verbose
+        self.gpu_id = gpu_id
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -90,6 +99,8 @@ class PCAH2O(TruncatedSVDH2O):
         param.k = self.n_components
         param.whiten = self.whiten
         param.algorithm = self.algorithm.encode('utf-8')
+        param.verbose = 1 if self.verbose else 0
+        param.gpu_id = self.gpu_id
 
         lib = self._load_lib()
         lib.pca(
@@ -199,6 +210,10 @@ class PCA(TruncatedSVD):
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
+    gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run. Only used by
+        h2o4gpu backend.
+
     """
 
     # pylint: disable=unused-argument
@@ -211,8 +226,9 @@ class PCA(TruncatedSVD):
                  iterated_power="auto",
                  random_state=None,
                  verbose=False,
-                 backend='auto'):
-        super().__init__(n_components, random_state, tol, verbose, backend)
+                 backend='auto',
+                 gpu_id=0):
+        super().__init__(n_components, random_state, tol, verbose, backend, gpu_id)
         self.svd_solver = svd_solver
         self.whiten = whiten
 
@@ -260,7 +276,12 @@ class PCA(TruncatedSVD):
             tol=tol,
             iterated_power=iterated_power,
             random_state=random_state)
-        self.model_h2o4gpu = PCAH2O(n_components=n_components, whiten=whiten)
+
+        self.model_h2o4gpu = PCAH2O(
+            n_components=self.n_components,
+            whiten=self.whiten,
+            verbose=self.verbose,
+            gpu_id=self.gpu_id)
 
         if self.do_sklearn:
             self.model = self.model_sklearn
