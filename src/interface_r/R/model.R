@@ -60,33 +60,44 @@ print.h2o4gpu_model <- function(x, ...) {
   cat(paste(param_items, collapse = ", "))
 }
 
+#' Train an H2O4GPU Estimator
+#' 
+#' This function builds the model using the training data specified.
+#' 
+#' @param x The training data where each column represents a different predictor variable 
+#' to be used in building the model.
+#' @param y A vector of numeric values to be used as response variable in building the model. 
+#' Note that if the vector is character or factor, it will be converted to numeric column 
+#' (e.g. 0, 1, 2, ...) implicitly. For unsupervised models, this argument can be ignored or
+#' specified as `NULL`.
+#' @param ... Additional arguments (unused for now).
+#' 
 #' @export
 fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
   object$model$fit(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
   attach_attrs_to_model(object)
 }
 
+#' Make Predictions using Trained H2O4GPU Estimator
+#' 
+#' This function makes predictions from new data using a trained H2O4GPU model.
+#' 
+#' @param x The new data where each column represents a different predictor variable to 
+#' be used in generating predictions.
+#' @param ... Additional arguments (unused for now).
 #' @export
 predict.h2o4gpu_model <- function(object, x, ...) {
   object$model$predict(X = resolve_model_input(x), ...)
 }
 
+#' Transform a Dataset using Trained H2O4GPU Estimator
+#' 
+#' This function transforms the given new data using a trained H2O4GPU model.
+#' 
+#' @param x The new data where each column represents a different predictor variable to 
+#' be used in generating predictions.
+#' @param ... Additional arguments (unused for now).
 #' @export
 transform.h2o4gpu_model <- function(object, x, ...) {
   object$model$transform(X = resolve_model_input(x), ...)
-}
-
-#' @export
-score.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$score(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
-}
-
-#' @export
-fit_transform.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$fit_transform(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
-}
-
-#' @export
-fit_predict.h2o4gpu_model <- function(object, x, y = NULL, ...) {
-  object$model$fit_predict(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
 }

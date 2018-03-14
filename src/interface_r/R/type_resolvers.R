@@ -24,7 +24,7 @@ resolve_model_y <- function(y, cls) {
     # Implicitly convert character and factor column to numeric (for classifiers only)
     if ("classifier" %in% cls && (is.character(y) || is.factor(y))) {
       warning('Your model input "y" is either character or factor. ',
-              'It will be converted to numeric column [0, 1, 2, ...] implicitly.')
+              'It will be converted to numeric column (e.g. 0, 1, 2, ...) implicitly.')
       y <- as.integer(as.factor(y)) - 1
     } else {
       if ("regressor" %in% cls && !is.numeric(y)) {

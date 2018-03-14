@@ -6,11 +6,10 @@
 
 #import abc
 import os
-from daal.data_management import (AOSNumericTable, FileDataSource,
-                                  DataSource, HomogenNumericTable)
 import numpy as np
 import pandas as pd
-
+from daal.data_management import (AOSNumericTable, FileDataSource,
+                                  DataSource, HomogenNumericTable)
 
 class IInput(object):
     '''
