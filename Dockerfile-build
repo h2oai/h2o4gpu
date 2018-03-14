@@ -62,8 +62,7 @@ RUN \
     eval "$(/root/.pyenv/bin/pyenv init -)" && \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
-    pip install setuptools --no-cache-dir && \
-    pip install Cython
+    pip install setuptools --no-cache-dir
 
 # Install Daal library
 COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
