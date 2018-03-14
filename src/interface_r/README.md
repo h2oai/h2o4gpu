@@ -6,11 +6,10 @@ This directory contains the R package for H2O4GPU - a collection of GPU solvers 
 
 First, please follow the instruction [here](https://github.com/h2oai/h2o4gpu#installation) to build the H2O4GPU Python package.
 
-Then install `devtools` R package via `install.packages("devtools")` if you haven't done it yet.
-
-Finally, we can install `h2o4gpu` R package via the following:
+Then install `h2o4gpu` R package via the following:
 
 ``` r
+if (!require(devtools)) install.packages("devtools")
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
@@ -28,9 +27,6 @@ model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
 
 # Make predictions
 predictions <- model %>% predict(x)
-
-# Score the model
-model %>% score(x, y)
 ```
 
-This package is still under active development so the existing [tests](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r/tests/testthat) serve as examples for now.
+For more examples, please visit the package [vignettes](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r/vignettes).
