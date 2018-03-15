@@ -53,8 +53,6 @@ def _load_tsvd_lib(lib_path):
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
-             ctypes.POINTER(ctypes.c_double),
-             ctypes.POINTER(ctypes.c_double),
              parameters]
 
         #Float version
@@ -63,15 +61,11 @@ def _load_tsvd_lib(lib_path):
              ctypes.POINTER(ctypes.c_float),
              ctypes.POINTER(ctypes.c_float),
              ctypes.POINTER(ctypes.c_float),
-             ctypes.POINTER(ctypes.c_float),
-             ctypes.POINTER(ctypes.c_float),
              parameters]
 
         #Double version
         h2o4gpu_tsvd_lib.truncated_svd_double.argtypes = \
             [ctypes.POINTER(ctypes.c_double),
-             ctypes.POINTER(ctypes.c_double),
-             ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),

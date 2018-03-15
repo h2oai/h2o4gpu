@@ -6,6 +6,7 @@
 """
 import ctypes
 import sys
+import time
 import numpy as np
 from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
@@ -111,23 +112,20 @@ class TruncatedSVDH2O(object):
             X = np.asfortranarray(X, dtype=np.float32)
 
         if self.double_precision == 1:
+            print("Detected Double")
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float64, order='F')
             U = np.empty(
                 (X.shape[0], self.n_components), dtype=np.float64, order='F')
             w = np.empty(self.n_components, dtype=np.float64)
-            explained_variance = np.empty(self.n_components, dtype=np.float64)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float64)
+
         else:
+            print("Detected Float")
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float32, order='F')
             U = np.empty(
                 (X.shape[0], self.n_components), dtype=np.float32, order='F')
             w = np.empty(self.n_components, dtype=np.float32)
-            explained_variance = np.empty(self.n_components, dtype=np.float32)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float32)
 
         param = parameters_svd()
         param.X_m = X.shape[0]
@@ -157,41 +155,38 @@ class TruncatedSVDH2O(object):
             lib.truncated_svd_double(
                 cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double),
                 cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
-                cptr(explained_variance, ctypes.c_double),
-                cptr(explained_variance_ratio, ctypes.c_double),
                 param)
         else:
             lib.truncated_svd_float(
                 cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float),
                 cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
-                cptr(explained_variance, ctypes.c_float),
-                cptr(explained_variance_ratio, ctypes.c_float),
                 param)
 
         self._w = w
         self._X = X
         self._U, self._Q = svd_flip(U, Q)
         X_transformed = self._U * self._w
-        # TODO Investigate why explained variance/ratio are off in CUDA
-        if self.algorithm not in ("power", "cusolver"):
-            self.explained_variance = explained_variance
-            self.explained_variance_ratio = explained_variance_ratio
-        else:
-            # start_ev = time.time()
-            self.explained_variance = \
-                np.var(X_transformed, axis=0)
-            # print("Time taken for explained variance :
-            # " + str(time.time()-start_ev))
-            # start_var = time.time()
-            full_var = \
-                np.var(X, axis=0).sum()
-            # print("Time taken for full variance : "
-            # + str(time.time() - start_var))
-            # start_evr = time.time()
-            self.explained_variance_ratio = \
-                self.explained_variance / full_var
-            # print("Time taken for explained variance ratio : "
-            # + str(time.time() - start_evr))
+        if self.verbose:
+            start_ev = time.time()
+        self.explained_variance = \
+            np.var(X_transformed, axis=0)
+        if self.verbose:
+            print("Time taken for explained variance : "
+                  + str(time.time()-start_ev))
+        if self.verbose:
+            start_var = time.time()
+        full_var = \
+            np.var(X, axis=0).sum()
+        if self.verbose:
+            print("Time taken for full variance : "
+            + str(time.time() - start_var))
+        if self.verbose:
+            start_evr = time.time()
+        self.explained_variance_ratio = \
+            self.explained_variance / full_var
+        if self.verbose:
+            print("Time taken for explained variance ratio : "
+            + str(time.time() - start_evr))
         return X_transformed
 
     def transform(self, X):
