@@ -628,6 +628,7 @@ h2o4gpu.kmeans <- function(
 #' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
 #' @param  verbose Verbose or not
 #' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
+#' @param  gpu_id ID of the GPU on which the algorithm should run. Only used by h2o4gpu backend.
 #' @export
 h2o4gpu.pca <- function(
 	n_components = 2L,
@@ -638,7 +639,8 @@ h2o4gpu.pca <- function(
 	iterated_power = "auto",
 	random_state = NULL,
 	verbose = FALSE,
-	backend = "h2o4gpu") {
+	backend = "h2o4gpu",
+	gpu_id = 0L) {
 
   model <- h2o4gpu$PCA(
     n_components = as.integer(n_components),
@@ -649,7 +651,8 @@ h2o4gpu.pca <- function(
     iterated_power = iterated_power,
     random_state = as_nullable_integer(random_state),
     verbose = verbose,
-    backend = backend
+    backend = backend,
+    gpu_id = as.integer(gpu_id)
   )
   h2o4gpu_model(model, NULL, "Principal Component Analysis (PCA)")
 }

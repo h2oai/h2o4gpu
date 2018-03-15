@@ -20,6 +20,8 @@ namespace pca
 			int k;
 			bool whiten;
 			const char* algorithm;
+			int verbose;
+			int gpu_id;
 		};
 
 		/**

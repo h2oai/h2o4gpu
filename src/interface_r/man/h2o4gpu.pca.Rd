@@ -6,7 +6,8 @@
 \usage{
 h2o4gpu.pca(n_components = 2L, copy = TRUE, whiten = FALSE,
   svd_solver = "arpack", tol = 0, iterated_power = "auto",
-  random_state = NULL, verbose = FALSE, backend = "h2o4gpu")
+  random_state = NULL, verbose = FALSE, backend = "h2o4gpu",
+  gpu_id = 0L)
 }
 \arguments{
 \item{n_components}{Desired dimensionality of output data}
@@ -26,6 +27,8 @@ h2o4gpu.pca(n_components = 2L, copy = TRUE, whiten = FALSE,
 \item{verbose}{Verbose or not}
 
 \item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+
+\item{gpu_id}{ID of the GPU on which the algorithm should run. Only used by h2o4gpu backend.}
 }
 \description{
 Principal Component Analysis (PCA)
