@@ -178,15 +178,13 @@ class TruncatedSVDH2O(object):
         full_var = \
             np.var(X, axis=0).sum()
         if self.verbose:
-            print("Time taken for full variance : "
-            + str(time.time() - start_var))
+            print("Time taken for full variance : " + str(time.time() - start_var))
         if self.verbose:
             start_evr = time.time()
         self.explained_variance_ratio = \
             self.explained_variance / full_var
         if self.verbose:
-            print("Time taken for explained variance ratio : "
-            + str(time.time() - start_evr))
+            print("Time taken for explained variance ratio : " + str(time.time() - start_evr))
         return X_transformed
 
     def transform(self, X):
