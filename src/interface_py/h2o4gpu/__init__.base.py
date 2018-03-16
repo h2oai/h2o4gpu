@@ -13,7 +13,7 @@ try:
     __import__('daal')
 except ImportError:
     import platform
-    print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
+    #print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
     DAAL_SUPPORTED=False
 
 from .types import FunctionVector
