@@ -90,8 +90,6 @@ class PCAH2O(TruncatedSVDH2O):
         U = np.empty(
             (X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components, dtype=np.float64)
-        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         mean = np.empty(X.shape[1], dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
@@ -105,7 +103,6 @@ class PCAH2O(TruncatedSVDH2O):
         lib = self._load_lib()
         lib.pca(
             _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
-            _as_dptr(explained_variance), _as_dptr(explained_variance_ratio),
             _as_dptr(mean), param)
 
         self._w = w
@@ -117,7 +114,6 @@ class PCAH2O(TruncatedSVDH2O):
         total_var = np.var(X, ddof=1, axis=0)
         self.explained_variance_ratio = \
             self.explained_variance / total_var.sum()
-        #self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
         # TODO noise_variance_ calculation
