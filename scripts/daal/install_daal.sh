@@ -8,7 +8,7 @@ set -e
 
 _intel_dall_tar="https://s3.amazonaws.com/intel-daal/daal-linux_x86_64__cp36.tar.gz"
 
-axel -a -n 20 $_intel_dall_tar && && tar xzvf daal-linux_x86_64__cp36.tar.gz -C $HOME &&
+axel -a -n 20 $_intel_dall_tar && tar xzvf daal-linux_x86_64__cp36.tar.gz -C $HOME &&
 rm -rf daal-linux_x86_64__cp36.tar.gz &&
 eval "$(/root/.pyenv/bin/pyenv init -)" && 
 pip install $HOME/daal/pydaal-2018.0.1.20171012-cp36-none-linux_x86_64.whl &&
