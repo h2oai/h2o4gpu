@@ -104,8 +104,6 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 RUN bash -c 'if [ ! $(arch) = "ppc64le" ]; then \
 	conda update conda -y && \
 	conda config --add channels intel && \
-	conda config --add channels conda-forge && \
-	conda config --get channels && \
 	conda install pydaal -y; \
 	fi'
 
