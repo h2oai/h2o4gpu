@@ -13,12 +13,7 @@ ENV HOME=/root
 ENV VECLIB_MAXIMUM_THREADS=32
 
 RUN \
-    yum groupinstall -y "Development Tools" 2>/dev/null || ( \
-    echo "clear cache - automatic fix applying for yum cache"; \
-    yum clean packages; \
-    yum clean headers; \
-    yum clean metadata; \
-    yum groupinstall -y "Development Tools"; )
+    yum groupinstall -y "Development Tools";
 
 RUN \
     yum install -y \
@@ -98,13 +93,6 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	python3.6 setup.py install && \
 	cd $HOME && \
 	rm -rf Pillow-5.0.0*; \
-	fi'
-
-# Install PyDAAL in case of x86_64 with conda
-RUN bash -c 'if [ ! $(arch) = "ppc64le" ]; then \
-	conda update conda -y && \
-	conda config --add channels intel && \
-	conda install pydaal -y; \
 	fi'
 
 RUN pip install numpy
