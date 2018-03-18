@@ -4,6 +4,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 import ctypes
 import sys
 import time
@@ -29,8 +30,8 @@ class TruncatedSVDH2O(object):
 
     algorithm: string, Default="power"
         SVD solver to use.
-        Either “cusolver” (similar to ARPACK)
-        or “power” for the power method.
+        Either "cusolver" (similar to ARPACK)
+        or "power" for the power method.
 
     n_iter: int, Default=100
         number of iterations (only relevant for power method)
@@ -379,8 +380,8 @@ class TruncatedSVD(object):
     algorithm: string, Default="power"
         SVD solver to use.
         H2O4GPU options:
-            Either “cusolver” (similar to ARPACK)
-            or “power” for the power method.
+            Either "cusolver" (similar to ARPACK)
+            or "power" for the power method.
         SKlearn options:
             Either "arpack" for the ARPACK wrapper in SciPy
             (scipy.sparse.linalg.svds), or "randomized" for the randomized
@@ -455,7 +456,17 @@ class TruncatedSVD(object):
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
-        if backend == 'auto':
+        self.do_daal = False
+
+        if n_gpus == 0:
+            # we don't have CPU back-end for SVD yet.
+            backend = 'sklearn'
+        else:
+            backend = 'h2o4gpu'
+
+        if backend in ['auto', 'sklearn']:
+            self.do_sklearn = True
+            self.backend = 'sklearn'
             params_string = ['algorithm']
             params = [self.algorithm]
             params_gpu = [['cusolver', 'power']]
@@ -473,30 +484,37 @@ class TruncatedSVD(object):
                               + "Will run Sklearn TruncatedSVD.")
                     self.do_sklearn = True
                 i = i + 1
-        elif backend == 'sklearn':
-            self.do_sklearn = True
-        elif backend == 'h2o4gpu':
-            self.do_sklearn = False
-        if n_gpus == 0:
-            # we don't have CPU back-end for SVD yet.
-            self.do_sklearn = True
-        if n_gpus != 0:
-            # sklearn can't do GPUs
-            self.do_sklearn = False
 
-        sklearn_algorithm = "arpack"  # Default scikit
-        sklearn_n_iter = 5
-        sklearn_tol = 1E-5
-        if self.do_sklearn:
-            self.backend = 'sklearn'
+            sklearn_algorithm = "arpack"  # Default scikit
+            sklearn_n_iter = 5
+            sklearn_tol = 1E-5
             if isinstance(algorithm, list):
                 sklearn_algorithm = algorithm[1]
             if isinstance(n_iter, list):
                 sklearn_n_iter = n_iter[1]
             if isinstance(tol, list):
                 sklearn_tol = tol[1]
-        else:
+
+        elif backend == 'h2o4gpu':
             self.backend = 'h2o4gpu'
+
+        elif backend == 'daal':
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.svd import SVD
+                self.do_daal = True
+                self.backend = 'daal'
+
+                self.model_daal = SVD(n_components=self.n_components,
+                                      verbose=self.verbose)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'sklearn'
 
         from h2o4gpu.decomposition.truncated_svd import TruncatedSVDSklearn
         self.model_sklearn = TruncatedSVDSklearn(
@@ -505,17 +523,21 @@ class TruncatedSVD(object):
             n_iter=sklearn_n_iter,
             random_state=self.random_state,
             tol=sklearn_tol)
-        self.model_h2o4gpu = TruncatedSVDH2O(n_components=self.n_components,
-                                             algorithm=self.algorithm,
-                                             n_iter=self.n_iter,
-                                             random_state=self.random_state,
-                                             tol=self.tol,
-                                             verbose=self.verbose,
-                                             gpu_id=self.gpu_id)
+
+        self.model_h2o4gpu = TruncatedSVDH2O(
+            n_components=self.n_components,
+            algorithm=self.algorithm,
+            n_iter=self.n_iter,
+            random_state=self.random_state,
+            tol=self.tol,
+            verbose=self.verbose,
+            gpu_id=self.gpu_id)
 
         # select final model type
         if self.do_sklearn:
             self.model = self.model_sklearn
+        elif self.do_daal:
+            self.model = self.model_daal
         else:
             self.model = self.model_h2o4gpu
 
