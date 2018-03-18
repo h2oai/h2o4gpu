@@ -41,20 +41,17 @@ else:
         assert indata.shape == U.shape
         assert in_columns == V.shape[0] == V.shape[1]
 
-        assert_array_almost_equal(np.array[[14.269, 0.6268]], sigma, decimal=4,
-                                  err_msg='Singular values are not correct')
+        assert_array_almost_equal(np.array([[14.269, 0.6268]]), sigma, decimal=4)
 
         assert_array_almost_equal(np.array([[-0.152, -0.823],
                                         [-0.350, -0.421], 
                                         [-0.547, -0.020],
                                         [-0.745, 0.381 ]]),
-                                        U, decimal=3,
-                                        err_msg='Left orthogonal matrix is not correct.')
+                                        U, decimal=3)
 
         assert_array_almost_equal(np.array([[-0.641, -0.767],
                                             [0.767, -0.641 ]]),
-                                            V, decimal=3,
-                                            err_msg='Right orthogonal matrix is not correct.')
+                                            V, decimal=3)
 
     def test_svd_simple_check():
         indata = np.array([[1,3,4],[5,6,9],[1,2,3],[7,6,8]])
@@ -86,7 +83,7 @@ else:
         algorithm.input.set(svd.data, daal_input)
 
         start_sklearn = time.time()
-        _U, s, _Vh = np.linalg.svd(input, full_matrices=False)
+        _U, s, _Vh = np.linalg.svd(indata, full_matrices=False)
         end_sklearn = time.time()
 
         start_daal = time.time()
