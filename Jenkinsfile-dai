@@ -53,6 +53,7 @@ pipeline {
                         stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9.0'
                     }
                 }
+                /*
                 stage('Build on ppc64le-centos7-cuda8.0') {
                     agent {
                         label "ibm-power"
@@ -83,6 +84,7 @@ pipeline {
                         stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9.0'
                     }
                 }
+                */
             }
         }
 

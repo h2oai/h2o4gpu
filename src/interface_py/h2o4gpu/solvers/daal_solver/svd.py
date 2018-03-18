@@ -10,7 +10,6 @@ from enum import Enum
 from daal.algorithms import svd
 import numpy as np
 from .daal_data import IInput
-from daal.algorithms.svd import leftSingularMatrix, rightSingularMatrix
 
 __all__ = ['SingularValueParameter', 'SVD']
 
@@ -75,8 +74,10 @@ class SVD(object):
         Input = hdd.getNumericTable()
 
         algorithm = svd.Batch(method=svd.defaultDense,
-                              leftSingularMatrix=self.parameters['leftSinglarMatrix'],
-                              rightSingularMatrix=self.parameters['rightSingularMatrix'])
+                              leftSingularMatrix=
+                              self.parameters['leftSingularMatrix'],
+                              rightSingularMatrix=
+                              self.parameters['rightSingularMatrix'])
         algorithm.input.set(svd.data, Input)
 
         # compute SVD decomposition
