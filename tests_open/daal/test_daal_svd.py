@@ -101,7 +101,7 @@ else:
 
         print("SVD for matrix[{}][{}]".format(rows, columns))
         print("+ Sklearn SVD: {}".format(end_sklearn - start_sklearn))
-        print("+ Sklearn Daal: {}").format(end_daal - start_daal)
+        print("+ Sklearn Daal: {}".format(end_daal - start_daal))
 
     def test_tsvd_wrapper(rows = 100, cols = 100, k = 100):
         indata = get_random_array(rows, cols)
