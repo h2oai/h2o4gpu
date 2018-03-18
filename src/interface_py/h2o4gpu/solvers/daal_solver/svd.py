@@ -89,9 +89,9 @@ class SVD(object):
         # transform result to numpy array
         self._U = IInput.getNumpyArray(nT=U)
         self._Q = IInput.getNumpyArray(nT=VT)
-        
+
         sigma = IInput.getNumpyArray(nT=Sigma)
-        _rows, cols = sigma.shape
+        _, cols = sigma.shape
         self._w = sigma.reshape(cols,)
 
         # Calculate explained variance & explained variance ratio
