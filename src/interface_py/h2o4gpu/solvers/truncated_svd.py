@@ -458,6 +458,10 @@ class TruncatedSVD(object):
         self.do_sklearn = False
         self.do_daal = False
 
+        sklearn_algorithm = "arpack"  # Default scikit
+        sklearn_n_iter = 5
+        sklearn_tol = 1E-5
+
         if n_gpus == 0:
             # we don't have CPU back-end for SVD yet.
             backend = 'sklearn'
@@ -485,9 +489,6 @@ class TruncatedSVD(object):
                     self.do_sklearn = True
                 i = i + 1
 
-            sklearn_algorithm = "arpack"  # Default scikit
-            sklearn_n_iter = 5
-            sklearn_tol = 1E-5
             if isinstance(algorithm, list):
                 sklearn_algorithm = algorithm[1]
             if isinstance(n_iter, list):
