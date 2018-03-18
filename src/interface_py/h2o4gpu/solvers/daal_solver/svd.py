@@ -6,10 +6,11 @@
 
 from __future__ import print_function
 import sys
-from daal.algorithms import svd
 from enum import Enum
+from daal.algorithms import svd
 import numpy as np
 from .daal_data import IInput
+from daal.algorithms.svd import leftSingularMatrix, rightSingularMatrix
 
 __all__ = ['SingularValueParameter', 'SVD']
 
@@ -37,9 +38,9 @@ class SVD(object):
         self.singular_values_ = None
         self.parameters = {'method': 'defaultDense',
                            'leftSingularMatrix': \
-                           SingularValueParameter.requiredInPackedForm.name,
+                           SingularValueParameter.requiredInPackedForm.value,
                            'rightSingularMatrix': \
-                           SingularValueParameter.requiredInPackedForm.name}
+                           SingularValueParameter.requiredInPackedForm.value}
 
     def fit(self, X, y=None):
         '''
@@ -73,7 +74,9 @@ class SVD(object):
 
         Input = hdd.getNumericTable()
 
-        algorithm = svd.Batch(method=svd.defaultDense)
+        algorithm = svd.Batch(method=svd.defaultDense,
+                              leftSingularMatrix=self.parameters['leftSinglarMatrix'],
+                              rightSingularMatrix=self.parameters['rightSingularMatrix'])
         algorithm.input.set(svd.data, Input)
 
         # compute SVD decomposition
@@ -188,14 +191,17 @@ class SVD(object):
                                  format(key, self.__class__.__name__))
             elif key in valid_params:
                 if key in ['leftSingularMatrix', 'rightSingularMatrix']:
-                    valid_values = [x.name for x in SingularValueParameter]
-                    if value.name not in valid_values:
+                    valid_values = [x.value for x in SingularValueParameter]
+                    if value.value not in valid_values:
                         raise ValueError('Invalid parameter {} for estimator '
                                          '{}. The valid values are: {}'.
                                          format(key, self.__class__.__name__,
                                                 ', '.join(valid_params)))
+                    else:
+                        self.parameters[key] = value.value
             elif key == 'method':
                 if value != 0:
                     raise ValueError('Invalid parameter {} for estimator {}. ' \
                                      'The only valid method is: 0.'.
                                      format(key, self.__class__.__name__))
+        return self
