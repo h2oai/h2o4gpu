@@ -130,22 +130,8 @@ else:
         print("H2o4GPU tsvd Sklearn Singular values: {}".format(sklearn_sigma))
         print("H2o4GPU tsvd Daal Singular values:    {}".format(daal_sigma))
 
-        sklearn_U = h2o4gpu_tsvd_sklearn.U
-        daal_U = h2o4gpu_tsvd_daal.U
-        print("H2o4GPU tsvd Sklearn U: {}".format(sklearn_U))
-        print("H2o4GPU tsvd Daal U:    {}".format(daal_U))
-
-        sklearn_components = h2o4gpu_tsvd_sklearn.commponents_
-        daal_components = h2o4gpu_tsvd_daal.components_
-        print("H2o4GPU tsvd Sklearn components: {}".format(sklearn_components))
-        print("H2o4GPU tsvd Daal components:    {}".format(daal_components))
-
-        print("Reconstruction")
-        reconstruct_sklearn = h2o4gpu_tsvd_sklearn.inverse_transform(h2o4gpu_tsvd_sklearn.fit_transform(indata))
-        reconstruct_daal = h2o4gpu_tsvd_daal.inverse_transform(h2o4gpu_tsvd_daal.fit_transform(indata))
-        print("Check inverse_transform() Sklearn vs Daal")
-        rtol=1E-2
-        assert np.allclose(reconstruct_sklearn, reconstruct_daal, rtol=rtol)
+        if os.getenv("CHECKPERFORMANCE") is not None:
+            assert(end_daal-start_daal <= end_sklearn-start_sklearn)
 
     def test_svd():
         test_svd_simple()
