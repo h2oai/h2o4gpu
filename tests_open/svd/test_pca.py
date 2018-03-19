@@ -1,23 +1,37 @@
 import numpy as np
 import sys
 import logging
+from h2o4gpu.solvers.pca import PCA
 from h2o4gpu.solvers.pca import PCAH2O
 from h2o4gpu.decomposition import PCASklearn
+from h2o4gpu.util import gpu
 
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000000, n=10, k=9):
+def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
+
+    gpu_id = 0
+
+    if change_gpu_id:
+        total_gpu, total_mem, gpu_type = gpu.get_gpu_info()
+
+        if(total_gpu > 0):
+            gpu_id = 1 #Use second gpu
 
     print("\n")
     print(X)
     print(np.mean(X, axis=0))
 
-    h2o4gpu_pca = PCAH2O(n_components=k)
+    if use_wrappper:
+        h2o4gpu_pca = PCA(n_components=k, gpu_id = gpu_id)
+    else:
+        h2o4gpu_pca = PCAH2O(n_components=k, gpu_id=gpu_id)
+
     scikit_pca = PCASklearn(n_components=k, svd_solver="arpack")
     scikit_pca.fit(X)
     h2o4gpu_pca.fit(X)
@@ -58,3 +72,6 @@ def func(m=5000000, n=10, k=9):
     assert h2o4gpu_pca.n_components_ == scikit_pca.n_components_
 
 def test_pca_error_k2(): func(m=1000000, n=10, k=2)
+def test_pca_error_k2_gpuid(): func(m=1000000, n=10, k=2, change_gpu_id=True)
+def test_pca_error_k2_wrapper(): func(m=1000000, n=10, k=2, use_wrappper=True)
+def test_pca_error_k2_gpuid_wrapper(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True)

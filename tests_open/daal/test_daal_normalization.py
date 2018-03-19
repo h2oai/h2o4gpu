@@ -10,7 +10,6 @@ except ImportError:
     print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
 else:
     import numpy as np
-    import h2o4gpu
     import logging
     from scipy import stats
     from daal.data_management import HomogenNumericTable
@@ -22,10 +21,10 @@ else:
 
     def test_zscore_single():
 
-        input = np.random.rand(10,1)
-        sc_zscore = stats.zscore(input, axis=0, ddof=1)
-        
-        da_input = HomogenNumericTable(input)
+        input_ = np.random.rand(10,1)
+        sc_zscore = stats.zscore(input_, axis=0, ddof=1)
+
+        da_input = HomogenNumericTable(input_)
         da_zscore = z_score(da_input)
         np_da_zscore = getNumpyArray(da_zscore)
 
@@ -33,10 +32,10 @@ else:
 
     def test_zscore_multicolumns():
 
-        input = np.random.rand(10,3)
-        sc_zscore = stats.zscore(input, axis=0, ddof=1)
+        input_ = np.random.rand(10,3)
+        sc_zscore = stats.zscore(input_, axis=0, ddof=1)
 
-        da_input = HomogenNumericTable(input)
+        da_input = HomogenNumericTable(input_)
         da_zscore = z_score(da_input)
         np_da_zscore = getNumpyArray(da_zscore)
 
@@ -44,6 +43,3 @@ else:
 
     def test_zscore_vector(): test_zscore_single()
     def test_zscore_matrix(): test_zscore_multicolumns()
-
-    if __name__ == '__main__':
-        test_zscore()

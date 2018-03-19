@@ -35,15 +35,24 @@ class PCAH2O(TruncatedSVDH2O):
         (the relative variance scales of the components) but can sometime
         improve the predictive accuracy of the downstream estimators by
         making their data respect some hard-wired assumptions.
+
+    verbose: bool
+        Verbose or not
+
+    gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run.
     """
 
-    def __init__(self, n_components=2, whiten=False):
+    def __init__(self, n_components=2, whiten=False,
+                 verbose=0, gpu_id=0):
         super().__init__(n_components)
         self.whiten = whiten
         self.n_components_ = n_components
         self.mean_ = None
         self.noise_variance_ = None
         self.algorithm = "cusolver"
+        self.verbose = verbose
+        self.gpu_id = gpu_id
 
     # pylint: disable=unused-argument
     def fit(self, X, y=None):
@@ -81,8 +90,6 @@ class PCAH2O(TruncatedSVDH2O):
         U = np.empty(
             (X.shape[0], self.n_components), dtype=np.float64, order='F')
         w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components, dtype=np.float64)
-        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         mean = np.empty(X.shape[1], dtype=np.float64)
         param = parameters()
         param.X_m = X.shape[0]
@@ -90,11 +97,12 @@ class PCAH2O(TruncatedSVDH2O):
         param.k = self.n_components
         param.whiten = self.whiten
         param.algorithm = self.algorithm.encode('utf-8')
+        param.verbose = 1 if self.verbose else 0
+        param.gpu_id = self.gpu_id
 
         lib = self._load_lib()
         lib.pca(
             _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
-            _as_dptr(explained_variance), _as_dptr(explained_variance_ratio),
             _as_dptr(mean), param)
 
         self._w = w
@@ -106,7 +114,6 @@ class PCAH2O(TruncatedSVDH2O):
         total_var = np.var(X, ddof=1, axis=0)
         self.explained_variance_ratio = \
             self.explained_variance / total_var.sum()
-        #self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
         # TODO noise_variance_ calculation
@@ -199,6 +206,10 @@ class PCA(TruncatedSVD):
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
+    gpu_id : int, optional, default: 0
+        ID of the GPU on which the algorithm should run. Only used by
+        h2o4gpu backend.
+
     """
 
     # pylint: disable=unused-argument
@@ -211,8 +222,9 @@ class PCA(TruncatedSVD):
                  iterated_power="auto",
                  random_state=None,
                  verbose=False,
-                 backend='auto'):
-        super().__init__(n_components, random_state, tol, verbose, backend)
+                 backend='auto',
+                 gpu_id=0):
+        super().__init__(n_components, random_state, tol, verbose, backend, gpu_id)
         self.svd_solver = svd_solver
         self.whiten = whiten
 
@@ -260,7 +272,12 @@ class PCA(TruncatedSVD):
             tol=tol,
             iterated_power=iterated_power,
             random_state=random_state)
-        self.model_h2o4gpu = PCAH2O(n_components=n_components, whiten=whiten)
+
+        self.model_h2o4gpu = PCAH2O(
+            n_components=self.n_components,
+            whiten=self.whiten,
+            verbose=self.verbose,
+            gpu_id=self.gpu_id)
 
         if self.do_sklearn:
             self.model = self.model_sklearn

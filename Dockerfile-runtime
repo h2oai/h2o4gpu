@@ -88,6 +88,7 @@ COPY examples/py/demos/H2O4GPU_KMeans_Quantization.ipynb /jupyter/demos/H2O4GPU_
 COPY examples/py/demos/Multi-GPU-H2O-GLM-simple.ipynb /jupyter/demos/Multi-GPU-H2O-GLM-simple.ipynb
 COPY examples/py/demos/H2O4GPU_TruncatedSVD.ipynb /jupyter/demos/H2O4GPU_TruncatedSVD.ipynb
 COPY examples/py/demos/H2O4GPU_PCA.ipynb /jupyter/demos/H2O4GPU_PCA.ipynb
+COPY examples/py/demos/H2O4GPU_Daal_LinearRegression.ipynb /jupyter/demos/H2O4GPU_Daal_LinearRegression.ipynb
 COPY examples/py/demos/figures /jupyter/demos/figures
 RUN \
   . h2o4gpu_env/bin/activate && \

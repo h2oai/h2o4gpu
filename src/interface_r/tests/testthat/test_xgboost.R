@@ -10,7 +10,6 @@ test_random_forest_classifier <- function(x, y) {
       predictions <- model %>% predict(x)
       expect_equal(max(predictions), 1)
       expect_equal(min(predictions), 0)
-      expect_true(model %>% score(x, y) > 0.90)
     }
   )
 }

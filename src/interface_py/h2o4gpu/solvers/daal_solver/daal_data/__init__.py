@@ -4,9 +4,8 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
-from daal.data_management import (BlockDescriptor, readOnly, NumericTable)
 import numpy as np
-
+from daal.data_management import (BlockDescriptor, readOnly, NumericTable)
 
 def getNumpyArray(nT):  # @DontTrace
     '''

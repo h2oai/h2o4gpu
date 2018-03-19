@@ -13,8 +13,8 @@ pkg_location <- "~/h2o4gpu/src/interface_r"
 
 
 # Note: Code below should not be changed unless necessary
-
-source(file.path(pkg_location, "scripts/gen_wrapper_utils.R"))
+setwd(pkg_location)
+source("scripts/gen_wrapper_utils.R")
 h2o4gpu <- import("h2o4gpu")
 common_nullabl_int_params <- c("random_state")
 

@@ -2,17 +2,10 @@
 
 [![Join the chat at https://gitter.im/h2oai/h2o4gpu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/h2oai/h2o4gpu)
 
-**H2O4GPU** is a collection of GPU solvers by
-[H2Oai](https://www.h2o.ai/).  It builds upon the easy-to-use
-[Scikit-learn](http://scikit-learn.org) API and its well-tested
-CPU-based algorithms.  It can be used as a drop-in replacement for
-scikit-learn (i.e. `import h2o4gpu as sklearn`) with support for GPUs
-on selected (and ever-growing) algorithms.  H2O4GPU inherits all the
-existing scikit-learn algorithms and falls-back to CPU aglorithms when
-the GPU algorithm does not support an important existing Scikit-learn
-class option.
+**H2O4GPU** is a collection of GPU solvers by [H2Oai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API and its well-tested CPU-based algorithms.  It can be used as a drop-in replacement for scikit-learn (i.e. `import h2o4gpu as sklearn`) with support for GPUs on selected (and ever-growing) algorithms.  H2O4GPU inherits all the existing scikit-learn algorithms and falls back to CPU algorithms when the GPU algorithm does not support an important existing scikit-learn class option.  The R package is a wrapper around the H2O4GPU Python package, and the interface follows standard R conventions for modeling.
 
-An R API is in developement located [here](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r) and will be released as a stand-alone R package in the future.
+
+Daal library added for CPU, currently supported only x86_64 architecture.
 
 ## Requirements
 
@@ -88,7 +81,18 @@ versions.
 pip install h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl
 ```
 
-Test your installation
+At this point, you should have installed the H2O4GPU Python package successfully. You can then go ahead and install the `h2o4gpu` R package via the following:
+
+```r
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
+```
+
+Detailed instructions can be found [here](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r).
+
+## Test Installation
+
+To test your installation of the Python package, the following code:
 
 ```
 import h2o4gpu
@@ -98,7 +102,7 @@ X = np.array([[1.,1.], [1.,4.], [1.,0.]])
 model = h2o4gpu.KMeans(n_clusters=2,random_state=1234).fit(X)
 model.cluster_centers_
 ```
-Should give input/output of:
+should give input/output of:
 ```
 >>> import h2o4gpu
 >>> import numpy as np
@@ -110,13 +114,31 @@ array([[ 1.,  1.  ],
        [ 1.,  4.  ]])
 ```
 
-For more examples check our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos).
+To test your installation of the R package, try the following example that builds a simple [XGBoost](https://github.com/dmlc/xgboost) random forest classifier:
 
-To run the demos using a local wheel run, at least download requirements_runtime_demos.txt from the github repo and do:
+``` r
+library(h2o4gpu)
+
+# Setup dataset
+x <- iris[1:4]
+y <- as.integer(iris$Species) - 1
+
+# Initialize and train the classifier
+model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
+
+# Make predictions
+predictions <- model %>% predict(x)
+```
+
+## Next Steps
+
+For more examples using Python API, please check out our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos). To run the demos using a local wheel run, at least download `requirements_runtime_demos.txt` from the Github repo and do:
 ```
 pip install -r requirements_runtime_demos.txt
 ```
 and then run the jupyter notebook demos.
+
+For more examples using R API, please visit the [vignettes](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r/vignettes).
 
 ## Running Jupyter Notebooks with Docker
 
