@@ -58,7 +58,7 @@ pipeline {
                         label "ibm-power"
                     }
                     steps {
-                        dumpInfo 'ppc64le-centos7-cuda8 Build Info'
+                       dumpInfo 'ppc64le-centos7-cuda8 Build Info'
                         script {
                             sh """
                                 make mrproper_in_docker

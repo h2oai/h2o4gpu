@@ -194,10 +194,10 @@ alldeps-nonccl-local: deps_fetch alldeps-install-nonccl-local
 alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 
 # lib for sklearn because don't want to fully apply yet
-alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
-alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
-alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
+alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn install_daal_x86_64
+alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn install_daal_x86_64
+alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn install_daal_x86_64
+alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn install_daal_x86_64
 
 ##### dependencies
 deps_clean:
@@ -446,6 +446,11 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 	bash testsxgboost/runtestxgboost.sh
 	bash testsxgboost/extracttestxgboost.sh
 	bash tests_open/showresults.sh # same for all tests
+
+# install daal
+install_daal_x86_64:
+	@echo "----- Install Daal Python library -----"
+	bash scripts/daal/install_daal_locally.sh
 
 ################
 
