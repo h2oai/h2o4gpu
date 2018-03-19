@@ -4,8 +4,10 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 import ctypes
 import sys
+import time
 import numpy as np
 from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
@@ -28,8 +30,8 @@ class TruncatedSVDH2O(object):
 
     algorithm: string, Default="power"
         SVD solver to use.
-        Either “cusolver” (similar to ARPACK)
-        or “power” for the power method.
+        Either "cusolver" (similar to ARPACK)
+        or "power" for the power method.
 
     n_iter: int, Default=100
         number of iterations (only relevant for power method)
@@ -111,23 +113,20 @@ class TruncatedSVDH2O(object):
             X = np.asfortranarray(X, dtype=np.float32)
 
         if self.double_precision == 1:
+            print("Detected Double")
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float64, order='F')
             U = np.empty(
                 (X.shape[0], self.n_components), dtype=np.float64, order='F')
             w = np.empty(self.n_components, dtype=np.float64)
-            explained_variance = np.empty(self.n_components, dtype=np.float64)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float64)
+
         else:
+            print("Detected Float")
             Q = np.empty(
                 (self.n_components, X.shape[1]), dtype=np.float32, order='F')
             U = np.empty(
                 (X.shape[0], self.n_components), dtype=np.float32, order='F')
             w = np.empty(self.n_components, dtype=np.float32)
-            explained_variance = np.empty(self.n_components, dtype=np.float32)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float32)
 
         param = parameters_svd()
         param.X_m = X.shape[0]
@@ -157,41 +156,36 @@ class TruncatedSVDH2O(object):
             lib.truncated_svd_double(
                 cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double),
                 cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
-                cptr(explained_variance, ctypes.c_double),
-                cptr(explained_variance_ratio, ctypes.c_double),
                 param)
         else:
             lib.truncated_svd_float(
                 cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float),
                 cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
-                cptr(explained_variance, ctypes.c_float),
-                cptr(explained_variance_ratio, ctypes.c_float),
                 param)
 
         self._w = w
         self._X = X
         self._U, self._Q = svd_flip(U, Q)
         X_transformed = self._U * self._w
-        # TODO Investigate why explained variance/ratio are off in CUDA
-        if self.algorithm not in ("power", "cusolver"):
-            self.explained_variance = explained_variance
-            self.explained_variance_ratio = explained_variance_ratio
-        else:
-            # start_ev = time.time()
-            self.explained_variance = \
-                np.var(X_transformed, axis=0)
-            # print("Time taken for explained variance :
-            # " + str(time.time()-start_ev))
-            # start_var = time.time()
-            full_var = \
-                np.var(X, axis=0).sum()
-            # print("Time taken for full variance : "
-            # + str(time.time() - start_var))
-            # start_evr = time.time()
-            self.explained_variance_ratio = \
-                self.explained_variance / full_var
-            # print("Time taken for explained variance ratio : "
-            # + str(time.time() - start_evr))
+        if self.verbose:
+            start_ev = time.time()
+        self.explained_variance = \
+            np.var(X_transformed, axis=0)
+        if self.verbose:
+            print("Time taken for explained variance : "
+                  + str(time.time()-start_ev))
+        if self.verbose:
+            start_var = time.time()
+        full_var = \
+            np.var(X, axis=0).sum()
+        if self.verbose:
+            print("Time taken for full variance : " + str(time.time() - start_var))
+        if self.verbose:
+            start_evr = time.time()
+        self.explained_variance_ratio = \
+            self.explained_variance / full_var
+        if self.verbose:
+            print("Time taken for explained variance ratio : " + str(time.time() - start_evr))
         return X_transformed
 
     def transform(self, X):
@@ -386,8 +380,8 @@ class TruncatedSVD(object):
     algorithm: string, Default="power"
         SVD solver to use.
         H2O4GPU options:
-            Either “cusolver” (similar to ARPACK)
-            or “power” for the power method.
+            Either "cusolver" (similar to ARPACK)
+            or "power" for the power method.
         SKlearn options:
             Either "arpack" for the ARPACK wrapper in SciPy
             (scipy.sparse.linalg.svds), or "randomized" for the randomized
@@ -462,7 +456,21 @@ class TruncatedSVD(object):
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
-        if backend == 'auto':
+        self.do_daal = False
+
+        sklearn_algorithm = "arpack"  # Default scikit
+        sklearn_n_iter = 5
+        sklearn_tol = 1E-5
+
+        if n_gpus == 0:
+            # we don't have CPU back-end for SVD yet.
+            backend = 'sklearn'
+        else:
+            backend = 'h2o4gpu'
+
+        if backend in ['auto', 'sklearn']:
+            self.do_sklearn = True
+            self.backend = 'sklearn'
             params_string = ['algorithm']
             params = [self.algorithm]
             params_gpu = [['cusolver', 'power']]
@@ -480,30 +488,34 @@ class TruncatedSVD(object):
                               + "Will run Sklearn TruncatedSVD.")
                     self.do_sklearn = True
                 i = i + 1
-        elif backend == 'sklearn':
-            self.do_sklearn = True
-        elif backend == 'h2o4gpu':
-            self.do_sklearn = False
-        if n_gpus == 0:
-            # we don't have CPU back-end for SVD yet.
-            self.do_sklearn = True
-        if n_gpus != 0:
-            # sklearn can't do GPUs
-            self.do_sklearn = False
 
-        sklearn_algorithm = "arpack"  # Default scikit
-        sklearn_n_iter = 5
-        sklearn_tol = 1E-5
-        if self.do_sklearn:
-            self.backend = 'sklearn'
             if isinstance(algorithm, list):
                 sklearn_algorithm = algorithm[1]
             if isinstance(n_iter, list):
                 sklearn_n_iter = n_iter[1]
             if isinstance(tol, list):
                 sklearn_tol = tol[1]
-        else:
+
+        elif backend == 'h2o4gpu':
             self.backend = 'h2o4gpu'
+
+        elif backend == 'daal':
+            from h2o4gpu import DAAL_SUPPORTED
+            if DAAL_SUPPORTED:
+                from h2o4gpu.solvers.daal_solver.svd import SVD
+                self.do_daal = True
+                self.backend = 'daal'
+
+                self.model_daal = SVD(n_components=self.n_components,
+                                      verbose=self.verbose)
+            else:
+                import platform
+                print("WARNING:"
+                      "DAAL is supported only for x86_64, "
+                      "architecture detected {}. Sklearn model"
+                      "used instead".format(platform.architecture()))
+                self.do_sklearn = True
+                self.backend = 'sklearn'
 
         from h2o4gpu.decomposition.truncated_svd import TruncatedSVDSklearn
         self.model_sklearn = TruncatedSVDSklearn(
@@ -512,17 +524,21 @@ class TruncatedSVD(object):
             n_iter=sklearn_n_iter,
             random_state=self.random_state,
             tol=sklearn_tol)
-        self.model_h2o4gpu = TruncatedSVDH2O(n_components=self.n_components,
-                                             algorithm=self.algorithm,
-                                             n_iter=self.n_iter,
-                                             random_state=self.random_state,
-                                             tol=self.tol,
-                                             verbose=self.verbose,
-                                             gpu_id=self.gpu_id)
+
+        self.model_h2o4gpu = TruncatedSVDH2O(
+            n_components=self.n_components,
+            algorithm=self.algorithm,
+            n_iter=self.n_iter,
+            random_state=self.random_state,
+            tol=self.tol,
+            verbose=self.verbose,
+            gpu_id=self.gpu_id)
 
         # select final model type
         if self.do_sklearn:
             self.model = self.model_sklearn
+        elif self.do_daal:
+            self.model = self.model_daal
         else:
             self.model = self.model_h2o4gpu
 

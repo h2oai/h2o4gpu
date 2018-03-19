@@ -12,10 +12,10 @@ DAAL_SUPPORTED=True
 try:
     __import__('daal')
 except ImportError:
-    import platform
-    print("Daal is not supported. Architecture detected {}".format(platform.architecture()))
     DAAL_SUPPORTED=False
 
+if DAAL_SUPPORTED:
+    from .solvers.daal_solver.regression import Method as LinearMethod
 from .types import FunctionVector
 from .solvers.pogs import Pogs
 from .solvers.elastic_net import ElasticNet

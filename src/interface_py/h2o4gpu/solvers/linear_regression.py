@@ -57,7 +57,6 @@ class LinearRegression(object):
             params_default = [False]
 
             i = 0
-            self.do_sklearn = False
             for param in params:
                 if param != params_default[i]:
                     self.do_sklearn = True
@@ -73,7 +72,7 @@ class LinearRegression(object):
             self.backend = 'sklearn'
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
-            self.backed = 'h2o4gpu'
+            self.backend = 'h2o4gpu'
         elif backend == 'daal':
             from h2o4gpu import DAAL_SUPPORTED
             if DAAL_SUPPORTED:
@@ -92,7 +91,7 @@ class LinearRegression(object):
                       "architecture detected {}. Sklearn model"
                       "used instead".format(platform.architecture()))
                 self.do_sklearn = True
-                self.backend = 'h2o4gpu'
+                self.backend = 'sklearn'
 
         self.model_sklearn = sk.LinearRegressionSklearn(
             fit_intercept=fit_intercept,

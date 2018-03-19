@@ -77,11 +77,12 @@ class Ridge(object):
             from h2o4gpu import DAAL_SUPPORTED
             if DAAL_SUPPORTED:
                 from h2o4gpu.solvers.daal_solver.regression \
-                        import LinearRegression as DRR
+                        import RidgeRegression as DRR
                 self.do_daal = True
                 self.backend = 'daal'
 
-                self.model_daal = DRR(fit_intercept=fit_intercept,
+                self.model_daal = DRR(alpha=alpha,
+                                      fit_intercept=fit_intercept,
                                       normalize=normalize,
                                       **kwargs)
             else:
