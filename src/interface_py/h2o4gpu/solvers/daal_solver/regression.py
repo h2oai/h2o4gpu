@@ -13,6 +13,7 @@ from daal.algorithms.ridge_regression import prediction as ridge_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
 from .utils import printNumericTable
 from .daal_data import IInput
+from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
 
 class Method(Enum):
     '''
@@ -175,20 +176,23 @@ class RidgeRegression(object):
     library
     '''
 
-    def __init__(self, fit_intercept=True, normalize=False, **kwargs):
+    def __init__(self,
+                 alpha=1.0,
+                 fit_intercept=True,
+                 normalize=False,
+                 **_):
         '''
         :param kwargs: alpha: Regularization parameter, a small positive
         value with default 1.0
         :param fit_intercept:
         :param normalize:
         '''
-
+        self.alpha = alpha
         self.normalize = normalize
         self.model = None
         self.parameters = ['intercept'] if fit_intercept else []
         self.train_data_array = None
         self.response_data_array = None
-        self.alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 1.0
 
     def fit(self, X, y=None):
 
@@ -206,7 +210,6 @@ class RidgeRegression(object):
 
         # Training data and responses
         Input = IInput.HomogenousDaalData(X).getNumericTable()
-
         Responses = IInput.HomogenousDaalData(y).getNumericTable()
 
         # Training object with normalization
@@ -247,9 +250,9 @@ class RidgeRegression(object):
         if calculate Beta0 (intercept)
         '''
 
-        Data = HomogenNumericTable(X)
+        Data = IInput.HomogenousDaalData(X).getNumericTable()
         ridge_prediction_algorithm = \
-            ridge_prediction.Batch_Float64DefaultDense()
+            ridge_prediction.Batch()
         # set input
         ridge_prediction_algorithm.input.setModel(
             ridge_prediction.model, self.model)
@@ -257,10 +260,12 @@ class RidgeRegression(object):
             ridge_prediction.data, Data)
 
         if 'intercept' in self.parameters:
-            ridge_prediction_algorithm.parameter.interceptFlag = True
+            beta_coeff = self.get_beta()
+            np_beta = getNumpyArray(beta_coeff)
+            self.intercept_ = [np_beta[0, 0]]
         # calculate
         res = ridge_prediction_algorithm.compute()
-        return res.get(ridge_prediction.prediction)
+        return getNumpyArray(res.get(ridge_prediction.prediction))
 
     def _score(self,
                predicted_response,

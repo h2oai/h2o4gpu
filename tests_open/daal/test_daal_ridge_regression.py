@@ -3,6 +3,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
+from __future__ import print_function
 try:
     __import__('daal')
 except ImportError:
@@ -20,6 +21,7 @@ else:
     from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
     from numpy.ma.testutils import assert_array_almost_equal
     from sklearn.linear_model import Ridge as ScikitRidgeRegression
+    import h2o4gpu
 
     logging.basicConfig(level=logging.DEBUG)
 
@@ -101,7 +103,7 @@ else:
 
         return (x,y)
 
-    # remark: we do not need test for overfitting, Ridge Regression helps here
+        # remark: we do not need test for overfitting, Ridge Regression helps here
 
     def get_daal_prediction(x=np.arange(10).reshape(10,1), y=np.arange(10).reshape(10,1)):
 
@@ -210,6 +212,59 @@ else:
         scikit_intercept = regression.intercept_
         assert_array_almost_equal(scikit_intercept, [daal_intercept])
 
+    def test_ridge_daal_vs_sklearn(rows=10, columns=9, verbose=False):
+        inout = get_random_array(rows, columns)
+        x = inout[0]
+        y = inout[1]
+        print("Prediction for X[{}][{}] and y[{}][{}]".format(x.shape[0],x.shape[1],y.shape[0],y.shape[1]))
+
+        start_sklearn = time.time()
+        ridge_solver_sklearn = h2o4gpu.Ridge(backend='sklearn',
+                                             normalize=True,
+                                             alpha=0.0)
+
+        ridge_solver_sklearn.fit(x, y)
+        sklearn_predicted = ridge_solver_sklearn.predict(x)
+        end_sklearn = time.time()
+
+        print(("Sklearn prediction: ", sklearn_predicted) if verbose else "",
+              end="")
+
+        start_daal = time.time()
+        ridge_solver_daal = h2o4gpu.Ridge(backend='daal',
+                                          normalize=True,
+                                          alpha=0.0)
+
+        ridge_solver_daal.fit(x, y)
+        daal_predicted = ridge_solver_daal.predict(x)
+        end_daal = time.time()
+
+        print(("Daal prediction: ", daal_predicted) if verbose else "",
+              end="")
+
+        daal_predicted_man = get_daal_prediction(x, y)
+        print(("Manual Daal prediction()", daal_predicted_man) if verbose else "",
+              end="\n")
+
+        print("Prediction taken:")
+        print("+ Sklearn: {}".format(end_sklearn-start_sklearn))
+        print("+ Daal:    {}".format(end_daal-start_daal))
+
+        assert_array_almost_equal(daal_predicted, sklearn_predicted, decimal=4)
+        assert_array_almost_equal(daal_predicted, y, decimal=4)
+        assert_array_almost_equal(daal_predicted, daal_predicted_man, decimal=4)
+
+        if os.getenv("CHECKPERFORMANCE") is not None:
+            assert end_daal - start_daal <= end_sklearn - start_sklearn
+
+        sklearn_score = ridge_solver_sklearn.score(x, y)
+        daal_score = ridge_solver_daal.score(x, y)
+        print("Score calculated: ")
+        print("+ Sklearn: {}".format(sklearn_score))
+        print("+ Daal:    {}".format(sklearn_score))
+
+        assert daal_score == sklearn_score
+
     def test_ridge_regression_normalized(): test_fit_ridge_regression_daal_vs_sklearn()
     def test_ridge_regression(): test_ridge_regression_simple()
     def test_ridge_regression_param_3_2(): test_ridge_regression_against_scikit(rows=3, columns=2)
@@ -217,3 +272,14 @@ else:
     def test_beta(): 
         test_coeff_size(rows=10, columns=9)
         test_intercept_flag(rows=10, columns=9)
+    def test_daal_ridge_wrapper():
+        test_ridge_daal_vs_sklearn(rows=4, columns=3, verbose=True)
+        test_ridge_daal_vs_sklearn(rows=50, columns=49, verbose=True)
+        test_ridge_daal_vs_sklearn(rows=100, columns=99, verbose=False)
+        test_ridge_daal_vs_sklearn(rows=1000, columns=999, verbose=False)
+
+if __name__ =='__main__':
+    print('testing ridge')
+    test_daal_ridge_wrapper()
+
+
