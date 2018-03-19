@@ -38,11 +38,12 @@ class LinearRegression(object):
         :param normalize: z-score used for independent variables
         :param in kwargs: method: normalEquation, QR
         '''
-        if 'method' in kwargs and kwargs['method'] in Method:
+        if 'method' in kwargs.keys() and kwargs['method'] in Method:
             self.method = kwargs['method'].value
+            if self.method == Method.qr_dense.value:
+                fit_intercept=False
         else:
-            self.method = Method.qr_dense.value
-
+            self.method = None
         self.normalize = normalize
         self.model = None
         self.parameters = ['intercept'] if fit_intercept else []
@@ -65,12 +66,13 @@ class LinearRegression(object):
 
         # Training data and responses
         Input = IInput.HomogenousDaalData(X).getNumericTable()
-
         Responses = IInput.HomogenousDaalData(y).getNumericTable()
 
         # Training object with/without normalization
-        linear_training_algorithm = linear_training.Batch(
-            method=self.method)
+        if self.method:
+            linear_training_algorithm = linear_training.Batch(method=self.method)
+        else:
+            linear_training_algorithm = linear_training.Batch()
 
         # set input values
         linear_training_algorithm.input.set(linear_training.data, Input)
@@ -78,7 +80,7 @@ class LinearRegression(object):
                                             Responses)
         # check if intercept flag is set
         linear_training_algorithm.parameter.interceptFlag = True \
-            if 'intercept' in self.parameters else True
+            if 'intercept' in self.parameters else False
         # calculate
         res = linear_training_algorithm.compute()
         # return trained model
@@ -104,9 +106,9 @@ class LinearRegression(object):
         if calculate Beta0 (intercept)
         '''
 
-        Data = HomogenNumericTable(X)
+        Data = IInput.HomogenousDaalData(X).getNumericTable()
         linear_prediction_algorithm = \
-            linear_prediction.Batch_Float64DefaultDense()
+            linear_prediction.Batch()
         # set input
         linear_prediction_algorithm.input.setModel(
             linear_prediction.model, self.model)
@@ -118,7 +120,7 @@ class LinearRegression(object):
         #    linear_prediction_algorithm.parameter.interceptFlag = True
 
         res = linear_prediction_algorithm.compute()
-        return res.get(linear_prediction.prediction)
+        return getNumpyArray(res.get(linear_prediction.prediction))
 
     def _score(self,
                predicted_response,

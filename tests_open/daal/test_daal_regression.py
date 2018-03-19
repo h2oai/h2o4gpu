@@ -18,8 +18,10 @@ else:
     from daal.algorithms.linear_regression import training as linear_training
     from daal.algorithms.linear_regression import prediction as linear_prediction
     from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
+    from h2o4gpu import LinearMethod
     from numpy.linalg.tests.test_linalg import assert_almost_equal
     from numpy.ma.testutils import assert_array_almost_equal
+    import h2o4gpu
 
     logging.basicConfig(level=logging.DEBUG)
 
@@ -61,8 +63,8 @@ else:
         x = np.array([0.,2.,3.]).reshape(3,1)
 
         nt_x = nt_y = HomogenNumericTable(x)
-        \
-        lr_alg = linear_training.Batch()
+
+        lr_alg = linear_training.Batch(method=linear_training.qrDense)
         lr_alg.input.set(linear_training.data, nt_x)
         lr_alg.input.set(linear_training.dependentVariables, nt_y)
         result = lr_alg.compute()
@@ -196,6 +198,52 @@ else:
         scikit_intercept = regression.intercept_
         assert_array_almost_equal(scikit_intercept, [daal_intercept])
 
+    def test_linear_regression_daal_vs_sklearn(rows=10, columns=9,verbose=False):
+        inout = get_random_array(rows, columns)
+        x = inout[0]
+        y = inout[1]
+
+        start_sklearn = time.time()
+        lin_solver_sklearn = h2o4gpu.LinearRegression(verbose=True,
+                                                      backend='sklearn')
+        lin_solver_sklearn.fit(x, y)
+        sklearn_predicted = lin_solver_sklearn.predict(x)
+        end_sklearn = time.time()
+
+        print(("Sklearn prediction: ", sklearn_predicted) if verbose else "",
+              end="")
+
+        start_daal = time.time()
+        lin_solver_daal = h2o4gpu.LinearRegression(fit_intercept=True,
+                                                   verbose=True,
+                                                   backend='daal',
+                                                   method=LinearMethod.normal_equation)
+
+        lin_solver_daal.fit(x, y)
+        daal_predicted = lin_solver_daal.predict(x)
+        end_daal = time.time()
+
+        print(("Daal prediction: ", daal_predicted) if verbose else "",
+              end="")
+
+        print("Prediction calculated:")
+        print("+ Sklearn: {}".format(end_sklearn-start_sklearn))
+        print("+ Daal:    {}".format(end_daal-start_daal))
+
+        assert_array_almost_equal(daal_predicted, sklearn_predicted, decimal=4)
+        assert_array_almost_equal(daal_predicted, y, decimal=4)
+
+        if os.getenv("CHECKPERFORMANCE") is not None:
+            assert end_daal - start_daal <= end_sklearn - start_sklearn
+
+        sklearn_score = lin_solver_sklearn.score(x, y)
+        daal_score = lin_solver_daal.score(x, y)
+        print("Score calculated: ")
+        print("+ Sklearn: {}".format(sklearn_score))
+        print("+ Daal:    {}".format(daal_score))
+
+        assert daal_score == sklearn_score
+
     def test_linear_regression_normalized(): test_fit_linear_regression_daal_vs_sklearn()
     def test_linear_regression(): test_linear_regression_simple()
     def test_linear_regression_param_3_2(): test_linear_regression_against_scikit(rows=3, columns=2)
@@ -203,11 +251,11 @@ else:
     def test_beta(): 
         test_coeff_size(rows=10, columns=9)
         test_intercept_flag(rows=10, columns=9)
+    def test_daal_linear_regression_wrapper():
+        test_linear_regression_daal_vs_sklearn(rows=10, columns=9,verbose=True)
+        test_linear_regression_daal_vs_sklearn(rows=100, columns=99,verbose=False)
+        test_linear_regression_daal_vs_sklearn(rows=1000, columns=999,verbose=False)
 
     if __name__ == '__main__':
-        test_linear_regression_normalized()
-        test_linear_regression()
-        test_linear_regression_param_3_2()
-        test_linear_regression_with_sc()
-        test_beta()
-
+        test_linear_regression_simple()
+        test_daal_linear_regression_wrapper()

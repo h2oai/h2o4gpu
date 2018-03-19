@@ -96,11 +96,11 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 	
 # Install PyDAAL in case of x86_64 with conda
-RUN bash -c 'if [ ! $(arch) = "ppc64le" ]; then \
-	conda update conda -y && \
-	conda config --add channels intel && \
-	conda install pydaal -y; \
-	fi'
+#RUN bash -c 'if [ ! $(arch) = "ppc64le" ]; then \
+#	conda update conda -y && \
+#	conda config --add channels intel && \
+#	conda install pydaal -y; \
+#	fi'
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy

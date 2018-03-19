@@ -14,6 +14,8 @@ try:
 except ImportError:
     DAAL_SUPPORTED=False
 
+if DAAL_SUPPORTED:
+    from .solvers.daal_solver.regression import Method as LinearMethod
 from .types import FunctionVector
 from .solvers.pogs import Pogs
 from .solvers.elastic_net import ElasticNet

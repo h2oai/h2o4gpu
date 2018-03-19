@@ -246,7 +246,7 @@ else:
         print(("Manual Daal prediction()", daal_predicted_man) if verbose else "",
               end="\n")
 
-        print("Prediction taken:")
+        print("Prediction calculated:")
         print("+ Sklearn: {}".format(end_sklearn-start_sklearn))
         print("+ Daal:    {}".format(end_daal-start_daal))
 
@@ -261,7 +261,7 @@ else:
         daal_score = ridge_solver_daal.score(x, y)
         print("Score calculated: ")
         print("+ Sklearn: {}".format(sklearn_score))
-        print("+ Daal:    {}".format(sklearn_score))
+        print("+ Daal:    {}".format(daal_score))
 
         assert daal_score == sklearn_score
 
