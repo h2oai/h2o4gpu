@@ -253,8 +253,8 @@ else:
         test_intercept_flag(rows=10, columns=9)
     def test_daal_linear_regression_wrapper():
         test_linear_regression_daal_vs_sklearn(rows=10, columns=9,verbose=True)
-        test_linear_regression_daal_vs_sklearn(rows=100, columns=99,verbose=False)
-        test_linear_regression_daal_vs_sklearn(rows=1000, columns=999,verbose=False)
+        #test_linear_regression_daal_vs_sklearn(rows=100, columns=99,verbose=False)
+        #test_linear_regression_daal_vs_sklearn(rows=1000, columns=999,verbose=False)
 
     if __name__ == '__main__':
         test_linear_regression_simple()
