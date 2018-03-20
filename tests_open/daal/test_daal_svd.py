@@ -135,9 +135,9 @@ else:
         test_svd_simple_check()
     def test_svd_benchmark(): 
         test_svd_daal_vs_sklearn(20,20)
-        test_svd_daal_vs_sklearn(1000,1000)
-        test_svd_daal_vs_sklearn(2000,2000)
-        test_svd_daal_vs_sklearn(100000,2)
+        #test_svd_daal_vs_sklearn(1000,1000)
+        #test_svd_daal_vs_sklearn(2000,2000)
+        #test_svd_daal_vs_sklearn(100000,2)
     def test_svd_wrapper():
         test_tsvd_wrapper(10, 10, 10)
 

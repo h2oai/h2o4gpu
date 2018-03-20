@@ -276,7 +276,7 @@ else:
         test_ridge_daal_vs_sklearn(rows=4, columns=3, verbose=True)
         test_ridge_daal_vs_sklearn(rows=50, columns=49, verbose=True)
         test_ridge_daal_vs_sklearn(rows=100, columns=99, verbose=False)
-        test_ridge_daal_vs_sklearn(rows=1000, columns=999, verbose=False)
+        #test_ridge_daal_vs_sklearn(rows=1000, columns=999, verbose=False)
 
 if __name__ =='__main__':
     print('testing ridge')
