@@ -64,6 +64,7 @@ print.h2o4gpu_model <- function(x, ...) {
 #' 
 #' This function builds the model using the training data specified.
 #' 
+#' @param object The h2o4gpu model object
 #' @param x The training data where each column represents a different predictor variable 
 #' to be used in building the model.
 #' @param y A vector of numeric values to be used as response variable in building the model. 
@@ -82,6 +83,7 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 #' 
 #' This function makes predictions from new data using a trained H2O4GPU model.
 #' 
+#' @param object The h2o4gpu model object
 #' @param x The new data where each column represents a different predictor variable to 
 #' be used in generating predictions.
 #' @param ... Additional arguments (unused for now).
@@ -94,6 +96,7 @@ predict.h2o4gpu_model <- function(object, x, ...) {
 #' 
 #' This function transforms the given new data using a trained H2O4GPU model.
 #' 
+#' @param object The h2o4gpu model object
 #' @param x The new data where each column represents a different predictor variable to 
 #' be used in generating predictions.
 #' @param ... Additional arguments (unused for now).
