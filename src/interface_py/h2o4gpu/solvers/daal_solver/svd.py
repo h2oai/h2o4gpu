@@ -7,8 +7,8 @@
 from __future__ import print_function
 import sys
 from enum import Enum
-from daal.algorithms import svd
 import numpy as np
+from daal.algorithms import svd
 from .daal_data import IInput
 
 __all__ = ['SingularValueParameter', 'SVD']

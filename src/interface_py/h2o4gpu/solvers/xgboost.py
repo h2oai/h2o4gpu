@@ -325,8 +325,6 @@ class RandomForestClassifier(object):
             self.set_attributes()
             return res
         res = self.model.predict(X)
-        res[res < 0.5] = 0
-        res[res > 0.5] = 1
         self.set_attributes()
         return res.squeeze()
 
@@ -341,7 +339,7 @@ class RandomForestClassifier(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        res = self.model.predict(X)
+        res = self.model.predict_proba(X)
         self.set_attributes()
         return res
 
