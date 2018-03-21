@@ -87,16 +87,16 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 #' @param object The h2o4gpu model object
 #' @param x The new data where each column represents a different predictor variable to 
 #' be used in generating predictions.
-#' @param type One of "response" or "prob", indicating the type of output: predicted values or probabilities
+#' @param type One of "raw" or "prob", indicating the type of output: predicted values or probabilities
 #' @param ... Additional arguments (unused for now).
 #' @export
-predict.h2o4gpu_model <- function(object, x, type="response", ...) {
-  if (type == "response") {
+predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
+  if (type == "raw") {
     object$model$predict(X = resolve_model_input(x), ...)
   } else if (type == "prob") {
     object$model$predict_proba(X = resolve_model_input(x), ...)
   } else {
-    stop(paste0("Unrecognized 'type' parameter value. Expected either 'response' or 'prob but got ", type))
+    stop(paste0("Unrecognized 'type' parameter value. Expected either 'raw' or 'prob but got ", type))
   }
 }
 
