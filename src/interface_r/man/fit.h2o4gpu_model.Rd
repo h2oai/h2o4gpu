@@ -7,6 +7,8 @@
 \method{fit}{h2o4gpu_model}(object, x, y = NULL, ...)
 }
 \arguments{
+\item{object}{The h2o4gpu model object}
+
 \item{x}{The training data where each column represents a different predictor variable
 to be used in building the model.}
 

@@ -7,6 +7,8 @@
 \method{transform}{h2o4gpu_model}(object, x, ...)
 }
 \arguments{
+\item{object}{The h2o4gpu model object}
+
 \item{x}{The new data where each column represents a different predictor variable to
 be used in generating predictions.}
 
