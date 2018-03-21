@@ -350,10 +350,10 @@ class ElasticNetH2O(object):
         return res
 
     def predict_proba(self,
-                valid_x=None,
-                valid_y=None,
-                sample_weight=None,
-                free_input_data=1):
+                      valid_x=None,
+                      valid_y=None,
+                      sample_weight=None,
+                      free_input_data=1):
         """Predict on a fitted GLM and get back uncalibrated probabilities for classification models
 
         :param ndarray valid_x : Validation features
