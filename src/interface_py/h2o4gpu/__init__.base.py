@@ -7,15 +7,14 @@
 #with other init files
 __version__ = "0.0.4"
 
-DAAL_SUPPORTED=True
 
 try:
     __import__('daal')
-except ImportError:
+    from .solvers.daal_solver.regression import Method as LinearMethod
+    DAAL_SUPPORTED=True
+except:
     DAAL_SUPPORTED=False
 
-if DAAL_SUPPORTED:
-    from .solvers.daal_solver.regression import Method as LinearMethod
 from .types import FunctionVector
 from .solvers.pogs import Pogs
 from .solvers.elastic_net import ElasticNet
