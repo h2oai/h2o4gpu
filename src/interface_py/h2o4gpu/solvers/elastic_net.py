@@ -335,13 +335,35 @@ class ElasticNetH2O(object):
         return self
 
 #TODO Add typechecking
-
     def predict(self,
                 valid_x=None,
                 valid_y=None,
                 sample_weight=None,
                 free_input_data=1):
-        """Predict on a fitted GLM
+        """Predict on a fitted GLM and get back class predictions for binomial models
+        for classification and predicted values for regression.
+
+        :param ndarray valid_x : Validation features
+
+        :param ndarray valid_y : Validation response
+
+        :param ndarray weight : Observation weights
+
+        :param int free_input_data : Indicate if input data should be freed at
+            the end of fit(). Default is 1.
+        """
+        res = self.predict_proba(valid_x, valid_y, sample_weight, free_input_data)
+        if self.family == "logistic":
+            res[res < 0.5] = 0
+            res[res > 0.5] = 1
+        return res
+
+    def predict_proba(self,
+                      valid_x=None,
+                      valid_y=None,
+                      sample_weight=None,
+                      free_input_data=1):
+        """Predict on a fitted GLM and get back uncalibrated probabilities for classification models
 
         :param ndarray valid_x : Validation features
 
