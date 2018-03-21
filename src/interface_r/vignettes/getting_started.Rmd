@@ -139,12 +139,27 @@ auc(actual = y_test, predicted = pred_rfc)
 #auc(actual = y_test, predicted = pred_enc)
 ```
 
-
 ### Multiclass Classification
+
+TO DO: Add another dataset and show a multiclass demo 
+
 
 ## Unsupervised Learning
 
 The unsupervised learning algorithms in **h2o4gpu** include K-Means, Principal Component Analysis (PCA), and Truncated Singular Value Decompostion (SVD).
 
-TO DO: Add examples of each of these
+```{r}
+# Prepare data
+iris$Species <- as.integer(iris$Species) - 1  # y must be provided as numeric data
 
+model_km <- h2o4gpu.kmeans(n_clusters = 3) %>% fit(iris)
+# TO DO: What to show now?
+
+#model_pca <- h2o4gpu.pca() %>% fit(iris)
+# ERROR: 
+# Error in py_call_impl(callable, dots$args, dots$keywords) : 
+#  TypeError: __init__() got an unexpected keyword argument 'gpu_id'
+
+model_tsvd <- h2o4gpu.truncated_svd() %>% fit(iris)
+# TO DO: What to show now?
+```
