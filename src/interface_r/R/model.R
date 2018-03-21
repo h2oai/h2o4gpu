@@ -1,4 +1,3 @@
-#' @export
 h2o4gpu_model <- function(model, subclass = NULL, description = NULL) {
   r_model_obj <- structure(
     list(model = model, description = description),
