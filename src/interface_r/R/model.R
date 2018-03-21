@@ -81,15 +81,23 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 
 #' Make Predictions using Trained H2O4GPU Estimator
 #' 
-#' This function makes predictions from new data using a trained H2O4GPU model.
+#' This function makes predictions from new data using a trained H2O4GPU model and returns class predictions
+#' for classification and predicted values for regression.
 #' 
 #' @param object The h2o4gpu model object
 #' @param x The new data where each column represents a different predictor variable to 
 #' be used in generating predictions.
+#' @param type One of "response" or "prob", indicating the type of output: predicted values or probabilities
 #' @param ... Additional arguments (unused for now).
 #' @export
-predict.h2o4gpu_model <- function(object, x, ...) {
-  object$model$predict(X = resolve_model_input(x), ...)
+predict.h2o4gpu_model <- function(object, x, type="response", ...) {
+  if (type == "response") {
+    object$model$predict(X = resolve_model_input(x), ...)
+  } else if (type == "prob") {
+    object$model$predict_proba(X = resolve_model_input(x), ...)
+  } else {
+    stop(paste0("Unrecognized 'type' parameter value. Expected either 'response' or 'prob but got ", type))
+  }
 }
 
 #' Transform a Dataset using Trained H2O4GPU Estimator
