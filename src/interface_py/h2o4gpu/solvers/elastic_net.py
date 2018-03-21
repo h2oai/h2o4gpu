@@ -219,12 +219,21 @@ class ElasticNetH2O(object):
         self.lambdas_list = lambdas
 
         # default None for _full stuff
+        self.error_vs_alpha_lambda = None
+        self.intercept_ = None
+        self._tols2 = None
+        self._lambdas2 = None
+        self._alphas2 = None
+        self.error_vs_alpha = None
+        self.valid_pred_vs_alphapure = None
+        self.x_vs_alphapure = None
         self.x_vs_alpha_lambdanew = None
         self.x_vs_alpha_lambdapure = None
         self.valid_pred_vs_alpha_lambdapure = None
         self._lambdas = None
         self._alphas = None
         self._tols = None
+        self.intercept2_ = None
 
         #Experimental features
         #TODO _shared_a and _standardize do not work currently.
