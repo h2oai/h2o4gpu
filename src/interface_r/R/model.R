@@ -92,12 +92,16 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 #' @export
 predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
   if (type == "raw") {
-    object$model$predict(X = resolve_model_input(x), ...)
+    preds <- object$model$predict(X = resolve_model_input(x), ...)
   } else if (type == "prob") {
-    object$model$predict_proba(X = resolve_model_input(x), ...)
+    preds <- object$model$predict_proba(X = resolve_model_input(x), ...)
+    if (!is.null(object$classes_)){
+      colnames(preds) <- object$classes_ #Taken from tree based models
+    }
   } else {
     stop(paste0("Unrecognized 'type' parameter value. Expected either 'raw' or 'prob but got ", type))
   }
+  return(preds)
 }
 
 #' Transform a Dataset using Trained H2O4GPU Estimator
