@@ -197,7 +197,7 @@ alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
 alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
 alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn install_daal_x86_64
+alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
 
 ##### dependencies
 deps_clean:

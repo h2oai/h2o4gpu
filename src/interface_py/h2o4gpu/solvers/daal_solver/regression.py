@@ -11,9 +11,9 @@ from daal.algorithms.linear_regression import prediction as linear_prediction
 from daal.algorithms.ridge_regression import training as ridge_training
 from daal.algorithms.ridge_regression import prediction as ridge_prediction
 from daal.data_management import HomogenNumericTable, NumericTable
+from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
 from .utils import printNumericTable
 from .daal_data import IInput
-from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
 
 class Method(Enum):
     '''
@@ -41,7 +41,7 @@ class LinearRegression(object):
         if 'method' in kwargs.keys() and kwargs['method'] in Method:
             self.method = kwargs['method'].value
             if self.method == Method.qr_dense.value:
-                fit_intercept=False
+                fit_intercept = False
         else:
             self.method = None
         self.normalize = normalize
@@ -70,7 +70,9 @@ class LinearRegression(object):
 
         # Training object with/without normalization
         if self.method:
-            linear_training_algorithm = linear_training.Batch(method=self.method)
+            linear_training_algorithm = linear_training.Batch(
+                method=self.method
+            )
         else:
             linear_training_algorithm = linear_training.Batch()
 
