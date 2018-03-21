@@ -343,9 +343,10 @@ class ElasticNetH2O(object):
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
         """
-        res = self.predict_proba(self, valid_x,valid_y, sample_weight, free_input_data)
-        res[res < 0.5] = 0
-        res[res > 0.5] = 1
+        res = self.predict_proba(valid_x, valid_y, sample_weight, free_input_data)
+        if self.family == "logistic":
+            res[res < 0.5] = 0
+            res[res > 0.5] = 1
         return res
 
     def predict_proba(self,
