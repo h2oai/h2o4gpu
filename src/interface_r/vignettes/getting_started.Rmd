@@ -11,59 +11,140 @@ vignette: >
 
 
 
+**H2O4GPU** is a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API and its well-tested CPU-based algorithms.  The R package is a wrapper around the H2O4GPU Python package, and the interface follows standard R conventions for modeling.  
+
+The **h2o4gpu** R package makes use of RStudio's [reticulate](https://rstudio.github.io/reticulate/) package for facilitating access to Python libraries through R.  Reticulate embeds a Python session within your R session, enabling seamless, high-performance interoperability.
+
+
 ## Installation
 
 First, please follow the instruction [here](https://github.com/h2oai/h2o4gpu#installation) to build the H2O4GPU Python package.
 
-Then install `devtools` R package via `install.packages("devtools")` if you haven't done it yet.
+Then install `devtools` R package via `install.packages("devtools")` if you haven't done it yet.  
 
-Finally, we can install `h2o4gpu` R package via the following:
+To get the most up-to-date version of H2O4GPU, you can install the **h2o4gpu** R package directly from GitHub as follows:
 
-```
+```{r}
 library(devtools)
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
-## Train & Evaluate a Model
+Alternatively, the R package can be installed from CRAN using `install.packages("h2o4gpu")`.
+
+If the Python package was installed into a virtual environment, you may have to add thesse two lines of code to the top of your script.  The path you will use will be the path of your virtual environment:
+
+```{r}
+library(reticulate)
+use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
+```
+
+However, if you installed the **h2o4gpu** Python package into the main Python installation on your machine, then these two lines of code will not be neccessary.
+
+
+## Quickstart
 
 Here's a quick demo of how to train and evaluate a GPU-based Random Forest model:
-```{r, echo=FALSE, results='foo'}
+```{r}
 library(h2o4gpu)
+library(reticulate)  # only needed if using a virtual Python environment
+use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
 
-# Setup dataset
+# Prepare data
 x <- iris[1:4]
-y <- as.integer(iris$Species) - 1
-# TO DO: use a different dataset and split into train/test
+y <- as.integer(iris$Species) - 1  # y must be provided as numeric data
 
 # Initialize and train the classifier
 model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
 
 # Make predictions
-predictions <- model %>% predict(x)
-
-# Score the model (uses Python scikit-learn score)
-# Not sure yet if we should keep score()
-model %>% score(x, y)
+#predictions <- model %>% predict(x, type = "prob")  #change to this version once https://github.com/h2oai/h2o4gpu/pull/489 is merged
+pred <- model %>% predict(x)
+head(pred)
 
 # Compute AUC using Metrics package
 library(Metrics)
-auc(actual = y, prdictions = predictions)
+auc(actual = y, predicted = pred)
 ```
 
-### Training
 
-TO DO: Finish
+## Supervised Learning
 
-### Model Evaluation
+H2O4GPU contains a collection of popular algorithms for supervised learning: Random Forest, Gradient Boosting Machine (GBM) and Generalized Linear Models (GLMs) with Elastic Net regularization.  
 
-The **h2o4gpu** Python module includes some scikit-learn functionality, including metrics functions.  Since the **h2o4gpu** R package wraps the **h2o4gpu** Python module, we have some of these scikit-learn functions right in R.
+The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](http://stanford.edu/%7Eboyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).
 
-One thing it includes is the [`score()`](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.score) method for all the supervised algorithms.
+The **h2o4gpu** R package does not include a suite of internal model metrics functions.  We encourage users to use a third-party model metrics package of their choice.  For all the examples below, we will use the **Metrics** R package.  This package has a large number of model metrics functions, all with a very simple, unified API.
 
-The `score()` method returns different output based on the type of problem.  For example, with a Random Forest classifier, the `score()` function:
 
-- Returns the mean accuracy on the given test data and labels.
-- In multi-label classification, this is the subset accuracy which is a harsh metric since you require for each sample that each label set be correctly predicted.  
+### Regression
 
-TO DO: Finish
+```{r}
+# Load a sample dataset for regression
+# Source: https://archive.ics.uci.edu/ml/datasets/Combined+Cycle+Power+Plant
+df <- read.csv("https://github.com/h2oai/h2o-tutorials/raw/master/h2o-world-2017/automl/data/powerplant_output.csv")
+
+# Randomly sample 80% of the rows for the training set
+set.seed(1)
+train_idx <- sample(1:nrow(df), 0.8*nrow(df))
+
+# Create train & test; last (5th) column is the response
+x_train <- df[train_idx,-5]
+y_train <- df[train_idx,5]
+x_test <- df[-train_idx,-5]
+y_test <- df[-train_idx,5]
+
+# Train three different
+model_gbc <- h2o4gpu.gradient_boosting_regressor() %>% fit(x_train, y_train)
+model_rfc <- h2o4gpu.random_forest_regressor() %>% fit(x_train, y_train)
+#model_enc <- h2o4gpu.elastic_net_regressor() %>% fit(x_train, y_train)  #error: https://github.com/h2oai/h2o4gpu/issues/436
+
+# Generate predictions (TO DO: Add type = "prob")
+pred_gbc <- model_gbc %>% predict(x_test)
+pred_rfc <- model_rfc %>% predict(x_test)
+#pred_enc <- model_enc %>% predict(x_test)
+
+# Compare test set performance using MSE
+mse(actual = y_test, predicted = pred_gbc)
+mse(actual = y_test, predicted = pred_rfc)  #TO DO: this is really big: 25168.17, something's wrong
+#mse(actual = y_test, predicted = pred_enc)
+```
+
+### Binary Classification
+
+```{r}
+# Import a sample binary classification train and test set
+# Source: https://archive.ics.uci.edu/ml/datasets/HIGGS
+train <- read.csv("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+test <- read.csv("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+
+# First column is the response
+x_train <- train[,-1]
+y_train <- train[,1]
+x_test <- test[,-1]
+y_test <- test[,1]
+
+# Train three different
+model_gbc <- h2o4gpu.gradient_boosting_classifier() %>% fit(x_train, y_train)
+model_rfc <- h2o4gpu.random_forest_classifier() %>% fit(x_train, y_train)
+#model_enc <- h2o4gpu.elastic_net_classifier() %>% fit(x_train, y_train)  #error: https://github.com/h2oai/h2o4gpu/issues/436
+
+# Generate predictions (TO DO: Add type = "prob")
+pred_gbc <- model_gbc %>% predict(x_test)
+pred_rfc <- model_rfc %>% predict(x_test)
+#pred_enc <- model_enc %>% predict(x_test)
+
+# Compare test set performance using AUC
+auc(actual = y_test, predicted = pred_gbc)
+auc(actual = y_test, predicted = pred_rfc)
+#auc(actual = y_test, predicted = pred_enc)
+```
+
+
+### Multiclass Classification
+
+## Unsupervised Learning
+
+The unsupervised learning algorithms in **h2o4gpu** include K-Means, Principal Component Analysis (PCA), and Truncated Singular Value Decompostion (SVD).
+
+TO DO: Add examples of each of these
 
