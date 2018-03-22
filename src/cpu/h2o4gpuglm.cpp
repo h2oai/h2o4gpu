@@ -57,10 +57,6 @@ H2O4GPU<T, M, P>::H2O4GPU(int sharedA, int me, int wDev, const M &A) :
 				kAdaptiveRho), _equil(kEquil), _gap_stop(kGapStop), _init_x(
 				false), _init_lambda(false), _nDev(0), _wDev(wDev) {
 
-	if (_verbose > 0) {
-		printLegalNotice();
-	}
-
 	_x = new T[_A.Cols()]();
 	_y = new T[_A.Rows()]();
 	_mu = new T[_A.Cols()]();
@@ -82,9 +78,6 @@ H2O4GPU<T, M, P>::H2O4GPU(const M &A) :
 				1.0), _init_iter(kInitIter), _verbose(kVerbose), _adaptive_rho(
 				kAdaptiveRho), _equil(kEquil), _gap_stop(kGapStop), _init_x(
 				false), _init_lambda(false), _nDev(0), _wDev(_A._wDev) {
-	if (_verbose > 0) {
-		printLegalNotice();
-	}
 
 	_x = new T[_A.Cols()]();
 	_y = new T[_A.Rows()]();
