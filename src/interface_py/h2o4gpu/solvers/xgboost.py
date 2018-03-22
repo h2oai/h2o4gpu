@@ -1023,7 +1023,7 @@ class GradientBoostingClassifier(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        res = self.model.predict(X)
+        res = self.model.predict_proba(X)
         self.set_attributes()
         return res
 
