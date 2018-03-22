@@ -5,16 +5,18 @@
 """
 #Skip pylint b / c this is automatically concatenated at compile time
 #with other init files
-__version__ = "0.0.4"
+# TODO: grab this from BUILD_INFO.txt or __about__.py
+__version__ = "0.2.0"
 
+DAAL_SUPPORTED=True
 
 try:
     __import__('daal')
-    from .solvers.daal_solver.regression import Method as LinearMethod
-    DAAL_SUPPORTED=True
-except:
+except ImportError:
     DAAL_SUPPORTED=False
 
+if DAAL_SUPPORTED:
+    from .solvers.daal_solver.regression import Method as LinearMethod
 from .types import FunctionVector
 from .solvers.pogs import Pogs
 from .solvers.elastic_net import ElasticNet
