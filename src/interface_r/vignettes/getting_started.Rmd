@@ -50,10 +50,10 @@ However, if you installed the **h2o4gpu** Python package into the main Python in
 
 Here's a quick demo of how to train and evaluate a GPU-based Random Forest classifier model.  We will use the classic Iris dataset, which is a three-class classification problem and evaluate the performance of the model using classification error.
 
-```{r}
+```{r, eval = FALSE}
 library(h2o4gpu)
-library(reticulate)  # only needed if using a virtual Python environment
-use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
+#library(reticulate)  # only needed if using a virtual Python environment
+#use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
 
 # Prepare data
 x <- iris[1:4]
@@ -128,7 +128,7 @@ head(pred_rfc)
 To compute AUC of a binary classification model, we use the predicted values of the second column (the "positive" class) and pass that to the `Metrics::auc()` function.
 
 
-```{r}
+```{r, eval = FALSE}
 # Compare test set performance using AUC
 #auc(actual = y_test, predicted = pred_gbc[, 2])
 auc(actual = y_test, predicted = pred_rfc[, 2])
@@ -193,13 +193,13 @@ head(pred_gbr)
 ```
 
 In regression problems, Mean Squared Error (MSE), is a common metric for model evaluation.  We will use test set MSE to evaluate and compare our two models.
-```{r}
+```{r, eval = FALSE}
 # Compare test set performance using MSE
 mse(actual = y_test, predicted = pred_gbr)
 mse(actual = y_test, predicted = pred_enr)
 ```
 
-Here we see that the GBM is drastically outperforming the GLM.
+In this case, which is not usual, the GBM drastically outperforms the GLM.
 
 
 ## Unsupervised Learning
