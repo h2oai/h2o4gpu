@@ -265,17 +265,6 @@ public:
 				std::ostream_iterator<T>(std::cout, "\n"));
 		os << std::endl;
 	}
-	void printLegalNotice() {
-#pragma omp critical
-		Printf(__HBAR__
-		"           H2O AI GLM\n"
-		"           Version: %s %s\n"
-		"           Compiled: %s %s\n"
-		"           H2O.ai, Inc., 2017\n"
-		__HBAR__, H2O4GPU_VERSION.c_str(), _GITHASH_,
-		__DATE__,
-		__TIME__);
-	}
 
 	// Setters for parameters and initial values.
 	void SetRho(T rho) {

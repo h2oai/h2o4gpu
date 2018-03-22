@@ -80,9 +80,6 @@ H2O4GPU<T, M, P>::H2O4GPU(int sharedA, int me, int wDev, const M &A) :
 
 	checkwDev(_wDev);
 	CUDACHECK(cudaSetDevice(_wDev));
-	if (_verbose > 0) {
-		printLegalNotice();
-	}
 
 	_x = new T[_A.Cols()]();
 	_y = new T[_A.Rows()]();
@@ -113,9 +110,6 @@ H2O4GPU<T, M, P>::H2O4GPU(const M &A) :
 
 	checkwDev(_wDev);
 	CUDACHECK(cudaSetDevice(_wDev));
-	if (_verbose > 0) {
-		printLegalNotice();
-	}
 
 	_x = new T[_A.Cols()]();
 	_y = new T[_A.Rows()]();
