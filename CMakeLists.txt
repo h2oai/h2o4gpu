@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2)
 project(h2o4gpu)
 include(cmake/Utils.cmake)
 
+set_default_configuration_release()
+
 find_package(OpenMP)
 find_package(BLAS REQUIRED)
 
