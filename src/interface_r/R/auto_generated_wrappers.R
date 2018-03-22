@@ -361,13 +361,9 @@ h2o4gpu.gradient_boosting_regressor <- function(
 #' @param  lambda_min_ratio Minimum lambda ratio to maximum lambda, used in lambda search.
 #' @param  n_lambdas Number of lambdas to be used in a search.
 #' @param  n_folds Number of cross validation folds.
-#' @param  n_alphas Number of alphas to be used in a search.
 #' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
 #' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
 #' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
-#' @param  alpha_max Maximum alpha.
-#' @param  alpha_min Minimum alpha.
-#' @param  alphas overrides n_alphas, alpha_min, and alpha_max.
 #' @param  lambdas overrides n_lambdas, lambda_max, and lambda_min_ratio.
 #' @param  double_precision Internally set unless using _ptr methods. Value can either be 0 (float32) or 1(float64)
 #' @param  order Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.
@@ -396,14 +392,10 @@ h2o4gpu.elastic_net_regressor <- function(
 	lambda_min_ratio = 1e-07,
 	n_lambdas = 100L,
 	n_folds = 5L,
-	n_alphas = 5L,
-	tol_seek_factor = 0.1,
+	 tol_seek_factor = 0.1,
 	 store_full_path = 0L,
 	lambda_max = NULL,
-	alpha_max = 1.0,
-	alpha_min = 0.0,
-	alphas = NULL,
-	lambdas = NULL,
+	   lambdas = NULL,
 	double_precision = NULL,
 	order = NULL,
 	backend = "h2o4gpu") {
@@ -431,14 +423,14 @@ h2o4gpu.elastic_net_regressor <- function(
     lambda_min_ratio = lambda_min_ratio,
     n_lambdas = as.integer(n_lambdas),
     n_folds = as.integer(n_folds),
-    n_alphas = as.integer(n_alphas),
+    n_alphas = 1L,
     tol_seek_factor = tol_seek_factor,
     family = "elasticnet",
     store_full_path = as.integer(store_full_path),
     lambda_max = lambda_max,
-    alpha_max = alpha_max,
-    alpha_min = alpha_min,
-    alphas = alphas,
+    alpha_max = alpha,
+    alpha_min = alpha,
+    alphas = NULL,
     lambdas = lambdas,
     double_precision = double_precision,
     order = order,
@@ -472,13 +464,9 @@ h2o4gpu.elastic_net_regressor <- function(
 #' @param  lambda_min_ratio Minimum lambda ratio to maximum lambda, used in lambda search.
 #' @param  n_lambdas Number of lambdas to be used in a search.
 #' @param  n_folds Number of cross validation folds.
-#' @param  n_alphas Number of alphas to be used in a search.
 #' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
 #' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
 #' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
-#' @param  alpha_max Maximum alpha.
-#' @param  alpha_min Minimum alpha.
-#' @param  alphas overrides n_alphas, alpha_min, and alpha_max.
 #' @param  lambdas overrides n_lambdas, lambda_max, and lambda_min_ratio.
 #' @param  double_precision Internally set unless using _ptr methods. Value can either be 0 (float32) or 1(float64)
 #' @param  order Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.
@@ -507,14 +495,10 @@ h2o4gpu.elastic_net_classifier <- function(
 	lambda_min_ratio = 1e-07,
 	n_lambdas = 100L,
 	n_folds = 5L,
-	n_alphas = 5L,
-	tol_seek_factor = 0.1,
+	 tol_seek_factor = 0.1,
 	 store_full_path = 0L,
 	lambda_max = NULL,
-	alpha_max = 1.0,
-	alpha_min = 0.0,
-	alphas = NULL,
-	lambdas = NULL,
+	   lambdas = NULL,
 	double_precision = NULL,
 	order = NULL,
 	backend = "h2o4gpu") {
@@ -542,14 +526,14 @@ h2o4gpu.elastic_net_classifier <- function(
     lambda_min_ratio = lambda_min_ratio,
     n_lambdas = as.integer(n_lambdas),
     n_folds = as.integer(n_folds),
-    n_alphas = as.integer(n_alphas),
+    n_alphas = 1L,
     tol_seek_factor = tol_seek_factor,
     family = "logistic",
     store_full_path = as.integer(store_full_path),
     lambda_max = lambda_max,
-    alpha_max = alpha_max,
-    alpha_min = alpha_min,
-    alphas = alphas,
+    alpha_max = alpha,
+    alpha_min = alpha,
+    alphas = NULL,
     lambdas = lambdas,
     double_precision = double_precision,
     order = order,

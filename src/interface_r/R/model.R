@@ -93,7 +93,12 @@ predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
   if (type == "raw") {
     preds <- object$model$predict(X = resolve_model_input(x), ...)
   } else if (type == "prob") {
+    # For GLM, process the ouput differently
     preds <- object$model$predict_proba(X = resolve_model_input(x), ...)
+    if (inherits(object$model, "h2o4gpu.solvers.elastic_net.ElasticNet")) {
+      preds <- t(preds)
+      preds <- cbind(1 - preds[,1], preds[,1]) #TODO Add colnames and multiclass?
+    }
     if (!is.null(object$classes_)){
       colnames(preds) <- object$classes_ #Taken from tree based models
     }

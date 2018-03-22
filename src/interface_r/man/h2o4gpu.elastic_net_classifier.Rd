@@ -11,8 +11,7 @@ h2o4gpu.elastic_net_classifier(alpha = 1, l1_ratio = 0.5,
   n_gpus = -1L, lambda_stop_early = TRUE, glm_stop_early = TRUE,
   glm_stop_early_error_fraction = 1, verbose = FALSE, n_threads = NULL,
   gpu_id = 0L, lambda_min_ratio = 1e-07, n_lambdas = 100L, n_folds = 5L,
-  n_alphas = 5L, tol_seek_factor = 0.1, store_full_path = 0L,
-  lambda_max = NULL, alpha_max = 1, alpha_min = 0, alphas = NULL,
+  tol_seek_factor = 0.1, store_full_path = 0L, lambda_max = NULL,
   lambdas = NULL, double_precision = NULL, order = NULL,
   backend = "h2o4gpu")
 }
@@ -61,19 +60,11 @@ h2o4gpu.elastic_net_classifier(alpha = 1, l1_ratio = 0.5,
 
 \item{n_folds}{Number of cross validation folds.}
 
-\item{n_alphas}{Number of alphas to be used in a search.}
-
 \item{tol_seek_factor}{Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.}
 
 \item{store_full_path}{Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.}
 
 \item{lambda_max}{Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum}
-
-\item{alpha_max}{Maximum alpha.}
-
-\item{alpha_min}{Minimum alpha.}
-
-\item{alphas}{overrides n_alphas, alpha_min, and alpha_max.}
 
 \item{lambdas}{overrides n_lambdas, lambda_max, and lambda_min_ratio.}
 
