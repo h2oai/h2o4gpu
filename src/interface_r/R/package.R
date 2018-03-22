@@ -27,10 +27,8 @@ np <- NULL
     }
   )
   
-  if (reticulate::py_module_available("h2o4gpu") && reticulate::py_module_available("np")) {
-    h2o4gpu <<- reticulate::import("h2o4gpu", delay_load = delay_load)
-    np <<- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
-  }
+  h2o4gpu <<- reticulate::import("h2o4gpu", delay_load = delay_load)
+  np <<- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
 }
 
 # Placeholder for now
