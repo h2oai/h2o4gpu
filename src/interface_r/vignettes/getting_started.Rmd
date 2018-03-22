@@ -17,16 +17,16 @@ The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reti
 
 **H2O4GPU** is a new project under active development and we are looking for contributors!  If you find a bug, please check that we have not already fixed the issue in the bleeding edge version and then check that we do not already have an issue opened for this topic.  If not, then please file a new issue with a reproducible example. 
 
-- Here is the main [GitHub repo](https://github.com/h2oai/h2o4gpu).
+- Here is the main [GitHub repo](https://github.com/h2oai/h2o4gpu).  If you like the package, please 🌟 the repo on GitHub! 
 - If you're looking to contribute, check out the [CONTRIBUTING.md](https://github.com/h2oai/h2o4gpu/blob/master/CONTRIBUTING.md) file.
-- All open issues are [here](https://github.com/h2oai/h2o4gpu/issues?utf8=%E2%9C%93&q=is%3Aopen).
 - All open issues that are specific to the R package are [here](https://github.com/h2oai/h2o4gpu/labels/R).
+- All open issues are [here](https://github.com/h2oai/h2o4gpu/issues?utf8=%E2%9C%93&q=is%3Aopen).
 
 ## Installation
 
-The Python package is a prerequisite for the R package. So first, follow the instructions [here](https://github.com/h2oai/h2o4gpu#installation) to install the **h2o4gpu** Python package (either at the system level or in a Python virtual envivonment). The easiest thing to do is to `pip install` either the stable or bleeding edge `whl` file.
+The Python package is a prerequisite for the R package. So first, follow the instructions [here](https://github.com/h2oai/h2o4gpu#installation) to install the **h2o4gpu** Python package (either at the system level or in a Python virtual envivonment). The easiest thing to do is to `pip install` either the stable or bleeding edge `whl` file. To ensure compatibility, the Python package version number should match the R package version number.
 
-The R package can be installed from CRAN using `install.packages("h2o4gpu")`.  To ensure compatibility, the Python package version number should match the R package version number.  To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
+The R package can be installed from CRAN using `install.packages("h2o4gpu")`.  To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
 
 ```{r, eval = FALSE}
 library(devtools)
@@ -70,17 +70,17 @@ ce(actual = y, predicted = pred)
 
 ## Supervised Learning
 
-**H2O4GPU** contains a collection of popular algorithms for supervised learning: Random Forest, Gradient Boosting Machine (GBM) and Generalized Linear Models (GLMs) with Elastic Net regularization.  There are methods for regression and classification for each of these algorithms.
+**H2O4GPU** contains a collection of popular algorithms for supervised learning: Random Forest, Gradient Boosting Machine (GBM) and Generalized Linear Models (GLMs) with Elastic Net regularization.  There are methods for regression and classification for each of these algorithms.  Both Random Forest and GBM support multiclass clasification, however the GLM currently only supports binomial classification (a ticket for multinomial support is open [here](https://github.com/h2oai/h2o4gpu/issues/505)).
 
-The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](http://stanford.edu/%7Eboyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).  We have found that this method is not as fast as we'd like it to be, so we are working on implementing an entirely new GLM (follow progress [here](https://github.com/h2oai/h2o4gpu/issues/356)) from scratch.
+The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](http://stanford.edu/%7Eboyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).  We have found that this method is not as fast as we'd like it to be, so we are working on implementing an entirely new GLM from scratch (follow progress [here](https://github.com/h2oai/h2o4gpu/issues/356)).
 
 The **h2o4gpu** R package does not include a suite of internal model metrics functions, therefore we encourage users to use a third-party model metrics package of their choice.  For all the examples below, we will use the [Metrics](https://cran.r-project.org/web/packages/Metrics/index.html) R package.  This package has a large number of model metrics functions, all with a very simple, unified API.
 
 ### Binary Classification
 
-In this example, we will train and test three different models on a subset of the [HIGGS](https://archive.ics.uci.edu/ml/datasets/HIGGS) dataset.  The goal in this dataset is to distinguish between signal "1" and background "0", so it's a binary classification problem.  The features are all numeric, so there's no pre-processing neccessary.
+In this example, we will train and test three different models on a subset of the [HIGGS](https://archive.ics.uci.edu/ml/datasets/HIGGS) dataset.  The goal in this dataset is to distinguish between signal "1" and background "0", so this is a binary classification problem.  The features are all numeric.
 
-**H2O4GPU** requires all feature and response columns to be numeric.  If your response column is a factor, then you can simply convert the levels to integer values using `as.integer()`.  If you have categorical/factor columns among your features, you must apply some sort of encoding to convert the information into numeric data.  Some options are label encoding (convert the levels to integers) one hot encoding (binary indicator columns, one for each categorical level), or some other type of encoding.  For simplicity, in this tutorial, we will always use label encoding, however you can read more about different types of encodings [here](https://dzone.com/articles/handling-character-data-for-machine-learning).
+**H2O4GPU** requires all feature and response columns to be numeric, so in this case, we don't have to do any pre-processing of the data.  If your response column is a factor, then you can simply convert the levels to integer values using `as.integer()`.  If you have categorical/factor columns among your features, you must apply an encoding method to convert the columns into numeric data.  Some options are label encoding (simply convert the levels to integers) or one hot encoding (binary indicator columns, one for each categorical level).  For simplicity, in this tutorial, we will always use label encoding, however you can read more about different types of encodings [here](https://dzone.com/articles/handling-character-data-for-machine-learning).
 
 ```{r, eval = FALSE}
 # Load a sample dataset for binary classification
@@ -111,9 +111,9 @@ We pipe our trained models to the familiar `predict()` method.  In binary classi
 
 ```{r, eval = FALSE}
 # Generate predictions (type "prob" gives predicted values instead of predicted label)
-#pred_gbc <- model_gbc %>% predict(x_test, type = "prob")  #https://github.com/h2oai/h2o4gpu/issues/496
+pred_gbc <- model_gbc %>% predict(x_test, type = "prob")
 pred_rfc <- model_rfc %>% predict(x_test, type = "prob")
-#pred_enc <- model_enc %>% predict(x_test, type = "prob")  #https://github.com/h2oai/h2o4gpu/issues/496
+pred_enc <- model_enc %>% predict(x_test, type = "prob")
 ```
 
 Let's take a look at what the output of the `predict()` function looks like in binary classification. It will be a two-column matrix with the column names set to the names of the classes.
@@ -127,9 +127,9 @@ To compute AUC of a binary classification model, we use the predicted values of 
 
 ```{r, eval = FALSE}
 # Compare test set performance using AUC
-#auc(actual = y_test, predicted = pred_gbc[, 2])
+auc(actual = y_test, predicted = pred_gbc[, 2])
 auc(actual = y_test, predicted = pred_rfc[, 2])
-#auc(actual = y_test, predicted = pred_enc[, 2])
+auc(actual = y_test, predicted = pred_enc[, 2])
 ```
 
 
@@ -257,5 +257,5 @@ Train a truncated SVD model with 4 components and apply the transformation on a 
 
 ```{r, eval = FALSE}
 model_tsvd <- h2o4gpu.truncated_svd(n_components = 4) %>% fit(train)
-test_transformed <- model_pca %>% transform(test)
+test_transformed <- model_tsvd %>% transform(test)
 ```
