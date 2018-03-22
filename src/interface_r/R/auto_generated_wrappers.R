@@ -363,7 +363,6 @@ h2o4gpu.gradient_boosting_regressor <- function(
 #' @param  n_folds Number of cross validation folds.
 #' @param  n_alphas Number of alphas to be used in a search.
 #' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
-#' @param  family "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 #' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
 #' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
 #' @param  alpha_max Maximum alpha.
@@ -475,7 +474,6 @@ h2o4gpu.elastic_net_regressor <- function(
 #' @param  n_folds Number of cross validation folds.
 #' @param  n_alphas Number of alphas to be used in a search.
 #' @param  tol_seek_factor Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.
-#' @param  family "logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".
 #' @param  store_full_path Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.
 #' @param  lambda_max Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum
 #' @param  alpha_max Maximum alpha.
@@ -622,7 +620,7 @@ h2o4gpu.kmeans <- function(
 #' @param  n_components Desired dimensionality of output data
 #' @param  copy If FALSE, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected results, use fit_transform(X) instead.
 #' @param  whiten When TRUE (FALSE by default) the `components_` vectors are multiplied by the square root of (n_samples) and divided by the singular values to ensure uncorrelated outputs with unit component-wise variances.
-#' @param  svd_solver auto : the solver is selected by a default policy based on `X.shape` and `n_components`: if the input data is larger than 500x500 and the number of components to extract is lower than 80% of the smallest dimension of the data, then the more efficient 'randomized' method is enabled. Otherwise the exact full SVD is computed and optionally truncated afterwards. full : run exact full SVD calling the standard LAPACK solver via `scipy.linalg.svd` and select the components by postprocessing arpack : run SVD truncated to n_components calling ARPACK solver via `scipy.sparse.linalg.svds`. It requires strictly 0 < n_components < X.shape[1] randomized : run randomized SVD by the method of Halko et al.
+#' @param  svd_solver 'auto' is selected by a default policy based on `X.shape` and `n_components`: if the input data is larger than 500x500 and the number of components to extract is lower than 80 percent of the smallest dimension of the data, then the more efficient 'randomized' method is enabled. Otherwise the exact full SVD is computed and optionally truncated afterwards. 'full' runs exact full SVD calling the standard LAPACK solver via `scipy.linalg.svd` and select the components by postprocessing 'arpack'runs SVD truncated to n_components calling ARPACK solver via `scipy.sparse.linalg.svds`. It requires strictly 0 < n_components < columns. 'randomized' runs randomized SVD by the method of Halko et al.
 #' @param  tol Tolerance for singular values computed by svd_solver == 'arpack'.
 #' @param  iterated_power Number of iterations for the power method computed by svd_solver == 'randomized'.
 #' @param  random_state If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by `np.random`. Used when ``svd_solver`` == 'arpack' or 'randomized'.
@@ -661,7 +659,7 @@ h2o4gpu.pca <- function(
 #' @title Truncated Singular Value Decomposition (TruncatedSVD)
 #' 
 #' @param  n_components Desired dimensionality of output data
-#' @param  algorithm SVD solver to use. H2O4GPU options: Either “cusolver” (similar to ARPACK) or “power” for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).
+#' @param  algorithm SVD solver to use. H2O4GPU options: Either "cusolver" (similar to ARPACK) or "power" for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).
 #' @param  n_iter number of iterations (only relevant for power method) Should be at most 2147483647 due to INT_MAX in C++ backend.
 #' @param  random_state seed (NULL for auto-generated)
 #' @param  tol Tolerance for "power" method. Ignored by "cusolver". Should be > 0.0 to ensure convergence. Should be 0.0 to effectively ignore and only base convergence upon n_iter

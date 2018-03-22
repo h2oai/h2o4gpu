@@ -168,22 +168,15 @@ class PCA(TruncatedSVD):
         making their data respect some hard-wired assumptions.
 
     svd_solver : string {'auto', 'full', 'arpack', 'randomized'}
-        auto :
-            the solver is selected by a default policy based on `X.shape` and
-            `n_components`: if the input data is larger than 500x500 and the
-            number of components to extract is lower than 80% of the smallest
-            dimension of the data, then the more efficient 'randomized'
-            method is enabled. Otherwise the exact full SVD is computed and
-            optionally truncated afterwards.
-        full :
-            run exact full SVD calling the standard LAPACK solver via
-            `scipy.linalg.svd` and select the components by postprocessing
-        arpack :
-            run SVD truncated to n_components calling ARPACK solver via
-            `scipy.sparse.linalg.svds`. It requires strictly
-            0 < n_components < X.shape[1]
-        randomized :
-            run randomized SVD by the method of Halko et al.
+        'auto' is selected by a default policy based on `X.shape`
+        and `n_components`: if the input data is larger than 500x500 and the number
+        of components to extract is lower than 80 percent of the smallest
+        dimension of the data, then the more efficient 'randomized'
+        method is enabled. Otherwise the exact full SVD is computed and
+        optionally truncated afterwards. 'full' runs exact full SVD calling the standard LAPACK solver via
+        `scipy.linalg.svd` and select the components by postprocessing
+        'arpack'runs SVD truncated to n_components calling ARPACK solver via `scipy.sparse.linalg.svds`.
+        It requires strictly 0 < n_components < columns. 'randomized' runs randomized SVD by the method of Halko et al.
 
     tol : float >= 0, optional (default .0)
         Tolerance for singular values computed by svd_solver == 'arpack'.

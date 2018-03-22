@@ -82,8 +82,6 @@ h2o4gpu.elastic_net_classifier(alpha = 1, l1_ratio = 0.5,
 \item{order}{Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.}
 
 \item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
-
-\item{family}{"logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".}
 }
 \description{
 Elastic Net Classifier
