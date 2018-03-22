@@ -143,8 +143,3 @@ examples/py/demos/H2O4GPU_GLM.ipynb
 examples/py/demos/H2O4GPU_GBM.ipynb
 examples/py/demos/H2O4GPU_KMeans_Images.ipynb
 ```
-
-- To compile and run gpu C++ version:
-```
-cd $BASE/examples/cpp && make -j all ; make run
-```

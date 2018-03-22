@@ -120,7 +120,6 @@ update_submodule:
 
 cpp:
 	(mkdir -p build; cd build; cmake ../; make -j)
-	$(MAKE) -j all -C examples/cpp/
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
@@ -150,7 +149,6 @@ cleanbuild: cleancpp cleanpy
 
 cleancpp:
 	$(MAKE) -j clean -C src/
-	$(MAKE) -j clean -C examples/cpp/
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
