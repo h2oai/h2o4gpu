@@ -275,9 +275,9 @@ class RandomForestClassifier(object):
             class_weight=class_weight)
 
         # Parameters for random forest
-        silent = False
+        silent = True
         if verbose != 0:
-            silent = True
+            silent = False
         if random_state is None:
             random_state = 0
 
@@ -608,9 +608,9 @@ class RandomForestRegressor(object):
             warm_start=warm_start)
 
         # Parameters for random forest
-        silent = False
+        silent = True
         if verbose != 0:
-            silent = True
+            silent = False
         if random_state is None:
             random_state = 0
 
@@ -957,9 +957,9 @@ class GradientBoostingClassifier(object):
             presort=presort)  # h2o4gpu)
 
         # Parameters for gbm
-        silent = False
+        silent = True
         if verbose != 0:
-            silent = True
+            silent = False
         if random_state is None:
             random_state = 0
 
@@ -1341,9 +1341,9 @@ class GradientBoostingRegressor(object):
             presort=presort)  # h2o4gpu)
 
         # Parameters for gbm
-        silent = False
+        silent = True
         if verbose != 0:
-            silent = True
+            silent = False
         if random_state is None:
             random_state = 0
 
