@@ -14,7 +14,7 @@ h2o4gpu.elastic_net_classifier(alpha = 1, l1_ratio = 0.5,
   n_alphas = 5L, tol_seek_factor = 0.1, store_full_path = 0L,
   lambda_max = NULL, alpha_max = 1, alpha_min = 0, alphas = NULL,
   lambdas = NULL, double_precision = NULL, order = NULL,
-  backend = "h2o4gpu", family = "unused")
+  backend = "h2o4gpu")
 }
 \arguments{
 \item{alpha}{Constant that multiplies the penalty terms. Defaults to 1.0. See the notes for the exact mathematical meaning of this parameter.\code{alpha = 0} is equivalent to an ordinary least square, solved by the :class:\code{LinearRegressionSklearn} object. For numerical reasons, using \code{alpha = 0} with the \code{LassoSklearn} object is not advised. Given this, you should use the :class:\code{LinearRegressionSklearn} object.}
@@ -82,8 +82,6 @@ h2o4gpu.elastic_net_classifier(alpha = 1, l1_ratio = 0.5,
 \item{order}{Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.}
 
 \item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
-
-\item{family}{"logistic" for classification with logistic regression. Defaults to "elasticnet" for regression. Must be "logistic" or "elasticnet".}
 }
 \description{
 Elastic Net Classifier

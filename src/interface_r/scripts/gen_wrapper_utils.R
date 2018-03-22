@@ -18,7 +18,10 @@ gen_wrapper <- function(
       write_line(paste0("#' @title ", description))
       write_line("#' ")
       for(i in 1:length(docs$parameters)) {
-        write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
+        #Family arg is not needed as we have separate methods for classifier/regression
+        if (names(docs$parameters)[i] != "family") {
+          write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
+        }
       }
       write_line("#' @export")
       if (is.null(r_function)) {

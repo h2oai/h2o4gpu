@@ -11,7 +11,7 @@ h2o4gpu.truncated_svd(n_components = 2L, algorithm = "power",
 \arguments{
 \item{n_components}{Desired dimensionality of output data}
 
-\item{algorithm}{SVD solver to use. H2O4GPU options: Either “cusolver” (similar to ARPACK) or “power” for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).}
+\item{algorithm}{SVD solver to use. H2O4GPU options: Either "cusolver" (similar to ARPACK) or "power" for the power method. SKlearn options: Either "arpack" for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).}
 
 \item{n_iter}{number of iterations (only relevant for power method) Should be at most 2147483647 due to INT_MAX in C++ backend.}
 
