@@ -1,4 +1,5 @@
 #- * - encoding : utf - 8 - * -
+# pylint: disable=fixme, line-too-long
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -23,80 +24,99 @@ from ..util.gpu import device_count
 class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
 
-    :param int n_threads : Number of threads to use in the gpu.
-    Each thread is an independent model builder. Default is None.
+       Parameters
+       ----------
+       n_threads : int, (Default=None)
+           Number of threads to use in the gpu.
+           Each thread is an independent model builder.
 
-    :param gpu_id : int, optional, default: 0
-        ID of the GPU on which the algorithm should run.
+       gpu_id : int, optional, (default=0)
+           ID of the GPU on which the algorithm should run.
 
-    :param int n_gpus : Number of gpu's to use in GLM solver. Default is -1.
+       n_gpus : int, (Default=-1)
+           Number of gpu's to use in GLM solver.
 
-    :param str order : Row or Column major for C/C++ backend. Default is 'r'.
-        Must be 'r' (Row major) or 'c' (Column major).
+       order : string, (Default='r')
+           Row or Column major for C/C++ backend. Default is 'r'.
+           Must be 'r' (Row major) or 'c' (Column major).
 
-    :param bool fit_intercept : Include constant term in the model.
-        Default is True.
+       fit_intercept : bool, (default=True)
+           Include constant term in the model.
 
-    :param float lambda_min_ratio: Minimum lambda ratio to maximum lambda, used
-        in lambda search. Default is 1e-7.
+       lambda_min_ratio: float, (Default=1E-7).
+           Minimum lambda ratio to maximum lambda, used
+           in lambda search.
 
-    :param int n_lambdas : Number of lambdas to be used in a search.
-        Default is 100.
+       n_lambdas : int, (Default=100)
+           Number of lambdas to be used in a search.
 
-    :param int n_folds : Number of cross validation folds. Default is 1.
+       n_folds : int,  (Default=1)
+           Number of cross validation folds.
 
-    :param int n_alphas : Number of alphas to be used in a search. Default is 5.
+       n_alphas : int, (Default=5)
+           Number of alphas to be used in a search.
 
-    :param float tol : Relative tolerance.  Default is 1E-2.
+       tol : float, (Default=1E-2)
+           Relative tolerance.
 
-    :param float tol_seek_factor : factor of tolerance to seek
-        once below null model accuracy.  Default is 1E-1, so seeks tolerance
-        of 1E-3 once below null model accuracy for tol=1E-2.
+       tol_seek_factor : float, (Default=1E-1)
+           Factor of tolerance to seek
+           once below null model accuracy.  Default is 1E-1, so seeks tolerance
+           of 1E-3 once below null model accuracy for tol=1E-2.
 
-    :param bool lambda_stop_early : Stop early when there is no more relative
-        improvement on train or validation. Default is True.
+       lambda_stop_early : float, (Default=True)
+           Stop early when there is no more relative
+           improvement on train or validation.
 
-    :param bool glm_stop_early : Stop early when there is no more relative
-        improvement in the primary and dual residuals for ADMM.  Default is True
+       glm_stop_early : bool, (Default=True)
+           Stop early when there is no more relative
+           improvement in the primary and dual residuals for ADMM.
 
-    :param float glm_stop_early_error_fraction : Relative tolerance for
-        metric-based stopping criterion (stop if relative improvement is not at
-        least this much). Default is 1.0.
+       glm_stop_early_error_fraction : float, (Default=1.0)
+           Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at
+           least this much).
 
-    :param int max_iter : Maximum number of iterations. Default is 5000
+       max_iter : int, (Default=5000)
+           Maximum number of iterations.
 
-    :param int verbose : Print verbose information to the console if set to > 0.
-        Default is 0.
+       verbose : int, (Default=0)
+           Print verbose information to the console if set to > 0.
 
-    :param str family : "logistic" for classification with logistic regression.
-        Defaults to "elasticnet" for regression.
-        Must be "logistic" or "elasticnet".
+       family : string, (Default="elasticnet")
+           "logistic" for classification with logistic regression.
+           Defaults to "elasticnet" for regression.
+           Must be "logistic" or "elasticnet".
 
-    :param int store_full_path: Whether to store full solution for all alphas
-        and lambdas.  If 1, then during predict will compute best
-        and full predictions.
-        Default is 0.
+       store_full_path: int, (Default=0)
+           Whether to store full solution for all alphas
+           and lambdas.  If 1, then during predict will compute best
+           and full predictions.
 
-    :param int,float lambda_max : Maximum Lambda value to use.
-        Default is None, and then internally compute standard maximum
+       lambda_max : int, (Default=None)
+           Maximum Lambda value to use.
+           Default is None, and then internally compute standard maximum
 
-    :param int,float alpha_max : Maximum alpha.  Default is 1.0.
+       alpha_max : float, (Default=1.0)
+           Maximum alpha.
 
-    :param int,float alpha_min : Minimum alpha.  Default is 0.0.
+       alpha_min : float, (Default=0.0)
+           Minimum alpha.
 
-    :param int,float alphas: list, tuple, array, or numpy 1D array of alphas,
-        overrides n_alphas, alpha_min, and alpha_max. Default is None.
+       alphas: list, tuple, array, or numpy 1D array of alphas (Default=None)
+           overrides n_alphas, alpha_min, and alpha_max.
 
-    :param int,float lambdas: list, tuple, array, or numpy 1D array of lambdas,
-        overrides n_lambdas, lambda_max, and lambda_min_ratio. Default is None.
+       lambdas: list, tuple, array, or numpy 1D array of lambdas (Default=None)
+           overrides n_lambdas, lambda_max, and lambda_min_ratio.
 
-    :param int double_precision: float32 (0) and float64 (1).
-        Default is None, internally set unless using _ptr methods
+       double_precision: int, (Default=None)
+           Internally set unless using _ptr methods. Value can either be
+           0 (float32) or 1(float64)
 
-    :param order : Order of data.  Default is None, and internally
-        determined (unless using _ptr methods) whether
-        row 'r' or column 'c' major order.
-    """
+       order : string, (Default=None)
+           Order of data. Default is None, and internally
+           determined (unless using _ptr methods) whether
+           row 'r' or column 'c' major order.
+       """
 
     class info:
         pass
@@ -199,12 +219,21 @@ class ElasticNetH2O(object):
         self.lambdas_list = lambdas
 
         # default None for _full stuff
+        self.error_vs_alpha_lambda = None
+        self.intercept_ = None
+        self._tols2 = None
+        self._lambdas2 = None
+        self._alphas2 = None
+        self.error_vs_alpha = None
+        self.valid_pred_vs_alphapure = None
+        self.x_vs_alphapure = None
         self.x_vs_alpha_lambdanew = None
         self.x_vs_alpha_lambdapure = None
         self.valid_pred_vs_alpha_lambdapure = None
         self._lambdas = None
         self._alphas = None
         self._tols = None
+        self.intercept2_ = None
 
         #Experimental features
         #TODO _shared_a and _standardize do not work currently.
@@ -306,13 +335,35 @@ class ElasticNetH2O(object):
         return self
 
 #TODO Add typechecking
-
     def predict(self,
                 valid_x=None,
                 valid_y=None,
                 sample_weight=None,
                 free_input_data=1):
-        """Predict on a fitted GLM
+        """Predict on a fitted GLM and get back class predictions for binomial models
+        for classification and predicted values for regression.
+
+        :param ndarray valid_x : Validation features
+
+        :param ndarray valid_y : Validation response
+
+        :param ndarray weight : Observation weights
+
+        :param int free_input_data : Indicate if input data should be freed at
+            the end of fit(). Default is 1.
+        """
+        res = self.predict_proba(valid_x, valid_y, sample_weight, free_input_data)
+        if self.family == "logistic":
+            res[res < 0.5] = 0
+            res[res > 0.5] = 1
+        return res
+
+    def predict_proba(self,
+                      valid_x=None,
+                      valid_y=None,
+                      sample_weight=None,
+                      free_input_data=1):
+        """Predict on a fitted GLM and get back uncalibrated probabilities for classification models
 
         :param ndarray valid_x : Validation features
 
@@ -1292,15 +1343,156 @@ class ElasticNetH2O(object):
 class ElasticNet(object):
     """H2O ElasticNet Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
-        and h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn
-        Documentation:
-        import h2o4gpu.solvers ;
-        help(h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu)
-        help(h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn)
+    Selects between h2o4gpu.solvers.elastic_net.ElasticNet_h2o4gpu
+    and h2o4gpu.linear_model.coordinate_descent.ElasticNet_sklearn
 
-    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
-        'h2o4gpu'.  Default is 'auto'.
+    Parameters
+    ----------
+    alpha : float, optional
+        Constant that multiplies the penalty terms. Defaults to 1.0.
+        See the notes for the exact mathematical meaning of this
+        parameter.``alpha = 0`` is equivalent to an ordinary least square,
+        solved by the :class:`LinearRegressionSklearn` object. For numerical
+        reasons, using ``alpha = 0`` with the ``LassoSklearn`` object is not advised.
+        Given this, you should use the :class:`LinearRegressionSklearn` object.
+
+    l1_ratio : float
+        The ElasticNetSklearn mixing parameter, with ``0 <= l1_ratio <= 1``. For
+        ``l1_ratio = 0`` the penalty is an L2 penalty. ``For l1_ratio = 1`` it
+        is an L1 penalty.  For ``0 < l1_ratio < 1``, the penalty is a
+        combination of L1 and L2.
+
+    fit_intercept : bool
+        Whether the intercept should be estimated or not. If ``False``, the
+        data is assumed to be already centered.
+
+    normalize : boolean, optional, default False
+        This parameter is ignored when ``fit_intercept`` is set to False.
+        If True, the regressors X will be normalized before regression by
+        subtracting the mean and dividing by the l2-norm.
+        If you wish to standardize, please use
+        :class:`h2o4gpu.preprocessing.StandardScaler` before calling ``fit``
+        on an estimator with ``normalize=False``.
+
+    precompute : True | False | array-like
+        Whether to use a precomputed Gram matrix to speed up
+        calculations. The Gram matrix can also be passed as argument.
+        For sparse input this option is always ``True`` to preserve sparsity.
+
+    max_iter : int, optional
+        The maximum number of iterations
+
+    copy_X : boolean, optional, default True
+        If ``True``, X will be copied; else, it may be overwritten.
+
+    tol : float, optional
+        The tolerance for the optimization: if the updates are
+        smaller than ``tol``, the optimization code checks the
+        dual gap for optimality and continues until it is smaller
+        than ``tol``.
+
+    warm_start : bool, optional
+        When set to ``True``, reuse the solution of the previous call to fit as
+        initialization, otherwise, just erase the previous solution.
+
+    positive : bool, optional
+        When set to ``True``, forces the coefficients to be positive.
+
+    random_state : int, RandomState instance or None, optional, default None
+        The seed of the pseudo random number generator that selects a random
+        feature to update.  If int, random_state is the seed used by the random
+        number generator; If RandomState instance, random_state is the random
+        number generator; If None, the random number generator is the
+        RandomState instance used by `np.random`. Used when ``selection`` ==
+        'random'.
+
+    selection : str, default 'cyclic'
+        If set to 'random', a random coefficient is updated every iteration
+        rather than looping over features sequentially by default. This
+        (setting to 'random') often leads to significantly faster convergence
+        especially when tol is higher than 1e-4.
+
+    n_gpus : int, (Default=-1)
+        Number of gpu's to use in GLM solver.
+
+    lambda_stop_early : float, (Default=True)
+        Stop early when there is no more relative
+        improvement on train or validation.
+
+    glm_stop_early : bool, (Default=True)
+        Stop early when there is no more relative
+        improvement in the primary and dual residuals for ADMM.
+
+    glm_stop_early_error_fraction : float, (Default=1.0)
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at
+        least this much).
+
+    verbose : int, (Default=0)
+        Print verbose information to the console if set to > 0.
+
+    n_threads : int, (Default=None)
+        Number of threads to use in the gpu.
+        Each thread is an independent model builder.
+
+    gpu_id : int, optional, (default=0)
+        ID of the GPU on which the algorithm should run.
+
+    lambda_min_ratio: float, (Default=1E-7).
+        Minimum lambda ratio to maximum lambda, used
+        in lambda search.
+
+    n_lambdas : int, (Default=100)
+        Number of lambdas to be used in a search.
+
+    n_folds : int,  (Default=1)
+        Number of cross validation folds.
+
+    n_alphas : int, (Default=5)
+        Number of alphas to be used in a search.
+
+    tol_seek_factor : float, (Default=1E-1)
+        Factor of tolerance to seek
+        once below null model accuracy.  Default is 1E-1, so seeks tolerance
+        of 1E-3 once below null model accuracy for tol=1E-2.
+
+    family : string, (Default="elasticnet")
+        "logistic" for classification with logistic regression.
+        Defaults to "elasticnet" for regression.
+        Must be "logistic" or "elasticnet".
+
+    store_full_path: int, (Default=0)
+        Whether to store full solution for all alphas
+        and lambdas.  If 1, then during predict will compute best
+        and full predictions.
+
+    lambda_max : int, (Default=None)
+        Maximum Lambda value to use.
+        Default is None, and then internally compute standard maximum
+
+    alpha_max : float, (Default=1.0)
+        Maximum alpha.
+
+    alpha_min : float, (Default=0.0)
+        Minimum alpha.
+
+    alphas: list, tuple, array, or numpy 1D array of alphas (Default=None)
+        overrides n_alphas, alpha_min, and alpha_max.
+
+    lambdas: list, tuple, array, or numpy 1D array of lambdas (Default=None)
+        overrides n_lambdas, lambda_max, and lambda_min_ratio.
+
+    double_precision: int, (Default=None)
+        Internally set unless using _ptr methods. Value can either be
+        0 (float32) or 1(float64)
+
+    order : string, (Default=None)
+        Order of data. Default is None, and internally
+        determined (unless using _ptr methods) whether
+        row 'r' or column 'c' major order.
+
+    backend : string, (Default="auto")
+        Which backend to use.
+        Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
     """

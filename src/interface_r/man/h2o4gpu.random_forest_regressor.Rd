@@ -14,6 +14,53 @@ h2o4gpu.random_forest_regressor(n_estimators = 10L, criterion = "mse",
   tree_method = "gpu_hist", n_gpus = -1L, predictor = "gpu_predictor",
   backend = "h2o4gpu")
 }
+\arguments{
+\item{n_estimators}{The number of trees in the forest.}
+
+\item{criterion}{The function to measure the quality of a split. Supported criteria are "mse" for the mean squared error, which is equal to variance reduction as feature selection criterion, and "mae" for the mean absolute error.}
+
+\item{max_depth}{The maximum depth of the tree. If NULL, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.}
+
+\item{min_samples_split}{The minimum number of samples required to split an internal node:}
+
+\item{min_samples_leaf}{The minimum number of samples required to be at a leaf node:}
+
+\item{min_weight_fraction_leaf}{The minimum weighted fraction of the sum total of weights (of all the input samples) required to be at a leaf node. Samples have equal weight when sample_weight is not provided.}
+
+\item{max_features}{The number of features to consider when looking for the best split:}
+
+\item{max_leaf_nodes}{Grow trees with \code{max_leaf_nodes} in best-first fashion. Best nodes are defined as relative reduction in impurity. If NULL then unlimited number of leaf nodes.}
+
+\item{min_impurity_decrease}{A node will be split if this split induces a decrease of the impurity greater than or equal to this value.}
+
+\item{min_impurity_split}{Threshold for early stopping in tree growth. A node will split if its impurity is above the threshold, otherwise it is a leaf.}
+
+\item{bootstrap}{Whether bootstrap samples are used when building trees.}
+
+\item{oob_score}{whether to use out-of-bag samples to estimate the R^2 on unseen data.}
+
+\item{n_jobs}{The number of jobs to run in parallel for both \code{fit} and \code{predict}. If -1, then the number of jobs is set to the number of cores.}
+
+\item{random_state}{If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by \code{np.random}.}
+
+\item{verbose}{Controls the verbosity of the tree building process.}
+
+\item{warm_start}{When set to \code{TRUE}, reuse the solution of the previous call to fit and add more estimators to the ensemble, otherwise, just fit a whole new forest.}
+
+\item{subsample}{Subsample ratio of the training instance.}
+
+\item{colsample_bytree}{Subsample ratio of columns when constructing each tree.}
+
+\item{num_parallel_tree}{Number of trees to grow per round}
+
+\item{tree_method}{The tree construction algorithm used in XGBoost Distributed and external memory version only support approximate algorithm. Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’} ‘auto’: Use heuristic to choose faster one. - For small to medium dataset, exact greedy will be used. - For very large-dataset, approximate algorithm will be chosen. - Because old behavior is always use exact greedy in single machine, - user will get a message when approximate algorithm is chosen to notify this choice. ‘exact’: Exact greedy algorithm. ‘approx’: Approximate greedy algorithm using sketching and histogram. ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching. ‘gpu_exact’: GPU implementation of exact algorithm. ‘gpu_hist’: GPU implementation of hist algorithm.}
+
+\item{n_gpus}{Number of gpu's to use in RandomForestRegressor solver. Default is -1.}
+
+\item{predictor}{The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.}
+
+\item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+}
 \description{
 Random Forest Regressor
 }

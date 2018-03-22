@@ -16,6 +16,13 @@ gen_wrapper <- function(
       docs <- reticulate::py_function_docs(python_function)
       write_line(paste0("#' @description ", description))
       write_line(paste0("#' @title ", description))
+      write_line("#' ")
+      for(i in 1:length(docs$parameters)) {
+        #Family arg is not needed as we have separate methods for classifier/regression
+        if (names(docs$parameters)[i] != "family") {
+          write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
+        }
+      }
       write_line("#' @export")
       if (is.null(r_function)) {
         r_function <- docs$name

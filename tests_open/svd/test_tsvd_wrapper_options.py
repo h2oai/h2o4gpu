@@ -9,10 +9,12 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000, n=10, k=9, algorithm="cusolver"):
+def func(m=5000, n=10, k=9, algorithm="cusolver", convert_to_float32=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
+    if convert_to_float32:
+        X = X.astype(np.float32)
     print("SVD on " + str(X.shape[0]) + " by " + str(X.shape[1]) + " matrix")
     print("Original X Matrix")
     print(X)
@@ -91,5 +93,6 @@ def func(m=5000, n=10, k=9, algorithm="cusolver"):
 
 
 def test_tsvd_error_k2_cusolver_wrappertest(): func(n=50, k=2, algorithm="cusolver")
+def test_tsvd_error_k2_cusolver_wrappertest_float32(): func(n=50, k=2, algorithm="cusolver", convert_to_float32=True)
 @pytest.mark.skip("Failing")
 def test_tsvd_error_k2_power_wrappertest(): func(n=50, k=2, algorithm="power")

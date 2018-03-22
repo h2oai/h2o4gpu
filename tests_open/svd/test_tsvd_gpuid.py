@@ -9,11 +9,13 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000, n=10, k=9):
+def func(m=5000, n=10, k=9, convert_to_float32=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
 
+    if convert_to_float32:
+        X = X.astype(np.float32)
     gpu_id = 0
 
     total_gpu, total_mem, gpu_type = gpu.get_gpu_info()
@@ -43,3 +45,4 @@ def func(m=5000, n=10, k=9):
     print(h2o4gpu_tsvd.explained_variance_ratio_)
 
 def test_tsvd_gpu_id(): func(k=5)
+def test_tsvd_gpu_id_float32(): func(k=5, convert_to_float32=True)

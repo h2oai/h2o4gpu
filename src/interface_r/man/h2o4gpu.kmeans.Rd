@@ -10,6 +10,37 @@ h2o4gpu.kmeans(n_clusters = 8L, init = "k-means++", n_init = 1L,
   algorithm = "auto", gpu_id = 0L, n_gpus = -1L, do_checks = 1L,
   backend = "h2o4gpu")
 }
+\arguments{
+\item{n_clusters}{The number of clusters to form as well as the number of centroids to generate.}
+
+\item{init}{Method for initialization, defaults to 'random': 'k-means++' : selects initial cluster centers for k-mean clustering in a smart way to speed up convergence. \emph{Not supported yet} - if chosen we will use SKLearn's methods. 'random': choose k observations (rows) at random from data for the initial centroids. If an ndarray is passed, it should be of shape (n_clusters, n_features) and gives the initial centers. \emph{Not supported yet} - if chosen we will use SKLearn's methods.}
+
+\item{n_init}{Number of time the k-means algorithm will be run with different centroid seeds. The final results will be the best output of n_init consecutive runs in terms of inertia. \emph{Not supported yet} - always runs 1.}
+
+\item{max_iter}{Maximum number of iterations of the algorithm.}
+
+\item{tol}{Relative tolerance to declare convergence.}
+
+\item{precompute_distances}{Precompute distances (faster but takes more memory). 'auto' : do not precompute distances if n_samples * n_clusters > 12 million. This corresponds to about 100MB overhead per job using double precision. TRUE : always precompute distances FALSE : never precompute distances \emph{Not supported yet} - always uses auto if running h2o4gpu version.}
+
+\item{verbose}{Logger verbosity level.}
+
+\item{random_state}{random_state for RandomState. Must be convertible to 32 bit unsigned integers.}
+
+\item{copy_x}{When pre-computing distances it is more numerically accurate to center the data first. If copy_x is TRUE, then the original data is not modified. If FALSE, the original data is modified, and put back before the function returns, but small numerical differences may be introduced by subtracting and then adding the data mean. \emph{Not supported yet} - always uses TRUE if running h2o4gpu version.}
+
+\item{n_jobs}{The number of jobs to use for the computation. This works by computing each of the n_init runs in parallel. If -1 all CPUs are used. If 1 is given, no parallel computing code is used at all, which is useful for debugging. For n_jobs below -1, (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one are used. \emph{Not supported yet} - CPU backend not yet implemented.}
+
+\item{algorithm}{K-means algorithm to use. The classical EM-style algorithm is "full". The "elkan" variation is more efficient by using the triangle inequality, but currently doesn't support sparse data. "auto" chooses "elkan" for dense data and "full" for sparse data. \emph{Not supported yet} - always uses full if running h2o4gpu version.}
+
+\item{gpu_id}{ID of the GPU on which the algorithm should run.}
+
+\item{n_gpus}{Number of GPUs on which the algorithm should run. < 0 means all possible GPUs on the machine. 0 means no GPUs, run on CPU.}
+
+\item{do_checks}{If set to 0 GPU error check will not be performed.}
+
+\item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+}
 \description{
 K-means Clustering
 }

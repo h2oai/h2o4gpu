@@ -16,6 +16,73 @@ h2o4gpu.elastic_net_regressor(alpha = 1, l1_ratio = 0.5,
   lambdas = NULL, double_precision = NULL, order = NULL,
   backend = "h2o4gpu")
 }
+\arguments{
+\item{alpha}{Constant that multiplies the penalty terms. Defaults to 1.0. See the notes for the exact mathematical meaning of this parameter.\code{alpha = 0} is equivalent to an ordinary least square, solved by the :class:\code{LinearRegressionSklearn} object. For numerical reasons, using \code{alpha = 0} with the \code{LassoSklearn} object is not advised. Given this, you should use the :class:\code{LinearRegressionSklearn} object.}
+
+\item{l1_ratio}{The ElasticNetSklearn mixing parameter, with \code{0 <= l1_ratio <= 1}. For \code{l1_ratio = 0} the penalty is an L2 penalty. \code{For l1_ratio = 1} it is an L1 penalty. For \code{0 < l1_ratio < 1}, the penalty is a combination of L1 and L2.}
+
+\item{fit_intercept}{Whether the intercept should be estimated or not. If \code{FALSE}, the data is assumed to be already centered.}
+
+\item{normalize}{This parameter is ignored when \code{fit_intercept} is set to FALSE. If TRUE, the regressors X will be normalized before regression by subtracting the mean and dividing by the l2-norm. If you wish to standardize, please use :class:\code{h2o4gpu.preprocessing.StandardScaler} before calling \code{fit} on an estimator with \code{normalize=FALSE}.}
+
+\item{precompute}{Whether to use a precomputed Gram matrix to speed up calculations. The Gram matrix can also be passed as argument. For sparse input this option is always \code{TRUE} to preserve sparsity.}
+
+\item{max_iter}{The maximum number of iterations}
+
+\item{copy_X}{If \code{TRUE}, X will be copied; else, it may be overwritten.}
+
+\item{tol}{The tolerance for the optimization: if the updates are smaller than \code{tol}, the optimization code checks the dual gap for optimality and continues until it is smaller than \code{tol}.}
+
+\item{warm_start}{When set to \code{TRUE}, reuse the solution of the previous call to fit as initialization, otherwise, just erase the previous solution.}
+
+\item{positive}{When set to \code{TRUE}, forces the coefficients to be positive.}
+
+\item{random_state}{The seed of the pseudo random number generator that selects a random feature to update. If int, random_state is the seed used by the random number generator; If RandomState instance, random_state is the random number generator; If NULL, the random number generator is the RandomState instance used by \code{np.random}. Used when \code{selection} == 'random'.}
+
+\item{selection}{If set to 'random', a random coefficient is updated every iteration rather than looping over features sequentially by default. This (setting to 'random') often leads to significantly faster convergence especially when tol is higher than 1e-4.}
+
+\item{n_gpus}{Number of gpu's to use in GLM solver.}
+
+\item{lambda_stop_early}{Stop early when there is no more relative improvement on train or validation.}
+
+\item{glm_stop_early}{Stop early when there is no more relative improvement in the primary and dual residuals for ADMM.}
+
+\item{glm_stop_early_error_fraction}{Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).}
+
+\item{verbose}{Print verbose information to the console if set to > 0.}
+
+\item{n_threads}{Number of threads to use in the gpu. Each thread is an independent model builder.}
+
+\item{gpu_id}{ID of the GPU on which the algorithm should run.}
+
+\item{lambda_min_ratio}{Minimum lambda ratio to maximum lambda, used in lambda search.}
+
+\item{n_lambdas}{Number of lambdas to be used in a search.}
+
+\item{n_folds}{Number of cross validation folds.}
+
+\item{n_alphas}{Number of alphas to be used in a search.}
+
+\item{tol_seek_factor}{Factor of tolerance to seek once below null model accuracy. Default is 1E-1, so seeks tolerance of 1E-3 once below null model accuracy for tol=1E-2.}
+
+\item{store_full_path}{Whether to store full solution for all alphas and lambdas. If 1, then during predict will compute best and full predictions.}
+
+\item{lambda_max}{Maximum Lambda value to use. Default is NULL, and then internally compute standard maximum}
+
+\item{alpha_max}{Maximum alpha.}
+
+\item{alpha_min}{Minimum alpha.}
+
+\item{alphas}{overrides n_alphas, alpha_min, and alpha_max.}
+
+\item{lambdas}{overrides n_lambdas, lambda_max, and lambda_min_ratio.}
+
+\item{double_precision}{Internally set unless using _ptr methods. Value can either be 0 (float32) or 1(float64)}
+
+\item{order}{Order of data. Default is NULL, and internally determined (unless using _ptr methods) whether row 'r' or column 'c' major order.}
+
+\item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+}
 \description{
 Elastic Net Regressor
 }

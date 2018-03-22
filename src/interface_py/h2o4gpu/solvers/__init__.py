@@ -21,3 +21,10 @@ from ..solvers.xgboost import GradientBoostingClassifier
 from ..solvers.xgboost import GradientBoostingRegressor
 from ..solvers.truncated_svd import TruncatedSVDH2O
 from ..solvers.truncated_svd import TruncatedSVD
+try:
+    __import__('daal')
+    from ..solvers.daal_solver.regression import LinearRegression as DLR
+    from ..solvers.daal_solver.regression import RidgeRegression as DRR
+    from ..solvers.daal_solver.svd import *
+except:
+    pass

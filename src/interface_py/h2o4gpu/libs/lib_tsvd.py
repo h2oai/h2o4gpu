@@ -46,10 +46,26 @@ def _load_tsvd_lib(lib_path):
     """
     try:
         h2o4gpu_tsvd_lib = ctypes.cdll.LoadLibrary(lib_path)
+
+        #Original Version
         h2o4gpu_tsvd_lib.truncated_svd.argtypes = \
             [ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             parameters]
+
+        #Float version
+        h2o4gpu_tsvd_lib.truncated_svd_float.argtypes = \
+            [ctypes.POINTER(ctypes.c_float),
+             ctypes.POINTER(ctypes.c_float),
+             ctypes.POINTER(ctypes.c_float),
+             ctypes.POINTER(ctypes.c_float),
+             parameters]
+
+        #Double version
+        h2o4gpu_tsvd_lib.truncated_svd_double.argtypes = \
+            [ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
