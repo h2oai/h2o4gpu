@@ -31,14 +31,14 @@ The Python package is a prerequisite for the R package. So first, follow the ins
 
 The R package can be installed from CRAN using `install.packages("h2o4gpu")`.  To ensure compatibility, the Python package version number should match the R package version number.  To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
 
-```{r}
+```{r, eval = FALSE}
 library(devtools)
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
 If the Python package was installed into a virtual environment, you may have to add thesse two lines of code to the top of your script.  The path you will use will be the path of your virtual environment:
 
-```{r}
+```{r, eval = FALSE}
 library(reticulate)
 use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
 ```
@@ -57,7 +57,7 @@ use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
 
 # Prepare data
 x <- iris[1:4]
-y <- as.integer(iris$Species) - 1  # all columns, including the response, must be numeric
+y <- as.integer(iris$Species) # all columns, including the response, must be numeric
 
 # Initialize and train the classifier
 model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
