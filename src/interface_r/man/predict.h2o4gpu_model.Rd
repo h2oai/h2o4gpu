@@ -4,7 +4,7 @@
 \alias{predict.h2o4gpu_model}
 \title{Make Predictions using Trained H2O4GPU Estimator}
 \usage{
-\method{predict}{h2o4gpu_model}(object, x, type = "raw", ...)
+\method{predict}{h2o4gpu_model}(object, x, type = c("raw", "prob"), ...)
 }
 \arguments{
 \item{object}{The h2o4gpu model object}
