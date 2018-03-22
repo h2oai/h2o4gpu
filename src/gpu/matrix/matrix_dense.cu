@@ -30,10 +30,7 @@
 #include <cmath>
 #include <limits>
 #include <thrust/fill.h>
-
-
-
-extern int checkwDev(int wDev);
+#include "../include/cuda_utils.h"
 
 namespace h2o4gpu {
 

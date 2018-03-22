@@ -47,10 +47,6 @@ MKLSTUFF=
 endif
 
 # CUDA Flags
-#CUDA_LIB=$(CUDA_HOME)/lib64
-#CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
-#CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
-#CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
 CUB_HOME=../cub/
 
 LINKFLAGS=$(ICCSTUFF) $(MKLSTUFF) $(GCCSTUFF)

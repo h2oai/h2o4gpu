@@ -34,7 +34,6 @@ smalldata/
 tests/smalldata
 tests/data
 *.idea/
-*.txt
 *.so
 *.gz
 *.swp

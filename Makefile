@@ -6,7 +6,6 @@ $(info ** ------------------------------------------------------------------ **)
 NVCC := $(shell command -v nvcc 2> /dev/null)
 
 SHELL := /bin/bash # force avoidance of dash as shell
-# TODO(jon): ensure CPU-only can compile (i.e. no nvcc, etc.)
 #
 # Build specific config
 #
@@ -23,12 +22,12 @@ include src/config2.mk
 
 ifdef NVCC
 ifeq ($(shell test $(CUDA_MAJOR) -ge 9; echo $$?),0)
-$(warning Compiling with Cuda9 or higher)
-XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
+    $(warning Compiling with Cuda9 or higher)
+    XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61;70"
 else
-$(warning Compiling with Cuda8 or lower)
-# >=52 required for kmeans for larger data of size rows/32>2^16
-XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
+    $(warning Compiling with Cuda8 or lower)
+    # >=52 required for kmeans for larger data of size rows/32>2^16
+    XGB_CUDA ?= -DGPU_COMPUTE_VER="35;52;60;61"
 endif
 endif
 
@@ -120,7 +119,7 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	$(MAKE) -j all -C src/
+	(mkdir -p build; cd build; cmake ../; make -j)
 	$(MAKE) -j all -C examples/cpp/
 
 c:
@@ -197,7 +196,7 @@ alldeps-cpu-local: deps_fetch alldeps-install-cpu-local
 alldeps-install-nccl-local: deps_install apply-xgboost-nccl-local apply_py3nvml libsklearn
 alldeps-install-nonccl-local: deps_install apply-xgboost-nonccl-local apply_py3nvml libsklearn
 alldeps-install-cpu-local: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
-alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn
+alldeps_install-cpuonly: deps_install apply-xgboost-cpu-local apply_py3nvml libsklearn install_daal_x86_64
 
 ##### dependencies
 deps_clean:

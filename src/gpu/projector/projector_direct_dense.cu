@@ -15,9 +15,9 @@
 #include "util.h"
 #include "timer.h"
 
-extern int checkwDev(int wDev);
-
 #include "h2o4gpuglm.h"
+
+#include "../include/cuda_utils.h"
 
 namespace h2o4gpu {
 

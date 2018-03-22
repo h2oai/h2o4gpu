@@ -1,0 +1,6 @@
+function(format_gencode_flags flags out)
+    foreach(ver ${flags})
+        set(${out} "${${out}}-gencode arch=compute_${ver},code=sm_${ver};")
+    endforeach()
+    set(${out} "${${out}}" PARENT_SCOPE)
+endfunction(format_gencode_flags flags)

@@ -6,7 +6,7 @@
 
 #include "cuda_utils2.h"
 
-int checkwDev(int wDev){
+inline int checkwDev(int wDev){
 #ifdef DEBUG
   int nVis = 0;
 #pragma omp critical
