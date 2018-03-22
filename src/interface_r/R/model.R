@@ -11,7 +11,7 @@ h2o4gpu_model <- function(model, subclass = NULL, description = NULL) {
 attach_attrs_to_model <- function(r_model_obj) {
   attrs_exclude_from_attach <- c(
     "fit", "fit_predict", "fit_transform", "score", "predict", "transform",
-    "init")
+    "init", "predict_proba")
   attrs_exclude_from_attach <- c(attrs_exclude_from_attach, names(r_model_obj$params))
   
   if (grepl("H2O", as.character(r_model_obj$model))){
@@ -89,18 +89,17 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 #' @param type One of "raw" or "prob", indicating the type of output: predicted values or probabilities
 #' @param ... Additional arguments (unused for now).
 #' @export
-predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
+predict.h2o4gpu_model <- function(object, x, type = c("raw", "prob"), ...) {
+  type <- match.arg(type)
   if (type == "raw") {
     preds <- object$model$predict(X = resolve_model_input(x), ...)
   } else if (type == "prob") {
     preds <- object$model$predict_proba(X = resolve_model_input(x), ...)
     if (!is.null(object$classes_)){
-      colnames(preds) <- object$classes_ #Taken from tree based models
+      colnames(preds) <- object$classes_ # taken from tree based models
     }
-  } else {
-    stop(paste0("Unrecognized 'type' parameter value. Expected either 'raw' or 'prob but got ", type))
   }
-  return(preds)
+  preds
 }
 
 #' Transform a Dataset using Trained H2O4GPU Estimator
