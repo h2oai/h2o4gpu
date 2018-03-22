@@ -145,10 +145,7 @@ clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
-cleanbuild: cleancpp cleanpy
-
-cleancpp:
-	$(MAKE) -j clean -C src/
+cleanbuild: cleanpy
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
