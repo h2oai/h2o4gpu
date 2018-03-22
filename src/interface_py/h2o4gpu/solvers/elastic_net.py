@@ -1643,6 +1643,11 @@ class ElasticNet(object):
         self.set_attributes()
         return res
 
+    def predict_proba(self, X):
+        res = self.model.predict_proba(X)
+        self.set_attributes()
+        return res
+
     def score(self, X, y, sample_weight=None):
         # TODO: add for h2o4gpu
         if self.verbose:
