@@ -4,6 +4,8 @@
 
 ### Build Environment
 
+* Linux machine w/ GCC4.9+ and CMake installed.
+
 * Python 3.6.
 
 For `pyenv` go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv. Then run, e.g.:

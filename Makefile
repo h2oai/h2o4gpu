@@ -122,9 +122,6 @@ cpp:
 	(mkdir -p build; cd build; cmake ../; make -j)
 	$(MAKE) -j all -C examples/cpp/
 
-c:
-	$(MAKE) -j all -C src/interface_c
-
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
@@ -149,14 +146,11 @@ clean: cleanbuild deps_clean xgboost_clean py3nvml_clean
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
-cleanbuild: cleancpp cleanc cleanpy
+cleanbuild: cleancpp cleanpy
 
 cleancpp:
 	$(MAKE) -j clean -C src/
 	$(MAKE) -j clean -C examples/cpp/
-
-cleanc:
-	$(MAKE) -j clean -C src/interface_c
 
 cleanpy:
 	$(MAKE) -j clean -C src/interface_py
@@ -165,9 +159,9 @@ xgboost_clean:
 	-pip uninstall -y xgboost
 	rm -rf xgboost/build/
 
-buildquick: cpp cleanc c py
+buildquick: cpp py
 build: update_submodule buildquick
-buildnocpp: update_submodule cleanc cleanpy c py # avoid cpp
+buildnocpp: update_submodule cleanpy py # avoid cpp
 
 install: pyinstall
 
