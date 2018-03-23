@@ -297,10 +297,12 @@ class RandomForestClassifier(object):
             colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
-            print("Running sklearn RandomForestClassifier")
+            if verbose > 0:
+                print("Running sklearn RandomForestClassifier")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu RandomForestClassifier")
+            if verbose > 0:
+                print("Running h2o4gpu RandomForestClassifier")
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
@@ -630,10 +632,12 @@ class RandomForestRegressor(object):
             colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
-            print("Running sklearn RandomForestRegressor")
+            if verbose > 0:
+                print("Running sklearn RandomForestRegressor")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu RandomForestRegressor")
+            if verbose > 0:
+                print("Running h2o4gpu RandomForestRegressor")
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
@@ -979,10 +983,12 @@ class GradientBoostingClassifier(object):
             backend=backend)  # h2o4gpu
 
         if self.do_sklearn:
-            print("Running sklearn GradientBoostingClassifier")
+            if verbose > 0:
+                print("Running sklearn GradientBoostingClassifier")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu GradientBoostingClassifier")
+            if verbose > 0:
+                print("Running h2o4gpu GradientBoostingClassifier")
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
@@ -1023,7 +1029,7 @@ class GradientBoostingClassifier(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        res = self.model.predict(X)
+        res = self.model.predict_proba(X)
         self.set_attributes()
         return res
 
@@ -1363,10 +1369,12 @@ class GradientBoostingRegressor(object):
             backend=backend)  # h2o4gpu
 
         if self.do_sklearn:
-            print("Running sklearn GradientBoostingRegressor")
+            if verbose > 0:
+                print("Running sklearn GradientBoostingRegressor")
             self.model = self.model_sklearn
         else:
-            print("Running h2o4gpu GradientBoostingRegressor")
+            if verbose > 0:
+                print("Running h2o4gpu GradientBoostingRegressor")
             self.model = self.model_h2o4gpu
 
     def apply(self, X):

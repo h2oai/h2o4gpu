@@ -19,7 +19,7 @@ gen_wrapper <- function(
       write_line("#' ")
       for(i in 1:length(docs$parameters)) {
         #Family arg is not needed as we have separate methods for classifier/regression
-        if (names(docs$parameters)[i] != "family") {
+        if (!(names(docs$parameters)[i] %in% c("family", "alphas", "alpha_max", "alpha_min", "n_alphas"))) {
           write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
         }
       }
@@ -33,6 +33,10 @@ gen_wrapper <- function(
                        paste(r_function, "<- function(\n\t"), docs$signature)
       signature <- gsub('backend = "auto"', 'backend = "h2o4gpu"', signature)
       signature <- gsub('family = "elasticnet",', "", signature)
+      signature <- gsub('n_alphas = 5L,', "", signature)  #train only 1 GLM model
+      signature <- gsub('alpha_max = 1.0,', "", signature)
+      signature <- gsub('alpha_min = 0.0,', "", signature)
+      signature <- gsub('alphas = NULL,', "", signature)
       signature <- gsub(', ', ',\n\t', signature)
       write_line(paste(signature, "{\n"))
       
@@ -57,12 +61,20 @@ gen_wrapper <- function(
             param <- paste0("as_nullable_integer(", param, ")")
           }
           suffix <- ifelse(i < length(params), ",", "\n  )")
-          if (param == "family" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")){
-            if(r_function == "h2o4gpu.elastic_net_classifier"){
+          if (param == "family" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")) {
+            if (r_function == "h2o4gpu.elastic_net_classifier") {
               write_line(paste0("    ", params[[i]], " = ", '"logistic"', suffix))
             } else {
               write_line(paste0("    ", params[[i]], " = ", '"elasticnet"', suffix))
             }
+          } else if (param == "n_alphas" && r_function %in% c("h2o4gpu.elastic_net_classifier","h2o4gpu.elastic_net_regressor")) {
+            write_line(paste0("    ", params[[i]], " = ", '1L', suffix))
+          } else if (param %in% c("alphas")) {
+            write_line(paste0("    ", params[[i]], " = ", 'NULL', suffix))
+          } else if (param %in% c("alpha_max")) {
+            write_line(paste0("    ", params[[i]], " = ", 'alpha', suffix))
+          } else if (param %in% c("alpha_min")) {
+            write_line(paste0("    ", params[[i]], " = ", 'alpha', suffix))
           } else {
             write_line(paste0("    ", params[[i]], " = ", param, suffix))
           }

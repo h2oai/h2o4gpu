@@ -74,6 +74,11 @@ print.h2o4gpu_model <- function(x, ...) {
 #' 
 #' @export
 fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
+  if (inherits(object$model, "h2o4gpu.solvers.elastic_net.ElasticNet") && object$params$family == "logistic"){
+    if (length(unique(y)) > 2){
+      stop(paste0("Multinomial GLM not supported! Unique levels of y should be 2 but got ", length(unique(y))))
+    }
+  }
   object$model$fit(X = resolve_model_input(x), y = resolve_model_y(y, class(object)), ...)
   attach_attrs_to_model(object)
 }
@@ -93,7 +98,12 @@ predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
   if (type == "raw") {
     preds <- object$model$predict(X = resolve_model_input(x), ...)
   } else if (type == "prob") {
+    # For GLM, process the ouput differently
     preds <- object$model$predict_proba(X = resolve_model_input(x), ...)
+    if (inherits(object$model, "h2o4gpu.solvers.elastic_net.ElasticNet")) {
+      preds <- t(preds)
+      preds <- cbind(1 - preds[,1], preds[,1]) #TODO Add colnames and multiclass?
+    }
     if (!is.null(object$classes_)){
       colnames(preds) <- object$classes_ #Taken from tree based models
     }
