@@ -6,11 +6,11 @@ import os
 
 
 def cpu_lib_path():
-    return get_lib_path("ch2o4gpu_cpu")
+    return get_lib_path("_ch2o4gpu_cpu")
 
 
 def gpu_lib_path():
-    return get_lib_path("ch2o4gpu_gpu")
+    return get_lib_path("_ch2o4gpu_gpu")
 
 
 def get_lib_path(lib_name):

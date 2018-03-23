@@ -106,7 +106,6 @@ examples/py/ipums_feather
 *.app
 
 # CUDA #
-*.i
 *.ii
 *.ptx
 *.cubin
