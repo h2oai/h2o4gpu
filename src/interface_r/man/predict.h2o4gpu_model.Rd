@@ -20,3 +20,21 @@ be used in generating predictions.}
 This function makes predictions from new data using a trained H2O4GPU model and returns class predictions
 for classification and predicted values for regression.
 }
+\examples{
+\dontrun{
+
+library(h2o4gpu)
+
+# Setup dataset
+x <- iris[1:4]
+y <- as.integer(iris$Species) - 1
+
+# Initialize and train the classifier
+model <- h2o4gpu.random_forest_classifier() \%>\% fit(x, y)
+
+# Make predictions
+predictions <- model \%>\% predict(x)
+
+}
+
+}

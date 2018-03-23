@@ -22,3 +22,16 @@ specified as \code{NULL}.}
 \description{
 This function builds the model using the training data specified.
 }
+\examples{
+\dontrun{
+
+library(h2o4gpu)
+
+# Setup dataset
+x <- iris[1:4]
+y <- as.integer(iris$Species) - 1
+
+# Train the classifier
+h2o4gpu.random_forest_classifier() \%>\% fit(x, y)
+}
+}

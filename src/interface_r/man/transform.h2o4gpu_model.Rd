@@ -17,3 +17,25 @@ be used in generating predictions.}
 \description{
 This function transforms the given new data using a trained H2O4GPU model.
 }
+\examples{
+\dontrun{
+
+library(h2o4gpu)
+
+# Prepare data
+iris$Species <- as.integer(iris$Species) # convert to numeric data
+
+# Randomly sample 80\% of the rows for the training set
+set.seed(1)
+train_idx <- sample(1:nrow(iris), 0.8*nrow(iris)) 
+train <- iris[train_idx, ]
+test <- iris[-train_idx, ]
+
+# Train a K-Means model
+model_km <- h2o4gpu.kmeans(n_clusters = 3L) \%>\% fit(train)
+
+# Transform test data
+test_dist <- model_km \%>\% transform(test)
+
+}
+}
