@@ -4,7 +4,7 @@ author: "Navdeep Gill, Erin LeDell, Yuan Tang"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{H2O4GPU: Machine Learning with GPUs in R}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
