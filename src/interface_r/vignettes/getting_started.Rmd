@@ -74,7 +74,7 @@ ce(actual = y, predicted = pred)
 
 The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](http://stanford.edu/%7Eboyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).  We have found that this method is not as fast as we'd like it to be, so we are working on implementing an entirely new GLM from scratch (follow progress [here](https://github.com/h2oai/h2o4gpu/issues/356)).
 
-The **h2o4gpu** R package does not include a suite of internal model metrics functions, therefore we encourage users to use a third-party model metrics package of their choice.  For all the examples below, we will use the [Metrics](https://cran.r-project.org/web/packages/Metrics/index.html) R package.  This package has a large number of model metrics functions, all with a very simple, unified API.
+The **h2o4gpu** R package does not include a suite of internal model metrics functions, therefore we encourage users to use a third-party model metrics package of their choice.  For all the examples below, we will use the [Metrics](https://CRAN.R-project.org/package=Metrics) R package.  This package has a large number of model metrics functions, all with a very simple, unified API.
 
 ### Binary Classification
 
