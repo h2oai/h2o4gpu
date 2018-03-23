@@ -29,9 +29,24 @@ namespace h2o4gpu {
     return (std::abs(y) < 1E-15) ?  0.0 : x / y;
   }
 
+  double f05(double tp, double tn, double fp, double fn) {
+    auto y = 1.25 * tp + fp + 0.25 * fn;
+    return (std::abs(y) < 1E-15) ? 0.0 : (1.25 * tp) / y;
+  }
+
   double f1(double tp, double tn, double fp, double fn) {
     auto y = 2 * tp + fp + fn;
     return (std::abs(y) < 1E-15) ? 0.0 : (2 * tp) / y;
+  }
+
+  double f2(double tp, double tn, double fp, double fn) {
+    auto y = 5 * tp + fp + 4 * fn;
+    return (std::abs(y) < 1E-15) ? 0.0 : (5 * tp) / y;
+  }
+
+  double acc(double tp, double tn, double fp, double fn) {
+    auto y = tp + fp + tn + fn;
+    return (std::abs(y) < 1E-15) ? 0.0 : (tp + tn) / y;
   }
 
   double cm_metric_opt(std::vector<double> y, std::vector<double> yhat,
@@ -126,15 +141,48 @@ namespace h2o4gpu {
                          std::vector<double>(w, w + l), mcc);
   }
 
+  double f05_opt(double *y, int n, double *yhat, int m) {
+    std::vector<double> w(n, 1.0);
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      w, f05);
+  }
+
+  double f05_opt(double *y, int n, double *yhat, int m, double *w, int l) {
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      std::vector<double>(w, w + l), f05);
+  }
+
   double f1_opt(double *y, int n, double *yhat, int m) {
     std::vector<double> w(n, 1.0);
     return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
-                         w, f1);
+      w, f1);
   }
 
   double f1_opt(double *y, int n, double *yhat, int m, double *w, int l) {
     return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
-                         std::vector<double>(w, w + l), f1);
+      std::vector<double>(w, w + l), f1);
+  }
+
+  double f2_opt(double *y, int n, double *yhat, int m) {
+    std::vector<double> w(n, 1.0);
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      w, f2);
+  }
+
+  double f2_opt(double *y, int n, double *yhat, int m, double *w, int l) {
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      std::vector<double>(w, w + l), f2);
+  }
+
+  double acc_opt(double *y, int n, double *yhat, int m) {
+    std::vector<double> w(n, 1.0);
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      w, acc);
+  }
+
+  double acc_opt(double *y, int n, double *yhat, int m, double *w, int l) {
+    return cm_metric_opt(std::vector<double>(y, y + n), std::vector<double>(yhat, yhat + m),
+      std::vector<double>(w, w + l), acc);
   }
   
   void confusion_matrices(double *y, int n, double *yhat, int m, double *cm, int k, int j) {

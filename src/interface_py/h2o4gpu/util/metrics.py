@@ -275,11 +275,11 @@ def auc(actual, posterior):
     return area_under_curve
 
 
-def f1_opt(actual, predicted, sample_weight=None):
+def f05_opt(actual, predicted, sample_weight=None):
     """
-    Computes the F1-score after optimal predictions thresholding.
+    Computes the F0.5-Score after optimal predictions thresholding.
 
-    This function maximizes the F1-score by means of
+    This function maximizes the F0.5-Score by means of
     optimal predictions thresholding.
 
     :param actual : numpy array
@@ -290,12 +290,61 @@ def f1_opt(actual, predicted, sample_weight=None):
                            sample weights
 
     :returns double
-             The optimal F1-score
+             The optimal F0.5-Score
     """
     import h2o4gpu.util.daicx as daicx
     if sample_weight is None:
-        return daicx.f1_opt(actual, predicted)
-    return daicx.f1_opt(actual, predicted, sample_weight)
+        return daicx.f05_opt(actual.ravel(), predicted.ravel())
+    return daicx.f05_opt(actual.ravel(), predicted.ravel(),
+                         sample_weight.ravel())
+
+
+def f1_opt(actual, predicted, sample_weight=None):
+    """
+    Computes the F1-Score after optimal predictions thresholding.
+
+    This function maximizes the F1-Score by means of
+    optimal predictions thresholding.
+
+    :param actual : numpy array
+                    The ground truth value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
+
+    :returns double
+             The optimal F1-Score
+    """
+    import h2o4gpu.util.daicx as daicx
+    if sample_weight is None:
+        return daicx.f1_opt(actual.ravel(), predicted.ravel())
+    return daicx.f1_opt(actual.ravel(), predicted.ravel(),
+                        sample_weight.ravel())
+
+
+def f2_opt(actual, predicted, sample_weight=None):
+    """
+    Computes the F2-Score after optimal predictions thresholding.
+
+    This function maximizes the F2-Score by means of
+    optimal predictions thresholding.
+
+    :param actual : numpy array
+                    The ground truth value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
+
+    :returns double
+             The optimal F2-Score
+    """
+    import h2o4gpu.util.daicx as daicx
+    if sample_weight is None:
+        return daicx.f2_opt(actual.ravel(), predicted.ravel())
+    return daicx.f2_opt(actual.ravel(), predicted.ravel(),
+                        sample_weight.ravel())
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -317,13 +366,38 @@ def mcc_opt(actual, predicted, sample_weight=None):
     """
     import h2o4gpu.util.daicx as daicx
     if sample_weight is None:
-        return daicx.mcc_opt(actual, predicted)
-    return daicx.mcc_opt(actual, predicted, sample_weight)
+        return daicx.mcc_opt(actual.ravel(), predicted.ravel())
+    return daicx.mcc_opt(actual.ravel(), predicted.ravel(),
+                         sample_weight.ravel())
+
+
+def acc_opt(actual, predicted, sample_weight=None):
+    """
+    Computes the Accuracy after optimal predictions thresholding.
+
+    This function maximizes the Accuracy
+    by means of optimal predictions thresholding.
+
+    :param actual : numpy array
+                    The ground truth value
+    :param predicted : numpy array
+                       The predicted value
+    :param sample_weight : numpy array or None
+                           sample weights
+
+    :returns double
+             The optimal Accuracy
+    """
+    import h2o4gpu.util.daicx as daicx
+    if sample_weight is None:
+        return daicx.acc_opt(actual.ravel(), predicted.ravel())
+    return daicx.acc_opt(actual.ravel(), predicted.ravel(),
+                         sample_weight.ravel())
 
 
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
-    Computes confusion matrices for DAICX analysis.
+    Computes confusion matrices for ROC analysis.
 
     This function cumputes confusion matrices
     for all possible prediction thresholds.
@@ -343,7 +417,8 @@ def confusion_matrices(actual, predicted, sample_weight=None):
 
     res = np.zeros((actual.shape[0], len(cm_stats_cols)))
     if sample_weight is None:
-        daicx.confusion_matrices(actual, predicted, res)
+        daicx.confusion_matrices(actual.ravel(), predicted.ravel(), res)
     else:
-        daicx.confusion_matrices(actual, predicted, sample_weight, res)
+        daicx.confusion_matrices(actual.ravel(), predicted.ravel(),
+                                 sample_weight.ravel(), res)
     return pd.DataFrame(res[~np.all(res == 0, axis=1)], columns=cm_stats_cols)
