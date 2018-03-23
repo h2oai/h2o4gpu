@@ -52,7 +52,8 @@ INCLUDE_DIRECTORIES (
         ${PYTHON_INCLUDE_PATH}
 )
 
-ADD_LIBRARY(commonh2o4gpu OBJECT ${COMMON_SOURCES})
+# TODO should be OBJECT??
+ADD_LIBRARY(commonh2o4gpu ${COMMON_SOURCES})
 
 # BUILD CPU LIBRARY
 FILE(GLOB_RECURSE CPU_SOURCES
@@ -60,8 +61,8 @@ FILE(GLOB_RECURSE CPU_SOURCES
         src/cpu/*.h
         )
 
-# TODO should be SHARED??
-ADD_LIBRARY(cpuh2o4gpu ${CPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu>)
+ADD_LIBRARY(cpuh2o4gpu SHARED ${CPU_SOURCES})
+TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES} commonh2o4gpu)
 
 ### SWIG
 
@@ -110,12 +111,8 @@ if(USE_CUDA)
                 src/common/*.h
                 )
 
-        CUDA_ADD_LIBRARY(cuda_static ${GPU_SOURCES} STATIC)
-
-        TARGET_LINK_LIBRARIES(cuda_static ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
-
-        ADD_LIBRARY(gpuh2o4gpu SHARED $<TARGET_OBJECTS:commonh2o4gpu>)
-        TARGET_LINK_LIBRARIES(gpuh2o4gpu ${BLAS_LIBRARIES} cuda_static)
+        CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} STATIC)
+        TARGET_LINK_LIBRARIES(gpuh2o4gpu ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY} ${BLAS_LIBRARIES} commonh2o4gpu)
 
         if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
                 SWIG_ADD_MODULE(ch2o4gpu_gpu python src/swig/ch2o4gpu_gpu.i)
