@@ -1,3 +1,3 @@
-## h2o4gpu 0.0.1 (CRAN)
+## h2o4gpu 0.2.0 (CRAN)
 
 * Initial release.

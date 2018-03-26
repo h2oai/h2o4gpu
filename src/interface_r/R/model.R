@@ -73,6 +73,18 @@ print.h2o4gpu_model <- function(x, ...) {
 #' @param ... Additional arguments (unused for now).
 #' 
 #' @export
+#' @examples 
+#' \dontrun{
+#' 
+#' library(h2o4gpu)
+#' 
+#' # Setup dataset
+#' x <- iris[1:4]
+#' y <- as.integer(iris$Species) - 1
+#' 
+#' # Train the classifier
+#' h2o4gpu.random_forest_classifier() %>% fit(x, y)
+#' }
 fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
   if (inherits(object$model, "h2o4gpu.solvers.elastic_net.ElasticNet") && object$params$family == "logistic"){
     if (length(unique(y)) > 2){
@@ -94,6 +106,23 @@ fit.h2o4gpu_model <- function(object, x, y = NULL, ...) {
 #' @param type One of "raw" or "prob", indicating the type of output: predicted values or probabilities
 #' @param ... Additional arguments (unused for now).
 #' @export
+#' @examples 
+#' \dontrun{
+#' 
+#' library(h2o4gpu)
+#' 
+#' # Setup dataset
+#' x <- iris[1:4]
+#' y <- as.integer(iris$Species) - 1
+#' 
+#' # Initialize and train the classifier
+#' model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
+#' 
+#' # Make predictions
+#' predictions <- model %>% predict(x)
+#' 
+#' }
+#' 
 predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
   if (type == "raw") {
     preds <- object$model$predict(X = resolve_model_input(x), ...)
@@ -122,6 +151,27 @@ predict.h2o4gpu_model <- function(object, x, type="raw", ...) {
 #' be used in generating predictions.
 #' @param ... Additional arguments (unused for now).
 #' @export
+#' @examples 
+#' \dontrun{
+#' 
+#' library(h2o4gpu)
+#' 
+#' # Prepare data
+#' iris$Species <- as.integer(iris$Species) # convert to numeric data
+#' 
+#' # Randomly sample 80% of the rows for the training set
+#' set.seed(1)
+#' train_idx <- sample(1:nrow(iris), 0.8*nrow(iris)) 
+#' train <- iris[train_idx, ]
+#' test <- iris[-train_idx, ]
+#' 
+#' # Train a K-Means model
+#' model_km <- h2o4gpu.kmeans(n_clusters = 3L) %>% fit(train)
+#' 
+#' # Transform test data
+#' test_dist <- model_km %>% transform(test)
+#' 
+#' }
 transform.h2o4gpu_model <- function(object, x, ...) {
   object$model$transform(X = resolve_model_input(x), ...)
 }

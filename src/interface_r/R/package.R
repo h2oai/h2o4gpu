@@ -2,6 +2,23 @@
 #' 
 #' @docType package
 #' @name h2o4gpu
+#' 
+#' @examples 
+#' \dontrun{
+#' 
+#' library(h2o4gpu)
+#' 
+#' # Setup dataset
+#' x <- iris[1:4]
+#' y <- as.integer(iris$Species) - 1
+#' 
+#' # Initialize and train the classifier
+#' model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
+#' 
+#' # Make predictions
+#' predictions <- model %>% predict(x)
+#' 
+#' }
 NULL
 
 h2o4gpu <- NULL
