@@ -6,7 +6,7 @@
 #Skip pylint b / c this is automatically concatenated at compile time
 #with other init files
 # TODO: grab this from BUILD_INFO.txt or __about__.py
-__version__ = "0.2.0"
+__version__ = "0.2.0.9999"
 
 DAAL_SUPPORTED=True
 
