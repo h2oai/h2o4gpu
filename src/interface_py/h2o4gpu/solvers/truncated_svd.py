@@ -174,7 +174,8 @@ class TruncatedSVDH2O(object):
         self._U, self._Q = svd_flip(U, Q)
         X_transformed = self._U * self._w
         # TODO Investigate why explained variance/ratio are off in CUDA
-        if self.algorithm not in ("power", "cusolver"):
+        if self.algorithm in ("power", "cusolver"):
+            print("CUDA calculation!")
             self.explained_variance = explained_variance
             self.explained_variance_ratio = explained_variance_ratio
         else:
