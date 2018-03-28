@@ -8,9 +8,16 @@ SHELL := /bin/bash # force avoidance of dash as shell
 include config2.mk
 
 NVCC := $(shell command -v nvcc 2> /dev/null)
+DAAL := $(shell ldconfig -p | grep daal_core)
 
 ifndef NVCC
 $(info ** No CUDA found, only build with CPU.)
+endif
+
+ifndef DAAL
+$(info ** NO DAAL found. running without DAAL library.)
+else
+-include daal.mk
 endif
 
 # Bulid directory
@@ -136,6 +143,7 @@ CPU_HDR=\
 	cpu/include/cgls.h \
 	cpu/include/equil_helper.h \
 	cpu/include/projector_helper.h
+
 CPU_MTX_OBJ=\
 	$(OBJDIR)/cpu/matrix/matrix_sparse.o \
 	$(OBJDIR)/cpu/matrix/matrix_dense.o
