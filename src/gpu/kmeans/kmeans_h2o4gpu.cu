@@ -52,15 +52,14 @@ void random_data(int verbose, thrust::device_vector<T> &array, int m, int n) {
  */
 template<typename T>
 void copy_data(int verbose, const char ord, thrust::device_vector<T> &array, const T *srcdata,
-               int q, int n, int npergpu, int d) {
+               int q, int n, size_t npergpu, int d) {
   if (ord == 'c') {
     thrust::host_vector<T> host_array(npergpu * d);
     log_debug(verbose, "Copy data COL ORDER -> ROW ORDER");
 
-    int indexi, indexj;
-    for (int i = 0; i < npergpu * d; i++) {
-      indexi = i % d; // col
-      indexj = i / d + q * npergpu; // row (shifted by which gpu)
+    for (size_t i = 0; i < npergpu * d; i++) {
+      size_t indexi = i % d; // col
+      size_t indexj = i / d + q * npergpu; // row (shifted by which gpu)
       host_array[i] = srcdata[indexi * n + indexj];
     }
     array = host_array;
@@ -92,7 +91,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
     log_debug(verbose, "Copy data shuffle COL ORDER -> ROW ORDER");
 
     for (int i = 0; i < npergpu; i++) {
-      for (int j = 0; j < d; j++) {
+      for (size_t j = 0; j < d; j++) {
         host_array[i * d + j] = srcdata[v[q * npergpu + i] + j * n]; // shift by which gpu
       }
     }
@@ -100,7 +99,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord, thrust:
     log_debug(verbose, "Copy data shuffle ROW ORDER not changed");
 
     for (int i = 0; i < npergpu; i++) {
-      for (int j = 0; j < d; j++) {
+      for (size_t j = 0; j < d; j++) {
         host_array[i * d + j] = srcdata[v[q * npergpu + i] * d + j]; // shift by which gpu
       }
     }
@@ -142,17 +141,17 @@ void random_centroids(int verbose, int seed, const char ord,
 
   if (ord == 'c') {
     log_debug(verbose, "Random centroids COL ORDER -> ROW ORDER");
-    for (int i = 0; i < k; i++) { // rows
-      int reali = dis(gen); // + q*npergpu; // row sampled (called indexj above)
-      for (int j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) { // clusters
+      size_t reali = dis(gen); // + q*npergpu; // row sampled (called indexj above)
+      for (size_t j = 0; j < d; j++) { // cols
         host_array[i * d + j] = srcdata[reali + j * n];
       }
     }
   } else {
     log_debug(verbose, "Random centroids ROW ORDER not changed");
     for (int i = 0; i < k; i++) { // rows
-      int reali = dis(gen); // + q*npergpu ; // row sampled
-      for (int j = 0; j < d; j++) { // cols
+      size_t reali = dis(gen); // + q*npergpu ; // row sampled
+      for (size_t j = 0; j < d; j++) { // cols
         host_array[i * d + j] = srcdata[reali * d + j];
       }
     }

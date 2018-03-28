@@ -83,14 +83,14 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
     s_B[i] = B[i];
   }
 
-  int block_start_row_index = blockIdx.x * max_block_rows;
-  int block_rows = max_block_rows;
+  size_t block_start_row_index = blockIdx.x * max_block_rows;
+  size_t block_rows = max_block_rows;
 
   if (blockIdx.x == gridDim.x - 1 && n % max_block_rows != 0) {
     block_rows = n % max_block_rows;
   }
 
-  for (int i = threadIdx.x; i < d * block_rows; i += blockDim.x) {
+  for (size_t i = threadIdx.x; i < d * block_rows; i += blockDim.x) {
     s_A[i] = alpha * A[d * block_start_row_index + i];
   }
 
@@ -99,7 +99,7 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
   float_t elem_c = 0;
 
   int col_c = threadIdx.x % k;
-  int abs_row_c = block_start_row_index + threadIdx.x / k;
+  size_t abs_row_c = block_start_row_index + threadIdx.x / k;
   int row_c = threadIdx.x / k;
 
   // Thread/Block combination either too far for data array
@@ -109,7 +109,7 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
     return;
   }
 
-  for (int i = 0; i < d; i++) {
+  for (size_t i = 0; i < d; i++) {
     elem_c += s_B[d * col_c + i] * s_A[d * row_c + i];
   }
 
@@ -140,21 +140,27 @@ void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
   int dev_num;
   safe_cuda(cudaGetDevice(&dev_num));
 
+  bool do_cublas = true;
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
     int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
     int grid_size = std::ceil(static_cast<double>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(double);
-    int shared_size_A = block_rows * d * sizeof(double);
+    size_t shared_size_A = block_rows * d * sizeof(double);
+    if(shared_size_B + shared_size_A < (1 << 15)){
 
-    matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
-        thrust::raw_pointer_cast(data.data() + data_offset * d),
-            thrust::raw_pointer_cast(centroids.data()),
-            thrust::raw_pointer_cast(pairwise_distances.data()),
-            alpha, beta, n, d, k, block_rows
-    );
-  } else {
+        matmul << < grid_size, BLOCK_SIZE_MUL, shared_size_B + shared_size_A >> > (
+            thrust::raw_pointer_cast(data.data() + data_offset * d),
+                thrust::raw_pointer_cast(centroids.data()),
+                thrust::raw_pointer_cast(pairwise_distances.data()),
+                alpha, beta, n, d, k, block_rows
+        );
+        do_cublas = false;
+    }
+  }
+
+  if(do_cublas){
     cublasStatus_t stat = safe_cublas(cublasDgemm(detail::cublas_handle[dev_num],
                                                   CUBLAS_OP_T, CUBLAS_OP_N,
                                                   n, k, d, &alpha,
