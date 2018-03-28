@@ -7,8 +7,6 @@ KMeans clustering solver.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import sys
-from ctypes import c_int, c_float, c_double, c_void_p, pointer, \
-    POINTER, cast
 
 import numpy as np
 
@@ -347,19 +345,18 @@ class KMeansH2O(object):
         :return: array of shape [n_samples,]
                 A cluster index for each record
         """
+        lib = self._load_lib()
+
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         _check_data_content(self.do_checks, "X", X_np)
-        X_np, c_data, _ = self._to_cdata(X_np)
-        c_init = 0
+        c_X_np = self._toc(X_np)
 
-        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
-        c_res = c_void_p(0)
+        cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
+        c_res = np.zeros(rows)
 
-        lib = self._load_lib()
-
-        data_ord = ord('c' if np.isfortran(X_np) else 'r')
+        data_ord = 'c' if np.isfortran(X_np) else 'r'
 
         if self.double_precision == 0:
             c_kmeans = lib.make_ptr_float_kmeans
@@ -368,11 +365,9 @@ class KMeansH2O(object):
 
         c_kmeans(1, self.verbose,
                  self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                 c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                 self.tol, c_data, c_centroids, None, pointer(c_res))
+                 data_ord, self._n_clusters, self._max_iter, 0,
+                 self.tol, c_X_np, cluster_centers_, None, c_res)
 
-        preds = np.fromiter(
-            cast(c_res, POINTER(c_int)), dtype=np.int32, count=rows)
         preds = np.reshape(preds, rows)
         return preds
 
@@ -400,35 +395,31 @@ class KMeansH2O(object):
         :return: array, shape [n_samples, k]
             Distances to each cluster for each row.
         """
+        lib = self._load_lib()
+
         cols, rows = self._validate_centroids(X)
 
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
-        X_np, c_data, c_data_type = self._to_cdata(X_np)
-        _, c_centroids, _ = self._to_cdata(self.cluster_centers_, convert=False)
-        c_res = c_void_p(0)
+        c_X_np = self._toc(X_np)
+        cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
+        c_res = np.zeros(rows * self._n_clusters)
 
-        lib = self._load_lib()
-
-        data_ord = ord('c' if np.isfortran(X_np) else 'r')
+        data_ord = 'c' if np.isfortran(X_np) else 'r'
 
         if self.double_precision == 0:
             lib.kmeans_transform_float(
                 self.verbose, self._gpu_id, self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, c_data, c_centroids,
-                pointer(c_res))
+                data_ord, self._n_clusters, c_X_np, cluster_centers_,
+                c_res)
         else:
             lib.kmeans_transform_double(
                 self.verbose, self._gpu_id, self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, c_data, c_centroids,
-                pointer(c_res))
+                data_ord, self._n_clusters, c_X_np, cluster_centers_,
+                c_res)
 
-        transformed = np.fromiter(
-            cast(c_res, POINTER(c_data_type)),
-            dtype=c_data_type,
-            count=rows * self._n_clusters)
         # TODO don 't set order if X is ' F'
         transformed = np.reshape(
-            transformed, (rows, self._n_clusters), order='F')
+            c_res, (rows, self._n_clusters), order='F')
         return transformed
 
     def sklearn_transform(self, X, y=None):
@@ -475,83 +466,62 @@ class KMeansH2O(object):
 
     def _fit(self, data):
         """Actual method calling the underlying fitting implementation."""
-        data_ord = ord('c' if np.isfortran(data) else 'r')
+        lib = self._load_lib()
 
-        data, c_data_ptr, data_ctype = self._to_cdata(data)
+        data_ord = 'c' if data.flags.f_contiguous else 'r'
+
+        c_data = self._toc(data)
 
         if self.init == "k-means++":
             c_init = 1
         else:
             c_init = 0
 
-        pred_centers = c_void_p(0)
-        pred_labels = c_void_p(0)
-
-        lib = self._load_lib()
-
         rows = np.shape(data)[0]
         cols = np.shape(data)[1]
 
+        centroids = np.empty([])
+        pred_centers = np.zeros(cols * self._n_clusters, data.dtype)
+        pred_labels = np.zeros(rows, dtype=np.int32)
+
         if self.double_precision == 0:
-            status = lib.make_ptr_float_kmeans(
+            iter, res_centroids, res_labels = lib.make_ptr_float_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None, pointer(pred_centers),
-                pointer(pred_labels))
+                data_ord, self._n_clusters, self._max_iter, c_init,
+                self.tol, c_data, centroids,
+                pred_centers, pred_labels)
         else:
-            status = lib.make_ptr_double_kmeans(
+            iter, res_centroids, res_labels = lib.make_ptr_double_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                c_int(data_ord), self._n_clusters, self._max_iter, c_init,
-                self.tol, c_data_ptr, None, pointer(pred_centers),
-                pointer(pred_labels))
-        if status:
-            raise ValueError('KMeans failed in C++ library.')
+                data_ord, self._n_clusters, self._max_iter, c_init,
+                self.tol, c_data, centroids,
+                pred_centers, pred_labels)
 
-        centroids = np.fromiter(
-            cast(pred_centers, POINTER(data_ctype)),
-            dtype=data_ctype,
-            count=self._n_clusters * cols)
-        centroids = np.reshape(centroids, (self._n_clusters, cols))
-
-        if np.isnan(centroids).any():
-            centroids = centroids[~np.isnan(centroids).any(axis=1)]
-            self._print_verbose(0, "Removed %d empty centroids" %
-                                (self._n_clusters - centroids.shape[0]))
-            self._n_clusters = centroids.shape[0]
-
+        centroids = np.reshape(res_centroids, (self._n_clusters, cols))
         self.cluster_centers_ = centroids
 
-        labels = np.ctypeslib.as_array(
-            cast(pred_labels, POINTER(c_int)), (rows,))
-        self.labels_ = np.reshape(labels, rows)
+        self.labels_ = np.reshape(res_labels, rows)
 
         return self.cluster_centers_, self.labels_
 
     # FIXME : This function duplicates others
     # in solvers / utils.py as used in GLM
-
-    def _to_cdata(self, data, convert=True):
+    def _toc(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(1, "Detected numeric data format which is not "
                                 "supported. Casting to np.float32.")
             data = np.array(data, copy=False, dtype=np.float32)
-
         if data.dtype == np.float64:
             self._print_verbose(1, "Detected np.float64 data")
             self.double_precision = 1
-            my_ctype = c_double
         elif data.dtype == np.float32:
             self._print_verbose(1, "Detected np.float32 data")
             self.double_precision = 0
-            my_ctype = c_float
-        else:
-            raise ValueError(
-                "Unsupported data type %s, "
-                "should be either np.float32 or np.float64" % data.dtype)
-        return data, cptr(data, dtype=my_ctype), my_ctype
+
+        return data.flatten()
 
     def _print_verbose(self, level, msg):
         if self.verbose > level:

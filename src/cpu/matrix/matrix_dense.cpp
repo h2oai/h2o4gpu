@@ -1040,13 +1040,6 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 }  // namespace h2o4gpu
 
-
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                       const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
                       void**a, void**b, void**c, void**d, void **e) {
@@ -1064,8 +1057,4 @@ extern "C" {
   int modelfree1_double(float *aptr){
     return h2o4gpu::modelFree1<float>(aptr);
   }
-  
-#ifdef __cplusplus
-}
-#endif
 

@@ -1823,10 +1823,6 @@ int modelFree2(T *aptr) {
 template int modelFree2<float>(float *aptr);
 template int modelFree2<double>(double *aptr);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
@@ -1882,9 +1878,5 @@ int modelfree2_float(float *aptr) {
 int modelfree2_double(double *aptr) {
 	return modelFree2<double>(aptr);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 }

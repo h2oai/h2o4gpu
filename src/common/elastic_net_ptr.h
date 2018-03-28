@@ -330,9 +330,6 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n,
 template<typename T>
 int modelFree2(T *aptr);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 double elastic_net_ptr_double(const char family, int dopredict, int sourceDev,
 		int datatype, int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord,
 		size_t mTrain, size_t n, size_t mValid, int intercept, int standardize,
@@ -360,9 +357,5 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev,
 
 int modelfree_double(double *aptr);
 int modelfree_float(float *aptr);
-
-#ifdef __cplusplus
-}
-#endif
 
 }

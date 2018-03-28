@@ -43,19 +43,19 @@ template<typename T>
 int makePtr_dense(int dopredict, int verbose, int seed, int gpu_id, int n_gpu, size_t rows, size_t cols,
                   const char ord, int k, int max_iterations, int init_from_data,
                   T threshold, const T *srcdata, const T *centroids,
-                  void **pred_centroids, void **pred_labels);
+                  T **pred_centroids, int **pred_labels);
 
 template<typename T>
 int makePtr_dense_cpu(int dopredict, int verbose, int seed, int cpu_id, int n_cpu, size_t rows, size_t cols,
                       const char ord, int k, int max_iterations, int init_from_data,
                       T threshold, const T *srcdata, const T *centroids,
-                      void **pred_centroids, void **pred_labels);
+                      T **pred_centroids, int **pred_labels);
 
 template<typename T>
 int kmeans_transform(int verbose,
                      int gpu_id, int n_gpu,
                      size_t m, size_t n, const char ord, int k,
                      const T *srcdata, const T *centroids,
-                     void **preds);
+                     T **preds);
 
 }  // namespace h2o4gpukmeans

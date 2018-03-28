@@ -355,10 +355,6 @@ void H2O4GPUShutdown(void * work){
   delete p_work;
 }
 
-
-extern "C" {
-
-
 void * h2o4gpu_init_dense_single(int wDev, enum ORD ord, size_t m, size_t n, const float *A){
     return ord == COL_MAJ ? H2O4GPUInit<float>(wDev, m,n,A,'c') : H2O4GPUInit<float>(wDev, m,n,A,'r');
 }
@@ -387,7 +383,5 @@ int h2o4gpu_solve_double(void *work, H2O4GPUSettingsD *settings, H2O4GPUSolution
 
 void h2o4gpu_finish_single(void * work){ return H2O4GPUShutdown<float>(work); }
 void h2o4gpu_finish_double(void * work){ return H2O4GPUShutdown<double>(work); }
-
-}
 
 
