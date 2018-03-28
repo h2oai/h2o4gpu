@@ -287,7 +287,7 @@ namespace tsvd
 			{
 				for (auto j = 0; j < _n; j++)
 				{
-					printf("%1.4f ", h_tsvd[j * _m + i]);
+					printf("%1.2f ", h_tsvd[j * _m + i]);
 				}
 				printf("\n");
 			}
