@@ -68,5 +68,5 @@ def func(m=5000, n=10, k=9, algorithm="cusolver", convert_to_float32 = False):
 
 def test_tsvd_error_k2_cusolver(): func(n=5, k=2, algorithm="cusolver")
 def test_tsvd_error_k2_power(): func(n=50, k=2, algorithm="power")
-def test_tsvd_error_k2_cusolver_float32(): func(m=10,n=5, k=2, algorithm="cusolver", convert_to_float32=True)
+def test_tsvd_error_k2_cusolver_float32(): func(n=5, k=2, algorithm="cusolver", convert_to_float32=True)
 def test_tsvd_error_k2_power_float32(): func(n=50, k=2, algorithm="power", convert_to_float32=True)
