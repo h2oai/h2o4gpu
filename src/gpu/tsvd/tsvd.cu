@@ -59,77 +59,6 @@ namespace tsvd
 	}
 
 	/**
-	 * Alternative variance calculation (Can be slow for big matrices)
-	 *
-	 * @param UmultSigma
-	 * @param k
-	 * @param UmultSigmaVar
-	 * @param context
-	 */
-	template<typename T>
-	void calc_var(const Matrix<T>UmultSigma, int k, Matrix<T> &UmultSigmaVar, DeviceContext &context){
-		//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
-		Matrix<T>UmultOnes(UmultSigma.rows(), 1);
-		UmultOnes.fill(1.0f);
-
-		//Allocate matrices for variance calculation
-		Matrix<T>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
-		Matrix<T>UmultSigmaSum(k, 1);
-		Matrix<T>UmultSigmaSumSquare(k, 1);
-		Matrix<T>UmultSigmaSumOfSquare(k, 1);
-		Matrix<T>UmultSigmaVarNum(k, 1);
-
-		//Calculate Variance
-		square_val(UmultSigma, UmultSigmaSquare, context);
-		multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
-		multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
-		square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
-		//Get rows
-		auto m = UmultSigma.rows();
-		multiply(UmultSigmaSumOfSquare, m, context);
-		subtract(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, context);
-		auto d_u_sigma_var_num = UmultSigmaVarNum.data();
-		auto d_u_sigma_var = UmultSigmaVar.data();
-		auto counting = thrust::make_counting_iterator <int>(0);
-		thrust::for_each(counting, counting+UmultSigmaVar.size(), [=]__device__(int idx){
-			float div_val = d_u_sigma_var_num[idx]/(std::pow(m,2));
-			d_u_sigma_var[idx] = div_val;
-		} );
-	}
-
-
-	template<typename T>
-	class variance_iterator{
-	public:
-		// Required iterator traits
-		typedef variance_iterator<T>          self_type;            ///< My own type
-		typedef size_t                            difference_type;  ///< Type to express the result of subtracting one iterator from another
-		typedef T                           value_type;             ///< The type of the element the iterator can point to
-		typedef T*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-		typedef T                           reference;              ///< The type of a reference to an element the iterator can point to
-		typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
-		const T* data_ptr;
-		const T* mean_ptr;
-		const int col_rows;
-		size_t offset;
-		__device__ T operator[](size_t idx){
-			idx = idx + offset;
-			T mean = mean_ptr[idx/col_rows];
-			T dev_square = pow((data_ptr[idx] - mean),2);
-			return dev_square;
-		}
-		__device__ self_type operator+(size_t idx){
-			self_type retval(data_ptr, mean_ptr, col_rows);
-			retval.offset += idx;
-			return retval;
-		}
-
-		__host__ __device__ variance_iterator(const T* data_ptr, const T* mean_ptr, const int col_rows):data_ptr(data_ptr), mean_ptr(mean_ptr), col_rows(col_rows), offset(0){
-
-		}
-	};
-
-	/**
 	 * Utility to calculate variance for each column of a matrix
 	 *
 	 * @param X
@@ -139,22 +68,6 @@ namespace tsvd
 	 */
 	template<typename T>
 	void calc_var_numerator(Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, DeviceContext &context){
-//		auto m = X.rows();
-//		variance_iterator<T> variance(X.data(), UColMean.data(), m);
-//		thrust::device_vector<int> segments(X.columns() + 1);
-//		thrust::sequence(segments.begin(), segments.end(), 0, static_cast<int>(X.rows()));
-//		// Determine temporary device storage requirements
-//		void     *d_temp_storage = NULL;
-//		size_t   temp_storage_bytes = 0;
-//		int cols = static_cast<int>(X.columns());
-//		cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-//										cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
-//		// Allocate temporary storage
-//		safe_cuda(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-//		// Run sum-reduction
-//		cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-//										cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
-//		safe_cuda(cudaFree(d_temp_storage));
 		auto counting = thrust::make_counting_iterator(0);
 		auto d_X = X.data();
 		auto d_Mean = UColMean.data();
@@ -292,25 +205,11 @@ namespace tsvd
 		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
 
-		//Explained Variance
-		Matrix<T>UmultSigma(U.rows(), U.columns());
 		//U * Sigma
+		Matrix<T>UmultSigma(U.rows(), U.columns());
 		multiply_diag(U, sigma, UmultSigma, context, false);
-		std::vector<T> u_multsigma_host(UmultSigma.size());
-//		C++ impl. Useful for debugging.
-//		UmultSigma.copy_to_host(u_multsigma_host.begin());
-//		for(int col = 0; col < UmultSigma.columns(); col++){
-//			auto begin = u_multsigma_host.begin() + col*UmultSigma.rows();
-//			auto end = begin + UmultSigma.rows();
-//			auto mean = std::accumulate(begin, end, T())/UmultSigma.rows();
-//			std::cout<<"Column: "<<col<<" Mean: "<<mean<<std::endl;
-//			auto var_sum = T();
-//			for (int row = 0; row < UmultSigma.rows(); row++) {
-//				var_sum += std::pow(*(begin+row) - mean,2);
-//			}
-//			auto var = var_sum/UmultSigma.rows();
-//			_explained_variance[col] = var;
-//		}
+
+		//Explained Variance
 		Matrix<T>UOnesSigma(UmultSigma.rows(), 1);
 		UOnesSigma.fill(1.0f);
 		Matrix<T>USigmaVar(_param.k, 1);
