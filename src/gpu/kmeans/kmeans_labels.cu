@@ -182,9 +182,9 @@ void calculate_distances<double>(int verbose, int q, size_t n, int d, int k,
                    pairwise_distances.end(),
                    absolute_value<double>()); // in-place transformation to ensure all distances are positive indefinite
 
-  #if(CHECK)
+#if(CHECK)
   gpuErrchk(cudaGetLastError());
-  #endif
+#endif
 }
 
 template<>
@@ -213,7 +213,7 @@ void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
   if (k <= 16 && d <= 64) {
     const int BLOCK_SIZE_MUL = 128;
     int block_rows = std::min((size_t)BLOCK_SIZE_MUL / k, n);
-    int grid_size = std::ceil(static_cast<float>(n) / block_rows);
+    int grid_size = std::ceil(static_cast<double>(n) / block_rows);
 
     int shared_size_B = d * k * sizeof(float);
     int shared_size_A = block_rows * d * sizeof(float);
@@ -242,13 +242,19 @@ void calculate_distances<float>(int verbose, int q, size_t n, int d, int k,
     }
   }
 
+  // TODO necessary? add to doubles?
+  cudaDeviceSynchronize();
+
   thrust::for_each(pairwise_distances.begin(),
                    pairwise_distances.end(),
                    absolute_value<float>()); // in-place transformation to ensure all distances are positive indefinite
 
-  #if(CHECK)
+  // TODO necessary? add to doubles?
+  cudaDeviceSynchronize();
+
+#if(CHECK)
   gpuErrchk(cudaGetLastError());
-  #endif
+#endif
 }
 
 }

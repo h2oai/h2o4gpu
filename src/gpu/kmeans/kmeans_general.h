@@ -3,7 +3,10 @@
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
 #pragma once
+#include <thrust/device_vector.h>
 #include "../../common/logger.h"
+#include <iostream>
+
 #define MAX_NGPUS 16
 
 #define VERBOSE 0
@@ -24,3 +27,14 @@
       exit(EXIT_FAILURE);                             \
     }                                                 \
   } while(0)
+
+template<typename T>
+void printVector(const char *msg, thrust::device_vector<T> dev_vec) {
+  thrust::host_vector<T> host_vec = dev_vec;
+  std::cout << "\n>>> " << msg << std::endl;
+  std::cout.precision(17);
+  for (int i = 0; i < host_vec.size(); ++i) {
+    std::cout << std::fixed << host_vec[i] << " ";
+  }
+  std::cout << std::endl;
+}
