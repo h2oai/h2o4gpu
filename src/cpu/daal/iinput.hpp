@@ -28,7 +28,7 @@ class IInput {
 protected:
 	SharedPtr<NumericTable> _inputData;
 public:
-	virtual SharedPtr<NumericTable> getNumericTable() {
+	virtual const SharedPtr<NumericTable>& getNumericTable() const {
 		return this->_inputData;
 	}
 	virtual ~IInput() {}
@@ -77,6 +77,26 @@ public:
 			}
 		return("");
 	}
+}
+
+/* convert numericTable to raw pointer -> memory released in daal */
+template<typename Output, size_t rows, size_t columns>
+const Output* getRawOutput(const NumericTablePtr& nt) {
+	BlockDescriptor<Output> block;
+	(*nt.get()).getBlockOfRows(0, rows, readOnly, block);
+	const Output *array = block.getBlockPtr();
+	(*nt.get()).releaseBlockOfRows(block);
+	return array;
+}
+
+template<typename Output>
+const Output* getRawOutput(const NumericTablePtr& nt) {
+	BlockDescriptor<double> block;
+	auto rows = (*nt.get()).getNumberOfRows();
+	(*nt.get()).getBlockOfRows(0, rows, readOnly, block);
+	const double *array = block.getBlockPtr();
+	(*nt.get()).releaseBlockOfRows(block);
+	return array;
 }
 
 } /* end of DAAL namespace */

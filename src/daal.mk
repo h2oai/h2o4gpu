@@ -10,3 +10,5 @@ DAAL_INCLUDE := -I$HOME/daal/include
 DAAL_HDR = \
 	cpu/daal/include/debug.hpp \
 	cpu/daal/include/iinput.hpp
+	
+DAAL_DEF = DDAAL_DEF
