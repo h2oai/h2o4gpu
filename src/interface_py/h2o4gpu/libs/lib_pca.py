@@ -48,6 +48,8 @@ def _load_pca_lib(lib_path):
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
              ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
+             ctypes.POINTER(ctypes.c_double),
              parameters]
 
     # pylint: disable=broad-except
