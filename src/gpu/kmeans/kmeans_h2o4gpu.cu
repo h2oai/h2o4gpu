@@ -801,7 +801,7 @@ namespace h2o4gpukmeans {
     double t1 = timer<double>();
 
   // copy result of centroids (sitting entirely on each device) back to host
-  // TODO FIXME: When do delete this ctr memory?
+  // TODO FIXME: When do delete ctr and h_labels memory???
   thrust::host_vector<T> *ctr = new thrust::host_vector<T>(*d_centroids[0]);
   *pred_centroids = ctr->data();
 
@@ -1104,15 +1104,15 @@ int make_ptr_double_kmeans(int dopredict, int verbose, int seed, int gpu_id, int
 int kmeans_transform_float(int verbose,
                            int gpu_id, int n_gpu,
                            size_t m, size_t n, const char ord, int k,
-                           const float *src_data, const float *centroids,
+                           const float *srcdata, const float *centroids,
                            float **preds) {
-  return h2o4gpukmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
+  return h2o4gpukmeans::kmeans_transform<float>(verbose, gpu_id, n_gpu, m, n, ord, k, srcdata, centroids, preds);
 }
 
 int kmeans_transform_double(int verbose,
                             int gpu_id, int n_gpu,
                             size_t m, size_t n, const char ord, int k,
-                            const double *src_data, const double *centroids,
+                            const double *srcdata, const double *centroids,
                             double **preds) {
-  return h2o4gpukmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, k, src_data, centroids, preds);
+  return h2o4gpukmeans::kmeans_transform<double>(verbose, gpu_id, n_gpu, m, n, ord, k, srcdata, centroids, preds);
 }

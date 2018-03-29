@@ -354,7 +354,7 @@ class KMeansH2O(object):
         c_X_np = self._toc(X_np)
 
         cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
-        c_res = np.zeros(rows)
+        c_res = np.zeros(rows, np.int32)
 
         data_ord = 'c' if np.isfortran(X_np) else 'r'
 
@@ -366,10 +366,9 @@ class KMeansH2O(object):
         c_kmeans(1, self.verbose,
                  self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                  data_ord, self._n_clusters, self._max_iter, 0,
-                 self.tol, c_X_np, cluster_centers_, None, c_res)
+                 self.tol, c_X_np, cluster_centers_, np.empty([], X_np.dtype), c_res)
 
-        preds = np.reshape(preds, rows)
-        return preds
+        return c_res
 
     # y is here just for compatibility with sklearn api
     # pylint: disable=unused-argument
@@ -402,7 +401,7 @@ class KMeansH2O(object):
         X_np, _, _, _, _, _ = _get_data(X, ismatrix=True)
         c_X_np = self._toc(X_np)
         cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
-        c_res = np.zeros(rows * self._n_clusters)
+        c_res = np.zeros(rows * self._n_clusters, X_np.dtype)
 
         data_ord = 'c' if np.isfortran(X_np) else 'r'
 
@@ -417,7 +416,6 @@ class KMeansH2O(object):
                 data_ord, self._n_clusters, c_X_np, cluster_centers_,
                 c_res)
 
-        # TODO don 't set order if X is ' F'
         transformed = np.reshape(
             c_res, (rows, self._n_clusters), order='F')
         return transformed
@@ -485,24 +483,24 @@ class KMeansH2O(object):
         pred_labels = np.zeros(rows, dtype=np.int32)
 
         if self.double_precision == 0:
-            iter, res_centroids, res_labels = lib.make_ptr_float_kmeans(
+            lib.make_ptr_float_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                 data_ord, self._n_clusters, self._max_iter, c_init,
                 self.tol, c_data, centroids,
                 pred_centers, pred_labels)
         else:
-            iter, res_centroids, res_labels = lib.make_ptr_double_kmeans(
+            lib.make_ptr_double_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
                 data_ord, self._n_clusters, self._max_iter, c_init,
                 self.tol, c_data, centroids,
                 pred_centers, pred_labels)
 
-        centroids = np.reshape(res_centroids, (self._n_clusters, cols))
+        centroids = np.reshape(pred_centers, (self._n_clusters, cols))
         self.cluster_centers_ = centroids
 
-        self.labels_ = np.reshape(res_labels, rows)
+        self.labels_ = np.reshape(pred_labels, rows)
 
         return self.cluster_centers_, self.labels_
 

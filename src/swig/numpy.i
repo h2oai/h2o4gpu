@@ -3181,36 +3181,29 @@
 %typemap(freearg)
   (DATA_TYPE *IN_ARRAY1)
 {
+
   if (is_new_object$argnum && array$argnum)
     { Py_DECREF(array$argnum); }
+
 }
 
-/* Typemap suite for (DATA_TYPE *ARGOUT_ARRAY1)
+/* Typemap suite for (DATA_TYPE* INPLACE_ARRAY1)
  */
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
+           fragment="NumPy_Macros")
+  (DATA_TYPE** INPLACE_ARRAY1)
+{
+  $1 = is_array($input) && PyArray_EquivTypenums(array_type($input), DATA_TYPECODE);
+}
 %typemap(in,
          fragment="NumPy_Fragments")
-  (DATA_TYPE **ARGOUT_ARRAY1)
-  (PyArrayObject* array=NULL, int is_new_object=0, PyArrayObject_fields* temp=NULL)
+  (DATA_TYPE** INPLACE_ARRAY1)
+  (PyArrayObject* array=NULL, PyArrayObject_fields* temp=NULL)
 {
-    npy_intp size[1] = { -1 };
-
-    array = obj_to_array_contiguous_allow_conversion($input,
-                                                   DATA_TYPECODE,
-                                                   &is_new_object);
-    if (!array) SWIG_fail;
-    temp = (PyArrayObject_fields*)array;
-    $1 = (DATA_TYPE**) &temp->data;
-}
-%typemap(argout)
-  (DATA_TYPE** ARGOUT_ARRAY1)
-{
-    $result = SWIG_Python_AppendOutput($result,(PyObject*)array$argnum);
-}
-%typemap(freearg)
-  (DATA_TYPE **ARGOUT_ARRAY1)
-{
-  if (is_new_object$argnum && array$argnum)
-    { Py_DECREF(array$argnum); }
+  array = obj_to_array_no_conversion($input, DATA_TYPECODE);
+  if (!array || !require_contiguous(array) || !require_native(array)) SWIG_fail;
+  temp = (PyArrayObject_fields*)array;
+  $1 = (DATA_TYPE**) &temp->data;
 }
 
 %enddef    /* %numpy_typemaps() macro */
