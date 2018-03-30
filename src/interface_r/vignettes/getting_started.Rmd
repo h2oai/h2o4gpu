@@ -44,7 +44,7 @@ Using a Python [virtual environment](https://packaging.python.org/tutorials/inst
 library(reticulate)
 use_virtualenv("/home/username/venv/h2o4gpu")  # set this to the path of your venv
 ```
-If you have installed **h2o4gpu** Python module using Anaconda, then you can use the `use_condaenv()` function instead.
+If you have installed **h2o4gpu** Python module using Anaconda, then you can use the `use_condaenv()` function instead.  More information about Python environment configuration is available in the reticulate [user guide](https://rstudio.github.io/reticulate/articles/versions.html).
 
 
 ## Quickstart
