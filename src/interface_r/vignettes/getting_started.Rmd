@@ -11,7 +11,7 @@ vignette: >
 
 
 
-**H2O4GPU** is a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API and its well-tested CPU-based algorithms.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python package, and the interface follows standard R conventions for modeling.  
+**H2O4GPU** is a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python package.
 
 The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reticulate/) package for facilitating access to Python libraries through R.  Reticulate embeds a Python session within your R session, enabling seamless, high-performance interoperability.
 
@@ -24,23 +24,27 @@ The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reti
 
 ## Installation
 
-The Python package is a prerequisite for the R package. So first, follow the instructions [here](https://github.com/h2oai/h2o4gpu#installation) to install the **h2o4gpu** Python package (either at the system level or in a Python virtual envivonment). The easiest thing to do is to `pip install` either the stable or bleeding edge `whl` file. To ensure compatibility, the Python package version number should match the R package version number.
+There are a few [system requirements](https://github.com/h2oai/h2o4gpu#requirements), including Ubuntu 16.04+, Python >=3.6, R >=3.1, CUDA 8 or 9, and a machine with Nvidia GPUs.  The code should still run if you have CPUs, but it will fall back to scikit-learn CPU based versions of the algorithms.
 
-The R package can be installed from CRAN using `install.packages("h2o4gpu")`.  To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
+The **h2o4gpu** Python module is a prerequisite for the R package. So first, follow the instructions [here](https://github.com/h2oai/h2o4gpu#user-installation) to install the **h2o4gpu** Python package (either at the system level or in a Python virtual envivonment). The easiest thing to do is to `pip install` the stable release `whl` file. To ensure compatibility, the Python package version number should match the R package version number. 
+
+The recomended way of installing the R package can is from CRAN using `install.packages("h2o4gpu")`. To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
 
 ```{r, eval = FALSE}
 library(devtools)
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
-If the Python package was installed into a virtual environment, you may have to add thesse two lines of code to the top of your script.  The path you will use will be the path of your virtual environment:
+
+### Virtual environments
+
+Using a Python [virtual environment](https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments) is a good solution if you don't want to upgrade your main Python installation to 3.6.  If you installed the **h2o4gpu** Python module into a virtual environment, you will have to add a line of code to tell R which Python envivonment you want to use:
 
 ```{r, eval = FALSE}
 library(reticulate)
-use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
+use_virtualenv("/home/username/venv/h2o4gpu")  # set this to the path of your venv
 ```
-
-However, if you installed the **h2o4gpu** Python package into the main Python installation on your machine, then these two lines of code will not be neccessary.
+If you have installed **h2o4gpu** Python module using Anaconda, then you can use the `use_condaenv()` function instead.  More information about Python environment configuration is available in the reticulate [user guide](https://rstudio.github.io/reticulate/articles/versions.html).
 
 
 ## Quickstart
@@ -50,7 +54,7 @@ Here's a quick demo of how to train and evaluate a GPU-based Random Forest class
 ```{r, eval = FALSE}
 library(h2o4gpu)
 library(reticulate)  # only needed if using a virtual Python environment
-use_virtualenv("/home/ledell/venv/h2o4gpu")  # set this to the path of your venv
+use_virtualenv("/home/username/venv/h2o4gpu")  # set this to the path of your venv
 
 # Prepare data
 x <- iris[1:4]
