@@ -10,7 +10,7 @@ The **h2o4gpu** Python module is a prerequisite for the R package. So first, fol
 
 The recomended way of installing the R package can is from CRAN using `install.packages("h2o4gpu")`. To install the development version of the **h2o4gpu** R package, you can install directly from GitHub as follows:
 
-```{r, eval = FALSE}
+``` r
 library(devtools)
 devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
@@ -20,7 +20,7 @@ devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 
 Using a Python [virtual environment](https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments) is a good solution if you don't want to upgrade your main Python installation to 3.6.  If you installed the **h2o4gpu** Python module into a virtual environment, you will have to add a line of code to tell R which Python envivonment you want to use:
 
-```{r, eval = FALSE}
+``` r
 library(reticulate)
 use_virtualenv("/home/username/venv/h2o4gpu")  # set this to the path of your venv
 ```
@@ -135,7 +135,7 @@ That means that R package cannot locate the **h2o4gpu** Python module.  To fix t
 
 If you have multiple versions of Python installed on your machine and don't want to use the primary version (the one you get when you type `python` at the command line), then you may consider using `reticulate::use_python()` function to explicitly specify which one to use:
 
-```
+``` r
 library(reticulate)
 use_python("/usr/local/bin/python")
 ```
