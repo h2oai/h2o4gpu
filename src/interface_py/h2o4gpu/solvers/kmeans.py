@@ -532,7 +532,7 @@ class KMeansH2O(object):
 
     def _load_lib(self):
         """Load library."""
-        from ..libs.lib_kmeans import GPUlib, CPUlib
+        from ..libs.lib_utils import GPUlib, CPUlib
 
         gpu_lib = GPUlib().get()
         cpu_lib = CPUlib().get()

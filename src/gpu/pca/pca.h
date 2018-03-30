@@ -9,7 +9,7 @@
 namespace pca {
 typedef float pca_float;
 
-struct params {
+typedef struct params {
   int X_n;
   int X_m;
   int k;
@@ -17,7 +17,7 @@ struct params {
   const char *algorithm;
   int verbose;
   int gpu_id;
-};
+} params;
 
 /**
  *

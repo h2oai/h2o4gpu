@@ -10,7 +10,7 @@ from scipy.sparse.csr import csr_matrix
 from h2o4gpu.types import H2OConstants, cptr, make_settings, \
     make_solution, make_info, change_settings, change_solution, \
     Solution, FunctionVector
-from h2o4gpu.libs.lib_pogs import CPUlib, GPUlib
+from h2o4gpu.libs.lib_utils import CPUlib, GPUlib
 from ..util.gpu import device_count
 
 # TODO: catch Ctrl-C

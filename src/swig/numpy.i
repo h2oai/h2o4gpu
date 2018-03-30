@@ -3133,8 +3133,8 @@
 /* H2O4GPU ADDED TYPEMAPS */
 /**************************************/
 
-/* Typemap suite for (DATA_TYPE *IN_ARRAY1)
- */
+/************** Typemap suite for (DATA_TYPE *IN_ARRAY1)
+ **************/
  %typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
             fragment="NumPy_Macros")
    (DATA_TYPE *IN_ARRAY1)
@@ -3159,36 +3159,29 @@
     { Py_DECREF(array$argnum); }
 }
 
-/* Typemap suite for (DATA_TYPE *IN_ARRAY1)
- */
- %typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
-            fragment="NumPy_Macros")
-   (DATA_TYPE *IN_ARRAY1)
- {
-   $1 = is_array($input) || PySequence_Check($input);
- }
-%typemap(in,
-         fragment="NumPy_Fragments")
-  (DATA_TYPE *IN_ARRAY1)
-  (PyArrayObject* array=NULL, int is_new_object=0)
-{
-    array = obj_to_array_contiguous_allow_conversion($input,
-                                                   DATA_TYPECODE,
-                                                   &is_new_object);
-    if (!array) SWIG_fail;
-    $1 = (DATA_TYPE*) array_data(array);
-}
-%typemap(freearg)
-  (DATA_TYPE *IN_ARRAY1)
-{
-
-  if (is_new_object$argnum && array$argnum)
-    { Py_DECREF(array$argnum); }
-
-}
-
+/************** Typemap suite for (DATA_TYPE *INPLACE_ARRAY1)
+ **************/
 /* Typemap suite for (DATA_TYPE* INPLACE_ARRAY1)
  */
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
+           fragment="NumPy_Macros")
+  (DATA_TYPE* INPLACE_ARRAY1)
+{
+  $1 = is_array($input) && PyArray_EquivTypenums(array_type($input),
+                                                 DATA_TYPECODE);
+}
+%typemap(in,
+         fragment="NumPy_Fragments")
+  (DATA_TYPE* INPLACE_ARRAY1)
+  (PyArrayObject* array=NULL, int i=1)
+{
+  array = obj_to_array_no_conversion($input, DATA_TYPECODE);
+  if (!array || !require_contiguous(array) || !require_native(array)) SWIG_fail;
+  $1 = (DATA_TYPE*) array_data(array);
+}
+
+/************** Typemap suite for (DATA_TYPE** INPLACE_ARRAY1)
+ **************/
 %typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
            fragment="NumPy_Macros")
   (DATA_TYPE** INPLACE_ARRAY1)
@@ -3205,6 +3198,53 @@
   temp = (PyArrayObject_fields*)array;
   $1 = (DATA_TYPE**) &temp->data;
 }
+
+/************** Typemap suite for (DATA_TYPE* IN_FARRAY2)
+ **************/
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
+           fragment="NumPy_Macros")
+  (DATA_TYPE* IN_FARRAY2)
+{
+  $1 = is_array($input) || PySequence_Check($input);
+}
+%typemap(in,
+         fragment="NumPy_Fragments")
+  (DATA_TYPE* IN_FARRAY2)
+  (PyArrayObject* array=NULL, int is_new_object=0)
+{
+  array = obj_to_array_fortran_allow_conversion($input,
+                                                DATA_TYPECODE,
+                                                &is_new_object);
+  if (!array || !require_fortran(array)) SWIG_fail;
+  $1 = (DATA_TYPE*) array_data(array);
+}
+%typemap(freearg)
+  (DATA_TYPE* IN_FARRAY2)
+{
+  if (is_new_object$argnum && array$argnum)
+    { Py_DECREF(array$argnum); }
+}
+
+/************** Typemap suite for (DATA_TYPE* INPLACE_FARRAY2)
+ **************/
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY,
+           fragment="NumPy_Macros")
+  (DATA_TYPE* INPLACE_FARRAY2)
+{
+  $1 = is_array($input) && PyArray_EquivTypenums(array_type($input),
+                                                 DATA_TYPECODE);
+}
+%typemap(in,
+         fragment="NumPy_Fragments")
+  (DATA_TYPE* INPLACE_FARRAY2)
+  (PyArrayObject* array=NULL)
+{
+  array = obj_to_array_no_conversion($input, DATA_TYPECODE);
+  if (!array || !require_contiguous(array)
+      || !require_native(array) || !require_fortran(array)) SWIG_fail;
+  $1 = (DATA_TYPE*) array_data(array);
+}
+
 
 %enddef    /* %numpy_typemaps() macro */
 /* *************************************************************** */

@@ -6,11 +6,14 @@
 #define tsvd_export
 #endif
 
-#include "../data/matrix.cuh"
-
 namespace tsvd {
 
-struct params {
+template <typename T>
+class Matrix;
+
+class DeviceContext;
+
+typedef struct params {
   int X_n;
   int X_m;
   int k;
@@ -20,7 +23,7 @@ struct params {
   float tol;
   int verbose;
   int gpu_id;
-};
+} params;
 
 /**
  *
@@ -46,17 +49,5 @@ void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explai
 
 template<typename T, typename S>
 tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param);
-
-void outer_product(Matrix<float> &A,
-                   float eigen_value,
-                   const Matrix<float> &eigen_vector,
-                   const Matrix<float> &eigen_vector_transpose,
-                   DeviceContext &context);
-
-void outer_product(Matrix<double> &A,
-                   float eigen_value,
-                   const Matrix<double> &eigen_vector,
-                   const Matrix<double> &eigen_vector_transpose,
-                   DeviceContext &context);
 
 }

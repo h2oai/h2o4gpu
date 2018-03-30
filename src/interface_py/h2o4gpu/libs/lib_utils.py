@@ -2,21 +2,34 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import os
+class CPUlib:
 
+    def __init__(self):
+        pass
 
-def cpu_lib_path():
-    return get_lib_path("_ch2o4gpu_cpu")
+    @staticmethod
+    def get():
+        try:
+            import h2o4gpu.libs.ch2o4gpu_cpu as ch2o4gpu_cpu
+            return ch2o4gpu_cpu
+        except Exception as e:
+            print("Exception:")
+            print(e)
+            print('\nWarning: h2o4gpu shared object (dynamic library) for CPU failed to load.')
+            return None
 
+class GPUlib:
 
-def gpu_lib_path():
-    return get_lib_path("_ch2o4gpu_gpu")
+    def __init__(self):
+        pass
 
-
-def get_lib_path(lib_name):
-    ext = ".dylib" if os.uname()[0] == "Darwin" else ".so"
-    lib_path = os.path.join(
-        os.path.dirname(__file__), "../../" + lib_name + ext)
-    if not os.path.exists(lib_path):
-        print("WARNING: Library " + lib_path + " doesn't exist.")
-    return lib_path
+    @staticmethod
+    def get():
+        try:
+            import h2o4gpu.libs.ch2o4gpu_gpu as ch2o4gpu_gpu
+            return ch2o4gpu_gpu
+        except Exception as e:
+            print("Exception:")
+            print(e)
+            print('\nWarning: h2o4gpu shared object (dynamic library) for GPU failed to load.')
+            return None
