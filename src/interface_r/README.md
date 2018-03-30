@@ -24,7 +24,8 @@ Using a Python [virtual environment](https://packaging.python.org/tutorials/inst
 library(reticulate)
 use_virtualenv("/home/username/venv/h2o4gpu")  # set this to the path of your venv
 ```
-If you have installed the package using Anaconda, then you can try to use the `use_condaenv()` function (though we have not tested this yet).
+If you have installed **h2o4gpu** Python module using Anaconda, then you can use the `use_condaenv()` function instead.
+
 
 ### Test installation
 
