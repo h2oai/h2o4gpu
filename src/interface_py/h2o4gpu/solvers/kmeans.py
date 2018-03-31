@@ -12,10 +12,7 @@ import numpy as np
 
 from ..solvers.utils import _check_data_content, \
     _get_data, _setter
-from ..util.gpu import device_count
 from ..typecheck.typechecks import assert_satisfies
-from ..types import cptr
-
 
 class KMeansH2O(object):
     """K-Means clustering
@@ -161,6 +158,7 @@ class KMeansH2O(object):
         self.init = init
         self._n_clusters = n_clusters
         self._gpu_id = gpu_id
+        from ..util.gpu import device_count
         (self.n_gpus, self.devices) = device_count(n_gpus)
 
         self._max_iter = max_iter

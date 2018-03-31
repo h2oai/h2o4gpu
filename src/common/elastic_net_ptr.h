@@ -262,20 +262,9 @@ int topkwrap(int whichmax, mysize_t n, mysize_t k, T arr[], mysize_t *whichbeta,
 	mysize_t arrid[n];
 	for (int i = 0; i < n; i++)
 		arrid[i] = i;
-	//cout<<"okk";
 	topk(whichmax, arr, arrid, n, k, whichbeta, valuebeta);
-	//   heapSort(whichmax, arr, arrid,n);
-
-	//   cout << "Sorted array is \n";
-	//   printArray(arr, arrid,n);
-
 	return (0);
 }
-
-template int topkwrap<double>(int whichmax, mysize_t n, mysize_t k,
-		double arr[], mysize_t *whichbeta, double *valuebeta);
-template int topkwrap<float>(int whichmax, mysize_t n, mysize_t k, float arr[],
-mysize_t *whichbeta, float *valuebeta);
 
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
@@ -292,8 +281,8 @@ double ElasticNetptr(const char family, int dopredict, int sourceDev,
 		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
 		double tol, double tolseekfactor, int lambdastopearly, int glmstopearly,
 		double glmstopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore);
 template<typename T>
@@ -304,8 +293,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype,
 		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
 		double tol, double tolseekfactor, int lambdastopearly, int glmstopearly,
 		double glmstopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore);
 template<typename T>
@@ -316,16 +305,10 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype,
 		int nAlphas, double alpha_min, double alpha_max, T *alphas, T *lambdas,
 		double tol, double tolseekfactor, int lambdastopearly, int glmstopearly,
 		double glmstopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore);
-
-template<typename T>
-int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n,
-		size_t mValid, const char ord, const T *data, const T *datay,
-		const T *vdata, const T *vdatay, const T *weight, void **_data,
-		void **_datay, void **_vdata, void **_vdatay, void **_weight);
 
 template<typename T>
 int modelFree2(T *aptr);
@@ -337,8 +320,8 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev,
 		int nAlphas, double alpha_min, double alpha_max, double *alphas,
 		double *lambdas, double tol, double tolseekfactor, int lambdastopearly, int glmstopearly,
 		double glmstopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, double **Xvsalphalambda,
+		double *trainXptr, double *trainYptr, double *validXptr, double *validYptr,
+		double *weightptr, int givefullpath, double **Xvsalphalambda,
 		double **Xvsalpha, double **validPredsvsalphalambda,
 		double **validPredsvsalpha, size_t *countfull, size_t *countshort,
 		size_t *countmore);
@@ -349,13 +332,10 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev,
 		int nAlphas, double alpha_min, double alpha_max, float *alphas,
 		float *lambdas, double tol, double tolseekfactor, int lambdastopearly, int glmstopearly,
 		double glmstopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, float **Xvsalphalambda,
+		float *trainXptr, float *trainYptr, float *validXptr, float *validYptr,
+		float *weightptr, int givefullpath, float **Xvsalphalambda,
 		float **Xvsalpha, float **validPredsvsalphalambda,
 		float **validPredsvsalpha, size_t *countfull, size_t *countshort,
 		size_t *countmore);
-
-int modelfree_double(double *aptr);
-int modelfree_float(float *aptr);
 
 }

@@ -5,26 +5,19 @@
 """
 import sys
 import time
-from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, pointer
 import numpy as np
-from h2o4gpu.types import cptr
 
 # Data utils
-
-
-def _unicode_order(fortran):
-    return ord('c') if fortran else ord('r')
-
 
 def _get_order(data, fortran, order):
     """ Return the Unicode code point representing the
     order of this data set. """
     if data is not None:
         if order is None:
-            order = _unicode_order(fortran)
+            order = fortran
         elif order in ['c', 'r']:
-            order = ord(order)
-        elif order in [ord('c'), ord('r')]:
+            order = order
+        elif order in ['c', 'r']:
             order = order
         else:
             ValueError("Bad order")
@@ -56,9 +49,9 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
 
     # convert to correct precision if necessary
     if order is not None:
-        if order == ord('r'):
+        if order == 'r':
             nporder = 'C'
-        elif order == ord('c'):
+        elif order == 'c':
             nporder = 'F'
         else:
             nporder = 'C'
@@ -182,29 +175,6 @@ def _data_info(data, verbose=0):
             n = data_shape[1]
 
     return double_precision, m, n
-
-
-def _convert_to_ptr(data):
-    """Convert data to a form which can be passed to C/C++ code.
-
-    :param data: array_like
-    :return:
-    """
-
-    if data is not None:
-        np_data, _, dtype = _to_np(data)
-        if dtype == np.float32:
-            c_ftype = c_float
-        elif dtype == np.float64:
-            c_ftype = c_double
-        else:
-            ValueError("No such dtype")
-        data_ptr = cptr(np_data, dtype=c_ftype)
-    else:
-        data_ptr = None
-
-    return data_ptr
-
 
 def _check_equal(iterator):
     """Check if all the values in an iterator are equal.
@@ -365,11 +335,6 @@ def upload_data(self,
 
     # ############## #
 
-    a = c_void_p(0)
-    b = c_void_p(0)
-    c = c_void_p(0)
-    d = c_void_p(0)
-    e = c_void_p(0)
     if self.double_precision == 1:
         self.dtype = np.float64
 
@@ -383,12 +348,18 @@ def upload_data(self,
             print('Detected np.float32')
             sys.stdout.flush()
 
-            # make these types consistent
-    A = _convert_to_ptr(train_x)
-    B = _convert_to_ptr(train_y)
-    C = _convert_to_ptr(valid_x)
-    D = _convert_to_ptr(valid_y)
-    E = _convert_to_ptr(sample_weight)
+    # TODO size??
+    a = np.zeros(0, self.dtype)
+    b = np.zeros(0, self.dtype)
+    c = np.zeros(0, self.dtype)
+    d = np.zeros(0, self.dtype)
+    e = np.zeros(0, self.dtype)
+
+    A = train_x
+    B = train_y
+    C = valid_x
+    D = valid_y
+    E = sample_weight
 
     if self.double_precision == 1:
         c_upload_data = self.lib.make_ptr_double
@@ -401,23 +372,23 @@ def upload_data(self,
         return a, b, c, d, e
 
     status = c_upload_data(
-        c_int(self._shared_a),  # pylint: disable=W0212
-        c_int(self.source_me),
-        c_int(source_dev),
-        c_size_t(m_train),
-        c_size_t(n),
-        c_size_t(m_valid),
-        c_int(self.ord),
+        self._shared_a,  # pylint: disable=W0212
+        self.source_me,
+        source_dev,
+        m_train,
+        n,
+        m_valid,
+        self.ord,
         A,
         B,
         C,
         D,
         E,
-        pointer(a),
-        pointer(b),
-        pointer(c),
-        pointer(d),
-        pointer(e),
+        a,
+        b,
+        c,
+        d,
+        e,
     )
 
     assert status == 0, 'Failure uploading the data'

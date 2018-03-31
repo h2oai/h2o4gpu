@@ -145,21 +145,13 @@ def cudaresetdevice(gpu_id, n_gpus):
     (n_gpus, devices) = device_count(n_gpus)
     gpu_id = gpu_id % devices
 
-    from ..libs.lib_elastic_net import GPUlib, CPUlib
-    gpu_lib = GPUlib().get()
-    cpu_lib = CPUlib().get()
-
-    lib = None
-    if n_gpus == 0 or gpu_lib is None or devices == 0:
-        lib = cpu_lib
-    elif n_gpus > 0 or gpu_lib is None or devices == 0:
-        lib = gpu_lib
-    else:
+    from ..libs.lib_utils import getLib
+    lib = getLib(n_gpus, devices)
+    if lib is None:
         n_gpus = 0
 
     if n_gpus > 0 and lib is not None:
-        from ctypes import c_int
-        lib.cudaresetdevice(c_int(gpu_id), c_int(n_gpus))
+        lib.cudaresetdevice(gpu_id, n_gpus)
 
 def cudaresetdevice_bare(n_gpus):
     """
@@ -223,14 +215,9 @@ def get_compute_capability_subprocess(gpu_id):
     else:
         n_gpus = 0
 
-    from ctypes import c_int, POINTER, cast, addressof
-    device_major = c_int(0)
-    device_minor = c_int(0)
-    device_ratioperf = c_int(0)
+    device_major = 0
+    device_minor = 0
+    device_ratioperf = 0
     if n_gpus > 0 and lib is not None:
-        c_int_p = POINTER(c_int)
-        lib.get_compute_capability(
-            c_int(gpu_id), cast(addressof(device_major), c_int_p),
-            cast(addressof(device_minor), c_int_p),
-            cast(addressof(device_ratioperf), c_int_p))
-    return device_major.value, device_minor.value, device_ratioperf.value
+        device_major, device_minor, device_ratioperf = lib.get_compute_capability(gpu_id)
+    return device_major, device_minor, device_ratioperf

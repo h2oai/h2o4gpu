@@ -33,3 +33,15 @@ class GPUlib:
             print(e)
             print('\nWarning: h2o4gpu shared object (dynamic library) for GPU failed to load.')
             return None
+
+def getLib(n_gpus, devices):
+    cpu_lib = CPUlib().get()
+    gpu_lib = GPUlib().get()
+    if (n_gpus == 0) or (gpu_lib is None and cpu_lib is not None) or (devices == 0):
+        print("\nUsing CPU library\n")
+        return cpu_lib
+    elif (n_gpus > 0) and (gpu_lib is not None) and (devices > 0):
+        print("\nUsing GPU library with %d GPUs\n" % n_gpus)
+        return gpu_lib
+    else:
+        return None

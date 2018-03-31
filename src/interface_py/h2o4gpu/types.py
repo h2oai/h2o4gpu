@@ -2,54 +2,27 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from ctypes import POINTER, c_int, c_int32, c_uint, c_void_p, c_float, \
-    c_double, Structure
 from numpy import zeros, ones, inf
+import h2o4gpu.libs.lib_utils as lib_utils
 
+lib = None
 
-class H2OConstants:
-    COL_MAJ = c_int(0)
-    ROW_MAJ = c_int(1)
+def lazyLib():
+    global lib
+    if lib is None:
+        from .util.gpu import device_count
+        n_gpus, devices = device_count(n_gpus=-1)
+        lib = lib_utils.getLib(n_gpus, devices)
+    return lib
 
-
-class H2OFunctions:
-    """
-    Constants representing functions used internally in C/C++
-    """
-    ABS = c_int(0)
-    EXP = c_int(1)
-    HUBER = c_int(2)
-    IDENTITY = c_int(3)
-    INDBOX01 = c_int(4)
-    INDEQ0 = c_int(5)
-    INDGE0 = c_int(6)
-    INDLE0 = c_int(7)
-    LOGISTIC = c_int(8)
-    MAXNEG0 = c_int(9)
-    MAXPOS0 = c_int(10)
-    NEGENTR = c_int(11)
-    NEGLOG = c_int(12)
-    RECIPR = c_int(13)
-    SQUARE = c_int(14)
-    ZERO = c_int(15)
-
-
-class H2OStatus:
-    """
-    Constants representing statuses returned from C/C++
-    """
-    SUCCESS = 'H2O4GPU_SUCCESS'
-    INFEASIBLE = 'H2O4GPU_INFEASIBLE'
-    UNBOUNDED = 'H2O4GPU_UNBOUNDED'
-    MAX_ITER = 'H2O4GPU_MAX_ITER'
-    NAN_FOUND = 'H2O4GPU_NAN_FOUND'
-    ERROR = 'H2O4GPU_ERROR'
-
-
-class H2OSolverDefault:
+class H2OSolverDefault(object):
     """
     Constants representing defaults used in our solvers
     """
+
+    def __init__(self):
+        pass
+
     RHO = 1.  # rho = 1.0
     ABS_TOL = 1e-4  # abs_tol = 1e-2
     REL_TOL = 1e-4  # rel_tol = 1e-4
@@ -62,73 +35,16 @@ class H2OSolverDefault:
     N_DEV = 1  # number of cuda devices =1
     W_DEV = 0  # which cuda devices (0)
 
-
-#pointers to C types
-c_int_p = POINTER(c_int)
-c_int32_p = POINTER(c_int32)
-c_float_p = POINTER(c_float)
-c_void_pp = POINTER(c_void_p)
-c_double_p = POINTER(c_double)
-
-
 #H2O4GPU types
-class SettingsS(Structure):
-    _fields_ = [('rho', c_float), ('abs_tol', c_float), ('rel_tol', c_float),
-                ('max_iters', c_uint), ('verbose', c_uint),
-                ('adaptive_rho', c_int), ('equil', c_int), ('gap_stop', c_int),
-                ('warm_start', c_int), ('nDev', c_int), ('wDev', c_int)]
-
-
-class SettingsD(Structure):
-    _fields_ = [('rho', c_double), ('abs_tol', c_double), ('rel_tol', c_double),
-                ('max_iters', c_uint), ('verbose', c_uint),
-                ('adaptive_rho', c_int), ('equil', c_int), ('gap_stop', c_int),
-                ('warm_start', c_int), ('nDev', c_int), ('wDev', c_int)]
-
-
-class InfoS(Structure):
-    _fields_ = [('iter', c_uint), ('status', c_int), ('obj', c_float),
-                ('rho', c_float), ('solvetime', c_float)]
-
-
-class InfoD(Structure):
-    _fields_ = [('iter', c_uint), ('status', c_int), ('obj', c_double),
-                ('rho', c_double), ('solvetime', c_float)]
-
-
 class Solution(object):
 
     def __init__(self, double_precision, m, n):
-        T = c_double if double_precision else c_float
+        T = np.float64 if double_precision else np.float32
         self.double_precision = double_precision
         self.x = zeros(n, dtype=T)
         self.y = zeros(m, dtype=T)
         self.mu = zeros(n, dtype=T)
         self.nu = zeros(m, dtype=T)
-
-
-class SolutionS(Structure):
-    _fields_ = [('x', c_float_p), ('y', c_float_p), ('mu', c_float_p),
-                ('nu', c_float_p)]
-
-
-class SolutionD(Structure):
-    _fields_ = [('x', c_double_p), ('y', c_double_p), ('mu', c_double_p),
-                ('nu', c_double_p)]
-
-
-#pointers to H2O4GPU types
-settings_s_p = POINTER(SettingsS)
-settings_d_p = POINTER(SettingsD)
-info_s_p = POINTER(InfoS)
-info_d_p = POINTER(InfoD)
-solution_s_p = POINTER(SolutionS)
-solution_d_p = POINTER(SolutionD)
-
-
-def cptr(np_arr, dtype=c_float):
-    return np_arr.ctypes.data_as(POINTER(dtype))
-
 
 def change_settings(settings, **kwargs):
     """ Utility setting values from kwargs
@@ -163,34 +79,30 @@ def make_settings(double_precision=False, **kwargs):
     :param kwargs: **kwargs
     :return: SettingsS object
     """
-    rho = kwargs['rho'] if 'rho' in list(
+    settings = lazyLib().H2O4GPUSettingsD if double_precision else lazyLib().H2O4GPUSettingsS
+    settings.rho = kwargs['rho'] if 'rho' in list(
         kwargs.keys()) else H2OSolverDefault.RHO
-    relt = kwargs['abs_tol'] if 'abs_tol' in list(
+    settings.relt = kwargs['abs_tol'] if 'abs_tol' in list(
         kwargs.keys()) else H2OSolverDefault.ABS_TOL
-    abst = kwargs['rel_tol'] if 'rel_tol' in list(
+    settings.abst = kwargs['rel_tol'] if 'rel_tol' in list(
         kwargs.keys()) else H2OSolverDefault.REL_TOL
-    maxit = kwargs['max_iters'] if 'max_iters' in list(
+    settings.maxit = kwargs['max_iters'] if 'max_iters' in list(
         kwargs.keys()) else H2OSolverDefault.MAX_ITERS
-    verb = kwargs['verbose'] if 'verbose' in list(
+    settings.verb = kwargs['verbose'] if 'verbose' in list(
         kwargs.keys()) else H2OSolverDefault.VERBOSE
-    adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(
+    settings.adap = kwargs['adaptive_rho'] if 'adaptive_rho' in list(
         kwargs.keys()) else H2OSolverDefault.ADAPTIVE_RHO
-    equil = kwargs['equil'] if 'equil' in list(
+    settings.equil = kwargs['equil'] if 'equil' in list(
         kwargs.keys()) else H2OSolverDefault.EQUIL
-    gaps = kwargs['gap_stop'] if 'gap_stop' in list(
+    settings.gaps = kwargs['gap_stop'] if 'gap_stop' in list(
         kwargs.keys()) else H2OSolverDefault.GAP_STOP
-    warm = kwargs['warm_start'] if 'warm_start' in list(
+    settings.warm = kwargs['warm_start'] if 'warm_start' in list(
         kwargs.keys()) else H2OSolverDefault.WARM_START
-    ndev = kwargs['nDev'] if 'nDev' in list(
+    settings.ndev = kwargs['nDev'] if 'nDev' in list(
         kwargs.keys()) else H2OSolverDefault.N_DEV
-    wdev = kwargs['wDev'] if 'wDev' in list(
+    settings.wdev = kwargs['wDev'] if 'wDev' in list(
         kwargs.keys()) else H2OSolverDefault.W_DEV
-    if double_precision:
-        return SettingsD(rho, relt, abst, maxit, verb, adap, equil, gaps, warm,
-                         ndev, wdev)
-    return SettingsS(rho, relt, abst, maxit, verb, adap, equil, gaps, warm,
-                     ndev, wdev)
-
+    return settings
 
 def change_solution(py_solution, **kwargs):
     try:
@@ -201,32 +113,33 @@ def change_solution(py_solution, **kwargs):
 
 
 def make_solution(py_solution):
-    if py_solution.double_precision:
-        return SolutionD(
-            cptr(py_solution.x, c_double), cptr(py_solution.y, c_double),
-            cptr(py_solution.mu, c_double), cptr(py_solution.nu, c_double))
-    return SolutionS(
-        cptr(py_solution.x, c_float), cptr(py_solution.y, c_float),
-        cptr(py_solution.mu, c_float), cptr(py_solution.nu, c_float))
-
+    solution = lazyLib().H2O4GPUSolutionD() if py_solution.double_precision else lazyLib().H2O4GPUSolutionS()
+    solution.x = py_solution.x
+    solution.y = py_solution.y,
+    solution.mu = py_solution.mu
+    solution.nu = py_solution.nu
+    return solution
 
 def make_info(double_precision):
-    if double_precision:
-        return InfoD(0, 0, inf, 0, 0)
-    return InfoS(0, 0, inf, 0, 0)
-
+    info = lazyLib().H2O4GPUInfoD if double_precision else lazyLib().H2O4GPUInfoS
+    info.iter = 0
+    info.status = 0
+    info.obj = inf
+    info.rho = 0
+    info.solvetime = 0
+    return info
 
 class FunctionVector(object):
     """Class representing a function"""
 
     def __init__(self, length, double_precision=False):
-        T = c_double if double_precision else c_float
+        T = np.float64 if double_precision else np.float32
         self.a = ones(length, T)
         self.b = zeros(length, T)
         self.c = ones(length, T)
         self.d = zeros(length, T)
         self.e = zeros(length, T)
-        self.h = zeros(length, c_int)
+        self.h = zeros(length, np.int32)
         self.double_precision = double_precision
 
     def length(self):

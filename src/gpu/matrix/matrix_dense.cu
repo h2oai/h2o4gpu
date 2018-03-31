@@ -1933,7 +1933,7 @@ template class MatrixDense<float>;
   // upload data function.  Uploads to a single GPU.
   // mimics otherwise similar MatrixDense constructor, but has no destruction of uploaded data pointers
 template <typename T>
-int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight, void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight){
+int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord, const T *data, const T *datay, const T *vdata, const T *vdatay, const T *weight, T **_data, T **_datay, T **_vdata, T **_vdatay, T **_weight){
     checkwDev(wDev);
     CUDACHECK(cudaSetDevice(wDev));
 
@@ -2011,10 +2011,10 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
   template int makePtr_dense<double>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
                                      const double *data, const double *datay, const double *vdata, const double *vdatay, const double *weight,
-                                     void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+                                     double **_data, double **_datay, double **_vdata, double **_vdatay, double **_weight);
   template int makePtr_dense<float>(int sharedA, int me, int wDev, size_t m, size_t n, size_t mValid, const char ord,
                                     const float *data, const float *datay, const float *vdata, const float *vdatay, const float *weight,
-                                    void **_data, void **_datay, void **_vdata, void **_vdatay, void **_weight);
+                                    float **_data, float **_datay, float **_vdata, float **_vdatay, float **_weight);
 
 
 
@@ -2039,12 +2039,12 @@ int modelFree1(T *aptr){
 
     int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                         const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
-                        void**a, void**b, void**c, void**d, void **e) {
+                        double**a, double**b, double**c, double**d, double **e) {
       return h2o4gpu::makePtr_dense<double>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
     int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                        const float* trainX, const float* trainY, const float* validX, const float* validY, const float *weight,
-                       void**a, void**b, void**c, void**d, void **e) {
+                       float**a, float**b, float**c, float**d, float **e) {
       return h2o4gpu::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
 

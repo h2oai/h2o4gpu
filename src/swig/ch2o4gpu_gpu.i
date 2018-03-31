@@ -14,3 +14,4 @@
 %include "pca.i"
 %include "pogs.i"
 %include "tsvd.i"
+%include "utils.i"
