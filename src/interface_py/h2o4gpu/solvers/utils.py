@@ -14,7 +14,7 @@ def _get_order(data, fortran, order):
     order of this data set. """
     if data is not None:
         if order is None:
-            order = fortran
+            order = 'c' if fortran else 'r'
         elif order in ['c', 'r']:
             order = order
         elif order in ['c', 'r']:
@@ -341,19 +341,20 @@ def upload_data(self,
         if self.verbose > 0:
             print('Detected np.float64')
             sys.stdout.flush()
+        newpointer = self.lib.new_doublep
     else:
         self.dtype = np.float32
 
         if self.verbose > 0:
             print('Detected np.float32')
             sys.stdout.flush()
+        newpointer = self.lib.new_floatp
 
-    # TODO size??
-    a = np.zeros(0, self.dtype)
-    b = np.zeros(0, self.dtype)
-    c = np.zeros(0, self.dtype)
-    d = np.zeros(0, self.dtype)
-    e = np.zeros(0, self.dtype)
+    a = newpointer()
+    b = newpointer()
+    c = newpointer()
+    d = newpointer()
+    e = newpointer()
 
     A = train_x
     B = train_y

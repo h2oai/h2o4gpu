@@ -3139,6 +3139,7 @@
             fragment="NumPy_Macros")
    (DATA_TYPE *IN_ARRAY1)
  {
+   printf("CHEKING\n");
    $1 = is_array($input) || PySequence_Check($input);
  }
 %typemap(in,
@@ -3147,8 +3148,8 @@
   (PyArrayObject* array=NULL, int is_new_object=0)
 {
     array = obj_to_array_contiguous_allow_conversion($input,
-                                                   DATA_TYPECODE,
-                                                   &is_new_object);
+                                                       DATA_TYPECODE,
+                                                       &is_new_object);
     if (!array) SWIG_fail;
     $1 = (DATA_TYPE*) array_data(array);
 }

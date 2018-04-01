@@ -614,11 +614,11 @@ class ElasticNetH2O(object):
         if self.alphas_list is not None:
             c_alphas = (self.alphas_list.astype(self.dtype, copy=False))
         else:
-            c_alphas = np.empty([], self.dtype)
+            c_alphas = np.zeros(0, self.dtype)
         if self.lambdas_list is not None:
             c_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
         else:
-            c_lambdas = np.empty([], self.dtype)
+            c_lambdas = np.zeros(0, self.dtype)
 
 #call elastic net in C backend
             count_full, count_short, count_more = c_elastic_net(
