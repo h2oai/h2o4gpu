@@ -2032,10 +2032,16 @@ int modelFree1(T *aptr){
 
   template int modelFree1<float>(float *aptr);
   template int modelFree1<double>(double *aptr);
-  
-
 
 }  // namespace h2o4gpu
+
+int modelfree1_double(double *aptr){
+  return h2o4gpu::modelFree1<double>(aptr);
+}
+int modelfree1_float(float *aptr){
+  return h2o4gpu::modelFree1<float>(aptr);
+}
+
 
     int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
                         const double* trainX, const double* trainY, const double* validX, const double* validY, const double *weight,
@@ -2048,12 +2054,6 @@ int modelFree1(T *aptr){
       return h2o4gpu::makePtr_dense<float>(sharedA, sourceme, sourceDev, mTrain, n, mValid, ord, trainX, trainY, validX, validY, weight, a, b, c, d, e);
     }
 
-   int modelfree1_double(double *aptr){
-    return h2o4gpu::modelFree1<double>(aptr);
-  }
-  int modelfree1_float(float *aptr){
-    return h2o4gpu::modelFree1<float>(aptr);
-  }
 
 
 

@@ -12,4 +12,4 @@
 %include "elastic_net.i"
 %include "kmeans.i"
 %include "pogs.i"
-%include "utils.i"
+%include "matrix_dense.i"

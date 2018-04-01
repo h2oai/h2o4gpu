@@ -90,7 +90,7 @@ class MatrixDense : public Matrix<T> {
 };
 
 
- 
+
 
 }  // namespace h2o4gpu
 
