@@ -9,9 +9,11 @@
     import_array();
 %}
 
-%include "elastic_net.i"
-%include "kmeans.i"
-%include "pca.i"
-%include "pogs.i"
-%include "tsvd.i"
-%include "matrix_dense.i"
+%include "cpointer.i"
+%include "solver/kmeans.i"
+%include "solver/elastic_net.i"
+%include "solver/pca.i"
+%include "solver/pogs.i"
+%include "solver/tsvd.i"
+%include "matrix/matrix_dense.i"
+%include "util/gpu.i"

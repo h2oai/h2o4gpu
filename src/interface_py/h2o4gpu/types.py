@@ -12,7 +12,7 @@ def lazyLib():
     if lib is None:
         from .util.gpu import device_count
         n_gpus, devices = device_count(n_gpus=-1)
-        lib = lib_utils.getLib(n_gpus, devices)
+        lib = lib_utils.get_lib(n_gpus, devices)
     return lib
 
 class H2OSolverDefault(object):

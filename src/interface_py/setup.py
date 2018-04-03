@@ -121,13 +121,4 @@ setup(
     description='H2O.ai GPU Edition',
     install_requires=reqs,
     cmdclass={'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
-    
-    ext_modules=[
-    Extension(name='h2o4gpu.util._daicx',
-              sources=['h2o4gpu/util/daicx.i', '../cpu/metrics/metrics.cpp'],
-              include_dirs=[numpy.get_include(), '../include/'],
-              extra_compile_args=swig_extra_compile_args,
-              extra_link_args=swig_extra_link_args,
-              swig_opts=["-c++"])
-    ]
 )

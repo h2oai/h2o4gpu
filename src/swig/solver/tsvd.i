@@ -1,6 +1,6 @@
 /* File : tsvd.i */
 %{
-#include "../gpu/tsvd/tsvd.h"
+#include "../../gpu/tsvd/tsvd.h"
 %}
 
 %rename("params_tsvd") tsvd::params;
@@ -13,4 +13,4 @@
 %apply (double *INPLACE_FARRAY2) {double *_Q, double *_U};
 %apply (double *INPLACE_ARRAY1) {double *_w};
 
-%include "../gpu/tsvd/tsvd.h"
+%include "../../gpu/tsvd/tsvd.h"

@@ -13,8 +13,9 @@ import pandas as pd
 from tabulate import tabulate
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
+from ctypes import c_float, c_double, cast, POINTER
 
-from ..libs.lib_utils import getLib
+from ..libs.lib_utils import get_lib
 from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
 
 class ElasticNetH2O(object):
@@ -246,7 +247,7 @@ class ElasticNetH2O(object):
 
         self.n_threads = n_threads
 
-        self.lib = getLib(self.n_gpus, devices)
+        self.lib = get_lib(self.n_gpus, devices)
 
         self.x_vs_alpha_lambda = None
         self.x_vs_alpha = None
@@ -357,7 +358,6 @@ class ElasticNetH2O(object):
 
         source_dev = 0
         if not (valid_x is None and valid_y is None and sample_weight is None):
-
             prepare_and_upload_data(
                 self,
                 train_x=None,
@@ -371,6 +371,7 @@ class ElasticNetH2O(object):
 
 #save global variable
         oldstorefullpath = self.store_full_path
+
 
         if self.store_full_path == 1:
             self.store_full_path = 1
@@ -553,7 +554,7 @@ class ElasticNetH2O(object):
         if do_predict == 0 and self.did_fit_ptr == 1:
             free_sols(self)
 
-# ############## #
+        # ############## #
 
         self.did_fit_ptr = 1
 
@@ -570,58 +571,54 @@ class ElasticNetH2O(object):
             which_precision = double_precision
             self.double_precision = double_precision
 
-# ############ #
+        # ############ #
 
         if do_predict == 0:
             #initialize if doing fit
-            # TODO size??
-            x_vs_alpha_lambda = np.zeros(self.n_lambdas*self.n_alphas, self.dtype)
-            # TODO size??
-            x_vs_alpha = np.zeros(self.n_alphas, self.dtype)
-            # TODO size??
-            valid_pred_vs_alpha_lambda = np.zeros(self.n_lambdas*self.n_alphas, self.dtype)
-            # TODO size??
-            valid_pred_vs_alpha = np.zeros(self.n_alphas, self.dtype)
+            self.x_vs_alpha_lambda = None
+            self.x_vs_alpha = None
+            self.valid_pred_vs_alpha_lambda = None
+            self.valid_pred_vs_alpha = None
             count_full = 0
             count_short = 0
             count_more = 0
         else:
             #restore if predict
-            x_vs_alpha_lambda = self.x_vs_alpha_lambda
-            x_vs_alpha = self.x_vs_alpha
-            valid_pred_vs_alpha_lambda = self.valid_pred_vs_alpha_lambda
-            valid_pred_vs_alpha = self.valid_pred_vs_alpha
             count_full = self.count_full
             count_short = self.count_short
             count_more = self.count_more
 
-# ############## #
-#
+        # ############## #
+        #
         if which_precision == 1:
             c_elastic_net = self.lib.elastic_net_ptr_double
             self.dtype = np.float64
+            c_type = c_double
             if self.verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
             self.dtype = np.float32
+            c_type = c_float
             if self.verbose > 0:
                 print('single precision fit')
                 sys.stdout.flush()
 
-#precision - independent commands
+        #precision - independent commands
         if self.alphas_list is not None:
             c_alphas = (self.alphas_list.astype(self.dtype, copy=False))
         else:
-            c_alphas = np.zeros(0, self.dtype)
+            c_alphas = None
         if self.lambdas_list is not None:
             c_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
         else:
-            c_lambdas = np.zeros(0, self.dtype)
+            c_lambdas = None
 
-#call elastic net in C backend
-            count_full, count_short, count_more = c_elastic_net(
+        #call elastic net in C backend
+        res, x_vs_alpha_lambda, x_vs_alpha, \
+        valid_pred_vs_alpha_lambda, valid_pred_vs_alpha, \
+        count_full, count_short, count_more = c_elastic_net(
             self._family,
             do_predict,
             source_dev,
@@ -659,51 +656,51 @@ class ElasticNetH2O(object):
             d,
             e,
             self.store_full_path,
-            x_vs_alpha_lambda,
-            x_vs_alpha,
-            valid_pred_vs_alpha_lambda,
-            valid_pred_vs_alpha,
+            self.x_vs_alpha_lambda,
+            self.x_vs_alpha,
+            self.valid_pred_vs_alpha_lambda,
+            self.valid_pred_vs_alpha,
+            count_full,
+            count_short,
+            count_more
         )
         #if should or user wanted to save or free data,
         #do that now that we are done using a, b, c, d, e
         #This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
-        if free_input_data == 1:
-            free_data(self)
-
-# ####################################
-#PROCESS OUTPUT
-#save pointers
-
         self.x_vs_alpha_lambda = x_vs_alpha_lambda
         self.x_vs_alpha = x_vs_alpha
         self.valid_pred_vs_alpha_lambda = valid_pred_vs_alpha_lambda
         self.valid_pred_vs_alpha = valid_pred_vs_alpha
+
         self.count_full = count_full
         self.count_short = count_short
         self.count_more = count_more
 
-        count_full_value = count_full.value
-        count_short_value = count_short.value
-        count_more_value = count_more.value
+        if free_input_data == 1:
+            free_data(self)
+
+        # ####################################
+        #PROCESS OUTPUT
+        #save pointers
 
         if self.store_full_path == 1:
-            num_all = int(count_full_value / (self.n_alphas * self.n_lambdas))
+            num_all = int(count_full / (self.n_alphas * self.n_lambdas))
         else:
-            num_all = int(count_short_value / self.n_alphas)
+            num_all = int(count_short / self.n_alphas)
 
         num_all_other = num_all - n
         num_error = 3  # should be consistent w/ src/common/elastic_net_ptr.cpp
         num_other = num_all_other - num_error
         if num_other != 3:
             print('num_other=%d but expected 3' % num_other)
-            print('count_full_value=%d '
-                  'count_short_value=%d '
-                  'count_more_value=%d '
-                  'num_all=%d num_all_other=%d' % (int(count_full_value),
-                                                   int(count_short_value),
-                                                   int(count_more_value),
+            print('count_full=%d '
+                  'count_short=%d '
+                  'count_more=%d '
+                  'num_all=%d num_all_other=%d' % (int(count_full),
+                                                   int(count_short),
+                                                   int(count_more),
                                                    int(num_all),
                                                    int(num_all_other)))
             sys.stdout.flush()
@@ -714,10 +711,14 @@ class ElasticNetH2O(object):
             #x_vs_alpha_lambda contains solution(and other data)
             #for all lambda and alpha
 
-            self.x_vs_alpha_lambdanew = np.reshape(
-                self.x_vs_alpha_lambda,
-                (self.n_lambdas, self.n_alphas, num_all)
-            )
+            self.x_vs_alpha_lambdanew = \
+                np.fromiter(cast(self.x_vs_alpha_lambda.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
+                            count=count_full)
+
+            self.x_vs_alpha_lambdanew = \
+                np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas,
+                                                       self.n_alphas, num_all))
 
             self.x_vs_alpha_lambdapure = \
                 self.x_vs_alpha_lambdanew[:, :, 0:n]
@@ -729,10 +730,10 @@ class ElasticNetH2O(object):
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
             self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:
-                                                     n + num_error + 2]
+                                                           n + num_error + 2]
 
             self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:
-                                                   n + num_error + 3]
+                                                         n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
@@ -740,8 +741,12 @@ class ElasticNetH2O(object):
                 self.intercept_ = None
 
         if self.store_full_path == 1 and do_predict == 1:
-            self.valid_pred_vs_alpha_lambdanew = valid_pred_vs_alpha_lambda
+            thecount = int(count_full / (n + num_all_other) * m_valid)
 
+            self.valid_pred_vs_alpha_lambdanew = \
+                np.fromiter(cast(self.valid_pred_vs_alpha_lambda.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
+                            count=thecount)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.reshape(self.valid_pred_vs_alpha_lambdanew,
                            (self.n_lambdas, self.n_alphas, m_valid))
@@ -750,43 +755,47 @@ class ElasticNetH2O(object):
 
         if do_predict == 0:  # store_full_path==0 or 1
             #x_vs_alpha contains only best of all lambda for each alpha
-
-            self.x_vs_alphanew = x_vs_alpha
+            self.x_vs_alphanew = np.fromiter(
+                cast(self.x_vs_alpha.__int__(), POINTER(c_type)),
+                dtype=self.dtype,
+                count=count_short)
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
                                             (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[:, n + num_error:
-                                                n + num_error + 1]
+                                                   n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:
-                                               n + num_error + 2]
+                                                  n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:
-                                             n + num_error + 3]
+                                                n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept2_ = self.x_vs_alphapure[:, -1]
             else:
                 self.intercept2_ = None
 
-#preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+        #preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
         if self.store_full_path == 0 and do_predict == 1:
-            thecount = int(count_short_value / (n + num_all_other) * m_valid)
+            thecount = int(count_short / (n + num_all_other) * m_valid)
             if self.verbose > 0:
                 print('thecount=%d '
-                      'count_full_value=%d '
-                      'count_short_value=%d '
+                      'count_full=%d '
+                      'count_short=%d '
                       'n=%d num_all_other=%d '
                       'm_valid=%d' % (
                           thecount,
-                          count_full_value,
-                          count_short_value,
+                          count_full,
+                          count_short,
                           n,
                           num_all_other,
                           m_valid,
                       ))
                 sys.stdout.flush()
-            self.valid_pred_vs_alphanew = valid_pred_vs_alpha
-
+            self.valid_pred_vs_alphanew = \
+                np.fromiter(cast(self.valid_pred_vs_alpha.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
+                            count=thecount)
             self.valid_pred_vs_alphanew = \
                 np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas,
                                                          m_valid))

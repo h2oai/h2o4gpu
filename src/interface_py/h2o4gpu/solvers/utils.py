@@ -341,20 +341,18 @@ def upload_data(self,
         if self.verbose > 0:
             print('Detected np.float64')
             sys.stdout.flush()
-        newpointer = self.lib.new_doublep
     else:
         self.dtype = np.float32
 
         if self.verbose > 0:
             print('Detected np.float32')
             sys.stdout.flush()
-        newpointer = self.lib.new_floatp
 
-    a = newpointer()
-    b = newpointer()
-    c = newpointer()
-    d = newpointer()
-    e = newpointer()
+    a = None
+    b = None
+    c = None
+    d = None
+    e = None
 
     A = train_x
     B = train_y
@@ -372,7 +370,7 @@ def upload_data(self,
         sys.stdout.flush()
         return a, b, c, d, e
 
-    status = c_upload_data(
+    status, a, b, c, d, e = c_upload_data(
         self._shared_a,  # pylint: disable=W0212
         self.source_me,
         source_dev,
@@ -389,7 +387,7 @@ def upload_data(self,
         b,
         c,
         d,
-        e,
+        e
     )
 
     assert status == 0, 'Failure uploading the data'
@@ -424,7 +422,6 @@ def free_data(self):
             self.lib.modelfree1_float(self.d)
             self.lib.modelfree1_float(self.e)
 
-
 def free_sols(self):
     if self.did_fit_ptr == 1:
         self.did_fit_ptr = 0
@@ -446,12 +443,10 @@ def free_preds(self):
             self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
             self.lib.modelfree2_float(self.valid_pred_vs_alpha)
 
-
 def finish(self):
     free_data(self)
     free_sols(self)
     free_preds(self)
-
 
 class _setter:
     """Setter

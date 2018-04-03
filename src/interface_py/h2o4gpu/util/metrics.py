@@ -6,7 +6,6 @@
 import numpy as np
 import pandas as pd
 
-
 def ll(actual, predicted):
     """
     Computes the log likelihood.
@@ -316,35 +315,34 @@ def f1_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal F1-Score
     """
-    import h2o4gpu.util.daicx as daicx
+    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
     if sample_weight is None:
-        return daicx.f1_opt(actual.ravel(), predicted.ravel())
-    return daicx.f1_opt(actual.ravel(), predicted.ravel(),
+        return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel())
+    return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel(),
                         sample_weight.ravel())
 
+    def f2_opt(actual, predicted, sample_weight=None):
+        """
+        Computes the F2-Score after optimal predictions thresholding.
 
-def f2_opt(actual, predicted, sample_weight=None):
-    """
-    Computes the F2-Score after optimal predictions thresholding.
+        This function maximizes the F2-Score by means of
+        optimal predictions thresholding.
 
-    This function maximizes the F2-Score by means of
-    optimal predictions thresholding.
+        :param actual : numpy array
+                        The ground truth value
+        :param predicted : numpy array
+                           The predicted value
+        :param sample_weight : numpy array or None
+                               sample weights
 
-    :param actual : numpy array
-                    The ground truth value
-    :param predicted : numpy array
-                       The predicted value
-    :param sample_weight : numpy array or None
-                           sample weights
-
-    :returns double
-             The optimal F2-Score
-    """
-    import h2o4gpu.util.daicx as daicx
-    if sample_weight is None:
-        return daicx.f2_opt(actual.ravel(), predicted.ravel())
-    return daicx.f2_opt(actual.ravel(), predicted.ravel(),
-                        sample_weight.ravel())
+        :returns double
+                 The optimal F2-Score
+        """
+        import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+        if sample_weight is None:
+            return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel())
+        return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel(),
+                            sample_weight.ravel())
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -364,10 +362,10 @@ def mcc_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal MCC
     """
-    import h2o4gpu.util.daicx as daicx
+    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
     if sample_weight is None:
-        return daicx.mcc_opt(actual.ravel(), predicted.ravel())
-    return daicx.mcc_opt(actual.ravel(), predicted.ravel(),
+        return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel())
+    return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel(),
                          sample_weight.ravel())
 
 
@@ -388,12 +386,11 @@ def acc_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal Accuracy
     """
-    import h2o4gpu.util.daicx as daicx
+    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
     if sample_weight is None:
-        return daicx.acc_opt(actual.ravel(), predicted.ravel())
-    return daicx.acc_opt(actual.ravel(), predicted.ravel(),
+        return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel())
+    return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel(),
                          sample_weight.ravel())
-
 
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
@@ -412,13 +409,12 @@ def confusion_matrices(actual, predicted, sample_weight=None):
     :returns pandas DataFrame
              Confusion matrices for each unique predicted value as threshold
     """
-    import h2o4gpu.util.daicx as daicx
     cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1']
 
     res = np.zeros((actual.shape[0], len(cm_stats_cols)))
+    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
     if sample_weight is None:
-        daicx.confusion_matrices(actual.ravel(), predicted.ravel(), res)
+        h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(), res)
     else:
-        daicx.confusion_matrices(actual.ravel(), predicted.ravel(),
+        h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(),
                                  sample_weight.ravel(), res)
-    return pd.DataFrame(res[~np.all(res == 0, axis=1)], columns=cm_stats_cols)

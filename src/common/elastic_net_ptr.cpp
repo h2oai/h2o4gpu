@@ -1872,11 +1872,12 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 			validPredsvsalpha, countfull, countshort, countmore);
 }
 
-int modelfree2_float(float *aptr) {
-	return modelFree2<float>(aptr);
-}
-int modelfree2_double(double *aptr) {
-	return modelFree2<double>(aptr);
+
 }
 
+int modelfree2_float(float *aptr) {
+	return h2o4gpu::modelFree2<float>(aptr);
+}
+int modelfree2_double(double *aptr) {
+	return h2o4gpu::modelFree2<double>(aptr);
 }

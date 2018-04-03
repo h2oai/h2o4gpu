@@ -9,7 +9,8 @@
     import_array();
 %}
 
-%include "elastic_net.i"
-%include "kmeans.i"
-%include "pogs.i"
-%include "matrix_dense.i"
+%include "cpointer.i"
+%include "solver/kmeans.i"
+%include "solver/elastic_net.i"
+%include "solver/pogs.i"
+%include "matrix/matrix_dense.i"

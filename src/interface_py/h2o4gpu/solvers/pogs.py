@@ -30,7 +30,7 @@ class Pogs(object):
 
         from ..util.gpu import device_count
         n_gpus, devices = device_count(n_gpus=n_gpus)
-        self.solver = BaseSolver(A, lib_utils.getLib(n_gpus, devices))
+        self.solver = BaseSolver(A, lib_utils.get_lib(n_gpus, devices))
 
         assert self.solver is not None, "Couldn't instantiate Pogs Solver"
 
