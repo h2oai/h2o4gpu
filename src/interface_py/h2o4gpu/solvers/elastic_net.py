@@ -8,12 +8,12 @@ import sys
 import time
 import warnings
 
+from ctypes import c_float, c_double, cast, POINTER
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
-from ctypes import c_float, c_double, cast, POINTER
 
 from ..libs.lib_utils import get_lib
 from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
@@ -616,7 +616,7 @@ class ElasticNetH2O(object):
             c_lambdas = None
 
         #call elastic net in C backend
-        res, x_vs_alpha_lambda, x_vs_alpha, \
+        _, x_vs_alpha_lambda, x_vs_alpha, \
         valid_pred_vs_alpha_lambda, valid_pred_vs_alpha, \
         count_full, count_short, count_more = c_elastic_net(
             self._family,
@@ -730,10 +730,10 @@ class ElasticNetH2O(object):
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
             self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:
-                                                           n + num_error + 2]
+                                                     n + num_error + 2]
 
             self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:
-                                                         n + num_error + 3]
+                                                   n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
@@ -764,11 +764,11 @@ class ElasticNetH2O(object):
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[:, n + num_error:
-                                                   n + num_error + 1]
+                                                n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:
-                                                  n + num_error + 2]
+                                               n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:
-                                                n + num_error + 3]
+                                             n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept2_ = self.x_vs_alphapure[:, -1]
@@ -983,7 +983,7 @@ class ElasticNetH2O(object):
             e,
             do_predict,
             free_input_data=0)
-        if c is None or len(c) == 0:
+        if c is None:
             self.prediction = self.predict_ptr(
                 valid_xptr=a, valid_yptr=b, free_input_data=free_input_data)
         else:

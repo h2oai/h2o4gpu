@@ -4,7 +4,7 @@ exec 3>&1
 
 status=0;
 for py in `find h2o4gpu -name "*.py" -type f`; do
-	if 	[ "$py" == "h2o4gpu/__init__.py" ] || [ "$py" == "h2o4gpu/util/roc_opt.py" ] || [ "$py" == "h2o4gpu/solvers/daal_solver/utils/__init__.py" ] || [ "$py" == "h2o4gpu/solvers/__init__.py" ] || [ "$py" == "h2o4gpu/typecheck/compatibility.py" ] || [ "$py" == "h2o4gpu/typecheck/typechecks.py" ]; then
+	if 	[ "$py" == "h2o4gpu/__init__.py" ] || [ "$py" == "h2o4gpu/util/roc_opt.py" ] || [ "$py" == "h2o4gpu/solvers/daal_solver/utils/__init__.py" ] || [ "$py" == "h2o4gpu/solvers/__init__.py" ] || [ "$py" == "h2o4gpu/typecheck/compatibility.py" ] || [ "$py" == "h2o4gpu/typecheck/typechecks.py" ] || [ "$py" == "h2o4gpu/libs/ch2o4gpu_gpu.py" ] || [ "$py" == "h2o4gpu/libs/ch2o4gpu_cpu.py" ]; then
 		echo "Skip $py"; 
 	else echo $py; 
 	mkdir -p ../pylint.d ;

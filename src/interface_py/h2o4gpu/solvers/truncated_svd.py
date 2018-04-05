@@ -104,24 +104,14 @@ class TruncatedSVDH2O(object):
         X = self._check_double(X)
         matrix_type = np.float64 if self.double_precision == 1 else np.float32
 
-        if self.double_precision == 1:
-            Q = np.empty(
-                (self.n_components, X.shape[1]), dtype=np.float64, order='C')
-            U = np.empty(
-                (X.shape[0], self.n_components), dtype=np.float64, order='C')
-            w = np.empty(self.n_components, dtype=np.float64)
-            explained_variance = np.empty(self.n_components, dtype=np.float64)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float64)
-        else:
-            Q = np.empty(
-                (self.n_components, X.shape[1]), dtype=np.float32, order='C')
-            U = np.empty(
-                (X.shape[0], self.n_components), dtype=np.float32, order='C')
-            w = np.empty(self.n_components, dtype=np.float32)
-            explained_variance = np.empty(self.n_components, dtype=np.float32)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float32)
+        Q = np.empty(
+            (self.n_components, X.shape[1]), dtype=matrix_type, order='C')
+        U = np.empty(
+            (X.shape[0], self.n_components), dtype=matrix_type, order='C')
+        w = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance_ratio = np.empty(self.n_components,
+                                            dtype=matrix_type)
 
         lib = self._load_lib()
 

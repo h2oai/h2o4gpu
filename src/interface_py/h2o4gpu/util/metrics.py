@@ -4,7 +4,6 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
-import pandas as pd
 
 def ll(actual, predicted):
     """
@@ -319,10 +318,11 @@ def f1_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel())
     return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel(),
-                        sample_weight.ravel())
+                              sample_weight.ravel())
 
-    def f2_opt(actual, predicted, sample_weight=None):
-        """
+
+def f2_opt(actual, predicted, sample_weight=None):
+    """
         Computes the F2-Score after optimal predictions thresholding.
 
         This function maximizes the F2-Score by means of
@@ -338,11 +338,11 @@ def f1_opt(actual, predicted, sample_weight=None):
         :returns double
                  The optimal F2-Score
         """
-        import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
-        if sample_weight is None:
-            return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel())
-        return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel(),
-                            sample_weight.ravel())
+    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    if sample_weight is None:
+        return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel())
+    return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel(),
+                              sample_weight.ravel())
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -366,7 +366,7 @@ def mcc_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel())
     return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel(),
-                         sample_weight.ravel())
+                               sample_weight.ravel())
 
 
 def acc_opt(actual, predicted, sample_weight=None):
@@ -390,7 +390,7 @@ def acc_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel())
     return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel(),
-                         sample_weight.ravel())
+                               sample_weight.ravel())
 
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
@@ -417,4 +417,4 @@ def confusion_matrices(actual, predicted, sample_weight=None):
         h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(), res)
     else:
         h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(),
-                                 sample_weight.ravel(), res)
+                                       sample_weight.ravel(), res)

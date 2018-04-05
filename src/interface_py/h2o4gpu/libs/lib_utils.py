@@ -2,42 +2,54 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-class CPUlib:
+
+
+class CPUlib(object):
+    """H2O4GPU CPU module"""
 
     def __init__(self):
         pass
 
     @staticmethod
     def get():
+        """Get the CPU module object"""
         try:
             import h2o4gpu.libs.ch2o4gpu_cpu as ch2o4gpu_cpu
             return ch2o4gpu_cpu
-        except Exception as e:
+        except ImportError as e:
             print("Exception:")
             print(e)
-            print('\nWarning: h2o4gpu shared object (dynamic library) for CPU failed to load.')
+            print('\nWarning: h2o4gpu shared object (dynamic library)'
+                  ' for CPU failed to load.')
             return None
 
-class GPUlib:
+
+class GPUlib(object):
+    """H2O4GPU GPU module"""
 
     def __init__(self):
         pass
 
     @staticmethod
     def get():
+        """Get the GPU module object"""
         try:
             import h2o4gpu.libs.ch2o4gpu_gpu as ch2o4gpu_gpu
             return ch2o4gpu_gpu
-        except Exception as e:
+        except ImportError as e:
             print("Exception:")
             print(e)
-            print('\nWarning: h2o4gpu shared object (dynamic library) for GPU failed to load.')
+            print('\nWarning: h2o4gpu shared object (dynamic library)'
+                  ' for GPU failed to load.')
             return None
 
 def get_lib(n_gpus, devices, verbose=0):
+    """Load either CPU or GPU H2O4GPU library."""
     cpu_lib = CPUlib().get()
     gpu_lib = GPUlib().get()
-    if (n_gpus == 0) or (gpu_lib is None and cpu_lib is not None) or (devices == 0):
+    if (n_gpus == 0) or \
+            (gpu_lib is None and cpu_lib is not None) or \
+            (devices == 0):
         if verbose > 0:
             print("\nUsing CPU library\n")
         return cpu_lib

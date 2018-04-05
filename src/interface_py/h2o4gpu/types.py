@@ -79,7 +79,8 @@ def make_settings(double_precision=False, **kwargs):
     :param kwargs: **kwargs
     :return: SettingsS object
     """
-    settings = lazyLib().H2O4GPUSettingsD if double_precision else lazyLib().H2O4GPUSettingsS
+    settings = lazyLib().H2O4GPUSettingsD if double_precision \
+        else lazyLib().H2O4GPUSettingsS
     settings.rho = kwargs['rho'] if 'rho' in list(
         kwargs.keys()) else H2OSolverDefault.RHO
     settings.relt = kwargs['abs_tol'] if 'abs_tol' in list(
@@ -113,15 +114,17 @@ def change_solution(py_solution, **kwargs):
 
 
 def make_solution(py_solution):
-    solution = lazyLib().H2O4GPUSolutionD() if py_solution.double_precision else lazyLib().H2O4GPUSolutionS()
+    solution = lazyLib().H2O4GPUSolutionD() if py_solution.double_precision \
+        else lazyLib().H2O4GPUSolutionS()
     solution.x = py_solution.x
-    solution.y = py_solution.y,
+    solution.y = py_solution.y
     solution.mu = py_solution.mu
     solution.nu = py_solution.nu
     return solution
 
 def make_info(double_precision):
-    info = lazyLib().H2O4GPUInfoD if double_precision else lazyLib().H2O4GPUInfoS
+    info = lazyLib().H2O4GPUInfoD if double_precision \
+        else lazyLib().H2O4GPUInfoS
     info.iter = 0
     info.status = 0
     info.obj = inf
