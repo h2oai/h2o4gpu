@@ -8,7 +8,7 @@ test_random_forest_classifier <- function(x, y) {
     {
       model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
       predictions <- model %>% predict(x)
-      expect_equal(max(predictions), 1)
+      expect_equal(max(predictions), 2)
       expect_equal(min(predictions), 0)
     }
   )
@@ -18,6 +18,21 @@ test_succeeds("Random Forest classifier works correctly with numeric labels", {
   x <- iris[1:4]
   y <- as.integer(iris$Species) - 1
   test_random_forest_classifier(x, y)
+})
+
+test_succeeds("Random Forest classifier works correctly with sparse feature matrix", {
+  if (require("Matrix")) {
+    N <- 100
+    x <- sparseMatrix(
+      i = sample(N, N),
+      j = sample(N, N),
+      x = runif(N),
+      dims = c(N, N))
+    y <- c(rep(0, N/2), rep(1, N/2))
+    model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
+    predictions <- model %>% predict(x)
+    expect_equal(length(predictions), N)
+  }
 })
 
 test_succeeds("Random Forest classifier works correctly with factor labels", {

@@ -12,6 +12,8 @@ resolve_model_input <- function(x) {
     as.matrix(x)
   } else if (is.list(x)) {
     np$array(x)
+  } else if (inherits(x, "dgCMatrix")) {
+    r_to_py(x)
   } else {
     stop(paste0('Input x of type "', class(x), '" is not currently supported.'))
   }

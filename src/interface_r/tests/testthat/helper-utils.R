@@ -51,7 +51,7 @@ test_classifier <- function(classifier_func, classifier_name) {
     y <- dataset$y
     model <- classifier_func() %>% fit(x, y)
     predictions <- model %>% predict(x)
-    expect_equal(max(predictions), 1)
+    expect_equal(max(predictions), 2)
     expect_equal(min(predictions), 0)
   })
 }

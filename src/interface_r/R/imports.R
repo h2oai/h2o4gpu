@@ -1,3 +1,3 @@
 #' @importFrom magrittr %>%
-#' @importFrom reticulate use_condaenv use_python use_virtualenv
+#' @importFrom reticulate use_condaenv use_python use_virtualenv r_to_py
 NULL
