@@ -6,9 +6,7 @@ import os
 from subprocess import call
 from distutils.command.build import build
 from setuptools.command.install import install
-from setuptools import setup, Extension, find_packages
 from pip.req import parse_requirements
-import numpy
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -101,8 +99,15 @@ class BinaryDistribution(Distribution):
 about_info={}
 with open('__about__.py') as f: exec(f.read(), about_info)
 
-swig_extra_compile_args = ["-std=c++11"]
-swig_extra_link_args = []
+# Make the .whl contain required python and OS as we are version and distro specific
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+except ImportError:
+    bdist_wheel = None
 
 setup(
     name='h2o4gpu',
@@ -120,5 +125,5 @@ setup(
     zip_safe=False,
     description='H2O.ai GPU Edition',
     install_requires=reqs,
-    cmdclass={'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
+    cmdclass={'bdist_wheel': bdist_wheel, 'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
 )
