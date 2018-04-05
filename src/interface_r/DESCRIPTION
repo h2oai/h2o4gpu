@@ -20,6 +20,7 @@ LazyData: true
 Depends:
     R (>= 3.1)
 Imports:
+    utils,
     magrittr,
     reticulate (>= 1.4)
 Roxygen: list(markdown = TRUE)
