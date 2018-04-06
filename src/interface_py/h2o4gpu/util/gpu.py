@@ -158,13 +158,8 @@ def cudaresetdevice_bare(n_gpus):
     Resets the cuda device so any next cuda call will reset the cuda context.
     """
     if n_gpus > 0:
-        from ..libs.lib_elastic_net import GPUlib
-        gpu_lib = GPUlib().get()
-
-        lib = gpu_lib
-
-        lib.cudaresetdevice_bare()
-
+        from ..libs.lib_utils import GPUlib
+        GPUlib().get().cudaresetdevice_bare()
 
 def get_compute_capability(gpu_id):
     """
