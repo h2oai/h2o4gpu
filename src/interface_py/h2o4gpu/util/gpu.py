@@ -66,8 +66,7 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30):
         except concurrent.futures.process.BrokenProcessPool:
             pass
         except concurrent.futures.TimeoutError:
-            if trial == trials - 1:
-                break
+            pass
     if return_usage:
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
