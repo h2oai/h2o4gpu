@@ -84,11 +84,11 @@ class PCAH2O(TruncatedSVDH2O):
 
         """
         # SWIG takes care of mapping to Fortran order
-        X = np.ascontiguousarray(X, dtype=np.float64)
+        X = np.asfortranarray(X, dtype=np.float64)
         Q = np.empty(
-            (self.n_components, X.shape[1]), dtype=np.float64, order='C')
+            (self.n_components, X.shape[1]), dtype=np.float64)
         U = np.empty(
-            (X.shape[0], self.n_components), dtype=np.float64, order='C')
+            (X.shape[0], self.n_components), dtype=np.float64)
         w = np.empty(self.n_components, dtype=np.float64)
         explained_variance = np.empty(self.n_components, dtype=np.float64)
         explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)

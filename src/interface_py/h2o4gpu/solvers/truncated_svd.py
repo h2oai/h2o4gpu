@@ -104,10 +104,9 @@ class TruncatedSVDH2O(object):
         X = self._check_double(X)
         matrix_type = np.float64 if self.double_precision == 1 else np.float32
 
-        Q = np.empty(
-            (self.n_components, X.shape[1]), dtype=matrix_type, order='C')
-        U = np.empty(
-            (X.shape[0], self.n_components), dtype=matrix_type, order='C')
+        X = np.asfortranarray(X, dtype=matrix_type)
+        Q = np.empty((self.n_components, X.shape[1]), dtype=matrix_type)
+        U = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
         w = np.empty(self.n_components, dtype=matrix_type)
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components,
