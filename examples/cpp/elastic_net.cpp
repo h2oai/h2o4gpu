@@ -7,7 +7,7 @@
 #include <random>
 #include "reader.h"
 #include "matrix/matrix_dense.h"
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 #include "timer.h"
 
 #ifdef _OPENMP

@@ -5,7 +5,7 @@
 #include "matrix/matrix_dense.h"
 #include <iostream>
 #include <cstdlib>
-#include "h2o4gpukmeans.h"
+#include "solver/kmeans.h"
 #include <random>
 #include <algorithm>
 #include <vector>

@@ -100,8 +100,7 @@ if(USE_CUDA)
                         "Space separated list of compute versions to be built against")
         endif()
 
-        SET(CUDA_BUILD_VERSION 8.0)
-        FIND_PACKAGE(CUDA ${CUDA_BUILD_VERSION} REQUIRED)
+        FIND_PACKAGE(CUDA 8.0 REQUIRED)
 
         ADD_DEFINITIONS(
                 -DCUDA_MAJOR=${CUDA_VERSION_MAJOR}
@@ -124,7 +123,18 @@ if(USE_CUDA)
                 )
 
         CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> STATIC)
-        TARGET_LINK_LIBRARIES(gpuh2o4gpu ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY} ${BLAS_LIBRARIES})
+
+        if($ENV{USENVTX})
+                MESSAGE(STATUS "Building with NVTX support on.")
+                SET(NVTX_LIBRARY nvToolsExt)
+        endif()
+
+        TARGET_LINK_LIBRARIES(gpuh2o4gpu
+                ${CUDA_CUBLAS_LIBRARIES}
+                ${CUDA_cusolver_LIBRARY}
+                ${CUDA_cusparse_LIBRARY}
+                ${BLAS_LIBRARIES}
+                ${NVTX_LIBRARY})
         TARGET_INCLUDE_DIRECTORIES (gpuh2o4gpu PUBLIC
                 src/gpu/include
                 )

@@ -6,11 +6,11 @@ $(info ** ------------------------------------------------------------------ **)
 NVCC := $(shell command -v nvcc 2> /dev/null)
 
 #local settings
-USEDEBUG=0
-USENVTX=0
 USENCCL=0
+USENVTX=0
+CMAKE_BUILD_TYPE=0
 
-$(warning USEDEBUG is $(USEDEBUG))
+$(warning CMAKE_BUILD_TYPE is $(CMAKE_BUILD_TYPE))
 $(warning USENVTX is $(USENVTX))
 $(warning USENCCL is $(USENCCL))
 

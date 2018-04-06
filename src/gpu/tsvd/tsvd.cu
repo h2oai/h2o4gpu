@@ -2,7 +2,7 @@
 #include "cuda_runtime.h"
 #include "utils.cuh"
 #include "../device/device_context.cuh"
-#include "tsvd.h"
+#include "../../include/solver/tsvd.h"
 #include <ctime>
 #include <thrust/iterator/counting_iterator.h>
 #include<algorithm>

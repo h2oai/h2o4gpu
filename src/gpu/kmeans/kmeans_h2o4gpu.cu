@@ -11,7 +11,7 @@
 #include "cuda.h"
 #include <cstdlib>
 #include <unistd.h>
-#include "h2o4gpukmeans.h"
+#include "solver/kmeans.h"
 #include "kmeans_impl.h"
 #include "kmeans_general.h"
 #include "kmeans_h2o4gpu.h"

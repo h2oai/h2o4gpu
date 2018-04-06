@@ -15,7 +15,7 @@
 #include "util.h"
 #include "timer.h"
 
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 
 #include "../include/cuda_utils.h"
 

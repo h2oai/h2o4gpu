@@ -3,7 +3,7 @@
  */
 #include "matrix/matrix_dense.h"
 #include "matrix/matrix_sparse.h"
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 #include "h2o4gpu_c.h"
 #include <iostream>   //std::cout
 

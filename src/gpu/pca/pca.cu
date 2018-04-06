@@ -1,8 +1,8 @@
-#include "pca.h"
+#include "../../include/solver/pca.h"
 #include "../tsvd/utils.cuh"
 #include "../data/matrix.cuh"
 #include "../device/device_context.cuh"
-#include "../tsvd/tsvd.h"
+#include "../../include/solver/tsvd.h"
 
 namespace pca
 {
