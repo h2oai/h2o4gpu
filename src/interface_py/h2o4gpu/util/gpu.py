@@ -34,7 +34,7 @@ def device_count(n_gpus=0):
     return n_gpus, available_device_count
 
 
-def get_gpu_info(return_usage=False, trials=2, timeout=30):
+def get_gpu_info(return_usage=False, trials=2, timeout=30, print_trials=False):
     """Gets the GPU info.
 
     This runs in a sub-process to avoid mixing parent-child CUDA contexts.
@@ -42,7 +42,8 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30):
     # to avoid mixing parent-child cuda contexts
     # https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
     # Tries "trials" times to get result
-    # If fails to get result within "timeout" seconds each trial, then returns as if no GPU
+    # If fails to get result within "timeout" seconds each trial,
+    #    then returns as if no GPU
 
     :return:
         Total number of GPUs and total available memory
@@ -60,13 +61,17 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30):
         try:
             with ProcessPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(get_gpu_info_subprocess, return_usage)
-                # don't wait more than 30s, import on py3nvml can hang if 2 subprocesses GIL lock import at same time
+                # don't wait more than 30s,
+                # import on py3nvml can hang if 2 subprocesses
+                # GIL lock import at same time
                 res = future.result(timeout=timeout)
             return res
         except concurrent.futures.process.BrokenProcessPool:
             pass
         except concurrent.futures.TimeoutError:
             pass
+        if print_trials:
+            print("Trial %d/%d" % (trial, trials-1))
     if return_usage:
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
