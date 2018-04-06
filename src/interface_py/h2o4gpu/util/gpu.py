@@ -34,13 +34,15 @@ def device_count(n_gpus=0):
     return n_gpus, available_device_count
 
 
-def get_gpu_info(return_usage=False):
+def get_gpu_info(return_usage=False, trials=2, timeout=30):
     """Gets the GPU info.
 
     This runs in a sub-process to avoid mixing parent-child CUDA contexts.
     # get GPU info, but do in sub-process
     # to avoid mixing parent-child cuda contexts
     # https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
+    # Tries "trials" times to get result
+    # If fails to get result within "timeout" seconds each trial, then returns as if no GPU
 
     :return:
         Total number of GPUs and total available memory
@@ -54,15 +56,21 @@ def get_gpu_info(return_usage=False):
     res = None
     # sometimes hit broken process pool in cpu mode,
     # so just return back no gpus.
-    try:
-        with ProcessPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(get_gpu_info_subprocess, return_usage)
-            res = future.result()
-        return res
-    except concurrent.futures.process.BrokenProcessPool:
-        if return_usage:
-            return (total_gpus, total_mem, gpu_type, usage)
-        return (total_gpus, total_mem, gpu_type)
+    for trial in range(0, trials):
+        try:
+            with ProcessPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(get_gpu_info_subprocess, return_usage)
+                # don't wait more than 30s, import on py3nvml can hang if 2 subprocesses GIL lock import at same time
+                res = future.result(timeout=timeout)
+            return res
+        except concurrent.futures.process.BrokenProcessPool:
+            pass
+        except concurrent.futures.TimeoutError:
+            if trial == trials - 1:
+                break
+    if return_usage:
+        return (total_gpus, total_mem, gpu_type, usage)
+    return (total_gpus, total_mem, gpu_type)
 
 
 def get_gpu_info_subprocess(return_usage=False):
@@ -148,6 +156,18 @@ def cudaresetdevice(gpu_id, n_gpus):
     if n_gpus > 0 and lib is not None:
         from ctypes import c_int
         lib.cudaresetdevice(c_int(gpu_id), c_int(n_gpus))
+
+def cudaresetdevice_bare(n_gpus):
+    """
+    Resets the cuda device so any next cuda call will reset the cuda context.
+    """
+    if n_gpus > 0:
+        from ..libs.lib_elastic_net import GPUlib
+        gpu_lib = GPUlib().get()
+
+        lib = gpu_lib
+
+        lib.cudaresetdevice_bare()
 
 
 def get_compute_capability(gpu_id):

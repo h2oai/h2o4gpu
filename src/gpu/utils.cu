@@ -30,6 +30,11 @@ extern "C" {
     return(0);
   }
 
+  int cudaresetdevice_bare(void) {
+    cudaDeviceReset();
+    return(0);
+  }
+
   #ifdef __cplusplus
 }
 #endif
