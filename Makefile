@@ -74,6 +74,8 @@ deps_install:
 #########################################
 # SUBMODULE BUILD TARGETS
 #########################################
+# SUBMODULE BUILD TARGETS
+#########################################
 
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE

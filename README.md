@@ -147,6 +147,7 @@ Download the Docker file (for linux_x86_64):
     * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cuda92-runtime.tar.bz2)
     
 Load and run docker file (e.g. for bleeding-edge of cuda90):
+>>>>>>> Remove nonccl build. Rewrite builds to CentOS. Unify x86_64 and ppc64le builds. Build cleanup.
 ```
 pbzip2 -dc h2o4gpu-0.2.0.9999-cuda90-runtime.tar.bz2 | nvidia-docker load
 mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0.9999-cuda90-runtime &

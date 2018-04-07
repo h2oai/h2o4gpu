@@ -101,6 +101,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
     if (isBleedingEdge()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
+        arch = ${platform}.split('-')[0]
         def nonLocalVersionTag = versionTag.split('\\+')[0]
         def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-cp36-cp36m-linux_${buildArch}.whl"
 
