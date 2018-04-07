@@ -5,8 +5,6 @@
 
 set -e
 
-source h2o4gpu_env/bin/activate
-
 if [ "x$1" != "x" ]; then
     d=$1
     cd $d

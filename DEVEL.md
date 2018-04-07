@@ -102,7 +102,7 @@ git clone https://github.com/h2oai/xgboost
 cd xgboost
 git checkout h2oai
 make -f Makefile2
-pip install python-package/dist/xgboost-0.7-py3-none-any.whl --upgrade
+pip install python-package/dist/xgboost-0.71-py3-none-any.whl --upgrade
 ```
 Note: By default the GPU NCCL version is installed using your local cuda version.
 
@@ -110,6 +110,8 @@ If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
 
 ## Build flags and options:
+
+To find a full list of used flags and options please refer to `make/config.mk`. Here are the most useful ones:
 
 ##### Debug mode
 
@@ -122,6 +124,10 @@ To enable `nvToolsExt` set the `USENVTX` variable e.g. `make fullinstall USENVTX
 ##### DEV_BUILD
 
 To expedite the building process in dev setup you can set `DEV_BUILD=ON` e.g. `make fullinstall DEV_BUILD=ON`. This will build the binary with only single CUDA compute capability (currently 6.1).
+
+##### NCCL
+
+Currently only XGBoost part of the project is using NCCL. By default NCCL support is ON during builds. To turn it off run with `USENCCL=0` e.g. `make fullinstall USENCCL=0`
 
 ## Testing
 

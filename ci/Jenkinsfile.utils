@@ -68,14 +68,16 @@ String changeId() {
     return "-master"
 }
 
-void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
+void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
     echo "Publishing artifact to S3"
+
+    def buildArch = platform.split('-')[0]
 
     def versionTag = buildInfo.getVersion()
     def majorVersionTag = buildInfo.getMajorVersion()
     def artifactId = "h2o4gpu"
-    def artifact = "${artifactId}-${versionTag}-cp36-cp36m-linux_x86_64.whl"
-    def localArtifact = "src/interface_py/${dist}/${artifact}"
+    def artifact = "${artifactId}-${versionTag}-cp36-cp36m-linux_${buildArch}.whl"
+    def localArtifact = "src/interface_py/dist/${platform}/${artifact}"
 
     sh 'echo "S3 defs: $versionTag $artifactId $artifact $localArtifact" '
 
@@ -83,19 +85,34 @@ void publishToS3(BuildInfo buildInfo, String extratag, String dist) {
     def bucket = "s3://h2o-release/h2o4gpu/snapshots/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+    sh "s3cmd del ${bucket}${localArtifact}"
 
     if (isRelease()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
+
+        // Temporarily also push to a bucket containing build_id, in the long run only this upload should stay
+        // the above one should get deprecated
+        build_id_bucket = "s3://artifacts.h2o.ai/releases/ai/h2o/${artifactId}/${env.BRANCH_NAME}/${env.BUILD_ID}/${platform}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${build_id_bucket}"
+        sh "s3cmd setacl --acl-public  ${build_id_bucket}${artifact}"
     }
     if (isBleedingEdge()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
-        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-cp36-cp36m-linux_x86_64.whl"
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-cp36-cp36m-linux_${buildArch}.whl"
+
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
+
+        // Temporarily also push to a bucket containing build_id, in the long run only this upload should stay
+        // the above one should get deprecated
+        build_id_bucket = "s3://artifacts.h2o.ai/snapshots/ai/h2o/${artifactId}/${versionTag}/${platform}${extratag}/"
+        sh "s3cmd put ${localArtifact} ${build_id_bucket}${bleedingEdgeArtifact}"
+        sh "s3cmd setacl --acl-public  ${build_id_bucket}${bleedingEdgeArtifact}"
+
     }
 }
 
@@ -130,50 +147,62 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     }
 }
 
-void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String dist, String target) {
+void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
     echo "Running tests"
 
    try {
         sh """
-            CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} target=${target} dist=${dist} ./scripts/make-docker-runtests.sh
+            DATA_DIRS="${data_dirs}" \
+            CONTAINER_NAME=${CONTAINER_NAME} \
+            extratag=${extratag} \
+            dockerimage=${dockerimage} \
+            target=${target} \
+            platform=${platform} ./scripts/make-docker-runtests.sh
            """
             currentBuild.result = "SUCCESS"
     } catch (error) {
             currentBuild.result = "FAILURE"
             throw error
     } finally {
-        sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+        sh "docker stop ${CONTAINER_NAME} || true"
         // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         arch 'tmp/*.log'
         arch 'results/*.dat'
-        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: false
+        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: true
     }
 }
 
-void buildOnLinux(String dockerimage, String extratag, String dist, String stashName) {
+void buildOnLinux(String dockerimage, String extratag, String platform, String stashName) {
     echo "Building on linux"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} extratag=${extratag} dockerimage=${dockerimage} H2O4GPU_BUILD=${env.BUILD_ID} H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + ciVersionSuffix()} makeopts=${env.MAKE_OPTS} dist=${dist} ./scripts/make-docker-devel.sh
+                git clean -f -d -x
+                CONTAINER_NAME=${CONTAINER_NAME} \
+                extratag=${extratag} \
+                dockerimage=${dockerimage} \
+                H2O4GPU_BUILD=${env.BUILD_ID} \
+                H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + ciVersionSuffix()} \
+                makeopts=${env.MAKE_OPTS} \
+                platform=${platform} ./scripts/make-docker-devel.sh
                """
-            stash includes: "src/interface_py/${dist}/*h2o4gpu-*.whl", name: stashName
+            stash includes: "src/interface_py/dist/${platform}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
             sh "echo \"Archive artifacts\""
-            arch "src/interface_py/${dist}/*h2o4gpu-*.whl"
+            arch "src/interface_py/dist/${platform}/*h2o4gpu-*.whl"
             currentBuild.result = "SUCCESS"
         }  catch (error) {
             currentBuild.result = "FAILURE"
             throw error
         } finally {
-            sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            sh "docker stop ${CONTAINER_NAME} || true"
             // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
     }
 }
 
-void buildRuntime(BuildInfo buildInfo, String dockerimage, String dist, String extratag) {
+void buildRuntime(BuildInfo buildInfo, String dockerimage, String platform, String extratag, String data_dirs) {
     echo "Building runtime"
 
     def buckettype = "snapshots"
@@ -184,14 +213,21 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String dist, String e
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
         try {
             sh """
-                CONTAINER_NAME=${CONTAINER_NAME} versionTag=${versionTag} extratag=${extratag} encodedFullVersionTag=${encodedFullVersionTag} fullVersionTag=${fullVersionTag} dist=${dist} dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
+                DATA_DIRS="${data_dirs}" \
+                CONTAINER_NAME=${CONTAINER_NAME} \
+                versionTag=${versionTag} \
+                extratag=${extratag} \
+                encodedFullVersionTag=${encodedFullVersionTag} \
+                fullVersionTag=${fullVersionTag} \
+                platform=${platform} \
+                dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
             currentBuild.result = "SUCCESS"
         } catch (error) {
             currentBuild.result = "FAILURE"
             throw error
         } finally {
-            sh "nvidia-docker stop ${CONTAINER_NAME} || true"
+            sh "docker stop ${CONTAINER_NAME} || true"
             // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
     }
@@ -271,15 +307,15 @@ def doTests() {
     def changedFiles = buildInfo.get().getChangedFiles()
     if (changedFiles) {
         echo "Looking for 'tests' in ${changedFiles.join(',')}"
-        // Check if the code change touches tests_open
+        // Check if the code change touches tests/python/open_data
         def doTrigger1 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_open")
+            filepath.startsWith("tests/python/open_data")
         }
         def doTrigger2 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_big")
+            filepath.startsWith("tests/python/big")
         }
         def doTrigger3 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_small")
+            filepath.startsWith("tests/python/small")
         }
         def doTrigger4 = changedFiles.any { filepath ->
             filepath.startsWith("data")
@@ -303,16 +339,15 @@ def doTestperf() {
 
     def changedFiles = buildInfo.get().getChangedFiles()
     if (changedFiles) {
-        echo "Looking for 'testsxgboost' in ${changedFiles.join(',')}"
-        // Check if the code change touches tests_open
+        echo "Looking for 'tests/python/xgboost' in ${changedFiles.join(',')}"
         def doTrigger1 = changedFiles.any { filepath ->
-            filepath.startsWith("testsxgboost")
+            filepath.startsWith("tests/python/xgboost")
         }
         def doTrigger2 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_big")
+            filepath.startsWith("tests/python/big")
         }
         def doTrigger3 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_small")
+            filepath.startsWith("tests/python/small")
         }
         def doTrigger4 = doBuild()
         def doTrigger5 = doTests()
@@ -329,15 +364,14 @@ def doRuntime() {
     def changedFiles = buildInfo.get().getChangedFiles()
     if (changedFiles) {
         echo "Looking for 'examples' in ${changedFiles.join(',')}"
-        // Check if the code change touches tests_open
         def doTrigger1 = changedFiles.any { filepath ->
             filepath.startsWith("examples")
         }
         def doTrigger2 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_big")
+            filepath.startsWith("tests/python/big")
         }
         def doTrigger3 = changedFiles.any { filepath ->
-            filepath.startsWith("tests_small")
+            filepath.startsWith("tests/python/small")
         }
         def doTrigger4 = doBuild()
         echo "doRuntime() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4}"

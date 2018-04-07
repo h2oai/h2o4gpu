@@ -28,9 +28,9 @@ src/pylint.d/*
 src/interface_py/py3nvml
 src/interface_py/xgboost
 deps/
-data/
-open_data/
-smalldata/
+./data/
+./open_data/
+./smalldata/
 tests/smalldata
 tests/data
 *.idea/
@@ -72,7 +72,7 @@ tests/results
 examples/py/sourced.png
 
 # temp data generated
-testsxgboost/fifa_data.pk
+tests/python/xgboost/fifa_data.pk
 examples/py/ipums_feather
 
 # Visual Studio Code
@@ -157,7 +157,7 @@ src/interface_py/h2o4gpu/utils/
 
 ## add submodules so user has to force to add/commit
 cub
-xgboost
+./xgboost
 py3nvml
 scikit-learn
 tests/googletest

@@ -11,3 +11,8 @@ psutil==5.4.5
 # below for xgboost
 scikit-learn==0.19.1
 sklearn==0.0
+pytest==3.3.1
+pytest-forked==0.2
+pytest-xdist==1.20.1
+pytest-cov==2.4.0
+pylint==1.8.4

@@ -356,4 +356,4 @@ Add Java wrapper files - *coming soon*.
 
 ### Tests
 
-Add tests! Currently adding Python tests in `tests_open` is the easiest way. C/C++/CUDA tests coming soon.
+Add tests! Currently adding Python tests in `tests/python/open_data` is the easiest way. C/C++/CUDA tests coming soon.
