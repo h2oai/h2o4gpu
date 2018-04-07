@@ -1,7 +1,7 @@
 /*!
  * Modifications Copyright 2017 H2O.ai, Inc.
  */
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 
 #include <algorithm>
 #include <limits>

@@ -6,9 +6,7 @@ import os
 from subprocess import call
 from distutils.command.build import build
 from setuptools.command.install import install
-from setuptools import setup, Extension, find_packages
 from pip.req import parse_requirements
-import numpy
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -19,8 +17,8 @@ class H2O4GPUBuild(build):
     def run(self):
         """Run the compilation"""
         NVCC = os.popen("which nvcc").read() != ""
-        CPULIB = 'ch2o4gpu_cpu'
-        GPULIB = 'ch2o4gpu_gpu'
+        CPULIB = '_ch2o4gpu_cpu'
+        GPULIB = '_ch2o4gpu_gpu'
         EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
         # run original build code
@@ -101,8 +99,15 @@ class BinaryDistribution(Distribution):
 about_info={}
 with open('__about__.py') as f: exec(f.read(), about_info)
 
-swig_extra_compile_args = ["-std=c++11"]
-swig_extra_link_args = []
+# Make the .whl contain required python and OS as we are version and distro specific
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+except ImportError:
+    bdist_wheel = None
 
 setup(
     name='h2o4gpu',
@@ -120,14 +125,5 @@ setup(
     zip_safe=False,
     description='H2O.ai GPU Edition',
     install_requires=reqs,
-    cmdclass={'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
-    
-    ext_modules=[
-    Extension(name='h2o4gpu.util._daicx',
-              sources=['h2o4gpu/util/daicx.i', '../cpu/metrics/metrics.cpp'],
-              include_dirs=[numpy.get_include(), '../include/'],
-              extra_compile_args=swig_extra_compile_args,
-              extra_link_args=swig_extra_link_args,
-              swig_opts=["-c++"])
-    ]
+    cmdclass={'bdist_wheel': bdist_wheel, 'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
 )

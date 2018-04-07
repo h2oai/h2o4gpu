@@ -7,10 +7,6 @@
 #include "../include/util.h"
 #include <sys/stat.h>
 
-#if(USEMKL==1)
-#include <mkl.h>
-#endif
-
 #ifdef HAVECUDA
 #define TEXTARCH "GPU"
 
@@ -20,19 +16,11 @@
 
 #define TEXTARCH "CPU"
 
-#if(USEMKL==1)
-#define TEXTBLAS "MKL"
-#else
 #define TEXTBLAS "CPU"
-#endif
 
 #endif
 
-#if(USEICC==1)
-#define TEXTCOMP "ICC"
-#else
 #define TEXTCOMP "GCC"
-#endif
 
 using namespace std;
 
@@ -251,8 +239,8 @@ double ElasticNetptr(
 		T *alphas, T *lambdas,
 		double tol, double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore) {
 
@@ -313,8 +301,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		T *alphas, T *lambdas,
 		double tol, double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction,
-		int max_iterations, int verbose, void *trainXptr, void *trainYptr,
-		void *validXptr, void *validYptr, void *weightptr, int givefullpath,
+		int max_iterations, int verbose, T *trainXptr, T *trainYptr,
+		T *validXptr, T *validYptr, T *weightptr, int givefullpath,
 		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
 		T **validPredsvsalpha, size_t *countfull, size_t *countshort,
 		size_t *countmore) {
@@ -368,9 +356,6 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	int nth=omp_get_max_threads();
 	//      nGPUs=nth; // openmp threads = cuda/cpu devices used
 	omp_set_dynamic(0);
-#if(USEMKL==1)
-	mkl_set_dynamic(0);
-#endif
 	omp_set_nested(1);
 	omp_set_max_active_levels(2);
 #ifdef DEBUG
@@ -588,11 +573,6 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
 		// set number of mkl threads per openmp thread so that not oversubscribing cores
 		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
-#if(USEMKL==1)
-		//mkl_set_num_threads_local(mklperthread);
-		mkl_set_num_threads_local(mklperthread);
-		//But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
-#endif
 #else
 		int me = 0;
 #endif
@@ -1417,8 +1397,8 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		T *alphas, T *lambdas,
 		double tol, double tol_seek_factor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
-		void *trainXptr, void *trainYptr, void *validXptr, void *validYptr,
-		void *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
 		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
 		size_t *countshort, size_t *countmore) {
 
@@ -1455,9 +1435,6 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 	int nth=omp_get_max_threads();
 	//      nGPUs=nth; // openmp threads = cuda/cpu devices used
 	omp_set_dynamic(0);
-#if(USEMKL==1)
-	mkl_set_dynamic(0);
-#endif
 	omp_set_nested(1);
 	omp_set_max_active_levels(2);
 #ifdef DEBUG
@@ -1522,11 +1499,6 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 		int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
 		// set number of mkl threads per openmp thread so that not oversubscribing cores
 		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
-#if(USEMKL==1)
-		//mkl_set_num_threads_local(mklperthread);
-		mkl_set_num_threads_local(mklperthread);
-		//But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
-#endif
 #else
 		int me = 0;
 #endif
@@ -1738,8 +1710,8 @@ template double ElasticNetptr<double>(
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
+		double *validYptr, double *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1752,8 +1724,8 @@ template double ElasticNetptr<float>(const char family, int dopredict, int sourc
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
+		float *validYptr, float *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1766,8 +1738,8 @@ template double ElasticNetptr_fit<double>(const char family, int sourceDev, int 
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
+		double *validYptr, double *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1780,8 +1752,8 @@ template double ElasticNetptr_fit<float>(const char family, int sourceDev, int d
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
+		float *validYptr, float *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1794,8 +1766,8 @@ template double ElasticNetptr_predict<double>(const char family, int sourceDev, 
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
+		double *validYptr, double *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1808,8 +1780,8 @@ template double ElasticNetptr_predict<float>(const char family, int sourceDev, i
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
+		float *validYptr, float *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore);
@@ -1823,10 +1795,6 @@ int modelFree2(T *aptr) {
 template int modelFree2<float>(float *aptr);
 template int modelFree2<double>(double *aptr);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, int datatype,
 		int sharedA, int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain,
 		size_t n, size_t mValid, int intercept, int standardize,
@@ -1835,8 +1803,8 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
+		double *validYptr, double *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
@@ -1859,8 +1827,8 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, void *trainXptr, void *trainYptr, void *validXptr,
-		void *validYptr, void *weightptr, int givefullpath,
+		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
+		float *validYptr, float *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
@@ -1876,15 +1844,12 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 			validPredsvsalpha, countfull, countshort, countmore);
 }
 
+
+}
+
 int modelfree2_float(float *aptr) {
-	return modelFree2<float>(aptr);
+	return h2o4gpu::modelFree2<float>(aptr);
 }
 int modelfree2_double(double *aptr) {
-	return modelFree2<double>(aptr);
-}
-
-#ifdef __cplusplus
-}
-#endif
-
+	return h2o4gpu::modelFree2<double>(aptr);
 }

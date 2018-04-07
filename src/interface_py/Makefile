@@ -43,8 +43,8 @@ all: prep
 	python setup.py sdist bdist_wheel
 
 	# for pycharm
-	ln -sf $(thepwd)/../interface_c/ch2o4gpu_cpu.so .
-	ln -sf $(thepwd)/../interface_c/ch2o4gpu_gpu.so .
+	ln -sf $(thepwd)/../interface_c/_ch2o4gpu_cpu.so .
+	ln -sf $(thepwd)/../interface_c/_ch2o4gpu_gpu.so .
 
 
 install:

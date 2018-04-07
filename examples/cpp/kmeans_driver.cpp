@@ -14,7 +14,7 @@
 //#include "cuda.h"
 #include <cstdlib>
 #include <random>
-#include "h2o4gpukmeans.h"
+#include "solver/kmeans.h"
 
 typedef float real_t;
 //typedef double real_t;

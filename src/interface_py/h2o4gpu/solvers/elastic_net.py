@@ -6,20 +6,17 @@
 """
 import sys
 import time
-from ctypes import c_int, c_float, c_double, c_void_p, c_size_t, POINTER, \
-    pointer, cast, addressof
 import warnings
 
+from ctypes import c_float, c_double, cast, POINTER
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
 from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
 
-from ..libs.lib_elastic_net import GPUlib, CPUlib
+from ..libs.lib_utils import get_lib
 from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
-from ..util.gpu import device_count
-
 
 class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
@@ -155,13 +152,8 @@ class ElasticNetH2O(object):
 
         self.double_precision = double_precision
 
-        if order is not None:
-            assert order in ['r',
-                             'c'], \
-                "Order should be set to 'r' or 'c' but got " + order
-            self.ord = ord(order)
-        else:
-            self.ord = None
+        self.ord = order
+
         self.dtype = None
 
         ##############################
@@ -206,7 +198,7 @@ class ElasticNetH2O(object):
         self.max_iter = max_iter
         self.verbose = verbose
         self._family_str = family  # Hold string value for family
-        self._family = ord(family.split()[0][0])
+        self._family = family.split()[0][0]
         self.store_full_path = store_full_path
         if lambda_max is None:
             self.lambda_max = -1.0  # to trigger C code to compute
@@ -241,6 +233,7 @@ class ElasticNetH2O(object):
         self._shared_a = 0
         self._standardize = 0
 
+        from ..util.gpu import device_count
         (self.n_gpus, devices) = device_count(n_gpus)
         gpu_id = gpu_id % devices
         self._gpu_id = gpu_id
@@ -254,19 +247,7 @@ class ElasticNetH2O(object):
 
         self.n_threads = n_threads
 
-        gpu_lib = GPUlib().get()
-        cpu_lib = CPUlib().get()
-
-        if self.n_gpus == 0 or gpu_lib is None or devices == 0:
-            if verbose > 0:
-                print('Using CPU GLM solver %d %d' % (self.n_gpus, devices))
-            self.lib = cpu_lib
-        elif self.n_gpus > 0 or gpu_lib is None or devices == 0:
-            if verbose > 0:
-                print('Using GPU GLM solver with %d GPUs' % self.n_gpus)
-            self.lib = gpu_lib
-        else:
-            raise RuntimeError("Couldn't instantiate GLM Solver")
+        self.lib = get_lib(self.n_gpus, devices)
 
         self.x_vs_alpha_lambda = None
         self.x_vs_alpha = None
@@ -377,7 +358,6 @@ class ElasticNetH2O(object):
 
         source_dev = 0
         if not (valid_x is None and valid_y is None and sample_weight is None):
-
             prepare_and_upload_data(
                 self,
                 train_x=None,
@@ -391,6 +371,7 @@ class ElasticNetH2O(object):
 
 #save global variable
         oldstorefullpath = self.store_full_path
+
 
         if self.store_full_path == 1:
             self.store_full_path = 1
@@ -573,7 +554,7 @@ class ElasticNetH2O(object):
         if do_predict == 0 and self.did_fit_ptr == 1:
             free_sols(self)
 
-# ############## #
+        # ############## #
 
         self.did_fit_ptr = 1
 
@@ -581,11 +562,7 @@ class ElasticNetH2O(object):
         #not calling with self.source_dev because want option to never use
         #default but instead input pointers from foreign code's pointers
 
-        if order is not None:  # set order if not already set
-            if order in ['r', 'c']:
-                self.ord = ord(order)
-            else:
-                self.ord = order
+        self.ord = order
 
         if hasattr(self,
                    'double_precision') and self.double_precision is not None:
@@ -594,149 +571,136 @@ class ElasticNetH2O(object):
             which_precision = double_precision
             self.double_precision = double_precision
 
-# ############ #
+        # ############ #
 
         if do_predict == 0:
-
             #initialize if doing fit
-
-            x_vs_alpha_lambda = c_void_p(0)
-            x_vs_alpha = c_void_p(0)
-            valid_pred_vs_alpha_lambda = c_void_p(0)
-            valid_pred_vs_alpha = c_void_p(0)
-            count_full = c_size_t(0)
-            count_short = c_size_t(0)
-            count_more = c_size_t(0)
+            self.x_vs_alpha_lambda = None
+            self.x_vs_alpha = None
+            self.valid_pred_vs_alpha_lambda = None
+            self.valid_pred_vs_alpha = None
+            count_full = 0
+            count_short = 0
+            count_more = 0
         else:
-
             #restore if predict
-
-            x_vs_alpha_lambda = self.x_vs_alpha_lambda
-            x_vs_alpha = self.x_vs_alpha
-            valid_pred_vs_alpha_lambda = self.valid_pred_vs_alpha_lambda
-            valid_pred_vs_alpha = self.valid_pred_vs_alpha
             count_full = self.count_full
             count_short = self.count_short
             count_more = self.count_more
 
-# ############## #
-#
-
-        c_size_t_p = POINTER(c_size_t)
+        # ############## #
+        #
         if which_precision == 1:
             c_elastic_net = self.lib.elastic_net_ptr_double
             self.dtype = np.float64
-            self.myctype = c_double
+            c_type = c_double
             if self.verbose > 0:
                 print('double precision fit')
                 sys.stdout.flush()
         else:
             c_elastic_net = self.lib.elastic_net_ptr_float
             self.dtype = np.float32
-            self.myctype = c_float
+            c_type = c_float
             if self.verbose > 0:
                 print('single precision fit')
                 sys.stdout.flush()
 
-#precision - independent commands
+        #precision - independent commands
         if self.alphas_list is not None:
-            pass_alphas = (self.alphas_list.astype(self.dtype, copy=False))
-            c_alphas = pass_alphas.ctypes.data_as(POINTER(self.myctype))
+            c_alphas = (self.alphas_list.astype(self.dtype, copy=False))
         else:
-            c_alphas = cast(0, POINTER(self.myctype))
+            c_alphas = None
         if self.lambdas_list is not None:
-            pass_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
-            c_lambdas = pass_lambdas.ctypes.data_as(POINTER(self.myctype))
+            c_lambdas = (self.lambdas_list.astype(self.dtype, copy=False))
         else:
-            c_lambdas = cast(0, POINTER(self.myctype))
+            c_lambdas = None
 
-#call elastic net in C backend
-        c_elastic_net(
-            c_int(self._family),
-            c_int(do_predict),
-            c_int(source_dev),
-            c_int(1),
-            c_int(self._shared_a),
-            c_int(self.n_threads),
-            c_int(self._gpu_id),
-            c_int(self.n_gpus),
-            c_int(self._total_n_gpus),
-            c_int(self.ord),
-            c_size_t(m_train),
-            c_size_t(n),
-            c_size_t(m_valid),
-            c_int(self.fit_intercept),
-            c_int(self._standardize),
-            c_double(self.lambda_max),
-            c_double(self.lambda_min_ratio),
-            c_int(self.n_lambdas),
-            c_int(self.n_folds),
-            c_int(self.n_alphas),
-            c_double(self.alpha_min),
-            c_double(self.alpha_max),
+        #call elastic net in C backend
+        _, x_vs_alpha_lambda, x_vs_alpha, \
+        valid_pred_vs_alpha_lambda, valid_pred_vs_alpha, \
+        count_full, count_short, count_more = c_elastic_net(
+            self._family,
+            do_predict,
+            source_dev,
+            1,
+            self._shared_a,
+            self.n_threads,
+            self._gpu_id,
+            self.n_gpus,
+            self._total_n_gpus,
+            self.ord,
+            m_train,
+            n,
+            m_valid,
+            self.fit_intercept,
+            self._standardize,
+            self.lambda_max,
+            self.lambda_min_ratio,
+            self.n_lambdas,
+            self.n_folds,
+            self.n_alphas,
+            self.alpha_min,
+            self.alpha_max,
             c_alphas,
             c_lambdas,
-            c_double(self.tol),
-            c_double(self.tol_seek_factor),
-            c_int(self.lambda_stop_early),
-            c_int(self.glm_stop_early),
-            c_double(self.glm_stop_early_error_fraction),
-            c_int(self.max_iter),
-            c_int(self.verbose),
+            self.tol,
+            self.tol_seek_factor,
+            self.lambda_stop_early,
+            self.glm_stop_early,
+            self.glm_stop_early_error_fraction,
+            self.max_iter,
+            self.verbose,
             a,
             b,
             c,
             d,
             e,
             self.store_full_path,
-            pointer(x_vs_alpha_lambda),
-            pointer(x_vs_alpha),
-            pointer(valid_pred_vs_alpha_lambda),
-            pointer(valid_pred_vs_alpha),
-            cast(addressof(count_full), c_size_t_p),
-            cast(addressof(count_short), c_size_t_p),
-            cast(addressof(count_more), c_size_t_p),
+            self.x_vs_alpha_lambda,
+            self.x_vs_alpha,
+            self.valid_pred_vs_alpha_lambda,
+            self.valid_pred_vs_alpha,
+            count_full,
+            count_short,
+            count_more
         )
         #if should or user wanted to save or free data,
         #do that now that we are done using a, b, c, d, e
         #This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
-        if free_input_data == 1:
-            free_data(self)
-
-# ####################################
-#PROCESS OUTPUT
-#save pointers
-
         self.x_vs_alpha_lambda = x_vs_alpha_lambda
         self.x_vs_alpha = x_vs_alpha
         self.valid_pred_vs_alpha_lambda = valid_pred_vs_alpha_lambda
         self.valid_pred_vs_alpha = valid_pred_vs_alpha
+
         self.count_full = count_full
         self.count_short = count_short
         self.count_more = count_more
 
-        count_full_value = count_full.value
-        count_short_value = count_short.value
-        count_more_value = count_more.value
+        if free_input_data == 1:
+            free_data(self)
+
+        # ####################################
+        #PROCESS OUTPUT
+        #save pointers
 
         if self.store_full_path == 1:
-            num_all = int(count_full_value / (self.n_alphas * self.n_lambdas))
+            num_all = int(count_full / (self.n_alphas * self.n_lambdas))
         else:
-            num_all = int(count_short_value / self.n_alphas)
+            num_all = int(count_short / self.n_alphas)
 
         num_all_other = num_all - n
         num_error = 3  # should be consistent w/ src/common/elastic_net_ptr.cpp
         num_other = num_all_other - num_error
         if num_other != 3:
             print('num_other=%d but expected 3' % num_other)
-            print('count_full_value=%d '
-                  'count_short_value=%d '
-                  'count_more_value=%d '
-                  'num_all=%d num_all_other=%d' % (int(count_full_value),
-                                                   int(count_short_value),
-                                                   int(count_more_value),
+            print('count_full=%d '
+                  'count_short=%d '
+                  'count_more=%d '
+                  'num_all=%d num_all_other=%d' % (int(count_full),
+                                                   int(count_short),
+                                                   int(count_more),
                                                    int(num_all),
                                                    int(num_all_other)))
             sys.stdout.flush()
@@ -748,9 +712,9 @@ class ElasticNetH2O(object):
             #for all lambda and alpha
 
             self.x_vs_alpha_lambdanew = \
-                np.fromiter(cast(x_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.dtype,
-                            count=count_full_value)
+                np.fromiter(cast(self.x_vs_alpha_lambda.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
+                            count=count_full)
 
             self.x_vs_alpha_lambdanew = \
                 np.reshape(self.x_vs_alpha_lambdanew, (self.n_lambdas,
@@ -777,10 +741,11 @@ class ElasticNetH2O(object):
                 self.intercept_ = None
 
         if self.store_full_path == 1 and do_predict == 1:
-            thecount = int(count_full_value / (n + num_all_other) * m_valid)
+            thecount = int(count_full / (n + num_all_other) * m_valid)
+
             self.valid_pred_vs_alpha_lambdanew = \
-                np.fromiter(cast(valid_pred_vs_alpha_lambda,
-                                 POINTER(self.myctype)), dtype=self.dtype,
+                np.fromiter(cast(self.valid_pred_vs_alpha_lambda.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alpha_lambdanew = \
                 np.reshape(self.valid_pred_vs_alpha_lambdanew,
@@ -790,11 +755,10 @@ class ElasticNetH2O(object):
 
         if do_predict == 0:  # store_full_path==0 or 1
             #x_vs_alpha contains only best of all lambda for each alpha
-
             self.x_vs_alphanew = np.fromiter(
-                cast(x_vs_alpha, POINTER(self.myctype)),
+                cast(self.x_vs_alpha.__int__(), POINTER(c_type)),
                 dtype=self.dtype,
-                count=count_short_value)
+                count=count_short)
             self.x_vs_alphanew = np.reshape(self.x_vs_alphanew,
                                             (self.n_alphas, num_all))
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
@@ -811,26 +775,26 @@ class ElasticNetH2O(object):
             else:
                 self.intercept2_ = None
 
-#preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+        #preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
         if self.store_full_path == 0 and do_predict == 1:
-            thecount = int(count_short_value / (n + num_all_other) * m_valid)
+            thecount = int(count_short / (n + num_all_other) * m_valid)
             if self.verbose > 0:
                 print('thecount=%d '
-                      'count_full_value=%d '
-                      'count_short_value=%d '
+                      'count_full=%d '
+                      'count_short=%d '
                       'n=%d num_all_other=%d '
                       'm_valid=%d' % (
                           thecount,
-                          count_full_value,
-                          count_short_value,
+                          count_full,
+                          count_short,
                           n,
                           num_all_other,
                           m_valid,
                       ))
                 sys.stdout.flush()
             self.valid_pred_vs_alphanew = \
-                np.fromiter(cast(valid_pred_vs_alpha,
-                                 POINTER(self.myctype)), dtype=self.dtype,
+                np.fromiter(cast(self.valid_pred_vs_alpha.__int__(), POINTER(c_type)),
+                            dtype=self.dtype,
                             count=thecount)
             self.valid_pred_vs_alphanew = \
                 np.reshape(self.valid_pred_vs_alphanew, (self.n_alphas,
@@ -1019,7 +983,7 @@ class ElasticNetH2O(object):
             e,
             do_predict,
             free_input_data=0)
-        if c is None or c is c_void_p(0):
+        if c is None:
             self.prediction = self.predict_ptr(
                 valid_xptr=a, valid_yptr=b, free_input_data=free_input_data)
         else:

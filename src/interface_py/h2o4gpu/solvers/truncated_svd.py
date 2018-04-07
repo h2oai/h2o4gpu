@@ -5,14 +5,10 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import print_function
-import ctypes
 import sys
 import numpy as np
-from ..libs.lib_tsvd import parameters as parameters_svd
 from ..solvers.utils import _setter
 from ..utils.extmath import svd_flip
-from ..types import cptr
-
 
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
@@ -65,7 +61,7 @@ class TruncatedSVDH2O(object):
         if random_state is not None:
             self.random_state = random_state
         else:
-            self.random_state = np.random.randint(0, 2 ** 32 - 1)
+            self.random_state = np.random.randint(0, 2 ** 31 - 1)
         self.tol = tol
         self.verbose = verbose
         self.n_gpus = n_gpus
@@ -106,39 +102,27 @@ class TruncatedSVDH2O(object):
             X = scipy.sparse.csr_matrix.todense(X)
 
         X = self._check_double(X)
-        if self.double_precision == 1:
-            X = np.asfortranarray(X, dtype=np.float64)
-        else:
-            X = np.asfortranarray(X, dtype=np.float32)
+        matrix_type = np.float64 if self.double_precision == 1 else np.float32
 
-        if self.double_precision == 1:
-            Q = np.empty(
-                (self.n_components, X.shape[1]), dtype=np.float64, order='F')
-            U = np.empty(
-                (X.shape[0], self.n_components), dtype=np.float64, order='F')
-            w = np.empty(self.n_components, dtype=np.float64)
-            explained_variance = np.empty(self.n_components, dtype=np.float64)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float64)
-        else:
-            Q = np.empty(
-                (self.n_components, X.shape[1]), dtype=np.float32, order='F')
-            U = np.empty(
-                (X.shape[0], self.n_components), dtype=np.float32, order='F')
-            w = np.empty(self.n_components, dtype=np.float32)
-            explained_variance = np.empty(self.n_components, dtype=np.float32)
-            explained_variance_ratio = np.empty(self.n_components,
-                                                dtype=np.float32)
+        X = np.asfortranarray(X, dtype=matrix_type)
+        Q = np.empty((self.n_components, X.shape[1]), dtype=matrix_type)
+        U = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
+        w = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance_ratio = np.empty(self.n_components,
+                                            dtype=matrix_type)
 
-        param = parameters_svd()
+        lib = self._load_lib()
+
+        param = lib.params_tsvd()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
-        param.algorithm = self.algorithm.encode('utf-8')
+        param.algorithm = self.algorithm
         param.tol = self.tol
         param.n_iter = self.n_iter
         param.random_state = self.random_state
-        param.verbose = 1 if self.verbose else 0
+        param.verbose = self.verbose
         param.gpu_id = self.gpu_id
 
         if param.tol < 0.0:
@@ -153,21 +137,10 @@ class TruncatedSVDH2O(object):
                              "C++ INT_MAX (2147483647) "
                              "but got`" + str(self.n_iter))
 
-        lib = self._load_lib()
         if self.double_precision == 1:
-            lib.truncated_svd_double(
-                cptr(X, ctypes.c_double), cptr(Q, ctypes.c_double),
-                cptr(w, ctypes.c_double), cptr(U, ctypes.c_double),
-                cptr(explained_variance, ctypes.c_double),
-                cptr(explained_variance_ratio, ctypes.c_double),
-                param)
+            lib.truncated_svd_double(X, Q, w, U, explained_variance, explained_variance_ratio, param)
         else:
-            lib.truncated_svd_float(
-                cptr(X, ctypes.c_float), cptr(Q, ctypes.c_float),
-                cptr(w, ctypes.c_float), cptr(U, ctypes.c_float),
-                cptr(explained_variance, ctypes.c_float),
-                cptr(explained_variance_ratio, ctypes.c_float),
-                param)
+            lib.truncated_svd_float(X, Q, w, U, explained_variance, explained_variance_ratio, param)
 
         self._w = w
         self._X = X
@@ -208,16 +181,15 @@ class TruncatedSVDH2O(object):
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(0, "Detected numeric data format which is not "
                                    "supported. Casting to np.float32.")
-            data = np.asfortranarray(data, dtype=np.floa32)
-
+            data = np.ascontiguousarray(data, dtype=np.floa32)
         if data.dtype == np.float64:
             self._print_verbose(0, "Detected np.float64 data")
             self.double_precision = 1
-            data = np.asfortranarray(data, dtype=np.float64)
+            data = np.ascontiguousarray(data, dtype=np.float64)
         elif data.dtype == np.float32:
             self._print_verbose(0, "Detected np.float32 data")
             self.double_precision = 0
-            data = np.asfortranarray(data, dtype=np.float32)
+            data = np.ascontiguousarray(data, dtype=np.float32)
         else:
             raise ValueError(
                 "Unsupported data type %s, "
@@ -345,14 +317,11 @@ class TruncatedSVDH2O(object):
 
     # Util to load gpu lib
     def _load_lib(self):
-        from ..libs.lib_tsvd import GPUlib
+        from ..libs.lib_utils import GPUlib
 
         gpu_lib = GPUlib().get()
 
         return gpu_lib
-
-def _as_dptr(x):
-    return x.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
 
 class TruncatedSVD(object):
     """
@@ -428,7 +397,7 @@ class TruncatedSVD(object):
         if random_state is not None:
             self.random_state = random_state
         else:
-            self.random_state = np.random.randint(0, 2 ** 32 - 1)
+            self.random_state = np.random.randint(0, 2 ** 31 - 1)
         if isinstance(tol, list):
             self.tol = tol[0]
         else:
