@@ -82,7 +82,7 @@ $(OBJ_DIR)/%.o:	$(SRC_DIR)%.cpp
 
 clean:
 	@echo "--- Cleaning Daal ---"
-	rm -rf $(TARGET) $(OBJ_FILES)
+	rm -rf $(TARGET) $(OBJ_FILES) $(OBJ_DIR)
 	
 endif
 
