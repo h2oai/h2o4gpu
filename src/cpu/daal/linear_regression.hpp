@@ -12,8 +12,8 @@
 #include <cstddef> // for size_t
 #include <memory>
 #include <utility>
-#include "iinput.hpp"
 #include "./utils/defines.h"
+#include "iinput.hpp_"
 #include "regression.hpp"
 
 namespace H2O4GPU {

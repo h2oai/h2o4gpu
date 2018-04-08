@@ -4,134 +4,158 @@
  *  Created on: Apr 2, 2018
  *      Author: monika
  */
-
+#include <string>
+#include <iostream>
+#include <exception>
+#include <stdexcept>
+#include <sstream>
 #include "h2o4gpu_daal_c.h"
-#include "iinput.hpp"
-#include "regression.hpp"
+#include "iinput.h"
+#include "svd.h"
+#include "ridge_regression.h"
+#include "linear_regression.h"
 
+using namespace H2O4GPU::DAAL;
 
-extern "C" {
 	// Daal input
-	void* CreateDaalInput(double *pData, size_t m_dim, size_t n_dim) {
-		return new(std::nothrow) HomogenousDaalData<double>(pData, m_dim, n_dim);
-	}
-	void* CreateDaalInput(double* featuresData, size_t m_features, size_t n_features,
-							double* dependentData, size_t m_dependent, size_t n_dependent) {
-		return new(std::nothrow) HomogenousDaalData(featuersData, m_features, n_features,
-							dependentData, m_dependent, n_dependent);
-	}
-	void* CreateDaalInput(const char* filename) {
-		return new(std::nothrow) HomogenousDaalData<std::string>(filename);
-	}
-	void* CreateDaalInput(const char* filename, size_t features, size_t dependentVariables) {
-		return new(std;:nothrow) HomogenousDaalData<std::string>(filename, features, dependentVariables);
-	}
-	void DeleteDaalInput_d(void* input) {
-		DeleteDaalInput<double>(input);
-	}
-	void printDaalInput_d(void *input,c onst char* msg) {
-		printDaalInput<double>(input, msg);
-	}
-	void *getDaalNT_d(const void* input) {
-		return getDaalNT<double>(input);
-	}
-	void printDaalNT(const void* input, const char* msg, size_t rows=0, size_t columns=0) {
-		try {
-			auto p = static_cast<const NumericTable *>(input);
-			printNumericTable(p, msg, rows, columns);
-		}
-	}
-
-	// Singular Value Decomposition
-	void* CreateDaalSVD(const void* input) {
-		try {
-			auto in = static_cast<const IInput*>(input);
-		} CATCH
-		return new(std::nothrow) SVD(*in);
-	}
-	void* CreateDaalSVD(double* input, size_t m_dim, size_t n_dim) {
-		return CreateSVD(input, m_dim, n_dim);
-	}
-	void DeleteSVD(void* pSVD) {
-		delete static_cast<SVD *>(pSVD);
-	}
-	const void fitDaalSVD(const void* svd) {
-		try {
-			auto psvd = static_cast<const SVD* >(svd);
-			psvd->fit();
-		} CATCH
-	}
-	const void* getDaalSigmas(const void* svd) const {
-		try {
-			auto psvd = static_cast<const SVD* >(svd);
-			return psvd->getSingularValues();
-		} CATCH
-		return nullptr;
-	}
-	const void* getDaalRightSingularMatrix(const void* svd) const {
-		try {
-			auto psvd = static_cast<const SVD* >(svd);
-			return psvd->getRightSingularMatrix();
-		} CATCH
-		return nullptr;
-	}
-	const void* getDaalLeftSingularMatrix(const void* svd) const {
-		try {
-			auto psvd = static_cast<const SVD* >(svd);
-			return psvd->getLeftSingularMatrix();
-		} CATCH
-		return nullptr;
-	}
-	// Regression
-	void* CreateDaalRegression(const void* input) {
-		try {
-			auto in = static_cast<const IInput*>(input);
-		} CATCH
-		return new(std::nothrow) Regression(*in);
-	}
-	void* CreateDaalRegression() {
-		return new(std::nothrow) Regression();
-	}
-	void DeleteDaalRegression(void* r) {
-		delete static_cast<Regression *>(r);
-	}
-	const void* train(Regression::Type type, const void* regression) {
-		try {
-			Regression* reg= nullptr;
-			if (type == Regression::type.linear)
-				reg = dynamic_cast<LinearRegression *>(regression);
-			else if(type == Regression::type.rigid)
-				reg = dynamic_cast<RidgeRegression *>(regression);
-			else
-				throw "Either linear or rigid regression is possible.";
-			return reg->train();
-		} CATCH
-		return nullptr;
-	}
-	const void* predict(Regression::Type type, const void* regression, const void* input) {
-		try {
-			Regression* reg = nullptr;
-			auto in = static_cast<const IInput *>(input);
-			if (type == Regression::type.linear)
-				reg = dynamic_cast<LinearRegression *>(regression);
-			else if (type == Regression::type.rigid)
-				reg = dynamic_cast<RigidRegression *>(regression);
-			else throw "Either linear or rigid regression is possible.";
-			return reg->predict(*in);
-		} CATCH
-		return nullptr;
-	}
-	void setInput(Regression::Type type, const void* regression, const void* input) {
-		try {
-			auto in = static_cast<const IInput *>(input);
-			Regression* reg = nullptr;
-			if (type == Regression::type.linear)
-				reg = dynamic_cast<LinearRegression *>(regression);
-			else if (type == Regression::type.rigid)
-				reg = dynamic_cast<RigidRegression *>(regression);
-			else throw "Either linear or rigid regression is possible.";
-			return reg->setInput(*in);
-		}
-	}
+void* CreateDaalInput(float *pData, size_t m_dim, size_t n_dim) {
+	return new(std::nothrow) HomogenousDaalData<float>(pData, m_dim, n_dim);
 }
+
+void* CreateDaalInputFeaturesDependent(float* featuresData, size_t m_features, size_t n_features,
+						float* dependentData, size_t m_dependent, size_t n_dependent) {
+	return new(std::nothrow) HomogenousDaalData<float>(featuresData, m_features, n_features,
+						dependentData, m_dependent, n_dependent);
+}
+void* CreateDaalInputFile(const char* filename) {
+	return new(std::nothrow) HomogenousDaalData<std::string>(filename);
+}
+void* CreateDaalInputFileFeaturesDependent(const char* filename, size_t features, size_t dependentVariables) {
+	return new(std::nothrow) HomogenousDaalData<std::string>(filename, features, dependentVariables);
+}
+void DeleteDaalInput(void* input) {
+	delete static_cast<IInput<float> *>(input);
+}
+void PrintDaalNumericTablePtr(float *input,const char* msg, size_t rows, size_t cols) {
+	try {
+		const NumericTablePtr* input = static_cast<const NumericTablePtr *>(input);
+		PrintTable pt;
+		pt.print(*input, std::string(msg), rows, cols);
+	} CATCH_DAAL
+}
+// Singular Value Decomposition
+void* CreateDaalSVD(void* input) {
+	try {
+		IInput<float>* in = static_cast<IInput<float> *>(input);
+		return new(std::nothrow) SVD(*in);
+	} CATCH_DAAL
+	return nullptr;
+}
+void DeleteDaalSVD(void* input) {
+	delete static_cast<SVD *>(input);
+}
+void fitDaalSVD(void* svd) {
+	try {
+		auto psvd = static_cast<SVD* >(svd);
+		psvd->fit();
+	} CATCH_DAAL
+}
+const void* getDaalSVDSigma(void* svd) {
+	try {
+		auto psvd = static_cast<SVD* >(svd);
+		return static_cast<const void*>(&psvd->getSingularValues());
+	} CATCH_DAAL
+	return nullptr;
+}
+const void* getDaalRightSingularMatrix(void* svd) {
+	try {
+		auto psvd = static_cast<SVD* >(svd);
+		return static_cast<const void*>(&psvd->getRightSingularMatrix());
+	} CATCH_DAAL
+	return nullptr;
+}
+const void* getDaalLeftSingularMatrix(void* svd) {
+	try {
+		auto psvd = static_cast<SVD* >(svd);
+		return static_cast<const void*>(&psvd->getLeftSingularMatrix());
+	} CATCH_DAAL
+	return nullptr;
+}
+// Regression
+void* CreateDaalRidgeRegression(void* input) {
+	try {
+		auto in = static_cast<IInput<float> *>(input);
+		return new(std::nothrow) RidgeRegression(*in);
+	} CATCH_DAAL
+	return nullptr;
+}
+void DeleteDaalRidgeRegression(void* regression) {
+	delete static_cast<RidgeRegression *>(regression);
+}
+void TrainDaalRidgeRegression(void *regression) {
+	try {
+		auto ridgeRegression = static_cast<RidgeRegression *>(regression);
+		ridgeRegression->train();
+	} CATCH_DAAL
+}
+void PredictDaalRidgeRegression(void* regression, void* input) {
+	try {
+		RidgeRegression* reg = static_cast<RidgeRegression *>(regression);
+		auto in = static_cast<IInput<float> *>(input);
+		reg->predict(*in);
+	} CATCH_DAAL
+}
+const void* GetDaalRidgeRegressionBeta(void* regression) {
+	try {
+		RidgeRegression* reg = static_cast<RidgeRegression *>(regression);
+		return &reg->getBeta();
+	} CATCH_DAAL
+	return nullptr;
+}
+const void* GetDaalRidgeRegressionPredictionData(void* regression) {
+	try {
+		RidgeRegression* reg = static_cast<RidgeRegression *>(regression);
+		return &reg->getPredictionData();
+	} CATCH_DAAL
+	return nullptr;
+}
+// Linear Regression
+void* CreateDaalLinearRegression(void* input) {
+	try {
+		IInput<float>* in = static_cast<IInput<float> *>(input);
+		return new(std::nothrow) LinearRegression(*in);
+	} CATCH_DAAL
+	return nullptr;
+}
+void DeleteDaalLinearRegression(void* regression) {
+	delete static_cast<LinearRegression *>(regression);
+}
+void TrainDaalLinearRegression(void *regression) {
+	try {
+		auto ridgeRegression = static_cast<RidgeRegression *>(regression);
+		ridgeRegression->train();
+	} CATCH_DAAL
+}
+void PredictDaalLinearRegression(void* regression, void* input) {
+	try {
+		LinearRegression* reg = static_cast<LinearRegression *>(regression);
+		auto in = static_cast<IInput<float> *>(input);
+		reg->predict(*in);
+	} CATCH_DAAL
+}
+const void* GetDaalLinearRegressionBeta(void* regression) {
+	try {
+		LinearRegression* reg = static_cast<LinearRegression *>(regression);
+		return &reg->getBeta();
+	} CATCH_DAAL
+	return nullptr;
+}
+const void* GetDaalLinearRegressionPredictionData(void* regression) {
+	try {
+		LinearRegression* reg = static_cast<LinearRegression *>(regression);
+		return &reg->getPredictionData();
+	} CATCH_DAAL
+	return nullptr;
+}
+
 
