@@ -176,11 +176,11 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   
   
   // Push data from CPU to GPU
-  void* aa;
-  void* bb;
-  void* cc;
-  void* dd;
-  void* ee;
+  T* aa;
+  T* bb;
+  T* cc;
+  T* dd;
+  T* ee;
   int sourceme=0; // index of first thread to own data
   int sourceDev=0; //index of first GPU to own data
   const char ord='r'; // normal C-order

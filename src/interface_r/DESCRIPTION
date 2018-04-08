@@ -1,7 +1,7 @@
 Package: h2o4gpu
 Type: Package
 Title: Interface to 'H2O4GPU'
-Version: 0.2.0
+Version: 0.2.0.9999
 Authors@R: c(
   person("Yuan", "Tang", role = c("aut", "cre"),
          email = "terrytangyuan@gmail.com",
@@ -20,6 +20,7 @@ LazyData: true
 Depends:
     R (>= 3.1)
 Imports:
+    utils,
     magrittr,
     reticulate (>= 1.4)
 Roxygen: list(markdown = TRUE)

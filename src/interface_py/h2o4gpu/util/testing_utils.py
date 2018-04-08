@@ -527,7 +527,6 @@ def run_glm(X,
 
     from ..solvers.utils import finish
     finish(enet)
-    print("Done Reporting")
 
     duration_h2o4gpu = time() - start_h2o4gpu
 

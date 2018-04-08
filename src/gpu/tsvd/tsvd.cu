@@ -2,13 +2,14 @@
 #include "cuda_runtime.h"
 #include "utils.cuh"
 #include "../device/device_context.cuh"
-#include "tsvd.h"
+#include "../../include/solver/tsvd.h"
 #include <ctime>
 #include <thrust/iterator/counting_iterator.h>
 #include<algorithm>
 #include <thrust/sequence.h>
 #include <thrust/inner_product.h>
 #include <thrust/transform_reduce.h>
+#include "../data/matrix.cuh"
 
 namespace tsvd
 {
@@ -59,77 +60,6 @@ namespace tsvd
 	}
 
 	/**
-	 * Alternative variance calculation (Can be slow for big matrices)
-	 *
-	 * @param UmultSigma
-	 * @param k
-	 * @param UmultSigmaVar
-	 * @param context
-	 */
-	template<typename T>
-	void calc_var(const Matrix<T>UmultSigma, int k, Matrix<T> &UmultSigmaVar, DeviceContext &context){
-		//Set aside matrix of 1's for getting columnar sums(t(UmultSima) * UmultOnes)
-		Matrix<T>UmultOnes(UmultSigma.rows(), 1);
-		UmultOnes.fill(1.0f);
-
-		//Allocate matrices for variance calculation
-		Matrix<T>UmultSigmaSquare(UmultSigma.rows(), UmultSigma.columns());
-		Matrix<T>UmultSigmaSum(k, 1);
-		Matrix<T>UmultSigmaSumSquare(k, 1);
-		Matrix<T>UmultSigmaSumOfSquare(k, 1);
-		Matrix<T>UmultSigmaVarNum(k, 1);
-
-		//Calculate Variance
-		square_val(UmultSigma, UmultSigmaSquare, context);
-		multiply(UmultSigmaSquare, UmultOnes, UmultSigmaSumOfSquare, context, true, false, 1.0f);
-		multiply(UmultSigma, UmultOnes, UmultSigmaSum, context, true, false, 1.0f);
-		square_val(UmultSigmaSum, UmultSigmaSumSquare, context);
-		//Get rows
-		auto m = UmultSigma.rows();
-		multiply(UmultSigmaSumOfSquare, m, context);
-		subtract(UmultSigmaSumOfSquare, UmultSigmaSumSquare, UmultSigmaVarNum, context);
-		auto d_u_sigma_var_num = UmultSigmaVarNum.data();
-		auto d_u_sigma_var = UmultSigmaVar.data();
-		auto counting = thrust::make_counting_iterator <int>(0);
-		thrust::for_each(counting, counting+UmultSigmaVar.size(), [=]__device__(int idx){
-			float div_val = d_u_sigma_var_num[idx]/(std::pow(m,2));
-			d_u_sigma_var[idx] = div_val;
-		} );
-	}
-
-
-	template<typename T>
-	class variance_iterator{
-	public:
-		// Required iterator traits
-		typedef variance_iterator<T>          self_type;            ///< My own type
-		typedef size_t                            difference_type;  ///< Type to express the result of subtracting one iterator from another
-		typedef T                           value_type;             ///< The type of the element the iterator can point to
-		typedef T*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-		typedef T                           reference;              ///< The type of a reference to an element the iterator can point to
-		typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
-		const T* data_ptr;
-		const T* mean_ptr;
-		const int col_rows;
-		size_t offset;
-		__device__ T operator[](size_t idx){
-			idx = idx + offset;
-			T mean = mean_ptr[idx/col_rows];
-			T dev_square = pow((data_ptr[idx] - mean),2);
-			return dev_square;
-		}
-		__device__ self_type operator+(size_t idx){
-			self_type retval(data_ptr, mean_ptr, col_rows);
-			retval.offset += idx;
-			return retval;
-		}
-
-		__host__ __device__ variance_iterator(const T* data_ptr, const T* mean_ptr, const int col_rows):data_ptr(data_ptr), mean_ptr(mean_ptr), col_rows(col_rows), offset(0){
-
-		}
-	};
-
-	/**
 	 * Utility to calculate variance for each column of a matrix
 	 *
 	 * @param X
@@ -138,23 +68,20 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void calc_var_numerator(const Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, DeviceContext &context){
-		auto m = X.rows();
-		variance_iterator<T> variance(X.data(), UColMean.data(), m);
-		thrust::device_vector<int> segments(X.columns() + 1);
-		thrust::sequence(segments.begin(), segments.end(), 0, static_cast<int>(X.rows()));
-		// Determine temporary device storage requirements
-		void     *d_temp_storage = NULL;
-		size_t   temp_storage_bytes = 0;
-		int cols = static_cast<int>(X.columns());
-		cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-										cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
-		// Allocate temporary storage
-		safe_cuda(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-		// Run sum-reduction
-		cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, variance, UVar.data(),
-										cols, thrust::raw_pointer_cast(segments.data()), thrust::raw_pointer_cast(segments.data() + 1));
-		safe_cuda(cudaFree(d_temp_storage));
+	void calc_var_numerator(Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, DeviceContext &context){
+		auto counting = thrust::make_counting_iterator(0);
+		auto d_X = X.data();
+		auto d_Mean = UColMean.data();
+		auto rows = X.rows();
+		thrust::for_each(counting, counting+X.size(),  [=] __device__ (size_t idx)
+		{
+			auto column = idx/rows;
+			d_X[idx] = std::pow(d_X[idx] - d_Mean[column],2);
+		});
+
+		Matrix<T>Ones(X.rows(), 1);
+		Ones.fill(1.0f);
+		multiply(X, Ones, UVar, context, true, false, 1.0f);
 
 	}
 
@@ -244,7 +171,7 @@ namespace tsvd
 	 * 4.Explained Variance Ratio
 	 */
 	template<typename T, typename S>
-	void get_tsvd_attr(Matrix<T> &X, Matrix<T> &Q, S _Q, Matrix<T> &w, S _w, S _U, params _param, DeviceContext &context){
+	void get_tsvd_attr(Matrix<T> &X, Matrix<T> &Q, S _Q, Matrix<T> &w, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param, DeviceContext &context){
 
 		//Obtain Q^T to obtain vector as row major order
 		Matrix<T>Qt(Q.columns(), Q.rows());
@@ -279,40 +206,39 @@ namespace tsvd
 		calculate_u(X, QReversed, sigma, U, context);
 		U.copy_to_host(_U); //Send to host
 
-// 		***********Disable for now***********
-//		//Explained Variance
-//		Matrix<T>UmultSigma(U.rows(), U.columns());
-//		//U * Sigma
-//		multiply_diag(U, sigma, UmultSigma, context, false);
-//
-//		Matrix<T>UOnesSigma(UmultSigma.rows(), 1);
-//		UOnesSigma.fill(1.0f);
-//		Matrix<T>USigmaVar(_param.k, 1);
-//		Matrix<T>USigmaColMean(_param.k, 1);
-//		multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
-//		float m_usigma = UmultSigma.rows();
-//		multiply(USigmaColMean, 1/m_usigma, context);
-//		calc_var_numerator(UmultSigma, USigmaColMean, USigmaVar, context);
-//		multiply(USigmaVar, 1/m_usigma, context);
-//		USigmaVar.copy_to_host(_explained_variance);
-//
-//		//Explained Variance Ratio
-//		//Set aside matrix of 1's for getting sum of columnar variances
-//		Matrix<T>XmultOnes(X.rows(), 1);
-//		XmultOnes.fill(1.0f);
-//		Matrix<T>XVar(X.columns(), 1);
-//		Matrix<T>XColMean(X.columns(), 1);
-//		multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
-//		float m = X.rows();
-//		multiply(XColMean, 1/m, context);
-//		calc_var_numerator(X, XColMean, XVar, context);
-//		multiply(XVar, 1/m, context);
-//
-//		Matrix<T>XVarSum(1,1);
-//		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
-//		Matrix<T>ExplainedVarRatio(_param.k, 1);
-//		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
-//		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
+		//U * Sigma
+		Matrix<T>UmultSigma(U.rows(), U.columns());
+		multiply_diag(U, sigma, UmultSigma, context, false);
+
+		//Explained Variance
+		Matrix<T>UOnesSigma(UmultSigma.rows(), 1);
+		UOnesSigma.fill(1.0f);
+		Matrix<T>USigmaVar(_param.k, 1);
+		Matrix<T>USigmaColMean(_param.k, 1);
+		multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
+		float m_usigma = UmultSigma.rows();
+		multiply(USigmaColMean, 1/m_usigma, context);
+		calc_var_numerator(UmultSigma, USigmaColMean, USigmaVar, context);
+		multiply(USigmaVar, 1/m_usigma, context);
+		USigmaVar.copy_to_host(_explained_variance);
+
+		//Explained Variance Ratio
+		//Set aside matrix of 1's for getting sum of columnar variances
+		Matrix<T>XmultOnes(X.rows(), 1);
+		XmultOnes.fill(1.0f);
+		Matrix<T>XVar(X.columns(), 1);
+		Matrix<T>XColMean(X.columns(), 1);
+		multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
+		float m = X.rows();
+		multiply(XColMean, 1/m, context);
+		calc_var_numerator(X, XColMean, XVar, context);
+		multiply(XVar, 1/m, context);
+
+		Matrix<T>XVarSum(1,1);
+		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
+		Matrix<T>ExplainedVarRatio(_param.k, 1);
+		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
+		ExplainedVarRatio.copy_to_host(_explained_variance_ratio);
 	}
 
 
@@ -333,10 +259,12 @@ namespace tsvd
 	 * @param _Q
 	 * @param _w
 	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
 	template<typename T, typename S>
-	void cusolver_tsvd(Matrix<T> &X, S _Q, S _w, S _U, params _param){
+	void cusolver_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param){
 		//Allocate matrix for X^TX
 		Matrix<T>XtX(_param.X_n, _param.X_n);
 
@@ -352,7 +280,7 @@ namespace tsvd
 		calculate_eigen_pairs_exact(XtX, Q, w, context);
 
 		//Get tsvd attributes
-		get_tsvd_attr(X, Q, _Q, w, _w, _U, _param, context);
+		get_tsvd_attr(X, Q, _Q, w, _w, _U, _explained_variance, _explained_variance_ratio, _param, context);
 	}
 
 	/**
@@ -362,10 +290,12 @@ namespace tsvd
 	 * @param _Q
 	 * @param _w
 	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
 	template<typename T, typename S>
-	void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, params _param){
+	void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param){
 		//Allocate matrix for X^TX
 		Matrix<T>M(_param.X_n, _param.X_n);
 
@@ -430,7 +360,7 @@ namespace tsvd
 		w.copy(w_temp.data());
 
 		//Get tsvd attributes
-		get_tsvd_attr(X, Q, _Q, w, _w, _U, _param, context);
+		get_tsvd_attr(X, Q, _Q, w, _w, _U, _explained_variance, _explained_variance_ratio, _param, context);
 
 	}
 
@@ -441,14 +371,16 @@ namespace tsvd
 	 * @param _Q
 	 * @param _w
 	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void truncated_svd_float(const float *_X, float *_Q, float *_w, float *_U, params _param)
+	void truncated_svd_float(const float *_X, float *_Q, float *_w, float *_U, float *_explained_variance, float *_explained_variance_ratio, params _param)
 	{
 		safe_cuda(cudaSetDevice(_param.gpu_id));
 		Matrix<float>X(_param.X_m, _param.X_n);
 		X.copy(_X);
-		truncated_svd_matrix(X, _Q, _w, _U, _param);
+		truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 	}
 
 	/**
@@ -458,14 +390,16 @@ namespace tsvd
 	 * @param _Q
 	 * @param _w
 	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void truncated_svd_double(const double *_X, double *_Q, double *_w, double *_U, params _param)
+	void truncated_svd_double(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, params _param)
 	{
 		safe_cuda(cudaSetDevice(_param.gpu_id));
 		Matrix<double>X(_param.X_m, _param.X_n);
 		X.copy(_X);
-		truncated_svd_matrix(X, _Q, _w, _U, _param);
+		truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 	}
 
 	/**
@@ -475,18 +409,20 @@ namespace tsvd
 	 * @param _Q
 	 * @param _w
 	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void truncated_svd(const double *_X, double *_Q, double *_w, double *_U, params _param)
+	void truncated_svd(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, params _param)
 	{
 		safe_cuda(cudaSetDevice(_param.gpu_id));
 		Matrix<float>X(_param.X_m, _param.X_n);
 		X.copy(_X);
-		truncated_svd_matrix(X, _Q, _w, _U, _param);
+		truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 	}
 
 	template<typename T, typename S>
-	tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, params _param)
+	tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param)
 	{
 		std::string algorithm(_param.algorithm);
 		try
@@ -495,13 +431,13 @@ namespace tsvd
 				if(_param.verbose==1){
 				 fprintf(stderr,"Algorithm is cusolver with k = %d\n",_param.k); fflush(stderr);
 				}
-				tsvd::cusolver_tsvd(X, _Q, _w, _U, _param);
+				tsvd::cusolver_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 			}
 			else {
 				if(_param.verbose==1){
 				 fprintf(stderr,"Algorithm is power with k = %d and number of iterations = %d\n",_param.k,_param.n_iter); fflush(stderr);
 				}
-				tsvd::power_tsvd(X, _Q, _w, _U, _param);
+				tsvd::power_tsvd(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 			}
 		}
 		catch (const std::exception &e)
@@ -520,16 +456,16 @@ namespace tsvd
 }
 
 //Orignal impl
-template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, params _param);
-template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, params _param);
-template void tsvd::power_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, params _param);
+template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::power_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
 
 //Impl for floats and doubles
-template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, params _param);
-template void tsvd::truncated_svd_matrix<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, params _param);
-template void tsvd::cusolver_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, params _param);
-template void tsvd::power_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, params _param);
-template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, params _param);
-template void tsvd::power_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, params _param);
+template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, params _param);
+template void tsvd::truncated_svd_matrix<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::cusolver_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::power_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, params _param);
+template void tsvd::power_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, params _param);
 
 

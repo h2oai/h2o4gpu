@@ -7,15 +7,11 @@
 #include <random>
 #include "reader.h"
 #include "matrix/matrix_dense.h"
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 #include "timer.h"
 
 #ifdef _OPENMP
 #include <omp.h>
-#endif
-
-#if(USEMKL==1)
-#include <mkl.h>
 #endif
 
 using namespace h2o4gpu;
@@ -199,15 +195,6 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
   {
 #ifdef _OPENMP
     int me = omp_get_thread_num();
-#if(USEMKL==1)
-    //https://software.intel.com/en-us/node/522115
-    int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
-    // set number of mkl threads per openmp thread so that not oversubscribing cores
-    int mklperthread=max(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
-    //mkl_set_num_threads_local(mklperthread);
-    mkl_set_num_threads_local(mklperthread);
-    //But see (hyperthreading threads not good for MKL): https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/288645
-#endif
 #else
     int me=0;
 #endif

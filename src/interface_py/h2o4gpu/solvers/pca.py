@@ -5,9 +5,8 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
-from ..libs.lib_pca import parameters
 from ..solvers.utils import _setter
-from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD, _as_dptr
+from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD
 from ..utils.extmath import svd_flip
 
 
@@ -84,26 +83,29 @@ class PCAH2O(TruncatedSVDH2O):
                          dense array.
 
         """
+        # SWIG takes care of mapping to Fortran order
         X = np.asfortranarray(X, dtype=np.float64)
         Q = np.empty(
-            (self.n_components, X.shape[1]), dtype=np.float64, order='F')
+            (self.n_components, X.shape[1]), dtype=np.float64)
         U = np.empty(
-            (X.shape[0], self.n_components), dtype=np.float64, order='F')
+            (X.shape[0], self.n_components), dtype=np.float64)
         w = np.empty(self.n_components, dtype=np.float64)
+        explained_variance = np.empty(self.n_components, dtype=np.float64)
+        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
         mean = np.empty(X.shape[1], dtype=np.float64)
-        param = parameters()
+
+        lib = self._load_lib()
+
+        param = lib.params_pca()
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
         param.whiten = self.whiten
-        param.algorithm = self.algorithm.encode('utf-8')
+        param.algorithm = self.algorithm
         param.verbose = 1 if self.verbose else 0
         param.gpu_id = self.gpu_id
 
-        lib = self._load_lib()
-        lib.pca(
-            _as_dptr(X), _as_dptr(Q), _as_dptr(w), _as_dptr(U),
-            _as_dptr(mean), param)
+        lib.pca(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
 
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
@@ -114,6 +116,7 @@ class PCAH2O(TruncatedSVDH2O):
         total_var = np.var(X, ddof=1, axis=0)
         self.explained_variance_ratio = \
             self.explained_variance / total_var.sum()
+        #self.explained_variance_ratio = explained_variance_ratio
         self.mean_ = mean
 
         # TODO noise_variance_ calculation
@@ -133,7 +136,7 @@ class PCAH2O(TruncatedSVDH2O):
 
     # Util to load gpu lib
     def _load_lib(self):
-        from ..libs.lib_pca import GPUlib
+        from ..libs.lib_utils import GPUlib
 
         gpu_lib = GPUlib().get()
 

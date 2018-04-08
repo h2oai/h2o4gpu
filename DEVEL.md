@@ -4,14 +4,16 @@
 
 ### Build Environment
 
+* Linux machine w/ GCC4.9+ and CMake installed.
+
 * Python 3.6.
 
 For `pyenv` go to https://github.com/pyenv/pyenv and follow those instructions for installing pyenv. Then run, e.g.:
 
 ````
 
-env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.1
-pyenv global 3.6.1
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.6.3
+pyenv global 3.6.3
 ````
 
 For `virtualenv` and ubuntu 16.04:
@@ -52,9 +54,6 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:$CUDA_HOME/lib64:$CUDA_HOME/extras/CUPTI/lib64
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE
 export CUDADIR=/usr/local/cuda/include/
-export OMP_NUM_THREADS=32
-export MKL_NUM_THREADS=32
-export VECLIB_MAXIMUM_THREADS=32
 ```
 
 ### Compiling and Building
@@ -81,9 +80,9 @@ make fullinstall
 
 This installs full h2o4gpu as user. It compiles a python wheel
 and puts it in
-$BASE/src/interface_py/dist/h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl .  One
+`$BASE/src/interface_py/dist/h2o4gpu-<h2o4gpu_version>-cp<python_version>-cp<python_version>m-<OS>.whl` .  One
 can share this wheel and have someone install it as: `pip install
-h2o4gpu-<h2o4gpu_version>-py<py_version>-none-any.whl`.
+h2o4gpu-<h2o4gpu_version>-cp<python_version>-cp<python_version>m-<OS>.whl`.
 
 This also downloads and installs the necessary dependencies and then builds the R packge using [install_r_deps.sh](https://github.com/h2oai/h2o4gpu/blob/master/scripts/install_r_deps.sh) script.
 You can rebuild the R package using this script.
@@ -109,6 +108,16 @@ Note: By default the GPU NCCL version is installed using your local cuda version
 
 If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
+
+## Build flags and options:
+
+##### Debug mode
+
+To build the code in debug mode set `CMAKE_BUILD_TYPE=Debug` when building e.g. `make fullinstall CMAKE_BUILD_TYPE=Debug`.
+
+##### NVTE
+
+To enable `nvToolsExt` set the `USENVTX` variable e.g. `make fullinstall USENVTX=ON`
 
 ## Testing
 
@@ -142,7 +151,6 @@ examples/py/demos/H2O4GPU_GBM.ipynb
 examples/py/demos/H2O4GPU_KMeans_Images.ipynb
 ```
 
-- To compile and run gpu C++ version:
-```
-cd $BASE/examples/cpp && make -j all ; make run
-```
+## Adding code
+
+If you want to contibute code but are not sure where to start have a look at an [example](https://github.com/h2oai/h2o4gpu/tree/master/EXAMPLE_SOLVER.md) showing how to add a new solver from scratch.

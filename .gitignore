@@ -34,7 +34,6 @@ smalldata/
 tests/smalldata
 tests/data
 *.idea/
-*.txt
 *.so
 *.gz
 *.swp
@@ -107,7 +106,6 @@ examples/py/ipums_feather
 *.app
 
 # CUDA #
-*.i
 *.ii
 *.ptx
 *.cubin
@@ -121,6 +119,7 @@ examples/py/ipums_feather
 .ipynb_checkpoints
 
 # Entire build directory #
+build
 /src/build/*
 
 # Temp space
@@ -168,3 +167,11 @@ tests/googletest
 .Rhistory
 .RData
 .Ruserdata
+
+# SWIG
+src/interface_py/h2o4gpu/libs/ch2o4gpu_cpu.py
+src/interface_py/h2o4gpu/libs/ch2o4gpu_gpu.py
+src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.cxx
+src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.cxx
+
+src/interface_py/h2o4gpu/BUILD_INFO.txt

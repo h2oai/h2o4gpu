@@ -13,7 +13,7 @@
 #include "util.h"
 #include "timer.h"
 
-#include "h2o4gpuglm.h"
+#include "solver/glm.h"
 
 namespace h2o4gpu {
 namespace {

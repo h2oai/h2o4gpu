@@ -1,15 +1,10 @@
 /*!
  * Modifications Copyright 2017 H2O.ai, Inc.
  */
-#ifndef H2O4GPU_C_H
-#define H2O4GPU_C_H
+#pragma once
 
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
 // Possible column and row ordering.
 enum ORD { COL_MAJ, ROW_MAJ };
 
@@ -42,6 +37,14 @@ enum STATUS { H2O4GPU_SUCCESS,    // Converged succesfully.
       H2O4GPU_NAN_FOUND,  // Encountered nan.
       H2O4GPU_ERROR };    // Generic error, check logs.
 
+template <typename T>
+struct H2O4GPUSettings{
+  T rho, abs_tol, rel_tol;
+  unsigned int max_iters, verbose;
+  int adaptive_rho, equil, gap_stop, warm_start;
+  int nDev,wDev;
+};
+
 struct H2O4GPUSettingsS{
   float rho, abs_tol, rel_tol;
   unsigned int max_iters, verbose;
@@ -54,6 +57,18 @@ struct H2O4GPUSettingsD{
   unsigned int max_iters, verbose;
   int adaptive_rho, equil, gap_stop, warm_start;
   int nDev,wDev;
+};
+
+template <typename T>
+struct H2O4GPUInfo{
+  unsigned int iter;
+  int status;
+  T obj, rho, solvetime;
+};
+
+template <typename T>
+struct H2O4GPUSolution{
+  T *x, *y, *mu, *nu;
 };
 
 struct H2O4GPUInfoS{
@@ -91,14 +106,6 @@ int h2o4gpu_solve_double(void *work, struct H2O4GPUSettingsD *settings, struct H
                       const double *g_a, const double *g_b, const double *g_c,const double *g_d, const double *g_e, const enum FUNCTION *g_h);
 void h2o4gpu_finish_single(void * work);
 void h2o4gpu_finish_double(void * work);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  // H2O4GPU_C_H
-
-
 
 
 

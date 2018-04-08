@@ -34,13 +34,16 @@ def device_count(n_gpus=0):
     return n_gpus, available_device_count
 
 
-def get_gpu_info(return_usage=False):
+def get_gpu_info(return_usage=False, trials=2, timeout=30, print_trials=False):
     """Gets the GPU info.
 
     This runs in a sub-process to avoid mixing parent-child CUDA contexts.
     # get GPU info, but do in sub-process
     # to avoid mixing parent-child cuda contexts
     # https://stackoverflow.com/questions/22950047/cuda-initialization-error-after-fork
+    # Tries "trials" times to get result
+    # If fails to get result within "timeout" seconds each trial,
+    #    then returns as if no GPU
 
     :return:
         Total number of GPUs and total available memory
@@ -54,15 +57,24 @@ def get_gpu_info(return_usage=False):
     res = None
     # sometimes hit broken process pool in cpu mode,
     # so just return back no gpus.
-    try:
-        with ProcessPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(get_gpu_info_subprocess, return_usage)
-            res = future.result()
-        return res
-    except concurrent.futures.process.BrokenProcessPool:
-        if return_usage:
-            return (total_gpus, total_mem, gpu_type, usage)
-        return (total_gpus, total_mem, gpu_type)
+    for trial in range(0, trials):
+        try:
+            with ProcessPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(get_gpu_info_subprocess, return_usage)
+                # don't wait more than 30s,
+                # import on py3nvml can hang if 2 subprocesses
+                # GIL lock import at same time
+                res = future.result(timeout=timeout)
+            return res
+        except concurrent.futures.process.BrokenProcessPool:
+            pass
+        except concurrent.futures.TimeoutError:
+            pass
+        if print_trials:
+            print("Trial %d/%d" % (trial, trials-1))
+    if return_usage:
+        return (total_gpus, total_mem, gpu_type, usage)
+    return (total_gpus, total_mem, gpu_type)
 
 
 def get_gpu_info_subprocess(return_usage=False):
@@ -133,22 +145,21 @@ def cudaresetdevice(gpu_id, n_gpus):
     (n_gpus, devices) = device_count(n_gpus)
     gpu_id = gpu_id % devices
 
-    from ..libs.lib_elastic_net import GPUlib, CPUlib
-    gpu_lib = GPUlib().get()
-    cpu_lib = CPUlib().get()
-
-    lib = None
-    if n_gpus == 0 or gpu_lib is None or devices == 0:
-        lib = cpu_lib
-    elif n_gpus > 0 or gpu_lib is None or devices == 0:
-        lib = gpu_lib
-    else:
+    from ..libs.lib_utils import get_lib
+    lib = get_lib(n_gpus, devices)
+    if lib is None:
         n_gpus = 0
 
     if n_gpus > 0 and lib is not None:
-        from ctypes import c_int
-        lib.cudaresetdevice(c_int(gpu_id), c_int(n_gpus))
+        lib.cudaresetdevice(gpu_id, n_gpus)
 
+def cudaresetdevice_bare(n_gpus):
+    """
+    Resets the cuda device so any next cuda call will reset the cuda context.
+    """
+    if n_gpus > 0:
+        from ..libs.lib_utils import GPUlib
+        GPUlib().get().cudaresetdevice_bare()
 
 def get_compute_capability(gpu_id):
     """
@@ -187,26 +198,15 @@ def get_compute_capability_subprocess(gpu_id):
     (n_gpus, devices) = device_count(n_gpus)
     gpu_id = gpu_id % devices
 
-    from ..libs.lib_elastic_net import GPUlib, CPUlib
-    gpu_lib = GPUlib().get()
-    cpu_lib = CPUlib().get()
-
-    lib = None
-    if n_gpus == 0 or gpu_lib is None or devices == 0:
-        lib = cpu_lib
-    elif n_gpus > 0 or gpu_lib is None or devices == 0:
-        lib = gpu_lib
-    else:
+    from ..libs.lib_utils import get_lib
+    lib = get_lib(n_gpus, devices)
+    if lib is None:
         n_gpus = 0
 
-    from ctypes import c_int, POINTER, cast, addressof
-    device_major = c_int(0)
-    device_minor = c_int(0)
-    device_ratioperf = c_int(0)
+    device_major = 0
+    device_minor = 0
+    device_ratioperf = 0
     if n_gpus > 0 and lib is not None:
-        c_int_p = POINTER(c_int)
-        lib.get_compute_capability(
-            c_int(gpu_id), cast(addressof(device_major), c_int_p),
-            cast(addressof(device_minor), c_int_p),
-            cast(addressof(device_ratioperf), c_int_p))
-    return device_major.value, device_minor.value, device_ratioperf.value
+        _, device_major, device_minor, device_ratioperf = \
+            lib.get_compute_capability(gpu_id)
+    return device_major, device_minor, device_ratioperf
