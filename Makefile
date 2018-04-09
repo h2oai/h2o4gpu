@@ -435,11 +435,14 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 	bash testsxgboost/extracttestxgboost.sh
 	bash tests_open/showresults.sh # same for all tests
 
-# install daal
 install_daal_x86_64:
-	@echo "----- Install Daal Python library -----"
+	@echo "--- Install Daal Python library -----"
 	bash scripts/daal/install_daal_locally.sh
-
+	@echo "----- Compile Daal C-library -----"
+	cd  src/cpu/daal && $(MAKE)
+clean_daal:
+	@echo "--- Cleaning Daal library ---"
+	cd src/cpu/daal && $(MAKE) clean
 ################
 
 # http://developer2.download.nvidia.com/compute/cuda/9.0/secure/rc/docs/sidebar/CUDA_Quick_Start_Guide.pdf?_ZyOB0PlGZzBUluXp3FtoWC-LMsTsc5H6SxIaU0i9pGNyWzZCgE-mhnAg2m66Nc3WMDvxWvvQWsXGMqr1hUliGOZvoothMTVnDe12dQQgxwS4Asjoz8XiOvPYOjV6yVQtkFhvDztUlJbNSD4srPWUU2-XegCRFII8_FIpxXERaWV
