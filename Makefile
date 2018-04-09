@@ -119,7 +119,14 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	(mkdir -p build; cd build; cmake ../; make -j)
+	(mkdir -p build; \
+	cd build; \
+	touch ../src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.stamp; \
+	touch ../src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.stamp; \
+	cmake ../; \
+	make -j; \
+	rm -f ../src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.stamp; \
+	rm -f ../src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.stamp); \
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
