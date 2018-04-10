@@ -119,7 +119,12 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	(mkdir -p build; cd build; cmake ../; make -j)
+	(mkdir -p build; \
+	cd build; \
+	cmake ../; \
+	make -j; \
+	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
+	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py

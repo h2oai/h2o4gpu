@@ -71,8 +71,6 @@ TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 
 #============= SWIG
 SET(CMAKE_SWIG_FLAGS "")
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "../src/interface_c/")
-SET(CMAKE_SWIG_OUTDIR "../src/interface_py/h2o4gpu/libs")
 #============= SWIG
 
 #============= CPU SWIG
