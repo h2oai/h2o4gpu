@@ -40,7 +40,7 @@ COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-g
 ENV PATH=/opt/h2oai/gcc_wrapper:$PATH
 RUN ln /usr/bin/ar $LLVM4/bin/ARCH_SUBST-conda_cos6-linux-gnu-ar
 
-RUN yum install -y python36-devel
+RUN yum install -y python-devel
 
 RUN yum install -y atlas-devel blas-devel && \
   ln /usr/lib64/libgfortran.so.3 /usr/lib64/libgfortran.so && \
