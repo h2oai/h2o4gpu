@@ -40,8 +40,9 @@ COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-g
 ENV PATH=/opt/h2oai/gcc_wrapper:$PATH
 RUN ln /usr/bin/ar $LLVM4/bin/ARCH_SUBST-conda_cos6-linux-gnu-ar
 
+RUN yum install -y python36-devel
 
-RUN yum install -y swig atlas-devel blas-devel && \
+RUN yum install -y atlas-devel blas-devel && \
   ln /usr/lib64/libgfortran.so.3 /usr/lib64/libgfortran.so && \
   wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz && \
   tar xvf v0.2.20.tar.gz && \
@@ -71,6 +72,17 @@ RUN \
     make -j6 install && \
     cd $HOME && \
     rm -rf cmake-3*
+
+# Install SWIG b/c yum has old versions
+RUN \
+    wget https://sourceforge.net/projects/swig/files/swig/swig-$SWIG_VERSION/swig-3.0.12.tar.gz && \
+    tar -zxvf swig-3.0.12.tar.gz && \
+    cd swig-3.0.12 && \
+    ./configure --prefix=/usr && \
+    make -j 4 && \
+    make install && \
+    cd $HOME && \
+    rm -rf swig-3*
 
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
