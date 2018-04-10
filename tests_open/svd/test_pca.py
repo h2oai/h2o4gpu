@@ -17,8 +17,7 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
 
     if convert_to_float32:
         X = X.astype(np.float32)
-    print("X dtype")
-    print(X.dtype)
+
     gpu_id = 0
 
     if change_gpu_id:
