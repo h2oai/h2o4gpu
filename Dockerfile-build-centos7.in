@@ -75,7 +75,7 @@ RUN \
 
 # Install SWIG b/c yum has old versions
 RUN \
-    wget https://sourceforge.net/projects/swig/files/swig/swig-$SWIG_VERSION/swig-3.0.12.tar.gz && \
+    wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz && \
     tar -zxvf swig-3.0.12.tar.gz && \
     cd swig-3.0.12 && \
     ./configure --prefix=/usr && \
