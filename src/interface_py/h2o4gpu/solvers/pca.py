@@ -139,7 +139,7 @@ class PCAH2O(TruncatedSVDH2O):
 
         X_transformed = U * w
         return X_transformed
-    
+
     def _check_double(self, data, convert=True):
         """Transform input data into a type which can be passed into C land."""
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
@@ -159,7 +159,7 @@ class PCAH2O(TruncatedSVDH2O):
                 "Unsupported data type %s, "
                 "should be either np.float32 or np.float64" % data.dtype)
         return data
-    
+
     # Util to load gpu lib
     def _load_lib(self):
         from ..libs.lib_utils import GPUlib
