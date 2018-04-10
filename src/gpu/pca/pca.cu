@@ -19,7 +19,7 @@ namespace pca
 	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void pca_float(const float* _X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, float* _mean, params _param) {
+	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
 		try {
 
 			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
@@ -77,7 +77,7 @@ namespace pca
 	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void pca_double(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param) {
+	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
 		try {
 
 			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
