@@ -121,12 +121,10 @@ update_submodule:
 cpp:
 	(mkdir -p build; \
 	cd build; \
-	touch ../src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.stamp; \
-	touch ../src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.stamp; \
 	cmake ../; \
 	make -j; \
-	rm -f ../src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.stamp; \
-	rm -f ../src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.stamp); \
+	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
+	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
