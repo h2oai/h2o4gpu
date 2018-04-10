@@ -442,8 +442,13 @@ testxgboost: # liblightgbm (assumes one installs lightgdm yourself or run make l
 
 # install daal
 install_daal_x86_64:
-	@echo "----- Install Daal Python library -----"
+	@echo "--- Install Daal Python library -----"
 	bash scripts/daal/install_daal_locally.sh
+	@echo "----- Compile Daal C-library -----"
+	cd  src/cpu/daal && $(MAKE)
+clean_daal:
+	@echo "--- Cleaning Daal library ---"
+	cd src/cpu/daal && $(MAKE) clean
 
 ################
 
