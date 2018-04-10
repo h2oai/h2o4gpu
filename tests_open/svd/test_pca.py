@@ -17,7 +17,8 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
 
     if convert_to_float32:
         X = X.astype(np.float32)
-
+    print("X dtype")
+    print(X.dtype)
     gpu_id = 0
 
     if change_gpu_id:
@@ -42,7 +43,10 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
     print("Mean")
     print(h2o4gpu_pca.mean_)
     print(scikit_pca.mean_)
-    assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_)
+    if convert_to_float32:
+        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_, 1e-4)
+    else:
+        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_)
 
     print("Noise Variance")
     print(h2o4gpu_pca.noise_variance_)
