@@ -6,7 +6,6 @@ import os
 from subprocess import call
 from distutils.command.build import build
 from setuptools.command.install import install
-from pip.req import parse_requirements
 
 BASEPATH = os.path.dirname(os.path.abspath(__file__))
 H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
@@ -65,12 +64,10 @@ class H2O4GPUInstall(install):
         # install H2O4GPU executables
         self.copy_tree(self.build_lib, self.install_lib)
 
-# parse_requirements() returns generator of pip.req.InstallRequirement objects
-install_reqs = parse_requirements('../../requirements_runtime.txt', session='hack')
-
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-reqs = [str(ir.req) for ir in install_reqs]
+with open("../../requirements_runtime.txt", "r") as fs:
+    reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
 
 def get_packages(directory):
     paths = []
