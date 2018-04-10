@@ -7,7 +7,6 @@
 #endif
 
 namespace pca {
-typedef float pca_float;
 
 typedef struct params {
   int X_n;
@@ -30,5 +29,7 @@ typedef struct params {
  * \param 		  	_param
  */
 
-pca_export void pca(const double * _X, double * _Q, double * _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param);
+pca_export void pca_float(const float* _X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, float* _mean, params _param);
+pca_export void pca_double(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param);
+
 }

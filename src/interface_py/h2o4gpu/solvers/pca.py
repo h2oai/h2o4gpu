@@ -84,15 +84,17 @@ class PCAH2O(TruncatedSVDH2O):
 
         """
         # SWIG takes care of mapping to Fortran order
-        X = np.asfortranarray(X, dtype=np.float64)
+        X = self._check_double(X)
+        matrix_type = np.float64 if self.double_precision == 1 else np.float32
+        X = np.asfortranarray(X, dtype=matrix_type)
         Q = np.empty(
-            (self.n_components, X.shape[1]), dtype=np.float64)
+            (self.n_components, X.shape[1]), dtype=matrix_type)
         U = np.empty(
-            (X.shape[0], self.n_components), dtype=np.float64)
-        w = np.empty(self.n_components, dtype=np.float64)
-        explained_variance = np.empty(self.n_components, dtype=np.float64)
-        explained_variance_ratio = np.empty(self.n_components, dtype=np.float64)
-        mean = np.empty(X.shape[1], dtype=np.float64)
+            (X.shape[0], self.n_components), dtype=matrix_type)
+        w = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance = np.empty(self.n_components, dtype=matrix_type)
+        explained_variance_ratio = np.empty(self.n_components, dtype=matrix_type)
+        mean = np.empty(X.shape[1], dtype=matrix_type)
 
         lib = self._load_lib()
 
@@ -105,7 +107,11 @@ class PCAH2O(TruncatedSVDH2O):
         param.verbose = 1 if self.verbose else 0
         param.gpu_id = self.gpu_id
 
-        lib.pca(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
+
+        if self.double_precision == 1:
+            lib.pca_double(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
+        else:
+            lib.pca_float(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
 
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
@@ -133,7 +139,27 @@ class PCAH2O(TruncatedSVDH2O):
 
         X_transformed = U * w
         return X_transformed
-
+    
+    def _check_double(self, data, convert=True):
+        """Transform input data into a type which can be passed into C land."""
+        if convert and data.dtype != np.float64 and data.dtype != np.float32:
+            self._print_verbose(0, "Detected numeric data format which is not "
+                                   "supported. Casting to np.float32.")
+            data = np.ascontiguousarray(data, dtype=np.floa32)
+        if data.dtype == np.float64:
+            self._print_verbose(0, "Detected np.float64 data")
+            self.double_precision = 1
+            data = np.ascontiguousarray(data, dtype=np.float64)
+        elif data.dtype == np.float32:
+            self._print_verbose(0, "Detected np.float32 data")
+            self.double_precision = 0
+            data = np.ascontiguousarray(data, dtype=np.float32)
+        else:
+            raise ValueError(
+                "Unsupported data type %s, "
+                "should be either np.float32 or np.float64" % data.dtype)
+        return data
+    
     # Util to load gpu lib
     def _load_lib(self):
         from ..libs.lib_utils import GPUlib
