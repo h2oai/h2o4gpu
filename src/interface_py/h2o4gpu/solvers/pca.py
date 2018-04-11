@@ -5,6 +5,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
+from math import sqrt
 from ..solvers.utils import _setter
 from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD
 from ..utils.extmath import svd_flip
@@ -116,7 +117,10 @@ class PCAH2O(TruncatedSVDH2O):
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
         self._X = X
+
         n = X.shape[0]
+        if self.whiten:
+            self._U = self._Q / self._w[:, np.newaxis] * sqrt(n)
         # To match sci-kit #TODO Port to cuda?
         self.explained_variance = self.singular_values_**2 / (n - 1)
         total_var = np.var(X, ddof=1, axis=0)

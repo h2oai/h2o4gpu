@@ -10,7 +10,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_to_float32=False):
+def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_to_float32=False, whiten=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
@@ -31,15 +31,18 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
     print(np.mean(X, axis=0))
 
     if use_wrappper:
-        h2o4gpu_pca = PCA(n_components=k, gpu_id = gpu_id)
+        h2o4gpu_pca = PCA(n_components=k, gpu_id = gpu_id, whiten=whiten)
     else:
-        h2o4gpu_pca = PCAH2O(n_components=k, gpu_id=gpu_id)
+        h2o4gpu_pca = PCAH2O(n_components=k, gpu_id=gpu_id, whiten=whiten)
 
-    scikit_pca = PCASklearn(n_components=k, svd_solver="arpack")
+    scikit_pca = PCASklearn(n_components=k, svd_solver="arpack", whiten=whiten)
+
+    print("Fitting scikit PCA")
     scikit_pca.fit(X)
+    print("Fitting h2o4gpu PCA")
     h2o4gpu_pca.fit(X)
 
-    print("Mean")
+    print("Column Means")
     print(h2o4gpu_pca.mean_)
     print(scikit_pca.mean_)
     if convert_to_float32:
@@ -85,3 +88,11 @@ def test_pca_error_k2_float(): func(m=1000000, n=10, k=2, convert_to_float32 = T
 def test_pca_error_k2_gpuid_float(): func(m=1000000, n=10, k=2, change_gpu_id=True, convert_to_float32 = True)
 def test_pca_error_k2_wrapper_float(): func(m=1000000, n=10, k=2, use_wrappper=True, convert_to_float32 = True)
 def test_pca_error_k2_gpuid_wrapper_float(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True, convert_to_float32 = True)
+def test_pca_error_k2_whiten(): func(m=1000000, n=10, k=2, whiten=True)
+def test_pca_error_k2_gpuid_whiten(): func(m=1000000, n=10, k=2, change_gpu_id=True, whiten=True)
+def test_pca_error_k2_wrapper_whiten(): func(m=1000000, n=10, k=2, use_wrappper=True, whiten=True)
+def test_pca_error_k2_gpuid_wrapper_whiten(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True, whiten=True)
+def test_pca_error_k2_float_whiten(): func(m=1000000, n=10, k=2, convert_to_float32 = True, whiten=True)
+def test_pca_error_k2_gpuid_float_whiten(): func(m=1000000, n=10, k=2, change_gpu_id=True, convert_to_float32 = True, whiten=True)
+def test_pca_error_k2_wrapper_float_whiten(): func(m=1000000, n=10, k=2, use_wrappper=True, convert_to_float32 = True, whiten=True)
+def test_pca_error_k2_gpuid_wrapper_float_whiten(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True, convert_to_float32 = True, whiten=True)
