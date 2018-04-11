@@ -320,7 +320,7 @@ def f1_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return lib.f1_opt(actual.ravel(), predicted.ravel())
     return lib.f1_opt(actual.ravel(), predicted.ravel(),
-                              sample_weight.ravel())
+                      sample_weight.ravel())
 
 
 def f2_opt(actual, predicted, sample_weight=None):
@@ -345,7 +345,7 @@ def f2_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return lib.f2_opt(actual.ravel(), predicted.ravel())
     return lib.f2_opt(actual.ravel(), predicted.ravel(),
-                              sample_weight.ravel())
+                      sample_weight.ravel())
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -370,7 +370,7 @@ def mcc_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return lib.mcc_opt(actual.ravel(), predicted.ravel())
     return lib.mcc_opt(actual.ravel(), predicted.ravel(),
-                               sample_weight.ravel())
+                       sample_weight.ravel())
 
 
 def acc_opt(actual, predicted, sample_weight=None):
@@ -395,7 +395,7 @@ def acc_opt(actual, predicted, sample_weight=None):
     if sample_weight is None:
         return lib.acc_opt(actual.ravel(), predicted.ravel())
     return lib.acc_opt(actual.ravel(), predicted.ravel(),
-                               sample_weight.ravel())
+                       sample_weight.ravel())
 
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
@@ -423,5 +423,5 @@ def confusion_matrices(actual, predicted, sample_weight=None):
         lib.confusion_matrices(actual.ravel(), predicted.ravel(), res)
     else:
         lib.confusion_matrices(actual.ravel(), predicted.ravel(),
-                                       sample_weight.ravel(), res)
+                               sample_weight.ravel(), res)
     return pd.DataFrame(res[~np.all(res == 0, axis=1)], columns=cm_stats_cols)
