@@ -7,61 +7,120 @@
 namespace pca
 {
 
-/**
- * Conduct PCA on a matrix
- *
- * @param _X
- * @param _Q
- * @param _w
- * @param _U
- * @param _explained_variance
- * @param _explained_variance_ratio
- * @param _param
- */
-void pca(const double* _X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, double* _mean, params _param) {
-	try {
+	/**
+	* Conduct PCA on a matrix
 
-		tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+	 *
+	 * @param _X
+	 * @param _Q
+	 * @param _w
+	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
+	 * @param _param
+	 */
+	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
+		try {
 
-		//Take in X matrix and allocate for X^TX
-		tsvd::Matrix<float>X(_param.X_m, _param.X_n);
-		X.copy(_X);
+			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
 
-		tsvd::Matrix<float>XtX(_param.X_n, _param.X_n);
+			//Take in X matrix and allocate for X^TX
+			tsvd::Matrix<float>X(_param.X_m, _param.X_n);
+			X.copy(_X);
 
-		//create context
-		tsvd::DeviceContext context;
+			tsvd::Matrix<float>XtX(_param.X_n, _param.X_n);
 
-		//Get columnar means
-		tsvd::Matrix<float>XOnes(X.rows(), 1);
-		XOnes.fill(1.0f);
-		tsvd::Matrix<float>XColMean(X.columns(), 1);
-		tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
-		float m = X.rows();
-		multiply(XColMean, 1/m, context);
-		XColMean.copy_to_host(_mean);
+			//create context
+			tsvd::DeviceContext context;
 
-		//Center matrix
-		tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
-		tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
-		tsvd::Matrix<float>XCentered(X.rows(), X.columns());
-		tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
+			//Get columnar means
+			tsvd::Matrix<float>XOnes(X.rows(), 1);
+			XOnes.fill(1.0f);
+			tsvd::Matrix<float>XColMean(X.columns(), 1);
+			tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+			float m = X.rows();
+			multiply(XColMean, 1/m, context);
+			XColMean.copy_to_host(_mean);
 
-        tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
+			//Center matrix
+			tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
+			tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
+			tsvd::Matrix<float>XCentered(X.rows(), X.columns());
+			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
 
-        tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
+			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
 
-        if(_param.whiten) {
-            // TODO whiten
-        }
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
 
-	} catch (const std::exception &e) {
-	    std::cerr << "pca error: " << e.what() << "\n";
-	} catch (std::string e) {
-	    std::cerr << "pca error: " << e << "\n";
-	} catch (...) {
-		std::cerr << "pca error\n";
+			if(_param.whiten) {
+				// TODO whiten
+			}
+
+		} catch (const std::exception &e) {
+			std::cerr << "pca error: " << e.what() << "\n";
+		} catch (std::string e) {
+			std::cerr << "pca error: " << e << "\n";
+		} catch (...) {
+			std::cerr << "pca error\n";
+		}
 	}
-}
+
+	/**
+	 * Conduct PCA on a matrix
+
+	 *
+	 * @param _X
+	 * @param _Q
+	 * @param _w
+	 * @param _U
+	 * @param _explained_variance
+	 * @param _explained_variance_ratio
+	 * @param _param
+	 */
+	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
+		try {
+
+			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+
+			//Take in X matrix and allocate for X^TX
+			tsvd::Matrix<double>X(_param.X_m, _param.X_n);
+			X.copy(_X);
+
+			tsvd::Matrix<double>XtX(_param.X_n, _param.X_n);
+
+			//create context
+			tsvd::DeviceContext context;
+
+			//Get columnar means
+			tsvd::Matrix<double>XOnes(X.rows(), 1);
+			XOnes.fill(1.0f);
+			tsvd::Matrix<double>XColMean(X.columns(), 1);
+			tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+			float m = X.rows();
+			multiply(XColMean, 1/m, context);
+			XColMean.copy_to_host(_mean);
+
+			//Center matrix
+			tsvd::Matrix<double>OnesXMeanTranspose(X.rows(), X.columns());
+			tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
+			tsvd::Matrix<double>XCentered(X.rows(), X.columns());
+			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
+
+			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
+
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
+
+			if(_param.whiten) {
+				// TODO whiten
+			}
+
+		} catch (const std::exception &e) {
+			std::cerr << "pca error: " << e.what() << "\n";
+		} catch (std::string e) {
+			std::cerr << "pca error: " << e << "\n";
+		} catch (...) {
+			std::cerr << "pca error\n";
+		}
+	}
 
 }
