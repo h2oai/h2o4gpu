@@ -10,10 +10,13 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False):
+def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_to_float32=False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
+
+    if convert_to_float32:
+        X = X.astype(np.float32)
 
     gpu_id = 0
 
@@ -39,7 +42,10 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False):
     print("Mean")
     print(h2o4gpu_pca.mean_)
     print(scikit_pca.mean_)
-    assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_)
+    if convert_to_float32:
+        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_, 1e-4)
+    else:
+        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_)
 
     print("Noise Variance")
     print(h2o4gpu_pca.noise_variance_)
@@ -75,3 +81,7 @@ def test_pca_error_k2(): func(m=1000000, n=10, k=2)
 def test_pca_error_k2_gpuid(): func(m=1000000, n=10, k=2, change_gpu_id=True)
 def test_pca_error_k2_wrapper(): func(m=1000000, n=10, k=2, use_wrappper=True)
 def test_pca_error_k2_gpuid_wrapper(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True)
+def test_pca_error_k2_float(): func(m=1000000, n=10, k=2, convert_to_float32 = True)
+def test_pca_error_k2_gpuid_float(): func(m=1000000, n=10, k=2, change_gpu_id=True, convert_to_float32 = True)
+def test_pca_error_k2_wrapper_float(): func(m=1000000, n=10, k=2, use_wrappper=True, convert_to_float32 = True)
+def test_pca_error_k2_gpuid_wrapper_float(): func(m=1000000, n=10, k=2, change_gpu_id=True, use_wrappper=True, convert_to_float32 = True)

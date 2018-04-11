@@ -402,25 +402,6 @@ namespace tsvd
 		truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
 	}
 
-	/**
-	 * Conduct truncated SVD on a matrix with double type
-	 *
-	 * @param _X
-	 * @param _Q
-	 * @param _w
-	 * @param _U
-	 * @param _explained_variance
-	 * @param _explained_variance_ratio
-	 * @param _param
-	 */
-	void truncated_svd(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, params _param)
-	{
-		safe_cuda(cudaSetDevice(_param.gpu_id));
-		Matrix<float>X(_param.X_m, _param.X_n);
-		X.copy(_X);
-		truncated_svd_matrix(X, _Q, _w, _U, _explained_variance, _explained_variance_ratio, _param);
-	}
-
 	template<typename T, typename S>
 	tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param)
 	{
@@ -454,11 +435,6 @@ namespace tsvd
 		  }
 	}
 }
-
-//Orignal impl
-template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
-template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
-template void tsvd::power_tsvd<float>(Matrix<float> &X, double* _Q, double* _w, double* _U, double* _explained_variance, double* _explained_variance_ratio, params _param);
 
 //Impl for floats and doubles
 template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _explained_variance, float* _explained_variance_ratio, params _param);
