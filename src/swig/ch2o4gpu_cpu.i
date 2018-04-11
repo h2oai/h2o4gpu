@@ -14,3 +14,4 @@
 %include "solver/elastic_net.i"
 %include "solver/pogs.i"
 %include "matrix/matrix_dense.i"
+%include "metrics.i"

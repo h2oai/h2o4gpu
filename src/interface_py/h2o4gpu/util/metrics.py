@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
+import pandas as pd
 
 def ll(actual, predicted):
     """
@@ -314,11 +315,12 @@ def f1_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal F1-Score
     """
-    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel())
-    return h2o_metrics.f1_opt(actual.ravel(), predicted.ravel(),
-                              sample_weight.ravel())
+        return lib.f1_opt(actual.ravel(), predicted.ravel())
+    return lib.f1_opt(actual.ravel(), predicted.ravel(),
+                      sample_weight.ravel())
 
 
 def f2_opt(actual, predicted, sample_weight=None):
@@ -338,11 +340,12 @@ def f2_opt(actual, predicted, sample_weight=None):
         :returns double
                  The optimal F2-Score
         """
-    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel())
-    return h2o_metrics.f2_opt(actual.ravel(), predicted.ravel(),
-                              sample_weight.ravel())
+        return lib.f2_opt(actual.ravel(), predicted.ravel())
+    return lib.f2_opt(actual.ravel(), predicted.ravel(),
+                      sample_weight.ravel())
 
 
 def mcc_opt(actual, predicted, sample_weight=None):
@@ -362,11 +365,12 @@ def mcc_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal MCC
     """
-    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel())
-    return h2o_metrics.mcc_opt(actual.ravel(), predicted.ravel(),
-                               sample_weight.ravel())
+        return lib.mcc_opt(actual.ravel(), predicted.ravel())
+    return lib.mcc_opt(actual.ravel(), predicted.ravel(),
+                       sample_weight.ravel())
 
 
 def acc_opt(actual, predicted, sample_weight=None):
@@ -386,11 +390,12 @@ def acc_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal Accuracy
     """
-    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel())
-    return h2o_metrics.acc_opt(actual.ravel(), predicted.ravel(),
-                               sample_weight.ravel())
+        return lib.acc_opt(actual.ravel(), predicted.ravel())
+    return lib.acc_opt(actual.ravel(), predicted.ravel(),
+                       sample_weight.ravel())
 
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
@@ -412,9 +417,11 @@ def confusion_matrices(actual, predicted, sample_weight=None):
     cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1']
 
     res = np.zeros((actual.shape[0], len(cm_stats_cols)))
-    import h2o4gpu.libs.ch2o4gpu_cpu as h2o_metrics
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(), res)
+        lib.confusion_matrices(actual.ravel(), predicted.ravel(), res)
     else:
-        h2o_metrics.confusion_matrices(actual.ravel(), predicted.ravel(),
-                                       sample_weight.ravel(), res)
+        lib.confusion_matrices(actual.ravel(), predicted.ravel(),
+                               sample_weight.ravel(), res)
+    return pd.DataFrame(res[~np.all(res == 0, axis=1)], columns=cm_stats_cols)
