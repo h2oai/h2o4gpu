@@ -43,8 +43,7 @@ FILE(GLOB_RECURSE COMMON_SOURCES
         src/common/*.cpp
         src/common/*.h
         src/interface_c/*.cpp
-        src/interface_c/*.h
-        )
+        src/interface_c/*.h)
 
 INCLUDE_DIRECTORIES(
         src/include
@@ -59,13 +58,43 @@ TARGET_INCLUDE_DIRECTORIES (commonh2o4gpu PUBLIC
         )
 #============= BUILD COMMON CPU/GPU CODE
 
+#============= DAAL
+EXECUTE_PROCESS(COMMAND ldconfig -p | grep daal_core
+                OUTPUT_VARIABLE DAAL
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if(${DAAL})
+        MESSAGE(STATUS "Building with DAAL support.")
+
+        FILE(GLOB_RECURSE DAAL_SOURCES
+                src/daal/*.cpp
+                src/daal/*.h)
+
+        ADD_LIBRARY(daalh2o4gpu OBJECT ${DAAL_SOURCES})
+
+        TARGET_INCLUDE_DIRECTORIES (daalh2o4gpu PUBLIC
+                $(HOME)/daal/include
+                )
+
+        TARGET_LINK_LIBRARIES(daalh2o4gpu
+                daal_core
+                daal_sequential
+                pthread
+                m)
+
+        SET(daal_obj $<TARGET_OBJECTS:daalh2o4gpu>)
+else()
+        MESSAGE(STATUS "Building without DAAL support. Please install DAAL first.")
+endif()
+#============= DAAL
+
 #============= BUILD CPU LIBRARY
 FILE(GLOB_RECURSE CPU_SOURCES
         src/cpu/*.cpp
         src/cpu/*.h
         )
 
-ADD_LIBRARY(cpuh2o4gpu STATIC ${CPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu>)
+ADD_LIBRARY(cpuh2o4gpu STATIC ${CPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> ${daal_obj})
 TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 #============= BUILD CPU LIBRARY
 
