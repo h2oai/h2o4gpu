@@ -4,8 +4,8 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import numpy as np
 from math import sqrt
+import numpy as np
 from ..solvers.utils import _setter
 from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD
 from ..utils.extmath import svd_flip
