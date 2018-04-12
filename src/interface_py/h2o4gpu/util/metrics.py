@@ -291,11 +291,11 @@ def f05_opt(actual, predicted, sample_weight=None):
     :returns double
              The optimal F0.5-Score
     """
-    import h2o4gpu.util.daicx as daicx
+    from ..libs.lib_utils import CPUlib
+    lib = CPUlib.get()
     if sample_weight is None:
-        return daicx.f05_opt(actual.ravel(), predicted.ravel())
-    return daicx.f05_opt(actual.ravel(), predicted.ravel(),
-                         sample_weight.ravel())
+        return lib.f05_opt(actual.ravel(), predicted.ravel())
+    return lib.f05_opt(actual.ravel(), predicted.ravel(), sample_weight.ravel())
 
 
 def f1_opt(actual, predicted, sample_weight=None):
