@@ -37,7 +37,6 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
         h2o4gpu_pca = PCAH2O(n_components=k, gpu_id=gpu_id, whiten=whiten)
 
     scikit_pca = PCASklearn(n_components=k, svd_solver="arpack", whiten=whiten)
-    print("White is " + str(scikit_pca.whiten))
 
     print("Fitting scikit PCA")
     scikit_pca.fit(X)
