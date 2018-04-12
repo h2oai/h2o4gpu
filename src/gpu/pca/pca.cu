@@ -50,11 +50,7 @@ namespace pca
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
 
-			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
-
-			if(_param.whiten) {
-				// TODO whiten
-			}
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param, _param.whiten);
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";
@@ -108,11 +104,7 @@ namespace pca
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
 
-			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
-
-			if(_param.whiten) {
-				// TODO whiten
-			}
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param, _param.whiten);
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";

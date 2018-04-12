@@ -4,7 +4,6 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from math import sqrt
 import numpy as np
 from ..solvers.utils import _setter
 from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD
@@ -119,8 +118,6 @@ class PCAH2O(TruncatedSVDH2O):
         self._X = X
 
         n = X.shape[0]
-        if self.whiten:
-            self._Q = (self._Q * sqrt(n)) / self._w[:, np.newaxis]
         # To match sci-kit #TODO Port to cuda?
         self.explained_variance = self.singular_values_**2 / (n - 1)
         total_var = np.var(X, ddof=1, axis=0)

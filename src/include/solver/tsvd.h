@@ -40,12 +40,12 @@ tsvd_export void truncated_svd_float(const float *_X, float *_Q, float *_w, floa
 tsvd_export void truncated_svd_double(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, params _param);
 
 template<typename T, typename S>
-void cusolver_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param);
+void cusolver_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param, bool _whiten);
 
 template<typename T, typename S>
-void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param);
+void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param, bool _whiten);
 
 template<typename T, typename S>
-tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param);
+tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _explained_variance, S _explained_variance_ratio, params _param, bool _whiten);
 
 }
