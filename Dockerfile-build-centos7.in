@@ -40,8 +40,6 @@ COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-g
 ENV PATH=/opt/h2oai/gcc_wrapper:$PATH
 RUN ln /usr/bin/ar $LLVM4/bin/ARCH_SUBST-conda_cos6-linux-gnu-ar
 
-RUN yum install -y python-devel
-
 RUN yum install -y atlas-devel blas-devel && \
   ln /usr/lib64/libgfortran.so.3 /usr/lib64/libgfortran.so && \
   wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz && \
@@ -83,6 +81,13 @@ RUN \
     make install && \
     cd $HOME && \
     rm -rf swig-3*
+
+# Symlinks for CMake/SWIG - it does not recognize Miniconda paths otherwise
+RUN \
+    mkdir -p /usr/lib64/ && \
+    ln -s /opt/h2oai/dai/python/lib/*python* /usr/lib64/ && \
+    mkdir -p /usr/include/python3.6m && \
+    ln -s /opt/h2oai/dai/python/include/python3.6m/* /usr/include/python3.6m
 
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
