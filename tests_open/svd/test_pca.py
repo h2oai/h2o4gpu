@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import logging
+from math import sqrt
 from h2o4gpu.solvers.pca import PCA
 from h2o4gpu.solvers.pca import PCAH2O
 from h2o4gpu.decomposition import PCASklearn
@@ -71,6 +72,10 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
     assert np.allclose(h2o4gpu_pca.singular_values_, scikit_pca.singular_values_)
 
     print("Components")
+    if whiten:
+        #Need to manually calculate as Scikit does not store whiten components. See link below:
+        #https://github.com/scikit-learn/scikit-learn/blob/a24c8b46/sklearn/decomposition/pca.py#L567
+        scikit_pca.components_ = (scikit_pca.components_ * sqrt(X.shape[0])) / scikit_pca.singular_values_[:, np.newaxis]
     print(h2o4gpu_pca.components_)
     print(scikit_pca.components_)
     assert np.allclose(h2o4gpu_pca.components_, scikit_pca.components_, .1)

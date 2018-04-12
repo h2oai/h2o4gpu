@@ -120,7 +120,7 @@ class PCAH2O(TruncatedSVDH2O):
 
         n = X.shape[0]
         if self.whiten:
-            self._U = self._Q / self._w[:, np.newaxis] * sqrt(n)
+            self._Q = (self._Q * sqrt(n)) / self._w[:, np.newaxis]
         # To match sci-kit #TODO Port to cuda?
         self.explained_variance = self.singular_values_**2 / (n - 1)
         total_var = np.var(X, ddof=1, axis=0)
