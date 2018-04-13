@@ -13,7 +13,7 @@ INCLUDE(${SWIG_USE_FILE})
 
 #============= OPTIONS & SETTINGS
 OPTION(USE_CUDA  "Build with GPU acceleration" ON)
-OPTION(RELEASE  "Release build" OFF)
+OPTION(DEV_BUILD  "Dev build" OFF)
 
 # Compiler flags
 SET(CMAKE_CXX_STANDARD 11)
@@ -89,29 +89,32 @@ SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
 #============= CPU SWIG
 
 if(USE_CUDA)
-        #============= BUILD GPU LIBRARY
-        if(RELEASE)
-                SET(GPU_COMPUTE_VER 35;50;52;60;61 CACHE STRING
-                        "Space separated list of compute versions to be built against")
-        else()
-                SET(GPU_COMPUTE_VER 61 CACHE STRING
-                        "Space separated list of compute versions to be built against")
-        endif()
-
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
 
+        #============= BUILD GPU LIBRARY
         ADD_DEFINITIONS(
                 -DCUDA_MAJOR=${CUDA_VERSION_MAJOR}
                 -DHAVECUDA
         )
+
+        if(DEV_BUILD)
+                MESSAGE(STATUS "Building DEVELOPER compute capability version.")
+                SET(GPU_COMPUTE_VER 61 CACHE STRING
+                        "Space separated list of compute versions to be built against")
+        else()
+                MESSAGE(STATUS "Building RELEASE compute capability version.")
+                SET(GPU_COMPUTE_VER 35;50;52;60;61 CACHE STRING
+                        "Space separated list of compute versions to be built against")
+        endif()
+
+        if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
+                MESSAGE(STATUS "CUDA 9.0 detected, adding Volta compute capability (7.0).")
+                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
+        endif()
+
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
         SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo;")
-
-        if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND RELEASE)
-                MESSAGE("CUDA 9.0 detected, adding Volta compute capability (7.0).")
-                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
-        endif()
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu
