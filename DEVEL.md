@@ -119,6 +119,10 @@ To build the code in debug mode set `CMAKE_BUILD_TYPE=Debug` when building e.g. 
 
 To enable `nvToolsExt` set the `USENVTX` variable e.g. `make fullinstall USENVTX=ON`
 
+##### DEV_BUILD
+
+To expedite the building process in dev setup you can set `DEV_BUILD=ON` e.g. `make fullinstall DEV_BUILD=ON`. This will build the binary with only single CUDA compute capability (currently 6.1).
+
 ## Testing
 
 - test python package

@@ -121,7 +121,7 @@ update_submodule:
 cpp:
 	(mkdir -p build; \
 	cd build; \
-	cmake ../; \
+	cmake -DDEV_BUILD=${DEV_BUILD} ../; \
 	make -j; \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)
