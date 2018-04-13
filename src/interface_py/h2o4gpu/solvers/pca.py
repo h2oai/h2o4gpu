@@ -102,11 +102,13 @@ class PCAH2O(TruncatedSVDH2O):
         param.X_m = X.shape[0]
         param.X_n = X.shape[1]
         param.k = self.n_components
-        param.whiten = self.whiten
         param.algorithm = self.algorithm
+        param.n_iter = self.n_iter
+        param.random_state = self.random_state
+        param.tol = self.tol
         param.verbose = 1 if self.verbose else 0
         param.gpu_id = self.gpu_id
-
+        param.whiten = self.whiten
 
         if self.double_precision == 1:
             lib.pca_double(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
