@@ -160,7 +160,6 @@ namespace tsvd
 				d_u[idx] = 0.0;
 			}
 		} );
-
 	}
 
 	/**
@@ -178,6 +177,20 @@ namespace tsvd
 		transpose(Q, Qt, context); //Needed for calculate_u()
 		Matrix<T>QtTrunc(_param.k, Qt.columns());
 		row_reverse_trunc_q(Qt, QtTrunc, context);
+
+		if (_param.whiten) {
+			auto d_q = QtTrunc.data();
+			auto x_sqrt_row = std::sqrt(X.rows());
+			auto d_sigma = w.data();
+			auto column_size = QtTrunc.rows();
+			auto counting = thrust::make_counting_iterator <int>(0);
+			thrust::for_each(counting, counting+QtTrunc.size(), [=]__device__(int idx){
+				int column = idx/column_size;
+				T sigma = d_sigma[column];
+				T q = d_q[idx];
+				d_q[idx] = (q * x_sqrt_row)/std::sqrt(sigma);
+			} );
+		}
 		QtTrunc.copy_to_host(_Q); //Send to host
 
 		//Obtain square root of eigenvalues, which are singular values

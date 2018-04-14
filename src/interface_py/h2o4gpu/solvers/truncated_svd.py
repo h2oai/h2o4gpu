@@ -124,6 +124,7 @@ class TruncatedSVDH2O(object):
         param.random_state = self.random_state
         param.verbose = self.verbose
         param.gpu_id = self.gpu_id
+        param.whiten = False #Whitening is not exposed for tsvd yet
 
         if param.tol < 0.0:
             raise ValueError("The `tol` parameter must be >= 0.0 "

@@ -12,10 +12,13 @@ typedef struct params {
   int X_n;
   int X_m;
   int k;
-  bool whiten;
   const char *algorithm;
+  int n_iter;
+  int random_state;
+  float tol;
   int verbose;
   int gpu_id;
+  bool whiten;
 } params;
 
 /**

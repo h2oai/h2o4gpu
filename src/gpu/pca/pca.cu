@@ -48,13 +48,9 @@ namespace pca
 			tsvd::Matrix<float>XCentered(X.rows(), X.columns());
 			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
 
-			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
+			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
 			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
-
-			if(_param.whiten) {
-				// TODO whiten
-			}
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";
@@ -106,13 +102,9 @@ namespace pca
 			tsvd::Matrix<double>XCentered(X.rows(), X.columns());
 			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
 
-			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.verbose, _param.gpu_id};
+			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
 			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
-
-			if(_param.whiten) {
-				// TODO whiten
-			}
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";

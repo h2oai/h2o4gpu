@@ -23,6 +23,7 @@ typedef struct params {
   float tol;
   int verbose;
   int gpu_id;
+  bool whiten;
 } params;
 
 /**
