@@ -7,5 +7,5 @@ if [[ $? != 0 ]]; then
   echo "R is not installed. Skipping R tests..."
 else
   echo "R is installed. Running R tests..."
-  R -e 'pkgs <- c("devtools", "magrittr", "roxygen2", "reticulate", "testthat"); if (isTRUE(all(pkgs %in% row.names(installed.packages())))) devtools::test("src/interface_r")'
+  R -e 'pkgs <- c("devtools", "magrittr", "roxygen2", "reticulate", "testthat"); if (isTRUE(all(pkgs %in% row.names(installed.packages())))) devtools::check("src/interface_r")'
 fi
