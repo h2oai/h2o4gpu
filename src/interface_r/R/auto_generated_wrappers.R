@@ -1,8 +1,10 @@
 # -------------------------------------------------------------------------------
 #             *** WARNING: DO NOT MODIFY THIS FILE ***
 #              
-# Instead, modify scripts/gen_wrappers.R which automatically generates this file
-# ------------------------------------------------------------------------------- 
+# Instead, modify scripts/gen_wrappers.R which automatically generates this file.
+#
+# reticulate version: 1.6.0
+# -------------------------------------------------------------------------------
 
 #' @description Random Forest Classifier
 #' @title Random Forest Classifier
