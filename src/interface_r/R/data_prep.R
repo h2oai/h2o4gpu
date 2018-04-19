@@ -8,12 +8,12 @@
 #'@export
 prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_csv=FALSE, save_csv_path=NULL){
   
-  if (!is.null(save_as_csv)) {
+  if (save_as_csv) {
     if (!is.null(save_csv_path)) {
-      print(paste0("CSV will be saved to ", save_csv_path))
+      print(paste0("CSV will be saved to -> ", save_csv_path))
     } else {
       save_csv_path <- getwd()
-      print(paste0("CSV will be saved to current working directory -> ",save_csv_path, " since `save_csv_path` was not specified"))
+      print(paste0("CSV will be saved to current working directory -> ", save_csv_path, " since `save_csv_path` was not specified"))
     }
   }
   
@@ -39,21 +39,18 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
     stop("Response is not specified")
   }
   
-  print("Number of columns:")
-  print(ncol(DT))
+  print(paste0("Number of columns: ", ncol(DT)))
   
-  print("Number of rows:")
-  print(nrow(DT))
-  
-  print(is.data.table(DT))
+  print(paste0("Number of rows: ", nrow(DT)))
+
   ## Label-encoding of categoricals (those cols with fewer than 1k levels, but not constant)
-  print("Label encoding")
+  print("Label encoding dataset...")
   feature.names <- setdiff(names(DT), response)
   for (ff in feature.names) {
     tt <- uniqueN(DT[[ff]])
     if (tt < 1000 && tt > 1) {
       DT[, (ff):=factor(DT[[ff]])]  
-      print(paste0(ff,"has ",tt," levels"))
+      print(paste0(ff," has ",tt," levels"))
     }
     if (tt < 2) {
       print(paste0("Dropping constant column: ", ff))
@@ -61,8 +58,7 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
     }
   }
   
-  print("Number of columns after label encoding:")
-  print(ncol(DT))
+  print(paste0("Number of columns after label encoding: ", ncol(DT)))
   
   numCols <- names(DT)[which(sapply(DT, is.numeric))]
   catCols <- names(DT)[which(sapply(DT, is.factor))]
@@ -70,7 +66,7 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
   print(paste0("Number of categorical columns: ", length(catCols)))
   
   ## impute missing values, drop near-const cols and standardize the data
-  print("Imputing missing values using mean")
+  print("Imputing missing values using mean...")
   cols <- setdiff(numCols,c(response))
   for (c in cols) {
     DT[!is.finite(DT[[c]]), (c):=mean(DT[[c]], na.rm=TRUE)]
@@ -79,26 +75,27 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
     else
       DT[,(c):=scale(as.numeric(DT[[c]]))]
   }
-  print("Number of columns after mean imputation:")
-  print(ncol(DT))
+  print(paste0("Number of columns after mean imputation: ", ncol(DT)))
   
   ## one-hot encode the categoricals
-  print("One hot encoding data table categoricals only")
+  print("One hot encoding data table categoricals only...")
   DT2 <- as.data.table(model.matrix(DT[[response]]~., data = DT[,c(catCols), with=FALSE], sparse=FALSE))[,-1]
-  print("Number of columns that have been one hot encoded:")
-  print(ncol(DT2))
+  print(paste0("Number of columns that have been one hot encoded: ", ncol(DT2)))
   
   ## add back the numeric columns and assign back to DT
   print("Add back numeric columns and assign to data table")
   DT <- DT2[,(numCols):=DT[,numCols,with=FALSE]]
   
-  print("Final dimensions of data table after pre processing:")
-  print(dim(DT))
+  print(paste0("Final dimensions of data table after pre processing: ", nrow(DT), " by ", ncol(DT)))
   
   ## check validity of data
-  all(!is.na(DT))
-  all(sapply(DT, is.numeric))
-  all(sapply(DT, function(x) all(is.finite(x))))
+  print(paste0("Number of NA's in final data table after pre processing: ", sum(sapply(DT, is.na))))
+  print(paste0("Number of numeric's in final data table after pre processing ", sum(sapply(DT, is.numeric))))
+  if (all(sapply(DT, function(x) all(is.finite(x))))) {
+    print("All entries in final data table after pre processing are finite")
+  } else {
+    print("Some entries are not finite in final data table after pre processing. Please inspect final data table")
+  }
   
   ## save preprocessed file as CSV
   if (save_as_csv) {
