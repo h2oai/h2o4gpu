@@ -126,7 +126,7 @@ RHEL_OS    := $(shell cat /etc/redhat-release)
 cpp:
 	(mkdir -p build; \
 	cd build; \
-	cmake -DDEV_BUILD=${DEV_BUILD} -DNVML_LIB=${NVML_LIB} ../; \
+	cmake -DDEV_BUILD=${DEV_BUILD} -DNVML_LIB=$(NVML_LIB)/libnvidia-ml.so ../; \
 	make -j; \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)

@@ -39,6 +39,11 @@ XGBOOST_VERSION = 0.6
 INSTALL_R = 1
 R_VERSION = 3.1.0
 
+# NVML stuff
+ARCH       := $(shell getconf LONG_BIT)
+OS         := $(shell cat /etc/issue)
+RHEL_OS    := $(shell cat /etc/redhat-release)
+
 # Gets Driver Branch
 DRIVER_BRANCH := $(shell nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.')
 
@@ -99,3 +104,8 @@ endif
 ifneq (${ARCH},$(filter ${ARCH},32 64))
 	$(error Unknown architecture!)
 endif
+
+$(warning Compiling with ARCH=$(ARCH))
+$(warning Compiling with OS=$(OS))
+$(warning Compiling with RHEL_OS=$(RHEL_OS))
+$(warning Compiling with NVML_LIB=$(NVML_LIB))
