@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+#include <assert.h>
+#include "nvml.h"
+
 #include "include/cuda_utils2.h"
 
 int cudaresetdevice(int wDev, int nDev) {
@@ -41,3 +44,27 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
   return (0);
 }
 
+
+void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage) {
+
+  nvmlReturn_t rv;
+  rv = nvmlInit();
+  assert(rv == NVML_SUCCESS);
+  //unsigned int n_gpus;
+  rv = nvmlDeviceGetCount(n_gpus);
+  assert(rv == NVML_SUCCESS);
+
+  //  int gpu_percent_usage[n_gpus];
+
+  for (int i = 0; i < *n_gpus; ++i) {
+    nvmlDevice_t device;
+    nvmlReturn_t rv;
+    rv = nvmlDeviceGetHandleByIndex(i, &device);
+    assert(rv == NVML_SUCCESS);
+    nvmlUtilization_t utilization;
+    rv = nvmlDeviceGetUtilizationRates(device, &utilization);
+    assert(rv == NVML_SUCCESS);
+    gpu_percent_usage[i] = utilization.gpu;
+  }
+
+}

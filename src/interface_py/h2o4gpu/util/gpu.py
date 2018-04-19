@@ -131,6 +131,31 @@ def get_gpu_info_subprocess(return_usage=False):
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
 
+def get_gpu_info_c(return_usage=False):
+    """Gets the GPU info from C call
+
+    :return:
+        Total number of GPUs and total available memory
+         (and  optionally GPU usage)
+    """
+    total_gpus = 0
+    total_mem = 0
+    gpu_type = 0
+    usage = []
+
+    from ..libs.lib_utils import GPUlib
+    lib = GPUlib().get()
+
+    try:
+        total_gpus, usage = \
+            lib.get_gpu_info_c()
+    except:
+        pass
+
+    if return_usage:
+        return (total_gpus, total_mem, gpu_type, usage)
+    return (total_gpus, total_mem, gpu_type)
+
 
 def cudaresetdevice(gpu_id, n_gpus):
     """
