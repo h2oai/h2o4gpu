@@ -7,7 +7,7 @@
 prep_data <- function(data_table, response, save_csv_path = NULL){
   
   if (!is.data.table(data-table)) {
-    stop ("Input data should of type data.table")
+    stop ("Input data should be of type data.table")
   }
   
   if (is.character(response)) {
