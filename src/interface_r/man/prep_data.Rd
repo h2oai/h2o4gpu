@@ -4,17 +4,12 @@
 \alias{prep_data}
 \title{Prep data for h2o4gpu algorithms}
 \usage{
-prep_data(data_table = NULL, data_path = NULL, response = NULL,
-  save_as_csv = FALSE, save_csv_path = NULL)
+prep_data(data_table, response, save_csv_path = FALSE)
 }
 \arguments{
 \item{data_table}{\code{data.table} object containing data that needs to be preprocessed for h2o4gpu}
 
-\item{data_path}{Path to data that needs to be preprocessed for h2o4gpu. Only needed if \code{data_table} parameter is not provided/available}
-
 \item{response}{Response column as a string or index}
-
-\item{save_as_csv}{Whether to save processed data as a csv}
 
 \item{save_csv_path}{Path to save processed data as a csv}
 }
