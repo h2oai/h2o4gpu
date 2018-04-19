@@ -4,7 +4,8 @@
 \alias{prep_data}
 \title{Prep data for h2o4gpu algorithms}
 \usage{
-prep_data(data_table, response, save_csv_path = FALSE)
+prep_data(data_table, response, save_csv_path = NULL,
+  max_label_encoding_levels = 1000)
 }
 \arguments{
 \item{data_table}{\code{data.table} object containing data that needs to be preprocessed for h2o4gpu}
@@ -12,6 +13,8 @@ prep_data(data_table, response, save_csv_path = FALSE)
 \item{response}{Response column as a string or index}
 
 \item{save_csv_path}{Path to save processed data as a csv}
+
+\item{max_label_encoding_levels}{The maximum number of uniques required in a column to consider it a categorical variable. Default is 1000}
 }
 \description{
 Prep data for h2o4gpu algorithms

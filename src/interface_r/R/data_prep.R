@@ -3,10 +3,11 @@
 #'@param data_table `data.table` object containing data that needs to be preprocessed for h2o4gpu
 #'@param response Response column as a string or index
 #'@param save_csv_path Path to save processed data as a csv
+#'@param max_label_encoding_levels The maximum number of uniques required in a column to consider it a categorical variable. Default is 1000
 #'@export
-prep_data <- function(data_table, response, save_csv_path = NULL){
+prep_data <- function(data_table, response, save_csv_path = NULL, max_label_encoding_levels = 1000){
   
-  if (!is.data.table(data-table)) {
+  if (!is.data.table(data_table)) {
     stop ("Input data should be of type data.table")
   }
   
@@ -20,12 +21,12 @@ prep_data <- function(data_table, response, save_csv_path = NULL){
   
   print(paste0("Number of rows: ", nrow(data_table)))
 
-  ## Label-encoding of categoricals (those cols with fewer than 1k levels, but not constant)
+  ## Label-encoding of categoricals (those cols with fewer than `label_encoding_levels` levels, but not constant)
   print("Label encoding dataset...")
   feature.names <- setdiff(names(data_table), response)
   for (ff in feature.names) {
     tt <- uniqueN(data_table[[ff]])
-    if (tt < 1000 && tt > 1) {
+    if (tt <= max_label_encoding_levels && tt > 1) {
       data_table[, (ff):=factor(data_table[[ff]])]  
       print(paste0(ff," has ",tt," levels"))
     }
