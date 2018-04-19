@@ -4,7 +4,6 @@
 #'@param response Response column as a string or index
 #'@param save_csv_path Path to save processed data as a csv
 #'@param max_label_encoding_levels The maximum number of uniques required in a column to consider it a categorical variable. Default is 1000
-#'@export
 prep_data <- function(data_table, response, save_csv_path = NULL, max_label_encoding_levels = 1000){
   
   if (!is.data.table(data_table)) {
