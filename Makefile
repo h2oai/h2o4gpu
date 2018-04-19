@@ -118,10 +118,15 @@ default: fullinstall
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
+
+ARCH       := $(shell getconf LONG_BIT)
+OS         := $(shell cat /etc/issue)
+RHEL_OS    := $(shell cat /etc/redhat-release)
+
 cpp:
 	(mkdir -p build; \
 	cd build; \
-	cmake -DDEV_BUILD=${DEV_BUILD} ../; \
+	cmake -DDEV_BUILD=${DEV_BUILD} -DNVML_LIB=${NVML_LIB} ../; \
 	make -j; \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)

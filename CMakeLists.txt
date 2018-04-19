@@ -90,18 +90,18 @@ SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
 
 if(USE_CUDA)
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
-        FIND_PACKAGE(NVML)
+#        FIND_PACKAGE(NVML)
 
 
-        if(NVML_FOUND)
-            include_directories(${NVML_INCLUDE_DIR})
-            add_definitions(-DUSE_NVML)
-        endif(NVML_FOUND)
+#        if(NVML_FOUND)
+#            include_directories(${NVML_INCLUDE_DIR})
+#            add_definitions(-DUSE_NVML)
+#        endif(NVML_FOUND)
 
 
-        if(NVML_FOUND)
-            target_link_libraries(nvml_test ${NVML_LIBRARY})
-        endif(NVML_FOUND)
+#        if(NVML_FOUND)
+#            target_link_libraries(nvml_test ${NVML_LIBRARY})
+#       endif(NVML_FOUND)
 
         #============= BUILD GPU LIBRARY
         ADD_DEFINITIONS(
@@ -147,7 +147,8 @@ if(USE_CUDA)
                 ${CUDA_cusolver_LIBRARY}
                 ${CUDA_cusparse_LIBRARY}
                 ${BLAS_LIBRARIES}
-                ${NVTX_LIBRARY})
+                ${NVTX_LIBRARY}
+                ${NVML_LIB})
         TARGET_INCLUDE_DIRECTORIES (gpuh2o4gpu PUBLIC
                 src/gpu/include
                 )
