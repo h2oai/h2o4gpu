@@ -1,0 +1,26 @@
+template:
+  params:
+    bootswatch: flatly
+
+navbar:
+  title: "h2o4gpu"
+  type: inverse
+  left:
+    - text: "Tutorials"
+      menu:
+      - text: "Getting started - Machine Learning with GPUs"
+        href: articles/getting_started.html
+    - text: "News"
+      href: news/index.html
+    - text: "API Reference"
+      href: reference/index.html
+  right:
+   - icon: fa-github
+     href: https://github.com/h2oai/h2o4gpu-r
+
+reference:
+
+  - title: "Reference"
+    contents:
+      - h2o4gpu.kmeans
+      - predict.h2o4gpu_model
