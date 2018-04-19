@@ -4,14 +4,17 @@
 \alias{prep_data}
 \title{Prep data for h2o4gpu}
 \usage{
-prep_data(data_path = "", response = "", output_csv_name = "data.csv")
+prep_data(data_path = "", response = "", save_as_csv,
+  output_csv_name = "data.csv")
 }
 \arguments{
-\item{data_path}{Path to data}
+\item{data_path}{Path to data that needs to be preprocessed for h2o4gpu}
 
 \item{response}{Response column as a string}
 
-\item{output_csv_name}{Name of save csv file}
+\item{output_csv_name}{Name of saved csv file}
+
+\item{save_as_cv}{Whether to save processed data as csv}
 }
 \description{
 Prep data for h2o4gpu
