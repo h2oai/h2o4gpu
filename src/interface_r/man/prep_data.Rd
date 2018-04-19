@@ -2,20 +2,22 @@
 % Please edit documentation in R/data_prep.R
 \name{prep_data}
 \alias{prep_data}
-\title{Prep data for h2o4gpu}
+\title{Prep data for h2o4gpu algorithms}
 \usage{
-prep_data(data_path = "", response = "", save_as_csv,
-  output_csv_name = "data.csv")
+prep_data(data_table = NULL, data_path = NULL, response = NULL,
+  save_as_csv = FALSE, save_csv_path = NULL)
 }
 \arguments{
-\item{data_path}{Path to data that needs to be preprocessed for h2o4gpu}
+\item{data_table}{\code{data.table} object containing data that needs to be preprocessed for h2o4gpu}
 
-\item{response}{Response column as a string}
+\item{data_path}{Path to data that needs to be preprocessed for h2o4gpu. Only needed if \code{data_table} parameter is not provided/available}
 
-\item{output_csv_name}{Name of saved csv file}
+\item{response}{Response column as a string or index}
 
-\item{save_as_cv}{Whether to save processed data as csv}
+\item{save_as_cv}{Whether to save processed data as a csv}
+
+\item{output_csv_path}{Path to save processed data as a csv}
 }
 \description{
-Prep data for h2o4gpu
+Prep data for h2o4gpu algorithms
 }
