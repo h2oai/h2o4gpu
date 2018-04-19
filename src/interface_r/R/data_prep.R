@@ -85,7 +85,7 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
   
   ## check validity of data
   print(paste0("Number of NA's in final data table after pre processing: ", sum(sapply(DT, is.na))))
-  print(paste0("Number of numeric's in final data table after pre processing ", sum(sapply(DT, is.numeric))))
+  print(paste0("Number of numeric's in final data table after pre processing: ", sum(sapply(DT, is.numeric))))
   if (all(sapply(DT, function(x) all(is.finite(x))))) {
     print("All entries in final data table after pre processing are finite")
   } else {
