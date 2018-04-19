@@ -4,16 +4,16 @@
 #'@param response Response column as a string or index
 #'@param save_csv_path Path to save processed data as a csv
 #'@export
-prep_data <- function(data_table, response, save_csv_path = FALSE){
+prep_data <- function(data_table, response, save_csv_path = NULL){
   
-  if (!is.null(response)) {
-    if (is.character(response)) {
-      print(paste0("Response is -> ",response))
-    } else {
-      print(paste0("Response is -> ",colnames(data_table)[response]))
-    }
+  if (!is.data.table(data-table)) {
+    stop ("Input data should of type data.table")
+  }
+  
+  if (is.character(response)) {
+    print(paste0("Response is -> ",response))
   } else {
-    stop("Response is not specified")
+    print(paste0("Response is -> ",colnames(data_table)[response]))
   }
   
   print(paste0("Number of columns: ", ncol(data_table)))
@@ -75,7 +75,7 @@ prep_data <- function(data_table, response, save_csv_path = FALSE){
   }
   
   ## save preprocessed file as CSV
-  if (save_csv_path) {
+  if (!is.null(save_csv_path)) {
     print(paste0("Saving processed data to ", save_csv_path))
     fwrite(data_table, save_csv_path)
   }
