@@ -14,9 +14,9 @@ prep_data(data_table = NULL, data_path = NULL, response = NULL,
 
 \item{response}{Response column as a string or index}
 
-\item{save_as_cv}{Whether to save processed data as a csv}
+\item{save_as_csv}{Whether to save processed data as a csv}
 
-\item{output_csv_path}{Path to save processed data as a csv}
+\item{save_csv_path}{Path to save processed data as a csv}
 }
 \description{
 Prep data for h2o4gpu algorithms

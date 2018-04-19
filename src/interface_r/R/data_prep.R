@@ -3,18 +3,13 @@
 #'@param data_table `data.table` object containing data that needs to be preprocessed for h2o4gpu
 #'@param data_path Path to data that needs to be preprocessed for h2o4gpu. Only needed if `data_table` parameter is not provided/available
 #'@param response Response column as a string or index
-#'@param save_as_cv Whether to save processed data as a csv
-#'@param output_csv_path Path to save processed data as a csv
+#'@param save_as_csv Whether to save processed data as a csv
+#'@param save_csv_path Path to save processed data as a csv
 #'@export
 prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_csv=FALSE, save_csv_path=NULL){
   
-  if (save_as_csv) {
-    if (!is.null(save_csv_path)) {
-      print(paste0("CSV will be saved to -> ", save_csv_path))
-    } else {
-      save_csv_path <- getwd()
-      print(paste0("CSV will be saved to current working directory -> ", save_csv_path, " since `save_csv_path` was not specified"))
-    }
+  if (save_as_csv && is.null(save_csv_path)) {
+    stop("`save_as_csv` is set to TRUE but `save_csv_path` is NULL. Please specify a path to save processed data")
   }
   
   if (is.null(data_table)) {
@@ -100,7 +95,7 @@ prep_data <- function(data_table=NULL, data_path=NULL, response=NULL, save_as_cs
   ## save preprocessed file as CSV
   if (save_as_csv) {
     print(paste0("Saving processed data to ", save_csv_path))
-    fwrite(DT, output_csv_name)
+    fwrite(DT, save_csv_path)
   }
   
   return(DT)
