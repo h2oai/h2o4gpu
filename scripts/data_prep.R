@@ -1,92 +1,84 @@
-#'Prep data for h2o4gpu
+#'Prep data for h2o4gpu algorithms
 #'
-#'@param data_path Path to data
-#'@param response Response column as a string
-#'@param output_csv_name Name of save csv file
-#'@param output_feather_name Name of saved feather file
-#'@export
-prepData <- function(data_path="", response="", output_csv_name="data.csv", output_feather_name="data.feather"){
-  wd <- getwd()
-  print(paste0("CSV will be saved to current working directory -> ",wd))
+#'@param data_table `data.table` object containing data that needs to be preprocessed for h2o4gpu
+#'@param response Response column as a string or index
+#'@param save_csv_path Path to save processed data as a csv
+#'@param max_label_encoding_levels The maximum number of uniques required in a column to consider it a categorical variable. Default is 1000
+prep_data <- function(data_table, response, save_csv_path = NULL, max_label_encoding_levels = 1000){
   
-  response <- response
-  print(paste0("Response is -> ",response))
+  if (!is.data.table(data_table)) {
+    stop ("Input data should be of type data.table")
+  }
   
-  print(paste0("Reading in -> ",data_path))
-  DT <- fread(data_path)
+  if (is.character(response)) {
+    print(paste0("Response is -> ",response))
+  } else {
+    print(paste0("Response is -> ",colnames(data_table)[response]))
+  }
   
-  print("Number of columns:")
-  print(ncol(DT))
+  print(paste0("Number of columns: ", ncol(data_table)))
   
-  print("Number of rows:")
-  print(nrow(DT))
-  
-  ## Label-encoding of categoricals (those cols with fewer than 1k levels, but not constant)
-  print("Label encoding")
-  feature.names <- setdiff(names(DT), response)
+  print(paste0("Number of rows: ", nrow(data_table)))
+
+  ## Label-encoding of categoricals (those cols with fewer than `label_encoding_levels` levels, but not constant)
+  print("Label encoding dataset...")
+  feature.names <- setdiff(names(data_table), response)
   for (ff in feature.names) {
-    tt <- uniqueN(DT[[ff]])
-    if (tt < 1000 && tt > 1) {
-      DT[, (ff):=factor(DT[[ff]])]  
-      print(paste0(ff,"has ",tt," levels"))
+    tt <- uniqueN(data_table[[ff]])
+    if (tt <= max_label_encoding_levels && tt > 1) {
+      data_table[, (ff):=factor(data_table[[ff]])]  
+      print(paste0(ff," has ",tt," levels"))
     }
     if (tt < 2) {
-      print(paste0("dropping constant column: ", ff))
-      DT[, (ff):=NULL]
+      print(paste0("Dropping constant column: ", ff))
+      data_table[, (ff):=NULL]
     }
   }
   
-  print("Number of columns after label encoding:")
-  print(ncol(DT))
+  print(paste0("Number of columns after label encoding: ", ncol(data_table)))
   
-  numCols <- names(DT)[which(sapply(DT, is.numeric))]
-  catCols <- names(DT)[which(sapply(DT, is.factor))]
-  print(paste0("Number of numeric columns: ",     length(numCols)))
-  print(paste0("Number of categorical columns: ", length(catCols)))
+  num_cols <- names(data_table)[which(sapply(data_table, is.numeric))]
+  cat_cols <- names(data_table)[which(sapply(data_table, is.factor))]
+  print(paste0("Number of numeric columns: ", length(num_cols)))
+  print(paste0("Number of categorical columns: ", length(cat_cols)))
   
   ## impute missing values, drop near-const cols and standardize the data
-  print("Imputing missing values using mean")
-  cols <- setdiff(numCols,c(response))
+  print("Imputing missing values using mean...")
+  cols <- setdiff(num_cols,c(response))
   for (c in cols) {
-    DT[!is.finite(DT[[c]]), (c):=mean(DT[[c]], na.rm=TRUE)]
-    if (!is.finite(sd(DT[[c]])) || sd(DT[[c]])<1e-4) 
-      DT[,(c):=NULL]
+    data_table[!is.finite(data_table[[c]]), (c):=mean(data_table[[c]], na.rm=TRUE)]
+    if (!is.finite(sd(data_table[[c]])) || sd(data_table[[c]])<1e-4) 
+      data_table[,(c):=NULL]
     else
-      DT[,(c):=scale(as.numeric(DT[[c]]))]
+      data_table[,(c):=scale(as.numeric(data_table[[c]]))]
   }
-  print("Number of columns after mean imputation:")
-  print(ncol(DT))
+  print(paste0("Number of columns after mean imputation: ", ncol(data_table)))
   
   ## one-hot encode the categoricals
-  print("One hot encoding data table categoricals only")
-  DT2 <- as.data.table(model.matrix(DT[[response]]~., data = DT[,c(catCols), with=FALSE], sparse=FALSE))[,-1]
-  print("Number of columns that have been one hot encoded:")
-  print(ncol(DT2))
+  print("One hot encoding data table categoricals only...")
+  data_table2 <- as.data.table(model.matrix(data_table[[response]]~., data = data_table[,c(cat_cols), with=FALSE], sparse=FALSE))[,-1]
+  print(paste0("Number of columns that have been one hot encoded: ", ncol(data_table2)))
   
-  ## add back the numeric columns and assign back to DT
+  ## add back the numeric columns and assign back to data_table
   print("Add back numeric columns and assign to data table")
-  DT <- DT2[,(numCols):=DT[,numCols,with=FALSE]]
+  data_table <- data_table2[,(num_cols):=data_table[,num_cols,with=FALSE]]
   
-  print("Final dimensions of data table after pre processing:")
-  print(dim(DT))
+  print(paste0("Final dimensions of data table after pre processing: ", nrow(data_table), " by ", ncol(data_table)))
   
   ## check validity of data
-  all(!is.na(DT))
-  all(sapply(DT, is.numeric))
-  all(sapply(DT, function(x) all(is.finite(x))))
+  print(paste0("Number of NA's in final data table after pre processing: ", sum(sapply(data_table, is.na))))
+  print(paste0("Number of numeric's in final data table after pre processing: ", sum(sapply(data_table, is.numeric))))
+  if (all(sapply(data_table, function(x) all(is.finite(x))))) {
+    print("All entries in final data table after pre processing are finite")
+  } else {
+    print("Some entries are not finite in final data table after pre processing. Please inspect final data table")
+  }
   
   ## save preprocessed file as CSV
-  print(paste0("Saving processed data to ", wd))
-  fwrite(DT, output_csv_name)
+  if (!is.null(save_csv_path)) {
+    print(paste0("Saving processed data to ", save_csv_path))
+    fwrite(data_table, save_csv_path)
+  }
   
-  #Write out with feather
-  ## First time only: install both packages
-  require(data.table)   
-  require(feather)
-  
-  print("Reading in data that has been pre processed")
-  DT <- fread(paste0(getwd(),"/",output_csv_name))
-  
-  print("Writing out feather file")
-  write_feather(DT, output_feather_name)
+  return(data_table)
 }
