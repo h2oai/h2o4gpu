@@ -119,12 +119,12 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	(mkdir -p build; \
+	mkdir -p build; \
 	cd build; \
-	cmake -DDEV_BUILD=${DEV_BUILD} ../; \
+	cmake -DDEV_BUILD=${DEV_BUILD} -DNVML_LIB=$(NVML_LIB)/libnvidia-ml.so ../; \
 	make -j; \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
-	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)
+	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
@@ -758,7 +758,7 @@ endif
 fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
 
 Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
-	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
+	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' | sed 's/MY_CUDA_VERSION_SUBST/$(MY_CUDA_VERSION)/g' > $@
 
 centos7_cuda8_in_docker: MY_CUDA_VERSION=8.0
 centos7_cuda8_in_docker: MY_CUDNN_VERSION=5

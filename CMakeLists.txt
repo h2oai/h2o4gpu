@@ -135,7 +135,8 @@ if(USE_CUDA)
                 ${CUDA_cusolver_LIBRARY}
                 ${CUDA_cusparse_LIBRARY}
                 ${BLAS_LIBRARIES}
-                ${NVTX_LIBRARY})
+                ${NVTX_LIBRARY}
+                ${NVML_LIB})
         TARGET_INCLUDE_DIRECTORIES (gpuh2o4gpu PUBLIC
                 src/gpu/include
                 )
