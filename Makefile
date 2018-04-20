@@ -118,11 +118,6 @@ default: fullinstall
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
-
-ARCH       := $(shell getconf LONG_BIT)
-OS         := $(shell cat /etc/issue)
-RHEL_OS    := $(shell cat /etc/redhat-release)
-
 cpp:
 	(mkdir -p build; \
 	cd build; \

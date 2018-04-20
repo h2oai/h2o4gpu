@@ -39,7 +39,9 @@ XGBOOST_VERSION = 0.6
 INSTALL_R = 1
 R_VERSION = 3.1.0
 
-# NVML stuff
+#
+# Find NVML library
+#
 ARCH       := $(shell getconf LONG_BIT)
 OS         := $(shell cat /etc/issue)
 RHEL_OS    := $(shell cat /etc/redhat-release)
