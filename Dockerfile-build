@@ -30,7 +30,7 @@ RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
 RUN \
     export NVIDIA_DRIVER=$(grep "Module" /proc/driver/nvidia/version | cut -f 9 -d' ' | cut -f 1 -d '.') && \
     mkdir -p /usr/lib/nvidia-$NVIDIA_DRIVER && \
-    ln -s /usr/local/nvidia/lib/libnvidia-ml.so.1 /usr/lib/nvidia-$NVIDIA_DRIVER/libnvidia-ml.so
+    ln -s /usr/local/nvidia/lib64/libnvidia-ml.so.1 /usr/lib/nvidia-$NVIDIA_DRIVER/libnvidia-ml.so
 
 # add-apt-repository ppa:fkrull/deadsnakes  && \
 
