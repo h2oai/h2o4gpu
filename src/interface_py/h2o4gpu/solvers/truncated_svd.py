@@ -111,7 +111,7 @@ class TruncatedSVDH2O(object):
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=matrix_type)
-        X_transformed = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
+        X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
 
         lib = self._load_lib()
 

@@ -24,14 +24,13 @@ def func(m=5000, n=10, k=9, convert_to_float32 = False):
     h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVDH2O(n_components=k, tol = 1e-50, n_iter=2000, random_state=42, verbose=True)
     h2o4gpu_tsvd_sklearn_wrapper.fit(X)
     X_transformed = h2o4gpu_tsvd_sklearn_wrapper.fit_transform(X)
-    #X_transformed = h2o4gpu_tsvd_sklearn_wrapper._U * h2o4gpu_tsvd_sklearn_wrapper._w
     print("\n")
     print("Sklearn run")
     # Exact scikit impl
     sklearn_tsvd = sklearnsvd(n_components=k, random_state=42)
     sklearn_tsvd.fit(X)
     X_transformed_sklearn = sklearn_tsvd.fit_transform(X)
-    #assert np.allclose(X_transformed, X_transformed_sklearn, atol=2.1)
+    assert np.allclose(X_transformed, X_transformed_sklearn, atol=2.1)
 
 def test_tsvd_error_k2_double(): func(n=5, k=2)
 def test_tsvd_error_k2_float32(): func(n=5, k=2, convert_to_float32=True)
