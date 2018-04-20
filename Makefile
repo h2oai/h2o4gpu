@@ -758,7 +758,7 @@ endif
 fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
 
 Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
-	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' > $@
+	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' | sed sed 's/MY_CUDA_VERSION_SUBST/$(MY_CUDA_VERSION)/g' > $@
 
 centos7_cuda8_in_docker: MY_CUDA_VERSION=8.0
 centos7_cuda8_in_docker: MY_CUDNN_VERSION=5

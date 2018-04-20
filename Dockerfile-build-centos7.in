@@ -114,7 +114,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 # Symlinks for NVML
 RUN \
     mkdir -p /usr/lib64/nvidia/ && \
-    ln -s /usr/local/cuda-$(MY_CUDA_VERSION)/targets/ARCH_SUBST-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
+    ln -s /usr/local/cuda-MY_CUDA_VERSION_SUBST/targets/ARCH_SUBST-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
 
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
