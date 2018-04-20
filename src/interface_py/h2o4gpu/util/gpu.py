@@ -3,7 +3,7 @@
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-
+import numpy as np
 
 #############################
 # Device utils
@@ -141,20 +141,21 @@ def get_gpu_info_c(return_usage=False, verbose=False):
     total_gpus = 0
     total_mem = 0
     gpu_type = 0
-    usage = []
+    usage_tmp = np.empty(1024, dtype=np.int32)
 
     from ..libs.lib_utils import GPUlib
     lib = GPUlib().get()
 
     try:
-        total_gpus, usage = \
-            lib.get_gpu_info_c()
+        total_gpus = \
+            lib.get_gpu_info_c(usage_tmp)
     except:
         if verbose:
             print("Failed to get gpu info from get_gpu_info_c")
         pass
 
     if return_usage:
+        usage = np.resize(usage_tmp, total_gpus)
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
 

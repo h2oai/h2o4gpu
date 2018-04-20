@@ -52,7 +52,7 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage) {
   assert(rv == NVML_SUCCESS);
   //unsigned int n_gpus;
   rv = nvmlDeviceGetCount(n_gpus);
-  std::cout << "n_gpus: %d" << n_gpus << std::endl;
+
   assert(rv == NVML_SUCCESS);
 
   //  int gpu_percent_usage[n_gpus];
