@@ -119,12 +119,12 @@ update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
 cpp:
-	(mkdir -p build; \
+	mkdir -p build; \
 	cd build; \
 	cmake -DDEV_BUILD=${DEV_BUILD} -DNVML_LIB=$(NVML_LIB)/libnvidia-ml.so ../; \
 	make -j; \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/; \
-	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;)
+	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py

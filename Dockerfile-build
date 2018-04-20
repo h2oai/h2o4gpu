@@ -64,6 +64,9 @@ RUN \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
 
+# Symlinks for NVML
+RUN ln -s /usr/local/nvidia/lib/libnvidia-ml.so.1 /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'`/libnvidia-ml.so
+
 # Install Daal library
 COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
 RUN \
