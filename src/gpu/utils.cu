@@ -45,7 +45,7 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
 }
 
 
-void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, int *gpu_total_memory, char **gpu_name) {
+void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, char **gpu_name) {
 
   nvmlReturn_t rv;
   rv = nvmlInit();
@@ -66,14 +66,11 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, int *gpu_total
     rv = nvmlDeviceGetUtilizationRates(device, &utilization);
     assert(rv == NVML_SUCCESS);
     gpu_percent_usage[i] = utilization.gpu;
-    std::cout << "usage " << gpu_percent_usage[i] << std::endl;
     nvmlMemory_t memory;
     rv = nvmlDeviceGetMemoryInfo(device, &memory);
     assert(rv == NVML_SUCCESS);
     gpu_total_memory[i] = memory.total;
-    std::cout << "memory " << gpu_total_memory[i] << std::endl;
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
-    std::cout << "name " << gpu_name[i] << std::endl;
     assert(rv == NVML_SUCCESS);
   }
 
