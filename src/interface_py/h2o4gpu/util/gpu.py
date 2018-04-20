@@ -143,7 +143,7 @@ def get_gpu_info_c(return_usage=False, verbose=False):
     gpu_type = 0
     usage_tmp = np.empty(1024, dtype=np.int32)
     memory_total_tmp = np.empty(1024, dtype=np.int32)
-    gpu_type_tmp = np.empty(64, dtype=np.str)
+    gpu_type_tmp = np.empty(64, dtype='<U30')
 
     from ..libs.lib_utils import GPUlib
     lib = GPUlib().get()
