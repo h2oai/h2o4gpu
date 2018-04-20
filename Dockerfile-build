@@ -66,7 +66,7 @@ RUN \
 
 # Symlinks for NVML
 RUN \
-    mkdir -p /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'`
+    mkdir -p /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'` && \
     ln -s /usr/local/nvidia/lib/libnvidia-ml.so.1 /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'`/libnvidia-ml.so
 
 # Install Daal library
