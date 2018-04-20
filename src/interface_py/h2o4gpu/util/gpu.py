@@ -149,10 +149,10 @@ def get_gpu_info_c(return_usage=False, verbose=False):
     try:
         total_gpus = \
             lib.get_gpu_info_c(usage_tmp)
+    # pylint: disable=bare-except
     except:
         if verbose:
             print("Failed to get gpu info from get_gpu_info_c")
-        pass
 
     if return_usage:
         usage = np.resize(usage_tmp, total_gpus)
