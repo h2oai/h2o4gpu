@@ -136,19 +136,21 @@ def get_gpu_info_c(return_usage=False, verbose=False):
 
     :return:
         Total number of GPUs and total available memory
-         (and  optionally GPU usage)
+         (and optionally GPU usage)
     """
     total_gpus = 0
     total_mem = 0
     gpu_type = 0
     usage_tmp = np.empty(1024, dtype=np.int32)
+    memory_total_tmp = np.empty(1024, dtype=np.int32)
+    gpu_type_tmp = np.empty(64, dtype=np.str)
 
     from ..libs.lib_utils import GPUlib
     lib = GPUlib().get()
 
     try:
         total_gpus = \
-            lib.get_gpu_info_c(usage_tmp)
+            lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
     # pylint: disable=bare-except
     except:
         if verbose:
@@ -156,6 +158,8 @@ def get_gpu_info_c(return_usage=False, verbose=False):
 
     if return_usage:
         usage = np.resize(usage_tmp, total_gpus)
+        total_mem = np.resize(memory_total_tmp, total_gpus)
+        gpu_type = np.resize(gpu_type_tmp, total_gpus)
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
 
