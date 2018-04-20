@@ -142,7 +142,7 @@ def get_gpu_info_c(return_usage=False):
     gpu_type = 0
     usage_tmp = np.empty(1024, dtype=np.int32)
     memory_total_tmp = np.empty(1024, dtype=np.uint64)
-    # This 30 should be the same as the max gpu type passed in get_gpu_info_c to nvml
+    # This 30 should be same as the gpu type in get_gpu_info_c
     gpu_type_tmp = [' '*30 for _ in range(64)]
 
     from ..libs.lib_utils import GPUlib
@@ -152,7 +152,8 @@ def get_gpu_info_c(return_usage=False):
         lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
 
     # Strip the trailing NULL and whitespaces from C backend
-    gpu_type_tmp = [gpu_type.strip().replace("\x00", "") for gpu_type in gpu_type_tmp]
+    gpu_type_tmp = [gpu_type.strip().replace("\x00", "")
+                    for gpu_type in gpu_type_tmp]
 
     if return_usage:
         usage = np.resize(usage_tmp, total_gpus)
