@@ -111,6 +111,9 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	rm -rf Pillow-5.0.0*; \
 	fi'
 
+# Symlinks for NVML
+RUN ln -s /usr/local/cuda-$(MY_CUDA_VERSION)/targets/ARCH_SUBST-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
+
 RUN pip install numpy
 RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
 RUN sed -i 's/cmake/# cmake/' requirements_buildonly.txt
