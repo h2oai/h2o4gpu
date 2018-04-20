@@ -5,7 +5,6 @@
 ARG layer
 ARG version
 
-
 FROM $layer:$version
 # e.g. FROM ubuntu:latest
 
@@ -16,7 +15,7 @@ MAINTAINER H2o.ai <ops@h2o.ai>
 ENV DEBIAN_FRONTEND noninteractive
 ENV HOME=/root
 ENV PYENV_ROOT=$HOME/.pyenv
-ENV PATH=/usr/local/nvidia/bin/:$PYENV_ROOT/bin:$PATH
+ENV PATH=$PYENV_ROOT/bin:$PATH
 
 RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
 	export PATH=/usr/local/cuda/bin:$PATH && \
@@ -26,6 +25,12 @@ RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
 	export OMP_NUM_THREADS=32 && \
 	export MKL_NUM_THREADS=32 && \
 	export VECLIB_MAXIMUM_THREADS=32; fi
+
+# Symlinks for NVML
+RUN \
+    export NVIDIA_DRIVER=$(grep "Module" /proc/driver/nvidia/version | cut -f 9 -d' ' | cut -f 1 -d '.') && \
+    mkdir -p /usr/lib/nvidia-$NVIDIA_DRIVER && \
+    ln -s /usr/local/nvidia/lib/libnvidia-ml.so.1 /usr/lib/nvidia-$NVIDIA_DRIVER/libnvidia-ml.so
 
 # add-apt-repository ppa:fkrull/deadsnakes  && \
 
@@ -63,11 +68,6 @@ RUN \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
     CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
     pip install setuptools --no-cache-dir
-
-# Symlinks for NVML
-RUN \
-    mkdir -p /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'` && \
-    ln -s /usr/local/nvidia/lib/libnvidia-ml.so.1 /usr/lib/nvidia-`nvidia-smi | grep Driver | cut -f 3 -d' ' | cut -f 1 -d '.'`/libnvidia-ml.so
 
 # Install Daal library
 COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
