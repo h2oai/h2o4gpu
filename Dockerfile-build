@@ -19,7 +19,7 @@ ENV PYENV_ROOT=$HOME/.pyenv
 ENV PATH=$PYENV_ROOT/bin:$PATH
 
 RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
-	export PATH=/usr/local/cuda/bin:$PATH && \
+	export PATH=/usr/local/nvidia/bin/:/usr/local/cuda/bin:$PATH && \
 	export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 && \
 	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE && \
 	export CUDADIR=/usr/local/cuda/include/ && \
