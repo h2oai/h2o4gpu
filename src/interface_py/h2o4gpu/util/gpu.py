@@ -4,6 +4,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
+import sys
 
 #############################
 # Device utils
@@ -152,9 +153,11 @@ def get_gpu_info_c(return_usage=False, verbose=False):
         total_gpus = \
             lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
     # pylint: disable=bare-except
-    except:
+    except Exception as e:
         if verbose:
             print("Failed to get gpu info from get_gpu_info_c")
+            print(e)
+            sys.stdout.flush()
 
     if return_usage:
         usage = np.resize(usage_tmp, total_gpus)
