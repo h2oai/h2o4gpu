@@ -131,7 +131,7 @@ def get_gpu_info_subprocess(return_usage=False):
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
 
-def get_gpu_info_c(return_usage=False):
+def get_gpu_info_c(return_usage=False, verbose=False):
     """Gets the GPU info from C call
 
     :return:
@@ -150,6 +150,8 @@ def get_gpu_info_c(return_usage=False):
         total_gpus, usage = \
             lib.get_gpu_info_c()
     except:
+        if verbose:
+            print("Failed to get gpu info from get_gpu_info_c")
         pass
 
     if return_usage:
