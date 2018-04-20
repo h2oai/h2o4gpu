@@ -111,6 +111,7 @@ class TruncatedSVDH2O(object):
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=matrix_type)
+        X_transformed = np.empty((X.shape[0], self.n_components), dtype=matrix_type)
 
         lib = self._load_lib()
 
@@ -139,14 +140,13 @@ class TruncatedSVDH2O(object):
                              "but got`" + str(self.n_iter))
 
         if self.double_precision == 1:
-            lib.truncated_svd_double(X, Q, w, U, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_double(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
         else:
-            lib.truncated_svd_float(X, Q, w, U, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_float(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
 
         self._w = w
         self._X = X
         self._U, self._Q = svd_flip(U, Q)
-        X_transformed = self._U * self._w
         self.explained_variance = explained_variance
         self.explained_variance_ratio = explained_variance_ratio
         return X_transformed
