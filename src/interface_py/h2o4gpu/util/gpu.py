@@ -132,14 +132,13 @@ def get_gpu_info_subprocess(return_usage=False):
         return (total_gpus, total_mem, gpu_type, usage)
     return (total_gpus, total_mem, gpu_type)
 
-def get_gpu_info_c(return_usage=False, verbose=False):
+def get_gpu_info_c(return_usage=False):
     """Gets the GPU info from C call
 
     :return:
         Total number of GPUs and total available memory
          (and optionally GPU usage)
     """
-    total_gpus = 0
     total_mem = 0
     gpu_type = 0
     usage_tmp = np.empty(1024, dtype=np.int32)
@@ -149,15 +148,8 @@ def get_gpu_info_c(return_usage=False, verbose=False):
     from ..libs.lib_utils import GPUlib
     lib = GPUlib().get()
 
-    try:
-        total_gpus = \
-            lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
-    # pylint: disable=bare-except
-    except Exception as e:
-        if verbose:
-            print("Failed to get gpu info from get_gpu_info_c")
-            print(e)
-            sys.stdout.flush()
+    total_gpus = \
+        lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
 
     if return_usage:
         usage = np.resize(usage_tmp, total_gpus)
