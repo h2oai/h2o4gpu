@@ -148,7 +148,8 @@ def get_gpu_info_subprocess(return_usage=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def get_gpu_info_c(return_usage=False, return_capability=False, return_all=False, verbose=False):
+def get_gpu_info_c(return_usage=False, return_capability=False,
+                   return_all=False, verbose=False):
     """Gets the GPU info from C call
 
     :return:
@@ -172,14 +173,15 @@ def get_gpu_info_c(return_usage=False, return_capability=False, return_all=False
         lib = GPUlib().get()
 
         total_gpus_actual = \
-            lib.get_gpu_info_c(usages_tmp, total_mems_tmp, free_mems_tmp, gpu_types_tmp, majors_tmp, minors_tmp)
+            lib.get_gpu_info_c(usages_tmp, total_mems_tmp, free_mems_tmp,
+                               gpu_types_tmp, majors_tmp, minors_tmp)
 
         # This will drop the GPU count, but the returned usage
         total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
 
         # Strip the trailing NULL and whitespaces from C backend
         gpu_types_tmp = [g_type.strip().replace("\x00", "")
-                        for g_type in gpu_types_tmp]
+                         for g_type in gpu_types_tmp]
     # pylint: disable=broad-except
     except Exception as e:
         if verbose:
@@ -208,7 +210,8 @@ def get_gpu_info_c(return_usage=False, return_capability=False, return_all=False
             gpu_i += 1
 
     if return_all:
-        return (total_gpus, total_mems, free_mems, gpu_types, usages, majors, minors)
+        return (total_gpus, total_mems,
+                free_mems, gpu_types, usages, majors, minors)
     if return_usage and return_capability:
         return (total_gpus, total_mems, gpu_types, usages, majors, minors)
     if return_usage:
@@ -250,7 +253,11 @@ def cudaresetdevice_bare(n_gpus):
 
 
 def get_compute_capability(gpu_id):
-    total_gpus, total_mems, gpu_types, majors, minors = get_gpu_info_c(return_capability=True)
+    """
+    Get compute capability for all gpus
+    """
+    total_gpus, _, _, majors, minors =\
+        get_gpu_info_c(return_capability=True)
     if total_gpus > 0:
         gpu_id = gpu_id % total_gpus
         device_major = majors.tolist()[gpu_id]
