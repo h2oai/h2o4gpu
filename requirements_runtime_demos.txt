@@ -12,4 +12,4 @@ matplotlib>=2.0.0
 seaborn>=0.7.1
 # for some demos/tests
 feather-format>=0.4.0
-psutil>=5.4.2
+psutil>=5.4.5

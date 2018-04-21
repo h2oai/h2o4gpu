@@ -22,8 +22,8 @@ cmake>=0.8.0
 Cython==0.27.3
 # for make testperf
 h2o>=3.16.0.2
-pandas>=0.22.0
-numpy>=1.14.0
+pandas==0.22.0
+numpy==1.14.2
 # for some utilities
 nbconvert>=5.2.1
 nbformat>=4.3.0
@@ -31,8 +31,8 @@ notebook>=5.0.0
 # below for some tests
 numba==0.35.0
 feather-format>=0.4.0
-psutil>=5.4.2
+psutil>=5.4.5
 # below for sync with aws s3
 awscli>=1.11.148
 # for pycharm
-matplotlib>=2.0.0
+matplotlib==2.0.2
