@@ -35,7 +35,6 @@ int cudaresetdevice_bare(void) {
 }
 
 int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
-  // http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html#group__CUDART__DEVICE_1g1bf9d625a931d657e08db2b4391170f0
   cudaDeviceProp prop;
   cudaGetDeviceProperties(&prop, d_idx);
   *major = prop.major;
@@ -45,7 +44,7 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
 }
 
 
-void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, char **gpu_name) {
+void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory, char **gpu_name, int *majors, int *minors) {
 
   nvmlReturn_t rv;
   rv = nvmlInit();
@@ -70,7 +69,10 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     rv = nvmlDeviceGetMemoryInfo(device, &memory);
     assert(rv == NVML_SUCCESS);
     gpu_total_memory[i] = memory.total;
+    gpu_free_memory[i] = memory.free;
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
+    assert(rv == NVML_SUCCESS);
+    rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
     assert(rv == NVML_SUCCESS);
   }
 

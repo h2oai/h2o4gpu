@@ -20,7 +20,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count, _, _ = get_gpu_info()
+    available_device_count, _, _ = get_gpu_info_c()
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -148,59 +148,74 @@ def get_gpu_info_subprocess(return_usage=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def get_gpu_info_c(return_usage=False, verbose=False):
+def get_gpu_info_c(return_usage=False, return_capability=False, return_all=False, verbose=False):
     """Gets the GPU info from C call
 
     :return:
         Total number of GPUs and total available memory
          (and optionally GPU usage)
     """
+    max_gpus = 128
     total_gpus = 0
     total_gpus_actual = 0
-    total_mem = np.array([])
-    gpu_type = np.array([])
     which_gpus = []
-    usage_tmp = np.empty(1024, dtype=np.int32)
-    memory_total_tmp = np.empty(1024, dtype=np.uint64)
+    usages_tmp = np.empty(max_gpus, dtype=np.int32)
+    total_mems_tmp = np.empty(max_gpus, dtype=np.uint64)
+    free_mems_tmp = np.empty(max_gpus, dtype=np.uint64)
     # This 30 should be same as the gpu type in get_gpu_info_c
-    gpu_type_tmp = [' ' * 30 for _ in range(64)]
+    gpu_types_tmp = [' ' * 30 for _ in range(64)]
+    majors_tmp = np.empty(max_gpus, dtype=np.int32)
+    minors_tmp = np.empty(max_gpus, dtype=np.int32)
 
     try:
         from ..libs.lib_utils import GPUlib
         lib = GPUlib().get()
 
         total_gpus_actual = \
-            lib.get_gpu_info_c(usage_tmp, memory_total_tmp, gpu_type_tmp)
+            lib.get_gpu_info_c(usages_tmp, total_mems_tmp, free_mems_tmp, gpu_types_tmp, majors_tmp, minors_tmp)
 
         # This will drop the GPU count, but the returned usage
         total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
 
         # Strip the trailing NULL and whitespaces from C backend
-        gpu_type_tmp = [gpu_type.strip().replace("\x00", "")
-                        for gpu_type in gpu_type_tmp]
+        gpu_types_tmp = [g_type.strip().replace("\x00", "")
+                        for g_type in gpu_types_tmp]
     # pylint: disable=broad-except
     except Exception as e:
         if verbose:
             print(e)
 
-    total_mem_actual = np.resize(memory_total_tmp, total_gpus_actual)
-    gpu_type_actual = np.resize(gpu_type_tmp, total_gpus_actual)
-    usage_actual = np.resize(usage_tmp, total_gpus_actual)
+    total_mems_actual = np.resize(total_mems_tmp, total_gpus_actual)
+    free_mems_actual = np.resize(free_mems_tmp, total_gpus_actual)
+    gpu_types_actual = np.resize(gpu_types_tmp, total_gpus_actual)
+    usages_actual = np.resize(usages_tmp, total_gpus_actual)
+    majors_actual = np.resize(majors_tmp, total_gpus_actual)
+    minors_actual = np.resize(minors_tmp, total_gpus_actual)
 
-    total_mem = np.resize(np.copy(total_mem_actual), total_gpus)
-    gpu_type = np.resize(np.copy(gpu_type_actual), total_gpus)
-    usage = np.resize(np.copy(usage_actual), total_gpus)
+    total_mems = np.resize(np.copy(total_mems_actual), total_gpus)
+    free_mems = np.resize(np.copy(free_mems_actual), total_gpus)
+    gpu_types = np.resize(np.copy(gpu_types_actual), total_gpus)
+    usages = np.resize(np.copy(usages_actual), total_gpus)
+    majors = np.resize(np.copy(majors_actual), total_gpus)
+    minors = np.resize(np.copy(minors_actual), total_gpus)
     gpu_i = 0
     for j in range(total_gpus_actual):
         if j in which_gpus:
-            total_mem[gpu_i] = total_mem_actual[j]
-            gpu_type[gpu_i] = gpu_type_actual[j]
-            usage[gpu_i] = usage_actual[j]
+            total_mems[gpu_i] = total_mems_actual[j]
+            free_mems[gpu_i] = free_mems_actual[j]
+            gpu_types[gpu_i] = gpu_types_actual[j]
+            usages[gpu_i] = usages_actual[j]
             gpu_i += 1
 
+    if return_all:
+        return (total_gpus, total_mems, free_mems, gpu_types, usages, majors, minors)
+    if return_usage and return_capability:
+        return (total_gpus, total_mems, gpu_types, usages, majors, minors)
     if return_usage:
-        return (total_gpus, total_mem, gpu_type, usage)
-    return (total_gpus, total_mem, gpu_type)
+        return (total_gpus, total_mems, gpu_types, usages)
+    if return_capability:
+        return (total_gpus, total_mems, gpu_types, majors, minors)
+    return (total_gpus, total_mems, gpu_types)
 
 
 def cudaresetdevice(gpu_id, n_gpus):
@@ -235,6 +250,20 @@ def cudaresetdevice_bare(n_gpus):
 
 
 def get_compute_capability(gpu_id):
+    total_gpus, total_mems, gpu_types, majors, minors = get_gpu_info_c(return_capability=True)
+    if total_gpus > 0:
+        gpu_id = gpu_id % total_gpus
+        device_major = majors.tolist()[gpu_id]
+        device_minor = minors.tolist()[gpu_id]
+        device_ratioperf = 1
+    else:
+        device_major = -1
+        device_minor = -1
+        device_ratioperf = 1
+    return (device_major, device_minor, device_ratioperf)
+
+
+def get_compute_capability_orig(gpu_id):
     """
     Gets the major cuda version, minor cuda version,
      and ratio of floating point single perf to double perf.

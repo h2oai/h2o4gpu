@@ -3,7 +3,7 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import warnings
-
+# pylint: disable=unused-variable
 class CPUlib(object):
     """H2O4GPU CPU module"""
 
@@ -27,6 +27,7 @@ class CPUlib(object):
                 return None
 
 
+# pylint: disable=unused-variable
 class GPUlib(object):
     """H2O4GPU GPU module"""
 
