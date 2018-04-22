@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 #include <assert.h>
+
+#include <cuda_runtime_api.h>
 #include "nvml.h"
 
 #include "include/cuda_utils2.h"
@@ -72,8 +74,13 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     gpu_free_memory[i] = memory.free;
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
     assert(rv == NVML_SUCCESS);
+#if (CUDART_VERSION >= 9000)
     rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
     assert(rv == NVML_SUCCESS);
+#else
+    int ratioperf;
+    get_compute_capability(i, &majors[i], &minors[i], &ratioperf);
+#endif
   }
 
 }
