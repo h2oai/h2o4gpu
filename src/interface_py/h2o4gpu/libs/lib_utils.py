@@ -50,6 +50,7 @@ class GPUlib(object):
                       ' for GPU failed to load.')
                 return None
 
+
 def get_lib(n_gpus, devices, verbose=0):
     """Load either CPU or GPU H2O4GPU library."""
     cpu_lib = CPUlib().get()
