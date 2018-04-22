@@ -4,6 +4,8 @@
 """
 import warnings
 
+
+# pylint: disable=unused-variable
 class CPUlib(object):
     """H2O4GPU CPU module"""
 
@@ -27,6 +29,7 @@ class CPUlib(object):
                 return None
 
 
+# pylint: disable=unused-variable
 class GPUlib(object):
     """H2O4GPU GPU module"""
 
@@ -48,6 +51,7 @@ class GPUlib(object):
                 print('\nWarning: h2o4gpu shared object (dynamic library)'
                       ' for GPU failed to load.')
                 return None
+
 
 def get_lib(n_gpus, devices, verbose=0):
     """Load either CPU or GPU H2O4GPU library."""
