@@ -23,13 +23,23 @@ using namespace H2O4GPU::DAAL;
 using namespace daal::services;
 using namespace daal::data_management;
 
+void printNT(NumericTable& input, const std::string& msg, size_t rows, size_t cols) {
+	printNumericTable(input, msg.c_str(), rows, cols);
+}
+
 /* Base print class */
 void PrintTable::print(const NumericTablePtr& input, const std::string& msg, size_t rows, size_t cols) const {
+	std::cout << "PrintTable::print test\n";
+	std::cout << type_name<decltype(input)>()<<std::endl;
 	printNumericTable(input, msg.c_str(), rows, cols);
 }
 
 void PrintTable::print(NumericTable& input, const std::string& msg, size_t rows, size_t cols) {
+	std::cout << "PrintTable::print test\n";
+	std::cout << type_name<decltype(input)>()<<std::endl;
 	printNumericTable(input, msg.c_str(), rows, cols);
+
+
 }
 
 /* generic IInput interface */
@@ -37,31 +47,28 @@ template<typename Input>
 const typename IInput<Input>::NTPtr& IInput<Input>::getNumericTable() const {
 	return this->_inputData;
 }
-const NumericTablePtr& IInput<float>::getNumericTable() const {
-	return this->_inputData;
-}
+
 template<typename Input>
 const typename IInput<Input>::NTPtr& IInput<Input>::getFeaturesTable() const {
 	return this->_featuresData;
 }
-const NumericTablePtr& IInput<float>::getFeaturesTable() const {
-	return this->_featuresData;
-}
+
 template<typename Input>
 const typename IInput<Input>::NTPtr& IInput<Input>::getDependentTable() const {
 	return this->_dependentData;
 }
-const NumericTablePtr& IInput<float>::getDependentTable() const {
-	return this->_dependentData;
-}
+
+
 /* HomogenousDaalData specialized */
 template<typename Input>
 HomogenousDaalData<Input>::HomogenousDaalData(Input* inputArray, size_t m_dim, size_t n_dim) {
 	if (!std::is_arithmetic<Input>::value)
 		throw "Input type is not arithmetic!";
+	//std::cout << type_name<decltype(inputArray)>() << "decltype(INput)\n";
 	using NTPointer = typename HomogenousDaalData<Input>::NTPtr;
 	this->_inputData =
 			NTPointer(new Matrix<Input>(m_dim, n_dim, inputArray));
+	auto m = SharedPtr<NumericTable>(new Matrix<Input>(m_dim, n_dim, inputArray));
 }
 template<typename Input>
 HomogenousDaalData<Input>::HomogenousDaalData(const Input* inputArray, size_t m_dim, size_t n_dim) {
@@ -82,7 +89,6 @@ HomogenousDaalData<Input>::HomogenousDaalData(Input* features, size_t m_features
 			NTPointer(new Matrix<Input>(m_features, n_features, features));
 	this->_dependentData =
 			NTPointer(new Matrix<Input>(m_data, n_data, dependentData));
-	//this->_inputData = NTPointer(new MergedNumericTable(this->_featuresData, this->_dependentData));
 }
 template<typename Input>
 HomogenousDaalData<Input>::HomogenousDaalData(const Input* features, size_t m_features, size_t n_features,
@@ -94,7 +100,6 @@ HomogenousDaalData<Input>::HomogenousDaalData(const Input* features, size_t m_fe
 			NTPointer(new Matrix<Input>(m_features, n_features, const_cast<Input*>(features)));
 	this->_dependentData =
 			NTPointer(new Matrix<Input>(m_data, n_data, const_cast<Input*>(dependentData)));
-	//this->_inputData = NTPointer(new MergedNumericTable(this->_featuresData, this->_dependentData));
 }
 template<typename Input>
 HomogenousDaalData<Input>::HomogenousDaalData(std::vector<Input>& input, size_t m_dim, size_t n_dim) {
@@ -174,6 +179,8 @@ HomogenousDaalData<std::string>::HomogenousDaalData(const std::string & filename
 
 template class IInput<float>;
 template class IInput<int>;
+template class IInput<double>;
 template class HomogenousDaalData<float>;
 template class HomogenousDaalData<int>;
+template class HomogenousDaalData<double>;
 template class HomogenousDaalData<std::string>;

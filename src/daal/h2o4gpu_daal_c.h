@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <sstream>
 
+
 #define CATCH_DAAL 																				\
 	catch(const std::runtime_error &e) { 														\
 		fprintf(stderr, "Runtime error: %s in %s at line %d", e.what(), __FILE__, __LINE__); 	\
@@ -30,29 +31,34 @@ extern "C" {
 #endif
 
 //input to enter algorithms
-void *CreateDaalInput(float*, size_t, size_t);
-void *CreateDaalInputFeaturesDependent(float*, size_t, size_t, float*, size_t, size_t);
-void *CreateDaalInputFile(const std::string&);
-void *CreateDaalInputFileFeaturesDependent(const std::string&, size_t size_t);
+void *CreateDaalInput(double*, size_t, size_t);
+
+void *CreateDaalInputFeaturesDependent(double*, size_t, size_t, double*, size_t, size_t);
+void* GetFeaturesData(void* input);
+void* GetDependentTable(void* input);
+void *CreateDaalInputFile(const char*);
+void *CreateDaalInputFileFeaturesDependent(const char* filename, size_t, size_t);
 void DeleteDaalInput(void* input);
-void PrintDaalNumericTablePtr(float* input, const char* msg="", size_t rows=0, size_t cols = 0);
+void PrintDaalNumericTablePtr(void* input, const char* msg="", size_t rows=0, size_t cols = 0);
+void PrintNTP(void*, const char * msg="", size_t rows=0, size_t cols=0);
 
 // Singular value decomposition algorithm
 void* CreateDaalSVD(void*);
 void DeleteDaalSVD(void*);
-void fitDaalSVD(void*);
-const void* getDaalSVDSigma(void*);
-const void* getDaalRightSingularMatrix(void*);
-const void* getDaalLeftSingularMatrix(void*);
+void FitDaalSVD(void*);
+void* GetDaalSVDSigma(void*);
+const void* GetDaalRightSingularMatrix(void*);
+const void* GetDaalLeftSingularMatrix(void*);
+
 // Regression
 void* CreateDaalRidgeRegression(void*);
-void DeleteDaalRidgeRegression();
+void DeleteDaalRidgeRegression(void *);
 void TrainDaalRidgeRegression(void *regression);
 void PredictDaalRidgeRegression(void* regression, void* input);
 const void* GetDaalRidgeRegressionBeta(void* regression);
-const void* GetDaalRidgeRegressionPredictionData(void* regression);
-// Linear Regression
+void* GetDaalRidgeRegressionPredictionData(void* regression);
 
+// Linear Regression
 void* CreateDaalLinearRegression(void*);
 void DeleteDaalLinearRegression(void*);
 void TrainDaalLinearRegression(void *regression);

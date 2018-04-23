@@ -26,6 +26,7 @@ class PUBLIC SVD {
 public:
 	typedef svd::ResultPtr resultPtr;
 
+	SVD(IInput<double>* input);
 	template<typename Input=FLOAT_TYPE>
 	SVD(const IInput<Input>& input);
 	template<typename Input=FLOAT_TYPE>

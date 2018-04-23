@@ -24,6 +24,7 @@ class PUBLIC RidgeRegression {
 public:
 	typedef daal::algorithms::ridge_regression::training::ResultPtr TrainingResultPtr;
 
+	RidgeRegression(IInput<double>* input);
 	template<typename Input=FLOAT_TYPE>
 		RidgeRegression(IInput<Input>& input);
 	template<typename Input=FLOAT_TYPE>

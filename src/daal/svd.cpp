@@ -9,12 +9,17 @@
 
 using namespace H2O4GPU::DAAL;
 
+SVD::SVD(IInput<double>* input) {
+	this->_origData = input->getNumericTable();
+}
 template<typename Input>
 SVD::SVD(const IInput<Input>& input) {
-	this->_origData = input.getNumericTable();
+	this->_origData = std::move(input.getNumericTable());
 }
 template<typename Input>
 SVD::SVD(IInput<Input>& input) {
+	auto m = input.getNumericTable();
+	input.print(m);
 	this->_origData = std::move(input.getNumericTable());
 }
 void SVD::fit() {
@@ -40,5 +45,6 @@ const NumericTablePtr& SVD::getRightSingularMatrix() {
 	return this->_rightSingularMatrix;
 }
 
-template SVD::SVD(const IInput<float>&);
-template SVD::SVD(const IInput<int>&);
+
+template SVD::SVD<double>(const IInput<double>&);
+template SVD::SVD<double>(IInput<double>&);

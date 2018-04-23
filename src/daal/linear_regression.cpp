@@ -5,14 +5,15 @@
  *      Author: monika
  */
 
-
 #include <utility>
 #include "linear_regression.h"
 
 using namespace H2O4GPU::DAAL;
-using namespace daal;
-using namespace daal::algorithms::linear_regression;
 
+LinearRegression::LinearRegression(IInput<double>* input) {
+	this->_featuresData = std::move(input->getFeaturesTable());
+	this->_dependentData = std::move(input->getDependentTable());
+}
 template<typename Input>
 LinearRegression::LinearRegression(IInput<Input>& input) {
 	this->_featuresData = std::move(input.getFeaturesTable());
@@ -30,6 +31,10 @@ void LinearRegression::train() {
 	algorithm.compute();
 	this->_trainingModel = algorithm.getResult();
 }
+const NumericTablePtr& LinearRegression::getBeta() {
+	this->_beta = this->_trainingModel->get(training::model)->getBeta();
+	return this->_beta;
+}
 const typename LinearRegression::TrainingResultPtr& LinearRegression::getModel() const {
 	return this->_trainingModel;
 }
@@ -46,15 +51,12 @@ void LinearRegression::predict(IInput<Input>& input) {
 const NumericTablePtr& LinearRegression::getPredictionData() const {
 	return this->_predictionData;
 }
-const NumericTablePtr& LinearRegression::getBeta() {
-	this->_beta = this->_trainingModel->get(training::model)->getBeta();
-	return this->_beta;
-}
-template LinearRegression::LinearRegression(IInput<float> &);
-template LinearRegression::LinearRegression(IInput<int> &);
-template LinearRegression::LinearRegression(const IInput<float> &);
-template LinearRegression::LinearRegression(const IInput<int> &);
-template void LinearRegression::predict(IInput<float>&);
-template void LinearRegression::predict(IInput<int>&);
 
+
+template LinearRegression::LinearRegression<float>(IInput<float> &);
+template LinearRegression::LinearRegression<double>(IInput<double> &);
+template LinearRegression::LinearRegression<float>(const IInput<float> &);
+template LinearRegression::LinearRegression<double>(const IInput<double> &);
+template void LinearRegression::predict<float>(IInput<float>&);
+template void LinearRegression::predict<double>(IInput<double>&);
 

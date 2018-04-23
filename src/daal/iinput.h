@@ -26,6 +26,8 @@ using namespace daal::data_management;
 using namespace daal::services;
 
 /* Base class to print numeric table */
+void printNT(NumericTable& input, const std::string& = "", size_t rows=0, size_t cols=0);
+
 class PUBLIC PrintTable {
 public:
 	virtual void print(const NumericTablePtr& input, const std::string& ="", size_t =0, size_t =0) const;
@@ -49,7 +51,7 @@ public:
 };
 
 template<>
-class PUBLIC IInput<float> : public PrintTable {
+class PUBLIC IInput<FLOAT_TYPE> : public PrintTable {
 public:
 	typedef NumericTablePtr NTPtr;
 protected:
@@ -57,9 +59,9 @@ protected:
 	NTPtr _featuresData;
 	NTPtr _dependentData;
 public:
-	const NTPtr& getNumericTable() const;
-	const NTPtr& getFeaturesTable() const;
-	const NTPtr& getDependentTable() const;
+	const NTPtr& getNumericTable() const { return this->_inputData; }
+	const NTPtr& getFeaturesTable() const { return this->_featuresData; }
+	const NTPtr& getDependentTable() const { return this->_dependentData; }
 };
 
 template<typename Input=FLOAT_TYPE>

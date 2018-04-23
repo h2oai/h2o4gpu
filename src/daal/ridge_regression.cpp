@@ -10,6 +10,10 @@
 
 using namespace H2O4GPU::DAAL;
 
+RidgeRegression::RidgeRegression(IInput<double>* input) {
+	this->_featuresData = std::move(input->getFeaturesTable());
+	this->_dependentData = std::move(input->getDependentTable());
+}
 template<typename Input>
 RidgeRegression::RidgeRegression(IInput<Input>& input) {
 	this->_featuresData = std::move(input.getFeaturesTable());
@@ -48,9 +52,9 @@ const NumericTablePtr& RidgeRegression::getPredictionData() const {
 	return this->_predictionData;
 }
 
-template RidgeRegression::RidgeRegression(IInput<float> &);
-template RidgeRegression::RidgeRegression(IInput<int> &);
-template RidgeRegression::RidgeRegression(const IInput<float> &);
-template RidgeRegression::RidgeRegression(const IInput<int> &);
-template void RidgeRegression::predict(IInput<float>&);
-template void RidgeRegression::predict(IInput<int>&);
+template RidgeRegression::RidgeRegression<double>(IInput<double> &);
+template RidgeRegression::RidgeRegression<double>(const IInput<double> &);
+template RidgeRegression::RidgeRegression<float>(IInput<float> &);
+template RidgeRegression::RidgeRegression<float>(const IInput<float> &);
+template void RidgeRegression::predict<double>(IInput<double> &);
+template void RidgeRegression::predict<float>(IInput<float> &);

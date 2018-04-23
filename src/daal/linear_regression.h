@@ -21,6 +21,7 @@ class PUBLIC LinearRegression {
 public:
 	typedef daal::algorithms::linear_regression::training::ResultPtr TrainingResultPtr;
 
+	LinearRegression(IInput<double>* input);
 	template<typename Input=FLOAT_TYPE>
 		LinearRegression(IInput<Input>& input);
 	template<typename Input=FLOAT_TYPE>
