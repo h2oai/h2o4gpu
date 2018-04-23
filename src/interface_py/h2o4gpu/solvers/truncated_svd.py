@@ -8,7 +8,6 @@ from __future__ import print_function
 import sys
 import numpy as np
 from ..solvers.utils import _setter
-from ..utils.extmath import svd_flip
 
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
