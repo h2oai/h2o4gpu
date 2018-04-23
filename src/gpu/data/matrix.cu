@@ -1,9 +1,36 @@
 #include "matrix.cuh"
 #include <algorithm>
 #include <thrust/inner_product.h>
+#include <thrust/extrema.h>
 
 namespace tsvd
 {
+	void max_index_per_column(Matrix<tsvd_float>& A, std::vector<int>& result_array, DeviceContext& context){
+
+		int result;
+		for (int i=0; i<A.columns(); i++) {
+			safe_cublas(cublasIsamax(context.cublas_handle, A.rows(), A.data() + i*A.rows(), 1, &result));
+			if (i == 0) {
+				result_array[i] = result - 1;
+			} else  {
+				result_array[i] = result - 1 + A.rows();
+			}
+		}
+	}
+
+	void max_index_per_column(Matrix<tsvd_double>& A, std::vector<int>& result_array, DeviceContext& context){
+
+		int result;
+		for (int i=0; i<A.columns(); i++) {
+			safe_cublas(cublasIdamax(context.cublas_handle, A.rows(), A.data() + i*A.rows(), 1, &result));
+			if (i == 0) {
+				result_array[i] = result - 1;
+			} else  {
+				result_array[i] = result - 1 + A.rows();
+			}
+		}
+	}
+
 	template<typename T, typename U>
 	void multiply(Matrix<T>& A, const U a, DeviceContext& context)
 	{

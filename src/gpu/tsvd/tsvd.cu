@@ -134,6 +134,26 @@ namespace tsvd
 	}
 
 	/**
+	 * Transform matrix into absolute values
+	 *
+	 * @param UmultSigma
+	 * @param UmultSigmaSquare
+	 * @param context
+	 */
+	template<typename T>
+	void get_abs(const Matrix<T> &U, Matrix<T> &U_abs, DeviceContext &context){
+		auto n = U.columns();
+		auto m = U.rows();
+		auto d_u = U.data();
+		auto d_u_abs = U_abs.data();
+		auto counting = thrust::make_counting_iterator <int>(0);
+		thrust::for_each(counting, counting+U_abs.size(), [=]__device__(int idx){
+			float abs_val = std::abs(d_u[idx]);
+			d_u_abs[idx] = abs_val;
+		} );
+	}
+
+	/**
 	 * Calculate the U matrix, which is defined as:
 	 * U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
 	 *
@@ -191,7 +211,6 @@ namespace tsvd
 				d_q[idx] = (q * x_sqrt_row)/std::sqrt(sigma);
 			} );
 		}
-		QtTrunc.copy_to_host(_Q); //Send to host
 
 		//Obtain square root of eigenvalues, which are singular values
 		T generic_zero = 0.0;
@@ -217,7 +236,39 @@ namespace tsvd
 		Matrix<T>QReversed(Q.rows(), Q.columns());
 		col_reverse_q(Q, QReversed, context);
 		calculate_u(X, QReversed, sigma, U, context);
+
+		/**
+		 * SVD sign correction (same as svd_flip() in sklearn) -> https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/utils/extmath.py#L499
+		   Sign correction to ensure deterministic output from SVD.
+    	   Adjusts the columns of u and the rows of v such that the loadings in the
+    	   columns in u that are largest in absolute value are always positive.
+		 */
+		Matrix<T>U_abs(U.rows(), U.columns());
+		get_abs(U, U_abs, context);
+		std::vector<int> result_array(U_abs.columns());
+		max_index_per_column(U_abs, result_array, context);
+		Matrix<T>Signs(1, _param.k);
+		thrust::device_vector<int> d_results = result_array;
+		auto d_U = U.data();
+		auto d_Signs = Signs.data();
+		auto counting = thrust::make_counting_iterator <int>(0);
+		auto ptr = d_results.data();
+		thrust::for_each(counting, counting+Signs.size(), [=]__device__(int idx){
+			int u_idx = ptr[idx];
+			T val = 1.0;
+			if (d_U[u_idx] < 0.0) {
+				val = -1.0;
+			} else if (d_U[u_idx] == 0.0) {
+				val = 0.0;
+			} else {
+				val = 1.0;
+			}
+			d_Signs[idx] = val;
+		} );
+		multiply_diag(U, Signs, U, context, false);
+		multiply_diag(QtTrunc, Signs, QtTrunc, context, true);
 		U.copy_to_host(_U); //Send to host
+		QtTrunc.copy_to_host(_Q); //Send to host
 
 		//U * Sigma (_X_transformed)
 		Matrix<T>UmultSigma(U.rows(), U.columns());

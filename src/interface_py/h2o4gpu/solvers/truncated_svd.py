@@ -146,7 +146,8 @@ class TruncatedSVDH2O(object):
 
         self._w = w
         self._X = X
-        self._U, self._Q = svd_flip(U, Q)
+        self._U = U
+        self._Q = Q
         self.explained_variance = explained_variance
         self.explained_variance_ratio = explained_variance_ratio
         return X_transformed

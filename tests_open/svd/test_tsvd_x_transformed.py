@@ -8,7 +8,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-def func(m=5000, n=10, k=9, convert_to_float32 = False):
+def func(m=5000, n=10, k=9, algorithm = "cusolver", convert_to_float32 = False):
     np.random.seed(1234)
 
     X = np.random.rand(m, n)
@@ -21,7 +21,7 @@ def func(m=5000, n=10, k=9, convert_to_float32 = False):
 
     print("\n")
     print("H2O4GPU run")
-    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVDH2O(n_components=k, tol = 1e-50, n_iter=2000, random_state=42, verbose=True)
+    h2o4gpu_tsvd_sklearn_wrapper = TruncatedSVDH2O(n_components=k, algorithm=algorithm, tol = 1e-50, n_iter=2000, random_state=42, verbose=True)
     h2o4gpu_tsvd_sklearn_wrapper.fit(X)
     X_transformed = h2o4gpu_tsvd_sklearn_wrapper.fit_transform(X)
     print("\n")
@@ -30,7 +30,24 @@ def func(m=5000, n=10, k=9, convert_to_float32 = False):
     sklearn_tsvd = sklearnsvd(n_components=k, random_state=42)
     sklearn_tsvd.fit(X)
     X_transformed_sklearn = sklearn_tsvd.fit_transform(X)
-    assert np.allclose(X_transformed, X_transformed_sklearn, atol=2.1)
+    print("X transformed cuda")
+    print(X_transformed)
+    print("X transformed sklearn")
+    print(X_transformed_sklearn)
+    print("Max absolute diff between X_transformed and X_transformed_sklearn")
+    print(str(np.max(np.abs(X_transformed) - np.abs(X_transformed_sklearn))))
+    if convert_to_float32:
+        if algorithm == "power":
+            assert np.allclose(X_transformed, X_transformed_sklearn, atol=0.007167549)
+        else:
+            assert np.allclose(X_transformed, X_transformed_sklearn, atol = 1.95616e-05)
+    else:
+        if algorithm=="power":
+            assert np.allclose(X_transformed, X_transformed_sklearn, atol=1.8848614999622538e-06)
+        else:
+            assert np.allclose(X_transformed, X_transformed_sklearn)
 
-def test_tsvd_error_k2_double(): func(n=5, k=2)
+def test_tsvd_error_k2_double(): func(n=5, k=3)
 def test_tsvd_error_k2_float32(): func(n=5, k=2, convert_to_float32=True)
+def test_tsvd_error_k2_double_power(): func(n=5, k=3, algorithm="power")
+def test_tsvd_error_k2_float32_power(): func(n=5, k=2, algorithm = "power", convert_to_float32=True)

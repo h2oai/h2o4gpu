@@ -469,6 +469,9 @@ namespace tsvd
 	void dot_product(Matrix<tsvd_float>& b_k1, Matrix<tsvd_float>& b_k, float* eigen_value_estimate, DeviceContext& context);
 	void dot_product(Matrix<tsvd_double>& b_k1, Matrix<tsvd_double>& b_k, double* eigen_value_estimate, DeviceContext& context);
 
+	void max_index_per_column(Matrix<tsvd_float>& A, std::vector<int>& result_array, DeviceContext& context);
+	void max_index_per_column(Matrix<tsvd_double>& A, std::vector<int>& result_array, DeviceContext& context);
+
 	//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	//Stricly floating point operations that are not used
 
