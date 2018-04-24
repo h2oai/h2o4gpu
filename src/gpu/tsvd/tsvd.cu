@@ -247,15 +247,7 @@ namespace tsvd
 		auto ptr = d_results.data();
 		thrust::for_each(counting, counting+Signs.size(), [=]__device__(int idx){
 			int u_idx = ptr[idx];
-			T val = 1.0;
-			if (d_U[u_idx] < 0.0) {
-				val = -1.0;
-			} else if (d_U[u_idx] == 0.0) {
-				val = 0.0;
-			} else {
-				val = 1.0;
-			}
-			d_Signs[idx] = val;
+			d_Signs[idx] = (T(0) < d_U[u_idx]) - (d_U[u_idx] < T(0));
 		} );
 		multiply_diag(U, Signs, U, context, false);
 		multiply_diag(QtTrunc, Signs, QtTrunc, context, true);

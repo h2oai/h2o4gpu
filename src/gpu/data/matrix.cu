@@ -10,11 +10,7 @@ namespace tsvd
 		int result;
 		for (int i=0; i<A.columns(); i++) {
 			safe_cublas(cublasIsamax(context.cublas_handle, A.rows(), A.data() + i*A.rows(), 1, &result));
-			if (i == 0) {
-				result_array[i] = result - 1;
-			} else  {
-				result_array[i] = result - 1 + A.rows();
-			}
+			result_array[i] = result - 1 + i * A.rows();
 		}
 	}
 
@@ -23,11 +19,7 @@ namespace tsvd
 		int result;
 		for (int i=0; i<A.columns(); i++) {
 			safe_cublas(cublasIdamax(context.cublas_handle, A.rows(), A.data() + i*A.rows(), 1, &result));
-			if (i == 0) {
-				result_array[i] = result - 1;
-			} else  {
-				result_array[i] = result - 1 + A.rows();
-			}
+			result_array[i] = result - 1 + i * A.rows();
 		}
 	}
 
