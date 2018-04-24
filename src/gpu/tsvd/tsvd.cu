@@ -147,10 +147,9 @@ namespace tsvd
 		auto d_u = U.data();
 		auto d_u_abs = U_abs.data();
 		auto counting = thrust::make_counting_iterator <int>(0);
-		thrust::for_each(counting, counting+U_abs.size(), [=]__device__(int idx){
-			float abs_val = std::abs(d_u[idx]);
-			d_u_abs[idx] = abs_val;
-		} );
+		thrust::transform(d_u.dptr(), d_u.dptr() + d_u.size(), d_u_abs.dptr(), [=]__device__(T val){
+            return abs(val);
+        });
 	}
 
 	/**
