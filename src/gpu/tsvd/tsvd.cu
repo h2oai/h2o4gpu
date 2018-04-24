@@ -237,10 +237,8 @@ namespace tsvd
     	   Adjusts the columns of u and the rows of v such that the loadings in the
     	   columns in u that are largest in absolute value are always positive.
 		 */
-		Matrix<T>U_abs(U.rows(), U.columns());
-		get_abs(U, U_abs, context);
-		std::vector<int> result_array(U_abs.columns());
-		max_index_per_column(U_abs, result_array, context);
+		std::vector<int> result_array(U.columns());
+		max_index_per_column(U, result_array, context);
 		Matrix<T>Signs(1, _param.k);
 		thrust::device_vector<int> d_results = result_array;
 		auto d_U = U.data();
