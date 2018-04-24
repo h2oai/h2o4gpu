@@ -95,6 +95,7 @@ class PCAH2O(TruncatedSVDH2O):
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components, dtype=matrix_type)
         mean = np.empty(X.shape[1], dtype=matrix_type)
+        X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
 
         lib = self._load_lib()
 
@@ -111,9 +112,9 @@ class PCAH2O(TruncatedSVDH2O):
         param.whiten = self.whiten
 
         if self.double_precision == 1:
-            lib.pca_double(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
+            lib.pca_double(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, mean, param)
         else:
-            lib.pca_float(X, Q, w, U, explained_variance, explained_variance_ratio, mean, param)
+            lib.pca_float(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, mean, param)
 
         self._w = w
         self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
@@ -140,7 +141,6 @@ class PCAH2O(TruncatedSVDH2O):
         else:
             self.noise_variance_ = 0.
 
-        X_transformed = U * w
         return X_transformed
 
     def _check_double(self, data, convert=True):

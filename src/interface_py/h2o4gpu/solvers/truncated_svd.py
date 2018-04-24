@@ -8,7 +8,6 @@ from __future__ import print_function
 import sys
 import numpy as np
 from ..solvers.utils import _setter
-from ..utils.extmath import svd_flip
 
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
@@ -111,6 +110,7 @@ class TruncatedSVDH2O(object):
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=matrix_type)
+        X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
 
         lib = self._load_lib()
 
@@ -139,14 +139,14 @@ class TruncatedSVDH2O(object):
                              "but got`" + str(self.n_iter))
 
         if self.double_precision == 1:
-            lib.truncated_svd_double(X, Q, w, U, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_double(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
         else:
-            lib.truncated_svd_float(X, Q, w, U, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_float(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
 
         self._w = w
         self._X = X
-        self._U, self._Q = svd_flip(U, Q)
-        X_transformed = self._U * self._w
+        self._U = U
+        self._Q = Q
         self.explained_variance = explained_variance
         self.explained_variance_ratio = explained_variance_ratio
         return X_transformed

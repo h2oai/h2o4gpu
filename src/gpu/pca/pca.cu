@@ -19,7 +19,7 @@ namespace pca
 	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
+	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float* _X_transformed, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
 		try {
 
 			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
@@ -50,7 +50,7 @@ namespace pca
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
-			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, svd_param);
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";
@@ -73,7 +73,7 @@ namespace pca
 	 * @param _explained_variance_ratio
 	 * @param _param
 	 */
-	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
+	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double* _X_transformed, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
 		try {
 
 			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
@@ -104,7 +104,7 @@ namespace pca
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
-			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _explained_variance, _explained_variance_ratio, svd_param);
+			tsvd::truncated_svd_matrix(XCentered, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, svd_param);
 
 		} catch (const std::exception &e) {
 			std::cerr << "pca error: " << e.what() << "\n";
