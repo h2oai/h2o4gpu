@@ -142,12 +142,7 @@ namespace tsvd
 	 */
 	template<typename T>
 	void get_abs(const Matrix<T> &U, Matrix<T> &U_abs, DeviceContext &context){
-		auto n = U.columns();
-		auto m = U.rows();
-		auto d_u = U.data();
-		auto d_u_abs = U_abs.data();
-		auto counting = thrust::make_counting_iterator <int>(0);
-		thrust::transform(d_u.dptr(), d_u.dptr() + d_u.size(), d_u_abs.dptr(), [=]__device__(T val){
+		thrust::transform(U.dptr(), U.dptr() + U.size(), U_abs.dptr(), [=]__device__(T val){
             return abs(val);
         });
 	}
