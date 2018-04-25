@@ -954,7 +954,8 @@ class GradientBoostingClassifier(object):
             scale_pos_weight=1,
             base_score=0.5,
             missing=None,
-            backend='auto'):  # h2o4gpu
+            backend='auto',
+            **kwargs):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -1051,7 +1052,7 @@ class GradientBoostingClassifier(object):
             scale_pos_weight=scale_pos_weight,
             base_score=base_score,
             missing=missing,
-            backend=backend)  # h2o4gpu
+            **kwargs)  # h2o4gpu
 
         if self.do_sklearn:
             if verbose > 0:
@@ -1409,7 +1410,8 @@ class GradientBoostingRegressor(object):
             scale_pos_weight=1,
             base_score=0.5,
             missing=None,
-            backend='auto'):  # h2o4gpu
+            backend='auto',
+            **kwargs):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -1508,7 +1510,7 @@ class GradientBoostingRegressor(object):
             scale_pos_weight=scale_pos_weight,
             base_score=base_score,
             missing=missing,
-            backend=backend)  # h2o4gpu
+            **kwargs)
 
         if self.do_sklearn:
             if verbose > 0:
