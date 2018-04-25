@@ -19,7 +19,7 @@ OPTION(DEV_BUILD  "Dev build" OFF)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
 
 # PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
 # Open to suggestions how to do this better.
