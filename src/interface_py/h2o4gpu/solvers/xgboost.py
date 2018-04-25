@@ -1316,7 +1316,7 @@ class GradientBoostingRegressor(object):
             - 'cpu_predictor': Multicore CPU prediction algorithm.
             - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
 
-    objective : string or callable [default="reg:logistic"]
+    objective : string or callable [default="reg:linear"]
         Specify the learning task and the corresponding learning objective or a custom objective function to be used
         Note:
         A custom objective function can be provided for the objective parameter. In this case, it should have the signature objective(y_true, y_pred) -> grad, hess:
