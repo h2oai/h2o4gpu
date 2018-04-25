@@ -1397,7 +1397,7 @@ class GradientBoostingRegressor(object):
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
-            objective="binary:logistic",
+            objective="reg:linear",
             booster='gbtree',
             n_jobs=1,
             gamma=0,
