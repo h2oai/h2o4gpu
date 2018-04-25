@@ -914,6 +914,12 @@ class GradientBoostingClassifier(object):
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
+    **kwargs : dict, optional
+        Keyword arguments for XGBoost Booster object. Full documentation of parameters can be
+        found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md.
+        Attempting to set a parameter via the constructor args and **kwargs dict simultaneously will
+        result in a TypeError.
+
     """
 
     def __init__(
@@ -1368,6 +1374,12 @@ class GradientBoostingRegressor(object):
         Which backend to use.
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
+
+    **kwargs : dict, optional
+        Keyword arguments for XGBoost Booster object. Full documentation of parameters can be
+        found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md.
+        Attempting to set a parameter via the constructor args and **kwargs dict simultaneously will
+        result in a TypeError.
 
     """
 
