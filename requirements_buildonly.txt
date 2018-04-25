@@ -36,3 +36,4 @@ psutil==5.4.5
 awscli==1.15.6
 # for pycharm
 matplotlib==2.0.2
+llvmlite==0.20.0

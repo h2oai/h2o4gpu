@@ -17,7 +17,7 @@ typedef struct params {
   int X_n;
   int X_m;
   int k;
-  const char *algorithm;
+  char *algorithm;
   int n_iter;
   int random_state;
   float tol;
