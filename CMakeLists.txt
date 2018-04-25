@@ -19,6 +19,7 @@ OPTION(DEV_BUILD  "Dev build" OFF)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
 
 # PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
 # Open to suggestions how to do this better.
@@ -70,7 +71,7 @@ TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 #============= BUILD CPU LIBRARY
 
 #============= SWIG
-SET(CMAKE_SWIG_FLAGS "")
+SET(CMAKE_SWIG_FLAGS -Werror)
 #============= SWIG
 
 #============= CPU SWIG
@@ -114,7 +115,7 @@ if(USE_CUDA)
 
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo;")
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu
