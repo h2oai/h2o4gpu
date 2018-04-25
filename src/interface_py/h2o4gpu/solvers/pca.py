@@ -7,7 +7,6 @@
 import numpy as np
 from ..solvers.utils import _setter
 from ..solvers.truncated_svd import TruncatedSVDH2O, TruncatedSVD
-from ..utils.extmath import svd_flip
 
 
 class PCAH2O(TruncatedSVDH2O):
@@ -117,7 +116,8 @@ class PCAH2O(TruncatedSVDH2O):
             lib.pca_float(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, mean, param)
 
         self._w = w
-        self._U, self._Q = svd_flip(U, Q)  # TODO Port to cuda?
+        self._U = U
+        self._Q = Q
         self._X = X
 
         n = X.shape[0]
