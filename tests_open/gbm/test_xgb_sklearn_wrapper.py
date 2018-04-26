@@ -18,13 +18,13 @@ def test_drf_regressor_backupsklearn(backend='auto'):
     Solver = h2o4gpu.RandomForestRegressor
 
     #Run h2o4gpu version of RandomForest Regression
-    drf = Solver(backend=backend, random_state=1234, oob_score=True)
+    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
     from h2o4gpu.ensemble import RandomForestRegressorSklearn
-    drf_sk = RandomForestRegressorSklearn(random_state=1234, oob_score=True, max_depth=3)
+    drf_sk = RandomForestRegressorSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
@@ -71,13 +71,13 @@ def test_drf_classifier_backupsklearn(backend='auto'):
     Solver = h2o4gpu.RandomForestClassifier
 
     #Run h2o4gpu version of RandomForest Regression
-    drf = Solver(backend=backend, random_state=1234, oob_score=True)
+    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
     from h2o4gpu.ensemble import RandomForestClassifierSklearn
-    drf_sk = RandomForestClassifierSklearn(random_state=1234, oob_score=True, max_depth=3)
+    drf_sk = RandomForestClassifierSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
