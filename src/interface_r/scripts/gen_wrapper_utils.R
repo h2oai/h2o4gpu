@@ -83,8 +83,8 @@ gen_wrapper <- function(
           } else if (param %in% c("alpha_min")) {
             write_line(paste0("    ", params[[i]], " = ", 'alpha', suffix))
           } else {
-            if(i == length(params) && r_function %in% c("h2o4gpu.gradient_boosting_classifier","h2o4gpu.gradient_boosting_regressor")) {
-              write_line(paste0("    ",param, ",\n    ...", suffix))
+            if (i == length(params) && r_function %in% c("h2o4gpu.gradient_boosting_classifier","h2o4gpu.gradient_boosting_regressor")) {
+              write_line(paste0("    ", params[[i]], " = ", param, ",\n    ...", suffix))
             } else {
               write_line(paste0("    ", params[[i]], " = ", param, suffix))
             }
