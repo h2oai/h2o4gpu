@@ -1,4 +1,5 @@
 # - * - encoding : utf - 8 - * -
+# pylint: disable=fixme, line-too-long
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -12,16 +13,50 @@ from ..solvers.utils import _setter
 class LinearRegression(object):
     """H2O LinearRegression Regression Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.ElasticNetH2O
-        and h2o4gpu.linear_model.base.LinearRegression_sklearn
-        Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
-        help(h2o4gpu.linear_model.base.LinearRegression_sklearn)
+    Parameters
+    ----------
+    fit_intercept : boolean, optional, default True
+        whether to calculate the intercept for this model. If set
+        to False, no intercept will be used in calculations
+        (e.g. data is expected to be already centered).
 
-    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
-        'h2o4gpu'.  Default is 'auto'.
+    normalize : boolean, optional, default False
+        This parameter is ignored when ``fit_intercept`` is set to False.
+        If True, the regressors X will be normalized before regression by
+        subtracting the mean and dividing by the l2-norm.
+        If you wish to standardize, please use
+        :class:`sklearn.preprocessing.StandardScaler` before calling ``fit`` on
+        an estimator with ``normalize=False``.
+
+    copy_X : boolean, optional, default True
+        If True, X will be copied; else, it may be overwritten.
+
+    n_jobs : int, optional, default 1
+        The number of jobs to use for the computation.
+        If -1 all CPUs are used. This will only provide speedup for
+        n_targets > 1 and sufficient large problems.
+
+    tol : float, (Default=1E-2)
+       Relative tolerance.
+
+    n_gpus : int
+        Number of gpu's to use in RandomForestRegressor solver. Default is -1.
+
+    glm_stop_early : bool, (Default=True)
+       Stop early when there is no more relative
+       improvement in the primary and dual residuals for ADMM.
+
+    glm_stop_early_error_fraction : float, (Default=1.0)
+       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at
+       least this much).
+
+    verbose : int, (Default=0)
+       Print verbose information to the console if set to > 0.
+
+    backend : string, (Default="auto")
+        Which backend to use.
+        Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
-
 
     """
 

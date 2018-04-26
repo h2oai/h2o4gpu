@@ -1,4 +1,5 @@
 # - * - encoding : utf - 8 - * -
+# pylint: disable=fixme, line-too-long
 """
 :copyright: 2017 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -12,14 +13,84 @@ from ..solvers.utils import _setter
 class Lasso(object):
     """H2O Lasso Regression Solver
 
-        Selects between h2o4gpu.solvers.elastic_net.ElasticNetH2O
-        and h2o4gpu.linear_model.coordinate_descent.Lasso_sklearn
-        Documentation:
-        import h2o4gpu.solvers ; help(h2o4gpu.solvers.elastic_net.ElasticNetH2O)
-        help(h2o4gpu.linear_model.lasso.Lasso_sklearn)
+    Parameters
+    ----------
+    alpha : float, optional
+        Constant that multiplies the L1 term. Defaults to 1.0.
+        ``alpha = 0`` is equivalent to an ordinary least square, solved
+        by the :class:`LinearRegression` object. For numerical
+        reasons, using ``alpha = 0`` with the ``Lasso`` object is not advised.
+        Given this, you should use the :class:`LinearRegression` object.
 
-    :param: backend : Which backend to use.  Options are 'auto', 'sklearn',
-        'h2o4gpu'.  Default is 'auto'.
+    fit_intercept : boolean
+        whether to calculate the intercept for this model. If set
+        to false, no intercept will be used in calculations
+        (e.g. data is expected to be already centered).
+
+    normalize : boolean, optional, default False
+        This parameter is ignored when ``fit_intercept`` is set to False.
+        If True, the regressors X will be normalized before regression by
+        subtracting the mean and dividing by the l2-norm.
+        If you wish to standardize, please use
+        :class:`sklearn.preprocessing.StandardScaler` before calling ``fit``
+        on an estimator with ``normalize=False``.
+
+    precompute : True | False | array-like, default=False
+        Whether to use a precomputed Gram matrix to speed up
+        calculations. If set to ``'auto'`` let us decide. The Gram
+        matrix can also be passed as argument. For sparse input
+        this option is always ``True`` to preserve sparsity.
+
+    copy_X : boolean, optional, default True
+        If ``True``, X will be copied; else, it may be overwritten.
+
+    max_iter : int, optional
+        The maximum number of iterations
+
+    tol : float, optional
+        The tolerance for the optimization: if the updates are
+        smaller than ``tol``, the optimization code checks the
+        dual gap for optimality and continues until it is smaller
+        than ``tol``.
+
+    warm_start : bool, optional
+        When set to True, reuse the solution of the previous call to fit as
+        initialization, otherwise, just erase the previous solution.
+
+    positive : bool, optional
+        When set to ``True``, forces the coefficients to be positive.
+
+    random_state : int, RandomState instance or None, optional, default None
+        The seed of the pseudo random number generator that selects a random
+        feature to update.  If int, random_state is the seed used by the random
+        number generator; If RandomState instance, random_state is the random
+        number generator; If None, the random number generator is the
+        RandomState instance used by `np.random`. Used when ``selection`` ==
+        'random'.
+
+    selection : str, default 'cyclic'
+        If set to 'random', a random coefficient is updated every iteration
+        rather than looping over features sequentially by default. This
+        (setting to 'random') often leads to significantly faster convergence
+        especially when tol is higher than 1e-4.
+
+    n_gpus : int
+        Number of gpu's to use in RandomForestRegressor solver. Default is -1.
+
+    glm_stop_early : bool, (Default=True)
+       Stop early when there is no more relative
+       improvement in the primary and dual residuals for ADMM.
+
+    glm_stop_early_error_fraction : float, (Default=1.0)
+       Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at
+       least this much).
+
+    verbose : int, (Default=0)
+       Print verbose information to the console if set to > 0.
+
+    backend : string, (Default="auto")
+        Which backend to use.
+        Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
 
     """
