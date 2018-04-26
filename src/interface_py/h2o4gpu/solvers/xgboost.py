@@ -18,7 +18,7 @@ class RandomForestClassifier(object):
 
     Parameters
     ----------
-    n_estimators : integer, optional (default=10)
+    n_estimators : integer, optional (default=100)
         The number of trees in the forest.
 
     criterion : string, optional (default="gini")
@@ -186,7 +186,7 @@ class RandomForestClassifier(object):
 
     def __init__(
             self,
-            n_estimators=10,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
             criterion='gini',
             max_depth=3,  # h2o4gpu
             min_samples_split=2,
@@ -383,7 +383,7 @@ class RandomForestRegressor(object):
 
     Parameters
     ----------
-    n_estimators : integer, optional (default=10)
+    n_estimators : integer, optional (default=100)
         The number of trees in the forest.
 
     criterion : string, optional (default="mse")
@@ -526,7 +526,7 @@ class RandomForestRegressor(object):
 
     def __init__(
             self,
-            n_estimators=10,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
             criterion='mse',
             max_depth=3,  # h2o4gpu
             min_samples_split=2,

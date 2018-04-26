@@ -4,7 +4,7 @@
 \alias{h2o4gpu.random_forest_regressor}
 \title{Random Forest Regressor}
 \usage{
-h2o4gpu.random_forest_regressor(n_estimators = 10L, criterion = "mse",
+h2o4gpu.random_forest_regressor(n_estimators = 100L, criterion = "mse",
   max_depth = 3L, min_samples_split = 2L, min_samples_leaf = 1L,
   min_weight_fraction_leaf = 0, max_features = "auto",
   max_leaf_nodes = NULL, min_impurity_decrease = 0,

@@ -35,7 +35,7 @@
 #' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.random_forest_classifier <- function(
-	n_estimators = 10L,
+	n_estimators = 100L,
 	criterion = "gini",
 	max_depth = 3L,
 	min_samples_split = 2L,
@@ -117,7 +117,7 @@ h2o4gpu.random_forest_classifier <- function(
 #' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
 #' @export
 h2o4gpu.random_forest_regressor <- function(
-	n_estimators = 10L,
+	n_estimators = 100L,
 	criterion = "mse",
 	max_depth = 3L,
 	min_samples_split = 2L,
@@ -208,6 +208,7 @@ h2o4gpu.random_forest_regressor <- function(
 #' @param  base_score The initial prediction score of all instances, global bias.
 #' @param  missing Value in the data which needs to be present as a missing value. If NULL, defaults to np.nan.
 #' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
+#' @param  ... Other parameters for XGBoost object. Full documentation of parameters can be found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md
 #' @export
 h2o4gpu.gradient_boosting_classifier <- function(
 	loss = "deviance",
@@ -245,7 +246,8 @@ h2o4gpu.gradient_boosting_classifier <- function(
 	scale_pos_weight = 1L,
 	base_score = 0.5,
 	missing = NULL,
-	backend = "h2o4gpu") {
+	backend = "h2o4gpu",
+	...) {
 
   model <- h2o4gpu$GradientBoostingClassifier(
     loss = loss,
@@ -283,7 +285,7 @@ h2o4gpu.gradient_boosting_classifier <- function(
     scale_pos_weight = as.integer(scale_pos_weight),
     base_score = base_score,
     missing = missing,
-    backend = backend
+    backend = backend, ...
   )
   h2o4gpu_model(model, c("classifier"), "Gradient Boosting Classifier")
 }
@@ -328,6 +330,7 @@ h2o4gpu.gradient_boosting_classifier <- function(
 #' @param  base_score The initial prediction score of all instances, global bias.
 #' @param  missing Value in the data which needs to be present as a missing value. If NULL, defaults to np.nan.
 #' @param  backend Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.
+#' @param  ... Other parameters for XGBoost object. Full documentation of parameters can be found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md
 #' @export
 h2o4gpu.gradient_boosting_regressor <- function(
 	loss = "ls",
@@ -366,7 +369,8 @@ h2o4gpu.gradient_boosting_regressor <- function(
 	scale_pos_weight = 1L,
 	base_score = 0.5,
 	missing = NULL,
-	backend = "h2o4gpu") {
+	backend = "h2o4gpu",
+	...) {
 
   model <- h2o4gpu$GradientBoostingRegressor(
     loss = loss,
@@ -405,7 +409,7 @@ h2o4gpu.gradient_boosting_regressor <- function(
     scale_pos_weight = as.integer(scale_pos_weight),
     base_score = base_score,
     missing = missing,
-    backend = backend
+    backend = backend, ...
   )
   h2o4gpu_model(model, c("regressor"), "Gradient Boosting Regressor")
 }

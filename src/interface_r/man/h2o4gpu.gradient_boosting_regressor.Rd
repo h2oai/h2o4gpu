@@ -16,7 +16,7 @@ h2o4gpu.gradient_boosting_regressor(loss = "ls", learning_rate = 0.1,
   booster = "gbtree", n_jobs = 1L, gamma = 0L, min_child_weight = 1L,
   max_delta_step = 0L, colsample_bylevel = 1L, reg_alpha = 0L,
   reg_lambda = 1L, scale_pos_weight = 1L, base_score = 0.5,
-  missing = NULL, backend = "h2o4gpu")
+  missing = NULL, backend = "h2o4gpu", ...)
 }
 \arguments{
 \item{loss}{loss function to be optimized. 'ls' refers to least squares regression. 'lad' (least absolute deviation) is a highly robust loss function solely based on order information of the input variables. 'huber' is a combination of the two. 'quantile' allows quantile regression (use \code{alpha} to specify the quantile).}
@@ -92,6 +92,8 @@ h2o4gpu.gradient_boosting_regressor(loss = "ls", learning_rate = 0.1,
 \item{missing}{Value in the data which needs to be present as a missing value. If NULL, defaults to np.nan.}
 
 \item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
+
+\item{...}{Other parameters for XGBoost object. Full documentation of parameters can be found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md}
 }
 \description{
 Gradient Boosting Regressor
