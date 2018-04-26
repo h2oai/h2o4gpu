@@ -12,7 +12,11 @@ h2o4gpu.gradient_boosting_regressor(loss = "ls", learning_rate = 0.1,
   max_features = "auto", alpha = 0.9, verbose = 0L,
   max_leaf_nodes = NULL, warm_start = FALSE, presort = "auto",
   colsample_bytree = 1, num_parallel_tree = 1L, tree_method = "gpu_hist",
-  n_gpus = -1L, predictor = "gpu_predictor", backend = "h2o4gpu")
+  n_gpus = -1L, predictor = "gpu_predictor", objective = "reg:linear",
+  booster = "gbtree", n_jobs = 1L, gamma = 0L, min_child_weight = 1L,
+  max_delta_step = 0L, colsample_bylevel = 1L, reg_alpha = 0L,
+  reg_lambda = 1L, scale_pos_weight = 1L, base_score = 0.5,
+  missing = NULL, backend = "h2o4gpu")
 }
 \arguments{
 \item{loss}{loss function to be optimized. 'ls' refers to least squares regression. 'lad' (least absolute deviation) is a highly robust loss function solely based on order information of the input variables. 'huber' is a combination of the two. 'quantile' allows quantile regression (use \code{alpha} to specify the quantile).}
@@ -62,6 +66,30 @@ h2o4gpu.gradient_boosting_regressor(loss = "ls", learning_rate = 0.1,
 \item{n_gpus}{Number of gpu's to use in GradientBoostingRegressor solver. Default is -1.}
 
 \item{predictor}{The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU. - 'cpu_predictor': Multicore CPU prediction algorithm. - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.}
+
+\item{objective}{Specify the learning task and the corresponding learning objective or a custom objective function to be used Note: A custom objective function can be provided for the objective parameter. In this case, it should have the signature objective(y_true, y_pred) -> grad, hess:}
+
+\item{booster}{Specify which booster to use: gbtree, gblinear or dart.}
+
+\item{n_jobs}{Number of parallel threads used to run xgboost.}
+
+\item{gamma}{Minimum loss reduction required to make a further partition on a leaf node of the tree.}
+
+\item{min_child_weight}{Minimum sum of instance weight(hessian) needed in a child.}
+
+\item{max_delta_step}{Maximum delta step we allow each tree’s weight estimation to be.}
+
+\item{colsample_bylevel}{Subsample ratio of columns for each split, in each level.}
+
+\item{reg_alpha}{L1 regularization term on weights}
+
+\item{reg_lambda}{L2 regularization term on weights}
+
+\item{scale_pos_weight}{Balancing of positive and negative weights.}
+
+\item{base_score}{The initial prediction score of all instances, global bias.}
+
+\item{missing}{Value in the data which needs to be present as a missing value. If NULL, defaults to np.nan.}
 
 \item{backend}{Which backend to use. Options are 'auto', 'sklearn', 'h2o4gpu'. Saves as attribute for actual backend used.}
 }
