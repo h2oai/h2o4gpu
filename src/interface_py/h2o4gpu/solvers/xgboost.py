@@ -18,7 +18,7 @@ class RandomForestClassifier(object):
 
     Parameters
     ----------
-    n_estimators : integer, optional (default=10)
+    n_estimators : integer, optional (default=100)
         The number of trees in the forest.
 
     criterion : string, optional (default="gini")
@@ -186,7 +186,7 @@ class RandomForestClassifier(object):
 
     def __init__(
             self,
-            n_estimators=10,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
             criterion='gini',
             max_depth=3,  # h2o4gpu
             min_samples_split=2,
@@ -383,7 +383,7 @@ class RandomForestRegressor(object):
 
     Parameters
     ----------
-    n_estimators : integer, optional (default=10)
+    n_estimators : integer, optional (default=100)
         The number of trees in the forest.
 
     criterion : string, optional (default="mse")
@@ -526,7 +526,7 @@ class RandomForestRegressor(object):
 
     def __init__(
             self,
-            n_estimators=10,  # h2o4gpu
+            n_estimators=100,  # h2o4gpu
             criterion='mse',
             max_depth=3,  # h2o4gpu
             min_samples_split=2,
@@ -862,10 +862,63 @@ class GradientBoostingClassifier(object):
             - 'cpu_predictor': Multicore CPU prediction algorithm.
             - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
 
+    objective : string or callable [default="binary:logistic"]
+        Specify the learning task and the corresponding learning objective or a custom objective function to be used
+        Note:
+        A custom objective function can be provided for the objective parameter. In this case, it should have the signature objective(y_true, y_pred) -> grad, hess:
+
+        y_true: array_like of shape [n_samples]
+                The target values
+        y_pred: array_like of shape [n_samples]
+                The predicted values
+        grad: array_like of shape [n_samples]
+                The value of the gradient for each sample point.
+        hess: array_like of shape [n_samples]
+                The value of the second derivative for each sample point
+
+    booster: string [default='gbtree]
+        Specify which booster to use: gbtree, gblinear or dart.
+
+    n_jobs : int
+        Number of parallel threads used to run xgboost.
+
+    gamma : float
+        Minimum loss reduction required to make a further partition on a leaf node of the tree.
+
+    min_child_weight : int
+        Minimum sum of instance weight(hessian) needed in a child.
+
+    max_delta_step : int
+        Maximum delta step we allow each tree’s weight estimation to be.
+
+    colsample_bylevel : float
+        Subsample ratio of columns for each split, in each level.
+
+    reg_alpha : float (xgb’s alpha)
+        L1 regularization term on weights
+
+    reg_lambda : float (xgb’s lambda)
+        L2 regularization term on weights
+
+    scale_pos_weight : float
+        Balancing of positive and negative weights.
+
+    base_score:
+        The initial prediction score of all instances, global bias.
+
+    missing : float, optional
+        Value in the data which needs to be present as a missing value. If None, defaults to np.nan.
+
     backend : string, (Default="auto")
         Which backend to use.
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
+
+    **kwargs : dict, optional
+        Keyword arguments for XGBoost Booster object. Full documentation of parameters can be
+        found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md.
+        Attempting to set a parameter via the constructor args and **kwargs dict simultaneously will
+        result in a TypeError.
 
     """
 
@@ -895,7 +948,20 @@ class GradientBoostingClassifier(object):
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
-            backend='auto'):  # h2o4gpu
+            objective="binary:logistic",
+            booster='gbtree',
+            n_jobs=1,
+            gamma=0,
+            min_child_weight=1,
+            max_delta_step=0,
+            colsample_bylevel=1,
+            reg_alpha=0,
+            reg_lambda=1,
+            scale_pos_weight=1,
+            base_score=0.5,
+            missing=None,
+            backend='auto',
+            **kwargs):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -980,7 +1046,19 @@ class GradientBoostingClassifier(object):
             tree_method=tree_method,  # h2o4gpu
             n_gpus=n_gpus,  # h2o4gpu
             predictor=predictor,  # h2o4gpu
-            backend=backend)  # h2o4gpu
+            objective=objective,
+            booster=booster,
+            n_jobs=n_jobs,
+            gamma=gamma,
+            min_child_weight=min_child_weight,
+            max_delta_step=max_delta_step,
+            colsample_bylevel=colsample_bylevel,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            scale_pos_weight=scale_pos_weight,
+            base_score=base_score,
+            missing=missing,
+            **kwargs)  # h2o4gpu
 
         if self.do_sklearn:
             if verbose > 0:
@@ -1245,10 +1323,63 @@ class GradientBoostingRegressor(object):
             - 'cpu_predictor': Multicore CPU prediction algorithm.
             - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
 
+    objective : string or callable [default="reg:linear"]
+        Specify the learning task and the corresponding learning objective or a custom objective function to be used
+        Note:
+        A custom objective function can be provided for the objective parameter. In this case, it should have the signature objective(y_true, y_pred) -> grad, hess:
+
+        y_true: array_like of shape [n_samples]
+                The target values
+        y_pred: array_like of shape [n_samples]
+                The predicted values
+        grad: array_like of shape [n_samples]
+                The value of the gradient for each sample point.
+        hess: array_like of shape [n_samples]
+                The value of the second derivative for each sample point
+
+    booster: string [default='gbtree]
+        Specify which booster to use: gbtree, gblinear or dart.
+
+    n_jobs : int
+        Number of parallel threads used to run xgboost.
+
+    gamma : float
+        Minimum loss reduction required to make a further partition on a leaf node of the tree.
+
+    min_child_weight : int
+        Minimum sum of instance weight(hessian) needed in a child.
+
+    max_delta_step : int
+        Maximum delta step we allow each tree’s weight estimation to be.
+
+    colsample_bylevel : float
+        Subsample ratio of columns for each split, in each level.
+
+    reg_alpha : float (xgb’s alpha)
+        L1 regularization term on weights
+
+    reg_lambda : float (xgb’s lambda)
+        L2 regularization term on weights
+
+    scale_pos_weight : float
+        Balancing of positive and negative weights.
+
+    base_score:
+        The initial prediction score of all instances, global bias.
+
+    missing : float, optional
+        Value in the data which needs to be present as a missing value. If None, defaults to np.nan.
+
     backend : string, (Default="auto")
         Which backend to use.
         Options are 'auto', 'sklearn', 'h2o4gpu'.
         Saves as attribute for actual backend used.
+
+    **kwargs : dict, optional
+        Keyword arguments for XGBoost Booster object. Full documentation of parameters can be
+        found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md.
+        Attempting to set a parameter via the constructor args and **kwargs dict simultaneously will
+        result in a TypeError.
 
     """
 
@@ -1279,7 +1410,20 @@ class GradientBoostingRegressor(object):
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
-            backend='auto'):  # h2o4gpu
+            objective="reg:linear",
+            booster='gbtree',
+            n_jobs=1,
+            gamma=0,
+            min_child_weight=1,
+            max_delta_step=0,
+            colsample_bylevel=1,
+            reg_alpha=0,
+            reg_lambda=1,
+            scale_pos_weight=1,
+            base_score=0.5,
+            missing=None,
+            backend='auto',
+            **kwargs):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
@@ -1366,7 +1510,19 @@ class GradientBoostingRegressor(object):
             tree_method=tree_method,  # h2o4gpu
             n_gpus=n_gpus,  # h2o4gpu
             predictor=predictor,  # h2o4gpu
-            backend=backend)  # h2o4gpu
+            objective=objective,
+            booster=booster,
+            n_jobs=n_jobs,
+            gamma=gamma,
+            min_child_weight=min_child_weight,
+            max_delta_step=max_delta_step,
+            colsample_bylevel=colsample_bylevel,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            scale_pos_weight=scale_pos_weight,
+            base_score=base_score,
+            missing=missing,
+            **kwargs)
 
         if self.do_sklearn:
             if verbose > 0:

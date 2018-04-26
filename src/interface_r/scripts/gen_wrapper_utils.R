@@ -22,6 +22,9 @@ gen_wrapper <- function(
         if (!(names(docs$parameters)[i] %in% c("family", "alphas", "alpha_max", "alpha_min", "n_alphas"))) {
           write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
         }
+        if (i == length(docs$parameters) && description %in% c("Gradient Boosting Classifier", "Gradient Boosting Regressor")) {
+          write_line(paste0("#' @param  ...", " Other parameters for XGBoost object. Full documentation of parameters can be found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md"))
+        }
       }
       write_line("#' @export")
       if (is.null(r_function)) {
@@ -31,7 +34,11 @@ gen_wrapper <- function(
       # Generate function signature
       signature <- sub(paste0(docs$name, "\\("),
                        paste(r_function, "<- function(\n\t"), docs$signature)
-      signature <- gsub('backend = "auto"', 'backend = "h2o4gpu"', signature)
+      if(r_function %in% c("h2o4gpu.gradient_boosting_classifier","h2o4gpu.gradient_boosting_regressor")) {
+        signature <- gsub('backend = "auto"', 'backend = "h2o4gpu", ...', signature)
+      } else {
+        signature <- gsub('backend = "auto"', 'backend = "h2o4gpu"', signature)
+      }
       signature <- gsub('family = "elasticnet",', "", signature)
       signature <- gsub('n_alphas = 5L,', "", signature)  #train only 1 GLM model
       signature <- gsub('alpha_max = 1.0,', "", signature)
@@ -76,7 +83,11 @@ gen_wrapper <- function(
           } else if (param %in% c("alpha_min")) {
             write_line(paste0("    ", params[[i]], " = ", 'alpha', suffix))
           } else {
-            write_line(paste0("    ", params[[i]], " = ", param, suffix))
+            if (i == length(params) && r_function %in% c("h2o4gpu.gradient_boosting_classifier","h2o4gpu.gradient_boosting_regressor")) {
+              write_line(paste0("    ", params[[i]], " = ", param, ",\n    ...", suffix))
+            } else {
+              write_line(paste0("    ", params[[i]], " = ", param, suffix))
+            }
           }
         }
       } else {
