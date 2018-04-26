@@ -285,7 +285,8 @@ h2o4gpu.gradient_boosting_classifier <- function(
     scale_pos_weight = as.integer(scale_pos_weight),
     base_score = base_score,
     missing = missing,
-    backend = backend, ...
+    backend,
+    ...
   )
   h2o4gpu_model(model, c("classifier"), "Gradient Boosting Classifier")
 }
@@ -409,7 +410,8 @@ h2o4gpu.gradient_boosting_regressor <- function(
     scale_pos_weight = as.integer(scale_pos_weight),
     base_score = base_score,
     missing = missing,
-    backend = backend, ...
+    backend,
+    ...
   )
   h2o4gpu_model(model, c("regressor"), "Gradient Boosting Regressor")
 }

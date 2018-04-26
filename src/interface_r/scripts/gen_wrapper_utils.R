@@ -22,7 +22,7 @@ gen_wrapper <- function(
         if (!(names(docs$parameters)[i] %in% c("family", "alphas", "alpha_max", "alpha_min", "n_alphas"))) {
           write_line(paste0("#' @param ", " ", names(docs$parameters)[i], " ", docs$sections[i]))
         }
-        if(i == length(docs$parameters) && description %in% c("Gradient Boosting Classifier", "Gradient Boosting Regressor")) {
+        if (i == length(docs$parameters) && description %in% c("Gradient Boosting Classifier", "Gradient Boosting Regressor")) {
           write_line(paste0("#' @param  ...", " Other parameters for XGBoost object. Full documentation of parameters can be found here: https://github.com/dmlc/xgboost/blob/master/doc/parameter.md"))
         }
       }
@@ -84,7 +84,7 @@ gen_wrapper <- function(
             write_line(paste0("    ", params[[i]], " = ", 'alpha', suffix))
           } else {
             if(i == length(params) && r_function %in% c("h2o4gpu.gradient_boosting_classifier","h2o4gpu.gradient_boosting_regressor")) {
-              write_line(paste0("    ", params[[i]], " = ", param, ", ...", suffix))
+              write_line(paste0("    ",param, ",\n    ...", suffix))
             } else {
               write_line(paste0("    ", params[[i]], " = ", param, suffix))
             }
