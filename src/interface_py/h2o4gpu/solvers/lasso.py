@@ -12,7 +12,7 @@ from ..solvers.utils import _setter
 class Lasso(object):
     """H2O Lasso Regression Solver
 
- Parameters
+    Parameters
     ----------
     alpha : float, optional
         Constant that multiplies the L1 term. Defaults to 1.0.
