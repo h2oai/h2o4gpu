@@ -20,7 +20,7 @@ def func(m=5000, n=10, k=9, convert_to_float32=False):
 
     total_gpu, total_mem, gpu_type = gpu.get_gpu_info()
 
-    if(total_gpu > 0):
+    if(total_gpu > 1): #More than one gpu?
         gpu_id = 1 #Use second gpu
 
     print("\n")

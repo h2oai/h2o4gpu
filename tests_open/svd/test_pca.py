@@ -24,7 +24,7 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
     if change_gpu_id:
         total_gpu, total_mem, gpu_type = gpu.get_gpu_info()
 
-        if(total_gpu > 0):
+        if(total_gpu > 1): #More than one gpu?
             gpu_id = 1 #Use second gpu
 
     print("\n")
