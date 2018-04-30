@@ -1,0 +1,44 @@
+template:
+  params:
+    bootswatch: flatly
+
+navbar:
+  title: "h2o4gpu"
+  type: inverse
+  left:
+    - text: "Tutorials"
+      menu:
+      - text: "Getting started - Machine Learning with GPUs"
+        href: articles/getting_started.html
+    - text: "News"
+      href: news/index.html
+    - text: "API Reference"
+      href: reference/index.html
+  right:
+   - icon: fa-github
+     href: https://github.com/h2oai/h2o4gpu-r
+
+reference:
+
+  - title: "Estimator Methods"
+    contents:
+      - fit.h2o4gpu_model
+      - predict.h2o4gpu_model
+      - transform.h2o4gpu_model
+  
+  - title: "Supervised Estimators"
+    contents:
+      - h2o4gpu.random_forest_classifier
+      - h2o4gpu.random_forest_regressor
+      - h2o4gpu.gradient_boosting_classifier
+      - h2o4gpu.gradient_boosting_regressor
+      - h2o4gpu.elastic_net_regressor
+      - h2o4gpu.elastic_net_classifier
+
+  - title: "Unsupervised Estimators"
+    contents:
+      - h2o4gpu.kmeans
+      - h2o4gpu.pca
+      - h2o4gpu.truncated_svd
+      
+      
