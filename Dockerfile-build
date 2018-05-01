@@ -126,7 +126,6 @@ RUN \
 
 # Arrow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-    yum install -y git boost-devel && \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
 	git checkout tags/apache-arrow-0.8.0 && \
