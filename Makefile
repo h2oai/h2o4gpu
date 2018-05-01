@@ -171,7 +171,6 @@ buildinstall: alldeps build install
 #########################################
 # DOCKER TARGETS
 #########################################
-
 DOCKER_CUDA_VERSION?=9.0
 
 ifeq (${DOCKER_CUDA_VERSION},8.0)
