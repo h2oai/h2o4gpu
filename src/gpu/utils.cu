@@ -38,7 +38,13 @@ int cudaresetdevice_bare(void) {
 
 int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
   cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, d_idx);
+  cudaError_t error;
+  error = cudaGetDeviceProperties(&prop, d_idx);
+  if(error != cudaSuccess){
+    std::cerr << "cudaGetDeviceProperties got error code " << (int)error << std::endl;
+    std::cout << "cudaGetDeviceProperties got error code " << (int)error << std::endl;
+    return(error);
+  }
   *major = prop.major;
   *minor = prop.minor;
   *ratioperf = prop.singleToDoublePrecisionPerfRatio;

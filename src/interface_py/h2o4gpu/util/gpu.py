@@ -316,6 +316,7 @@ def get_compute_capability_subprocess(gpu_id):
     device_minor = 0
     device_ratioperf = 0
     if n_gpus > 0 and lib is not None:
-        _, device_major, device_minor, device_ratioperf = \
+        error, device_major, device_minor, device_ratioperf = \
             lib.get_compute_capability(gpu_id)
+        assert error == 0, "Error in get_compute_capability_subprocess"
     return device_major, device_minor, device_ratioperf
