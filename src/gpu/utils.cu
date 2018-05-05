@@ -85,7 +85,11 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     assert(rv == NVML_SUCCESS);
 #else
     int ratioperf;
-    get_compute_capability(i, &majors[i], &minors[i], &ratioperf);
+    // if this gets called in process, it creates cuda context,
+    // but can't assume user wants that to happen, so cripple the function for now
+    //get_compute_capability(i, &majors[i], &minors[i], &ratioperf);
+    majors[i] = -1;
+    minors[i] = -1;
 #endif
   }
 

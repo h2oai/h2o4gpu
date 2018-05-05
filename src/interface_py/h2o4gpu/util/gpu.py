@@ -187,6 +187,11 @@ def get_gpu_info_c(return_usage=False, return_capability=False,
         if verbose:
             print(e)
 
+    if return_capability or return_all:
+        if list(minors_tmp)[0] == -1:
+            for j in which_gpus:
+                majors_tmp[j], minors_tmp[j], _ = get_compute_capability_orig(j)
+
     total_mems_actual = np.resize(total_mems_tmp, total_gpus_actual)
     free_mems_actual = np.resize(free_mems_tmp, total_gpus_actual)
     gpu_types_actual = np.resize(gpu_types_tmp, total_gpus_actual)
