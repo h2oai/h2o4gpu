@@ -6,6 +6,8 @@
 
 namespace pca
 {
+	using namespace device;
+	using namespace h2o4gpu;
 
 	/**
 	* Conduct PCA on a matrix
@@ -22,7 +24,7 @@ namespace pca
 	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float* _X_transformed, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
 		try {
 
-			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+			safe_cuda(cudaSetDevice(_param.gpu_id));
 
 			//Take in X matrix and allocate for X^TX
 			tsvd::Matrix<float>X(_param.X_m, _param.X_n);
@@ -31,7 +33,7 @@ namespace pca
 			tsvd::Matrix<float>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			tsvd::DeviceContext context;
+			DeviceContext context;
 
 			//Get columnar means
 			tsvd::Matrix<float>XOnes(X.rows(), 1);
@@ -76,7 +78,7 @@ namespace pca
 	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double* _X_transformed, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
 		try {
 
-			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+			safe_cuda(cudaSetDevice(_param.gpu_id));
 
 			//Take in X matrix and allocate for X^TX
 			tsvd::Matrix<double>X(_param.X_m, _param.X_n);
@@ -85,7 +87,7 @@ namespace pca
 			tsvd::Matrix<double>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			tsvd::DeviceContext context;
+			DeviceContext context;
 
 			//Get columnar means
 			tsvd::Matrix<double>XOnes(X.rows(), 1);

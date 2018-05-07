@@ -14,6 +14,9 @@
 namespace tsvd
 {
 
+	using namespace h2o4gpu;
+	using namespace device;
+
 	/**
 	 * Division utility to get explained variance ratio
 	 *

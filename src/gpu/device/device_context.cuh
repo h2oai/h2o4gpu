@@ -6,6 +6,8 @@
 
 namespace device
 {
+	using namespace h2o4gpu;
+
 	class DeviceContext
 	{
 	public:

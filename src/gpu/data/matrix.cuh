@@ -6,6 +6,8 @@
 
 namespace tsvd
 {
+	using namespace device;
+	using namespace h2o4gpu;
 
 	typedef float  tsvd_float;
 	typedef double tsvd_double;

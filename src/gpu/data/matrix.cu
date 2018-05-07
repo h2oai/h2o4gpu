@@ -5,6 +5,9 @@
 
 namespace tsvd
 {
+	using namespace device;
+	using namespace h2o4gpu;
+
 	void max_index_per_column(Matrix<tsvd_float>& A, std::vector<int>& result_array, DeviceContext& context){
 
 		int result;
