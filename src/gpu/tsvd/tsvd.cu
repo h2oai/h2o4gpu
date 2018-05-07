@@ -1,6 +1,6 @@
 #include <cstdio>
 #include "cuda_runtime.h"
-#include "utils.cuh"
+#include "../utils/utils.cuh"
 #include "../device/device_context.cuh"
 #include "../../include/solver/tsvd.h"
 #include <ctime>

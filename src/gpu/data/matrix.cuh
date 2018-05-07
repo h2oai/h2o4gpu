@@ -1,5 +1,5 @@
 #pragma once
-#include "../tsvd/utils.cuh"
+#include "../utils/utils.cuh"
 #include "../device/device_context.cuh"
 #include "cusolverDn.h"
 #include <../../../cub/cub/cub.cuh>
@@ -275,7 +275,7 @@ namespace tsvd
 
 		void copy(const Matrix<T>& M)
 		{
-			tsvd_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
+			h2o4gpu_check(M.rows() == this->rows()&&M.columns() == this->columns(), "Cannot copy matrix. Dimensions are different.");
 			thrust::copy(M.dptr(), M.dptr() + M.size(), this->dptr());
 		}
 

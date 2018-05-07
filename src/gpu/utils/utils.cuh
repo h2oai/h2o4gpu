@@ -10,9 +10,9 @@
 #include <cusparse.h>
 
 // TODO change this to h2o4gpu and move to gpu folder
-namespace tsvd
+namespace h2o4gpu
 {
-#define tsvd_error(x) error(x, __FILE__, __LINE__);
+#define h2o4gpu_error(x) error(x, __FILE__, __LINE__);
 
 	inline void error(const char* e, const char* file, int line)
 	{
@@ -23,7 +23,7 @@ namespace tsvd
 		exit(-1);
 	}
 
-#define tsvd_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
+#define h2o4gpu_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
 
 	inline void check(bool val, const char* e, const char* file, int line)
 	{

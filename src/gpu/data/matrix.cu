@@ -128,7 +128,7 @@ namespace tsvd
 
 	void transpose(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& B, DeviceContext& context)
 	{
-		tsvd_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
+		h2o4gpu_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
 		const tsvd_float alpha = 1.0f;
 		const tsvd_float beta = 0.0f;
 		safe_cublas(cublasSgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
@@ -136,7 +136,7 @@ namespace tsvd
 
 	void transpose(const Matrix<tsvd_double>& A, Matrix<tsvd_double>& B, DeviceContext& context)
 	{
-		tsvd_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
+		h2o4gpu_check(A.rows() == B.columns()&&A.columns() == B.rows(), "Transpose dimensions incorrect");
 		const tsvd_double alpha = 1.0f;
 		const tsvd_double beta = 0.0f;
 		safe_cublas(cublasDgeam(context.cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, B.rows(), B.columns(), &alpha, A.data(), A.rows(), &beta, NULL, B.rows(), B.data(), B.rows()));
@@ -230,9 +230,9 @@ namespace tsvd
 
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_float>& X, Matrix<tsvd_float>& Q, Matrix<tsvd_float>& w, DeviceContext& context)
 	{
-		tsvd_check(X.rows() == X.columns(), "X must be a symmetric matrix");
-		tsvd_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
-		tsvd_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+		h2o4gpu_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		h2o4gpu_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		h2o4gpu_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
 
 		int lwork;
 		safe_cusolver(cusolverDnSsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
@@ -252,9 +252,9 @@ namespace tsvd
 
 	void calculate_eigen_pairs_exact(const Matrix<tsvd_double>& X, Matrix<tsvd_double>& Q, Matrix<tsvd_double>& w, DeviceContext& context)
 	{
-		tsvd_check(X.rows() == X.columns(), "X must be a symmetric matrix");
-		tsvd_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
-		tsvd_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
+		h2o4gpu_check(X.rows() == X.columns(), "X must be a symmetric matrix");
+		h2o4gpu_check(X.rows() == Q.rows() && X.columns() == Q.columns(), "X and Q must have the same dimension");
+		h2o4gpu_check(w.rows() == Q.columns(), "Q and w should have the same number of columns");
 
 		int lwork;
 		safe_cusolver(cusolverDnDsyevd_bufferSize(context.cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER, X.rows(), X.data(), X.columns(), w.data(), &lwork));
@@ -286,8 +286,8 @@ namespace tsvd
 	//Stricly floating point operations that are not used
 	void linear_solve(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& X, const Matrix<tsvd_float>& B, DeviceContext& context)
 	{
-		tsvd_check(A.rows()>= A.columns(),"Linear solve requires m >= n");
-		tsvd_check(X.rows()>= X.columns(),"Linear solve requires n >= k"); //TODO: is this restriction necessary?
+		h2o4gpu_check(A.rows()>= A.columns(),"Linear solve requires m >= n");
+		h2o4gpu_check(X.rows()>= X.columns(),"Linear solve requires n >= k"); //TODO: is this restriction necessary?
 
 		Matrix<tsvd_float> A_copy(A);
 		Matrix<tsvd_float> B_copy(A.rows(), A.columns());
@@ -308,10 +308,10 @@ namespace tsvd
 
 		safe_cusolver(cusolverDnSgeqrf(context.cusolver_handle, A_copy.rows(), A_copy.columns(), A_copy.data(), A_copy.rows(), d_tau, d_work, work_size, d_dev_info));
 
-		tsvd_check(dev_info[0] == 0, "geqrf unsuccessful");
+		h2o4gpu_check(dev_info[0] == 0, "geqrf unsuccessful");
 
 		safe_cusolver(cusolverDnSormqr(context.cusolver_handle, CUBLAS_SIDE_LEFT, CUBLAS_OP_T, A.rows(), A.columns(), (std::min)(A.rows(), A.columns()), A_copy.data(), A.rows(), d_tau, B_copy.data(), A.rows(), d_work, work_size, d_dev_info));
-		tsvd_check(dev_info[0] == 0, "ormqr unsuccessful");
+		h2o4gpu_check(dev_info[0] == 0, "ormqr unsuccessful");
 
 		Matrix<tsvd_float> R(A.columns(), A.columns());
 		Matrix<tsvd_float> QTB(A.columns(), B.columns());
@@ -343,7 +343,7 @@ namespace tsvd
 
 	void pseudoinverse(const Matrix<tsvd_float>& A, Matrix<tsvd_float>& pinvA, DeviceContext& context)
 	{
-		tsvd_check(A.rows() == pinvA.columns() && A.columns() == pinvA.rows(), "pseudoinverse dimensions incorrect");
+		h2o4gpu_check(A.rows() == pinvA.columns() && A.columns() == pinvA.rows(), "pseudoinverse dimensions incorrect");
 
 		//Add zero rows if m < n such that m >= n
 		Matrix<tsvd_float> A_extended((std::max)(A.columns(), A.rows()), A.columns());
