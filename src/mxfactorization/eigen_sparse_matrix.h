@@ -22,8 +22,6 @@
 #include <fstream>
 #include <string>
 #include <Eigen/Core>
-#include <Eigen/Sparse>
-#include <Eigen/Dense>
 #include <vector>
 
 #if DEBUG
