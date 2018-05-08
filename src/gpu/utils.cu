@@ -52,7 +52,16 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
 }
 
 
-void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory, char **gpu_name, int *majors, int *minors) {
+void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory,
+ unsigned long long *gpu_free_memory,
+ char **gpu_name,
+ int *majors, int *minors,
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys) {
+
+  bool verbose=false;
+  if(verbose){
+    std::cerr << "inside get_gpu_info_c c function" << std::endl;
+  }
 
   nvmlReturn_t rv;
   rv = nvmlInit();
@@ -69,17 +78,25 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     nvmlReturn_t rv;
     rv = nvmlDeviceGetHandleByIndex(i, &device);
     assert(rv == NVML_SUCCESS);
+
     nvmlUtilization_t utilization;
     rv = nvmlDeviceGetUtilizationRates(device, &utilization);
     assert(rv == NVML_SUCCESS);
     gpu_percent_usage[i] = utilization.gpu;
+
+    if(verbose){
+      std::cerr << "i=" << i << " usage=" << gpu_percent_usage[i] << std::endl;
+    }
+
     nvmlMemory_t memory;
     rv = nvmlDeviceGetMemoryInfo(device, &memory);
     assert(rv == NVML_SUCCESS);
     gpu_total_memory[i] = memory.total;
     gpu_free_memory[i] = memory.free;
+
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
     assert(rv == NVML_SUCCESS);
+
 #if (CUDART_VERSION >= 9000)
     rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
     assert(rv == NVML_SUCCESS);
@@ -91,6 +108,34 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     majors[i] = -1;
     minors[i] = -1;
 #endif
+
+    if(verbose){
+      std::cerr << "i=" << i << " majors=" << majors[i] << " minors=" << minors[i] << std::endl;
+    }
+
+    unsigned int max_pids=2000;
+    unsigned int infoCount;
+    //rv = nvmlDeviceGetComputeRunningProcesses(device, &infoCount, NULL);
+    //assert(rv == NVML_SUCCESS);
+    infoCount = max_pids;
+    nvmlProcessInfo_t infos[infoCount];
+    unsigned int num_pid_local;
+    num_pids[i] = infoCount;
+    rv = nvmlDeviceGetComputeRunningProcesses(device, &num_pids[i], infos);
+    assert(rv == NVML_SUCCESS);
+    if(num_pids[i] > max_pids){
+       std::cerr << "Too many pids: " << num_pids[i] << " .  Increase max_pids: " << max_pids << std::endl;
+       assert(num_pids[i] <= max_pids);
+    }
+    for (unsigned int pidi=0; pidi < num_pids[i]; pidi++) {
+        pids[pidi + i * max_pids] = infos[pidi].pid;
+        usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
+
+        if(verbose){
+          std::cerr << "i=" << i << " pidi=" << pidi << " pids=" << pids[pidi + i * max_pids] << " gpumemory=" << usedGpuMemorys[pidi + i * max_pids] << std::endl;
+        }
+
+    }
   }
 
 }
