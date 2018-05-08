@@ -1,18 +1,20 @@
 #pragma once
 #include "cublas_v2.h"
-#include "../tsvd/utils.cuh"
+#include "../utils/utils.cuh"
 #include <cusparse.h>
 #include <cusolverDn.h>
 
-namespace tsvd
+namespace device
 {
+	using namespace h2o4gpu;
+
 	class DeviceContext
 	{
 	public:
 		cublasHandle_t cublas_handle;
 		cusolverDnHandle_t cusolver_handle;
 		cusparseHandle_t cusparse_handle;
-		CubMemory cub_mem;
+		h2o4gpu::CubMemory cub_mem;
 
 		DeviceContext()
 		{
