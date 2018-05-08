@@ -11,7 +11,7 @@ class CPUlib(object):
         pass
 
     @staticmethod
-    def get(verbose=1):
+    def get(verbose=0):
         """Get the CPU module object"""
         # SWIG generated files contain some deprecated calls to imp
         with warnings.catch_warnings():
@@ -36,7 +36,7 @@ class GPUlib(object):
         pass
 
     @staticmethod
-    def get(verbose=1):
+    def get(verbose=0):
         """Get the GPU module object"""
         # SWIG generated files contain some deprecated calls to imp
         with warnings.catch_warnings():
@@ -53,7 +53,7 @@ class GPUlib(object):
                 return None
 
 
-def get_lib(n_gpus, devices, verbose=1):
+def get_lib(n_gpus, devices, verbose=0):
     """Load either CPU or GPU H2O4GPU library."""
     cpu_lib = CPUlib().get(verbose=verbose)
     gpu_lib = GPUlib().get(verbose=verbose)
