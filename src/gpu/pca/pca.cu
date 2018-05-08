@@ -6,7 +6,6 @@
 
 namespace pca
 {
-	using namespace device;
 	using namespace h2o4gpu;
 
 	/**
@@ -33,7 +32,7 @@ namespace pca
 			tsvd::Matrix<float>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			DeviceContext context;
+			device::DeviceContext context;
 
 			//Get columnar means
 			tsvd::Matrix<float>XOnes(X.rows(), 1);
@@ -87,7 +86,7 @@ namespace pca
 			tsvd::Matrix<double>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			DeviceContext context;
+			device::DeviceContext context;
 
 			//Get columnar means
 			tsvd::Matrix<double>XOnes(X.rows(), 1);

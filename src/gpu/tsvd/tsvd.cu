@@ -15,7 +15,6 @@ namespace tsvd
 {
 
 	using namespace h2o4gpu;
-	using namespace device;
 
 	/**
 	 * Division utility to get explained variance ratio
@@ -26,7 +25,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void divide(const Matrix<T> &XVar, const Matrix<T> &XVarSum, Matrix<T> &ExplainedVarRatio, DeviceContext &context){
+	void divide(const Matrix<T> &XVar, const Matrix<T> &XVarSum, Matrix<T> &ExplainedVarRatio, device::DeviceContext &context){
 		auto d_x_var = XVar.data();
 		auto d_x_var_sum = XVarSum.data();
 		auto d_expl_var_ratio = ExplainedVarRatio.data();
@@ -49,7 +48,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void square_val(const Matrix<T> &UmultSigma, Matrix<T> &UmultSigmaSquare, DeviceContext &context){
+	void square_val(const Matrix<T> &UmultSigma, Matrix<T> &UmultSigmaSquare, device::DeviceContext &context){
 		auto n = UmultSigma.columns();
 		auto m = UmultSigma.rows();
 		auto k = UmultSigmaSquare.rows();
@@ -71,7 +70,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void calc_var_numerator(Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, DeviceContext &context){
+	void calc_var_numerator(Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, device::DeviceContext &context){
 		auto counting = thrust::make_counting_iterator(0);
 		auto d_X = X.data();
 		auto d_Mean = UColMean.data();
@@ -96,7 +95,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void col_reverse_q(const Matrix<T> &Q, Matrix<T> &QReversed, DeviceContext &context){
+	void col_reverse_q(const Matrix<T> &Q, Matrix<T> &QReversed, device::DeviceContext &context){
 		auto n = Q.columns();
 		auto m = Q.rows();
 		auto k = QReversed.rows();
@@ -120,7 +119,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void row_reverse_trunc_q(const Matrix<T> &Qt, Matrix<T> &QtTrunc, DeviceContext &context){
+	void row_reverse_trunc_q(const Matrix<T> &Qt, Matrix<T> &QtTrunc, device::DeviceContext &context){
 		auto m = Qt.rows();
 		auto k = QtTrunc.rows();
 		auto d_q = Qt.data();
@@ -144,7 +143,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void get_abs(const Matrix<T> &U, Matrix<T> &U_abs, DeviceContext &context){
+	void get_abs(const Matrix<T> &U, Matrix<T> &U_abs, device::DeviceContext &context){
 		thrust::transform(U.dptr(), U.dptr() + U.size(), U_abs.dptr(), [=]__device__(T val){
             return abs(val);
         });
@@ -161,7 +160,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void calculate_u(const Matrix<T> &X, const Matrix<T> &Q, const Matrix<T> &w, Matrix<T> &U, DeviceContext &context){
+	void calculate_u(const Matrix<T> &X, const Matrix<T> &Q, const Matrix<T> &w, Matrix<T> &U, device::DeviceContext &context){
 		multiply(X, Q, U, context, false, false, 1.0f); //A*V
 		auto d_u = U.data();
 		auto d_sigma = w.data();
@@ -187,7 +186,7 @@ namespace tsvd
 	 * 4.Explained Variance Ratio
 	 */
 	template<typename T, typename S>
-	void get_tsvd_attr(Matrix<T> &X, Matrix<T> &Q, S _Q, Matrix<T> &w, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param, DeviceContext &context){
+	void get_tsvd_attr(Matrix<T> &X, Matrix<T> &Q, S _Q, Matrix<T> &w, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param, device::DeviceContext &context){
 
 		//Obtain Q^T to obtain vector as row major order
 		Matrix<T>Qt(Q.columns(), Q.rows());
@@ -294,12 +293,12 @@ namespace tsvd
 	}
 
 
-	void outer_product(Matrix<float>& A, float eigen_value, const Matrix<float>& eigen_vector, const Matrix<float>& eigen_vector_transpose, DeviceContext& context)
+	void outer_product(Matrix<float>& A, float eigen_value, const Matrix<float>& eigen_vector, const Matrix<float>& eigen_vector_transpose, device::DeviceContext& context)
 	{
 		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
-	void outer_product(Matrix<double>& A, double eigen_value, const Matrix<double>& eigen_vector, const Matrix<double>& eigen_vector_transpose, DeviceContext& context)
+	void outer_product(Matrix<double>& A, double eigen_value, const Matrix<double>& eigen_vector, const Matrix<double>& eigen_vector_transpose, device::DeviceContext& context)
 	{
 		safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
@@ -321,7 +320,7 @@ namespace tsvd
 		Matrix<T>XtX(_param.X_n, _param.X_n);
 
 		//Create context
-		DeviceContext context;
+		device::DeviceContext context;
 
 		//Multiply X and Xt and output result to XtX
 		multiply(X, X, XtX, context, true, false, 1.0f);
@@ -355,7 +354,7 @@ namespace tsvd
 		Matrix<T>A(M.rows(), M.columns());
 
 		//Create context
-		DeviceContext context;
+		device::DeviceContext context;
 
 		//Multiply X and Xt and output result to XtX
 		multiply(X, X, M, context, true, false, 1.0f);
