@@ -178,7 +178,7 @@ def get_gpu_info_c(return_usage=False,
 
     try:
         from ..libs.lib_utils import GPUlib
-        lib = GPUlib().get()
+        lib = GPUlib().get(verbose=0 if not verbose else 1)
 
         total_gpus_actual = \
             lib.get_gpu_info_c(usages_tmp, total_mems_tmp, free_mems_tmp,
@@ -290,8 +290,12 @@ def get_compute_capability(gpu_id):
     """
     Get compute capability for all gpus
     """
-    total_gpus, _, _, majors, minors =\
-        get_gpu_info_c(return_capability=True)
+    try:
+        total_gpus, _, _, majors, minors =\
+            get_gpu_info_c(return_capability=True)
+    # pylint: disable=bare-except
+    except:
+        total_gpus = 0
     if total_gpus > 0:
         gpu_id = gpu_id % total_gpus
         device_major = majors.tolist()[gpu_id]

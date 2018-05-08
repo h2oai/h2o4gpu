@@ -11,7 +11,7 @@ class CPUlib(object):
         pass
 
     @staticmethod
-    def get():
+    def get(verbose=1):
         """Get the CPU module object"""
         # SWIG generated files contain some deprecated calls to imp
         with warnings.catch_warnings():
@@ -20,10 +20,11 @@ class CPUlib(object):
                 import h2o4gpu.libs.ch2o4gpu_cpu as ch2o4gpu_cpu
                 return ch2o4gpu_cpu
             except ImportError as e:
-                print("Exception:")
-                print(e)
-                print('\nWarning: h2o4gpu shared object (dynamic library)'
-                      ' for CPU failed to load.')
+                if verbose > 0:
+                    print("Exception:")
+                    print(e)
+                    print('\nWarning: h2o4gpu shared object (dynamic library)'
+                          ' for CPU failed to load.')
                 return None
 
 
@@ -35,7 +36,7 @@ class GPUlib(object):
         pass
 
     @staticmethod
-    def get():
+    def get(verbose=1):
         """Get the GPU module object"""
         # SWIG generated files contain some deprecated calls to imp
         with warnings.catch_warnings():
@@ -44,17 +45,18 @@ class GPUlib(object):
                 import h2o4gpu.libs.ch2o4gpu_gpu as ch2o4gpu_gpu
                 return ch2o4gpu_gpu
             except ImportError as e:
-                print("Exception:")
-                print(e)
-                print('\nWarning: h2o4gpu shared object (dynamic library)'
-                      ' for GPU failed to load.')
+                if verbose > 0:
+                    print("Exception:")
+                    print(e)
+                    print('\nWarning: h2o4gpu shared object (dynamic library)'
+                          ' for GPU failed to load.')
                 return None
 
 
-def get_lib(n_gpus, devices, verbose=0):
+def get_lib(n_gpus, devices, verbose=1):
     """Load either CPU or GPU H2O4GPU library."""
-    cpu_lib = CPUlib().get()
-    gpu_lib = GPUlib().get()
+    cpu_lib = CPUlib().get(verbose=verbose)
+    gpu_lib = GPUlib().get(verbose=verbose)
     if (n_gpus == 0) or \
             (gpu_lib is None and cpu_lib is not None) or \
             (devices == 0):
