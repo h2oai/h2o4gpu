@@ -25,7 +25,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void divide(const Matrix<T> &XVar, const Matrix<T> &XVarSum, Matrix<T> &ExplainedVarRatio, device::DeviceContext &context){
+	void divide(const matrix::Matrix<T> &XVar, const matrix::Matrix<T> &XVarSum, matrix::Matrix<T> &ExplainedVarRatio, device::DeviceContext &context){
 		auto d_x_var = XVar.data();
 		auto d_x_var_sum = XVarSum.data();
 		auto d_expl_var_ratio = ExplainedVarRatio.data();
@@ -41,14 +41,14 @@ namespace tsvd
 	}
 
 	/**
-	 * Square each value in a matrix
+	 * Square each value in a matrix::Matrix
 	 *
 	 * @param UmultSigma
 	 * @param UmultSigmaSquare
 	 * @param context
 	 */
 	template<typename T>
-	void square_val(const Matrix<T> &UmultSigma, Matrix<T> &UmultSigmaSquare, device::DeviceContext &context){
+	void square_val(const matrix::Matrix<T> &UmultSigma, matrix::Matrix<T> &UmultSigmaSquare, device::DeviceContext &context){
 		auto n = UmultSigma.columns();
 		auto m = UmultSigma.rows();
 		auto k = UmultSigmaSquare.rows();
@@ -62,7 +62,7 @@ namespace tsvd
 	}
 
 	/**
-	 * Utility to calculate variance for each column of a matrix
+	 * Utility to calculate variance for each column of a matrix::Matrix
 	 *
 	 * @param X
 	 * @param UColMean
@@ -70,7 +70,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void calc_var_numerator(Matrix<T> &X, const Matrix<T> &UColMean, Matrix<T> &UVar, device::DeviceContext &context){
+	void calc_var_numerator(matrix::Matrix<T> &X, const matrix::Matrix<T> &UColMean, matrix::Matrix<T> &UVar, device::DeviceContext &context){
 		auto counting = thrust::make_counting_iterator(0);
 		auto d_X = X.data();
 		auto d_Mean = UColMean.data();
@@ -81,7 +81,7 @@ namespace tsvd
 			d_X[idx] = std::pow(d_X[idx] - d_Mean[column],2);
 		});
 
-		Matrix<T>Ones(X.rows(), 1);
+		matrix::Matrix<T>Ones(X.rows(), 1);
 		Ones.fill(1.0f);
 		multiply(X, Ones, UVar, context, true, false, 1.0f);
 
@@ -95,7 +95,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void col_reverse_q(const Matrix<T> &Q, Matrix<T> &QReversed, device::DeviceContext &context){
+	void col_reverse_q(const matrix::Matrix<T> &Q, matrix::Matrix<T> &QReversed, device::DeviceContext &context){
 		auto n = Q.columns();
 		auto m = Q.rows();
 		auto k = QReversed.rows();
@@ -119,7 +119,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void row_reverse_trunc_q(const Matrix<T> &Qt, Matrix<T> &QtTrunc, device::DeviceContext &context){
+	void row_reverse_trunc_q(const matrix::Matrix<T> &Qt, matrix::Matrix<T> &QtTrunc, device::DeviceContext &context){
 		auto m = Qt.rows();
 		auto k = QtTrunc.rows();
 		auto d_q = Qt.data();
@@ -136,22 +136,22 @@ namespace tsvd
 	}
 
 	/**
-	 * Transform matrix into absolute values
+	 * Transform matrix::Matrix into absolute values
 	 *
 	 * @param UmultSigma
 	 * @param UmultSigmaSquare
 	 * @param context
 	 */
 	template<typename T>
-	void get_abs(const Matrix<T> &U, Matrix<T> &U_abs, device::DeviceContext &context){
+	void get_abs(const matrix::Matrix<T> &U, matrix::Matrix<T> &U_abs, device::DeviceContext &context){
 		thrust::transform(U.dptr(), U.dptr() + U.size(), U_abs.dptr(), [=]__device__(T val){
             return abs(val);
         });
 	}
 
 	/**
-	 * Calculate the U matrix, which is defined as:
-	 * U = A*V/sigma where A is our X Matrix, V is Q, and sigma is 1/w_i
+	 * Calculate the U matrix::Matrix, which is defined as:
+	 * U = A*V/sigma where A is our X matrix::Matrix, V is Q, and sigma is 1/w_i
 	 *
 	 * @param X
 	 * @param Q
@@ -160,7 +160,7 @@ namespace tsvd
 	 * @param context
 	 */
 	template<typename T>
-	void calculate_u(const Matrix<T> &X, const Matrix<T> &Q, const Matrix<T> &w, Matrix<T> &U, device::DeviceContext &context){
+	void calculate_u(const matrix::Matrix<T> &X, const matrix::Matrix<T> &Q, const matrix::Matrix<T> &w, matrix::Matrix<T> &U, device::DeviceContext &context){
 		multiply(X, Q, U, context, false, false, 1.0f); //A*V
 		auto d_u = U.data();
 		auto d_sigma = w.data();
@@ -181,17 +181,17 @@ namespace tsvd
 	/**
 	 * Obtain SVD attributes, which are as follows:
 	 * 1.Singular Values
-	 * 2.U matrix
+	 * 2.U matrix::Matrix
 	 * 3.Explained Variance
 	 * 4.Explained Variance Ratio
 	 */
 	template<typename T, typename S>
-	void get_tsvd_attr(Matrix<T> &X, Matrix<T> &Q, S _Q, Matrix<T> &w, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param, device::DeviceContext &context){
+	void get_tsvd_attr(matrix::Matrix<T> &X, matrix::Matrix<T> &Q, S _Q, matrix::Matrix<T> &w, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param, device::DeviceContext &context){
 
 		//Obtain Q^T to obtain vector as row major order
-		Matrix<T>Qt(Q.columns(), Q.rows());
+		matrix::Matrix<T>Qt(Q.columns(), Q.rows());
 		transpose(Q, Qt, context); //Needed for calculate_u()
-		Matrix<T>QtTrunc(_param.k, Qt.columns());
+		matrix::Matrix<T>QtTrunc(_param.k, Qt.columns());
 		row_reverse_trunc_q(Qt, QtTrunc, context);
 
 		if (_param.whiten) {
@@ -224,12 +224,12 @@ namespace tsvd
 		w.copy_to_host(w_temp.data()); //Send to host
 		std::reverse(w_temp.begin(), w_temp.end());
 		std::copy(w_temp.begin(), w_temp.begin() + _param.k, _w);
-		Matrix<T>sigma(_param.k, 1);
+		matrix::Matrix<T>sigma(_param.k, 1);
 		sigma.copy(w_temp.data());
 
-		//Get U matrix
-		Matrix<T>U(X.rows(), _param.k);
-		Matrix<T>QReversed(Q.rows(), Q.columns());
+		//Get U matrix::Matrix
+		matrix::Matrix<T>U(X.rows(), _param.k);
+		matrix::Matrix<T>QReversed(Q.rows(), Q.columns());
 		col_reverse_q(Q, QReversed, context);
 		calculate_u(X, QReversed, sigma, U, context);
 
@@ -241,7 +241,7 @@ namespace tsvd
 		 */
 		std::vector<int> result_array(U.columns());
 		max_index_per_column(U, result_array, context);
-		Matrix<T>Signs(1, _param.k);
+		matrix::Matrix<T>Signs(1, _param.k);
 		thrust::device_vector<int> d_results = result_array;
 		auto d_U = U.data();
 		auto d_Signs = Signs.data();
@@ -257,15 +257,15 @@ namespace tsvd
 		QtTrunc.copy_to_host(_Q); //Send to host
 
 		//U * Sigma (_X_transformed)
-		Matrix<T>UmultSigma(U.rows(), U.columns());
+		matrix::Matrix<T>UmultSigma(U.rows(), U.columns());
 		multiply_diag(U, sigma, UmultSigma, context, false);
 		UmultSigma.copy_to_host(_X_transformed); //Send to host
 
 		//Explained Variance
-		Matrix<T>UOnesSigma(UmultSigma.rows(), 1);
+		matrix::Matrix<T>UOnesSigma(UmultSigma.rows(), 1);
 		UOnesSigma.fill(1.0f);
-		Matrix<T>USigmaVar(_param.k, 1);
-		Matrix<T>USigmaColMean(_param.k, 1);
+		matrix::Matrix<T>USigmaVar(_param.k, 1);
+		matrix::Matrix<T>USigmaColMean(_param.k, 1);
 		multiply(UmultSigma, UOnesSigma, USigmaColMean, context, true, false, 1.0f);
 		float m_usigma = UmultSigma.rows();
 		multiply(USigmaColMean, 1/m_usigma, context);
@@ -274,31 +274,31 @@ namespace tsvd
 		USigmaVar.copy_to_host(_explained_variance); //Send to host
 
 		//Explained Variance Ratio
-		//Set aside matrix of 1's for getting sum of columnar variances
-		Matrix<T>XmultOnes(X.rows(), 1);
+		//Set aside matrix::Matrix of 1's for getting sum of columnar variances
+		matrix::Matrix<T>XmultOnes(X.rows(), 1);
 		XmultOnes.fill(1.0f);
-		Matrix<T>XVar(X.columns(), 1);
-		Matrix<T>XColMean(X.columns(), 1);
+		matrix::Matrix<T>XVar(X.columns(), 1);
+		matrix::Matrix<T>XColMean(X.columns(), 1);
 		multiply(X, XmultOnes, XColMean, context, true, false, 1.0f);
 		float m = X.rows();
 		multiply(XColMean, 1/m, context);
 		calc_var_numerator(X, XColMean, XVar, context);
 		multiply(XVar, 1/m, context);
 
-		Matrix<T>XVarSum(1,1);
+		matrix::Matrix<T>XVarSum(1,1);
 		multiply(XVar, XmultOnes, XVarSum, context, true, false, 1.0f);
-		Matrix<T>ExplainedVarRatio(_param.k, 1);
+		matrix::Matrix<T>ExplainedVarRatio(_param.k, 1);
 		divide(USigmaVar, XVarSum, ExplainedVarRatio, context);
 		ExplainedVarRatio.copy_to_host(_explained_variance_ratio); //Send to host
 	}
 
 
-	void outer_product(Matrix<float>& A, float eigen_value, const Matrix<float>& eigen_vector, const Matrix<float>& eigen_vector_transpose, device::DeviceContext& context)
+	void outer_product(matrix::Matrix<float>& A, float eigen_value, const matrix::Matrix<float>& eigen_vector, const matrix::Matrix<float>& eigen_vector_transpose, device::DeviceContext& context)
 	{
 		safe_cublas(cublasSger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
 
-	void outer_product(Matrix<double>& A, double eigen_value, const Matrix<double>& eigen_vector, const Matrix<double>& eigen_vector_transpose, device::DeviceContext& context)
+	void outer_product(matrix::Matrix<double>& A, double eigen_value, const matrix::Matrix<double>& eigen_vector, const matrix::Matrix<double>& eigen_vector_transpose, device::DeviceContext& context)
 	{
 		safe_cublas(cublasDger(context.cublas_handle, A.rows(), A.columns(), &eigen_value, eigen_vector.data(), 1, eigen_vector_transpose.data(), 1, A.data(), A.rows()));
 	}
@@ -315,9 +315,9 @@ namespace tsvd
 	 * @param _param
 	 */
 	template<typename T, typename S>
-	void cusolver_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param){
-		//Allocate matrix for X^TX
-		Matrix<T>XtX(_param.X_n, _param.X_n);
+	void cusolver_tsvd(matrix::Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param){
+		//Allocate matrix::Matrix for X^TX
+		matrix::Matrix<T>XtX(_param.X_n, _param.X_n);
 
 		//Create context
 		device::DeviceContext context;
@@ -325,9 +325,9 @@ namespace tsvd
 		//Multiply X and Xt and output result to XtX
 		multiply(X, X, XtX, context, true, false, 1.0f);
 
-		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
-		Matrix<T>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
-		Matrix<T>w(Q.rows(), 1);
+		//Set up Q (V^T) and w (singular value) matrices (w is a matrix::Matrix of size Q.rows() by 1; really just a vector
+		matrix::Matrix<T>Q(XtX.rows(), XtX.columns()); // n X n -> V^T
+		matrix::Matrix<T>w(Q.rows(), 1);
 		calculate_eigen_pairs_exact(XtX, Q, w, context);
 
 		//Get tsvd attributes
@@ -346,12 +346,12 @@ namespace tsvd
 	 * @param _param
 	 */
 	template<typename T, typename S>
-	void power_tsvd(Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param){
-		//Allocate matrix for X^TX
-		Matrix<T>M(_param.X_n, _param.X_n);
+	void power_tsvd(matrix::Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param){
+		//Allocate matrix::Matrix for X^TX
+		matrix::Matrix<T>M(_param.X_n, _param.X_n);
 
-		//Allocate matrix to be used in outer product calculation
-		Matrix<T>A(M.rows(), M.columns());
+		//Allocate matrix::Matrix to be used in outer product calculation
+		matrix::Matrix<T>A(M.rows(), M.columns());
 
 		//Create context
 		device::DeviceContext context;
@@ -359,24 +359,24 @@ namespace tsvd
 		//Multiply X and Xt and output result to XtX
 		multiply(X, X, M, context, true, false, 1.0f);
 
-		//Set up Q (V^T) and w (singular value) matrices (w is a matrix of size Q.rows() by 1; really just a vector
-		Matrix<T>Q(M.rows(), _param.k);
-		Matrix<T>w(_param.k, 1);
+		//Set up Q (V^T) and w (singular value) matrices (w is a matrix::Matrix of size Q.rows() by 1; really just a vector
+		matrix::Matrix<T>Q(M.rows(), _param.k);
+		matrix::Matrix<T>w(_param.k, 1);
 		std::vector<T> w_temp(w.size());
 
 		/* Power Method for finding all eigenvectors/eigen values
 		 * Logic:
 		 *
-		 * Since the matrix is symmetric, there exists an orthogonal basis of eigenvectors. Once you have found an eigenvector, extend it to an orthogonal basis,
-		 * rewrite the matrix in terms of this basis and restrict to the orthogonal space of the known eigenvector.
+		 * Since the matrix::Matrix is symmetric, there exists an orthogonal basis of eigenvectors. Once you have found an eigenvector, extend it to an orthogonal basis,
+		 * rewrite the matrix::Matrix in terms of this basis and restrict to the orthogonal space of the known eigenvector.
 		 * This is comprised in the method of deflation:
 		 *     You first find the first eigenvector v1 (with a maximal λ1), by iterating xn+1=Axn/|Axn|with a "random" initial x0. Once you have found a good approximation
-		 *     for v1, you consider B=A−λ1|v1|2 * v1vT (this simple step replaces the "rewrite in terms of this basis" above). This is a matrix that behaves like A for anything
+		 *     for v1, you consider B=A−λ1|v1|2 * v1vT (this simple step replaces the "rewrite in terms of this basis" above). This is a matrix::Matrix that behaves like A for anything
 		 *     orthogonal to v1 and zeroes out v1. Use the power method on B again, which will reveal v2, an eigenvector of a largest eigenvalue of B.
 		 *     Then switch to C=B−λ2|v2|2 * v2vT so on.
 		 */
-		Matrix<T>b_k(_param.X_n, 1);
-		Matrix<T>b_k1(_param.X_n, 1);
+		matrix::Matrix<T>b_k(_param.X_n, 1);
+		matrix::Matrix<T>b_k1(_param.X_n, 1);
 
 		for(int i = 0; i < _param.k; i ++){
 			//Set aside vector of randoms (n x 1)
@@ -400,7 +400,7 @@ namespace tsvd
 			//Put eigen vector into (starting at last column of Q)
 			thrust::copy(b_k.dptr(), b_k.dptr()+b_k.size(), Q.dptr()+Q.rows()*(Q.columns()-i-1));
 
-			//Get rid of eigen effect from original matrix (deflation)
+			//Get rid of eigen effect from original matrix::Matrix (deflation)
 			//multiply(A, 0.0, context);
 			A.zero();
 			outer_product(A, eigen_value_estimate, b_k, b_k, context);
@@ -416,7 +416,7 @@ namespace tsvd
 	}
 
 	/**
-	 * Conduct truncated SVD on a matrix with float type
+	 * Conduct truncated SVD on a matrix::Matrix with float type
 	 *
 	 * @param _X
 	 * @param _Q
@@ -429,13 +429,13 @@ namespace tsvd
 	void truncated_svd_float(const float *_X, float *_Q, float *_w, float *_U, float* _X_transformed, float *_explained_variance, float *_explained_variance_ratio, params _param)
 	{
 		safe_cuda(cudaSetDevice(_param.gpu_id));
-		Matrix<float>X(_param.X_m, _param.X_n);
+		matrix::Matrix<float>X(_param.X_m, _param.X_n);
 		X.copy(_X);
 		truncated_svd_matrix(X, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, _param);
 	}
 
 	/**
-	 * Conduct truncated SVD on a matrix with double type
+	 * Conduct truncated SVD on a matrix::Matrix with double type
 	 *
 	 * @param _X
 	 * @param _Q
@@ -448,13 +448,13 @@ namespace tsvd
 	void truncated_svd_double(const double *_X, double *_Q, double *_w, double *_U, double* _X_transformed, double *_explained_variance, double *_explained_variance_ratio, params _param)
 	{
 		safe_cuda(cudaSetDevice(_param.gpu_id));
-		Matrix<double>X(_param.X_m, _param.X_n);
+		matrix::Matrix<double>X(_param.X_m, _param.X_n);
 		X.copy(_X);
 		truncated_svd_matrix(X, _Q, _w, _U, _X_transformed, _explained_variance, _explained_variance_ratio, _param);
 	}
 
 	template<typename T, typename S>
-	tsvd_export void truncated_svd_matrix(Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param)
+	tsvd_export void truncated_svd_matrix(matrix::Matrix<T> &X, S _Q, S _w, S _U, S _X_transformed, S _explained_variance, S _explained_variance_ratio, params _param)
 	{
 		std::string algorithm(_param.algorithm);
 		try
@@ -488,11 +488,11 @@ namespace tsvd
 }
 
 //Impl for floats and doubles
-template void tsvd::truncated_svd_matrix<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
-template void tsvd::truncated_svd_matrix<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
-template void tsvd::cusolver_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
-template void tsvd::power_tsvd<double>(Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
-template void tsvd::cusolver_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
-template void tsvd::power_tsvd<float>(Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
+template void tsvd::truncated_svd_matrix<float>(matrix::Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
+template void tsvd::truncated_svd_matrix<double>(matrix::Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::cusolver_tsvd<double>(matrix::Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::power_tsvd<double>(matrix::Matrix<double> &X, double* _Q, double* _w, double* _U, double* _X_transformed, double* _explained_variance, double* _explained_variance_ratio, params _param);
+template void tsvd::cusolver_tsvd<float>(matrix::Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
+template void tsvd::power_tsvd<float>(matrix::Matrix<float> &X, float* _Q, float* _w, float* _U, float* _X_transformed, float* _explained_variance, float* _explained_variance_ratio, params _param);
 
 
