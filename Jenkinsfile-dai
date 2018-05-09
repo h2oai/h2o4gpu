@@ -25,7 +25,7 @@ pipeline {
             parallel {
                 stage('Build on x86_64-centos7-cuda8.0') {
                     agent {
-                        label "docker"
+                        label "linux && docker && !micro"
                     }
                     steps {
                         dumpInfo 'x86_64-centos7-cuda8 Build Info'
@@ -40,7 +40,7 @@ pipeline {
                 }
                 stage('Build on x86_64-centos7-cuda9.0') {
                     agent {
-                        label "docker"
+                        label "linux && docker && !micro"
                     }
                     steps {
                         dumpInfo 'x86_64-centos7-cuda9 Build Info'
@@ -91,7 +91,7 @@ pipeline {
                 branch 'master'
             }
             agent {
-                label "linux && docker"
+                label "linux && docker && !micro"
             }
             steps {
                 sh "rm -rf dist"
