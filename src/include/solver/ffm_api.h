@@ -36,7 +36,7 @@ typedef struct Params {
 
 } Params;
 
-void ffm_float(Row<float> *rows, float *w, Params _param);
-void ffm_double(Row<double> *rows, double *w, Params _param);
+void ffm_fit_float(Row<float> *rows, float *w, Params _param);
+void ffm_fit_double(Row<double> *rows, double *w, Params _param);
 
 }

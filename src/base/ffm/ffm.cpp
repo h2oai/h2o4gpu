@@ -71,7 +71,7 @@ Dataset<T> &rowsToDataset(Row<T> *rows, Params &params) {
 /**
  * C API method
  */
-void ffm_float(Row<float> *rows, float *w, Params _param) {
+void ffm_fit_float(Row<float> *rows, float *w, Params _param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
   Dataset<float> dataset = rowsToDataset(rows, _param);
   FFM<float> ffm(_param);
@@ -81,7 +81,7 @@ void ffm_float(Row<float> *rows, float *w, Params _param) {
   ffm.model.copyTo(w);
 }
 
-void ffm_double(Row<double> *rows, double *w, Params _param) {
+void ffm_fit_double(Row<double> *rows, double *w, Params _param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
   Dataset<double> dataset = rowsToDataset(rows, _param);
   FFM<double> ffm(_param);
