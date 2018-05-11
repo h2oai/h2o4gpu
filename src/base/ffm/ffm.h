@@ -16,10 +16,13 @@ template <typename T>
 class FFM  {
  public:
   FFM(Params const & params);
+  FFM(Params const & params, T *weights);
 
   Model<T> model;
 
   void fit(const Dataset<T> &dataset);
+
+  void predict(const Dataset<T> &dataset, T *predictions);
 
  private:
   const Params params;

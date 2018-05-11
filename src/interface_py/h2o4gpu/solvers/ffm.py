@@ -84,6 +84,9 @@ class FFMH2O(object):
         self.row_arr_holder = []
         self.node_arr_holder = []
 
+        self.learned_params = None
+        self.predictions = None
+
     @classmethod
     def _get_param_names(cls):
         # TODO implement
@@ -113,7 +116,7 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(X, y, lib)
+        rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(lib, X, y)
 
         weights = np.zeros(params.k * featureIdx * fieldIdx, dtype=self.dtype)
 
@@ -126,11 +129,12 @@ class FFMH2O(object):
         self.row_arr_holder = []
         self.node_arr_holder = []
 
+        self.learned_params = params
         self.weights = weights
         return self
 
 
-    def _numpy_to_ffm_rows(self, X, y, lib):
+    def _numpy_to_ffm_rows(self, lib, X, y=None):
         (node_creator, node_arr_creator, row_creator, row_arr_creator) = \
             (lib.floatNode, lib.NodeFloatArray, lib.floatRow, lib.RowFloatArray) if self.dtype == np.float32 \
                 else (lib.doubleNode, lib.NodeDoubleArray, lib.doubleRow, lib.RowDoubleArray)
@@ -152,13 +156,42 @@ class FFMH2O(object):
                 feature_idx = max(feature_idx, node.featureIdx + 1)
                 field_idx = max(field_idx, node.fieldIdx + 1)
             # Scale is being set automatically on the C++ side
-            row = row_creator(int(y[r]), 1.0, nr_nodes, node_arr)
+            row = row_creator( 0 if y is None else int(y[r]) , 1.0, nr_nodes, node_arr)
             row_arr.__setitem__(r, row)
         return row_arr, feature_idx, field_idx
 
     def predict(self, X):
-        # TODO implement
-        pass
+        lib = self._load_lib()
+
+        params = lib.params_ffm()
+        params.verbose = self.verbose
+        params.learningRate = self.learning_rate
+        params.regLambda = self.reg_lambda
+        params.nIter = self.max_iter
+        params.batchSize = self.batch_size
+        params.k = self.k
+        params.normalize = self.normalize
+        params.autoStop = self.auto_stop
+        params.nGpus = self.nGpus
+        params.numFields = self.learned_params.numFields
+        params.numFeatures = self.learned_params.numFeatures
+
+        params.numRows = np.shape(X)[0]
+
+        rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(lib, X)
+
+        self.predictions = np.zeros(params.numRows, dtype=self.dtype)
+
+        if self.dtype == np.float32:
+            lib.ffm_predict_float(rows, self.predictions, self.weights, params)
+        else:
+            lib.ffm_predict_double(rows, self.predictions, self.weights, params)
+
+        # Cleans up the memory
+        self.row_arr_holder = []
+        self.node_arr_holder = []
+
+        return self
 
     def transform(self, X, y=None):
         # TODO implement

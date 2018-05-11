@@ -13,6 +13,11 @@ Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params const &pa
 }
 
 template<typename T>
+void Trainer<T>::predict(T *predictions) {
+  // TODO implement
+}
+
+template<typename T>
 void Trainer<T>::oneEpoch(bool update) {
   // TODO implement
 }

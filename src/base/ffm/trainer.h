@@ -18,6 +18,8 @@ class Trainer {
 
   void oneEpoch(bool update);
 
+  void predict(T *predictions);
+
   bool earlyStop();
 
  private:

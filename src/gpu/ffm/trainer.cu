@@ -38,10 +38,11 @@ T wTx(Row<T> *row,
 
   auto weights_ptr = thrust::raw_pointer_cast(weights.data());
 
+  T r = params.normalize ? row->scale : 1.0;
+
 #pragma omp parallel for schedule(static) reduction(+: loss)
   for (size_t n1 = 0; n1 < row->size; n1++) {
     Node<T> *node1 = nodes[n1];
-    T r = params.normalize ? row->scale : 1.0;
 
     loss += thrust::transform_reduce(nodes.begin() + n1 + 1, nodes.end(), [=]__device__(Node<T> * node2) {
       size_t feature1 = node1->featureIdx;
@@ -85,6 +86,30 @@ T wTx(Row<T> *row,
   }
 
   return loss;
+}
+
+template<typename T>
+void Trainer<T>::predict(T *predictions) {
+  for (int i = 0; i < params.nGpus; i++) {
+    log_verbose(this->params.verbose, "Copying weights of size %zu to GPU %d for predictions", this->model.weights.size(), i);
+    thrust::device_vector<T> localWeights(this->model.weights.begin(), this->model.weights.end());
+
+    int record = 0;
+    while (trainDataBatcher[i]->hasNext()) {
+      log_verbose(this->params.verbose, "Getting batch of size %zu on GPU %d for predictions", this->params.batchSize, i);
+      DatasetBatch<T> batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
+
+      T loss = 0;
+      // TODO parallelize somehow
+      while (batch.hasNext()) {
+        Row<T> *row = batch.nextRow();
+
+        T t = wTx(row, localWeights, this->params);
+
+        predictions[record++] = 1 / (1 + exp(-t));
+      }
+    }
+  }
 }
 
 template<typename T>

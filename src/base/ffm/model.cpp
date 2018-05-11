@@ -27,6 +27,21 @@ Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numF
 }
 
 template<typename T>
+Model<T>::Model(Params const &params, T *weights) : weights(params.numFeatures * params.numFields * params.k) {
+  this->numFeatures = params.numFeatures;
+  this->numFields = params.numFields;
+  this->k = params.k;
+  this->normalize = params.normalize;
+
+  float coef = 1.0f / sqrt(this->k);
+
+  for (int i = 0; i < this->weights.size(); i++) {
+    this->weights[i] = weights[i];
+  }
+
+}
+
+template<typename T>
 void Model<T>::copyTo(T *dstWeights) {
   memcpy(dstWeights, this->weights.data(), this->weights.size() * sizeof(T));
 };

@@ -8,8 +8,8 @@
 
 %rename("params_ffm") ffm::Params;
 
-%apply (float *INPLACE_ARRAY1) {float *w};
-%apply (double *INPLACE_ARRAY1) {double *w};
+%apply (float *INPLACE_ARRAY1) {float *predictions, float *w};
+%apply (double *INPLACE_ARRAY1) {double *predictions, double *w};
 
 %include "../../include/data/ffm/data.h"
 %include "../../include/solver/ffm_api.h"

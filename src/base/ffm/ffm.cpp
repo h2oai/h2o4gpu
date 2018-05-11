@@ -12,6 +12,9 @@ template<typename T>
 FFM<T>::FFM(Params const &params) : params(params), model(params) {}
 
 template<typename T>
+FFM<T>::FFM(Params const & params, T *weights) : params(params), model(params, weights) {}
+
+template<typename T>
 void FFM<T>::fit(const Dataset<T> &dataset) {
   Trainer<T> trainer(dataset, this->model, this->params);
 
@@ -21,6 +24,12 @@ void FFM<T>::fit(const Dataset<T> &dataset) {
       break;
     }
   }
+}
+
+template<typename T>
+void FFM<T>::predict(const Dataset<T> &dataset, T *predictions) {
+  Trainer<T> trainer(dataset, this->model, this->params);
+  trainer.predict(predictions);
 }
 
 template<typename T>
@@ -89,6 +98,28 @@ void ffm_fit_double(Row<double> *rows, double *w, Params _param) {
   log_debug(_param.verbose, "Running FFM fit for double.");
   ffm.fit(dataset);
   ffm.model.copyTo(w);
+}
+
+void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params _param) {
+  // TODO temporary hack, change this so it's passed from Python and never changed
+  size_t fields = _param.numFields;
+  size_t features = _param.numFeatures;
+
+  log_debug(_param.verbose, "Converting %d float rows into a dataset for predictions.", _param.numRows);
+  Dataset<float> dataset = rowsToDataset(rows, _param);
+
+  _param.numFeatures = features;
+  _param.numFields = fields;
+
+  FFM<float> ffm(_param, w);
+  _param.printParams();
+  log_debug(_param.verbose, "Running FFM predict for float.");
+  ffm.predict(dataset, predictions);
+  // TODO copy to result
+}
+
+void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params _param) {
+
 }
 
 } // namespace ffm

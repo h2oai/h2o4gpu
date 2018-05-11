@@ -39,4 +39,7 @@ typedef struct Params {
 void ffm_fit_float(Row<float> *rows, float *w, Params _param);
 void ffm_fit_double(Row<double> *rows, double *w, Params _param);
 
+void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params _param);
+void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params _param);
+
 }

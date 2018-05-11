@@ -16,6 +16,8 @@ class Model {
 
   Model(Params const &params);
 
+  Model(Params const &params, T *weights);
+
   void copyTo(T *dstWeights);
 
   std::vector<T> weights;
