@@ -21,6 +21,7 @@ class Model {
   void copyTo(T *dstWeights);
 
   std::vector<T> weights;
+  std::vector<T> gradients;
 
  private:
 

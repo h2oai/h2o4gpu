@@ -9,19 +9,20 @@
 namespace ffm {
 
 template<typename T>
-Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numFields * params.k) {
+Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numFields * params.k), gradients(weights.size()) {
   this->numFeatures = params.numFeatures;
   this->numFields = params.numFields;
   this->k = params.k;
   this->normalize = params.normalize;
 
-  float coef = 1.0f / sqrt(this->k);
+  T coef = 1.0f / sqrt(this->k);
 
-  std::default_random_engine generator;
+  std::default_random_engine generator(params.seed);
   std::uniform_real_distribution<T> distribution(0.0, 1.0);
 
   for (int i = 0; i < weights.size(); i++) {
     this->weights[i] = coef * distribution(generator);
+    this->gradients[i] = 1.0;
   }
 
 }
@@ -33,7 +34,7 @@ Model<T>::Model(Params const &params, T *weights) : weights(params.numFeatures *
   this->k = params.k;
   this->normalize = params.normalize;
 
-  float coef = 1.0f / sqrt(this->k);
+  T coef = 1.0f / sqrt(this->k);
 
   for (int i = 0; i < this->weights.size(); i++) {
     this->weights[i] = weights[i];

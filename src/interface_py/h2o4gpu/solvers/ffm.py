@@ -63,6 +63,7 @@ class FFMH2O(object):
             normalize=True,
             auto_stop=False,
             # TODO change to -1 when multi GPU gets implemented
+            seed=None,
             n_gpus=1,
             dtype=np.float32
     ):
@@ -75,6 +76,7 @@ class FFMH2O(object):
         self.normalize = normalize
         self.auto_stop = auto_stop
         self.dtype = dtype
+        self.seed = seed
         from ..util.gpu import device_count
         (self.nGpus, self.devices) = device_count(n_gpus)
 
@@ -85,7 +87,6 @@ class FFMH2O(object):
         self.node_arr_holder = []
 
         self.learned_params = None
-        self.predictions = None
 
     @classmethod
     def _get_param_names(cls):
@@ -113,6 +114,8 @@ class FFMH2O(object):
         params.normalize = self.normalize
         params.autoStop = self.auto_stop
         params.nGpus = self.nGpus
+
+        params.seed = 0 if self.seed is None else self.seed
 
         params.numRows = np.shape(X)[0]
 
@@ -180,18 +183,18 @@ class FFMH2O(object):
 
         rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(lib, X)
 
-        self.predictions = np.zeros(params.numRows, dtype=self.dtype)
+        predictions = np.zeros(params.numRows, dtype=self.dtype)
 
         if self.dtype == np.float32:
-            lib.ffm_predict_float(rows, self.predictions, self.weights, params)
+            lib.ffm_predict_float(rows, predictions, self.weights, params)
         else:
-            lib.ffm_predict_double(rows, self.predictions, self.weights, params)
+            lib.ffm_predict_double(rows, predictions, self.weights, params)
 
         # Cleans up the memory
         self.row_arr_holder = []
         self.node_arr_holder = []
 
-        return self
+        return predictions
 
     def transform(self, X, y=None):
         # TODO implement

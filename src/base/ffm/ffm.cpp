@@ -80,7 +80,7 @@ Dataset<T> &rowsToDataset(Row<T> *rows, Params &params) {
 /**
  * C API method
  */
-void ffm_fit_float(Row<float> *rows, float *w, Params _param) {
+void ffm_fit_float(Row<float> *rows, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
   Dataset<float> dataset = rowsToDataset(rows, _param);
   FFM<float> ffm(_param);
@@ -90,7 +90,7 @@ void ffm_fit_float(Row<float> *rows, float *w, Params _param) {
   ffm.model.copyTo(w);
 }
 
-void ffm_fit_double(Row<double> *rows, double *w, Params _param) {
+void ffm_fit_double(Row<double> *rows, double *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
   Dataset<double> dataset = rowsToDataset(rows, _param);
   FFM<double> ffm(_param);
@@ -100,7 +100,7 @@ void ffm_fit_double(Row<double> *rows, double *w, Params _param) {
   ffm.model.copyTo(w);
 }
 
-void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params _param) {
+void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params &_param) {
   // TODO temporary hack, change this so it's passed from Python and never changed
   size_t fields = _param.numFields;
   size_t features = _param.numFeatures;
@@ -118,7 +118,7 @@ void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params _p
   // TODO copy to result
 }
 
-void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params _param) {
+void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params &_param) {
 
 }
 

@@ -18,7 +18,7 @@ void Trainer<T>::predict(T *predictions) {
 }
 
 template<typename T>
-void Trainer<T>::oneEpoch(bool update) {
+T Trainer<T>::oneEpoch(bool update) {
   // TODO implement
 }
 

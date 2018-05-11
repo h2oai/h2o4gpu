@@ -26,6 +26,8 @@ typedef struct Params {
   bool normalize = true;
   bool autoStop = false;
 
+  int seed = 0;
+
   // For CPU number of threads to be used
   // For GPU number of GPUs to be used
   int nGpus = 1;
@@ -36,10 +38,10 @@ typedef struct Params {
 
 } Params;
 
-void ffm_fit_float(Row<float> *rows, float *w, Params _param);
-void ffm_fit_double(Row<double> *rows, double *w, Params _param);
+void ffm_fit_float(Row<float> *rows, float *w, Params &_param);
+void ffm_fit_double(Row<double> *rows, double *w, Params &_param);
 
-void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params _param);
-void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params _param);
+void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params &_param);
+void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params &_param);
 
 }

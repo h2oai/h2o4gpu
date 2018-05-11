@@ -16,7 +16,7 @@ class Trainer {
  public:
   Trainer(const Dataset<T> &dataset, Model<T> &model, Params const &params);
 
-  void oneEpoch(bool update);
+  T oneEpoch(bool update);
 
   void predict(T *predictions);
 
