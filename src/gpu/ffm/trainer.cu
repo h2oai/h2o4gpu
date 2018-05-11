@@ -30,6 +30,7 @@ T wTx(Row<T> *row,
       T kappa = 0,
       bool update = false,
       int verbose = 0) {
+  log_verbose(params.verbose, "KAPPA = %f", kappa);
   thrust::device_vector < Node<T> * > nodes(row->data);
 
   size_t alignFeat1 = params.numFields * params.k;
@@ -56,35 +57,38 @@ T wTx(Row<T> *row,
       T value2 = node2->value;
       T localt = 0;
 
-      if (feature2 < params.numFeatures && field2 < params.numFields) {
-        size_t idx1 = feature1 * alignFeat1 + field1 * alignFeat2;
-        size_t idx2 = feature2 * alignFeat1 + field2 * alignFeat2;
-        T *w1 = weightsPtr + idx1;
-        T *w2 = weightsPtr + idx2;
-
-        T v = value1 * value2 * r;
-
-        if (update) {
-          T *wg1 = weightsGradientPtr + idx1;
-          T *wg2 = weightsGradientPtr + idx2;
-
-          for (size_t d = 0; d < params.k; d++) {
-            T g1 = params.regLambda * w1[d] + kappa * w2[d] * v;
-            T g2 = params.regLambda * w2[d] + kappa * w1[d] * v;
-
-            wg1[d] += g1 * g1;
-            wg2[d] += g2 * g2;
-
-            w1[d] -= params.learningRate / sqrt(wg1[d]) * g1;
-            w2[d] -= params.learningRate / sqrt(wg2[d]) * g2;
-          }
-        } else {
-          for (size_t d = 0; d < alignFeat2; d++) {
-            localt += w1[d] * w2[d] * v;
-          }
-        }
-
+      if (feature1 >= params.numFeatures || field1 >= params.numFields ||
+          feature2 >= params.numFeatures || field2 >= params.numFields) {
+        return localt;
       }
+
+      size_t idx1 = feature1 * alignFeat1 + field2 * alignFeat2;
+      size_t idx2 = feature2 * alignFeat1 + field1 * alignFeat2;
+      T *w1 = weightsPtr + idx1;
+      T *w2 = weightsPtr + idx2;
+
+      T v = value1 * value2 * r;
+
+      if (update) {
+        T *wg1 = weightsGradientPtr + idx1;
+        T *wg2 = weightsGradientPtr + idx2;
+
+        for (size_t d = 0; d < params.k; d++) {
+          T g1 = params.regLambda * w1[d] + kappa * w2[d] * v;
+          T g2 = params.regLambda * w2[d] + kappa * w1[d] * v;
+
+          wg1[d] += g1 * g1;
+          wg2[d] += g2 * g2;
+
+          w1[d] -= params.learningRate / sqrt(wg1[d]) * g1;
+          w2[d] -= params.learningRate / sqrt(wg2[d]) * g2;
+        }
+      } else {
+        for (size_t d = 0; d < alignFeat2; d++) {
+          localt += w1[d] * w2[d] * v;
+        }
+      }
+
       return localt;
     },
     (T) 0.0,
@@ -147,7 +151,7 @@ T Trainer<T>::oneEpoch(bool update) {
         T t = wTx(row, allLocalWeights[i], allLocalGradients[i], this->params);
 
         T expnyt = exp(-row->label * t);
-        loss += loss + log1p(1 + expnyt);
+        loss += log(1 + expnyt);
 
         if (update) {
           T kappa = -row->label * expnyt / (1 + expnyt);
