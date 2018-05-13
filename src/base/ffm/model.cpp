@@ -25,6 +25,8 @@ Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numF
     this->gradients[i] = 1.0;
   }
 
+
+
 }
 
 template<typename T>

@@ -47,26 +47,24 @@ Dataset<T> &rowsToDataset(Row<T> *rows, Params &params) {
   size_t numFeatures = 0;
 
   size_t position = 0;
+  std::vector<Row<T>*> rowVec(numRows);
+
   for (int i = 0; i < numRows; i++) {
-    Row<T> row = rows[i];
+    Row<T> *row = rows + i;
 
     T scale = 0.0;
 
-    for (int i = 0; i < row.size; i++) {
-      numFeatures = std::max(numFeatures, row.data[i]->featureIdx + 1);
-      numFields = std::max(numFields, row.data[i]->fieldIdx + 1);
+    for (int i = 0; i < row->size; i++) {
+      numFeatures = std::max(numFeatures, row->data[i]->featureIdx + 1);
+      numFields = std::max(numFields, row->data[i]->fieldIdx + 1);
 
-      scale += row.data[i]->value * row.data[i]->value;
+      scale += row->data[i]->value * row->data[i]->value;
       position++;
     }
 
-    row.label = row.label > 0 ? 1 : -1;
-    row.scale = 1.0 / scale;
-  }
-
-  std::vector<Row<T>*> rowVec(numRows);
-  for(int r = 0; r < numRows; r++) {
-    rowVec[r] = &rows[r];
+    row->label = row->label > 0 ? 1 : -1;
+    row->scale = 1.0 / scale;
+    rowVec[i] = row;
   }
 
   params.numFeatures = numFeatures;

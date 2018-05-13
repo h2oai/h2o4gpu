@@ -71,13 +71,12 @@ class Dataset {
  public:
   Dataset() {}
 
-  Dataset(int numFields, int numFeatures, size_t numRows, size_t numNodes, std::vector<Row<T> *> rows) :
+  Dataset(int numFields, int numFeatures, size_t numRows, size_t numNodes, std::vector<Row<T> *> &_rows) :
       numRows(numRows),
       numNodes(numNodes),
       numFields(numFields),
-      numFeatures(numFeatures) {
-      this->rows = rows;
-  }
+      numFeatures(numFeatures),
+      rows(_rows) {}
 
   ~Dataset() {
     // TODO implement

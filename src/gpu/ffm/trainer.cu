@@ -30,7 +30,6 @@ T wTx(Row<T> *row,
       T kappa = 0,
       bool update = false,
       int verbose = 0) {
-  log_verbose(params.verbose, "KAPPA = %f", kappa);
   thrust::device_vector < Node<T> * > nodes(row->data);
 
   size_t alignFeat1 = params.numFields * params.k;
@@ -74,6 +73,7 @@ T wTx(Row<T> *row,
         T *wg2 = weightsGradientPtr + idx2;
 
         for (size_t d = 0; d < params.k; d++) {
+
           T g1 = params.regLambda * w1[d] + kappa * w2[d] * v;
           T g2 = params.regLambda * w2[d] + kappa * w1[d] * v;
 
@@ -123,7 +123,6 @@ void Trainer<T>::predict(T *predictions) {
 }
 
 template<typename T>
-// TODO return loss
 T Trainer<T>::oneEpoch(bool update) {
   log_debug(this->params.verbose, "Computing an FFM epoch (update = %s)", update ? "true" : "false");
 
@@ -155,6 +154,7 @@ T Trainer<T>::oneEpoch(bool update) {
 
         if (update) {
           T kappa = -row->label * expnyt / (1 + expnyt);
+
           wTx(row, allLocalWeights[i], allLocalGradients[i], this->params, kappa, true);
         }
       }
