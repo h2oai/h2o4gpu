@@ -10,15 +10,6 @@ namespace ffm {
 
 /**
  *
- * DatasetBatchGPU Methods
- *
- */
-
-template<typename T>
-DatasetBatchGPU<T>::DatasetBatchGPU(std::vector<Row<T> *> rows, size_t numRows) : DatasetBatch<T>(rows, numRows) {}
-
-/**
- *
  * DatasetBatcherGPU Methods
  *
  */
@@ -73,6 +64,7 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
 template<typename T>
 DatasetBatch<T> DatasetBatcherGPU<T>::nextBatch(size_t batchSize) {
   log_debug(this->params.verbose, "Asked for batch of size %zu.", batchSize);
+  // TODO take the whole thing as 1 batch if all is on GPU
   size_t actualBatchSize = batchSize <= this->remaining() ? batchSize : this->remaining();
 
   if (this->onGPU) {

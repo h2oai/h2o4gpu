@@ -15,8 +15,8 @@ namespace ffm {
 template <typename T>
 class FFM  {
  public:
-  FFM(Params const & params);
-  FFM(Params const & params, T *weights);
+  FFM(Params & params);
+  FFM(Params & params, T *weights);
 
   Model<T> model;
 
@@ -25,7 +25,7 @@ class FFM  {
   void predict(const Dataset<T> &dataset, T *predictions);
 
  private:
-  const Params params;
+  Params params;
 };
 
 }

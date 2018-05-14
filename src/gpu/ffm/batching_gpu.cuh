@@ -33,7 +33,7 @@ class DatasetBatchGPU : public DatasetBatch<T> {
     return *this;
   }
 
-  DatasetBatchGPU(std::vector<Row<T> *> rows, size_t numRows);
+  DatasetBatchGPU<T>::DatasetBatchGPU(std::vector<Row<T> *> rows, size_t numRows) : DatasetBatch<T>(rows, numRows) {}
 
 };
 

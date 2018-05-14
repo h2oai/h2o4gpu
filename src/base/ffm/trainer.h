@@ -14,7 +14,7 @@ namespace ffm {
 template<typename T>
 class Trainer {
  public:
-  Trainer(const Dataset<T> &dataset, Model<T> &model, Params const &params);
+  Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params);
 
   T oneEpoch(bool update);
 
@@ -22,11 +22,11 @@ class Trainer {
 
   bool earlyStop();
 
- private:
-  Params params;
-
   // Global model for this machine
-  Model<T> model;
+  Model<T> &model;
+
+ private:
+  Params &params;
 
   // Vector of datasets split for threads/GPUs
   std::vector<DatasetBatcher<T>*> trainDataBatcher;

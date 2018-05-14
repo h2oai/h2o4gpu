@@ -12,11 +12,9 @@ namespace ffm {
 template<typename T>
 class Model {
  public:
-  Model() {}
+  Model(Params &params);
 
-  Model(Params const &params);
-
-  Model(Params const &params, T *weights);
+  Model(Params &params, T *weights);
 
   void copyTo(T *dstWeights);
 

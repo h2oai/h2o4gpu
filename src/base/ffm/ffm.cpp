@@ -9,10 +9,10 @@
 namespace ffm {
 
 template<typename T>
-FFM<T>::FFM(Params const &params) : params(params), model(params) {}
+FFM<T>::FFM(Params &params) : params(params), model(params) {}
 
 template<typename T>
-FFM<T>::FFM(Params const & params, T *weights) : params(params), model(params, weights) {}
+FFM<T>::FFM(Params & params, T *weights) : params(params), model(params, weights) {}
 
 template<typename T>
 void FFM<T>::fit(const Dataset<T> &dataset) {
@@ -113,7 +113,6 @@ void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params &_
   _param.printParams();
   log_debug(_param.verbose, "Running FFM predict for float.");
   ffm.predict(dataset, predictions);
-  // TODO copy to result
 }
 
 void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params &_param) {

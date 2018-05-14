@@ -12,7 +12,7 @@
 namespace ffm {
 
 template<typename T>
-Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params const &params)
+Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
     : trainDataBatcher(1), model(model), params(params) {
   // TODO delete in destructor
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
@@ -42,7 +42,7 @@ T wTx(Row<T> *row,
 
   T r = params.normalize ? row->scale : 1.0;
 
-//#pragma omp parallel for schedule(static) reduction(+: loss)
+#pragma omp parallel for schedule(static) reduction(+: loss)
   for (size_t n1 = 0; n1 < row->size; n1++) {
     Node<T> *node1 = nodes[n1];
 
@@ -73,7 +73,6 @@ T wTx(Row<T> *row,
         T *wg2 = weightsGradientPtr + idx2;
 
         for (size_t d = 0; d < params.k; d++) {
-
           T g1 = params.regLambda * w1[d] + kappa * w2[d] * v;
           T g2 = params.regLambda * w2[d] + kappa * w1[d] * v;
 
@@ -82,13 +81,13 @@ T wTx(Row<T> *row,
 
           w1[d] -= params.learningRate / sqrt(wg1[d]) * g1;
           w2[d] -= params.learningRate / sqrt(wg2[d]) * g2;
+
         }
       } else {
         for (size_t d = 0; d < alignFeat2; d++) {
           localt += w1[d] * w2[d] * v;
         }
       }
-
       return localt;
     },
     (T) 0.0,
@@ -136,6 +135,7 @@ T Trainer<T>::oneEpoch(bool update) {
     // TODO do only once for all iterations?
     allLocalWeights[i].resize(this->model.weights.size());
     thrust::copy(this->model.weights.begin(), this->model.weights.end(), allLocalWeights[i].begin() );
+
     allLocalGradients[i].resize(this->model.gradients.size());
     thrust::copy(this->model.gradients.begin(), this->model.gradients.end(), allLocalGradients[i].begin() );
 
@@ -154,7 +154,6 @@ T Trainer<T>::oneEpoch(bool update) {
 
         if (update) {
           T kappa = -row->label * expnyt / (1 + expnyt);
-
           wTx(row, allLocalWeights[i], allLocalGradients[i], this->params, kappa, true);
         }
       }

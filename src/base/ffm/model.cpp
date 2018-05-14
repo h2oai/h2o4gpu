@@ -9,7 +9,7 @@
 namespace ffm {
 
 template<typename T>
-Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numFields * params.k), gradients(weights.size()) {
+Model<T>::Model(Params &params) : weights(params.numFeatures * params.numFields * params.k), gradients(params.numFeatures * params.numFields * params.k) {
   this->numFeatures = params.numFeatures;
   this->numFields = params.numFields;
   this->k = params.k;
@@ -25,23 +25,18 @@ Model<T>::Model(Params const &params) : weights(params.numFeatures * params.numF
     this->gradients[i] = 1.0;
   }
 
-
-
 }
 
 template<typename T>
-Model<T>::Model(Params const &params, T *weights) : weights(params.numFeatures * params.numFields * params.k) {
+Model<T>::Model(Params &params, T *weights) : weights(params.numFeatures * params.numFields * params.k) {
   this->numFeatures = params.numFeatures;
   this->numFields = params.numFields;
   this->k = params.k;
   this->normalize = params.normalize;
 
-  T coef = 1.0f / sqrt(this->k);
-
   for (int i = 0; i < this->weights.size(); i++) {
     this->weights[i] = weights[i];
   }
-
 }
 
 template<typename T>
