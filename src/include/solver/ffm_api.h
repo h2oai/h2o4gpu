@@ -19,6 +19,7 @@ typedef struct Params {
   int batchSize = 1000;
 
   size_t numRows = 0;
+  size_t numNodes = 0;
   size_t numFeatures = 0;
   size_t numFields = 0;
   int k = 4;
@@ -38,10 +39,10 @@ typedef struct Params {
 
 } Params;
 
-void ffm_fit_float(Row<float> *rows, float *w, Params &_param);
-void ffm_fit_double(Row<double> *rows, double *w, Params &_param);
+void ffm_fit_float(size_t *features, size_t* fields, float* values, int *labels, float *scales, size_t *positions, float *w, Params &_param);
+void ffm_fit_double(size_t *features, size_t* fields, double* values, int *labels, double *scales, size_t *positions, double *w, Params &_param);
 
-void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params &_param);
-void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params &_param);
+void ffm_predict_float(size_t *features, size_t* fields, float* values, float *scales, size_t* positions, float *predictions, float *w, Params &_param);
+void ffm_predict_double(size_t *features, size_t* fields, double* values, double *scales, size_t* positions, double *predictions, double *w, Params &_param);
 
 }

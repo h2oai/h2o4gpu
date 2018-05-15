@@ -14,27 +14,9 @@ class DatasetBatchGPU : public DatasetBatch<T> {
  public:
   DatasetBatchGPU() {}
 
-  DatasetBatchGPU(const DatasetBatchGPU &other) : DatasetBatch<T>(other.rows, other.numRows) {}
-
-  DatasetBatchGPU(DatasetBatchGPU &&other) noexcept : DatasetBatch<T>(other.rows, other.numRows) {}
-
-  DatasetBatchGPU &operator=(const DatasetBatchGPU &other) {
-    DatasetBatchGPU tmp(other);
-    *this = std::move(tmp);
-    return *this;
-  }
-
-  DatasetBatchGPU &operator=(DatasetBatchGPU &&other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    this->rows = other.rows;
-    this->numRows = other.numRows;
-    return *this;
-  }
-
-  DatasetBatchGPU<T>::DatasetBatchGPU(std::vector<Row<T> *> rows, size_t numRows) : DatasetBatch<T>(rows, numRows) {}
-
+  DatasetBatchGPU(size_t *features, size_t* fields, T* values,
+                                      int *labels, T *scales, size_t *rowPositions,
+                                      size_t numRows) : DatasetBatch<T>(features, fields, values, labels, scales, rowPositions, numRows) {}
 };
 
 template<typename T>

@@ -32,55 +32,12 @@ void FFM<T>::predict(const Dataset<T> &dataset, T *predictions) {
   trainer.predict(predictions);
 }
 
-template<typename T>
-Dataset<T> &rowsToDataset(Row<T> *rows, Params &params) {
-  size_t numRows = params.numRows;
-  int *labels = new int[numRows];
-  T *scales = new T[numRows];
-
-  size_t totalNumNodes = 0;
-  for (size_t i = 0; i < numRows; i++) {
-    totalNumNodes += rows[i].size;
-  }
-
-  size_t numFields = 0;
-  size_t numFeatures = 0;
-
-  size_t position = 0;
-  std::vector<Row<T>*> rowVec(numRows);
-
-  for (int i = 0; i < numRows; i++) {
-    Row<T> *row = rows + i;
-
-    T scale = 0.0;
-
-    for (int i = 0; i < row->size; i++) {
-      numFeatures = std::max(numFeatures, row->data[i]->featureIdx + 1);
-      numFields = std::max(numFields, row->data[i]->fieldIdx + 1);
-
-      scale += row->data[i]->value * row->data[i]->value;
-      position++;
-    }
-
-    row->label = row->label > 0 ? 1 : -1;
-    row->scale = 1.0 / scale;
-    rowVec[i] = row;
-  }
-
-  params.numFeatures = numFeatures;
-  params.numFields = numFields;
-
-  // TODO needs to be deleted!
-  Dataset<T> *dataset = new Dataset<T>(numFields, numFeatures, numRows, totalNumNodes, rowVec);
-  return *dataset;
-}
-
 /**
  * C API method
  */
-void ffm_fit_float(Row<float> *rows, float *w, Params &_param) {
+void ffm_fit_float(size_t* features, size_t* fields, float* values, int *labels, float *scales, size_t *rowPositions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
-  Dataset<float> dataset = rowsToDataset(rows, _param);
+  Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<float> ffm(_param);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for float.");
@@ -88,9 +45,9 @@ void ffm_fit_float(Row<float> *rows, float *w, Params &_param) {
   ffm.model.copyTo(w);
 }
 
-void ffm_fit_double(Row<double> *rows, double *w, Params &_param) {
+void ffm_fit_double(size_t* features, size_t* fields, double* values, int *labels, double *scales, size_t *rowPositions, double *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
-  Dataset<double> dataset = rowsToDataset(rows, _param);
+  Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<double> ffm(_param);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for double.");
@@ -98,25 +55,22 @@ void ffm_fit_double(Row<double> *rows, double *w, Params &_param) {
   ffm.model.copyTo(w);
 }
 
-void ffm_predict_float(Row<float> *rows, float *predictions, float *w, Params &_param) {
-  // TODO temporary hack, change this so it's passed from Python and never changed
-  size_t fields = _param.numFields;
-  size_t features = _param.numFeatures;
-
+void ffm_predict_float(size_t *features, size_t* fields, float* values, float *scales, size_t* rowPositions, float *predictions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset for predictions.", _param.numRows);
-  Dataset<float> dataset = rowsToDataset(rows, _param);
-
-  _param.numFeatures = features;
-  _param.numFields = fields;
-
+  Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
   FFM<float> ffm(_param, w);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM predict for float.");
   ffm.predict(dataset, predictions);
 }
 
-void ffm_predict_double(Row<double> *rows, double *predictions, double *w, Params &_param) {
-
+void ffm_predict_double(size_t *features, size_t* fields, double* values, double *scales, size_t* rowPositions, double *predictions, double *w, Params &_param){
+  log_debug(_param.verbose, "Converting %d double rows into a dataset for predictions.", _param.numRows);
+  Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
+  FFM<double> ffm(_param, w);
+  _param.printParams();
+  log_debug(_param.verbose, "Running FFM predict for double.");
+  ffm.predict(dataset, predictions);
 }
 
 } // namespace ffm

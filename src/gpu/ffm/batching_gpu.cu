@@ -32,24 +32,21 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
     this->onGPU = true;
 
     Dataset<T> datasetGpu;
-    datasetGpu.rows = std::vector<Row<T>*>(dataset.numRows);
     datasetGpu.cpu = false;
     datasetGpu.numRows = dataset.numRows;
     datasetGpu.numFields = dataset.numFields;
+    datasetGpu.rowPositions = dataset.rowPositions;
+    datasetGpu.labels = dataset.labels;
+    datasetGpu.scales = dataset.scales;
 
-#pragma omp parallel for
-    for (int r = 0; r < dataset.numRows; r++) {
-      std::vector<Node<T> *> dataVector(dataset.rows[r]->size);
+    CUDA_CHECK(cudaMalloc(&datasetGpu.features, params.numNodes * sizeof(size_t)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.features, dataset.features, params.numNodes * sizeof(size_t), cudaMemcpyHostToDevice));
 
-#pragma omp parallel for
-      for(int n = 0; n < dataset.rows[r]->size; n++) {
-        CUDA_CHECK(cudaMalloc(&dataVector[n], sizeof(Node<T>)));
-        CUDA_CHECK(cudaMemcpy(dataVector[n], dataset.rows[r]->data[n], sizeof(Node<T>), cudaMemcpyHostToDevice));
-      }
+    CUDA_CHECK(cudaMalloc(&datasetGpu.fields, params.numNodes * sizeof(size_t)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(size_t), cudaMemcpyHostToDevice));
 
-      Row<T> *d_row = new Row<T>(dataset.rows[r]->label, dataset.rows[r]->scale, dataset.rows[r]->size, dataVector);
-      datasetGpu.rows[r] = d_row;
-    }
+    CUDA_CHECK(cudaMalloc(&datasetGpu.values, params.numNodes * sizeof(T)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.values, dataset.values, params.numNodes * sizeof(T), cudaMemcpyHostToDevice));
 
     this->dataset = datasetGpu;
   } else {
@@ -64,31 +61,31 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
 template<typename T>
 DatasetBatch<T> DatasetBatcherGPU<T>::nextBatch(size_t batchSize) {
   log_debug(this->params.verbose, "Asked for batch of size %zu.", batchSize);
-  // TODO take the whole thing as 1 batch if all is on GPU
   size_t actualBatchSize = batchSize <= this->remaining() ? batchSize : this->remaining();
 
   if (this->onGPU) {
+    // Take the whole thing as 1 batch if all is on GPU
+    size_t actualBatchSize = this->remaining();
+
     log_debug(this->params.verbose,
               "Creating batch of size %zu (asked for %zu) directly on the GPU.",
               actualBatchSize,
               batchSize);
 
-    // TODO memory duplication??
-    std::vector<Row<T>*> slice(this->dataset.rows.cbegin() + this->pos, this->dataset.rows.cbegin() + this->pos + actualBatchSize);
-
-    DatasetBatchGPU<T> batch(slice, actualBatchSize);
+    DatasetBatchGPU<T> batch(this->dataset.features + this->pos, this->dataset.fields + this->pos, this->dataset.values + this->pos,
+                             this->dataset.labels + this->pos, this->dataset.scales + this->pos, this->dataset.rowPositions + this->pos,
+                             actualBatchSize);
     this->pos = this->pos + actualBatchSize;
 
-    log_debug(this->params.verbose, "New position %zu", this->pos);
+    log_debug(this->params.verbose, "New batcher position %zu", this->pos);
     return batch;
   } else {
     log_debug(this->params.verbose,
               "Creating batch of size %zu (asked for %zu) from the CPU.",
               actualBatchSize,
               batchSize);
-    std::vector<Row<T> *> dRows;
-    // TODO copy [this->dataset.rows + this->pos, this->dataset.rows + this->pos + actualBatchSize) to dRows
-    DatasetBatchGPU<T> batch(dRows, actualBatchSize);
+    // TODO copy batch to GPU
+    DatasetBatchGPU<T> batch;
     this->pos = this->pos + actualBatchSize;
 
     return batch;

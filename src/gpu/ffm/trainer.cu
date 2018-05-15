@@ -30,8 +30,6 @@ T wTx(Row<T> *row,
       T kappa = 0,
       bool update = false,
       int verbose = 0) {
-  thrust::device_vector < Node<T> * > nodes(row->data);
-
   size_t alignFeat1 = params.numFields * params.k;
   size_t alignFeat2 = params.k;
 
@@ -42,18 +40,22 @@ T wTx(Row<T> *row,
 
   T r = params.normalize ? row->scale : 1.0;
 
+  auto features = row->features;
+  auto fields = row->fields;
+  auto values = row->values;
+
 #pragma omp parallel for schedule(static) reduction(+: loss)
   for (size_t n1 = 0; n1 < row->size; n1++) {
-    Node<T> *node1 = nodes[n1];
+    thrust::counting_iterator<int> counter(n1 + 1);
 
-    loss += thrust::transform_reduce(nodes.begin() + n1 + 1, nodes.end(), [=]__device__(Node<T> * node2) {
-      size_t feature1 = node1->featureIdx;
-      size_t field1 = node1->fieldIdx;
-      T value1 = node1->value;
+    loss += thrust::transform_reduce(counter, counter + row->size - n1 - 1, [=]__device__(int idx) {
+      size_t feature1 = features[n1];
+      size_t field1 = fields[n1];
+      T value1 = values[n1];
 
-      size_t feature2 = node2->featureIdx;
-      size_t field2 = node2->fieldIdx;
-      T value2 = node2->value;
+      size_t feature2 = features[idx];
+      size_t field2 = fields[idx];
+      T value2 = values[idx];
       T localt = 0;
 
       if (feature1 >= params.numFeatures || field1 >= params.numFields ||
@@ -142,11 +144,10 @@ T Trainer<T>::oneEpoch(bool update) {
     while (trainDataBatcher[i]->hasNext()) {
       DatasetBatch<T> batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
 
-      // TODO parallelize somehow
       // TODO shuffle batch?
-      while (batch.hasNext()) {
-        Row<T> *row = batch.nextRow();
-
+#pragma omp parallel for
+      for(size_t rowIdx = batch.pos; rowIdx < batch.remaining(); rowIdx++) {
+        Row<T> *row = batch.rowAt(rowIdx);
         T t = wTx(row, allLocalWeights[i], allLocalGradients[i], this->params);
 
         T expnyt = exp(-row->label * t);

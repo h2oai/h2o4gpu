@@ -82,10 +82,6 @@ class FFMH2O(object):
 
         self.weights = None
 
-        # Hacks for Python/SWIG not to release the objects prematurely
-        self.row_arr_holder = []
-        self.node_arr_holder = []
-
         self.learned_params = None
 
     @classmethod
@@ -119,49 +115,66 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(lib, X, y)
+        features, fields, values, scales, positions = self._numpy_to_ffm_rows(params, X)
 
-        weights = np.zeros(params.k * featureIdx * fieldIdx, dtype=self.dtype)
+        weights = np.zeros(params.k * params.numFeatures * params.numFields, dtype=self.dtype)
+
+        y_np = self._sanatize_labels(y)
 
         if self.dtype == np.float32:
-            lib.ffm_fit_float(rows, weights, params)
+            lib.ffm_fit_float(features, fields, values, y_np, scales, positions, weights, params)
         else:
-            lib.ffm_fit_double(rows, weights, params)
-
-        # Cleans up the memory
-        self.row_arr_holder = []
-        self.node_arr_holder = []
+            lib.ffm_fit_double(features, fields, values, y_np, scales, positions, weights, params)
 
         self.learned_params = params
         self.weights = weights
         return self
 
+    def _sanatize_labels(self, y):
+        return np.array(list(map(lambda e: 1 if e > 0 else -1, y)), dtype=np.int32)
 
-    def _numpy_to_ffm_rows(self, lib, X, y=None):
-        (node_creator, node_arr_creator, row_creator, row_arr_creator) = \
-            (lib.floatNode, lib.NodeFloatArray, lib.floatRow, lib.RowFloatArray) if self.dtype == np.float32 \
-                else (lib.doubleNode, lib.NodeDoubleArray, lib.doubleRow, lib.RowDoubleArray)
+    def _numpy_to_ffm_rows(self, params, X, update_param_features=True):
         nr_rows = np.shape(X)[0]
-        row_arr = row_arr_creator(nr_rows)
-        self.row_arr_holder.append(row_arr)
+
+        num_nodes = 0
+        for r in range(nr_rows):
+            num_nodes = num_nodes + len(X[r])
+        params.numNodes = num_nodes
+
+        features = np.zeros(num_nodes, dtype=np.uint64)
+        fields = np.zeros(num_nodes, dtype=np.uint64)
+        values = np.zeros(num_nodes, dtype=self.dtype)
+        scales = np.zeros(nr_rows, dtype=self.dtype)
+        positions = np.zeros(nr_rows + 1, dtype=np.uint64)
+
         feature_idx = 0
         field_idx = 0
+
+        curr_idx = 0
         for r in range(nr_rows):
             nr_nodes = len(X[r])
-            node_arr = node_arr_creator(nr_nodes)
-            self.node_arr_holder.append(node_arr)
+            scale = 0.0
+            positions[r + 1] = positions[r] + nr_nodes
             for n in range(nr_nodes):
-                node = node_creator()
-                node.fieldIdx = int(X[r][n][0])
-                node.featureIdx = int(X[r][n][1])
-                node.value = X[r][n][2]
-                node_arr.__setitem__(n, node)
-                feature_idx = max(feature_idx, node.featureIdx + 1)
-                field_idx = max(field_idx, node.fieldIdx + 1)
-            # Scale is being set automatically on the C++ side
-            row = row_creator( 0 if y is None else int(y[r]) , 1.0, nr_nodes, node_arr)
-            row_arr.__setitem__(r, row)
-        return row_arr, feature_idx, field_idx
+                field = int(X[r][n][0])
+                fields[curr_idx] = field
+                field_idx = max(field_idx, field + 1)
+
+                feature = int(X[r][n][1])
+                features[curr_idx] = feature
+                feature_idx = max(feature_idx, feature + 1)
+
+                value = X[r][n][2]
+                values[curr_idx] = value
+                scale = scale + (value * value)
+                curr_idx = curr_idx + 1
+            scales[r] = 1.0 / scale
+
+        if update_param_features:
+            params.numFeatures = feature_idx
+            params.numFields = field_idx
+
+        return features, fields, values, scales, positions
 
     def predict(self, X):
         lib = self._load_lib()
@@ -181,18 +194,14 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        rows, featureIdx, fieldIdx = self._numpy_to_ffm_rows(lib, X)
+        features, fields, values, scales, positions = self._numpy_to_ffm_rows(params, X)
 
         predictions = np.zeros(params.numRows, dtype=self.dtype)
 
         if self.dtype == np.float32:
-            lib.ffm_predict_float(rows, predictions, self.weights, params)
+            lib.ffm_predict_float(features, fields, values, scales, positions, predictions, self.weights, params)
         else:
-            lib.ffm_predict_double(rows, predictions, self.weights, params)
-
-        # Cleans up the memory
-        self.row_arr_holder = []
-        self.node_arr_holder = []
+            lib.ffm_predict_double(features, fields, values, scales, positions, predictions, self.weights, params)
 
         return predictions
 
