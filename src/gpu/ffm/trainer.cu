@@ -2,12 +2,15 @@
  * Copyright 2018 H2O.ai, Inc.
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
-#include "../../base/ffm/trainer.h"
-#include "batching_gpu.cuh"
+#include <algorithm>
 #include <cmath>
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/transform_reduce.h>
+#include "batching_gpu.cuh"
+#include "../utils/cuda.h"
+#include "../../base/ffm/trainer.h"
+#include "../../common/timer.h"
 
 namespace ffm {
 
@@ -19,84 +22,77 @@ Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
   trainDataBatcher[0] = batcher;
 }
 
-/**
- * Original ffm gradient/weight update method from https://github.com/guestwalk/libffm with slight adjustments
- */
 template<typename T>
-T wTx(Row<T> *row,
-      thrust::device_vector<T> &weights,
-      thrust::device_vector<T> &weightsGradient,
-      Params params,
-      T kappa = 0,
-      bool update = false,
-      int verbose = 0) {
-  size_t alignFeat1 = params.numFields * params.k;
-  size_t alignFeat2 = params.k;
+__global__ void wTxKernel(const size_t *features, const size_t *fields, const T *values, const T *r, const size_t *rowSizes,
+                          T *weightsPtr, T *weightsGradientPtr, T *losses,
+                          int alignFeat1, int alignFeat2, int k, float regLambda, float learningRate,
+                          bool update, const int* labels = nullptr) {
+  // TODO might need size_t
+  int rowIdx = blockIdx.x;
+  int rowOffset = rowSizes[rowIdx];
+  int rowSize = rowSizes[rowIdx + 1] - rowSizes[rowIdx];
 
-  T loss = 0.0;
-
-  T* weightsPtr = thrust::raw_pointer_cast(weights.data());
-  T* weightsGradientPtr = thrust::raw_pointer_cast(weightsGradient.data());
-
-  T r = params.normalize ? row->scale : 1.0;
-
-  auto features = row->features;
-  auto fields = row->fields;
-  auto values = row->values;
-
-#pragma omp parallel for schedule(static) reduction(+: loss)
-  for (size_t n1 = 0; n1 < row->size; n1++) {
-    thrust::counting_iterator<int> counter(n1 + 1);
-
-    loss += thrust::transform_reduce(counter, counter + row->size - n1 - 1, [=]__device__(int idx) {
-      size_t feature1 = features[n1];
-      size_t field1 = fields[n1];
-      T value1 = values[n1];
-
-      size_t feature2 = features[idx];
-      size_t field2 = fields[idx];
-      T value2 = values[idx];
-      T localt = 0;
-
-      if (feature1 >= params.numFeatures || field1 >= params.numFields ||
-          feature2 >= params.numFeatures || field2 >= params.numFields) {
-        return localt;
-      }
-
-      size_t idx1 = feature1 * alignFeat1 + field2 * alignFeat2;
-      size_t idx2 = feature2 * alignFeat1 + field1 * alignFeat2;
-      T *w1 = weightsPtr + idx1;
-      T *w2 = weightsPtr + idx2;
-
-      T v = value1 * value2 * r;
-
-      if (update) {
-        T *wg1 = weightsGradientPtr + idx1;
-        T *wg2 = weightsGradientPtr + idx2;
-
-        for (size_t d = 0; d < params.k; d++) {
-          T g1 = params.regLambda * w1[d] + kappa * w2[d] * v;
-          T g2 = params.regLambda * w2[d] + kappa * w1[d] * v;
-
-          wg1[d] += g1 * g1;
-          wg2[d] += g2 * g2;
-
-          w1[d] -= params.learningRate / sqrt(wg1[d]) * g1;
-          w2[d] -= params.learningRate / sqrt(wg2[d]) * g2;
-
-        }
-      } else {
-        for (size_t d = 0; d < alignFeat2; d++) {
-          localt += w1[d] * w2[d] * v;
-        }
-      }
-      return localt;
-    },
-    (T) 0.0,
-        thrust::plus<T>());
+  if(threadIdx.x >= (1.0 + rowSize - 1.0)/2.0 * (rowSize-1)) {
+    return;
   }
 
-  return loss;
+  // TODO might need size_t
+  int n1 = rowOffset; // Node1 index
+  int acc = 0;
+  int currSize = rowSize - 1;
+  int pos = currSize;
+  while(threadIdx.x >= pos) {
+    acc += currSize;
+    currSize--;
+    pos += currSize;
+    n1++;
+  }
+
+  int n2 = threadIdx.x - acc + n1 + 1;
+
+  int feature1 = features[n1];
+  int field1 = fields[n1];
+  T value1 = values[n1];
+
+  int feature2 = features[n2];
+  int field2 = fields[n2];
+  T value2 = values[n2];
+  T localt = 0;
+
+  // TODO check if fields/features are in range of trained model
+
+  int idx1 = feature1 * alignFeat1 + field2 * alignFeat2;
+  int idx2 = feature2 * alignFeat1 + field1 * alignFeat2;
+  T *w1 = weightsPtr + idx1;
+  T *w2 = weightsPtr + idx2;
+
+  T v = value1 * value2 * r[rowIdx];
+
+
+  if (update) {
+    // TODO shared in a block?
+    T expnyt = exp(-labels[rowIdx] * losses[rowIdx]);
+    T kappa = -labels[rowIdx] * expnyt / (1 + expnyt);
+
+    T *wg1 = weightsGradientPtr + idx1;
+    T *wg2 = weightsGradientPtr + idx2;
+
+    for (int d = 0; d < k; d++) {
+      T g1 = regLambda * w1[d] + kappa * w2[d] * v;
+      T g2 = regLambda * w2[d] + kappa * w1[d] * v;
+
+      wg1[d] += g1 * g1;
+      wg2[d] += g2 * g2;
+
+      w1[d] -= learningRate / sqrt(wg1[d]) * g1;
+      w2[d] -= learningRate / sqrt(wg2[d]) * g2;
+    }
+  } else {
+    for (int d = 0; d < alignFeat2; d++) {
+      localt += w1[d] * w2[d] * v;
+    }
+    losses[rowIdx] = localt;
+  }
 }
 
 template<typename T>
@@ -108,23 +104,37 @@ void Trainer<T>::predict(T *predictions) {
 
     int record = 0;
     while (trainDataBatcher[i]->hasNext()) {
-      DatasetBatch<T> batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
+      DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
 
-      T loss = 0;
-      // TODO parallelize somehow
-      while (batch.hasNext()) {
-        Row<T> *row = batch.nextRow();
+      size_t maxCalcs = batch->widestRow();
+      size_t blocks = batch->numRows;
+      size_t threads = maxCalcs;
 
-        T t = wTx(row, localWeights, localGradients, this->params);
+      T *losses;
+      cudaMalloc(&losses, batch->numRows * sizeof(T));
 
-        predictions[record++] = 1 / (1 + exp(-t));
-      }
+      T* weightsPtr = thrust::raw_pointer_cast(localWeights.data());
+      T* weightsGradientPtr = thrust::raw_pointer_cast(localGradients.data());
+
+      size_t alignFeat1 = params.numFields * params.k;
+      size_t alignFeat2 = params.k;
+
+      wTxKernel << < blocks, threads >> > (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
+          weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
+
+      thrust::copy(losses + record, losses + record + batch->numRows, predictions + record);
+
+
+      record += batch->numRows;
     }
+
+    std::transform (predictions, predictions + params.numRows, predictions, [&](T val){ return 1.0 / (1.0 + exp(-val)); });
   }
 }
 
 template<typename T>
 T Trainer<T>::oneEpoch(bool update) {
+  Timer timer;
   log_debug(this->params.verbose, "Computing an FFM epoch (update = %s)", update ? "true" : "false");
 
   T loss = 0;
@@ -134,30 +144,84 @@ T Trainer<T>::oneEpoch(bool update) {
   for (int i = 0; i < params.nGpus; i++) {
     log_verbose(this->params.verbose, "Copying weights of size %zu to GPU %d", this->model.weights.size(), i);
 
+    /**
+     * Copy Weights
+     * */
+    timer.tic();
     // TODO do only once for all iterations?
     allLocalWeights[i].resize(this->model.weights.size());
     thrust::copy(this->model.weights.begin(), this->model.weights.end(), allLocalWeights[i].begin() );
 
     allLocalGradients[i].resize(this->model.gradients.size());
     thrust::copy(this->model.gradients.begin(), this->model.gradients.end(), allLocalGradients[i].begin() );
+    timer.toc();
+    log_verbose(params.verbose, "Copying weights took %f.", timer.pop());
 
     while (trainDataBatcher[i]->hasNext()) {
-      DatasetBatch<T> batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
+      /**
+       * Get batch
+       */
 
-      // TODO shuffle batch?
-#pragma omp parallel for
-      for(size_t rowIdx = batch.pos; rowIdx < batch.remaining(); rowIdx++) {
-        Row<T> *row = batch.rowAt(rowIdx);
-        T t = wTx(row, allLocalWeights[i], allLocalGradients[i], this->params);
+      timer.tic();
+      DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
+timer.toc();
+      log_verbose(params.verbose, "Getting batch took %f.", timer.pop());
 
-        T expnyt = exp(-row->label * t);
-        loss += log(1 + expnyt);
+      size_t alignFeat1 = params.numFields * params.k;
+      size_t alignFeat2 = params.k;
 
-        if (update) {
-          T kappa = -row->label * expnyt / (1 + expnyt);
-          wTx(row, allLocalWeights[i], allLocalGradients[i], this->params, kappa, true);
-        }
+      size_t maxCalcs = batch->widestRow();
+      size_t threads = maxCalcs;
+      size_t blocks = batch->numRows;
+
+      /**
+        * Alloc
+        */
+      // todo dealloc
+      T *losses;
+      cudaMalloc(&losses, batch->numRows * sizeof(T));
+
+      T* weightsPtr = thrust::raw_pointer_cast(allLocalWeights[i].data());
+      T* weightsGradientPtr = thrust::raw_pointer_cast(allLocalGradients[i].data());
+
+      timer.tic();
+      wTxKernel<<<blocks, threads>>>(batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
+          weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
+      timer.toc();
+      log_verbose(params.verbose, "wTx (update false) took %f.", timer.pop());
+
+      timer.tic();
+      CUDA_CHECK(cudaDeviceSynchronize());
+      CUDA_CHECK(cudaGetLastError());
+      timer.toc();
+      log_verbose(params.verbose, "Cuda synchronize took %f.", timer.pop());
+
+      if(update) {
+        timer.tic();
+        wTxKernel<<<blocks, threads>>>(batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
+            weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, true, batch->labels);
+        timer.toc();
+        log_verbose(params.verbose, "wTx (update true) took %f.", timer.pop());
+
       }
+
+      timer.tic();
+      CUDA_CHECK(cudaDeviceSynchronize());
+      CUDA_CHECK(cudaGetLastError());
+      timer.toc();
+      log_verbose(params.verbose, "Cuda synchronize took %f.", timer.pop());
+
+      timer.tic();
+      int* labels = batch->labels;
+      thrust::counting_iterator<int> counter(0);
+      loss += thrust::transform_reduce(counter, counter + batch->numRows , [=]__device__(int idx) {
+        return log(1 + exp(-labels[idx] * losses[idx]));
+      },
+      (T) 0.0, thrust::plus<T>());
+      timer.toc();
+
+      log_verbose(params.verbose, "Loss compute took %f.", timer.pop());
+
     }
     trainDataBatcher[i]->reset();
   }
@@ -166,8 +230,12 @@ T Trainer<T>::oneEpoch(bool update) {
     // TODO average local weights
     // TODO distribute gradients
   } else {
+    timer.tic();
     thrust::copy(allLocalWeights[0].begin(), allLocalWeights[0].end(), this->model.weights.begin());
     thrust::copy(allLocalGradients[0].begin(), allLocalGradients[0].end(), this->model.gradients.begin());
+    timer.toc();
+    log_verbose(params.verbose, "Copying weights back took %f.", timer.pop());
+
   }
 
   log_debug(this->params.verbose, "Log loss = %f", loss / params.numRows);

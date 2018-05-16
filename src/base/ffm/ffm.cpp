@@ -3,6 +3,7 @@
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
 #include "ffm.h"
+#include "../../common/timer.h"
 #include <numeric>
 #include <algorithm>
 
@@ -18,8 +19,13 @@ template<typename T>
 void FFM<T>::fit(const Dataset<T> &dataset) {
   Trainer<T> trainer(dataset, this->model, this->params);
 
+  Timer timer;
+
   for (int epoch = 1; epoch <= this->params.nIter; epoch++) {
+    timer.tic();
     trainer.oneEpoch(true);
+    timer.toc();
+    log_debug(params.verbose, "Epoch took %f.", timer.pop());
     if (trainer.earlyStop()) {
       break;
     }
@@ -41,7 +47,11 @@ void ffm_fit_float(size_t* features, size_t* fields, float* values, int *labels,
   FFM<float> ffm(_param);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for float.");
+  Timer timer;
+  timer.tic();
   ffm.fit(dataset);
+  timer.toc();
+  log_debug(_param.verbose, "Float fit took %f.", timer.pop());
   ffm.model.copyTo(w);
 }
 

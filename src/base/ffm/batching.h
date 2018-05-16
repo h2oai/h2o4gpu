@@ -56,31 +56,7 @@ class DatasetBatch {
     return pos < numRows;
   }
 
-  Row<T> *rowAt(size_t rowPos) {
-    Row<T>* row;
-    if(nullptr != labels) {
-      // TODO where to deallocate??
-      row = new Row<T>(features + rowPos, fields + rowPos, values + rowPos, labels[rowPos], scales[rowPos], rowPositions[rowPos + 1] - rowPositions[rowPos]);
-    } else {
-      // Predictions don't need labels
-      row = new Row<T>(features + rowPos, fields + rowPos, values + rowPos, -1, scales[rowPos], rowPositions[rowPos + 1] - rowPositions[rowPos]);
-    }
-    return row;
-  }
-
-  Row<T> *nextRow() {
-    Row<T>* row;
-    if(nullptr != labels) {
-      // TODO where to deallocate??
-      row = new Row<T>(features + pos, fields + pos, values + pos, labels[pos], scales[pos], rowPositions[pos + 1] - rowPositions[pos]);
-    } else {
-      // Predictions don't need labels
-      row = new Row<T>(features + pos, fields + pos, values + pos, -1, scales[pos], rowPositions[pos + 1] - rowPositions[pos]);
-    }
-    pos++;
-    return row;
-  }
-
+  virtual size_t widestRow() { return 0.0; }
 };
 
 template<typename T>
@@ -102,7 +78,7 @@ class DatasetBatcher {
     pos = 0;
   }
 
-  virtual DatasetBatch<T> nextBatch(size_t batchSize) {}
+  virtual DatasetBatch<T> *nextBatch(size_t batchSize) {}
 
  protected:
   Dataset<T> dataset;
