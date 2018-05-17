@@ -18,12 +18,6 @@ namespace ffm {
  */
 template <typename T>
 size_t DatasetBatchGPU<T>::widestRow() {
-  this->rowPositions;
-
-  Timer timer;
-
-  timer.tic();
-
   thrust::device_vector<size_t> tmpRowSizes(this->numRows);
   thrust::device_vector<size_t> rowPositions(this->rowPositions, this->rowPositions + this->numRows);
   thrust::adjacent_difference(rowPositions.begin(), rowPositions.end(), tmpRowSizes.begin(), thrust::minus<size_t>());
@@ -32,13 +26,7 @@ size_t DatasetBatchGPU<T>::widestRow() {
 
   size_t max_value = *iter;
 
-  size_t widest = (max_value/2.0) * (max_value - 1.0);
-
-  timer.toc();
-
-  // TODO fix
-//  return widest;
-  return 741;
+  return max_value;
 }
 
 /**
@@ -103,7 +91,7 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
 template<typename T>
 DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(size_t batchSize) {
   log_verbose(this->params.verbose, "Asked for batch of size %zu.", batchSize);
-  size_t actualBatchSize = batchSize <= this->remaining() ? batchSize : this->remaining();
+  size_t actualBatchSize = batchSize <= this->remaining() && batchSize > 0 ? batchSize : this->remaining();
 
   if (this->onGPU) {
     log_verbose(this->params.verbose,

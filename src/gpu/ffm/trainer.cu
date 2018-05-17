@@ -12,87 +12,122 @@
 #include "../../base/ffm/trainer.h"
 #include "../../common/timer.h"
 
+#if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
+#else
+__device__ double atomicAdd(double* address, double val)
+{
+  unsigned long long int* address_as_ull =
+      (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(val +
+                        __longlong_as_double(assumed)));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+#endif
+
 namespace ffm {
 
 template<typename T>
 Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
     : trainDataBatcher(1), model(model), params(params) {
+  CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceMapHost));
+  CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
+
+#if __CUDA_ARCH__ > 500
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 0));
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, 0));
+#endif // CUDA 5.0
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitStackSize, 0));
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 0));
+  CUDA_CHECK(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
   // TODO delete in destructor
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
   trainDataBatcher[0] = batcher;
 }
 
 template<typename T>
-__global__ void wTxKernel(const size_t *features, const size_t *fields, const T *values, const T *r, const size_t *rowSizes,
-                          T *weightsPtr, T *weightsGradientPtr, T *losses,
-                          int alignFeat1, int alignFeat2, int k, float regLambda, float learningRate,
-                          bool update, const int* labels = nullptr) {
-  // TODO might need size_t
-  int rowIdx = blockIdx.x;
-  int rowOffset = rowSizes[rowIdx];
+Trainer<T>::~Trainer() {
+  CUDA_CHECK(cudaDeviceReset());
+}
+
+template<typename T>
+__global__ void wTxKernel(const size_t *__restrict__ features, const size_t *__restrict__ fields, const T *__restrict__ values,
+                          const T *__restrict__ r, const size_t *__restrict__ rowSizes,
+                          T *__restrict__ weightsPtr, T *__restrict__ weightsGradientPtr,
+                          T *__restrict__ losses, const int maxRowSize, const int rows,
+                          const int alignFeat1, const int alignFeat2, const int k, const float regLambda, const float learningRate,
+                          const bool update, const int* labels = nullptr) {
+  __shared__ T kappa;
+
+  int rowIdx = (blockIdx.x * blockDim.x + threadIdx.x) / maxRowSize;
+
+  if(rowIdx > rows) return;
+
   int rowSize = rowSizes[rowIdx + 1] - rowSizes[rowIdx];
 
-  if(threadIdx.x >= (1.0 + rowSize - 1.0)/2.0 * (rowSize-1)) {
-    return;
-  }
+  int nodeIdx = (blockIdx.x * blockDim.x + threadIdx.x) % maxRowSize;
 
-  // TODO might need size_t
-  int n1 = rowOffset; // Node1 index
-  int acc = 0;
-  int currSize = rowSize - 1;
-  int pos = currSize;
-  while(threadIdx.x >= pos) {
-    acc += currSize;
-    currSize--;
-    pos += currSize;
-    n1++;
-  }
+  if(nodeIdx >= rowSize) return;
 
-  int n2 = threadIdx.x - acc + n1 + 1;
+  int n1 = rowSizes[rowIdx] + nodeIdx;
+  T loss = 0.0;
+  for(int i = 1; n1 + i < rowSizes[rowIdx + 1]; i++) {
+    const int n2 = n1 + i;
 
-  int feature1 = features[n1];
-  int field1 = fields[n1];
-  T value1 = values[n1];
+    const int feature1 = features[n1];
+    const int field1 = fields[n1];
+    const T value1 = values[n1];
 
-  int feature2 = features[n2];
-  int field2 = fields[n2];
-  T value2 = values[n2];
-  T localt = 0;
+    const int feature2 = features[n2];
+    const int field2 = fields[n2];
+    const T value2 = values[n2];
 
-  // TODO check if fields/features are in range of trained model
+    // TODO check if fields/features are in range of trained model
+    const int idx1 = feature1 * alignFeat1 + field2 * alignFeat2;
+    const int idx2 = feature2 * alignFeat1 + field1 * alignFeat2;
+    T *w1 = weightsPtr + idx1;
+    T *w2 = weightsPtr + idx2;
 
-  int idx1 = feature1 * alignFeat1 + field2 * alignFeat2;
-  int idx2 = feature2 * alignFeat1 + field1 * alignFeat2;
-  T *w1 = weightsPtr + idx1;
-  T *w2 = weightsPtr + idx2;
+    const T v = value1 * value2 * r[rowIdx];
 
-  T v = value1 * value2 * r[rowIdx];
+    if (update) {
+      if (threadIdx.x == 0) {
+        const int label = labels[rowIdx];
+        const T expnyt = exp(-label * losses[rowIdx]);
+        kappa = -label * expnyt / (1 + expnyt);
+      }
 
+      __syncthreads();
 
-  if (update) {
-    // TODO shared in a block?
-    T expnyt = exp(-labels[rowIdx] * losses[rowIdx]);
-    T kappa = -labels[rowIdx] * expnyt / (1 + expnyt);
+      T *wg1 = weightsGradientPtr + idx1;
+      T *wg2 = weightsGradientPtr + idx2;
 
-    T *wg1 = weightsGradientPtr + idx1;
-    T *wg2 = weightsGradientPtr + idx2;
+      for (int d = 0; d < k; d++) {
+        const T w1d = w1[d];
+        const T w2d = w2[d];
+        const T g1 = regLambda * w1d + kappa * w2d * v;
+        const T g2 = regLambda * w2d + kappa * w1d * v;
 
-    for (int d = 0; d < k; d++) {
-      T g1 = regLambda * w1[d] + kappa * w2[d] * v;
-      T g2 = regLambda * w2[d] + kappa * w1[d] * v;
+        const T wg1d = wg1[d] + g1 * g1;
+        const T wg2d = wg2[d] + g2 * g2;
+        wg1[d] = wg1d;
+        wg2[d] = wg2d;
 
-      wg1[d] += g1 * g1;
-      wg2[d] += g2 * g2;
-
-      w1[d] -= learningRate / sqrt(wg1[d]) * g1;
-      w2[d] -= learningRate / sqrt(wg2[d]) * g2;
+        w1[d] = w1d - learningRate / sqrt(wg1d) * g1;
+        w2[d] = w2d - learningRate / sqrt(wg2d) * g2;
+      }
+    } else {
+      for (int d = 0; d < alignFeat2; d++) {
+        loss += w1[d] * w2[d] * v;
+      }
     }
-  } else {
-    for (int d = 0; d < alignFeat2; d++) {
-      localt += w1[d] * w2[d] * v;
-    }
-    losses[rowIdx] = localt;
   }
+  atomicAdd(losses + rowIdx, loss);
 }
 
 template<typename T>
@@ -106,9 +141,10 @@ void Trainer<T>::predict(T *predictions) {
     while (trainDataBatcher[i]->hasNext()) {
       DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
 
-      size_t maxCalcs = batch->widestRow();
-      size_t blocks = batch->numRows;
-      size_t threads = maxCalcs;
+      size_t threads = 512; // TODO based on row number??
+      size_t maxRowSize = batch->widestRow();
+      size_t totalThreads = batch->numRows * maxRowSize;
+      size_t blocks = std::ceil(totalThreads / threads);
 
       T *losses;
       cudaMalloc(&losses, batch->numRows * sizeof(T));
@@ -120,7 +156,7 @@ void Trainer<T>::predict(T *predictions) {
       size_t alignFeat2 = params.k;
 
       wTxKernel << < blocks, threads >> > (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
-          weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
+          weightsPtr, weightsGradientPtr, losses, maxRowSize, batch->numRows, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
 
       thrust::copy(losses + record, losses + record + batch->numRows, predictions + record);
 
@@ -164,15 +200,16 @@ T Trainer<T>::oneEpoch(bool update) {
 
       timer.tic();
       DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
-timer.toc();
+      timer.toc();
       log_verbose(params.verbose, "Getting batch took %f.", timer.pop());
 
       size_t alignFeat1 = params.numFields * params.k;
       size_t alignFeat2 = params.k;
 
-      size_t maxCalcs = batch->widestRow();
-      size_t threads = maxCalcs;
-      size_t blocks = batch->numRows;
+      size_t threads = 512; // TODO based on row number??
+      size_t maxRowSize = batch->widestRow();
+      size_t totalThreads = batch->numRows * maxRowSize;
+      size_t blocks = std::ceil((double)totalThreads / threads);
 
       /**
         * Alloc
@@ -185,31 +222,19 @@ timer.toc();
       T* weightsGradientPtr = thrust::raw_pointer_cast(allLocalGradients[i].data());
 
       timer.tic();
-      wTxKernel<<<blocks, threads>>>(batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
-          weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
-      timer.toc();
-      log_verbose(params.verbose, "wTx (update false) took %f.", timer.pop());
 
-      timer.tic();
-      CUDA_CHECK(cudaDeviceSynchronize());
-      CUDA_CHECK(cudaGetLastError());
-      timer.toc();
-      log_verbose(params.verbose, "Cuda synchronize took %f.", timer.pop());
+      wTxKernel<<<blocks, threads>>>(batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
+          weightsPtr, weightsGradientPtr, losses, maxRowSize, batch->numRows, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, false);
 
       if(update) {
-        timer.tic();
         wTxKernel<<<blocks, threads>>>(batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
-            weightsPtr, weightsGradientPtr, losses, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, true, batch->labels);
-        timer.toc();
-        log_verbose(params.verbose, "wTx (update true) took %f.", timer.pop());
-
+            weightsPtr, weightsGradientPtr, losses, maxRowSize, batch->numRows, alignFeat1, alignFeat2, params.k, params.regLambda, params.learningRate, true, batch->labels);
       }
 
-      timer.tic();
       CUDA_CHECK(cudaDeviceSynchronize());
       CUDA_CHECK(cudaGetLastError());
       timer.toc();
-      log_verbose(params.verbose, "Cuda synchronize took %f.", timer.pop());
+      log_verbose(params.verbose, "wTx took %f.", timer.pop());
 
       timer.tic();
       int* labels = batch->labels;

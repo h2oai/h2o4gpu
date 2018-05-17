@@ -15,6 +15,7 @@ template<typename T>
 class Trainer {
  public:
   Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params);
+  ~Trainer();
 
   T oneEpoch(bool update);
 
