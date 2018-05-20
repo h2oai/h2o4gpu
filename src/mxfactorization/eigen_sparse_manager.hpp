@@ -16,6 +16,7 @@
 #include <vector>
 #include <cstddef>
 #include <type_traits>
+#include <vector>
 
 #if DEBUG
 #define log(...) {											\
@@ -175,9 +176,56 @@ namespace sparse {
 		}
 	}
 
+	template <typename Type, int options, typename StorageIndex>
+	void serialize_indPtr(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string&& filename) {
+		std::fstream wFile;
+		StorageIndex nnzs = matrix.nonZeros();
+		StorageIndex rows = matrix.rows();
+		StorageIndex cols = matrix.cols();
+
+		std::cout << "serialize indPtr\n";
+
+		std::string fileName, dirName;
+		split_path(filename, dirName, fileName);
+		std::string newPath = dirName + '/' + fileName;
+		std::cout << newPath << std::endl;
+		std::string genFileName;
+		if (options == Eigen::RowMajor)
+			genFileName = ".csr.indptr.bin";
+		else
+			genFileName = ".csc.indptr.bin";
+
+		auto indPtrVec = indPtr(matrix);
+		wFile.open(newPath+genFileName, std::ios::binary | std::ios::out);
+		if (wFile.is_open()) {
+			wFile.write((const char *)&(rows), sizeof(StorageIndex));
+			wFile.write((const char *)&(cols), sizeof(StorageIndex));
+			wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
+			wFile.write((const char *)(indPtrVec.data()), sizeof(Type) * indPtrVec.size());
+			wFile.close();
+		}
+	}
+
+	/* indPtr implementation */
+	template <typename Type, int options, typename StorageIndex>
+	std::vector<Type> indPtr(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix) {
+		std::vector<Type> indPtrVec = {0}; // initialize with zero
+		for (size_t k = 0; k < matrix.outerSize(); ++k) {
+			size_t index = 0;
+			for (Eigen::SparseMatrix<Type, options>::InnerIterator it(matrix, k); it; ++it) {
+				++index;
+			}
+			Type pitch = indPtrVec.back();
+			indPtrVec.push_back(pitch+index);
+		}
+		return indPtrVec;
+		if (indPtrVec.size() != matrix.rows()+1)
+			throw std::length_error("indPtr has not the correct size: "+ std::to_string(matrix.rows()+1));
+	}
+
 	// for testing
 	template <typename Type, int options, typename StorageIndex>
-		void deserialize_test_data(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
+	void deserialize_test_data(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
 			std::fstream wFile;
 			StorageIndex nnzs;
 			StorageIndex * innerPtr = new StorageIndex[10];
