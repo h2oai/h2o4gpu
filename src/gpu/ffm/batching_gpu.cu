@@ -17,14 +17,14 @@ namespace ffm {
  * DatasetBatchGPU Mathods
  */
 template <typename T>
-size_t DatasetBatchGPU<T>::widestRow() {
-  thrust::device_vector<size_t> tmpRowSizes(this->numRows);
-  thrust::device_vector<size_t> rowPositions(this->rowPositions, this->rowPositions + this->numRows);
-  thrust::adjacent_difference(rowPositions.begin(), rowPositions.end(), tmpRowSizes.begin(), thrust::minus<size_t>());
+int DatasetBatchGPU<T>::widestRow() {
+  thrust::device_vector<int> tmpRowSizes(this->numRows);
+  thrust::device_vector<int> rowPositions(this->rowPositions, this->rowPositions + this->numRows);
+  thrust::adjacent_difference(rowPositions.begin(), rowPositions.end(), tmpRowSizes.begin(), thrust::minus<int>());
 
-  thrust::device_vector<size_t>::iterator iter = thrust::max_element(tmpRowSizes.begin(), tmpRowSizes.end());
+  thrust::device_vector<int>::iterator iter = thrust::max_element(tmpRowSizes.begin(), tmpRowSizes.end());
 
-  size_t max_value = *iter;
+  int max_value = *iter;
 
   return max_value;
 }
@@ -57,8 +57,8 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
     datasetGpu.numRows = dataset.numRows;
     datasetGpu.numFields = dataset.numFields;
 
-    CUDA_CHECK(cudaMalloc(&datasetGpu.rowPositions, (params.numRows + 1) * sizeof(size_t)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.rowPositions, dataset.rowPositions, (params.numRows + 1) * sizeof(size_t), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMalloc(&datasetGpu.rowPositions, (params.numRows + 1) * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.rowPositions, dataset.rowPositions, (params.numRows + 1) * sizeof(int), cudaMemcpyHostToDevice));
 
     // No need for predict
     if(dataset.labels != nullptr) {
@@ -69,11 +69,11 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
     CUDA_CHECK(cudaMalloc(&datasetGpu.scales, params.numRows * sizeof(T)));
     CUDA_CHECK(cudaMemcpy(datasetGpu.scales, dataset.scales, params.numRows * sizeof(T), cudaMemcpyHostToDevice));
 
-    CUDA_CHECK(cudaMalloc(&datasetGpu.features, params.numNodes * sizeof(size_t)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.features, dataset.features, params.numNodes * sizeof(size_t), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMalloc(&datasetGpu.features, params.numNodes * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.features, dataset.features, params.numNodes * sizeof(int), cudaMemcpyHostToDevice));
 
-    CUDA_CHECK(cudaMalloc(&datasetGpu.fields, params.numNodes * sizeof(size_t)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(size_t), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMalloc(&datasetGpu.fields, params.numNodes * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(int), cudaMemcpyHostToDevice));
 
     CUDA_CHECK(cudaMalloc(&datasetGpu.values, params.numNodes * sizeof(T)));
     CUDA_CHECK(cudaMemcpy(datasetGpu.values, dataset.values, params.numNodes * sizeof(T), cudaMemcpyHostToDevice));
@@ -89,9 +89,8 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
 }
 
 template<typename T>
-DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(size_t batchSize) {
-  log_verbose(this->params.verbose, "Asked for batch of size %zu.", batchSize);
-  size_t actualBatchSize = batchSize <= this->remaining() && batchSize > 0 ? batchSize : this->remaining();
+DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
+  int actualBatchSize = batchSize <= this->remaining() && batchSize > 0 ? batchSize : this->remaining();
 
   if (this->onGPU) {
     log_verbose(this->params.verbose,

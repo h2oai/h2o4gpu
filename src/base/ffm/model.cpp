@@ -4,12 +4,13 @@
  */
 #include "model.h"
 #include <random>
+#include <algorithm>
 #include <string.h>
 
 namespace ffm {
 
 template<typename T>
-Model<T>::Model(Params &params) : weights(params.numFeatures * params.numFields * params.k), gradients(params.numFeatures * params.numFields * params.k) {
+Model<T>::Model(Params &params) : weights(2 * params.numFeatures * params.numFields * params.k) {
   this->numFeatures = params.numFeatures;
   this->numFields = params.numFields;
   this->k = params.k;
@@ -20,9 +21,9 @@ Model<T>::Model(Params &params) : weights(params.numFeatures * params.numFields 
   std::default_random_engine generator(params.seed);
   std::uniform_real_distribution<T> distribution(0.0, 1.0);
 
-  for (int i = 0; i < weights.size(); i++) {
+  for (int i = 0; i < weights.size(); i += 2) {
     this->weights[i] = coef * distribution(generator);
-    this->gradients[i] = 1.0;
+    this->weights[i + 1] = 1.0;
   }
 
 }
@@ -35,13 +36,16 @@ Model<T>::Model(Params &params, T *weights) : weights(params.numFeatures * param
   this->normalize = params.normalize;
 
   for (int i = 0; i < this->weights.size(); i++) {
+    // TODO memcpy?
     this->weights[i] = weights[i];
   }
 }
 
 template<typename T>
 void Model<T>::copyTo(T *dstWeights) {
-  memcpy(dstWeights, this->weights.data(), this->weights.size() * sizeof(T));
+  // TODO copy only weights
+  std::copy_if( this->weights.begin(), this->weights.end(), dstWeights,
+                            []( int x ) { return x % 2; } );
 };
 
 template

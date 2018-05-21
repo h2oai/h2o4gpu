@@ -41,7 +41,7 @@ void FFM<T>::predict(const Dataset<T> &dataset, T *predictions) {
 /**
  * C API method
  */
-void ffm_fit_float(size_t* features, size_t* fields, float* values, int *labels, float *scales, size_t *rowPositions, float *w, Params &_param) {
+void ffm_fit_float(int* features, int* fields, float* values, int *labels, float *scales, int *rowPositions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
   Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<float> ffm(_param);
@@ -55,7 +55,7 @@ void ffm_fit_float(size_t* features, size_t* fields, float* values, int *labels,
   ffm.model.copyTo(w);
 }
 
-void ffm_fit_double(size_t* features, size_t* fields, double* values, int *labels, double *scales, size_t *rowPositions, double *w, Params &_param) {
+void ffm_fit_double(int* features, int* fields, double* values, int *labels, double *scales, int *rowPositions, double *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
   Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<double> ffm(_param);
@@ -65,7 +65,7 @@ void ffm_fit_double(size_t* features, size_t* fields, double* values, int *label
   ffm.model.copyTo(w);
 }
 
-void ffm_predict_float(size_t *features, size_t* fields, float* values, float *scales, size_t* rowPositions, float *predictions, float *w, Params &_param) {
+void ffm_predict_float(int *features, int* fields, float* values, float *scales, int* rowPositions, float *predictions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset for predictions.", _param.numRows);
   Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
   FFM<float> ffm(_param, w);
@@ -74,7 +74,7 @@ void ffm_predict_float(size_t *features, size_t* fields, float* values, float *s
   ffm.predict(dataset, predictions);
 }
 
-void ffm_predict_double(size_t *features, size_t* fields, double* values, double *scales, size_t* rowPositions, double *predictions, double *w, Params &_param){
+void ffm_predict_double(int *features, int* fields, double* values, double *scales, int* rowPositions, double *predictions, double *w, Params &_param){
   log_debug(_param.verbose, "Converting %d double rows into a dataset for predictions.", _param.numRows);
   Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
   FFM<double> ffm(_param, w);

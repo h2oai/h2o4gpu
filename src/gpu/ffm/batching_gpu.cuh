@@ -14,11 +14,11 @@ class DatasetBatchGPU : public DatasetBatch<T> {
  public:
   DatasetBatchGPU() {}
 
-  DatasetBatchGPU(size_t *features, size_t* fields, T* values,
-                                      int *labels, T *scales, size_t *rowPositions,
-                                      size_t numRows) : DatasetBatch<T>(features, fields, values, labels, scales, rowPositions, numRows) {}
+  DatasetBatchGPU(int *features, int* fields, T* values,
+                                      int *labels, T *scales, int *rowPositions,
+                                      int numRows) : DatasetBatch<T>(features, fields, values, labels, scales, rowPositions, numRows) {}
 
-  size_t widestRow() override;
+  int widestRow() override;
 };
 
 template<typename T>
@@ -52,7 +52,7 @@ class DatasetBatcherGPU : public DatasetBatcher<T> {
 
   DatasetBatcherGPU(Dataset<T> const &dataset, Params const &params);
 
-  DatasetBatch<T> *nextBatch(size_t batchSize) override;
+  DatasetBatch<T> *nextBatch(int batchSize) override;
 
  private:
   // If true means the GPU had enough memory to hold the whole data

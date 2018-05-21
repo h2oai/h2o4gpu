@@ -18,10 +18,10 @@ typedef struct Params {
   int nIter = 10;
   int batchSize = 1000;
 
-  size_t numRows = 0;
-  size_t numNodes = 0;
-  size_t numFeatures = 0;
-  size_t numFields = 0;
+  int numRows = 0;
+  int numNodes = 0;
+  int numFeatures = 0;
+  int numFields = 0;
   int k = 4;
 
   bool normalize = true;
@@ -39,10 +39,10 @@ typedef struct Params {
 
 } Params;
 
-void ffm_fit_float(size_t *features, size_t* fields, float* values, int *labels, float *scales, size_t *positions, float *w, Params &_param);
-void ffm_fit_double(size_t *features, size_t* fields, double* values, int *labels, double *scales, size_t *positions, double *w, Params &_param);
+void ffm_fit_float(int *features, int* fields, float* values, int *labels, float *scales, int *positions, float *w, Params &_param);
+void ffm_fit_double(int *features, int* fields, double* values, int *labels, double *scales, int *positions, double *w, Params &_param);
 
-void ffm_predict_float(size_t *features, size_t* fields, float* values, float *scales, size_t* positions, float *predictions, float *w, Params &_param);
-void ffm_predict_double(size_t *features, size_t* fields, double* values, double *scales, size_t* positions, double *predictions, double *w, Params &_param);
+void ffm_predict_float(int *features, int* fields, float* values, float *scales, int* positions, float *predictions, float *w, Params &_param);
+void ffm_predict_double(int *features, int* fields, double* values, double *scales, int* positions, double *predictions, double *w, Params &_param);
 
 }

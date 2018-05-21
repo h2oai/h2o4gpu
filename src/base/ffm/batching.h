@@ -24,18 +24,18 @@ class DatasetBatch {
                                                 rowPositions(other.rowPositions), numRows(other.numRows){}
 
   DatasetBatch(
-      size_t *features, size_t* fields, T* values,
+      int *features, int* fields, T* values,
       int *labels, T *scales,
-      size_t *rowPositions, size_t numRows) : features(features), fields(fields), values(values),
+      int *rowPositions, int numRows) : features(features), fields(fields), values(values),
                                               labels(labels), scales(scales),
                                               rowPositions(rowPositions), numRows(numRows) {}
 
   // Starting position for each row. Of size nr_rows + 1
-  size_t* rowPositions;
+  int* rowPositions;
 
   // feature:field:value for all the data points in all the rows
-  size_t* features;
-  size_t* fields;
+  int* features;
+  int* fields;
   T* values;
 
   // label and scale for each row
@@ -43,12 +43,12 @@ class DatasetBatch {
   T* scales;
 
   // Current position in the batch
-  size_t pos = 0;
+  int pos = 0;
 
   // Actual samples in the batch
-  size_t numRows;
+  int numRows;
 
-  size_t remaining() {
+  int remaining() {
     return numRows - pos;
   }
 
@@ -56,7 +56,7 @@ class DatasetBatch {
     return pos < numRows;
   }
 
-  virtual size_t widestRow() { return 0.0; }
+  virtual int widestRow() { return 0.0; }
 };
 
 template<typename T>
@@ -64,13 +64,13 @@ class DatasetBatcher {
  public:
   DatasetBatcher() {}
 
-  DatasetBatcher(size_t numRows) : numRows(numRows) {}
+  DatasetBatcher(int numRows) : numRows(numRows) {}
 
   bool hasNext() const {
     return pos < numRows;
   }
 
-  size_t remaining() {
+  int remaining() {
     return numRows - pos;
   }
 
@@ -78,12 +78,12 @@ class DatasetBatcher {
     pos = 0;
   }
 
-  virtual DatasetBatch<T> *nextBatch(size_t batchSize) {}
+  virtual DatasetBatch<T> *nextBatch(int batchSize) {}
 
  protected:
   Dataset<T> dataset;
-  size_t pos = 0;
-  size_t numRows = 0;
+  int pos = 0;
+  int numRows = 0;
 
 };
 

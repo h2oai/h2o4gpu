@@ -141,11 +141,11 @@ class FFMH2O(object):
             num_nodes = num_nodes + len(X[r])
         params.numNodes = num_nodes
 
-        features = np.zeros(num_nodes, dtype=np.uint64)
-        fields = np.zeros(num_nodes, dtype=np.uint64)
+        features = np.zeros(num_nodes, dtype=np.int32)
+        fields = np.zeros(num_nodes, dtype=np.int32)
         values = np.zeros(num_nodes, dtype=self.dtype)
         scales = np.zeros(nr_rows, dtype=self.dtype)
-        positions = np.zeros(nr_rows + 1, dtype=np.uint64)
+        positions = np.zeros(nr_rows + 1, dtype=np.int32)
 
         feature_idx = 0
         field_idx = 0
