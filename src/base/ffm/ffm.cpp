@@ -10,14 +10,14 @@
 namespace ffm {
 
 template<typename T>
-FFM<T>::FFM(Params &params) : params(params), model(params) {}
+FFM<T>::FFM(Params &params) : params(params), trainer(params) {}
 
 template<typename T>
-FFM<T>::FFM(Params & params, T *weights) : params(params), model(params, weights) {}
+FFM<T>::FFM(Params & params, T *weights) : params(params), trainer(weights, params) {}
 
 template<typename T>
 void FFM<T>::fit(const Dataset<T> &dataset) {
-  Trainer<T> trainer(dataset, this->model, this->params);
+  this->trainer.setDataset(dataset);
 
   Timer timer;
 
@@ -34,7 +34,7 @@ void FFM<T>::fit(const Dataset<T> &dataset) {
 
 template<typename T>
 void FFM<T>::predict(const Dataset<T> &dataset, T *predictions) {
-  Trainer<T> trainer(dataset, this->model, this->params);
+  this->trainer.setDataset(dataset);
   trainer.predict(predictions);
 }
 
@@ -52,7 +52,7 @@ void ffm_fit_float(int* features, int* fields, float* values, int *labels, float
   ffm.fit(dataset);
   timer.toc();
   log_debug(_param.verbose, "Float fit took %f.", timer.pop());
-  ffm.model.copyTo(w);
+  ffm.trainer.model->copyTo(w);
 }
 
 void ffm_fit_double(int* features, int* fields, double* values, int *labels, double *scales, int *rowPositions, double *w, Params &_param) {
@@ -62,7 +62,7 @@ void ffm_fit_double(int* features, int* fields, double* values, int *labels, dou
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for double.");
   ffm.fit(dataset);
-  ffm.model.copyTo(w);
+  ffm.trainer.model->copyTo(w);
 }
 
 void ffm_predict_float(int *features, int* fields, float* values, float *scales, int* rowPositions, float *predictions, float *w, Params &_param) {

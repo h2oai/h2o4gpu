@@ -18,11 +18,11 @@ class FFM  {
   FFM(Params & params);
   FFM(Params & params, T *weights);
 
-  Model<T> model;
-
   void fit(const Dataset<T> &dataset);
 
   void predict(const Dataset<T> &dataset, T *predictions);
+
+  Trainer<T> trainer;
 
  private:
   Params params;

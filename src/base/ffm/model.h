@@ -14,11 +14,13 @@ class Model {
  public:
   Model(Params &params);
 
-  Model(Params &params, T *weights);
+  Model(Params &params, const T *weights);
 
-  void copyTo(T *dstWeights);
+  virtual void copyTo(T *dstWeights);
 
   std::vector<T> weights;
+
+  virtual T* weightsRawPtr(int i);
 
  private:
 

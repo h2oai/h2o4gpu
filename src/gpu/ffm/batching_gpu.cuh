@@ -26,9 +26,7 @@ class DatasetBatcherGPU : public DatasetBatcher<T> {
  public:
   DatasetBatcherGPU() {}
 
-  ~DatasetBatcherGPU() {
-    // TODO implement
-  }
+  ~DatasetBatcherGPU() {}
 
   DatasetBatcherGPU(const DatasetBatcherGPU &other) : DatasetBatcher<T>(other), params(other.params) {}
 

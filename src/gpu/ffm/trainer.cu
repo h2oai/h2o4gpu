@@ -11,6 +11,7 @@
 #include "../utils/cuda.h"
 #include "../../base/ffm/trainer.h"
 #include "../../common/timer.h"
+#include "model_gpu.cuh"
 
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
 #else
@@ -34,9 +35,7 @@ __device__ double atomicAdd(double* address, double val)
 namespace ffm {
 
 template<typename T>
-Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
-    : trainDataBatcher(1), model(model), params(params) {
-
+Trainer<T>::Trainer(Params &params) : params(params), trainDataBatcher(params.nGpus) {
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceMapHost));
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
 
@@ -48,13 +47,35 @@ Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
   CUDA_CHECK(cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 0));
   CUDA_CHECK(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
-  // TODO delete in destructor
+  this->model = new ModelGPU<T>(params);
+}
+
+template<typename T>
+Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDataBatcher(params.nGpus) {
+  CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceMapHost));
+  CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
+
+#if __CUDA_ARCH__ > 500
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 0));
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitDevRuntimePendingLaunchCount, 0));
+#endif // CUDA 5.0
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitStackSize, 0));
+  CUDA_CHECK(cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 0));
+  CUDA_CHECK(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
+  this->model = new ModelGPU<T>(params, weights);
+}
+
+template<typename T>
+void Trainer<T>::setDataset(const Dataset<T> &dataset) {
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
   trainDataBatcher[0] = batcher;
 }
 
 template<typename T>
 Trainer<T>::~Trainer() {
+  delete trainDataBatcher[0];
+  delete model;
   CUDA_CHECK(cudaDeviceReset());
 }
 
@@ -69,7 +90,7 @@ __constant__ int cWeightsOffset[1];
 template<typename T>
 __global__ void wTxKernel(const int *__restrict__ features, const int *__restrict__ fields, const T *__restrict__ values,
                           const T *__restrict__ r, const int *__restrict__ rowSizes,
-                          T *__restrict__ weightsPtr, T *__restrict__ losses, bool update, const int *__restrict__ labels = nullptr) {
+                          T *__restrict__ weightsPtr, T *__restrict__ losses, const bool update, const int *__restrict__ labels = nullptr) {
   int rowIdx = (blockIdx.x * blockDim.x + threadIdx.x) / cMaxRowSize[0];
 
   if(rowIdx > cRows[0]) return;
@@ -119,6 +140,7 @@ __global__ void wTxKernel(const int *__restrict__ features, const int *__restric
     const T v = vals[threadIdx.x] * (threadIdx.x + i < MAX_BLOCK_THREADS ? vals[i] : values[n2]) * scales[rowIdx % MAX_BLOCK_THREADS];
 
     if (update) {
+#pragma unroll 8
       for (int d = 0; d < cK[0] * cWeightsOffset[0]; d+=cWeightsOffset[0]) {
         T w1d = w1[d];
         T w2d = w2[d];
@@ -132,6 +154,7 @@ __global__ void wTxKernel(const int *__restrict__ features, const int *__restric
         w2[d] -= cLearningRate[0] / std::sqrt(w2[d+1]) * g2;
       }
     } else {
+#pragma unroll
       for (int d = 0; d < cK[0] * cWeightsOffset[0]; d+=cWeightsOffset[0]) {
         loss += w1[d] * w2[d] * v;
       }
@@ -145,22 +168,20 @@ __global__ void wTxKernel(const int *__restrict__ features, const int *__restric
 template<typename T>
 void Trainer<T>::predict(T *predictions) {
   for (int i = 0; i < params.nGpus; i++) {
-    log_verbose(this->params.verbose, "Copying weights of size %zu to GPU %d for predictions", this->model.weights.size(), i);
-    thrust::device_vector<T> localWeights(this->model.weights.begin(), this->model.weights.end());
-
     int record = 0;
     while (trainDataBatcher[i]->hasNext()) {
       DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
 
-      int threads = MAX_BLOCK_THREADS; // TODO based on row number??
+      int threads = MAX_BLOCK_THREADS;
       int maxRowSize = batch->widestRow();
       int totalThreads = batch->numRows * maxRowSize;
       int blocks = std::ceil(totalThreads / threads);
 
       T *losses;
+      // todo once per predict and dealloc
       cudaMalloc(&losses, batch->numRows * sizeof(T));
 
-      T* weightsPtr = thrust::raw_pointer_cast(localWeights.data());
+      T* weightsPtr = this->model->weightsRawPtr(i);
 
       int alignFeat1 = params.numFields * params.k;
       int alignFeat2 = params.k;
@@ -180,7 +201,6 @@ void Trainer<T>::predict(T *predictions) {
 
       thrust::copy(losses + record, losses + record + batch->numRows, predictions + record);
 
-
       record += batch->numRows;
     }
 
@@ -195,20 +215,7 @@ T Trainer<T>::oneEpoch(bool update) {
 
   T loss = 0;
 
-  std::vector<thrust::device_vector<T>> allLocalWeights(params.nGpus);
   for (int i = 0; i < params.nGpus; i++) {
-    log_verbose(this->params.verbose, "Copying weights of size %zu to GPU %d", this->model.weights.size(), i);
-
-    /**
-     * Copy Weights
-     * */
-    timer.tic();
-    // TODO do only once for all iterations?
-    allLocalWeights[i].resize(this->model.weights.size());
-    thrust::copy(this->model.weights.begin(), this->model.weights.end(), allLocalWeights[i].begin() );
-    timer.toc();
-    log_verbose(params.verbose, "Copying weights took %f.", timer.pop());
-
     while (trainDataBatcher[i]->hasNext()) {
       /**
        * Get batch
@@ -222,7 +229,7 @@ T Trainer<T>::oneEpoch(bool update) {
       int alignFeat1 = params.numFields * params.k * 2;
       int alignFeat2 = params.k * 2;
 
-      int threads = MAX_BLOCK_THREADS; // TODO based on row number??
+      int threads = MAX_BLOCK_THREADS;
       int maxRowSize = batch->widestRow();
       int totalThreads = batch->numRows * maxRowSize;
       int blocks = std::ceil((double)totalThreads / threads);
@@ -230,11 +237,11 @@ T Trainer<T>::oneEpoch(bool update) {
       /**
         * Alloc
         */
-      // todo dealloc
+      // todo once per trainer and dealloc
       T *losses;
       cudaMalloc(&losses, batch->numRows * sizeof(T));
 
-      T* weightsPtr = thrust::raw_pointer_cast(allLocalWeights[i].data());
+      T* weightsPtr = this->model->weightsRawPtr(i);
 
       CUDA_CHECK(cudaMemcpyToSymbol(cK, &params.k, sizeof(int)));
       CUDA_CHECK(cudaMemcpyToSymbol(cMaxRowSize, &maxRowSize, sizeof(int)));
@@ -272,19 +279,14 @@ T Trainer<T>::oneEpoch(bool update) {
 
       log_verbose(params.verbose, "Loss compute took %f.", timer.pop());
 
+      delete batch;
     }
     trainDataBatcher[i]->reset();
   }
 
   if (params.nGpus != 1) {
     // TODO average local weights
-  } else {
-    timer.tic();
-    thrust::copy(allLocalWeights[0].begin(), allLocalWeights[0].end(), this->model.weights.begin());
-    timer.toc();
-    log_verbose(params.verbose, "Copying weights back took %f.", timer.pop());
-
-  }
+  } // Don't do anything for 1GPU cases
 
   log_debug(this->params.verbose, "Log loss = %f", loss / params.numRows);
 

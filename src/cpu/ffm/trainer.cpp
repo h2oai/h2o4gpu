@@ -7,8 +7,17 @@
 namespace ffm {
 
 template<typename T>
-Trainer<T>::Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params)
-    : trainDataBatcher(1), model(model), params(params) {
+Trainer<T>::Trainer(Params &params) : params(params) {
+  // TODO implement
+}
+
+template<typename T>
+Trainer<T>::Trainer(const T* weights, Params &params) : params(params) {
+  // TODO implement
+}
+
+template<typename T>
+void Trainer<T>::setDataset(const Dataset<T> &dataset) {
   // TODO implement
 }
 

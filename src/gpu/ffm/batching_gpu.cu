@@ -57,26 +57,35 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const 
     datasetGpu.numRows = dataset.numRows;
     datasetGpu.numFields = dataset.numFields;
 
-    CUDA_CHECK(cudaMalloc(&datasetGpu.rowPositions, (params.numRows + 1) * sizeof(int)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.rowPositions, dataset.rowPositions, (params.numRows + 1) * sizeof(int), cudaMemcpyHostToDevice));
-
-    // No need for predict
-    if(dataset.labels != nullptr) {
-      CUDA_CHECK(cudaMalloc(&datasetGpu.labels, params.numRows * sizeof(int)));
-      CUDA_CHECK(cudaMemcpy(datasetGpu.labels, dataset.labels, params.numRows * sizeof(int), cudaMemcpyHostToDevice));
+    cudaStream_t streams[6];
+    for(int i = 0; i < 6; i++) {
+      CUDA_CHECK(cudaStreamCreate(&streams[i]));
     }
 
+    // todo dealloc in destructor??
+    CUDA_CHECK(cudaMalloc(&datasetGpu.rowPositions, (params.numRows + 1) * sizeof(int)));
     CUDA_CHECK(cudaMalloc(&datasetGpu.scales, params.numRows * sizeof(T)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.scales, dataset.scales, params.numRows * sizeof(T), cudaMemcpyHostToDevice));
-
     CUDA_CHECK(cudaMalloc(&datasetGpu.features, params.numNodes * sizeof(int)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.features, dataset.features, params.numNodes * sizeof(int), cudaMemcpyHostToDevice));
-
     CUDA_CHECK(cudaMalloc(&datasetGpu.fields, params.numNodes * sizeof(int)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(int), cudaMemcpyHostToDevice));
-
     CUDA_CHECK(cudaMalloc(&datasetGpu.values, params.numNodes * sizeof(T)));
-    CUDA_CHECK(cudaMemcpy(datasetGpu.values, dataset.values, params.numNodes * sizeof(T), cudaMemcpyHostToDevice));
+    if(dataset.labels != nullptr) {
+      CUDA_CHECK(cudaMalloc(&datasetGpu.labels, params.numRows * sizeof(int)));
+    }
+
+    // No need for predict
+    cudaMemcpyAsync(datasetGpu.rowPositions, dataset.rowPositions, (params.numRows + 1) * sizeof(int), cudaMemcpyHostToDevice, streams[0]);
+    if(dataset.labels != nullptr) {
+      cudaMemcpyAsync(datasetGpu.labels, dataset.labels, params.numRows * sizeof(int), cudaMemcpyHostToDevice, streams[1]);
+    }
+    cudaMemcpyAsync(datasetGpu.scales, dataset.scales, params.numRows * sizeof(T), cudaMemcpyHostToDevice, streams[2]);
+    cudaMemcpyAsync(datasetGpu.features, dataset.features, params.numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[3]);
+    cudaMemcpyAsync(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[4]);
+    cudaMemcpyAsync(datasetGpu.values, dataset.values, params.numNodes * sizeof(T), cudaMemcpyHostToDevice, streams[5]);
+
+    for(int i = 0; i < 6; i++) {
+      CUDA_CHECK(cudaStreamSynchronize(streams[i]));
+      CUDA_CHECK(cudaStreamDestroy(streams[i]));
+    }
 
     this->dataset = datasetGpu;
   } else {
@@ -98,7 +107,6 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
               actualBatchSize,
               batchSize);
 
-    // todo DELETE
     DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(this->dataset.features + this->pos, this->dataset.fields + this->pos, this->dataset.values + this->pos,
                              this->dataset.labels + this->pos, this->dataset.scales + this->pos, this->dataset.rowPositions + this->pos,
                              actualBatchSize);

@@ -29,7 +29,7 @@ Model<T>::Model(Params &params) : weights(2 * params.numFeatures * params.numFie
 }
 
 template<typename T>
-Model<T>::Model(Params &params, T *weights) : weights(params.numFeatures * params.numFields * params.k) {
+Model<T>::Model(Params &params, const T *_weights) : weights(params.numFeatures * params.numFields * params.k) {
   this->numFeatures = params.numFeatures;
   this->numFields = params.numFields;
   this->k = params.k;
@@ -37,16 +37,22 @@ Model<T>::Model(Params &params, T *weights) : weights(params.numFeatures * param
 
   for (int i = 0; i < this->weights.size(); i++) {
     // TODO memcpy?
-    this->weights[i] = weights[i];
+    this->weights[i] = _weights[i];
   }
 }
 
 template<typename T>
 void Model<T>::copyTo(T *dstWeights) {
-  // TODO copy only weights
+  // Copy only weights
   std::copy_if( this->weights.begin(), this->weights.end(), dstWeights,
                             []( int x ) { return x % 2; } );
 };
+
+template<typename T>
+T* Model<T>::weightsRawPtr(int i) {
+  return this->weights.data();
+}
+
 
 template
 class Model<float>;

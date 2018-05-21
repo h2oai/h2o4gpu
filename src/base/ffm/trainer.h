@@ -14,8 +14,11 @@ namespace ffm {
 template<typename T>
 class Trainer {
  public:
-  Trainer(const Dataset<T> &dataset, Model<T> &model, Params &params);
+  Trainer(Params &params);
+  Trainer(const T* weights, Params &params);
   ~Trainer();
+
+  void setDataset(const Dataset<T> &dataset);
 
   T oneEpoch(bool update);
 
@@ -24,7 +27,7 @@ class Trainer {
   bool earlyStop();
 
   // Global model for this machine
-  Model<T> &model;
+  Model<T> *model;
 
  private:
   Params &params;
