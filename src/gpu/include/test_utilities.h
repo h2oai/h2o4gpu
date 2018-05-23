@@ -3,7 +3,7 @@
  *
  * See LICENCE.txt for license information
  *
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  ************************************************************************/
 #ifndef SRC_TEST_UTILITIES_H_
 #define SRC_TEST_UTILITIES_H_
