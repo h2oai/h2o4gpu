@@ -64,11 +64,3 @@ h2o4gpu\.solvers\.pca module
     :members:
     :undoc-members:
     :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: h2o4gpu.solvers
-    :members:
-    :undoc-members:
-    :show-inheritance:
