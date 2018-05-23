@@ -1,7 +1,7 @@
 # - * - encoding : utf - 8 - * -
 # pylint: disable=fixme, line-too-long
 """
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import print_function
@@ -12,10 +12,8 @@ from ..solvers.utils import _setter
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
 
-    Perform linear dimensionality reduction by means of
-    truncated singular value decomposition (SVD). Contrary to PCA, this
-    estimator does not center the data before computing the singular value
-    decomposition.
+    Perform linear dimensionality reduction by means of truncated singular value decomposition (SVD).
+    Contrary to PCA, this estimator does not center the data before computing the singular value decomposition.
 
     Parameters
     ----------
@@ -70,12 +68,14 @@ class TruncatedSVDH2O(object):
     def fit(self, X, y=None):
         """Fit Truncated SVD on matrix X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param y Ignored
+        :param y : Ignored
+                For ScikitLearn compatibility
 
-        :returns self : object
+        :returns self : self
+                object
 
         """
         self.fit_transform(X)
@@ -83,13 +83,13 @@ class TruncatedSVDH2O(object):
 
     # pylint: disable=unused-argument
     def fit_transform(self, X, y=None):
-        """Fit Truncated SVD on matrix X and perform dimensionality reduction
-           on X.
+        """Fit Truncated SVD on matrix X and perform dimensionality reduction on X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param: y Ignored
+        :param y : Ignored
+               For ScikitLearn compatibility
 
         :returns X_new : array, shape (n_samples, n_components)
                          Reduced version of X. This will always be a
@@ -154,7 +154,7 @@ class TruncatedSVDH2O(object):
     def transform(self, X):
         """Perform dimensionality reduction on X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
         :returns X_new : array, shape (n_samples, n_components)
@@ -169,7 +169,8 @@ class TruncatedSVDH2O(object):
     def inverse_transform(self, X):
         """Transform X back to its original space.
 
-        :param: X array-like, shape (n_samples, n_components)
+        :param X : array-like, shape (n_samples, n_components)
+                Data to transform back to original space
 
         :returns X_original : array, shape (n_samples, n_features)
                               Note that this is always a dense array.
@@ -234,10 +235,12 @@ class TruncatedSVDH2O(object):
     def get_params(self, deep=True):
         """Get parameters for this estimator.
 
-        :param bool deep : If True, will return the parameters for this
+        :param deep : bool
+            If True, will return the parameters for this
             estimator and contained subobjects that are estimators.
 
-        :returns dict params : Parameter names mapped to their values.
+        :returns params : dict
+            Parameter names mapped to their values.
         """
         out = dict()
         for key in self._get_param_names():
@@ -267,7 +270,8 @@ class TruncatedSVDH2O(object):
     def set_params(self, **params):
         """Set the parameters of this solver.
 
-        :return: self
+        :returns self : self
+            Returns self
         """
         if not params:
             # Simple optimization to gain speed(inspect is slow)
@@ -298,22 +302,40 @@ class TruncatedSVDH2O(object):
 
     @property
     def components_(self):
+        """
+        Components
+        """
         return self._Q
 
     @property
     def explained_variance_(self):
+        """
+        The variance of the training samples transformed by a projection to
+        each component.
+        """
         return self.explained_variance
 
     @property
     def explained_variance_ratio_(self):
+        """
+        Percentage of variance explained by each of the selected components.
+        """
         return self.explained_variance_ratio
 
     @property
     def singular_values_(self):
+        """
+        The singular values corresponding to each of the selected components.
+        The singular values are equal to the 2-norms of the ``n_components``
+        variables in the lower-dimensional space.
+        """
         return self._w
 
     @property
     def U(self):
+        """
+        U Matrix
+        """
         return self._U
 
     # Util to load gpu lib
@@ -338,13 +360,9 @@ class TruncatedSVD(object):
 
     algorithm: string, Default="power"
         SVD solver to use.
-        H2O4GPU options:
-            Either "cusolver" (similar to ARPACK)
-            or "power" for the power method.
-        SKlearn options:
-            Either "arpack" for the ARPACK wrapper in SciPy
-            (scipy.sparse.linalg.svds), or "randomized" for the randomized
-            algorithm due to Halko (2009).
+        H2O4GPU options are either "cusolver" (similar to ARPACK)
+        or "power" for the power method. SKlearn options are either "arpack" for the ARPACK wrapper
+        in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).
 
     n_iter: int, Default=100
         number of iterations (only relevant for power method)

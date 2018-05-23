@@ -95,7 +95,7 @@ As you have noticed, we define a number of special classes to facilitate type co
     # An enum. This is similar to a mere union of strings, except that we match case-insensitively
     Enum("case1", "case2", ...)
 
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals

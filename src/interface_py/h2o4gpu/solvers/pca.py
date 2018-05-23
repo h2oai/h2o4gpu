@@ -1,7 +1,7 @@
 # - * - encoding : utf - 8 - * -
 # pylint: disable=fixme, line-too-long
 """
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
@@ -56,12 +56,14 @@ class PCAH2O(TruncatedSVDH2O):
     def fit(self, X, y=None):
         """Fit PCA on matrix X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param y Ignored, for ScikitLearn compatibility
+        :param y : Ignored,
+                For ScikitLearn compatibility
 
-        :returns self : object
+        :returns self : self
+                object
 
         """
         self.fit_transform(X)
@@ -69,13 +71,13 @@ class PCAH2O(TruncatedSVDH2O):
 
     # pylint: disable=unused-argument
     def fit_transform(self, X, y=None):
-        """Fit PCA on matrix X and perform dimensionality reduction
-           on X.
+        """Fit PCA on matrix X and perform dimensionality reduction on X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param: y Ignored, for ScikitLearn compatibility
+        :param y : Ignored
+                For ScikitLearn compatibility
 
         :returns X_new : array, shape (n_samples, n_components)
                          Reduced version of X. This will always be a
