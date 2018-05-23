@@ -123,7 +123,7 @@ def ce(actual, predicted):
     :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The classification error between actual and predicted
     """
     return (
