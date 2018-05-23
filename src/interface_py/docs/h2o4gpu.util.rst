@@ -1,9 +1,6 @@
 h2o4gpu\.util package
 =====================
 
-Submodules
-----------
-
 h2o4gpu\.util\.import\_data module
 ----------------------------------
 

@@ -12,10 +12,8 @@ from ..solvers.utils import _setter
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
 
-    Perform linear dimensionality reduction by means of
-    truncated singular value decomposition (SVD). Contrary to PCA, this
-    estimator does not center the data before computing the singular value
-    decomposition.
+    Perform linear dimensionality reduction by means of truncated singular value decomposition (SVD).
+    Contrary to PCA, this estimator does not center the data before computing the singular value decomposition.
 
     Parameters
     ----------
@@ -70,7 +68,7 @@ class TruncatedSVDH2O(object):
     def fit(self, X, y=None):
         """Fit Truncated SVD on matrix X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
         :param y Ignored
@@ -83,13 +81,12 @@ class TruncatedSVDH2O(object):
 
     # pylint: disable=unused-argument
     def fit_transform(self, X, y=None):
-        """Fit Truncated SVD on matrix X and perform dimensionality reduction
-           on X.
+        """Fit Truncated SVD on matrix X and perform dimensionality reduction on X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param: y Ignored
+        :param y Ignored
 
         :returns X_new : array, shape (n_samples, n_components)
                          Reduced version of X. This will always be a
@@ -154,7 +151,7 @@ class TruncatedSVDH2O(object):
     def transform(self, X):
         """Perform dimensionality reduction on X.
 
-        :param: X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
         :returns X_new : array, shape (n_samples, n_components)
@@ -169,7 +166,7 @@ class TruncatedSVDH2O(object):
     def inverse_transform(self, X):
         """Transform X back to its original space.
 
-        :param: X array-like, shape (n_samples, n_components)
+        :param X array-like, shape (n_samples, n_components)
 
         :returns X_original : array, shape (n_samples, n_features)
                               Note that this is always a dense array.
@@ -234,10 +231,12 @@ class TruncatedSVDH2O(object):
     def get_params(self, deep=True):
         """Get parameters for this estimator.
 
-        :param bool deep : If True, will return the parameters for this
+        :param deep : bool
+            If True, will return the parameters for this
             estimator and contained subobjects that are estimators.
 
-        :returns dict params : Parameter names mapped to their values.
+        :returns params : dict
+            Parameter names mapped to their values.
         """
         out = dict()
         for key in self._get_param_names():
@@ -267,7 +266,8 @@ class TruncatedSVDH2O(object):
     def set_params(self, **params):
         """Set the parameters of this solver.
 
-        :return: self
+        :returns self : self
+            Returns self
         """
         if not params:
             # Simple optimization to gain speed(inspect is slow)
