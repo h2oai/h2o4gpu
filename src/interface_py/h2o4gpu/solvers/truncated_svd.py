@@ -68,12 +68,14 @@ class TruncatedSVDH2O(object):
     def fit(self, X, y=None):
         """Fit Truncated SVD on matrix X.
 
-        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param y Ignored
+        :param y : Ignored
+                For ScikitLearn compatibility
 
-        :returns self : object
+        :returns self : self
+                object
 
         """
         self.fit_transform(X)
@@ -83,10 +85,11 @@ class TruncatedSVDH2O(object):
     def fit_transform(self, X, y=None):
         """Fit Truncated SVD on matrix X and perform dimensionality reduction on X.
 
-        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
-        :param y Ignored
+        :param y : Ignored
+               For ScikitLearn compatibility
 
         :returns X_new : array, shape (n_samples, n_components)
                          Reduced version of X. This will always be a
@@ -151,7 +154,7 @@ class TruncatedSVDH2O(object):
     def transform(self, X):
         """Perform dimensionality reduction on X.
 
-        :param X {array-like, sparse matrix}, shape (n_samples, n_features)
+        :param X : {array-like, sparse matrix}, shape (n_samples, n_features)
                   Training data.
 
         :returns X_new : array, shape (n_samples, n_components)
@@ -166,7 +169,8 @@ class TruncatedSVDH2O(object):
     def inverse_transform(self, X):
         """Transform X back to its original space.
 
-        :param X array-like, shape (n_samples, n_components)
+        :param X : array-like, shape (n_samples, n_components)
+                Data to transform back to original space
 
         :returns X_original : array, shape (n_samples, n_features)
                               Note that this is always a dense array.
@@ -338,13 +342,9 @@ class TruncatedSVD(object):
 
     algorithm: string, Default="power"
         SVD solver to use.
-        H2O4GPU options:
-            Either "cusolver" (similar to ARPACK)
-            or "power" for the power method.
-        SKlearn options:
-            Either "arpack" for the ARPACK wrapper in SciPy
-            (scipy.sparse.linalg.svds), or "randomized" for the randomized
-            algorithm due to Halko (2009).
+        H2O4GPU options are either "cusolver" (similar to ARPACK)
+        or "power" for the power method. SKlearn options are either "arpack" for the ARPACK wrapper
+        in SciPy (scipy.sparse.linalg.svds), or "randomized" for the randomized algorithm due to Halko (2009).
 
     n_iter: int, Default=100
         number of iterations (only relevant for power method)
