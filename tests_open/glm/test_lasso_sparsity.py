@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 ElasticNet_h2o4gpu solver tests using Iris dataset.
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 

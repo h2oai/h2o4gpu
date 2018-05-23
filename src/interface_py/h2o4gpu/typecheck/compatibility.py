@@ -73,7 +73,7 @@ from h2o.utils.compatibility import *  # NOQA
     All these functions are redefined here to have Py3's behavior on Py2.
 
 ------------------------------------------------------------------------
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function,\

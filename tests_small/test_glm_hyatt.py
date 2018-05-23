@@ -2,7 +2,7 @@
 """
 GLM solver tests using Kaggle datasets.
 
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import time
