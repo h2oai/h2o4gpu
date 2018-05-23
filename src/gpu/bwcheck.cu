@@ -7,7 +7,7 @@
  * this software and related documentation outside the terms of the EULA
  * is strictly prohibited.
  *
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  */
 /*
  * This is a simple test program to measure the memcopy bandwidth of the GPU.

@@ -1,5 +1,5 @@
 /*!
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  */
 #ifndef PROX_LIB_H_
 #define PROX_LIB_H_
