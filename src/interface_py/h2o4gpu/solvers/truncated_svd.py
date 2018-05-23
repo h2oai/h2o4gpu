@@ -302,22 +302,40 @@ class TruncatedSVDH2O(object):
 
     @property
     def components_(self):
+        """
+        Components
+        """
         return self._Q
 
     @property
     def explained_variance_(self):
+        """
+        The variance of the training samples transformed by a projection to
+        each component.
+        """
         return self.explained_variance
 
     @property
     def explained_variance_ratio_(self):
+        """
+        Percentage of variance explained by each of the selected components.
+        """
         return self.explained_variance_ratio
 
     @property
     def singular_values_(self):
+        """
+        The singular values corresponding to each of the selected components.
+        The singular values are equal to the 2-norms of the ``n_components``
+        variables in the lower-dimensional space.
+        """
         return self._w
 
     @property
     def U(self):
+        """
+        U Matrix
+        """
         return self._U
 
     # Util to load gpu lib
