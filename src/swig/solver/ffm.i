@@ -7,7 +7,7 @@
 
 %apply (int *INPLACE_ARRAY1) {int *labels, int *features, int* fields, int *positions};
 
-%apply (float *INPLACE_ARRAY1) {float* values, float *scales, float *predictions, float *w};
-%apply (double *INPLACE_ARRAY1) {double* values, double *scales, double *predictions, double *w};
+%apply (float *INPLACE_ARRAY1) {float* values, float *predictions, float *w};
+%apply (double *INPLACE_ARRAY1) {double* values, double *predictions, double *w};
 
 %include "../../include/solver/ffm_api.h"

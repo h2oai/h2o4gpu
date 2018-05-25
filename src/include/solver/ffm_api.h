@@ -6,6 +6,7 @@
 
 #include "../data/ffm/data.h"
 #include "../../common/logger.h"
+#include <vector>
 
 namespace ffm {
 
@@ -16,7 +17,7 @@ typedef struct Params {
   float regLambda = 0.00002;
 
   int nIter = 10;
-  int batchSize = 1000;
+  int batchSize = -1;
 
   int numRows = 0;
   int numNodes = 0;
@@ -24,7 +25,7 @@ typedef struct Params {
   int numFields = 0;
   int k = 4;
 
-  bool normalize = true;
+  bool normalize = false;
   bool autoStop = false;
 
   int seed = 0;
@@ -39,10 +40,10 @@ typedef struct Params {
 
 } Params;
 
-void ffm_fit_float(int *features, int* fields, float* values, int *labels, float *scales, int *positions, float *w, Params &_param);
-void ffm_fit_double(int *features, int* fields, double* values, int *labels, double *scales, int *positions, double *w, Params &_param);
+void ffm_fit_float(int *features, int* fields, float* values, int *labels, int *positions, float *w, Params &_param);
+void ffm_fit_double(int *features, int* fields, double* values, int *labels, int *positions, double *w, Params &_param);
 
-void ffm_predict_float(int *features, int* fields, float* values, float *scales, int* positions, float *predictions, float *w, Params &_param);
-void ffm_predict_double(int *features, int* fields, double* values, double *scales, int* positions, double *predictions, double *w, Params &_param);
+void ffm_predict_float(int *features, int* fields, float* values, int* positions, float *predictions, float *w, Params &_param);
+void ffm_predict_double(int *features, int* fields, double* values, int* positions, double *predictions, double *w, Params &_param);
 
 }

@@ -38,11 +38,47 @@ void FFM<T>::predict(const Dataset<T> &dataset, T *predictions) {
   trainer.predict(predictions);
 }
 
+template <typename T>
+void computeScales(T *scales, const T* values, const int *rowPositions, Params &_param) {
+#pragma omp parallel for
+  for(int i = 0; i < _param.numRows; i++) {
+    if(_param.normalize) {
+      T scale = 0.0;
+      for (int e = rowPositions[i]; e < rowPositions[i + 1]; e++) {
+        scale += values[e] * values[e];
+      }
+      scales[i] = 1.0 / scale;
+    } else {
+      scales[i] = 1.0;
+    }
+  }
+}
+
+template <typename T>
+T maxElement(const T *data, int size) {
+  T maxVal = 0.0;
+
+#pragma omp parallel for reduction(max : maxVal)
+  for (int i = 0; i < size; i++) {
+    if (data[i] > maxVal) {
+      maxVal = data[i];
+    }
+  }
+
+  return maxVal;
+}
+
 /**
  * C API method
  */
-void ffm_fit_float(int* features, int* fields, float* values, int *labels, float *scales, int *rowPositions, float *w, Params &_param) {
+void ffm_fit_float(int* features, int* fields, float* values, int *labels, int *rowPositions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
+  float *scales = (float*) malloc(sizeof(float) * _param.numRows);
+  computeScales(scales, values, rowPositions, _param);
+
+  _param.numFields = maxElement(fields, _param.numNodes) + 1;
+  _param.numFeatures = maxElement(features, _param.numNodes) + 1;
+
   Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<float> ffm(_param);
   _param.printParams();
@@ -50,23 +86,36 @@ void ffm_fit_float(int* features, int* fields, float* values, int *labels, float
   Timer timer;
   timer.tic();
   ffm.fit(dataset);
+  ffm.trainer.model->copyTo(w);
   timer.toc();
   log_debug(_param.verbose, "Float fit took %f.", timer.pop());
-  ffm.trainer.model->copyTo(w);
 }
 
-void ffm_fit_double(int* features, int* fields, double* values, int *labels, double *scales, int *rowPositions, double *w, Params &_param) {
+void ffm_fit_double(int* features, int* fields, double* values, int *labels, int *rowPositions, double *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
+  double *scales = (double*) malloc(sizeof(double) * _param.numRows);
+  computeScales(scales, values, rowPositions, _param);
+
+  _param.numFields = maxElement(fields, _param.numNodes) + 1;
+  _param.numFeatures = maxElement(features, _param.numNodes) + 1;
+
   Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
   FFM<double> ffm(_param);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for double.");
+  Timer timer;
+  timer.tic();
   ffm.fit(dataset);
   ffm.trainer.model->copyTo(w);
+  timer.toc();
+  log_debug(_param.verbose, "Double fit took %f.", timer.pop());
 }
 
-void ffm_predict_float(int *features, int* fields, float* values, float *scales, int* rowPositions, float *predictions, float *w, Params &_param) {
+void ffm_predict_float(int *features, int* fields, float* values, int* rowPositions, float *predictions, float *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d float rows into a dataset for predictions.", _param.numRows);
+  float *scales = (float*) malloc(sizeof(float) * _param.numRows);
+  computeScales(scales, values, rowPositions, _param);
+
   Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
   FFM<float> ffm(_param, w);
   _param.printParams();
@@ -74,8 +123,11 @@ void ffm_predict_float(int *features, int* fields, float* values, float *scales,
   ffm.predict(dataset, predictions);
 }
 
-void ffm_predict_double(int *features, int* fields, double* values, double *scales, int* rowPositions, double *predictions, double *w, Params &_param){
+void ffm_predict_double(int *features, int* fields, double* values, int* rowPositions, double *predictions, double *w, Params &_param){
   log_debug(_param.verbose, "Converting %d double rows into a dataset for predictions.", _param.numRows);
+  double *scales = (double*) malloc(sizeof(double) * _param.numRows);
+  computeScales(scales, values, rowPositions, _param);
+
   Dataset<double> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, nullptr, scales, rowPositions);
   FFM<double> ffm(_param, w);
   _param.printParams();

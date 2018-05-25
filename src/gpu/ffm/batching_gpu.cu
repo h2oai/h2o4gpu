@@ -8,6 +8,7 @@
 #include "../../common/timer.h"
 #include <thrust/functional.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/adjacent_difference.h>
 
 namespace ffm {
@@ -18,11 +19,12 @@ namespace ffm {
  */
 template <typename T>
 int DatasetBatchGPU<T>::widestRow() {
-  thrust::device_vector<int> tmpRowSizes(this->numRows);
-  thrust::device_vector<int> rowPositions(this->rowPositions, this->rowPositions + this->numRows);
+  thrust::device_vector<int> tmpRowSizes(this->numRows + 1);
+  thrust::device_vector<int> rowPositions(this->rowPositions, this->rowPositions + this->numRows + 1);
   thrust::adjacent_difference(rowPositions.begin(), rowPositions.end(), tmpRowSizes.begin(), thrust::minus<int>());
 
-  thrust::device_vector<int>::iterator iter = thrust::max_element(tmpRowSizes.begin(), tmpRowSizes.end());
+  // Don't take into account 1st difference as it's equal to the first row's size
+  thrust::device_vector<int>::iterator iter = thrust::max_element(tmpRowSizes.begin() + 1, tmpRowSizes.end());
 
   int max_value = *iter;
 
@@ -107,7 +109,11 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
               actualBatchSize,
               batchSize);
 
-    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(this->dataset.features + this->pos, this->dataset.fields + this->pos, this->dataset.values + this->pos,
+
+    int moveBy = 0;
+    CUDA_CHECK(cudaMemcpy(&moveBy, &(this->dataset.rowPositions[this->pos]), sizeof(int), cudaMemcpyDeviceToHost));
+
+    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(this->dataset.features + moveBy, this->dataset.fields + moveBy, this->dataset.values + moveBy,
                              this->dataset.labels + this->pos, this->dataset.scales + this->pos, this->dataset.rowPositions + this->pos,
                              actualBatchSize);
     this->pos = this->pos + actualBatchSize;
