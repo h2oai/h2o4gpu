@@ -1,6 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 PROJECT(h2o4gpu)
 INCLUDE(cmake/Utils.cmake)
+LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 SET_DEFAULT_CONFIGURATION_RELEASE()
 
@@ -91,6 +92,7 @@ SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
 
 if(USE_CUDA)
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
+        FIND_PACKAGE(NVML REQUIRED)
 
         #============= BUILD GPU LIBRARY
         ADD_DEFINITIONS(
@@ -137,7 +139,7 @@ if(USE_CUDA)
                 ${CUDA_cusparse_LIBRARY}
                 ${BLAS_LIBRARIES}
                 ${NVTX_LIBRARY}
-                ${NVML_LIB})
+                ${NVML_LIBRARY})
         TARGET_INCLUDE_DIRECTORIES (gpuh2o4gpu PUBLIC
                 src/gpu/include
                 )
