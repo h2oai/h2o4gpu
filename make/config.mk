@@ -38,8 +38,3 @@ XGBOOST_VERSION = 0.6
 #
 INSTALL_R = 1
 R_VERSION = 3.1.0
-
-#
-# Find NVML library
-NVML_LIB := $(shell find /lib/ /usr/|grep libnvidia-ml.so.1|head -1)
-$(warning Compiling with NVML_LIB=$(NVML_LIB))
