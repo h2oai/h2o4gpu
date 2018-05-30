@@ -199,6 +199,23 @@ pipeline {
                 }
             }
         }
+        stage("Generate Docs") {
+            agent {
+                docker { image 'jangorecki/r-3.1.0' }
+                }
+            steps {
+                sh """
+                    R CMD INSTALL usethis
+                    R CMD INSTALL devtools
+                    R CMD INSTALL  pandoc
+                    wget https://github.com/r-lib/pkgdown/archive/v1.0.0.tar.gz
+                    R CMD INSTALL pkgdown-1.0.0.tar.gz
+                    R && `pkgdown::build_site(examples=FALSE)` && q(save="no")
+                   """
+                archiveArtifacts artifacts: 'src/interface_r/docs/*.html'
+                    }
+
+            }
 
         stage("Benchmarking Linux") {
             agent {
