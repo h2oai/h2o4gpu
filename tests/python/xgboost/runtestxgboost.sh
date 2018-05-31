@@ -17,7 +17,7 @@ then
 cd $MOUNT_POINT/football/
 unzip -o soccer.zip
 cd ../../
-cd testsxgboost # for libs stuff
+cd tests/python/xgboost # for libs stuff
 ipython 03_football_GPU.py &> $RESULTS_DIR/football.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
@@ -27,7 +27,7 @@ if [ $runtests -eq 1 ] || [ $runtests -eq -1 ]
 then
 
 # run credit
-cd testsxgboost # for libs stuff
+cd tests/python/xgboost # for libs stuff
 ipython 05_FraudDetection_GPU.py &> $RESULTS_DIR/credit.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
@@ -37,7 +37,7 @@ if [ $runtests -eq 2 ] || [ $runtests -eq -1 ]
 then
 
 # run airlines
-cd testsxgboost # for libs stuff
+cd tests/python/xgboost # for libs stuff
 ipython 01_airline_GPU.py &> $RESULTS_DIR/airlines.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
@@ -62,7 +62,7 @@ rm -rf validate-jpg
 #mkdir -p validate-jpg
 #cp -a test-jpg/*.jpg validate-jpg/
 cd ../../
-cd testsxgboost # for libs stuff
+cd tests/python/xgboost # for libs stuff
 ipython 04_PlanetKaggle_GPU.py &> $RESULTS_DIR/planet.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 
@@ -72,7 +72,7 @@ if [ $runtests -eq 4 ] || [ $runtests -eq -1 ]
 then
 
 # run higgs
-cd testsxgboost # for libs stuff
+cd tests/python/xgboost # for libs stuff
 ipython 06_HIGGS_GPU.py &> $RESULTS_DIR/higgs.txt # py from export of ipynb removing inline commands
 cd $MYPWD
 

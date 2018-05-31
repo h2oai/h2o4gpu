@@ -4,12 +4,7 @@ attrs==17.3.0
 execnet==1.5.0
 pluggy==0.6.0
 py==1.5.2
-pytest==3.3.1
-pytest-forked==0.2
-pytest-xdist==1.20.1
-pytest-cov==2.4.0
 six==1.11.0
-pylint==1.8.4
 yapf==0.17.0
 coverage==4.4.1
 # docs
@@ -18,7 +13,6 @@ sphinx_rtd_theme==0.2.4
 pillow==4.2.1
 # compile wheel
 wheel==0.31.0
-cmake==3.11.0
 Cython==0.27.3
 # for make testperf
 h2o==3.18.0.10

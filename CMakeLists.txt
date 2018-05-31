@@ -51,14 +51,13 @@ FILE(GLOB_RECURSE COMMON_SOURCES
 INCLUDE_DIRECTORIES(
         src/include
         src/cpu/include
+        # Here and not in target_include_directories b/c cmake < 3.7 which we use in Dockerfiles does not support it
+        src/gpu/include
         ${PYTHON_INCLUDE_PATH}
         ${PYTHON_INCLUDE_PATH_CUST}
 )
 
 ADD_LIBRARY(commonh2o4gpu OBJECT ${COMMON_SOURCES})
-TARGET_INCLUDE_DIRECTORIES (commonh2o4gpu PUBLIC
-        src/include
-        )
 #============= BUILD COMMON CPU/GPU CODE
 
 #============= BUILD CPU LIBRARY
@@ -140,9 +139,6 @@ if(USE_CUDA)
                 ${BLAS_LIBRARIES}
                 ${NVTX_LIBRARY}
                 ${NVML_LIBRARY})
-        TARGET_INCLUDE_DIRECTORIES (gpuh2o4gpu PUBLIC
-                src/gpu/include
-                )
         #============= BUILD GPU LIBRARY
 
         #============= GPU SWIG

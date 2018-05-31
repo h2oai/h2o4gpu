@@ -1,76 +1,74 @@
-#How to run:
-#To build: docker build -t opsh2o4gpu/h2o4gpu-runtime -f Dockerfile-runtime .
-#To run: nvidia-docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
-# or without nvidia: docker run -p 8888:8888 -v /some/local/log:/log opsh2o4gpu/h2o4gpu-runtime &
+ARG docker_name
 
-ARG layer
-ARG version
-
-FROM $layer:$version
-# e.g. FROM ubuntu:latest
-
-ARG wheel
-ENV wheel=${wheel}
-ARG buckettype
-ENV buckettype=${buckettype}
-
+FROM $docker_name
 
 MAINTAINER H2o.ai <ops@h2o.ai>
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV HOME=/root
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV CUDADIR=/usr/local/cuda/include/
+ENV LD_LIBRARY_PATH=/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH
 
-RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
-	export PATH=/usr/local/cuda/bin:$PATH && \
-	export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 && \
-	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE && \
-	export CUDADIR=/usr/local/cuda/include/ && \
-	export OMP_NUM_THREADS=32 && \
-	export MKL_NUM_THREADS=32 && \
-	export VECLIB_MAXIMUM_THREADS=32; fi
+ENV MINICONDA_VERSION=4.4.10
 
-# add-apt-repository ppa:fkrull/deadsnakes  && \
+# Setup gcc etc.
+RUN yum install -y epel-release
 
-RUN \
-  # Setup Repos
-  apt-get update -y && \
-  apt-get -y install curl apt-utils python-software-properties \
-  software-properties-common iputils-ping wget cpio net-tools build-essential \
-  git zip dirmngr && \
-  apt-get -y --no-install-recommends  install \
-      python3-dateutil \
-      python3-magic && \
-  wget http://launchpadlibrarian.net/326935544/s3cmd_2.0.0-1_all.deb && \
-  dpkg -i s3cmd_2.0.0-1_all.deb && \
-  add-apt-repository ppa:jonathonf/python-3.6 && \
-  apt-get update -yqq && \
-  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
-  # Install H2o dependencies
-  apt-get -y --no-install-recommends  install \
-    python3.6 \
-    python3.6-dev \
-    virtualenv \
-    python3-pip && \
-  update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
-  python -m pip install --upgrade pip && \
-  apt-get clean && \
-  rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev pbzip2
+RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 
-RUN \
-  mkdir h2o4gpu_env && \
-  virtualenv --python=/usr/bin/python3.6 h2o4gpu_env && \
-  chmod -R o+w h2o4gpu_env && \
-  . h2o4gpu_env/bin/activate && \
-  pip install --no-cache-dir --upgrade pip && \
-  pip install --no-cache-dir --upgrade setuptools && \
-  pip install --no-cache-dir --upgrade numpy && \
-  pip install --no-cache-dir --upgrade jupyter
+RUN yum install -y \
+    make \
+    ncurses-devel \
+	zlib-devel \
+	wget \
+	blas-devel \
+    openblas-devel \
+    libpng-devel \
+    freetype-devel \
+	bzip2 && \
+    wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
+    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python
+ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
+
+#
+# PPC64 specific - certain libs/whl don't support PPC64LE
+#
+
+WORKDIR $HOME
+
+# Arrow
+RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
+	yum install -y git boost-devel cmake3 && \
+	ln -s /usr/bin/cmake3 /usr/bin/cmake && \
+	git clone https://github.com/apache/arrow.git && \
+	cd $HOME/arrow/cpp && \
+	git checkout tags/apache-arrow-0.8.0 && \
+  	pip install numpy cython && \
+	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
+	cd $HOME/arrow/python && \
+	ARROW_HOME=/usr/local python setup.py install && \
+	yum install -y libjpeg-devel; \
+	fi'
+
+# Pillow
+ENV PILLOW_VERSION=4.2.1
+RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
+	wget https://files.pythonhosted.org/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-${PILLOW_VERSION}.tar.gz && \
+	tar xvf Pillow-${PILLOW_VERSION}.tar.gz && \
+	cd $HOME/Pillow-${PILLOW_VERSION} && \
+	sed -i "s/'ppc64'/'ppc64le'/g" setup.py && \
+	python setup.py install && \
+	cd $HOME && \
+	rm -rf Pillow-${PILLOW_VERSION}*; \
+	fi'
+
+WORKDIR /
 
 # Add requirements
-COPY requirements_runtime.txt requirements.txt
-COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
+COPY src/interface_py/requirements_runtime.txt requirements.txt
+COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
-  . h2o4gpu_env/bin/activate && \
   chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt && \
   pip install --no-cache-dir -r requirements_runtime_demos.txt
@@ -91,7 +89,6 @@ COPY examples/py/demos/H2O4GPU_PCA.ipynb /jupyter/demos/H2O4GPU_PCA.ipynb
 COPY examples/py/demos/H2O4GPU_Daal_LinearRegression.ipynb /jupyter/demos/H2O4GPU_Daal_LinearRegression.ipynb
 COPY examples/py/demos/figures /jupyter/demos/figures
 RUN \
-  . h2o4gpu_env/bin/activate && \
   cd /jupyter/demos && \
   chmod -R a+rwx /jupyter && \
   mkdir /scikit_learn_data && \
@@ -103,13 +100,11 @@ RUN \
   HOME=/jupyter jupyter notebook --generate-config && \
   sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
   chmod -R a+rwx /jupyter/.jupyter
+
 # Add shell wrapper
-COPY run.sh /run.sh
-
+COPY scripts/run.sh /run.sh
 RUN \
-  . h2o4gpu_env/bin/activate && \
   chmod a+rwx run.sh
-
 
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT
@@ -118,5 +113,5 @@ LABEL \
 h2o4gpu_commit="$h2o4gpu_COMMIT" \
 docker_version_tag="$DOCKER_VERSION_TAG"
 
-ENTRYPOINT ["./run.sh"]  
+ENTRYPOINT ["./run.sh"]
 EXPOSE 8888

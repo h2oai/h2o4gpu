@@ -9,14 +9,12 @@ Daal library added for CPU, currently supported only x86_64 architecture.
 
 ## Requirements
 
-* PC with Ubuntu 16.04+ w/ numpy 1.14.x
+* PC running Linux wit glibc 2.17+
 
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
   or
-  [CUDA 9.0](https://developer.nvidia.com/cuda-release-candidate-download) )
-
-NOTE: CUDA9.1 is not currently compatible with H2O4GPU.
+  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download) )
 
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
@@ -53,24 +51,18 @@ sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
   * Stable:
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nonccl-cuda8/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda90/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda92/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
         pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
     ```
 
-The "nccl" (NCCL) versions give support to multi-GPU in xgboost and in other algorithms.  The "nonccl" versions are provided
-in case of system instability in production environments due to NCCL.
- 
-Start a fresh pyenv or virtualenv session.
+ Start a fresh pyenv or virtualenv session.
 
 Install the Python wheel file. NOTE: If you don't use a fresh environment, this will
 overwrite your py3nvml and xgboost installations to use our validated
@@ -131,9 +123,9 @@ predictions <- model %>% predict(x)
 
 ## Next Steps
 
-For more examples using Python API, please check out our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos). To run the demos using a local wheel run, at least download `requirements_runtime_demos.txt` from the Github repo and do:
+For more examples using Python API, please check out our [Jupyter notebook demos](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos). To run the demos using a local wheel run, at least download `src/interface_py/requirements_runtime_demos.txt` from the Github repo and do:
 ```
-pip install -r requirements_runtime_demos.txt
+pip install -r src/interface_py/requirements_runtime_demos.txt
 ```
 and then run the jupyter notebook demos.
 
@@ -151,10 +143,8 @@ Download the Docker file (for linux_x86_64):
 
   * Bleeding edge (changes with every successful master branch build):
     * [CUDA8 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0.9999-nccl-cuda8-runtime.tar.bz2)
-    * [CUDA8 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda8/h2o4gpu-nonccl-cuda8-0.2.0.9999-runtime.tar.bz2)
     * [CUDA9 nccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0.9999-nccl-cuda9-runtime.tar.bz2)
-    * [CUDA9 nonccl](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-nonccl-cuda9/h2o4gpu-0.2.0.9999-nonccl-cuda9-runtime.tar.bz2)
-
+    
 Load and run docker file (e.g. for bleeding-edge of nccl-cuda9):
 ```
 pbzip2 -dc h2o4gpu-0.2.0.9999-nccl-cuda9-runtime.tar.bz2 | nvidia-docker load

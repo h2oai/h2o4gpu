@@ -66,7 +66,7 @@ class H2O4GPUInstall(install):
 
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
-with open("../../requirements_runtime.txt", "r") as fs:
+with open("requirements_runtime.txt", "r") as fs:
     reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
 
 def get_packages(directory):

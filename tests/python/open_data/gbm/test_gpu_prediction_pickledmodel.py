@@ -227,7 +227,7 @@ class TestGPUPredict(unittest.TestCase):
         Xtest = makeXtest()
 
         # load model
-        model = load_obj("./tests_open/gbm/model_saved.pkl")
+        model = load_obj("./tests/python/open_data/gbm/model_saved.pkl")
 
         # continue as before
         print("Before model.predict")

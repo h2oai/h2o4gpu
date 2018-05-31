@@ -46,7 +46,7 @@ To see if things are missing.
 
 3) Run `ldd --version`, we currently require version `2.23` or higher. If your system is running a lower version please update if possible or build the project yourself on your machine.
 
-4) Make sure you are running CUDA 8.x or CUDA 9.0, we currently don't support CUDA 9.1.
+4) Make sure you are running CUDA 8.x or CUDA 9.x.
 
 5) If compiled with icc (default if present) and have conda, need to do:
 

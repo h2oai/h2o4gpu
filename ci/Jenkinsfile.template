@@ -1,16 +1,3 @@
-// Just Notes:
-//
-//def jobnums       = [0 , 1 , 2  , 3]
-//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
-//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
-//def dobuilds      = [1, 0, 0, 0]
-//def dofulltests   = [1, 0, 0, 0]
-//def dopytests     = [1, 0, 0, 0]
-//def doruntimes    = [1, 1, 1, 1]
-//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04"]
-//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:8.0-cudnn5-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04", "nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"]
-//def dists         = ["dist1","dist2","dist3","dist4"]
-
 def benchmark_commit_trigger
 
 pipeline {
@@ -32,11 +19,6 @@ pipeline {
     }
 
     stages {
-        /////////////////////////////////////////////////////////////////////
-        //
-        //
-        //  Avoid mr-dl8 and mr-dl10 for build for now due to permission denied issue
-        /////////////////////////////////////////////////////////////////////
         stage("Git clone on Linux") {
 
             agent {
@@ -56,25 +38,24 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
                     commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
                     echo "Commit Message: ${commitMessage}"
                     benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
                 }
-                stash includes: "Jenkinsfile*", name: "jenkinsfiles"
+                stash includes: "ci/Jenkinsfile*", name: "jenkinsfiles"
             }
         }
-        stage("Build Wheel on Linux") {
-
+        stage("Build on Centos7") {
             agent {
                 label "${labelbuild}"
             }
             when {
                 expression {
                     unstash "jenkinsfiles"
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
                     return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests()
                 }
             }
@@ -91,8 +72,8 @@ pipeline {
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${dist}", "${linuxwheel}")
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${platform}", "${linuxwheel}")
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -109,14 +90,14 @@ pipeline {
             }
         }
 
-        stage("Test Wheel & Pylint & S3up on Linux") {
+        stage("Test | Lint | S3up on Centos7") {
             agent {
                 label "${labeltest}"
             }
             when {
                 expression {
                     unstash "jenkinsfiles"
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
                     return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
                 }
             }
@@ -124,39 +105,46 @@ pipeline {
                 dumpInfo 'Linux Test Info'
                 // Get source code (should put tests into wheel, then wouldn't have to checkout)
                 retryWithTimeout(200 /* seconds */, 3 /* retries */) {
-                    checkout scm
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
                 }
                 script {
                     unstash 'version_info'
                     sh """
                         echo "Before Stashed wheel file:"
-                        ls -l src/interface_py/${dist}/  || true
-                        rm -rf src/interface_py/${dist}/ || true
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
                        """
                     unstash "${linuxwheel}"
                     sh """
                         echo "After Stashed wheel file:"
-                        ls -l src/interface_py/${dist}/  || true
+                        ls -l src/interface_py/dist/${platform}/  || true
                        """
-                    h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${dist}", "${testtype}")
+                    h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${dist}")
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}")
                         }
                     }
                 }
             }
         }
-        stage("Build/Publish Runtime Docker Linux") {
+        stage("Build/Publish Runtime Docker Centos7") {
             agent {
                 label "${labelruntime}"
             }
             when {
                 expression {
                     unstash "jenkinsfiles"
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
                     return "${doruntime}" == "1" && h2o4gpuUtils.doRuntime()
                 }
             }
@@ -176,19 +164,19 @@ pipeline {
                 script {
                     sh """
                         echo "Before Stashed wheel file:"
-                        ls -l src/interface_py/${dist}/  || true
-                        rm -rf src/interface_py/${dist}/ || true
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
                        """
                     unstash "${linuxwheel}"
                     sh """
                         echo "After Stashed wheel file:"
-                        ls -l src/interface_py/${dist}/  || true
+                        ls -l src/interface_py/dist/${platform}  || true
                        """
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${dist}", "${extratag}")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${platform}", "${extratag}", "${data_dirs}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -207,7 +195,7 @@ pipeline {
             when {
                 expression {
                     unstash "jenkinsfiles"
-                    h2o4gpuUtils = load "Jenkinsfile.utils"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
                     echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
                     return "${doingbenchmark}" == "1" || (("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master")
                 }

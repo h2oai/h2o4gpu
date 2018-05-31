@@ -6,10 +6,12 @@ $(info ** ------------------------------------------------------------------ **)
 SHELL := /bin/bash # force avoidance of dash as shell
 thepwd = "$(shell pwd)"
 
+include ../../make/config.mk
+
 default: all
 
 pylint:
-	$$SHELL test.sh
+	$$SHELL scripts/run-pylint.sh
 
 pyformat:
 	@status=0; \
@@ -22,8 +24,8 @@ pyformat:
 	done; \
 
 prep:
-	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python-tag=.*/python-tag=py'$$PYVER'/g' setup.cfg
-	PYVER=`python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'` && sed -i 's/python_version==.*/python_version=='$$PYVER'/g' setup.cfg
+	PYVER=`$(PYTHON) -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' | sed 's/\.//g'` && sed -i 's/python-tag=.*/python-tag=py'$$PYVER'/g' setup.cfg
+	PYVER=`$(PYTHON) -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'` && sed -i 's/python_version==.*/python_version=='$$PYVER'/g' setup.cfg
 	cd ../../ && bash scripts/apply_sklearn_initmerge.sh # so if change our init it gets updated
 
 all: prep
@@ -32,7 +34,7 @@ all: prep
 	ln -sf ../../xgboost/python-package/xgboost .
 	ln -sf ../../py3nvml/py3nvml .
 
-	python setup.py sdist bdist_wheel
+	$(PYTHON) setup.py sdist bdist_wheel
 
 	# update build with xgboost shared library
 	mkdir -p build/lib/xgboost/
@@ -40,7 +42,7 @@ all: prep
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
-	python setup.py sdist bdist_wheel
+	$(PYTHON) setup.py sdist bdist_wheel
 
 	# for pycharm
 	ln -sf $(thepwd)/../interface_c/_ch2o4gpu_cpu.so .
@@ -48,14 +50,14 @@ all: prep
 
 
 install:
-	-cd ../.. && pip uninstall -y h2o4gpu
-	-cd ../.. && pip uninstall -y xgboost
-	-cd ../.. && pip uninstall -y py3nvml
+	-cd ../.. && $(PYTHON) -m pip uninstall -y h2o4gpu
+	-cd ../.. && $(PYTHON) -m pip uninstall -y xgboost
+	-cd ../.. && $(PYTHON) -m pip uninstall -y py3nvml
 	find -name *.pyc | xargs rm -rf
 	find -name *__pycache__ | xargs rm -rf
 	# something wrong with below
-	#python setup.py install
-	pip install dist/h2o4gpu*.whl --upgrade
+	#$(PYTHON) setup.py install
+	$(PYTHON) -m pip install dist/h2o4gpu*.whl --upgrade
 
 clean:
 	rm -f h2o4gpu/BUILD_INFO.txt
@@ -64,8 +66,7 @@ clean:
     # This *is* required
 	rm -f h2o4gpu/__init__.py
 	touch h2o4gpu/__init__.py
-	pip install numpy
-	python setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
+	$(PYTHON) setup.py clean --all && rm -rf h2o4gpu.egg-info && rm -rf h2o4gpu/__pycache__/ && rm -rf dist/
 	cd h2o4gpu && find -L -name *.pyc | xargs rm -rf
 
 
