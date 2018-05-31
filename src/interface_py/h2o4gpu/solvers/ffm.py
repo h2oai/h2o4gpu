@@ -97,7 +97,7 @@ class FFMH2O(object):
         # TODO implement
         pass
 
-    def fit(self, X, y):
+    def fit(self, X, y, X_validate=None, y_validate=None):
         lib = self._load_lib()
 
         params = lib.params_ffm()
@@ -117,19 +117,31 @@ class FFMH2O(object):
 
         fields, features, values, positions = self._numpy_to_ffm_rows(params, X)
 
-        self.weights = np.zeros(params.k * (np.max(features) + 1) * (np.max(fields) + 1), dtype=self.dtype)
-
         y_np = self._sanatize_labels(y)
 
+        fields_validation, features_validation, values_validation, positions_validation = None, None, None, None
+        if X_validate is not None and y_validate is not None:
+            fields_validation, features_validation, values_validation, positions_validation = self._numpy_to_ffm_rows(params, X_validate)
+
+        y_validation_np = self._sanatize_labels(y_validate)
+
+        self.weights = np.zeros(params.k * (np.max(features) + 1) * (np.max(fields) + 1), dtype=self.dtype)
+
         if self.dtype == np.float32:
-            lib.ffm_fit_float(features, fields, values, y_np, positions, self.weights, params)
+            lib.ffm_fit_float(features, fields, values, y_np, positions,
+                              features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
+                              self.weights, params)
         else:
-            lib.ffm_fit_double(features, fields, values, y_np, positions, self.weights, params)
+            lib.ffm_fit_double(features, fields, values, y_np, positions,
+                               features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
+                               self.weights, params)
 
         self.learned_params = params
         return self
 
     def _sanatize_labels(self, y):
+        if y is None:
+            return None
         return np.array(list(map(lambda e: 1 if e > 0 else -1, y)), dtype=np.int32)
 
     def _numpy_to_ffm_rows(self, params, X):

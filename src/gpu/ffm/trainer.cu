@@ -37,7 +37,7 @@ __device__ double atomicAdd(double* address, double val)
 namespace ffm {
 
 template<typename T>
-Trainer<T>::Trainer(Params &params) : params(params), trainDataBatcher(params.nGpus) {
+Trainer<T>::Trainer(Params &params) : params(params), trainDataBatcher(params.nGpus), validationDataBatcher(params.nGpus) {
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceMapHost));
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
 
@@ -53,7 +53,7 @@ Trainer<T>::Trainer(Params &params) : params(params), trainDataBatcher(params.nG
 }
 
 template<typename T>
-Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDataBatcher(params.nGpus) {
+Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDataBatcher(params.nGpus), validationDataBatcher(params.nGpus) {
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceMapHost));
   CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
 
@@ -226,7 +226,17 @@ void Trainer<T>::predict(T *predictions) {
 }
 
 template<typename T>
+T Trainer<T>::validationLoss() {
+  return this->oneEpoch(this->validationDataBatcher, false);
+}
+
+template<typename T>
 T Trainer<T>::oneEpoch(bool update) {
+  return this->oneEpoch(this->trainDataBatcher, true);
+}
+
+template<typename T>
+T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update) {
   Timer timer;
   log_debug(this->params.verbose, "Computing an FFM epoch (update = %s)", update ? "true" : "false");
 
@@ -236,13 +246,9 @@ T Trainer<T>::oneEpoch(bool update) {
     int initialBatchOffset = 0;
     CUDA_CHECK(cudaMemcpyToSymbol(cBatchOffset, &initialBatchOffset, sizeof(int)));
 
-    while (trainDataBatcher[i]->hasNext()) {
-      /**
-       * Get batch
-       */
-
+    while (dataBatcher[i]->hasNext()) {
       timer.tic();
-      DatasetBatch<T> *batch = trainDataBatcher[i]->nextBatch(this->params.batchSize);
+      DatasetBatch<T> *batch = dataBatcher[i]->nextBatch(this->params.batchSize);
       timer.toc();
       log_verbose(params.verbose, "Getting batch took %f.", timer.pop());
 
@@ -314,7 +320,7 @@ T Trainer<T>::oneEpoch(bool update) {
       cudaFree(losses);
     }
 
-    trainDataBatcher[i]->reset();
+    dataBatcher[i]->reset();
   }
 
   if (params.nGpus != 1) {

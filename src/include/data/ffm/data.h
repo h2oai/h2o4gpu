@@ -48,9 +48,9 @@ class Dataset {
       rowPositions(rowPositions){}
 
   // Number of rows in the dataset
-  int numRows;
+  int numRows = 0;
   // Total number of nodes in all the rows
-  int numNodes;
+  int numNodes = 0;
   // Total number of fields
   int numFields = 0;
   // Total number of features
@@ -74,6 +74,10 @@ class Dataset {
   // Total size in bytes required to hold this structure
   int requiredBytes() const {
     return numNodes * 2 * sizeof(int) + numRows * sizeof(T) + numRows * sizeof(int) + numRows * sizeof(T);
+  }
+
+  bool empty() {
+    return numRows == 0;
   }
 };
 

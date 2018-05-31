@@ -16,14 +16,15 @@ template<typename T>
 FFM<T>::FFM(Params & params, T *weights) : params(params), trainer(weights, params) {}
 
 template<typename T>
-void FFM<T>::fit(const Dataset<T> &dataset) {
+void FFM<T>::fit(const Dataset<T> &dataset, const Dataset<T> &valid_dataset) {
   this->trainer.setDataset(dataset);
+  this->trainer.setValidationDataset(valid_dataset);
 
   Timer timer;
 
   for (int epoch = 1; epoch <= this->params.nIter; epoch++) {
     timer.tic();
-    trainer.oneEpoch(true);
+    trainer.oneEpoch();
     timer.toc();
     log_debug(params.verbose, "Epoch took %f.", timer.pop());
     if (trainer.earlyStop()) {
@@ -71,8 +72,11 @@ T maxElement(const T *data, int size) {
 /**
  * C API method
  */
-void ffm_fit_float(int* features, int* fields, float* values, int *labels, int *rowPositions, float *w, Params &_param) {
-  log_debug(_param.verbose, "Converting %d float rows into a dataset.", _param.numRows);
+
+void ffm_fit_float(int *features, int* fields, float* values, int *labels, int *rowPositions,
+                   int *features_v, int* fields_v, float* values_v, int *labels_v, int *rowPositions_v,
+                   float *w, Params &_param) {
+  log_debug(_param.verbose, "Converting %d float rows into a training dataset.", _param.numRows);
   float *scales = (float*) malloc(sizeof(float) * _param.numRows);
   computeScales(scales, values, rowPositions, _param);
 
@@ -80,18 +84,35 @@ void ffm_fit_float(int* features, int* fields, float* values, int *labels, int *
   _param.numFeatures = maxElement(features, _param.numNodes) + 1;
 
   Dataset<float> dataset(_param.numFields, _param.numFeatures, _param.numRows, _param.numNodes, features, fields, values, labels, scales, rowPositions);
+
+  Dataset<float> *validationDataset = Dataset<float>();
+  if(features_v) {
+    log_debug(_param.verbose, "Converting %d float rows into a validation dataset.", _param.numRowsVal);
+
+    float *scales_v = (float*) malloc(sizeof(float) * _param.numRowsVal);
+    computeScales(scales_v, values_v, rowPositions_v, _param);
+
+    validationDataset = new Dataset<float>(_param.numFields, _param.numFeatures, _param.numRowsVal, _param.numNodesVal, features_v, fields_v, values_v, labels_v, scales_v, rowPositions_v);
+  }
+
   FFM<float> ffm(_param);
   _param.printParams();
   log_debug(_param.verbose, "Running FFM fit for float.");
   Timer timer;
   timer.tic();
-  ffm.fit(dataset);
+  ffm.fit(dataset, *validationDataset);
   ffm.trainer.model->copyTo(w);
   timer.toc();
   log_debug(_param.verbose, "Float fit took %f.", timer.pop());
+
+  if(validationDataset) {
+    delete validationDataset;
+  }
 }
 
-void ffm_fit_double(int* features, int* fields, double* values, int *labels, int *rowPositions, double *w, Params &_param) {
+void ffm_fit_double(int *features, int* fields, double* values, int *labels, int *rowPositions,
+                    int *features_v, int* fields_v, double* values_v, int *labels_v, int *rowPositions_v,
+                    double *w, Params &_param) {
   log_debug(_param.verbose, "Converting %d double rows into a dataset.", _param.numRows);
   double *scales = (double*) malloc(sizeof(double) * _param.numRows);
   computeScales(scales, values, rowPositions, _param);

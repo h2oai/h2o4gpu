@@ -15,12 +15,16 @@ template<typename T>
 class Trainer {
  public:
   Trainer(Params &params);
-  Trainer(const T* weights, Params &params);
+  Trainer(const T *weights, Params &params);
   ~Trainer();
 
   void setDataset(const Dataset<T> &dataset);
 
-  T oneEpoch(bool update);
+  T validationLoss();
+
+  T oneEpoch();
+
+  T oneEpoch(std::vector<DatasetBatcher<T> *> dataBatcher, bool update);
 
   void predict(T *predictions);
 
@@ -32,8 +36,11 @@ class Trainer {
  private:
   Params &params;
 
-  // Vector of datasets split for threads/GPUs
-  std::vector<DatasetBatcher<T>*> trainDataBatcher;
+  // Vector of train datasets splits for threads/GPUs
+  std::vector<DatasetBatcher<T> *> trainDataBatcher;
+
+  // Vector of validation datasets split for threads/GPUs
+  std::vector<DatasetBatcher<T> *> validationDataBatcher;
 
 };
 
