@@ -1,100 +1,174 @@
-# Copy this file and Run from one level higher than the git pull directory
-# To build: docker build -t opsh2oai/h2oai-nv -f Dockerfile-nvdocker .
-# To run with docker run -it -p 12345:12345 opsh2oai/h2oai-nv
+ARG docker_name
 
-ARG layer
-ARG version
-
-FROM $layer:$version
-# e.g. FROM ubuntu:latest
-
-RUN echo $layer
+FROM $docker_name
 
 MAINTAINER H2o.ai <ops@h2o.ai>
 
-ENV DEBIAN_FRONTEND noninteractive
+#
+# Env variables for CUDA. Necessary because certain systems don't support nvidia-docker so we should use plain docker as much as possible.
+#
 ENV HOME=/root
-ENV PYENV_ROOT=$HOME/.pyenv
-ENV PATH=$PYENV_ROOT/bin:$PATH
+ENV CUDA_HOME=/usr/local/cuda
+ENV CUDADIR=/usr/local/cuda/include/
+ENV PATH=/usr/local/cuda/bin:$PATH
+ENV LD_LIBRARY_PATH_CUDA=$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+ENV LD_LIBRARY_PATH_BUILD=/lib64:/usr/local/lib64:/home/$USER/lib/
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH_CUDA:$LD_LIBRARY_PATH_BUILD:$LD_LIBRARY_PATH
 
-RUN if $layer -ne "ubuntu"; then export CUDA_HOME=/usr/local/cuda && \
-	export PATH=/usr/local/cuda/bin:$PATH && \
-	export LD_LIBRARY_PATH_MORE=/home/$USER/lib/:$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 && \
-	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LD_LIBRARY_PATH_MORE && \
-	export CUDADIR=/usr/local/cuda/include/ && \
-	export OMP_NUM_THREADS=32 && \
-	export MKL_NUM_THREADS=32 && \
-	export VECLIB_MAXIMUM_THREADS=32; fi
+#
+# Env variables used by the codebase.
+#
+ENV OMP_NUM_THREADS=32
+ENV MKL_NUM_THREADS=32
+ENV VECLIB_MAXIMUM_THREADS=32
+
+#
+# Library versions
+#
+ENV MINICONDA_VERSION=4.4.10
+ENV SWIG_VERSION=3.0.12
+ENV PILLOW_VERSION=4.2.1
+ENV GIT_VERSION=2.17.0
+
+#
+# Install necessary libraries and dependencies
+#
+RUN yum install -y epel-release
+
+# Setup gcc etc.
+RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
+
+# Git requirements
+RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
+
+# Compile from source because yum's latest version is 1.8.3
+# --depth for submodule update which we use was added in 1.8.4
+RUN \
+    wget https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz && \
+    tar xf git-${GIT_VERSION}.tar.xz && \
+    cd git-${GIT_VERSION} && \
+    make configure && \
+    ./configure --prefix=/usr && \
+    make all && \
+    make install;
+
+# H2O4GPU requirements + util programs
+RUN yum install -y \
+    ncurses-devel \
+        bzip2 \
+        which \
+        axel \
+        cmake3 \
+        openssl-devel \
+        libpng-devel \
+        freetype-devel \
+        blas-devel \
+        openblas-devel && \
+    wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
+    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/`arch`-centos7/llvm.tar.bz2 && \
+    tar xvf llvm.tar.bz2 && \
+    cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
+    rm -rf llvm*
+
+ENV LLVM4=/opt/h2oai/h2o4gpu
+ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
+ENV PATH=$LLVM4/bin:$PATH
+ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
+
+#
+# Symlinks
+#
+
+# AR for conda
+RUN ln /usr/bin/ar $LLVM4/bin/`arch`-conda_cos6-linux-gnu-ar
+
+# CentOS' yum install cmake has only 2.X so need to install cmake3 and make a symlink
+RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
+
+# Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
+RUN \
+    mkdir -p /usr/lib64/ && \
+    ln -s /opt/h2oai/h2o4gpu/python/lib/*python* /usr/lib64/ && \
+    mkdir -p /usr/include/python3.6m && \
+    ln -s /opt/h2oai/h2o4gpu/python/include/python3.6m/* /usr/include/python3.6m
+
+# Yumming openblas puts some files in a not-so-standard locations
+RUN ln -s /usr/include/openblas/* /usr/local/include/
 
 # Symlinks for NVML
 RUN \
-    export NVIDIA_DRIVER=$(grep "Module" /proc/driver/nvidia/version | cut -f 9 -d' ' | cut -f 1 -d '.') && \
-    mkdir -p /usr/lib/nvidia-$NVIDIA_DRIVER && \
-    ln -s /usr/local/nvidia/lib64/libnvidia-ml.so.1 /usr/lib/nvidia-$NVIDIA_DRIVER/libnvidia-ml.so
+    mkdir -p /usr/lib64/nvidia/ && \
+    ln -s /usr/local/cuda-`nvcc --version | tail -n 1 | cut -f 5 -d' ' | cut -f 1 -d ','`/targets/`arch`-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
 
-# add-apt-repository ppa:fkrull/deadsnakes  && \
+#
+# Builds from source due to too old versions in yum
+#
+WORKDIR $HOME
 
-# Setup Repos
+# SWIG
 RUN \
-  apt-get update -y && \
-  apt-get -y install curl apt-utils python-software-properties \
-  software-properties-common iputils-ping wget cpio net-tools build-essential \
-  git zip dirmngr && \
-  apt-get -y --no-install-recommends  install \
-      python3-dateutil python3-magic s3cmd && \
-  wget http://launchpadlibrarian.net/326935544/s3cmd_2.0.0-1_all.deb && \
-  dpkg -i s3cmd_2.0.0-1_all.deb && \
-  add-apt-repository ppa:jonathonf/python-3.6 && \
-  apt-get update -yqq && \
-  curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
-  apt-get -y --no-install-recommends  install \
-    python3.6 \
-    python3.6-dev \
-    python3-pip \
-    python3-setuptools \
-    python3-wheel && \
-  update-alternatives --install /usr/bin/python python /usr/bin/python3.6 100 && \
-  python -m pip install --upgrade pip && \
-  apt-get clean && \
-  rm -rf /var/cache/apt/* && \
-  apt-get install -y libopenblas-dev axel && \
-  apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev swig
+    wget https://sourceforge.net/projects/swig/files/swig/swig-${SWIG_VERSION}/swig-${SWIG_VERSION}.tar.gz && \
+    tar -zxvf swig-${SWIG_VERSION}.tar.gz && \
+    cd swig-${SWIG_VERSION} && \
+    ./configure --prefix=/usr && \
+    make -j $(nproc) && \
+    make install && \
+    cd $HOME && \
+    rm -rf swig-3*
 
-RUN \
-    mkdir -p .pylint.d && \
-    rm -rf ~/.pyenv && \
-    git clone https://github.com/pyenv/pyenv.git ~/.pyenv && \
-    eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv install 3.6.1 && \
-    CONFIGURE_OPTS=--enable-shared /root/.pyenv/bin/pyenv global 3.6.1 && \
-    pip install setuptools --no-cache-dir
+# TODO Install DAAL
 
-# Install Daal library
-COPY scripts/daal/install_daal.sh scripts/daal/install_daal.sh
-RUN \
-	chmod +x scripts/daal/install_daal.sh && \
-	scripts/daal/install_daal.sh
+#
+# PPC64 specific - certain libs/whl don't support PPC64LE
+#
 
-COPY requirements_buildonly.txt requirements_buildonly.txt
-COPY requirements_runtime.txt requirements_runtime.txt
-COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
-RUN \
-    chmod a+rwx / && \
-    chmod -R a+rwx /root  && \
-    chmod ugo+s /root/ && \
-    mkdir -p /root/.cache/ && \
-    eval "$(/root/.pyenv/bin/pyenv init -)" && \
-    /root/.pyenv/bin/pyenv global 3.6.1 && \
-    pip install setuptools && \
-    pip install -r requirements_buildonly.txt && \
-    pip install -r requirements_runtime.txt && \
-    pip install -r requirements_runtime_demos.txt
+# Arrow
+RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
+	git clone https://github.com/apache/arrow.git && \
+	cd $HOME/arrow/cpp && \
+	git checkout tags/apache-arrow-0.8.0 && \
+    yum install -y boost-devel && \
+	pip install numpy cython && \
+	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
+	cd $HOME/arrow/python && \
+	ARROW_HOME=/usr/local python setup.py install && \
+	yum install -y libjpeg-devel;\
+	fi'
 
-# Install R dependencies and h2o4gpu R package when appropriate
-COPY scripts/install_r.sh scripts/install_r.sh
-COPY scripts/test_r_pkg.sh scripts/test_r_pkg.sh
-COPY scripts/install_r_deps.sh scripts/install_r_deps.sh
-RUN \
-    apt-get update -y && \
-    apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev && \
-    scripts/install_r_deps.sh
+# Pillow
+RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
+	wget https://files.pythonhosted.org/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-${PILLOW_VERSION}.tar.gz && \
+	tar xvf Pillow-${PILLOW_VERSION}.tar.gz && \
+	cd $HOME/Pillow-${PILLOW_VERSION} && \
+	sed -i "s/'ppc64'/'ppc64le'/g" setup.py && \
+	python setup.py install && \
+	cd $HOME && \
+	rm -rf Pillow-${PILLOW_VERSION}*; \
+	fi'
+
+
+#
+# Install Python requirements
+#
+RUN pip install numpy setuptools
+
+COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
+COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
+COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
+
+RUN pip install -r requirements_buildonly.txt
+RUN pip install -r requirements_runtime.txt
+RUN pip install -r requirements_runtime_demos.txt
+
+RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
+RUN chmod -R o+rwx /root
+
+WORKDIR $HOME
+
+ENV GIT_AUTHOR_NAME="anonymous"
+ENV GIT_AUTHOR_EMAIL="anonymous@h2o.ai"
+ENV GIT_COMMITTER_NAME="anonymous"
+ENV GIT_COMMITTER_EMAIL="anonymous@h2o.ai"
+ENV EMAIL="anonymous@h2o.ai"

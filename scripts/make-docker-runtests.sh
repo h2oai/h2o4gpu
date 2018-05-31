@@ -2,55 +2,48 @@
 # Requires one has already done(e.g.): make docker-build-nccl-cuda9 to get wheel built or wheel was unstashed on jenkins
 set -e
 
-# split layer and version
-IFS=':' read -ra LAYER_VERSION <<< "${dockerimage}"
-layer=${LAYER_VERSION[0]}
-version=${LAYER_VERSION[1]}
+DOCKER_CLI='nvidia-docker'
 
-if [ "$layer" == "ubuntu" ]
-then
-	docker=docker
-else
-	docker=nvidia-docker
-fi
-
+H2O4GPU_BUILD="${H2O4GPU_BUILD:-0}"
+DATA_DIRS="${DATA_DIRS:-}"
 
 echo "Docker devel test and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-$docker build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg layer=$layer --build-arg version=$version .
+$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
+
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
-$docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
+$DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
 echo "Docker devel test and pylint - Copying files"
-$docker exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
-$docker exec ${CONTAINER_NAME} bash -c 'cd ./repo ; ln -sf /data . || true ; ln -sf /open_data . || true'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd ./repo ; ln -sf /data . || true ; ln -sf /open_data . || true'
 
-echo "Docker devel test and pylint - setup pyenv, pip install wheel from ${dist}, make ${target}"
+echo "Docker devel test and pylint - pip install wheel from dist/${platform}, make ${target}"
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
-# Just ensure clean ${dist}/*.whl before unstash in jenkins
-$docker exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd`; eval "$(/root/.pyenv/bin/pyenv init -)" ; /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; pip install `find /dot/src/interface_py/'${dist}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
+# Just ensure clean dist/${platform}/*.whl before unstash in jenkins
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd` ; cd repo ; pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
 
 { # try
     echo "Docker devel test and pylint - copy any dat results"
     rm -rf results ; mkdir -p results/
     touch results/emptyresults.dat
-    nvidia-docker cp -a ${CONTAINER_NAME}:repo/results results/
+    $DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/results results/
 } || { # catch
    echo "No results dat files"
 }
 
 echo "Docker devel test and pylint - copy build reports"
 rm -rf build/test-reports ; mkdir -p build/test-reports/
-$docker cp -a ${CONTAINER_NAME}:repo/build/test-reports build/
+$DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/build/test-reports build/
 
 echo "Docker devel test and pylint - copy logs for arch"
 rm -rf tmp ; mkdir -p tmp
-$docker cp -a ${CONTAINER_NAME}:repo/tmp ./
+$DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/tmp ./
 
 echo "Docker devel test and pylint - pylint"
-$docker exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
-$docker exec ${CONTAINER_NAME} bash -c 'eval "$(/root/.pyenv/bin/pyenv init -)"  ;  /root/.pyenv/bin/pyenv global 3.6.1; cd repo ; make pylint'
+$DOCKER_CLI exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd repo ; make pylint'
 
 echo "Docker devel test and pylint - stop"
-$docker stop ${CONTAINER_NAME}
+$DOCKER_CLI stop ${CONTAINER_NAME}

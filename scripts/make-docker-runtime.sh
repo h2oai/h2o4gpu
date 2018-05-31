@@ -1,61 +1,52 @@
 #!/bin/bash
 set -e
 
-# split layer and version
-IFS=':' read -ra LAYER_VERSION <<< "${dockerimage}"
-layer=${LAYER_VERSION[0]}
-version=${LAYER_VERSION[1]}
+DOCKER_CLI='nvidia-docker'
 
-if [ "$layer" == "ubuntu" ]
-then
-	docker=docker
-else
-	docker=nvidia-docker
-fi
-
+DATA_DIRS="${DATA_DIRS:-}"
 
 echo "Docker runtime - BEGIN"
 
 echo "Docker runtime - Build"
 # wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-cp36-cp36m-linux_x86_64.whl # use this if want to pull from s3 in Dockerfile-runtime
 #  --build-arg http_proxy=http://172.16.2.142:3128/
-$docker build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg layer=$layer --build-arg version=$version .
+$DOCKER_CLI build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
 # -u `id -u`:`id -g` -d -t -w `pwd` -v `pwd`:`pwd`:rw
 
 echo "Runtime Docker - Run"
-$docker run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
+$DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
 
 echo "Docker runtime - pip install h2o4gpu and pip freeze"
-$docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; pip install `find /dot/src/interface_py/'${dist}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` ; pip freeze'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` ; pip freeze'
 
 { # try
     echo "Docker runtime - Getting Data"
-    #nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; mkdir -p scripts ; rm -rf scripts/fcov_get.py ; echo "from sklearn.datasets import fetch_covtype" > ./scripts/fcov_get.py ; echo "cov = fetch_covtype()" >> ./scripts/fcov_get.py'
-    #nvidia-docker exec ${CONTAINER_NAME} bash -c '. /h2o4gpu_env/bin/activate ; cd /jupyter/ ; python ../scripts/fcov_get.py'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/covertype ; cp /open_data/covertype/* ./scikit_learn_data/covertype'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/lfw_home ; cp -af /open_data/lfw_home ./scikit_learn_data'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/creditcard.csv .'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/Temples-shrines-and-castles-in-Japan-social-media-image.jpg'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/china.jpg'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
-    $docker exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
-    $docker exec -u root ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; chmod -R a+rwx .'
+    #$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p scripts ; rm -rf scripts/fcov_get.py ; echo "from sklearn.datasets import fetch_covtype" > ./scripts/fcov_get.py ; echo "cov = fetch_covtype()" >> ./scripts/fcov_get.py'
+    #$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; python ../scripts/fcov_get.py'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/covertype ; cp /open_data/covertype/* ./scikit_learn_data/covertype'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; mkdir -p ./scikit_learn_data/lfw_home ; cp -af /open_data/lfw_home ./scikit_learn_data'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/creditcard.csv .'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/kmeans_data/h2o-logo.jpg'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/Temples-shrines-and-castles-in-Japan-social-media-image.jpg'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; wget https://s3.amazonaws.com/h2o-public-test-data/h2o4gpu/open_data/china.jpg'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums_1k.csv .'
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd /jupyter/demos ; cp /data/ipums.feather .'
+    $DOCKER_CLI exec -u root ${CONTAINER_NAME} bash -c 'cd /jupyter/ ; chmod -R a+rwx .'
 } || { # catch
    echo "Some Data Not Obtained"
 }
-$docker commit ${CONTAINER_NAME} opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
+$DOCKER_CLI commit ${CONTAINER_NAME} opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
 
 echo "Docker runtime - stopping docker"
-$docker stop ${CONTAINER_NAME}
+$DOCKER_CLI stop ${CONTAINER_NAME}
 
 if [ -z `command -v pbzip2` ]
 then
     echo "Docker runtime - saving docker to local disk -- native system must have bzip2"
-    $docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | bzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
+    $DOCKER_CLI save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | bzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
 else
     echo "Docker runtime - saving docker to local disk -- native system must have pbzip2"
-    $docker save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | pbzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
+    $DOCKER_CLI save opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime | pbzip2 > h2o4gpu-${fullVersionTag}${extratag}-runtime.tar.bz2
 fi
 
 echo "Docker runtime - END"

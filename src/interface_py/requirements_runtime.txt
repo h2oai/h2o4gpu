@@ -1,0 +1,18 @@
+# below for h2o4gpu
+pandas==0.22.0
+numpy==1.14.2
+python-dateutil==2.7.2
+pytz==2018.4
+scipy==1.0.1
+tabulate==0.8.2
+future==0.16.0
+# below for some testing utils that can be run at runtime
+psutil==5.4.5
+# below for xgboost
+scikit-learn==0.19.1
+sklearn==0.0
+pytest==3.3.1
+pytest-forked==0.2
+pytest-xdist==1.20.1
+pytest-cov==2.4.0
+pylint==1.8.4
