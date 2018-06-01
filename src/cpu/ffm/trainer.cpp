@@ -17,7 +17,12 @@ Trainer<T>::Trainer(const T* weights, Params &params) : params(params) {
 }
 
 template<typename T>
-void Trainer<T>::setDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setTrainingDataset(const Dataset<T> &dataset) {
+  // TODO implement
+}
+
+template<typename T>
+void Trainer<T>::setValidationDataset(const Dataset<T> &dataset) {
   // TODO implement
 }
 

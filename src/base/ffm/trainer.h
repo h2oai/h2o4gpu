@@ -18,7 +18,8 @@ class Trainer {
   Trainer(const T *weights, Params &params);
   ~Trainer();
 
-  void setDataset(const Dataset<T> &dataset);
+  void setTrainingDataset(const Dataset<T> &dataset);
+  void setValidationDataset(const Dataset<T> &dataset);
 
   T validationLoss();
 

@@ -17,7 +17,7 @@ FFM<T>::FFM(Params & params, T *weights) : params(params), trainer(weights, para
 
 template<typename T>
 void FFM<T>::fit(const Dataset<T> &dataset, const Dataset<T> &valid_dataset) {
-  this->trainer.setDataset(dataset);
+  this->trainer.setTrainingDataset(dataset);
   this->trainer.setValidationDataset(valid_dataset);
 
   Timer timer;

@@ -24,7 +24,11 @@ The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reti
 
 ## Installation
 
+<<<<<<< Updated upstream
 There are a few [system requirements](https://github.com/h2oai/h2o4gpu#requirements), including Linux with glibc 2.17+, Python >=3.6, R >=3.1, CUDA 8 or 9, and a machine with Nvidia GPUs.  The code should still run if you have CPUs, but it will fall back to scikit-learn CPU based versions of the algorithms.
+=======
+There are a few [system requirements](https://github.com/h2oai/h2o4gpu#requirements), including Linux with glibc TODO MATEUSZ what glibc is required??, Python >=3.6, R >=3.1, CUDA 8 or 9, and a machine with Nvidia GPUs.  The code should still run if you have CPUs, but it will fall back to scikit-learn CPU based versions of the algorithms.
+>>>>>>> Stashed changes
 
 The **h2o4gpu** Python module is a prerequisite for the R package. So first, follow the instructions [here](https://github.com/h2oai/h2o4gpu#user-installation) to install the **h2o4gpu** Python package (either at the system level or in a Python virtual envivonment). The easiest thing to do is to `pip install` the stable release `whl` file. To ensure compatibility, the Python package version number should match the R package version number. 
 

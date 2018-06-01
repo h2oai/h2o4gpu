@@ -69,14 +69,21 @@ Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDat
 }
 
 template<typename T>
-void Trainer<T>::setDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setTrainingDataset(const Dataset<T> &dataset) {
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
   trainDataBatcher[0] = batcher;
 }
 
 template<typename T>
+void Trainer<T>::setValidationDataset(const Dataset<T> &dataset) {
+  DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
+  validationDataBatcher[0] = batcher;
+}
+
+template<typename T>
 Trainer<T>::~Trainer() {
   delete trainDataBatcher[0];
+  delete validationDataBatcher[0];
   delete model;
   CUDA_CHECK(cudaDeviceReset());
 }

@@ -1,3 +1,19 @@
+<<<<<<< Updated upstream:ci/Jenkinsfile.template
+=======
+// Just Notes:
+//
+//def jobnums       = [0 , 1 , 2  , 3]
+//def tags          = ["nccl" , "nonccl" , "nccl"  , "nonccl"]
+//def cudatags      = ["cuda8", "cuda8"  , "cuda9" , "cuda9"]
+//def dobuilds      = [1, 0, 0, 0]
+//def dofulltests   = [1, 0, 0, 0]
+//def dopytests     = [1, 0, 0, 0]
+//def doruntimes    = [1, 1, 1, 1]
+//def dockerimagesbuild    = ["nvidia/cuda:8.0-cudnn5-devel-centos7", "nvidia/cuda:8.0-cudnn5-devel-centos7", "nvidia/cuda:9.0-cudnn7-devel-centos7", "nvidia/cuda:9.0-cudnn7-devel-centos7"]
+//def dockerimagesruntime  = ["nvidia/cuda:8.0-cudnn5-runtime-centos7", "nvidia/cuda:8.0-cudnn5-runtime-centos7", "nvidia/cuda:9.0-cudnn7-runtime-centos7", "nvidia/cuda:9.0-cudnn7-runtime-centos7"]
+//def dists         = ["dist1","dist2","dist3","dist4"]
+
+>>>>>>> Stashed changes:Jenkinsfile.utils2
 def benchmark_commit_trigger
 
 pipeline {
