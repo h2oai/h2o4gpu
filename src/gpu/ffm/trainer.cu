@@ -70,13 +70,13 @@ Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDat
 
 template<typename T>
 void Trainer<T>::setTrainingDataset(Dataset<T> &dataset) {
-  DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
+  DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params, params.numRows, params.numNodes);
   trainDataBatcher[0] = batcher;
 }
 
 template<typename T>
 void Trainer<T>::setValidationDataset(Dataset<T> &dataset) {
-  DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
+  DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params, params.numRowsVal, params.numNodesVal);
   validationDataBatcher[0] = batcher;
 }
 

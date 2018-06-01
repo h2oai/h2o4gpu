@@ -85,7 +85,7 @@ class DatasetBatcher {
   }
 
  protected:
-  Dataset<T> dataset;
+  Dataset<T> *dataset;
   int pos = 0;
   int numRows = 0;
 

@@ -15,8 +15,24 @@ class DatasetBatchGPU : public DatasetBatch<T> {
   DatasetBatchGPU() {}
 
   DatasetBatchGPU(int *features, int* fields, T* values,
-                                      int *labels, T *scales, int *rowPositions,
-                                      int numRows) : DatasetBatch<T>(features, fields, values, labels, scales, rowPositions, numRows) {}
+                  int *labels, T *scales, int *rowPositions,
+                  int numRows, bool dealloc = false) : DatasetBatch<T>(features, fields, values, labels, scales, rowPositions, numRows), dealloc(dealloc) {}
+
+
+  ~DatasetBatchGPU() {
+    if(dealloc) {
+      cudaFree(this->features);
+      cudaFree(this->fields);
+      cudaFree(this->values);
+      if(this->labels) {
+        cudaFree(this->labels);
+      }
+      cudaFree(this->scales);
+      cudaFree(this->rowPositions);
+    }
+  }
+
+  bool dealloc = false;
 
   int widestRow() override;
 };
@@ -26,13 +42,15 @@ class DatasetBatcherGPU : public DatasetBatcher<T> {
  public:
   DatasetBatcherGPU() {}
 
-  DatasetBatcherGPU(Dataset<T> &dataset, Params const &params);
+  DatasetBatcherGPU(Dataset<T> &dataset, Params const &params, int rows, int nodes);
 
   DatasetBatcherGPU(const DatasetBatcherGPU &other) : DatasetBatcher<T>(other), params(other.params) {}
 
   DatasetBatcherGPU(DatasetBatcherGPU &&other) noexcept : DatasetBatcher<T>(other), params(other.params) {}
 
-  ~DatasetBatcherGPU() {}
+  ~DatasetBatcherGPU() {
+    delete this->dataset;
+  }
 
   DatasetBatcherGPU &operator=(const DatasetBatcherGPU &other) {
     DatasetBatcherGPU tmp(other);

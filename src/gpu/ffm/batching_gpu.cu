@@ -37,9 +37,49 @@ int DatasetBatchGPU<T>::widestRow() {
  * DatasetBatcherGPU Methods
  *
  */
+template<typename T>
+Dataset<T> *toGpuDataset(Dataset<T> &dataset, Params const &params, int rowOffset, int nodeOffset, int rows, int numNodes) {
+  Dataset<T> *datasetGpu = new Dataset<T>();
+  datasetGpu->cpu = false;
+  datasetGpu->numRows = dataset.numRows;
+  datasetGpu->numFields = dataset.numFields;
+
+  cudaStream_t streams[6];
+  for(int i = 0; i < 6; i++) {
+    CUDA_CHECK(cudaStreamCreate(&streams[i]));
+  }
+
+  // todo dealloc in destructor??
+  CUDA_CHECK(cudaMalloc(&datasetGpu->rowPositions, (rows + 1) * sizeof(int)));
+  CUDA_CHECK(cudaMalloc(&datasetGpu->scales, rows * sizeof(T)));
+  CUDA_CHECK(cudaMalloc(&datasetGpu->features, numNodes * sizeof(int)));
+  CUDA_CHECK(cudaMalloc(&datasetGpu->fields, numNodes * sizeof(int)));
+  CUDA_CHECK(cudaMalloc(&datasetGpu->values, numNodes * sizeof(T)));
+  if(dataset.labels != nullptr) {
+    CUDA_CHECK(cudaMalloc(&datasetGpu->labels, rows * sizeof(int)));
+  }
+
+  // No need for predict
+  cudaMemcpyAsync(datasetGpu->rowPositions, dataset.rowPositions + rowOffset, (rows + 1) * sizeof(int), cudaMemcpyHostToDevice, streams[0]);
+  if(dataset.labels != nullptr) {
+    cudaMemcpyAsync(datasetGpu->labels, dataset.labels + rowOffset, rows * sizeof(int), cudaMemcpyHostToDevice, streams[1]);
+  }
+  cudaMemcpyAsync(datasetGpu->scales, dataset.scales + rowOffset, rows * sizeof(T), cudaMemcpyHostToDevice, streams[2]);
+  cudaMemcpyAsync(datasetGpu->features, dataset.features + nodeOffset, numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[3]);
+  cudaMemcpyAsync(datasetGpu->fields, dataset.fields + nodeOffset, numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[4]);
+  cudaMemcpyAsync(datasetGpu->values, dataset.values + nodeOffset, numNodes * sizeof(T), cudaMemcpyHostToDevice, streams[5]);
+
+  for(int i = 0; i < 6; i++) {
+    CUDA_CHECK(cudaStreamSynchronize(streams[i]));
+    CUDA_CHECK(cudaStreamDestroy(streams[i]));
+  }
+
+  return datasetGpu;
+}
+
 
 template<typename T>
-DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> &dataset, Params const &params)
+DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> &dataset, Params const &params, int rows, int nodes)
     : DatasetBatcher<T>(dataset.numRows), params(params) {
 
   if(dataset.empty()) {
@@ -59,49 +99,13 @@ DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> &dataset, Params const &param
               requiredBytes,
               availableBytesFree);
     this->onGPU = true;
-
-    Dataset<T> datasetGpu;
-    datasetGpu.cpu = false;
-    datasetGpu.numRows = dataset.numRows;
-    datasetGpu.numFields = dataset.numFields;
-
-    cudaStream_t streams[6];
-    for(int i = 0; i < 6; i++) {
-      CUDA_CHECK(cudaStreamCreate(&streams[i]));
-    }
-
-    // todo dealloc in destructor??
-    CUDA_CHECK(cudaMalloc(&datasetGpu.rowPositions, (params.numRows + 1) * sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&datasetGpu.scales, params.numRows * sizeof(T)));
-    CUDA_CHECK(cudaMalloc(&datasetGpu.features, params.numNodes * sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&datasetGpu.fields, params.numNodes * sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&datasetGpu.values, params.numNodes * sizeof(T)));
-    if(dataset.labels != nullptr) {
-      CUDA_CHECK(cudaMalloc(&datasetGpu.labels, params.numRows * sizeof(int)));
-    }
-
-    // No need for predict
-    cudaMemcpyAsync(datasetGpu.rowPositions, dataset.rowPositions, (params.numRows + 1) * sizeof(int), cudaMemcpyHostToDevice, streams[0]);
-    if(dataset.labels != nullptr) {
-      cudaMemcpyAsync(datasetGpu.labels, dataset.labels, params.numRows * sizeof(int), cudaMemcpyHostToDevice, streams[1]);
-    }
-    cudaMemcpyAsync(datasetGpu.scales, dataset.scales, params.numRows * sizeof(T), cudaMemcpyHostToDevice, streams[2]);
-    cudaMemcpyAsync(datasetGpu.features, dataset.features, params.numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[3]);
-    cudaMemcpyAsync(datasetGpu.fields, dataset.fields, params.numNodes * sizeof(int), cudaMemcpyHostToDevice, streams[4]);
-    cudaMemcpyAsync(datasetGpu.values, dataset.values, params.numNodes * sizeof(T), cudaMemcpyHostToDevice, streams[5]);
-
-    for(int i = 0; i < 6; i++) {
-      CUDA_CHECK(cudaStreamSynchronize(streams[i]));
-      CUDA_CHECK(cudaStreamDestroy(streams[i]));
-    }
-
-    this->dataset = datasetGpu;
+    this->dataset = toGpuDataset(dataset, params, 0, 0, rows, nodes);
   } else {
     log_verbose(params.verbose,
               "Creating a dataset batcher requiring %zu bytes on CPU, batches will be transfered on demand (available %zu bytes).",
               requiredBytes,
               availableBytesFree);
-    this->dataset = dataset;
+    this->dataset = &dataset;
   }
 }
 
@@ -117,10 +121,10 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
 
 
     int moveBy = 0;
-    CUDA_CHECK(cudaMemcpy(&moveBy, &(this->dataset.rowPositions[this->pos]), sizeof(int), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(&moveBy, &(this->dataset->rowPositions[this->pos]), sizeof(int), cudaMemcpyDeviceToHost));
 
-    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(this->dataset.features + moveBy, this->dataset.fields + moveBy, this->dataset.values + moveBy,
-                             this->dataset.labels + this->pos, this->dataset.scales + this->pos, this->dataset.rowPositions + this->pos,
+    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(this->dataset->features + moveBy, this->dataset->fields + moveBy, this->dataset->values + moveBy,
+                             this->dataset->labels + this->pos, this->dataset->scales + this->pos, this->dataset->rowPositions + this->pos,
                              actualBatchSize);
     this->pos = this->pos + actualBatchSize;
 
@@ -130,8 +134,16 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
               "Creating batch of size %d (asked for %d) from the CPU.",
               actualBatchSize,
               batchSize);
-    // TODO copy batch to GPU
-    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>();
+    int batchNumNodes = 0;
+    for(int i = 0; i < actualBatchSize; i++) {
+      batchNumNodes += this->dataset->rowPositions[this->pos + i + 1] - this->dataset->rowPositions[this->pos + i];
+    }
+
+    Dataset<T> *gpuDataset = toGpuDataset(*this->dataset, params, this->pos, this->dataset->rowPositions[this->pos], actualBatchSize, batchNumNodes);
+
+    DatasetBatchGPU<T> *batch = new DatasetBatchGPU<T>(gpuDataset->features, gpuDataset->fields, gpuDataset->values,
+                                                       gpuDataset->labels, gpuDataset->scales, gpuDataset->rowPositions,
+                                                       actualBatchSize, true);
     this->pos = this->pos + actualBatchSize;
 
     return batch;
