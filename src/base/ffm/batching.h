@@ -80,6 +80,10 @@ class DatasetBatcher {
 
   virtual DatasetBatch<T> *nextBatch(int batchSize) {}
 
+  bool empty() {
+    return numRows <= 0;
+  }
+
  protected:
   Dataset<T> dataset;
   int pos = 0;

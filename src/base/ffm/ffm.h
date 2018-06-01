@@ -18,9 +18,11 @@ class FFM  {
   FFM(Params & params);
   FFM(Params & params, T *weights);
 
-  void fit(const Dataset<T> &dataset, const Dataset<T> &valid_dataset);
+  int fit(Dataset<T> &dataset, Dataset<T> &valid_dataset);
 
-  void predict(const Dataset<T> &dataset, T *predictions);
+  void predict(Dataset<T> &dataset, T *predictions);
+
+  bool validate();
 
   Trainer<T> trainer;
 

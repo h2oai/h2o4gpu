@@ -6,6 +6,7 @@
 
 #include "../../include/solver/ffm_api.h"
 #include <vector>
+#include <limits>
 
 namespace ffm {
 
@@ -21,6 +22,8 @@ class Model {
   std::vector<T> weights;
 
   virtual T* weightsRawPtr(int i);
+
+  T bestValidationLoss = std::numeric_limits<T>::max();
 
  private:
 

@@ -8,6 +8,7 @@
 #include "batching.h"
 #include "../../include/data/ffm/data.h"
 #include <vector>
+#include <algorithm>
 
 namespace ffm {
 
@@ -18,18 +19,21 @@ class Trainer {
   Trainer(const T *weights, Params &params);
   ~Trainer();
 
-  void setTrainingDataset(const Dataset<T> &dataset);
-  void setValidationDataset(const Dataset<T> &dataset);
+  void setTrainingDataset(Dataset<T> &dataset);
+  void setValidationDataset(Dataset<T> &dataset);
 
   T validationLoss();
 
-  T oneEpoch();
+  T trainOneEpoch();
 
   T oneEpoch(std::vector<DatasetBatcher<T> *> dataBatcher, bool update);
 
   void predict(T *predictions);
 
-  bool earlyStop();
+  bool hasValidationData() {
+    return std::any_of(this->validationDataBatcher.cbegin(), this->validationDataBatcher.cend(),
+                       [](DatasetBatcher<T> *batcher){ return !batcher->empty(); });
+  }
 
   // Global model for this machine
   Model<T> *model;

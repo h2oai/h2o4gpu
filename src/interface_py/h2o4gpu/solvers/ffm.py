@@ -81,8 +81,8 @@ class FFMH2O(object):
         (self.nGpus, self.devices) = device_count(n_gpus)
 
         self.weights = None
-
         self.learned_params = None
+        self.actual_iterations = 0
 
     @classmethod
     def _get_param_names(cls):
@@ -115,24 +115,27 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        fields, features, values, positions = self._numpy_to_ffm_rows(params, X)
+        fields, features, values, positions, num_nodes = self._numpy_to_ffm_rows(params, X)
+        params.numNodes = num_nodes
 
         y_np = self._sanatize_labels(y)
 
         fields_validation, features_validation, values_validation, positions_validation = None, None, None, None
         if X_validate is not None and y_validate is not None:
-            fields_validation, features_validation, values_validation, positions_validation = self._numpy_to_ffm_rows(params, X_validate)
+            fields_validation, features_validation, values_validation, positions_validation, num_nodes_validate = self._numpy_to_ffm_rows(params, X_validate)
+            params.numRowsVal = np.shape(X_validate)[0]
+            params.numNodesVal = num_nodes_validate
 
         y_validation_np = self._sanatize_labels(y_validate)
 
         self.weights = np.zeros(params.k * (np.max(features) + 1) * (np.max(fields) + 1), dtype=self.dtype)
 
         if self.dtype == np.float32:
-            lib.ffm_fit_float(features, fields, values, y_np, positions,
+            self.actual_iterations = lib.ffm_fit_float(features, fields, values, y_np, positions,
                               features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
                               self.weights, params)
         else:
-            lib.ffm_fit_double(features, fields, values, y_np, positions,
+            self.actual_iterations = lib.ffm_fit_double(features, fields, values, y_np, positions,
                                features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
                                self.weights, params)
 
@@ -152,7 +155,6 @@ class FFMH2O(object):
         num_nodes = 0
         for _, row in enumerate(X):
             num_nodes = num_nodes + len(row)
-        params.numNodes = num_nodes
 
         features = np.zeros(num_nodes, dtype=np.int32)
         fields = np.zeros(num_nodes, dtype=np.int32)
@@ -172,7 +174,7 @@ class FFMH2O(object):
         if params.verbose > 0:
             print("Preparing data for FFM took %d." % (time.time() - start))
 
-        return fields, features, values, positions
+        return fields, features, values, positions, num_nodes
 
     def predict(self, X):
         lib = self._load_lib()
@@ -192,7 +194,8 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        fields, features, values, positions = self._numpy_to_ffm_rows(params, X)
+        fields, features, values, positions, num_nodes = self._numpy_to_ffm_rows(params, X)
+        params.numNodes = num_nodes
 
         predictions = np.zeros(params.numRows, dtype=self.dtype)
 

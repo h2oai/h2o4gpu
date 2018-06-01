@@ -45,10 +45,10 @@ typedef struct Params {
 
 } Params;
 
-void ffm_fit_float(int *features, int* fields, float* values, int *labels, int *positions,
+int ffm_fit_float(int *features, int* fields, float* values, int *labels, int *positions,
                    int *features_v, int* fields_v, float* values_v, int *labels_v, int *positions_v,
                    float *w, Params &_param);
-void ffm_fit_double(int *features, int* fields, double* values, int *labels, int *positions,
+int ffm_fit_double(int *features, int* fields, double* values, int *labels, int *positions,
                     int *features_v, int* fields_v, double* values_v, int *labels_v, int *positions_v,
                     double *w, Params &_param);
 

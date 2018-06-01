@@ -10,6 +10,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/adjacent_difference.h>
+#include <thrust/extrema.h>
 
 namespace ffm {
 
@@ -38,8 +39,13 @@ int DatasetBatchGPU<T>::widestRow() {
  */
 
 template<typename T>
-DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> const &dataset, Params const &params)
+DatasetBatcherGPU<T>::DatasetBatcherGPU(Dataset<T> &dataset, Params const &params)
     : DatasetBatcher<T>(dataset.numRows), params(params) {
+
+  if(dataset.empty()) {
+    log_verbose(params.verbose, "Creating a batcher from an empty dataset.");
+    return;
+  }
 
   size_t requiredBytes = dataset.requiredBytes();
   size_t availableBytesFree = 0;
@@ -105,7 +111,7 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
 
   if (this->onGPU) {
     log_verbose(this->params.verbose,
-              "Creating batch of size %zu (asked for %zu) directly on the GPU.",
+              "Creating batch of size %d (asked for %d) directly on the GPU.",
               actualBatchSize,
               batchSize);
 
@@ -121,7 +127,7 @@ DatasetBatch<T> *DatasetBatcherGPU<T>::nextBatch(int batchSize) {
     return batch;
   } else {
     log_verbose(this->params.verbose,
-              "Creating batch of size %zu (asked for %zu) from the CPU.",
+              "Creating batch of size %d (asked for %d) from the CPU.",
               actualBatchSize,
               batchSize);
     // TODO copy batch to GPU

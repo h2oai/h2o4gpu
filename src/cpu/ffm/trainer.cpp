@@ -17,12 +17,12 @@ Trainer<T>::Trainer(const T* weights, Params &params) : params(params) {
 }
 
 template<typename T>
-void Trainer<T>::setTrainingDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setTrainingDataset(Dataset<T> &dataset) {
   // TODO implement
 }
 
 template<typename T>
-void Trainer<T>::setValidationDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setValidationDataset(Dataset<T> &dataset) {
   // TODO implement
 }
 
@@ -32,14 +32,8 @@ void Trainer<T>::predict(T *predictions) {
 }
 
 template<typename T>
-T Trainer<T>::oneEpoch(bool update) {
+T Trainer<T>::trainOneEpoch() {
   // TODO implement
-}
-
-template<typename T>
-bool Trainer<T>::earlyStop() {
-  // TODO implement
-  return false;
 }
 
 template class Trainer<float>;

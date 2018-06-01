@@ -26,12 +26,13 @@ class DatasetBatcherGPU : public DatasetBatcher<T> {
  public:
   DatasetBatcherGPU() {}
 
-  ~DatasetBatcherGPU() {}
+  DatasetBatcherGPU(Dataset<T> &dataset, Params const &params);
 
   DatasetBatcherGPU(const DatasetBatcherGPU &other) : DatasetBatcher<T>(other), params(other.params) {}
 
-  DatasetBatcherGPU(DatasetBatcherGPU &&other) noexcept : DatasetBatcher<T>(other), params(other.params) {
-  }
+  DatasetBatcherGPU(DatasetBatcherGPU &&other) noexcept : DatasetBatcher<T>(other), params(other.params) {}
+
+  ~DatasetBatcherGPU() {}
 
   DatasetBatcherGPU &operator=(const DatasetBatcherGPU &other) {
     DatasetBatcherGPU tmp(other);
@@ -47,8 +48,6 @@ class DatasetBatcherGPU : public DatasetBatcher<T> {
     this->params = other.params;
     return *this;
   }
-
-  DatasetBatcherGPU(Dataset<T> const &dataset, Params const &params);
 
   DatasetBatch<T> *nextBatch(int batchSize) override;
 

@@ -69,13 +69,13 @@ Trainer<T>::Trainer(const T* weights, Params &params) : params(params), trainDat
 }
 
 template<typename T>
-void Trainer<T>::setTrainingDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setTrainingDataset(Dataset<T> &dataset) {
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
   trainDataBatcher[0] = batcher;
 }
 
 template<typename T>
-void Trainer<T>::setValidationDataset(const Dataset<T> &dataset) {
+void Trainer<T>::setValidationDataset(Dataset<T> &dataset) {
   DatasetBatcherGPU<T> *batcher = new DatasetBatcherGPU<T>(dataset, params);
   validationDataBatcher[0] = batcher;
 }
@@ -238,7 +238,7 @@ T Trainer<T>::validationLoss() {
 }
 
 template<typename T>
-T Trainer<T>::oneEpoch(bool update) {
+T Trainer<T>::trainOneEpoch() {
   return this->oneEpoch(this->trainDataBatcher, true);
 }
 
@@ -288,6 +288,8 @@ T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update)
 
       timer.tic();
 
+      log_verbose(params.verbose, "Running wTx with %d blocks and %d threads.", blocks, threads);
+
       wTxKernel << < blocks, threads>>> (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
               weightsPtr, losses, false);
 
@@ -334,15 +336,7 @@ T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update)
     // TODO average local weights
   } // Don't do anything for 1GPU cases
 
-  log_debug(this->params.verbose, "Log loss = %f", loss / params.numRows);
-
   return loss / params.numRows;
-}
-
-template<typename T>
-bool Trainer<T>::earlyStop() {
-  // TODO implement
-  return false;
 }
 
 template
