@@ -16,79 +16,148 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 120, unit: 'MINUTES')
-        buildDiscarder(logRotator(daysToKeepStr: '30'))
+        timeout(time: 240, unit: 'MINUTES')
+        // buildDiscarder(logRotator(daysToKeepStr: '30'))
     }
 
     stages {
         stage('Build') {
             parallel {
-                stage('Build on x86_64-centos7-cuda8.0') {
+                stage('Build release on x86_64-centos7-cuda8.0') {
                     agent {
                         label "linux && docker && !micro"
                     }
                     steps {
-                        dumpInfo 'x86_64-centos7-cuda8 Build Info'
+                        dumpInfo 'x86_64-centos7-cuda8 release Build Info'
                         script {
                             sh """
-                                make mrproper_in_docker
-                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                                make mrproper
+                                make H2O_BUILD_TYPE=release BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
                             """
                         }
                         stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda8.0'
                     }
                 }
-                stage('Build on x86_64-centos7-cuda9.0') {
+                // stage('Build debug on x86_64-centos7-cuda8.0') {
+                //     agent {
+                //         label "linux && docker && !micro"
+                //     }
+                //     steps {
+                //         dumpInfo 'x86_64-centos7-cuda8 debug Build Info'
+                //         script {
+                //             sh """
+                //                 make mrproper
+                //                 make H2O_BUILD_TYPE=debug BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                //             """
+                //         }
+                //         stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda8.0-debug'
+                //     }
+                // }
+
+
+                stage('Build release on x86_64-centos7-cuda9.0') {
                     agent {
                         label "linux && docker && !micro"
                     }
                     steps {
-                        dumpInfo 'x86_64-centos7-cuda9 Build Info'
+                        dumpInfo 'x86_64-centos7-cuda9 release Build Info'
                         script {
                             sh """
-                                make mrproper_in_docker
-                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                                make mrproper
+                                make H2O_BUILD_TYPE=release BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
                             """
                         }
                         stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9.0'
                     }
                 }
-                stage('Build on ppc64le-centos7-cuda8.0') {
+                // stage('Build debug on x86_64-centos7-cuda9.0') {
+                //     agent {
+                //         label "linux && docker && !micro"
+                //     }
+                //     steps {
+                //         dumpInfo 'x86_64-centos7-cuda9 debug Build Info'
+                //         script {
+                //             sh """
+                //                 make mrproper
+                //                 make H2O_BUILD_TYPE=debug BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                //             """
+                //         }
+                //         stash includes: 'dist/**/*', name: 'x86_64-centos7-cuda9.0-debug'
+                //     }
+                // }
+
+
+                stage('Build release on ppc64le-centos7-cuda8.0') {
                     agent {
                         label "ibm-power"
                     }
                     steps {
-                        dumpInfo 'ppc64le-centos7-cuda8 Build Info'
+                        dumpInfo 'ppc64le-centos7-cuda8 release Build Info'
                         script {
                             sh """
-                                make mrproper_in_docker
-                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                                make mrproper
+                                make H2O_BUILD_TYPE=release BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
                             """
                         }
                         stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda8.0'
                     }
                 }
-                stage('Build on ppc64le-centos7-cuda9.0') {
+                stage('Build debug on ppc64le-centos7-cuda8.0') {
                     agent {
                         label "ibm-power"
                     }
                     steps {
-                        dumpInfo 'ppc64le-centos7-cuda9 Build Info'
+                        dumpInfo 'ppc64le-centos7-cuda8 debug Build Info'
                         script {
                             sh """
-                                make mrproper_in_docker
-                                make BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                                make mrproper
+                                make H2O_BUILD_TYPE=debug BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda8_in_docker
+                            """
+                        }
+                        stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda8.0-debug'
+                    }
+                }
+
+
+                stage('Build release on ppc64le-centos7-cuda9.0') {
+                    agent {
+                        label "ibm-power"
+                    }
+                    steps {
+                        dumpInfo 'ppc64le-centos7-cuda9 release Build Info'
+                        script {
+                            sh """
+                                make mrproper
+                                make H2O_BUILD_TYPE=release BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
                             """
                         }
                         stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9.0'
                     }
+                }
+                // stage('Build debug on ppc64le-centos7-cuda9.0') {
+                //     agent {
+                //         label "ibm-power"
+                //     }
+                //     steps {
+                //         dumpInfo 'ppc64le-centos7-cuda9 debug Build Info'
+                //         script {
+                //             sh """
+                //                 make mrproper
+                //                 make H2O_BUILD_TYPE=debug BRANCH_NAME=${env.BRANCH_NAME} BUILD_NUM=${env.BUILD_ID} centos7_cuda9_in_docker
+                //             """
+                //         }
+                //         stash includes: 'dist/**/*', name: 'ppc64le-centos7-cuda9.0-debug'
+                //     }
                 }
             }
         }
 
         stage('Publish centos7 snapshot to S3') {
             when {
-                branch 'master'
+                anyOf {
+                    branch 'master'
+                    branch 'build-python'
+                }
             }
             agent {
                 label "linux && docker && !micro"
@@ -96,9 +165,13 @@ pipeline {
             steps {
                 sh "rm -rf dist"
                 unstash 'x86_64-centos7-cuda8.0'
+                // unstash 'x86_64-centos7-cuda8.0-debug'
                 unstash 'x86_64-centos7-cuda9.0'
+                // unstash 'x86_64-centos7-cuda9.0-debug'
                 unstash 'ppc64le-centos7-cuda8.0'
+                unstash 'ppc64le-centos7-cuda8.0-debug'
                 unstash 'ppc64le-centos7-cuda9.0'
+                // unstash 'ppc64le-centos7-cuda9.0-debug'
                 sh 'echo "Stashed files:" && find dist'
                 script {
                     docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
