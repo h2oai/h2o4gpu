@@ -15,7 +15,7 @@ coverage==4.4.1
 # docs
 sphinx==1.5.6
 sphinx_rtd_theme==0.2.4
-pillow==4.2.1
+pillow==5.0.0
 # compile wheel
 wheel==0.31.0
 cmake==3.11.0

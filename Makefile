@@ -121,7 +121,11 @@ update_submodule:
 cpp:
 	mkdir -p build && \
 	cd build && \
-	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
+	cmake \
+	    -DDEV_BUILD=${DEV_BUILD} \
+	    -DPYTHON_INCLUDE_DIR=`python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())"` \
+	    -DPYTHON_LIBRARY=`python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))"` \
+	    ../ && \
 	make -j && \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
@@ -728,11 +732,29 @@ Jenkinsfiles:
 
 DIST_DIR = dist
 
-ARCH := $(shell arch)
-PLATFORM = $(ARCH)-centos7-cuda$(MY_CUDA_VERSION)
+H2O_BUILD_TYPE ?= release
+ifeq ($(H2O_BUILD_TYPE),release)
+    PLATFORM_DEBUG_SUFFIX =
+    CONTAINER_REPO_DEBUG_SUFFIX =
+    DEBUG_SUBST =
+    H2O_BUILD_TYPE_DEFINED = 1
+endif
+ifeq ($(H2O_BUILD_TYPE),debug)
+    PLATFORM_DEBUG_SUFFIX = -debug
+    CONTAINER_REPO_DEBUG_SUFFIX = -debug
+    DEBUG_SUBST = -debug
+    H2O_BUILD_TYPE_DEFINED = 1
+endif
+ifneq ($(H2O_BUILD_TYPE_DEFINED),1)
+    $(error H2O_BUILD_TYPE must be 'release' or 'debug')
+endif
+GEN_DOCKERFILE = Dockerfile-build-centos7.$(PLATFORM).gen
 
-CONTAINER_NAME_SUFFIX ?= -$(USER)
-CONTAINER_NAME ?= opsh2oai/dai-h2o4gpu$(CONTAINER_NAME_SUFFIX)
+ARCH := $(shell arch)
+PLATFORM = $(ARCH)-centos7-cuda$(MY_CUDA_VERSION)$(PLATFORM_DEBUG_SUFFIX)
+
+CONTAINER_REPO_SUFFIX ?= -$(USER)
+CONTAINER_REPO ?= opsh2oai/dai-h2o4gpu$(CONTAINER_REPO_SUFFIX)$(CONTAINER_REPO_DEBUG_SUFFIX)
 
 PROJECT_VERSION := $(BASE_VERSION)
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
@@ -742,7 +764,7 @@ BUILD_NUM_SUFFIX = .$(BUILD_NUM)
 VERSION = $(PROJECT_VERSION)$(BRANCH_NAME_SUFFIX)$(BUILD_NUM_SUFFIX)
 CONTAINER_TAG := $(shell echo $(VERSION) | sed 's/+/-/g')
 
-CONTAINER_NAME_TAG = $(CONTAINER_NAME):$(CONTAINER_TAG)
+CONTAINER_REPO_TAG = $(CONTAINER_REPO):$(CONTAINER_TAG)
 
 ARCH_SUBST = undefined
 FROM_SUBST = undefined
@@ -757,29 +779,34 @@ endif
 
 fullinstalljenkins-nonccl-cuda8-centos: mrproper centos7_in_docker
 
-Dockerfile-build-centos7.$(PLATFORM): Dockerfile-build-centos7.in
-	cat $< | sed 's/FROM_SUBST/$(FROM_SUBST)/'g | sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' | sed 's/MY_CUDA_VERSION_SUBST/$(MY_CUDA_VERSION)/g' > $@
+$(GEN_DOCKERFILE): Dockerfile-build-centos7.in
+	cat $< \
+	| sed 's/FROM_SUBST/$(FROM_SUBST)/'g \
+	| sed 's/ARCH_SUBST/$(ARCH_SUBST)/g' \
+	| sed 's/MY_CUDA_VERSION_SUBST/$(MY_CUDA_VERSION)/g' \
+	| sed 's/DEBUG_SUBST/$(DEBUG_SUBST)/g' \
+	> $@
 
 centos7_cuda8_in_docker: MY_CUDA_VERSION=8.0
 centos7_cuda8_in_docker: MY_CUDNN_VERSION=5
 centos7_cuda8_in_docker:
-	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+	$(MAKE) H2O_BUILD_TYPE=$(H2O_BUILD_TYPE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
 centos7_cuda9_in_docker: MY_CUDA_VERSION=9.0
 centos7_cuda9_in_docker: MY_CUDNN_VERSION=7
 centos7_cuda9_in_docker:
-	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+	$(MAKE) H2O_BUILD_TYPE=$(H2O_BUILD_TYPE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
 centos7_cuda91_in_docker: MY_CUDA_VERSION=9.1
 centos7_cuda91_in_docker: MY_CUDNN_VERSION=7
 centos7_cuda91_in_docker:
-	$(MAKE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
+	$(MAKE) H2O_BUILD_TYPE=$(H2O_BUILD_TYPE) MY_CUDA_VERSION=$(MY_CUDA_VERSION) MY_CUDNN_VERSION=$(MY_CUDNN_VERSION) centos7_in_docker_impl
 
-centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
+centos7_in_docker_impl: $(GEN_DOCKERFILE)
 	mkdir -p $(DIST_DIR)/$(PLATFORM)
 	docker build \
-		-t $(CONTAINER_NAME_TAG) \
-		-f Dockerfile-build-centos7.$(PLATFORM) \
+		-t $(CONTAINER_REPO_TAG) \
+		-f $(GEN_DOCKERFILE) \
 		.
 	docker run \
 		--rm \
@@ -788,9 +815,10 @@ centos7_in_docker_impl: Dockerfile-build-centos7.$(PLATFORM)
 		-v `pwd`:/dot \
 		-w /dot \
 		--entrypoint /bin/bash \
+		-e "H2O_BUILD_TYPE=$(H2O_BUILD_TYPE)" \
 		-e "MY_CUDA_VERSION=$(MY_CUDA_VERSION)" \
 		-e "MY_CUDNN_VERSION=$(MY_CUDNN_VERSION)" \
-		$(CONTAINER_NAME_TAG) \
+		$(CONTAINER_REPO_TAG) \
 		-c 'make centos7'
 	echo $(VERSION) > $(DIST_DIR)/$(PLATFORM)/VERSION.txt
 
@@ -804,6 +832,8 @@ centos7_build:
 	 IFLAGS="-I/usr/include/openblas" \
 	 OPENBLAS_PREFIX="open" \
 	 USEPARALLEL=0 \
+	 PYTHON_INCLUDE_DIR=`python -c "from distutils.sysconfig import get_python_inc; print(get_python_inc())"` \
+	 PYTHON_LIBRARY=`python -c "import distutils.sysconfig as sysconfig; print(sysconfig.get_config_var('LIBDIR'))")` \
 	 $(MAKE) \
 		deps_fetch \
 		apply-xgboost-nonccl-local \

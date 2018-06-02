@@ -21,9 +21,18 @@ RUN \
 	wget \
 	bzip2 \
 	openssl-devel \
-	libcurl-devel && \
-    wget https://repo.continuum.io/miniconda/Miniconda3-4.3.27-Linux-ARCH_SUBST.sh && \
-    bash Miniconda3-4.3.27-Linux-ARCH_SUBST.sh -b -p /opt/h2oai/dai/python && \
+	libcurl-devel
+
+RUN \
+    mkdir -p /opt/h2oai/dai
+
+RUN \
+    wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-python/build-python-2/ARCH_SUBST-centos7DEBUG_SUBST/python.tar && \
+    tar xvf python.tar && \
+    mv python /opt/h2oai/dai && \
+    rm -f python.tar
+
+RUN \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/ARCH_SUBST-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/dai/ && \
@@ -34,6 +43,7 @@ ENV PATH=/opt/h2oai/dai/python/bin:$PATH
 ENV PATH=/usr/local/bin:$PATH
 ENV PATH=$LLVM4/bin:$PATH
 ENV LD_LIBRARY_PATH=$LLVM4/lib
+ENV LD_LIBRARY_PATH=/opt/h2oai/dai/python/lib:$LD_LIBRARY_PATH
 COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/gcc
 COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/g++
 COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-gcc
@@ -53,9 +63,6 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-c++
 RUN yum install -y which
 WORKDIR $HOME
-COPY requirements_buildonly.txt requirements_buildonly.txt
-COPY requirements_runtime.txt requirements_runtime.txt
-COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 
 RUN yum install -y \
   libpng-devel \
@@ -89,42 +96,21 @@ RUN \
     mkdir -p /usr/include/python3.6m && \
     ln -s /opt/h2oai/dai/python/include/python3.6m/* /usr/include/python3.6m
 
-RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	git clone https://github.com/apache/arrow.git && \
-	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.8.0 && \
-	yum install -y boost-devel && \
-  	pip install numpy cython && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
-	cd $HOME/arrow/python && \
-	ARROW_HOME=/usr/local python setup.py install && \
-	yum install -y libjpeg-devel; \
-	fi'
-
-ENV PILLOW_VERSION=4.2.1
-RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	wget https://files.pythonhosted.org/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-${PILLOW_VERSION}.tar.gz && \
-	tar xvf Pillow-${PILLOW_VERSION}.tar.gz && \
-	cd $HOME/Pillow-${PILLOW_VERSION} && \
-	sed -i "s/'ppc64'/'ppc64le'/g" setup.py && \
-	python3.6 setup.py install && \
-	cd $HOME && \
-	rm -rf Pillow-${PILLOW_VERSION}*; \
-	fi'
-
 # Symlinks for NVML
 RUN \
     mkdir -p /usr/lib64/nvidia/ && \
     ln -s /usr/local/cuda-MY_CUDA_VERSION_SUBST/targets/ARCH_SUBST-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
 
-RUN pip install numpy
-RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy
+RUN pip install numpy==1.14.3
+RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy==1.1.0
+
+COPY requirements_buildonly.txt requirements_buildonly.txt
+COPY requirements_runtime.txt requirements_runtime.txt
+COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN sed -i 's/cmake/# cmake/' requirements_buildonly.txt
 RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
-
-RUN yum install -y which
 
 RUN chmod -R o+rwx /opt/h2oai/dai/python
 RUN chmod -R o+rwx /root
