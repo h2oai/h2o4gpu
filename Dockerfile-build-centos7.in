@@ -33,19 +33,19 @@ RUN \
 
 RUN \
     wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-python/build-python-4/ARCH_SUBST-centos7DEBUG_SUBST/python.tar && \
-    tar xvf python.tar && \
+    tar xf python.tar && \
     mv python /opt/h2oai/dai && \
     rm -f python.tar
 
 RUN \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/llvm.tar.bz2 && \
-    tar xvf llvm.tar.bz2 && \
+    wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/llvm.tar.bz2 && \
+    tar xf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/dai/ && \
     rm -rf llvm*
 
 RUN \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/openblas.tar.bz2 && \
-    tar xvf openblas.tar.bz2 && \
+    wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/openblas.tar.bz2 && \
+    tar xf openblas.tar.bz2 && \
     cp -a openblas/* /usr/local/ && \
     rm -rf openblas*
 ENV OPENBLAS_PREFIX=open
@@ -68,8 +68,8 @@ WORKDIR $HOME
 
 ENV PATH=/usr/local/bin:$PATH
 RUN \
-    wget https://cmake.org/files/v3.10/cmake-3.10.1.tar.gz && \
-    tar xvf cmake-3.10.1.tar.gz && \
+    wget -q https://cmake.org/files/v3.10/cmake-3.10.1.tar.gz && \
+    tar xf cmake-3.10.1.tar.gz && \
     cd $HOME/cmake-3.10.1 && \
     ./configure && \
     make -j6 install && \
@@ -78,8 +78,8 @@ RUN \
 
 # Install SWIG b/c yum has old versions
 RUN \
-    wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz && \
-    tar -zxvf swig-3.0.12.tar.gz && \
+    wget -q https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz && \
+    tar xf swig-3.0.12.tar.gz && \
     cd swig-3.0.12 && \
     ./configure --prefix=/usr && \
     make -j 4 && \
