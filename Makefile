@@ -552,7 +552,7 @@ fullinstalljenkins-nccl-cuda9-aws1-benchmark: mrproper clean alldeps-nccl-cuda9 
 	mkdir -p src/interface_py/dist7/ && mv src/interface_py/dist/*.whl src/interface_py/dist7/
 
 .PHONY: mrproper
-mrproper: clean
+mrproper:
 	@echo "----- Cleaning properly -----"
 	git clean -f -d -x
 
@@ -850,8 +850,7 @@ centos7:
 
 # Note:  We don't actually need to run mrproper in docker (as root) because
 #        the build step runs as the user.  But keep the API for consistency.
-mrproper_in_docker:
-	git clean -f -d -x
+mrproper_in_docker: mrproper
 
 printvars: MY_CUDA_VERSION=8.0
 printvars: MY_CUDNN_VERSION=5
