@@ -16,27 +16,39 @@ RUN \
 
 RUN \
     yum install -y \
+        which \
         ncurses-devel \
-	zlib-devel \
-	wget \
-	bzip2 \
-	openssl-devel \
-	libcurl-devel
+        zlib-devel \
+        wget \
+        bzip2 \
+        openssl-devel \
+        libcurl-devel \
+        libpng-devel \
+        freetype-devel \
+        atlas-devel \
+        blas-devel
 
 RUN \
     mkdir -p /opt/h2oai/dai
 
 RUN \
-    wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-python/build-python-2/ARCH_SUBST-centos7DEBUG_SUBST/python.tar && \
+    wget -q https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-python/build-python-4/ARCH_SUBST-centos7DEBUG_SUBST/python.tar && \
     tar xvf python.tar && \
     mv python /opt/h2oai/dai && \
     rm -f python.tar
 
 RUN \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/ARCH_SUBST-centos7/llvm.tar.bz2 && \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/dai/ && \
     rm -rf llvm*
+
+RUN \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-29/ARCH_SUBST-centos7/openblas.tar.bz2 && \
+    tar xvf openblas.tar.bz2 && \
+    cp -a openblas/* /usr/local/ && \
+    rm -rf openblas*
+ENV OPENBLAS_PREFIX=open
 
 ENV LLVM4=/opt/h2oai/dai
 ENV PATH=/opt/h2oai/dai/python/bin:$PATH
@@ -47,26 +59,12 @@ ENV LD_LIBRARY_PATH=/opt/h2oai/dai/python/lib:$LD_LIBRARY_PATH
 COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/gcc
 COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/g++
 COPY scripts/gcc_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-gcc
+COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-c++
 ENV PATH=/opt/h2oai/gcc_wrapper:$PATH
 RUN ln /usr/bin/ar $LLVM4/bin/ARCH_SUBST-conda_cos6-linux-gnu-ar
 
-RUN yum install -y atlas-devel blas-devel && \
-  ln /usr/lib64/libgfortran.so.3 /usr/lib64/libgfortran.so && \
-  wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz && \
-  tar xvf v0.2.20.tar.gz && \
-  rm v0.2.20.tar.gz && \
-  cd OpenBLAS-0.2.20 && make CBLAS_ONLY=1 && make PREFIX=/usr/local install
-
-ENV OPENBLAS_PREFIX=open
-RUN yum install -y libstdc++ libc libgomp
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-COPY scripts/g++_wrapper.sh /opt/h2oai/gcc_wrapper/ARCH_SUBST-conda_cos6-linux-gnu-c++
-RUN yum install -y which
 WORKDIR $HOME
-
-RUN yum install -y \
-  libpng-devel \
-  freetype-devel
 
 ENV PATH=/usr/local/bin:$PATH
 RUN \
@@ -101,15 +99,20 @@ RUN \
     mkdir -p /usr/lib64/nvidia/ && \
     ln -s /usr/local/cuda-MY_CUDA_VERSION_SUBST/targets/ARCH_SUBST-linux/lib/stubs/libnvidia-ml.so /usr/lib64/nvidia/libnvidia-ml.so
 
+RUN pip install setuptools
+RUN pip install scikit-build
 RUN pip install numpy==1.14.3
-RUN pip install setuptools llvmlite==0.20.0 scikit-build scipy==1.1.0
+RUN pip install llvmlite==0.20.0
+RUN pip install scipy==1.1.0
 
 COPY requirements_buildonly.txt requirements_buildonly.txt
-COPY requirements_runtime.txt requirements_runtime.txt
-COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN sed -i 's/cmake/# cmake/' requirements_buildonly.txt
 RUN pip install -r requirements_buildonly.txt
+
+COPY requirements_runtime.txt requirements_runtime.txt
 RUN pip install -r requirements_runtime.txt
+
+COPY requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN pip install -r requirements_runtime_demos.txt
 
 RUN chmod -R o+rwx /opt/h2oai/dai/python
