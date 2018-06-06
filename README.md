@@ -55,7 +55,7 @@ Download the Python wheel file (For Python 3.6 on linux_x86_64):
     * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
   * Bleeding edge (changes with every successful master branch build):
     * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda90/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
     * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
