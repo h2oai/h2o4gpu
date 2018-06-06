@@ -143,7 +143,7 @@ Download the Docker file (for linux_x86_64):
 
   * Bleeding edge (changes with every successful master branch build):
     * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cuda8-runtime.tar.bz2)
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda90/h2o4gpu-0.2.0.9999-cuda90-runtime.tar.bz2)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cuda9-runtime.tar.bz2)
     * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cuda92-runtime.tar.bz2)
     
 Load and run docker file (e.g. for bleeding-edge of cuda90):
