@@ -119,7 +119,7 @@ build_py: update_submodule clean_py py # avoid cpp
 
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-0.71-py3-none-any.whl --target ../
+	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-0.*-py3-none-any.whl --target ../
 
 install_py:
 	$(MAKE) -j install -C src/interface_py
