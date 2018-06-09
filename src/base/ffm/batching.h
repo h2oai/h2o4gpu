@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../../include/data/ffm/data.h"
+#include "../../include/solver/ffm_api.h"
 #include "../../common/logger.h"
 
 namespace ffm {
@@ -66,6 +67,8 @@ class DatasetBatcher {
 
   DatasetBatcher(int numRows) : numRows(numRows) {}
 
+  DatasetBatcher(Dataset<T> &dataset, Params const &params, int rows) : dataset(&dataset), numRows(rows) {}
+
   bool hasNext() const {
     return pos < numRows;
   }
@@ -78,7 +81,21 @@ class DatasetBatcher {
     pos = 0;
   }
 
-  virtual DatasetBatch<T> *nextBatch(int batchSize) {}
+  virtual DatasetBatch<T> *nextBatch(int batchSize) {
+    int actualBatchSize = batchSize <= this->remaining() && batchSize > 0 ? batchSize : this->remaining();
+
+    int moveBy = this->dataset->rowPositions[this->pos];
+    DatasetBatch<T> *batch = new DatasetBatch<T>(this->dataset->features + moveBy,
+                                                 this->dataset->fields + moveBy,
+                                                 this->dataset->values + moveBy,
+                                                 this->dataset->labels + this->pos,
+                                                 this->dataset->scales + this->pos,
+                                                 this->dataset->rowPositions + this->pos,
+                                                 actualBatchSize);
+    this->pos = this->pos + actualBatchSize;
+
+    return batch;
+  }
 
   bool empty() {
     return numRows <= 0;

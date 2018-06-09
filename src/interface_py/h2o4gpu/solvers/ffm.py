@@ -60,8 +60,8 @@ class FFMH2O(object):
             max_iter=10,
             batch_size=-1,
             k=4,
-            normalize=False,
-            auto_stop=False,
+            normalize=True,
+            auto_stop=True,
             # TODO change to -1 when multi GPU gets implemented
             seed=None,
             n_gpus=1,

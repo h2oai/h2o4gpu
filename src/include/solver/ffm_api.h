@@ -26,8 +26,8 @@ typedef struct Params {
   int numFields = 0;
   int k = 4;
 
-  bool normalize = false;
-  bool autoStop = false;
+  bool normalize = true;
+  bool autoStop = true;
 
   int seed = 0;
 

@@ -89,7 +89,6 @@ Trainer<T>::~Trainer() {
 }
 
 __constant__ int cK[1];
-__constant__ int cMaxRowSize[1];
 __constant__ int cRows[1];
 __constant__ int cAlignFeat[2];
 __constant__ float cRegLambda[1];
@@ -102,77 +101,60 @@ template<typename T>
 __global__ void wTxKernel(const int *__restrict__ features, const int *__restrict__ fields, const T *__restrict__ values,
                           const T *__restrict__ r, const int *__restrict__ rowSizes,
                           T *__restrict__ weightsPtr, T *__restrict__ losses, const bool update, const int *__restrict__ labels = nullptr) {
-  int rowIdx = (blockIdx.x * blockDim.x + threadIdx.x) / cMaxRowSize[0];
+  int rowIdx = (blockIdx.x * blockDim.x + threadIdx.x);
 
-  if(rowIdx >= cRows[0]) return;
-
-  int rowSize = rowSizes[rowIdx + 1] - rowSizes[rowIdx];
-
-  int nodeIdx = (blockIdx.x * blockDim.x + threadIdx.x) % cMaxRowSize[0];
-
-  if(nodeIdx >= rowSize) return;
-
-  __shared__ int fieldFeature[MAX_BLOCK_THREADS * 2];
-  __shared__ T vals[MAX_BLOCK_THREADS];
-  __shared__ T scales[MAX_BLOCK_THREADS];
-
-  __shared__ T kappas[MAX_BLOCK_THREADS];
-  __shared__ T expnyts[MAX_BLOCK_THREADS];
-
-  int n1 = rowSizes[rowIdx] + nodeIdx - cBatchOffset[0];
-
-  fieldFeature[threadIdx.x * 2] = fields[n1];
-  fieldFeature[threadIdx.x * 2 + 1] = features[n1];
-  vals[threadIdx.x] = values[n1];
-  scales[rowIdx % MAX_BLOCK_THREADS] = r[rowIdx];
-
-  if(update) {
-    expnyts[rowIdx % MAX_BLOCK_THREADS] = std::exp(-labels[rowIdx] * losses[rowIdx]);
-    kappas[rowIdx % MAX_BLOCK_THREADS] = -labels[rowIdx] * expnyts[rowIdx % MAX_BLOCK_THREADS] / (1 + expnyts[rowIdx % MAX_BLOCK_THREADS]);
-  }
-
-  __syncthreads();
+  if (rowIdx >= cRows[0]) return;
 
   T loss = 0.0;
 
-  for(int i = 1; n1 + i < rowSizes[rowIdx + 1] - cBatchOffset[0]; i++) {
-    // We cache some of the field:feature:values in shared memory, only as many "nodes" as there are threads
-    // so we know for 100% the initial node will be cached (since we run 1 thread per each starting node)
-    // but the subsequent nodes can be within the same block or they can spill to consequitive blocks
-    // depending on the size of the row and number of threads in a block
-    const int idx1 = fieldFeature[threadIdx.x * 2 + 1] * cAlignFeat[0] +
-        (threadIdx.x + i < MAX_BLOCK_THREADS ? fieldFeature[(threadIdx.x + i) * 2] : fields[n1 + i]) * cAlignFeat[1];
+  for (int n1 = rowSizes[rowIdx] - cBatchOffset[0]; n1 < rowSizes[rowIdx + 1] - cBatchOffset[0]; n1++) {
+    for (int n2 = n1 + 1; n2 < rowSizes[rowIdx + 1] - cBatchOffset[0]; n2++) {
+      const int idx1 = features[n1] * cAlignFeat[1] + fields[n2] * cAlignFeat[0];
+      const int idx2 = features[n2] * cAlignFeat[1] + fields[n1] * cAlignFeat[0];
 
-    const int idx2 = (threadIdx.x + i < MAX_BLOCK_THREADS ? fieldFeature[(threadIdx.x + i) * 2 + 1] : features[n1 + i]) * cAlignFeat[0] +
-        fieldFeature[threadIdx.x * 2] * cAlignFeat[1];
+      const double v = values[n1] * values[n2] * r[rowIdx];
 
-    const T v = vals[threadIdx.x] * (threadIdx.x + i < MAX_BLOCK_THREADS ? vals[threadIdx.x + i] : values[n1 + i]) * scales[rowIdx % MAX_BLOCK_THREADS];
-
-    if (update) {
-      for (int d = 0; d < cK[0] * cWeightsOffset[0]; d+=cWeightsOffset[0]) {
-        T w1d = (weightsPtr + idx1)[d];
-        T w2d = (weightsPtr + idx2)[d];
-        const T g1 = cRegLambda[0] * w1d + kappas[rowIdx % MAX_BLOCK_THREADS] * w2d * v;
-        const T g2 = cRegLambda[0] * w2d + kappas[rowIdx % MAX_BLOCK_THREADS] * w1d * v;
-
-        const T w1gdup = (weightsPtr + idx1)[d+1] + g1 * g1;
-        const T w2gdup = (weightsPtr + idx2)[d+1] + g2 * g2;
-
-        (weightsPtr + idx1)[d] -= cLearningRate[0] / std::sqrt(w1gdup) * g1;
-        (weightsPtr + idx2)[d] -= cLearningRate[0] / std::sqrt(w2gdup) * g2;
-
-        (weightsPtr + idx1)[d+1] = w1gdup;
-        (weightsPtr + idx2)[d+1] = w2gdup;
-
-      }
-    } else {
-      for (int d = 0; d < cK[0] * cWeightsOffset[0]; d+=cWeightsOffset[0]) {
+      for (int d = 0; d < cK[0] * cWeightsOffset[0]; d += cWeightsOffset[0]) {
         loss += (weightsPtr + idx1)[d] * (weightsPtr + idx2)[d] * v;
       }
+
     }
   }
-  if(!update) {
-    atomicAdd(losses + rowIdx, loss);
+
+  losses[rowIdx] = loss;
+
+  if (update) {
+    T expnyt = std::exp(-labels[rowIdx] * loss);
+    T kappa = -labels[rowIdx] * expnyt / (1.0 + expnyt);
+
+    for (int n1 = rowSizes[rowIdx] - cBatchOffset[0]; n1 < rowSizes[rowIdx + 1] - cBatchOffset[0]; n1++) {
+      for (int n2 = n1 + 1; n2 < rowSizes[rowIdx + 1] - cBatchOffset[0]; n2++) {
+        // We cache some of the field:feature:values in shared memory, only as many "nodes" as there are threads
+        // so we know for 100% the initial node will be cached (since we run 1 thread per each starting node)
+        // but the subsequent nodes can be within the same block or they can spill to consequitive blocks
+        // depending on the size of the row and number of threads in a block
+        const int idx1 = features[n1] * cAlignFeat[1] + fields[n2] * cAlignFeat[0];
+        const int idx2 = features[n2] * cAlignFeat[1] + fields[n1] * cAlignFeat[0];
+
+        const double v = values[n1] * values[n2] * r[rowIdx];
+
+        for (int d = 0; d < cK[0] * cWeightsOffset[0]; d += cWeightsOffset[0]) {
+          T w1d = (weightsPtr + idx1)[d];
+          T w2d = (weightsPtr + idx2)[d];
+          const T g1 = cRegLambda[0] * w1d + kappa * w2d * v;
+          const T g2 = cRegLambda[0] * w2d + kappa * w1d * v;
+
+          const T w1gdup = (weightsPtr + idx1)[d + 1] + g1 * g1;
+          const T w2gdup = (weightsPtr + idx2)[d + 1] + g2 * g2;
+
+          (weightsPtr + idx1)[d] -= cLearningRate[0] / std::sqrt(w1gdup) * g1;
+          (weightsPtr + idx2)[d] -= cLearningRate[0] / std::sqrt(w2gdup) * g2;
+
+          (weightsPtr + idx1)[d + 1] = w1gdup;
+          (weightsPtr + idx2)[d + 1] = w2gdup;
+        }
+      }
+    }
   }
 }
 
@@ -190,20 +172,18 @@ void Trainer<T>::predict(T *predictions) {
       T *losses;
       cudaMalloc(&losses, batch->numRows * sizeof(T));
 
+      int alignFeat0 = params.k;
       int alignFeat1 = params.numFields * params.k;
-      int alignFeat2 = params.k;
 
       int threads = MAX_BLOCK_THREADS;
-      int maxRowSize = batch->widestRow();
-      size_t totalThreads = batch->numRows * maxRowSize;
+      size_t totalThreads = batch->numRows;
       int blocks = std::ceil((double)totalThreads / threads);
 
       T* weightsPtr = this->model->weightsRawPtr(i);
 
       CUDA_CHECK(cudaMemcpyToSymbol(cK, &params.k, sizeof(int)));
-      CUDA_CHECK(cudaMemcpyToSymbol(cMaxRowSize, &maxRowSize, sizeof(int)));
       CUDA_CHECK(cudaMemcpyToSymbol(cRows, &batch->numRows, sizeof(int)));
-      int alignTmp[2] = { alignFeat1, alignFeat2 };
+      int alignTmp[2] = { alignFeat0, alignFeat1 };
       CUDA_CHECK(cudaMemcpyToSymbol(cAlignFeat, &alignTmp, 2 * sizeof(int)));
       CUDA_CHECK(cudaMemcpyToSymbol(cRegLambda, &params.regLambda, sizeof(float)));
       CUDA_CHECK(cudaMemcpyToSymbol(cLearningRate, &params.learningRate, sizeof(float)));
@@ -213,6 +193,7 @@ void Trainer<T>::predict(T *predictions) {
       wTxKernel << < blocks, threads >> > (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
           weightsPtr, losses, false);
 
+      // todo should be double?
       CUDA_CHECK(cudaMemcpy(predictions + record, losses, batch->numRows * sizeof(T), cudaMemcpyDeviceToHost));
 
       CUDA_CHECK(cudaDeviceSynchronize());
@@ -233,21 +214,21 @@ void Trainer<T>::predict(T *predictions) {
 }
 
 template<typename T>
-T Trainer<T>::validationLoss() {
+double Trainer<T>::validationLoss() {
   return this->oneEpoch(this->validationDataBatcher, false);
 }
 
 template<typename T>
-T Trainer<T>::trainOneEpoch() {
+double Trainer<T>::trainOneEpoch() {
   return this->oneEpoch(this->trainDataBatcher, true);
 }
 
 template<typename T>
-T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update) {
+double Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update) {
   Timer timer;
   log_debug(this->params.verbose, "Computing an FFM epoch (update = %s)", update ? "true" : "false");
 
-  T loss = 0;
+  double loss = 0;
 
   for (int i = 0; i < params.nGpus; i++) {
     int initialBatchOffset = 0;
@@ -263,23 +244,17 @@ T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update)
       T *losses;
       cudaMalloc(&losses, batch->numRows * sizeof(T));
 
-      int alignFeat1 = params.numFields * params.k * 2;
-      int alignFeat2 = params.k * 2;
-
       int threads = MAX_BLOCK_THREADS;
-      int maxRowSize = batch->widestRow();
-      size_t totalThreads = batch->numRows * maxRowSize;
+      size_t totalThreads = batch->numRows;
       int blocks = std::ceil((double)totalThreads / threads);
 
-      /**
-        * Alloc
-        */
       T* weightsPtr = this->model->weightsRawPtr(i);
 
+      int alignFeat0 = params.k * 2;
+      int alignFeat1 = params.numFields * params.k * 2;
       CUDA_CHECK(cudaMemcpyToSymbol(cK, &params.k, sizeof(int)));
-      CUDA_CHECK(cudaMemcpyToSymbol(cMaxRowSize, &maxRowSize, sizeof(int)));
       CUDA_CHECK(cudaMemcpyToSymbol(cRows, &batch->numRows, sizeof(int)));
-      int alignTmp[2] = { alignFeat1, alignFeat2 };
+      int alignTmp[2] = { alignFeat0, alignFeat1 };
       CUDA_CHECK(cudaMemcpyToSymbol(cAlignFeat, &alignTmp, 2 * sizeof(int)));
       CUDA_CHECK(cudaMemcpyToSymbol(cRegLambda, &params.regLambda, sizeof(float)));
       CUDA_CHECK(cudaMemcpyToSymbol(cLearningRate, &params.learningRate, sizeof(float)));
@@ -291,24 +266,12 @@ T Trainer<T>::oneEpoch(std::vector<DatasetBatcher<T>*> dataBatcher, bool update)
       log_verbose(params.verbose, "Running wTx with %d blocks and %d threads.", blocks, threads);
 
       wTxKernel << < blocks, threads>>> (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
-              weightsPtr, losses, false);
+              weightsPtr, losses, true, batch->labels);
 
       CUDA_CHECK(cudaDeviceSynchronize());
       CUDA_CHECK(cudaGetLastError());
       timer.toc();
       log_verbose(params.verbose, "wTx (false) took %f.", timer.pop());
-
-      timer.tic();
-
-      if (update) {
-        wTxKernel << < blocks, threads>>> (batch->features, batch->fields, batch->values, batch->scales, batch->rowPositions,
-                weightsPtr, losses, true, batch->labels);
-      }
-
-      CUDA_CHECK(cudaDeviceSynchronize());
-      CUDA_CHECK(cudaGetLastError());
-      timer.toc();
-      log_verbose(params.verbose, "wTx (true) took %f.", timer.pop());
 
       timer.tic();
       int* labels = batch->labels;

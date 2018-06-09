@@ -22,11 +22,11 @@ class Trainer {
   void setTrainingDataset(Dataset<T> &dataset);
   void setValidationDataset(Dataset<T> &dataset);
 
-  T validationLoss();
+  double validationLoss();
 
-  T trainOneEpoch();
+  double trainOneEpoch();
 
-  T oneEpoch(std::vector<DatasetBatcher<T> *> dataBatcher, bool update);
+  double oneEpoch(std::vector<DatasetBatcher<T> *> dataBatcher, bool update);
 
   void predict(T *predictions);
 

@@ -26,12 +26,12 @@ int FFM<T>::fit(Dataset<T> &dataset, Dataset<T> &valid_dataset) {
   for (; epoch <= this->params.nIter; epoch++) {
     log_info(this->params.verbose, "Iteration %d/%d.", epoch, this->params.nIter);
     timer.tic();
-    T trainingLoss = trainer.trainOneEpoch();
+    double trainingLoss = trainer.trainOneEpoch();
 
     log_info(this->params.verbose, "Train log loss = %f", trainingLoss);
 
     if(this->validate()) {
-      T validationLoss = trainer.validationLoss();
+      double validationLoss = trainer.validationLoss();
 
       log_info(this->params.verbose, "Validation log loss = %f", validationLoss);
 
