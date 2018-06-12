@@ -30,7 +30,7 @@ pipeline {
                     docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
                         docker.image("docker.h2o.ai/r-3-5").inside {
                             sh """
-                               R3 && `pkgdown::build_site(examples=FALSE)` && `q(save="no")`
+                               R3 -e 'pkgdown::build_site(examples=FALSE)'
                                """
                             archiveArtifacts artifacts: 'src/interface_r/docs/*.html'
                         }
