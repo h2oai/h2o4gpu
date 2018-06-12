@@ -31,20 +31,18 @@ pipeline {
             }
             steps {
                 // Get source code
-                retryWithTimeout(60 /* seconds */, 3 /* retries */) {
-                    deleteDir()
-                    checkout scm
-                    dumpInfo()
-                    script {
-                        docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
-                            docker.image("docker.h2o.ai/r-3-5").inside {
-                                sh """
+                deleteDir()
+                checkout scm
+                dumpInfo()
+                script {
+                    docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
+                        docker.image("docker.h2o.ai/r-3-5").inside {
+                            sh """
                                R && `pkgdown::build_site(examples=FALSE)` && q(save="no")
                                """
-                                archiveArtifacts artifacts: 'src/interface_r/docs/*.html'
-                            }
-
+                            archiveArtifacts artifacts: 'src/interface_r/docs/*.html'
                         }
+
                     }
                 }
             }
