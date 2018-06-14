@@ -33,9 +33,21 @@ pipeline {
                                cd src/interface_r &&
                                R3 -e 'pkgdown::build_site(examples=FALSE)'
                                """
-                            archiveArtifacts artifacts: 'src/interface_r/docs'
+                            archiveArtifacts artifacts: 'src/interface_r/'
                         }
 
+                    }
+                }
+            }
+        }
+        stage("Publish to S3") {
+            dumpInfo()
+            docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    docker.image("docker.h2o.ai/s3cmd").inside {
+                        sh """
+                           s3cmd put -P src/interface_r/docs/* s3://h2o-release/h2o4gpu/nightly/{$BUILD_ID}/interface_r/
+                           """
                     }
                 }
             }
