@@ -33,7 +33,7 @@ pipeline {
                                cd src/interface_r &&
                                R3 -e 'pkgdown::build_site(examples=FALSE)'
                                """
-                            archiveArtifacts artifacts: 'src/interface_r/docs/*.html'
+                            archiveArtifacts artifacts: 'src/interface_r/docs/*'
                         }
 
                     }
