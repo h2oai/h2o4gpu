@@ -51,7 +51,7 @@ pipeline {
                         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                             docker.image("docker.h2o.ai/s3cmd").inside {
                                 sh """
-                           s3cmd put -P src/interface_r/docs/* s3://h2o-release/h2o4gpu/nightly/{$BUILD_ID}/interface_r/
+                           s3cmd put --recursive -P src/interface_r/docs/* s3://h2o-release/h2o4gpu/nightly/{$BUILD_ID}/interface_r/
                            """
                             }
                         }
