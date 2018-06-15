@@ -41,6 +41,9 @@ pipeline {
             }
         }
         stage("Publish to S3") {
+            agent {
+                label "linux && docker && !micro"
+            }
             steps {
                 dumpInfo()
                 script {
