@@ -1,9 +1,9 @@
 # below for h2o4gpu
 pandas==0.22.0
-numpy==1.14.2
+numpy==1.14.5
 python-dateutil==2.7.2
 pytz==2018.4
-scipy==1.0.1
+scipy==1.1.0
 tabulate==0.8.2
 future==0.16.0
 # below for some testing utils that can be run at runtime
