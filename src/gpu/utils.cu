@@ -11,6 +11,8 @@
 #include <iostream>
 #include <assert.h>
 
+#include "../common/logger.h"
+
 #include <cuda_runtime_api.h>
 #include "nvml.h"
 
@@ -52,53 +54,90 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
 }
 
 
-void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory,
+void get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory,
  unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
  unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys) {
 
-  bool verbose=false;
-  if(verbose){
-    std::cerr << "inside get_gpu_info_c c function" << std::endl;
-  }
+  log_verbose(verbose, "Inside get_gpu_info_c c function");
 
   nvmlReturn_t rv;
   rv = nvmlInit();
+
+  if (rv != NVML_SUCCESS) {
+    log_fatal(verbose, "Failed to initialize NVML: %s", nvmlErrorString(rv));
+  }
+
   assert(rv == NVML_SUCCESS);
+
+  log_verbose(verbose, "Initialized NVML.");
+
   //unsigned int n_gpus;
   rv = nvmlDeviceGetCount(n_gpus);
+
+  if (rv != NVML_SUCCESS) {
+    log_fatal(verbose, "Failed to get device count: %s", nvmlErrorString(rv));
+  }
 
   assert(rv == NVML_SUCCESS);
 
   //  int gpu_percent_usage[n_gpus];
 
+  log_verbose(verbose, "Getting info for %u devices", *n_gpus);
+
   for (int i = 0; i < *n_gpus; ++i) {
     nvmlDevice_t device;
     nvmlReturn_t rv;
     rv = nvmlDeviceGetHandleByIndex(i, &device);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d by handle: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
 
     nvmlUtilization_t utilization;
     rv = nvmlDeviceGetUtilizationRates(device, &utilization);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d utilization: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
     gpu_percent_usage[i] = utilization.gpu;
 
-    if(verbose){
-      std::cerr << "i=" << i << " usage=" << gpu_percent_usage[i] << std::endl;
-    }
+    log_verbose(verbose, "i= %d usage= %d", i, gpu_percent_usage[i]);
 
     nvmlMemory_t memory;
     rv = nvmlDeviceGetMemoryInfo(device, &memory);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d memory info: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
+
+    log_verbose(verbose, "Device memory %i obtained.", i);
+
     gpu_total_memory[i] = memory.total;
     gpu_free_memory[i] = memory.free;
 
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d name: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
 
 #if (CUDART_VERSION >= 9000)
     rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d cuda compute capability: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
 #else
     int ratioperf;
@@ -109,9 +148,7 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     minors[i] = -1;
 #endif
 
-    if(verbose){
-      std::cerr << "i=" << i << " majors=" << majors[i] << " minors=" << minors[i] << std::endl;
-    }
+    log_verbose(verbose, "i= %d majors= %d", i, majors[i]);
 
     unsigned int max_pids=2000;
     unsigned int infoCount;
@@ -122,19 +159,21 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     unsigned int num_pid_local;
     num_pids[i] = infoCount;
     rv = nvmlDeviceGetComputeRunningProcesses(device, &num_pids[i], infos);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d running processes: %s", i, nvmlErrorString(rv));
+    }
+
     assert(rv == NVML_SUCCESS);
     if(num_pids[i] > max_pids){
-       std::cerr << "Too many pids: " << num_pids[i] << " .  Increase max_pids: " << max_pids << std::endl;
-       assert(num_pids[i] <= max_pids);
+      log_debug(verbose, "Too many pids: %u. Increase max_pids: %u.", num_pids[i], max_pids );
+      assert(num_pids[i] <= max_pids);
     }
     for (unsigned int pidi=0; pidi < num_pids[i]; pidi++) {
-        pids[pidi + i * max_pids] = infos[pidi].pid;
-        usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
+      pids[pidi + i * max_pids] = infos[pidi].pid;
+      usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
 
-        if(verbose){
-          std::cerr << "i=" << i << " pidi=" << pidi << " pids=" << pids[pidi + i * max_pids] << " gpumemory=" << usedGpuMemorys[pidi + i * max_pids] << std::endl;
-        }
-
+      log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi, pids[pidi + i * max_pids], usedGpuMemorys[pidi + i * max_pids]);
     }
   }
 
