@@ -161,9 +161,11 @@ def get_gpu_info_c(return_usage=False,
          (and optionally GPU usage)
     """
 
-    # For backwards compatibility, don't change to `if verbose:`
+    # For backwards compatibility, don't change to `if verbose:` as it will catch also any int value > 0
     if verbose == True:
         verbose = 600
+    if verbose == False:
+        verbose = 0
 
     max_gpus = 16
     total_gpus = 0
