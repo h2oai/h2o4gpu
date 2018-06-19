@@ -160,6 +160,11 @@ def get_gpu_info_c(return_usage=False,
         Total number of GPUs and total available memory
          (and optionally GPU usage)
     """
+
+    # For backwards compatibility, don't change to `if verbose:`
+    if verbose == True:
+        verbose = 600
+
     max_gpus = 16
     total_gpus = 0
     total_gpus_actual = 0
