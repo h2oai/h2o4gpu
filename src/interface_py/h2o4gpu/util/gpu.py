@@ -153,13 +153,21 @@ def get_gpu_info_c(return_usage=False,
                    return_capability=False,
                    return_memory_by_pid=False,
                    return_all=False,
-                   verbose=False):
+                   verbose=0):
     """Gets the GPU info from C call
 
     :return:
         Total number of GPUs and total available memory
          (and optionally GPU usage)
     """
+
+    # For backwards compatibility
+    # Don't change to `if verbose:` it will catch also int values > 0
+    if verbose is True:
+        verbose = 600
+    if verbose is False:
+        verbose = 0
+
     max_gpus = 16
     total_gpus = 0
     total_gpus_actual = 0
@@ -178,10 +186,11 @@ def get_gpu_info_c(return_usage=False,
 
     try:
         from ..libs.lib_utils import GPUlib
-        lib = GPUlib().get(verbose=0 if not verbose else 1)
+        lib = GPUlib().get(verbose=verbose)
 
         total_gpus_actual = \
-            lib.get_gpu_info_c(usages_tmp, total_mems_tmp, free_mems_tmp,
+            lib.get_gpu_info_c(verbose,
+                               usages_tmp, total_mems_tmp, free_mems_tmp,
                                gpu_types_tmp, majors_tmp, minors_tmp,
                                num_pids_tmp, pids_tmp, usedGpuMemorys_tmp)
 
@@ -193,7 +202,7 @@ def get_gpu_info_c(return_usage=False,
                          for g_type in gpu_types_tmp]
     # pylint: disable=broad-except
     except Exception as e:
-        if verbose:
+        if verbose > 0:
             import sys
             sys.stderr.write("Exception: %s" % str(e))
             print(e)
