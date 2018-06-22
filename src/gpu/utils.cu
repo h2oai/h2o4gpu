@@ -66,7 +66,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
   if (rv != NVML_SUCCESS) {
     log_fatal(verbose, "Failed to initialize NVML: %s", nvmlErrorString(rv));
-    return rv;
+    return 1;
   }
 
   log_verbose(verbose, "Initialized NVML.");
@@ -76,7 +76,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
   if (rv != NVML_SUCCESS) {
     log_fatal(verbose, "Failed to get device count: %s", nvmlErrorString(rv));
-    return rv;
+    return 1;
   }
 
   //  int gpu_percent_usage[n_gpus];
@@ -90,7 +90,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d by handle: %s", i, nvmlErrorString(rv));
-      return rv;
+      return 1;
     }
 
     nvmlUtilization_t utilization;
@@ -98,7 +98,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d utilization: %s", i, nvmlErrorString(rv));
-      return rv;
+      return 1;
     }
 
     gpu_percent_usage[i] = utilization.gpu;
@@ -110,7 +110,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d memory info: %s", i, nvmlErrorString(rv));
-      return rv;
+      return 1;
     }
 
     log_verbose(verbose, "Device memory %i obtained.", i);
@@ -122,7 +122,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d name: %s", i, nvmlErrorString(rv));
-      return rv;
+      return 1;
     }
 
 #if (CUDART_VERSION >= 9000)
@@ -130,7 +130,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d cuda compute capability: %s", i, nvmlErrorString(rv));
-        return rv;
+        return 1;
     }
 
 #else
@@ -155,12 +155,12 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d running processes: %s", i, nvmlErrorString(rv));
-      return rv;
+      return 1;
     }
 
     if(num_pids[i] > max_pids){
       log_debug(verbose, "Too many pids: %u. Increase max_pids: %u.", num_pids[i], max_pids );
-      return 42;
+      return 1;
     }
     for (unsigned int pidi=0; pidi < num_pids[i]; pidi++) {
       pids[pidi + i * max_pids] = infos[pidi].pid;
