@@ -188,11 +188,14 @@ def get_gpu_info_c(return_usage=False,
         from ..libs.lib_utils import GPUlib
         lib = GPUlib().get(verbose=verbose)
 
-        total_gpus_actual = \
+        status, total_gpus_actual = \
             lib.get_gpu_info_c(verbose,
                                usages_tmp, total_mems_tmp, free_mems_tmp,
                                gpu_types_tmp, majors_tmp, minors_tmp,
                                num_pids_tmp, pids_tmp, usedGpuMemorys_tmp)
+
+        if status != 0:
+            return None
 
         # This will drop the GPU count, but the returned usage
         total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
