@@ -1,5 +1,5 @@
 /*!
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  */
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once

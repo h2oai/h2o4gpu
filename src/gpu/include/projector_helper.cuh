@@ -1,5 +1,5 @@
 /*!
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  */
 #ifndef PROJECTOR_HELPER_CUH_
 #define PROJECTOR_HELPER_CUH_

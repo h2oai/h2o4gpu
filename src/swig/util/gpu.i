@@ -2,7 +2,11 @@
 %{
 extern int cudaresetdevice(int wDev, int nDev);
 extern int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf);
-extern void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory, char **gpu_name, int *majors, int *minors);
+extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage,
+ unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
+ char **gpu_name,
+ int *majors, int *minors,
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys);
 extern int cudaresetdevice_bare(void);
 %}
 
@@ -38,15 +42,23 @@ extern int cudaresetdevice_bare(void);
   free((char *) $1);
 }
 
-%apply int *OUTPUT {int *major, int *minor, int *ratioperf}
-%apply int *OUTPUT {unsigned int *n_gpus}
+%apply int *OUTPUT {int *major, int *minor, int *ratioperf};
+
+%apply int *OUTPUT {unsigned int *n_gpus};
 %apply (int *INPLACE_ARRAY1) {int *gpu_percent_usage};
 %apply (int *INPLACE_ARRAY1) {int *majors};
 %apply (int *INPLACE_ARRAY1) {int *minors};
 %apply (unsigned long long *INPLACE_ARRAY1) {unsigned long long *gpu_total_memory};
 %apply (unsigned long long *INPLACE_ARRAY1) {unsigned long long *gpu_free_memory};
+%apply (unsigned int *INPLACE_ARRAY1) {unsigned int *num_pids};
+%apply (unsigned int *INPLACE_ARRAY1) {unsigned int *pids};
+%apply (unsigned long long *INPLACE_ARRAY1) {unsigned long long *usedGpuMemorys};
 
 extern int cudaresetdevice(int wDev, int nDev);
 extern int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf);
-extern void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory, char **gpu_name, int *majors, int *minors);
+extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage,
+ unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
+ char **gpu_name,
+ int *majors, int *minors,
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys);
 extern int cudaresetdevice_bare(void);

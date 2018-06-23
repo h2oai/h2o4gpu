@@ -1,7 +1,7 @@
 /*************************************************************************
  * Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
  *
- * Modifications Copyright 2017 H2O.ai, Inc.
+ * Modifications Copyright 2017-2018 H2O.ai, Inc.
  ************************************************************************/
 #include <chrono>
 #include <cstdio>
@@ -9,7 +9,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <assert.h>
+
+#include "../common/logger.h"
 
 #include <cuda_runtime_api.h>
 #include "nvml.h"
@@ -52,37 +53,86 @@ int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf) {
 }
 
 
-void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory, char **gpu_name, int *majors, int *minors) {
+int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, unsigned long long *gpu_total_memory,
+ unsigned long long *gpu_free_memory,
+ char **gpu_name,
+ int *majors, int *minors,
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys) {
+
+  log_verbose(verbose, "Inside get_gpu_info_c c function");
 
   nvmlReturn_t rv;
   rv = nvmlInit();
-  assert(rv == NVML_SUCCESS);
+
+  if (rv != NVML_SUCCESS) {
+    log_fatal(verbose, "Failed to initialize NVML: %s", nvmlErrorString(rv));
+    return 1;
+  }
+
+  log_verbose(verbose, "Initialized NVML.");
+
   //unsigned int n_gpus;
   rv = nvmlDeviceGetCount(n_gpus);
 
-  assert(rv == NVML_SUCCESS);
+  if (rv != NVML_SUCCESS) {
+    log_fatal(verbose, "Failed to get device count: %s", nvmlErrorString(rv));
+    return 1;
+  }
 
   //  int gpu_percent_usage[n_gpus];
+
+  log_verbose(verbose, "Getting info for %u devices", *n_gpus);
 
   for (int i = 0; i < *n_gpus; ++i) {
     nvmlDevice_t device;
     nvmlReturn_t rv;
     rv = nvmlDeviceGetHandleByIndex(i, &device);
-    assert(rv == NVML_SUCCESS);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d by handle: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
     nvmlUtilization_t utilization;
     rv = nvmlDeviceGetUtilizationRates(device, &utilization);
-    assert(rv == NVML_SUCCESS);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d utilization: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
     gpu_percent_usage[i] = utilization.gpu;
+
+    log_verbose(verbose, "i= %d usage= %d", i, gpu_percent_usage[i]);
+
     nvmlMemory_t memory;
     rv = nvmlDeviceGetMemoryInfo(device, &memory);
-    assert(rv == NVML_SUCCESS);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d memory info: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
+    log_verbose(verbose, "Device memory %i obtained.", i);
+
     gpu_total_memory[i] = memory.total;
     gpu_free_memory[i] = memory.free;
+
     rv = nvmlDeviceGetName(device, gpu_name[i], 30);
-    assert(rv == NVML_SUCCESS);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d name: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
 #if (CUDART_VERSION >= 9000)
     rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
-    assert(rv == NVML_SUCCESS);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d cuda compute capability: %s", i, nvmlErrorString(rv));
+        return 1;
+    }
+
 #else
     int ratioperf;
     // if this gets called in process, it creates cuda context,
@@ -91,6 +141,34 @@ void get_gpu_info_c(unsigned int *n_gpus, int *gpu_percent_usage, unsigned long 
     majors[i] = -1;
     minors[i] = -1;
 #endif
+
+    log_verbose(verbose, "i= %d majors= %d", i, majors[i]);
+
+    unsigned int max_pids=2000;
+    unsigned int infoCount;
+    //rv = nvmlDeviceGetComputeRunningProcesses(device, &infoCount, NULL);
+    infoCount = max_pids;
+    nvmlProcessInfo_t infos[infoCount];
+    unsigned int num_pid_local;
+    num_pids[i] = infoCount;
+    rv = nvmlDeviceGetComputeRunningProcesses(device, &num_pids[i], infos);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get device %d running processes: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
+    if(num_pids[i] > max_pids){
+      log_debug(verbose, "Too many pids: %u. Increase max_pids: %u.", num_pids[i], max_pids );
+      return 1;
+    }
+    for (unsigned int pidi=0; pidi < num_pids[i]; pidi++) {
+      pids[pidi + i * max_pids] = infos[pidi].pid;
+      usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
+
+      log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi, pids[pidi + i * max_pids], usedGpuMemorys[pidi + i * max_pids]);
+    }
   }
 
+  return 0;
 }

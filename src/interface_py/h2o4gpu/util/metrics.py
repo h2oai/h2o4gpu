@@ -1,6 +1,6 @@
 #- * - encoding : utf - 8 - * -
 """
-:copyright: 2017 H2O.ai, Inc.
+:copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
@@ -13,12 +13,12 @@ def ll(actual, predicted):
     This function computes the log likelihood between two numbers,
     or for element between a pair of lists or numpy arrays.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double or list of doubles
+    :returns: double or list of doubles
              The log likelihood error between actual and predicted
     """
     actual = np.array(actual)
@@ -47,12 +47,12 @@ def log_loss(actual, predicted):
     This function computes the log loss between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
              The log loss between actual and predicted
     """
     return np.mean(ll(actual, predicted))
@@ -65,12 +65,12 @@ def se(actual, predicted):
     This function computes the squared error between two numbers,
     or for element between a pair of lists or numpy arrays.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double or list of doubles
+    :returns: double or list of doubles
             The squared error between actual and predicted
     """
     return np.power(np.array(actual) - np.array(predicted), 2)
@@ -83,12 +83,12 @@ def mse(actual, predicted):
     This function computes the mean squared error between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
              The mean squared error between actual and predicted
     """
     return np.mean(se(actual, predicted))
@@ -101,12 +101,12 @@ def rmse(actual, predicted):
     This function computes the root mean squared error between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The root mean squared error between actual and predicted
     """
     return np.sqrt(mse(actual, predicted))
@@ -118,12 +118,12 @@ def ce(actual, predicted):
 
     This function computes the classification error between two lists
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The classification error between actual and predicted
     """
     return (
@@ -137,12 +137,12 @@ def ae(actual, predicted):
     This function computes the absolute error between two numbers,
     or for element between a pair of lists or numpy arrays.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double or list of doubles
+    :returns: double or list of doubles
             The absolute error between actual and predicted
     """
     return np.abs(np.array(actual) - np.array(predicted))
@@ -155,12 +155,12 @@ def mae(actual, predicted):
     This function computes the mean absolute error between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The mean absolute error between actual and predicted
     """
     return np.mean(ae(actual, predicted))
@@ -173,12 +173,12 @@ def sle(actual, predicted):
     This function computes the squared log error between two numbers,
     or for element between a pair of lists or numpy arrays.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double or list of doubles
+    :returns: double or list of doubles
              The squared log error between actual and predicted
     """
     return (np.power(
@@ -192,12 +192,12 @@ def msle(actual, predicted):
     This function computes the mean squared log error between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The mean squared log error between actual and predicted
     """
     return np.mean(sle(actual, predicted))
@@ -210,12 +210,12 @@ def rmsle(actual, predicted):
     This function computes the root mean squared log error between two lists
     of numbers.
 
-    :param actual : int, float, list of numbers, numpy array
+    :param actual: int, float, list of numbers, numpy array
                     The ground truth value
-    :param predicted : same type as actual
+    :param predicted: same type as actual
                      The predicted value
 
-    :returns double
+    :returns: double
             The root mean squared log error between actual and predicted
     """
     return np.sqrt(msle(actual, predicted))
@@ -227,9 +227,9 @@ def tied_rank(x):
 
     This function computes the tied rank of elements in x.
 
-    :param x : list of numbers, numpy array
+    :param x: list of numbers, numpy array
 
-    :returns list of numbers
+    :returns: list of numbers
             The tied rank f each element in x
     """
     sorted_x = sorted(zip(x, range(len(x))))
@@ -254,14 +254,14 @@ def auc(actual, posterior):
 
     This function computes the AUC error metric for binary classification.
 
-    :param actual : list of binary numbers, numpy array
+    :param actual: list of binary numbers, numpy array
                     The ground truth value
-    :param posterior : same type as actual
+    :param posterior: same type as actual
                        Defines a ranking on the binary numbers,
                        from most likely to be positive to least
                        likely to be positive.
 
-    :returns double
+    :returns: double
              The AUC between actual and posterior
     """
     r = tied_rank(posterior)
@@ -281,14 +281,14 @@ def f05_opt(actual, predicted, sample_weight=None):
     This function maximizes the F0.5-Score by means of
     optimal predictions thresholding.
 
-    :param actual : numpy array
+    :param actual: numpy array
                     The ground truth value
-    :param predicted : numpy array
+    :param predicted: numpy array
                        The predicted value
-    :param sample_weight : numpy array or None
+    :param sample_weight: numpy array or None
                            sample weights
 
-    :returns double
+    :returns: double
              The optimal F0.5-Score
     """
     from ..libs.lib_utils import CPUlib
@@ -305,14 +305,14 @@ def f1_opt(actual, predicted, sample_weight=None):
     This function maximizes the F1-Score by means of
     optimal predictions thresholding.
 
-    :param actual : numpy array
+    :param actual: numpy array
                     The ground truth value
-    :param predicted : numpy array
+    :param predicted: numpy array
                        The predicted value
-    :param sample_weight : numpy array or None
+    :param sample_weight: numpy array or None
                            sample weights
 
-    :returns double
+    :returns: double
              The optimal F1-Score
     """
     from ..libs.lib_utils import CPUlib
@@ -330,14 +330,14 @@ def f2_opt(actual, predicted, sample_weight=None):
         This function maximizes the F2-Score by means of
         optimal predictions thresholding.
 
-        :param actual : numpy array
+        :param actual: numpy array
                         The ground truth value
-        :param predicted : numpy array
+        :param predicted: numpy array
                            The predicted value
-        :param sample_weight : numpy array or None
+        :param sample_weight: numpy array or None
                                sample weights
 
-        :returns double
+        :returns: double
                  The optimal F2-Score
         """
     from ..libs.lib_utils import CPUlib
@@ -355,14 +355,14 @@ def mcc_opt(actual, predicted, sample_weight=None):
     This function maximizes the Matthews Correlation Coefficient (MCC)
     by means of optimal predictions thresholding.
 
-    :param actual : numpy array
+    :param actual: numpy array
                     The ground truth value
-    :param predicted : numpy array
+    :param predicted: numpy array
                        The predicted value
-    :param sample_weight : numpy array or None
+    :param sample_weight: numpy array or None
                            sample weights
 
-    :returns double
+    :returns: double
              The optimal MCC
     """
     from ..libs.lib_utils import CPUlib
@@ -380,14 +380,14 @@ def acc_opt(actual, predicted, sample_weight=None):
     This function maximizes the Accuracy
     by means of optimal predictions thresholding.
 
-    :param actual : numpy array
+    :param actual: numpy array
                     The ground truth value
-    :param predicted : numpy array
+    :param predicted: numpy array
                        The predicted value
-    :param sample_weight : numpy array or None
+    :param sample_weight: numpy array or None
                            sample weights
 
-    :returns double
+    :returns: double
              The optimal Accuracy
     """
     from ..libs.lib_utils import CPUlib
@@ -404,14 +404,14 @@ def confusion_matrices(actual, predicted, sample_weight=None):
     This function cumputes confusion matrices
     for all possible prediction thresholds.
 
-    :param actual : numpy array
+    :param actual: numpy array
                     The ground truth value
-    :param predicted : numpy array
+    :param predicted: numpy array
                        The predicted value
-    :param sample_weight : numpy array or None
+    :param sample_weight: numpy array or None
                            sample weights
 
-    :returns pandas DataFrame
+    :returns: pandas DataFrame
              Confusion matrices for each unique predicted value as threshold
     """
     cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1']

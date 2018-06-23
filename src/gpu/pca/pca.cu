@@ -1,11 +1,12 @@
 #include "../../include/solver/pca.h"
-#include "../tsvd/utils.cuh"
+#include "../utils/utils.cuh"
 #include "../data/matrix.cuh"
 #include "../device/device_context.cuh"
 #include "../../include/solver/tsvd.h"
 
 namespace pca
 {
+	using namespace h2o4gpu;
 
 	/**
 	* Conduct PCA on a matrix
@@ -22,31 +23,31 @@ namespace pca
 	void pca_float(const float *_X, float *_Q, float *_w, float *_U, float* _X_transformed, float *_explained_variance, float *_explained_variance_ratio, float *_mean, params _param) {
 		try {
 
-			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+			safe_cuda(cudaSetDevice(_param.gpu_id));
 
 			//Take in X matrix and allocate for X^TX
-			tsvd::Matrix<float>X(_param.X_m, _param.X_n);
+			matrix::Matrix<float>X(_param.X_m, _param.X_n);
 			X.copy(_X);
 
-			tsvd::Matrix<float>XtX(_param.X_n, _param.X_n);
+			matrix::Matrix<float>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			tsvd::DeviceContext context;
+			device::DeviceContext context;
 
 			//Get columnar means
-			tsvd::Matrix<float>XOnes(X.rows(), 1);
+			matrix::Matrix<float>XOnes(X.rows(), 1);
 			XOnes.fill(1.0f);
-			tsvd::Matrix<float>XColMean(X.columns(), 1);
-			tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+			matrix::Matrix<float>XColMean(X.columns(), 1);
+			matrix:multiply(X, XOnes, XColMean, context, true, false, 1.0f);
 			float m = X.rows();
 			multiply(XColMean, 1/m, context);
 			XColMean.copy_to_host(_mean);
 
 			//Center matrix
-			tsvd::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
-			tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
-			tsvd::Matrix<float>XCentered(X.rows(), X.columns());
-			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
+			matrix::Matrix<float>OnesXMeanTranspose(X.rows(), X.columns());
+			matrix::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
+			matrix::Matrix<float>XCentered(X.rows(), X.columns());
+			matrix::subtract(X, OnesXMeanTranspose, XCentered, context);
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
@@ -76,31 +77,31 @@ namespace pca
 	void pca_double(const double *_X, double *_Q, double *_w, double *_U, double* _X_transformed, double *_explained_variance, double *_explained_variance_ratio, double *_mean, params _param) {
 		try {
 
-			tsvd::safe_cuda(cudaSetDevice(_param.gpu_id));
+			safe_cuda(cudaSetDevice(_param.gpu_id));
 
 			//Take in X matrix and allocate for X^TX
-			tsvd::Matrix<double>X(_param.X_m, _param.X_n);
+			matrix::Matrix<double>X(_param.X_m, _param.X_n);
 			X.copy(_X);
 
-			tsvd::Matrix<double>XtX(_param.X_n, _param.X_n);
+			matrix::Matrix<double>XtX(_param.X_n, _param.X_n);
 
 			//create context
-			tsvd::DeviceContext context;
+			device::DeviceContext context;
 
 			//Get columnar means
-			tsvd::Matrix<double>XOnes(X.rows(), 1);
+			matrix::Matrix<double>XOnes(X.rows(), 1);
 			XOnes.fill(1.0f);
-			tsvd::Matrix<double>XColMean(X.columns(), 1);
-			tsvd::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+			matrix::Matrix<double>XColMean(X.columns(), 1);
+			matrix::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
 			float m = X.rows();
 			multiply(XColMean, 1/m, context);
 			XColMean.copy_to_host(_mean);
 
 			//Center matrix
-			tsvd::Matrix<double>OnesXMeanTranspose(X.rows(), X.columns());
-			tsvd::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
-			tsvd::Matrix<double>XCentered(X.rows(), X.columns());
-			tsvd::subtract(X, OnesXMeanTranspose, XCentered, context);
+			matrix::Matrix<double>OnesXMeanTranspose(X.rows(), X.columns());
+			matrix::multiply(XOnes, XColMean, OnesXMeanTranspose, context, false, true, 1.0f);
+			matrix::Matrix<double>XCentered(X.rows(), X.columns());
+			matrix::subtract(X, OnesXMeanTranspose, XCentered, context);
 
 			tsvd::params svd_param = {_param.X_n, _param.X_m, _param.k, _param.algorithm, _param.n_iter, _param.random_state, _param.tol, _param.verbose, _param.gpu_id, _param.whiten};
 
