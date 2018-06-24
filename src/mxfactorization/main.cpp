@@ -1,156 +1,220 @@
 
-/**
- * Copyright 1993-2012 NVIDIA Corporation.  All rights reserved.
- *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
- */
+#include "als.h"
+//#include "host_utilities.h"
+#include "eigen_sparse_manager.h"
+//#include "helper/debug_output.h"
+#include "host_utilities.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "eigen_sparse_manager.hpp"
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include "als.h"
-#include "host_utilities.h"
+#include <string>
+#include <stdexcept>
+
+#define DEBUG 1
 
 #define DEVICEID 0
 #define ITERS 10
 
-int use_case_files(sparse::TestTrainDataHeader& header) {
-	std::string test_data_file("/home/monika/h2o/src/cuda_cu/monika_AMF/data/test_data.dat");
-	typedef Eigen::SparseMatrix<int, Eigen::ColMajor> ColMatrix;
-	typedef Eigen::SparseMatrix<int, Eigen::RowMajor> RowMatrix;
-
-	ColMatrix colTestMatrix;
-
-	bool result = sparse::loadFileAsSparseMatrix(colTestMatrix, test_data_file);
-	if (!result) {
-		std::cout << "Sparse Matrix cannot be loaded from file: " << test_data_file << std::endl;
-		return -1;
-	}
-
-	// create binaries (todo: without the files later)
-	// test data
-	sparse::serialize_rows_cols_data(colTestMatrix, "/home/monika/h2o/src/cuda_cu/monika_AMF/data/test");
-	header.m = (int)colTestMatrix.rows();
-	header.n = (int)colTestMatrix.cols();
-	header.nnz_test = sparse::getNNZ(colTestMatrix);
-
-	// train data, temporarily used the same test data
-	std::string train_data_file("/home/monika/h2o/src/cuda_cu/monika_AMF/data/test_data.dat");
-	ColMatrix colTrainMatrix;
-	RowMatrix rowTrainMatrix;
-
-	result = sparse::loadFileAsSparseMatrix(colTrainMatrix, train_data_file);
-	if (!result) {
-		std::cout << "Sparse Matrix cannot be loaded from file: " << train_data_file << std::endl;
-		return -1;
-	}
-	result = sparse::loadFileAsSparseMatrix(rowTrainMatrix, train_data_file);
-	if (!result) {
-		std::cout << "Sparse Matrix cannot be loaded from file: " << train_data_file << std::endl;
-		return -1;
-	}
-
-	header.nnz_train = sparse::getNNZ(colTrainMatrix);
-
-	sparse::serialize_rows_cols_data(colTrainMatrix, "/home/monika/h2o/src/cuda_cu/monika_AMF/data/train_csc");
-	sparse::serialize_rows_cols_data(rowTrainMatrix, "/home/monika/h2o/src/cuda_cu/monika_AMF/data/train_csr");
-	return 0;
+static bool endsWith(const std::string& str, const std::string& suffix)
+{
+	return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
 }
 
-#define CHECK_CUDA_RESULT(N) {											\
-	CUresult result = N;												\
-	if (result != 0) {													\
-		printf("CUDA call on line %d returned error %d\n", __LINE__,	\
-			result);													\
-		exit(1);														\
-	} }
+static bool startsWith(const std::string& str, const std::string& prefix)
+{
+	return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+}
+
+template<typename Type=float>
+void process_test_train_data(const std::string& test_data_file,
+		const std::string& train_data_file,
+		const std::string& output_folder,
+		sparse::TestTrainDataHeader& parameters,
+		int F=100,
+		float lambda=0.048,
+		int X_BATCH=1,
+		int THETA_BATCH=3)
+{
+	parameters.setF(F);
+	parameters.setLambda(lambda);
+	parameters.setXBatch(X_BATCH);
+	parameters.setThetaBatch(THETA_BATCH);
+
+	typedef Eigen::SparseMatrix<Type, Eigen::ColMajor> CMatrix;
+	typedef Eigen::SparseMatrix<Type, Eigen::RowMajor> RMatrix;
+
+	CMatrix colMatrixTest, colMatrixTrain; RMatrix rowMatrixTest, rowMatrixTrain;
+	// read test and training data file in files/memory
+	// @TODO: multithreading
+	bool result = sparse::loadFileAsSparseMatrix(colMatrixTest, test_data_file);
+	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for test data file!");
+	result = sparse::loadFileAsSparseMatrix(rowMatrixTest, test_data_file);
+	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for test data file!");
+
+	result = sparse::loadFileAsSparseMatrix(colMatrixTrain, train_data_file);
+	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for training data file!");
+	result = sparse::loadFileAsSparseMatrix(rowMatrixTrain, train_data_file);
+	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for training data file!");
+
+
+	// generate TEST output data files
+	int m = rowMatrixTrain.rows();
+	int n = rowMatrixTrain.cols();
+	int nnzs_test = rowMatrixTest.nonZeros();
+	int nnzs_train = rowMatrixTrain.nonZeros();
+
+	parameters.m = m;
+	parameters.n = n;
+	parameters.nnz_test = nnzs_test;
+	parameters.nnz_train = nnzs_train;
+
+	std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
+	// Process Test Data
+
+	sparse::serialize_test_data_coo_col_bin(rowMatrixTest, output_folder+"R_test_coo.col.bin");
+	sparse::serialize_test_data_coo_row_bin(rowMatrixTest, output_folder+"R_test_coo.row.bin");
+	sparse::serialize_test_data_coo_data_bin(rowMatrixTest, output_folder+"R_test_coo.data.bin");
+	// Process Training Data
+	sparse::serialize_test_data_coo_row_bin(rowMatrixTrain, output_folder+"R_train_coo.row.bin");
+	sparse::serialize_test_data_coo_data_bin(colMatrixTrain, output_folder+"R_train_csc.data.bin");
+	sparse::serialize_test_data_coo_data_bin(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
+	sparse::serialize_indPtr(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
+	sparse::serialize_indPtr(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
+	sparse::serialize_indices(rowMatrixTrain, output_folder+"R_train_csr_indices.bin");
+	sparse::serialize_indices(colMatrixTrain, output_folder+"R_train_csc_indices.bin");
+
+	printf("Input Data processed into binaries.\n");
+}
 
 int main(int argc, char **argv)
 {
-	sparse::TestTrainDataHeader test_train_data_header;
-	int result = use_case_files(test_train_data_header);
-	if (result) return result;
-	// set input parameters
-	test_train_data_header.setF(100);
-	test_train_data_header.setLambda(0.048);
-	test_train_data_header.setXBatch(1);
-	test_train_data_header.setThetaBatch(3);
+	if (argc != 4) {
+		printf("Usage: training_data testing_data output_folder.\n");
+		return 0;
+	}
+	std::string training_data_file(argv[1]);
+	std::string test_data_file(argv[2]);
+	std::string output_folder(argv[3]);
+	std::string slash("/");
+	if (!endsWith(output_folder, slash)) output_folder += "/";
+	sparse::TestTrainDataHeader parameters;
+
+	process_test_train_data(test_data_file, training_data_file, output_folder, parameters);
+
+	return 0;
 
 	cudaSetDevice(DEVICEID);
 	int* csrRowIndexHostPtr;
-
-	cudacall(cudaMallocHost( (void** ) &csrRowIndexHostPtr, (test_train_data_header.m + 1) * sizeof(csrRowIndexHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &csrRowIndexHostPtr, (parameters.m + 1) * sizeof(csrRowIndexHostPtr[0])) );
 	int* csrColIndexHostPtr;
-	cudacall(cudaMallocHost( (void** ) &csrColIndexHostPtr, test_train_data_header.nnz_train * sizeof(csrColIndexHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &csrColIndexHostPtr, parameters.nnz_train * sizeof(csrColIndexHostPtr[0])) );
 	float* csrValHostPtr;
-	cudacall(cudaMallocHost( (void** ) &csrValHostPtr, test_train_data_header.nnz_train * sizeof(csrValHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &csrValHostPtr, parameters.nnz_train * sizeof(csrValHostPtr[0])) );
 	float* cscValHostPtr;
-	cudacall(cudaMallocHost( (void** ) &cscValHostPtr, test_train_data_header.nnz_train * sizeof(cscValHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &cscValHostPtr, parameters.nnz_train * sizeof(cscValHostPtr[0])) );
 	int* cscRowIndexHostPtr;
-	cudacall(cudaMallocHost( (void** ) &cscRowIndexHostPtr, test_train_data_header.nnz_train * sizeof(cscRowIndexHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &cscRowIndexHostPtr, parameters.nnz_train * sizeof(cscRowIndexHostPtr[0])) );
 	int* cscColIndexHostPtr;
-	cudacall(cudaMallocHost( (void** ) &cscColIndexHostPtr, (test_train_data_header.n+1) * sizeof(cscColIndexHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &cscColIndexHostPtr, (parameters.n+1) * sizeof(cscColIndexHostPtr[0])) );
 	int* cooRowIndexHostPtr;
-	cudacall(cudaMallocHost( (void** ) &cooRowIndexHostPtr, test_train_data_header.nnz_train * sizeof(cooRowIndexHostPtr[0])) );
+	cudacall(cudaMallocHost( (void** ) &cooRowIndexHostPtr, parameters.nnz_train * sizeof(cooRowIndexHostPtr[0])) );
 
 	//calculate X from thetaT first, need to initialize thetaT
 	float* thetaTHost;
-	cudacall(cudaMallocHost( (void** ) &thetaTHost, test_train_data_header.n * test_train_data_header.f * sizeof(thetaTHost[0])) );
+	cudacall(cudaMallocHost( (void** ) &thetaTHost, parameters.n * parameters.F * sizeof(thetaTHost[0])) );
 
 	float* XTHost;
-	cudacall(cudaMallocHost( (void** ) &XTHost, test_train_data_header.m * test_train_data_header.f * sizeof(XTHost[0])) );
+	cudacall(cudaMallocHost( (void** ) &XTHost, parameters.m * parameters.F * sizeof(XTHost[0])) );
 
 	//initialize thetaT on host
 	unsigned int seed = 0;
 	srand (seed);
-	for (int k = 0; k < test_train_data_header.n * test_train_data_header.f; k++)
+	for (int k = 0; k < parameters.n * parameters.F; k++)
 		thetaTHost[k] = 0.2*((float) rand() / (float)RAND_MAX);
 	//CG needs to initialize X as well
-	for (int k = 0; k < test_train_data_header.m * test_train_data_header.f; k++)
+	for (int k = 0; k < parameters.m * parameters.F; k++)
 		XTHost[k] = 0;//0.1*((float) rand() / (float)RAND_MAX);;
 	printf("*******start loading training and testing sets to host.\n");
-
 	//testing set
 	int* cooRowIndexTestHostPtr = (int *) malloc(
-			test_train_data_header.nnz_test * sizeof(cooRowIndexTestHostPtr[0]));
+			parameters.nnz_test * sizeof(cooRowIndexTestHostPtr[0]));
 	int* cooColIndexTestHostPtr = (int *) malloc(
-			test_train_data_header.nnz_test * sizeof(cooColIndexTestHostPtr[0]));
-	float* cooValHostTestPtr = (float *) malloc(test_train_data_header.nnz_test * sizeof(cooValHostTestPtr[0]));
+			parameters.nnz_test * sizeof(cooColIndexTestHostPtr[0]));
+	float* cooValHostTestPtr = (float *) malloc(parameters.nnz_test * sizeof(cooValHostTestPtr[0]));
 
 	struct timeval tv0;
 	gettimeofday(&tv0, NULL);
 
-	// TODO - indptr implementation
-	loadCooSparseMatrixBin( (DATA_DIR + "/R_test_coo.data.bin").c_str(), (DATA_DIR + "/R_test_coo.row.bin").c_str(),
-							(DATA_DIR + "/R_test_coo.col.bin").c_str(),
-			cooValHostTestPtr, cooRowIndexTestHostPtr, cooColIndexTestHostPtr, test_train_data_header.nnz_test);
+	/* load sparseMatrixBins */
+	loadCooSparseMatrixBin( (output_folder + "R_test_coo.data.bin").c_str(), (output_folder + "R_test_coo.row.bin").c_str(),
+							(output_folder + "R_test_coo.col.bin").c_str(),
+							cooValHostTestPtr, cooRowIndexTestHostPtr, cooColIndexTestHostPtr, parameters.nnz_test);
 
-	loadCSRSparseMatrixBin( (DATA_DIR + "/R_train_csr.data.bin").c_str(), (DATA_DIR + "/R_train_csr.indptr.bin").c_str(),
-							(DATA_DIR + "/R_train_csr.indices.bin").c_str(),
-			csrValHostPtr, csrRowIndexHostPtr, csrColIndexHostPtr, test_train_data_header.m, test_train_data_header.nnz_train);
+	loadCSRSparseMatrixBin( (output_folder + "R_train_csr.data.bin").c_str(), (output_folder + "R_train_csr.indptr.bin").c_str(),
+							(output_folder + "R_train_csr.indices.bin").c_str(),
+							csrValHostPtr, csrRowIndexHostPtr, csrColIndexHostPtr, parameters.m, parameters.nnz_train);
 
-	loadCSCSparseMatrixBin( (DATA_DIR + "/R_train_csc.data.bin").c_str(), (DATA_DIR + "/R_train_csc.indices.bin").c_str(),
-							(DATA_DIR +"/R_train_csc.indptr.bin").c_str(),
-		cscValHostPtr, cscRowIndexHostPtr, cscColIndexHostPtr, test_train_data_header.n, test_train_data_header.nnz_train);
+	loadCSCSparseMatrixBin( (output_folder + "R_train_csc.data.bin").c_str(), (output_folder + "R_train_csc.indices.bin").c_str(),
+							(output_folder +"R_train_csc.indptr.bin").c_str(),
+							cscValHostPtr, cscRowIndexHostPtr, cscColIndexHostPtr, parameters.n, parameters.nnz_train);
 
-	loadCooSparseMatrixRowPtrBin( (DATA_DIR + "/R_train_coo.row.bin").c_str(), cooRowIndexHostPtr, test_train_data_header.nnz_train);
+	loadCooSparseMatrixRowPtrBin( (output_folder + "R_train_coo.row.bin").c_str(), cooRowIndexHostPtr, parameters.nnz_train);
+
+#define DEBUG 1
+#ifdef DEBUG
+    printf("\nloaded training csr to host; print data, row and col array\n");
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%.1f ", csrValHostPtr[i]);
+	}
+	printf("\n");
+
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%d ", csrRowIndexHostPtr[i]);
+	}
+	printf("\n");
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%d ", csrColIndexHostPtr[i]);
+	}
+	printf("\n");
+
+	printf("\nloaded testing coo to host; print data, row and col array\n");
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%.1f ", cooValHostTestPtr[i]);
+	}
+	printf("\n");
+
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%d ", cooRowIndexTestHostPtr[i]);
+	}
+	printf("\n");
+	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+		printf("%d ", cooColIndexTestHostPtr[i]);
+	}
+	printf("\n");
+
+#endif
+
 
 	double t0 = seconds();
-
 	doALS(csrRowIndexHostPtr, csrColIndexHostPtr, csrValHostPtr,
-			cscRowIndexHostPtr, cscColIndexHostPtr, cscValHostPtr,
-			cooRowIndexHostPtr, thetaTHost, XTHost,
-			cooRowIndexTestHostPtr, cooColIndexTestHostPtr, cooValHostTestPtr,
-			test_train_data_header.m, test_train_data_header.n, test_train_data_header.f, test_train_data_header.nnz_train,
-			test_train_data_header.nnz_test, test_train_data_header.lambda,
-			ITERS, test_train_data_header.X_BATCH, test_train_data_header.THETA_BATCH, DEVICEID);
-	printf("\ndoALS takes seconds: %.3f for F = %d\n", seconds() - t0, test_train_data_header.f);
+		cscRowIndexHostPtr, cscColIndexHostPtr, cscValHostPtr,
+		cooRowIndexHostPtr, thetaTHost, XTHost,
+		cooRowIndexTestHostPtr, cooColIndexTestHostPtr, cooValHostTestPtr,
+		parameters.m, parameters.n, parameters.F, parameters.nnz_train, parameters.nnz_test, parameters.lambda,
+		ITERS, parameters.X_BATCH, parameters.THETA_BATCH, DEVICEID);
+	printf("\ndoALS takes seconds: %.3f for F = %d\n", seconds() - t0, parameters.F);
 
+
+	cudaFreeHost(csrRowIndexHostPtr);
+	cudaFreeHost(csrColIndexHostPtr);
+	cudaFreeHost(csrValHostPtr);
+	cudaFreeHost(cscValHostPtr);
+	cudaFreeHost(cscRowIndexHostPtr);
+	cudaFreeHost(cscColIndexHostPtr);
+	cudaFreeHost(cooRowIndexHostPtr);
+	cudaFreeHost(XTHost);
+	cudaFreeHost(thetaTHost);
+	cudacall(cudaDeviceReset());
+	printf("\nALS Done.\n");
 
 	return 0;
 }
