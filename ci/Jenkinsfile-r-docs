@@ -1,4 +1,3 @@
-git reset --hard origin/master
 #!/usr/bin/groovy
 
 @Library('test-shared-library@1.2') _
