@@ -1,0 +1,64 @@
+git reset --hard origin/master
+#!/usr/bin/groovy
+
+@Library('test-shared-library@1.2') _
+
+import ai.h2o.ci.Utils
+
+pipeline {
+    agent none
+
+    // Setup job options
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(time: 300, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+    stages {
+        stage("Generate Docs") {
+            agent {
+                label "linux && docker && !micro"
+            }
+            steps {
+                // Get source code
+                deleteDir()
+                checkout scm
+                dumpInfo()
+                script {
+                    docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
+                        docker.image("docker.h2o.ai/r-3-5").inside {
+                            sh """
+                               cd src/interface_r &&
+                               R3 -e 'pkgdown::build_site(examples=FALSE)'
+                               """
+                            archiveArtifacts artifacts: 'src/interface_r/'
+                        }
+
+                    }
+                }
+            }
+        }
+        stage("Publish to S3") {
+            agent {
+                label "linux && docker && !micro"
+            }
+            steps {
+                dumpInfo()
+                script {
+                    docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                            docker.image("docker.h2o.ai/s3cmd").inside {
+                                sh """
+                           s3cmd put --recursive -P src/interface_r/docs/* s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Rdocs-$BUILD_ID/interface_r/
+                           """
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
