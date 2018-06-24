@@ -234,7 +234,7 @@ main: host_utilities.o device_utilities.o cg.o als.o main.o
 	$(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -lineinfo -o $@ $+ $(LIBRARIES)
 #netflix
 run: main
-	 ./main 17770 480189 100 99072112 1408395 0.048 1 3 ./data/netflix/
+	 ./main ./data/reverse_netflix.mm ./data/reverse_netflix.mme ./data
 clean:
 	rm -f host_utilities.o device_utilities.o als.o main main.o cg.o
 

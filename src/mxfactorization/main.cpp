@@ -45,7 +45,7 @@ void process_test_train_data(const std::string& test_data_file,
 	CMatrix colMatrixTest, colMatrixTrain; RMatrix rowMatrixTest, rowMatrixTrain;
 	// read test and training data file in files/memory
 	// @TODO: multithreading
-	bool result = sparse::loadFileAsSparseMatrix(colMatrixTest, test_data_file);
+	bool result = sparse::loadFileAsSparseMatrix<decltype(colMatrixTest), sparse::InputFormatFile::column_row_value>(colMatrixTest, test_data_file);
 	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for test data file!");
 	result = sparse::loadFileAsSparseMatrix(rowMatrixTest, test_data_file);
 	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for test data file!");
@@ -69,18 +69,17 @@ void process_test_train_data(const std::string& test_data_file,
 
 	std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
 	// Process Test Data
-
-	sparse::serialize_test_data_coo_col_bin(rowMatrixTest, output_folder+"R_test_coo.col.bin");
-	sparse::serialize_test_data_coo_row_bin(rowMatrixTest, output_folder+"R_test_coo.row.bin");
-	sparse::serialize_test_data_coo_data_bin(rowMatrixTest, output_folder+"R_test_coo.data.bin");
+	sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
+	sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
+	sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
 	// Process Training Data
-	sparse::serialize_test_data_coo_row_bin(rowMatrixTrain, output_folder+"R_train_coo.row.bin");
-	sparse::serialize_test_data_coo_data_bin(colMatrixTrain, output_folder+"R_train_csc.data.bin");
-	sparse::serialize_test_data_coo_data_bin(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
-	sparse::serialize_indPtr(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
-	sparse::serialize_indPtr(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
-	sparse::serialize_indices(rowMatrixTrain, output_folder+"R_train_csr_indices.bin");
-	sparse::serialize_indices(colMatrixTrain, output_folder+"R_train_csc_indices.bin");
+	sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
+	sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
+	sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
+	sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
+	sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
+	sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
+	sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
 
 	printf("Input Data processed into binaries.\n");
 }
@@ -100,7 +99,6 @@ int main(int argc, char **argv)
 
 	process_test_train_data(test_data_file, training_data_file, output_folder, parameters);
 
-	return 0;
 
 	cudaSetDevice(DEVICEID);
 	int* csrRowIndexHostPtr;
