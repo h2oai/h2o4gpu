@@ -23,4 +23,4 @@ class TestKmeans(object):
         ffmh2o.fit(X,y)
         predictions = ffmh2o.predict(X)
 
-        assert np.allclose(predictions, [0.9930521 , 0.9775533 , 0.01786625])
+        assert np.allclose(predictions, [0.98332864 , 0.5750131  , 0.016816145], atol=0.1)

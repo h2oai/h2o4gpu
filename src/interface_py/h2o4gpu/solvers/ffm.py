@@ -86,18 +86,38 @@ class FFMH2O(object):
 
     @classmethod
     def _get_param_names(cls):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        """
         pass
 
     def get_params(self, deep=True):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        """
         pass
 
     def set_params(self, **params):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        """
         pass
 
     def fit(self, X, y, X_validate=None, y_validate=None):
+        """
+        Fit an FFM model. Validation dataset is not required but
+        highly recommended as FFMs tend to overfit.
+
+        :param X: 2D array-like of 3-tuples (field:feature:value)
+        :param y:
+            array-like containing training labels.
+            >0 labels are treated as positive <=0 as negatives
+        :param X_validate: 2D array-like of 3-tuples (field:feature:value)
+        :param y_validate:
+            array-like containing training labels.
+            >0 labels are treated as positive <=0 as negatives
+        :return:
+        """
         lib = self._load_lib()
 
         params = lib.params_ffm()
@@ -115,29 +135,39 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        fields, features, values, positions, num_nodes = self._numpy_to_ffm_rows(params, X)
+        fields, features, values, positions, num_nodes = \
+            self._numpy_to_ffm_rows(params, X)
         params.numNodes = num_nodes
 
         y_np = self._sanatize_labels(y)
 
-        fields_validation, features_validation, values_validation, positions_validation = None, None, None, None
+        fields_validation, features_validation, values_validation, \
+        positions_validation = None, None, None, None
         if X_validate is not None and y_validate is not None:
-            fields_validation, features_validation, values_validation, positions_validation, num_nodes_validate = self._numpy_to_ffm_rows(params, X_validate)
+            fields_validation, features_validation, values_validation, \
+            positions_validation, num_nodes_validate = \
+                self._numpy_to_ffm_rows(params, X_validate)
             params.numRowsVal = np.shape(X_validate)[0]
             params.numNodesVal = num_nodes_validate
 
         y_validation_np = self._sanatize_labels(y_validate)
 
-        self.weights = np.zeros(params.k * (np.max(features) + 1) * (np.max(fields) + 1), dtype=self.dtype)
+        self.weights = \
+            np.zeros(params.k * (np.max(features) + 1) * (np.max(fields) + 1),
+                     dtype=self.dtype)
 
         if self.dtype == np.float32:
-            self.actual_iterations = lib.ffm_fit_float(features, fields, values, y_np, positions,
-                              features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
-                              self.weights, params)
+            self.actual_iterations = \
+                lib.ffm_fit_float(features, fields, values, y_np, positions,
+                                  features_validation, fields_validation,
+                                  values_validation, y_validation_np,
+                                  positions_validation, self.weights, params)
         else:
-            self.actual_iterations = lib.ffm_fit_double(features, fields, values, y_np, positions,
-                               features_validation, fields_validation, values_validation, y_validation_np, positions_validation,
-                               self.weights, params)
+            self.actual_iterations = \
+                lib.ffm_fit_double(features, fields, values, y_np, positions,
+                                   features_validation, fields_validation,
+                                   values_validation, y_validation_np,
+                                   positions_validation, self.weights, params)
 
         self.learned_params = params
         return self
@@ -145,9 +175,19 @@ class FFMH2O(object):
     def _sanatize_labels(self, y):
         if y is None:
             return None
-        return np.array(list(map(lambda e: 1 if e > 0 else -1, y)), dtype=np.int32)
+        return np.array(
+            list(map(lambda e: 1 if e > 0 else -1, y)), dtype=np.int32)
 
     def _numpy_to_ffm_rows(self, params, X):
+        """
+        Breaks down a 2D array-like object of 3-tuple into structures which
+        can be passed to the C ffm backend: 1D arrays of fields, features,
+        values, row positions.
+
+        :param params:
+        :param X:
+        :return:
+        """
         import time
         start = time.time()
         nr_rows = np.shape(X)[0]
@@ -177,6 +217,12 @@ class FFMH2O(object):
         return fields, features, values, positions, num_nodes
 
     def predict(self, X):
+        """
+        Returns a prediction per row. Requires `fit()` to be ran beforehand.
+
+        :param X: 2D array-like of 3-tuples (field:feature:value)
+        :return: array of predictions, one per X row
+        """
         lib = self._load_lib()
 
         params = lib.params_ffm()
@@ -194,28 +240,48 @@ class FFMH2O(object):
 
         params.numRows = np.shape(X)[0]
 
-        fields, features, values, positions, num_nodes = self._numpy_to_ffm_rows(params, X)
+        fields, features, values, positions, num_nodes = \
+            self._numpy_to_ffm_rows(params, X)
         params.numNodes = num_nodes
 
         predictions = np.zeros(params.numRows, dtype=self.dtype)
 
         if self.dtype == np.float32:
-            lib.ffm_predict_float(features, fields, values, positions, predictions, self.weights, params)
+            lib.ffm_predict_float(
+                features, fields, values,
+                positions, predictions, self.weights, params)
         else:
-            lib.ffm_predict_double(features, fields, values, positions, predictions, self.weights, params)
+            lib.ffm_predict_double(
+                features, fields, values,
+                positions, predictions, self.weights, params)
 
         return predictions
 
     def transform(self, X, y=None):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        :param X:
+        :param y:
+        :return:
+        """
         pass
 
     def fit_transform(self, X, y=None):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        :param X:
+        :param y:
+        :return:
+        """
         pass
 
     def fit_predict(self, X, y=None):
-        # TODO implement
+        """
+        Not yet currently implemented, for API consistency purpose here.
+        :param X:
+        :param y:
+        :return:
+        """
         pass
 
     # TODO push to a common class
