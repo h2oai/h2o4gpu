@@ -181,6 +181,7 @@ ALL_LDFLAGS += $(addprefix -Xlinker ,$(EXTRA_LDFLAGS))
 ##monika
 INC_EIGEN := ../mxfactorization
 dbg := 1
+MULTITHREADED := 1
 ################################################################################
 
 # Gencode arguments
@@ -231,7 +232,11 @@ host_utilities.o:host_utilities.cpp
 device_utilities.o:device_utilities.cu
 	$(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -lineinfo -o $@ -c $<
 main: host_utilities.o device_utilities.o cg.o als.o main.o
+ifeq ($(MULTITHREADED),1)
+	$(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -lineinfo -o $@ $+ $(LIBRARIES) -D_REENTRANT -lpthread
+else
 	$(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -lineinfo -o $@ $+ $(LIBRARIES)
+endif
 #netflix
 run: main
 	 ./main ./data/reverse_netflix.mm ./data/reverse_netflix.mme ./data

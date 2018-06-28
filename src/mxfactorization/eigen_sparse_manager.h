@@ -193,11 +193,13 @@ namespace sparse {
 			wFile.close();
 		}
 #if DEBUG
-		log("* serialize_test_data_cool_col_bin");
+		log(" ");
 		auto iip = matrix.innerIndexPtr();
 		for (int i = 0; i < nnzs; i++) {
 			std::cout << iip[i]<< ' ';
+			if (i > 10) break;
 		}
+		std::cout << std::endl;
 #endif
 	}
 
@@ -216,11 +218,18 @@ namespace sparse {
 		for (size_t k = 0; k < outS; ++k) {
 			for(InnerIterator it(matrix, k); it; ++it) {
 				outer_rows.push_back(it.outer());
-#if DEBUG
-				std::cout << it.outer() << ' ';
-#endif
 			}
 		}
+
+#if DEBUG
+		log(" ");
+		for (size_t i = 0; i < outer_rows.size(); ++i) {
+			std::cout << outer_rows[i] << ' ';
+			if (i > 10) break;
+		}
+		std::cout << std::endl;
+#endif
+
 		wFile.open(filename, std::ios::binary | std::ios::out);
 		if (wFile.is_open()) {
 			wFile.write((const char *)&outer_rows[0], outer_rows.size() * sizeof(StorageIndex));
@@ -245,10 +254,13 @@ namespace sparse {
 		}
 
 #if DEBUG
+		log(" ");
 		auto iip = matrix.valuePtr();
 		for (int i = 0; i < nnzs; i++) {
 			std::cout << iip[i]<< ' ';
+			if (i > 10) break;
 		}
+		std::cout << std::endl;
 #endif
 	}
 
@@ -285,9 +297,11 @@ namespace sparse {
 		}
 
 #if DEBUG
-		std::cout << "indptr - row\n";
-		for (typename std::vector<Type>::const_iterator i = indPtrVec.begin(); i != indPtrVec.end(); ++i) {
+		log(" ");
+		int counter = 0;
+		for (typename std::vector<StorageIndex>::const_iterator i = indPtrVec.begin(); i != indPtrVec.end(); ++i, ++counter) {
 			std::cout << *i << ' ';
+			if (counter > 10) break;
 		}
 		std::cout << std::endl;
 #endif
@@ -305,10 +319,11 @@ namespace sparse {
 			wFile.close();
 		}
 #if DEBUG
-		std::cout << "indices\n";
+		log(" ");
 		auto iip = matrix.innerIndexPtr();
 		for (StorageIndex i = 0; i < nnzs; i++) {
 			std::cout << iip[i] << ' ';
+			if (i > 10) break;
 		}
 		std::cout << std::endl;
 #endif
@@ -316,249 +331,6 @@ namespace sparse {
 
 	} // end of namespace COL_ROW_VALUE
 
-
-		/* TEST DATA */
-		/* SERIALIZE coo.col.bin */
-		template <typename Type, typename StorageIndex=Type>
-		void serialize_test_data_coo_col_bin(Eigen::SparseMatrix<Type, Eigen::RowMajor, StorageIndex>& matrix, const std::string& filename="R_test_coo.col.bin") {
-			typedef typename Eigen::SparseMatrix<Type, Eigen::RowMajor, StorageIndex>::InnerIterator InnerIterator;
-			std::fstream wFile;
-
-			StorageIndex rows = matrix.rows();
-			StorageIndex cols = matrix.cols();
-			StorageIndex nnzs = matrix.nonZeros();
-			//StorageIndex outS = matrix.outerSize();
-			//StorageIndex innS = matrix.innerSize();
-
-			/*
-			std::string fileName, dirName, genFileName;
-			split_path(filename, dirName, fileName);
-			std::string newPath = dirName + '/' + fileName;
-			genFileName = ".col.bin";
-			*/
-
-			wFile.open(filename, std::ios::binary | std::ios::out);
-			if (wFile.is_open()) {
-				//wFile.write((const char *)&(rows), sizeof(StorageIndex));
-				//wFile.write((const char *)&(cols), sizeof(StorageIndex));
-				//wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-
-				wFile.write((const char *)(matrix.innerIndexPtr()), sizeof(StorageIndex) * nnzs);
-				wFile.close();
-			}
-
-	#if DEBUG
-			log("* serialize_test_data_cool_col_bin");
-			auto iip = matrix.innerIndexPtr();
-			for (int i = 0; i < nnzs; i++) {
-				std::cout << iip[i]<< ' ';
-			}
-	#endif
-		}
-
-		/* SERIALIZE coo.col.bin */
-		template <typename Type, typename StorageIndex=Type>
-		void serialize_test_data_coo_row_bin(Eigen::SparseMatrix<Type, Eigen::RowMajor, StorageIndex>& matrix, const std::string& filename="R_test_coo.row.bin") {
-			typedef typename Eigen::SparseMatrix<Type, Eigen::RowMajor, StorageIndex>::InnerIterator InnerIterator;
-			std::fstream wFile;
-
-			StorageIndex rows = matrix.rows();
-			StorageIndex cols = matrix.cols();
-			StorageIndex nnzs = matrix.nonZeros();
-			StorageIndex outS = matrix.outerSize();
-			//StorageIndex innS = matrix.innerSize();
-
-			std::vector<StorageIndex> outer_rows;
-			for (size_t k = 0; k < outS; ++k) {
-				for(InnerIterator it(matrix, k); it; ++it) {
-					outer_rows.push_back(it.outer());
-					//delete
-#if DEBUG
-					std::cout << it.outer() << ' ';
-#endif
-				}
-			}
-
-			wFile.open(filename, std::ios::binary | std::ios::out);
-			if (wFile.is_open()) {
-				//wFile.write((const char *)&(rows), sizeof(StorageIndex));
-				//wFile.write((const char *)&(cols), sizeof(StorageIndex));
-				//wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-
-				wFile.write((const char *)&outer_rows[0], outer_rows.size() * sizeof(StorageIndex));
-				wFile.close();
-			}
-		}
-
-		/* SERIALIZE coo.col.bin */
-		template <typename Type, int options=Eigen::RowMajor, typename StorageIndex=Type>
-		void serialize_test_data_coo_data_bin(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename="R_test_coo.data.bin") {
-			typedef typename Eigen::SparseMatrix<Type, options, StorageIndex>::InnerIterator InnerIterator;
-			std::fstream wFile;
-
-			StorageIndex rows = matrix.rows();
-			StorageIndex cols = matrix.cols();
-			StorageIndex nnzs = matrix.nonZeros();
-
-			wFile.open(filename, std::ios::binary | std::ios::out);
-			if (wFile.is_open()) {
-				//wFile.write((const char *)&(rows), sizeof(StorageIndex));
-				//wFile.write((const char *)&(cols), sizeof(StorageIndex));
-				//wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-
-				wFile.write((const char *)(matrix.valuePtr()), sizeof(StorageIndex) * nnzs);
-				wFile.close();
-			}
-#if DEBUG
-			std::cout << "valuePtr() ->\n";
-			auto iip = matrix.valuePtr();
-			for (int i = 0; i < nnzs; i++) {
-				std::cout << iip[i]<< ' ';
-			}
-#endif
-		}
-
-
-		/* DESERIALIZE row.bin */
-		template <typename Type, int options, typename StorageIndex>
-		void deserialize_test_data_row(const std::string& filename) {
-			std::fstream rFile;
-			rFile.open(filename+".row.bin", std::ios::binary | std::ios::in);
-			StorageIndex rows, cols, nnzs;
-			StorageIndex* innerIndexPtr = nullptr;
-			if (rFile.is_open()) {
-				rFile.read((char*)&rows, sizeof(StorageIndex));
-				rFile.read((char*)&cols, sizeof(StorageIndex));
-				rFile.read((char*)&nnzs, sizeof(StorageIndex));
-				innerIndexPtr = new StorageIndex[nnzs];
-
-				rFile.read((char*)&innerIndexPtr, sizeof(StorageIndex) * nnzs);
-				rFile.close();
-			}
-			for (size_t i = 0; i < nnzs; i++) {
-				std::cout << *innerIndexPtr<< ' ';
-				innerIndexPtr++;
-			}
-			std::cout << std::endl;
-			delete[] innerIndexPtr;
-		}
-
-
-		/* by default options = colMajor, all test data must be col_major
-		 * training data in col_major and row_matrain_data_file = '/home/monika/h2o/src/cuda_cu/cuMF/cumf_als/data/netflix/reverse_netflix.mm'
-	test_data_file = '/home/monika/h2o/src/cuda_cu/cuMF/cumf_als/data/netflix/reverse_netflix.mme'jor
-		 */
-		template <typename Type, int options, typename StorageIndex>
-		void serialize_test_data(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
-			typedef typename Eigen::SparseMatrix<Type, options, StorageIndex>::InnerIterator InnerIterator;
-			std::fstream wFile;
-			StorageIndex nnzs = matrix.nonZeros();
-			wFile.open(filename+".row.bin", std::ios::binary | std::ios::out);
-			if (wFile.is_open()) {
-				wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-				wFile.write((const char *)(matrix.innerIndexPtr()), sizeof(StorageIndex) * nnzs);
-				wFile.close();
-			}
-			wFile.open(filename+".data.bin", std::ios::binary | std::ios::out);
-			if (wFile.is_open()) {
-				wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-				wFile.write((const char *)(matrix.valuePtr()), sizeof(Type) * nnzs);
-				wFile.close();
-			}
-			wFile.open(filename+".col.bin", std::ios::binary | std::ios::out);
-			StorageIndex *cols = new StorageIndex[nnzs];
-			for (size_t k = 0; k < matrix.outerSize(); ++k) {
-				size_t index = 0;
-				for (InnerIterator it(matrix, k); it; ++it)
-				{
-					cols[index++]=it.col();
-				}
-			}
-			if (wFile.is_open()) {
-				wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-				wFile.write((const char *)cols, sizeof(Type)*nnzs);
-				wFile.close();
-			}
-		}
-
-
-		/* indPtr implementation */
-		template <typename Type, int options, typename StorageIndex>
-		std::vector<Type> indPtr(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix) {
-			std::vector<Type> indPtrVec = {0}; // initialize with zero
-			typedef typename Eigen::SparseMatrix<Type, options>::InnerIterator iit;
-			for (size_t k = 0; k < matrix.outerSize(); ++k) {
-				size_t index = 0;
-				for (iit it(matrix, k); it; ++it) {
-					++index;
-				}
-				Type pitch = indPtrVec.back();
-				indPtrVec.push_back(pitch+index);
-			}
-			return indPtrVec;
-			if (indPtrVec.size() != matrix.rows()+1)
-				throw std::length_error("indPtr has not the correct size: "+ std::to_string(matrix.rows()+1));
-		}
-
-
-		template <typename Type, int options, typename StorageIndex>
-			void serialize_indPtr(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
-				std::fstream wFile;
-				StorageIndex nnzs = matrix.nonZeros();
-				StorageIndex rows = matrix.rows();
-				StorageIndex cols = matrix.cols();
-
-				auto indPtrVec = sparse::indPtr(matrix);
-				wFile.open(filename, std::ios::binary | std::ios::out);
-				if (wFile.is_open()) {
-					//wFile.write((const char *)&(rows), sizeof(StorageIndex));
-					//wFile.write((const char *)&(cols), sizeof(StorageIndex));
-					//wFile.write((const char *)&(nnzs), sizeof(StorageIndex));
-					wFile.write((const char *)(indPtrVec.data()), sizeof(Type) * indPtrVec.size());
-					wFile.close();
-				}
-
-#if DEBUG
-				std::cout << "indptr - row\n";
-				for (typename std::vector<Type>::const_iterator i = indPtrVec.begin(); i != indPtrVec.end(); ++i) {
-					std::cout << *i << ' ';
-				}
-				std::cout << std::endl;
-#endif
-			}
-
-
-		// for testing
-		template <typename Type, int options, typename StorageIndex>
-			void deserialize_test_data(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
-				std::fstream wFile;
-				StorageIndex nnzs;
-				StorageIndex * innerPtr = new StorageIndex[10];
-				wFile.open(filename+".row.bin", std::ios::binary | std::ios::in);
-				if (wFile.is_open()) {
-					wFile.read((char *)&nnzs, sizeof(StorageIndex));
-					wFile.read((char *)(innerPtr), sizeof(Type) * nnzs);
-					//delete
-					for (int i = 0; i < nnzs; i++) {
-						std::cout << innerPtr[i] << " - ";
-					}
-					std::cout << std::endl;
-					wFile.close();
-				}
-			}
-
-
-		// Serialization - deserialization to binaries
-		template <typename Type, int options, typename StorageIndex>
-		void serialize(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
-			typedef typename Eigen::Triplet<Type> Triplet;
-			std::vector<Triplet> result;
-			int nnz = matrix.nonZeros();
-			matrix.makeCompressed();
-
-			std::fstream writeFile;
-			writeFile.open(filename, std::ios::binary | std::ios::out);
-		}
 } // namespase sparse
 
 

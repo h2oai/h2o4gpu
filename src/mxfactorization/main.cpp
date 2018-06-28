@@ -1,13 +1,14 @@
 
 #include "als.h"
-//#include "host_utilities.h"
 #include "eigen_sparse_manager.h"
-//#include "helper/debug_output.h"
 #include "host_utilities.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <stdexcept>
+#include <iostream>
+#include <stdexcept>
+#include <thread>
 
 #define DEBUG 1
 
@@ -24,7 +25,7 @@ static bool startsWith(const std::string& str, const std::string& prefix)
 	return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
 }
 
-template<typename Type=float>
+template<typename Type=float, bool Multithreaded=true>
 void process_test_train_data(const std::string& test_data_file,
 		const std::string& train_data_file,
 		const std::string& output_folder,
@@ -43,8 +44,8 @@ void process_test_train_data(const std::string& test_data_file,
 	typedef Eigen::SparseMatrix<Type, Eigen::RowMajor> RMatrix;
 
 	CMatrix colMatrixTest, colMatrixTrain; RMatrix rowMatrixTest, rowMatrixTrain;
+
 	// read test and training data file in files/memory
-	// @TODO: multithreading
 	bool result = sparse::loadFileAsSparseMatrix<decltype(colMatrixTest), sparse::InputFormatFile::column_row_value>(colMatrixTest, test_data_file);
 	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for test data file!");
 	result = sparse::loadFileAsSparseMatrix(rowMatrixTest, test_data_file);
@@ -67,20 +68,69 @@ void process_test_train_data(const std::string& test_data_file,
 	parameters.nnz_test = nnzs_test;
 	parameters.nnz_train = nnzs_train;
 
-	std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
-	// Process Test Data
-	sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
-	sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
-	sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
-	// Process Training Data
-	sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
-	sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
-	sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
-	sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
-	sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
-	sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
-	sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
+	//std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
 
+	if (Multithreaded) {
+		std::cout << "\nMultithreading ON.\n";
+		typedef void (*callback_col)(CMatrix&, const std::string&);
+		typedef void (*callback_row)(RMatrix&, const std::string&);
+		callback_col colFunc;
+		callback_row rowFunc;
+
+		auto funcCol = [](callback_col pColFunc, CMatrix& matrix, const std::string filename) {
+			pColFunc(matrix, filename);
+		};
+		auto funcRow = [](callback_row pRowFunc, RMatrix& matrix, const std::string filename) {
+			pRowFunc(matrix, filename);
+		};
+		// Process Testing Data
+		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
+		std::thread th1(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.row.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_COL_BIN;
+		std::thread th2(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.col.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th3(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.data.bin");
+		// Process Training Data
+		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
+		std::thread th4(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_coo.row.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th5(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.data.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th6(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.data.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
+		std::thread th7(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indptr.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
+		std::thread th8(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indptr.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
+		std::thread th9(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indices.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
+		std::thread th10(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indices.bin");
+
+		th1.join();
+		th2.join();
+		th3.join();
+		th4.join();
+		th5.join();
+		th6.join();
+		th7.join();
+		th8.join();
+		th9.join();
+		th10.join();
+	}
+	else {
+		// Process Testing Data
+		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
+		sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
+		// Process Training Data
+		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
+		sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
+		sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
+		sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
+		sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
+	}
 	printf("Input Data processed into binaries.\n");
 }
 
