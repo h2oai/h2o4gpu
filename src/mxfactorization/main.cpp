@@ -1,19 +1,30 @@
 
 #include "als.h"
+//#include "host_utilities.h"
 #include "eigen_sparse_manager.h"
+//#include "helper/debug_output.h"
 #include "host_utilities.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <stdexcept>
-#include <iostream>
-#include <stdexcept>
+
 #include <thread>
 
 #define DEBUG 1
 
 #define DEVICEID 0
 #define ITERS 10
+
+template<typename Type=float, bool Multithreaded=true>
+void process_test_train_data(const std::string& test_data_file,
+		const std::string& train_data_file,
+		const std::string& output_folder,
+		sparse::TestTrainDataHeader& parameters,
+		int F=100,
+		float lambda=0.048,
+		int X_BATCH=1,
+		int THETA_BATCH=3);
 
 static bool endsWith(const std::string& str, const std::string& suffix)
 {
@@ -25,130 +36,18 @@ static bool startsWith(const std::string& str, const std::string& prefix)
 	return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
 }
 
-template<typename Type=float, bool Multithreaded=true>
-void process_test_train_data(const std::string& test_data_file,
+void calculateTheta(const std::string& test_data_file,
 		const std::string& train_data_file,
 		const std::string& output_folder,
 		sparse::TestTrainDataHeader& parameters,
+		float *thetaTHost,
+		float* XTHost,
 		int F=100,
 		float lambda=0.048,
 		int X_BATCH=1,
-		int THETA_BATCH=3)
-{
-	parameters.setF(F);
-	parameters.setLambda(lambda);
-	parameters.setXBatch(X_BATCH);
-	parameters.setThetaBatch(THETA_BATCH);
+		int THETA_BATCH=3) {
 
-	typedef Eigen::SparseMatrix<Type, Eigen::ColMajor> CMatrix;
-	typedef Eigen::SparseMatrix<Type, Eigen::RowMajor> RMatrix;
-
-	CMatrix colMatrixTest, colMatrixTrain; RMatrix rowMatrixTest, rowMatrixTrain;
-
-	// read test and training data file in files/memory
-	bool result = sparse::loadFileAsSparseMatrix<decltype(colMatrixTest), sparse::InputFormatFile::column_row_value>(colMatrixTest, test_data_file);
-	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for test data file!");
-	result = sparse::loadFileAsSparseMatrix(rowMatrixTest, test_data_file);
-	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for test data file!");
-
-	result = sparse::loadFileAsSparseMatrix(colMatrixTrain, train_data_file);
-	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for training data file!");
-	result = sparse::loadFileAsSparseMatrix(rowMatrixTrain, train_data_file);
-	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for training data file!");
-
-
-	// generate TEST output data files
-	int m = rowMatrixTrain.rows();
-	int n = rowMatrixTrain.cols();
-	int nnzs_test = rowMatrixTest.nonZeros();
-	int nnzs_train = rowMatrixTrain.nonZeros();
-
-	parameters.m = m;
-	parameters.n = n;
-	parameters.nnz_test = nnzs_test;
-	parameters.nnz_train = nnzs_train;
-
-	//std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
-
-	if (Multithreaded) {
-		std::cout << "\nMultithreading ON.\n";
-		typedef void (*callback_col)(CMatrix&, const std::string&);
-		typedef void (*callback_row)(RMatrix&, const std::string&);
-		callback_col colFunc;
-		callback_row rowFunc;
-
-		auto funcCol = [](callback_col pColFunc, CMatrix& matrix, const std::string filename) {
-			pColFunc(matrix, filename);
-		};
-		auto funcRow = [](callback_row pRowFunc, RMatrix& matrix, const std::string filename) {
-			pRowFunc(matrix, filename);
-		};
-		// Process Testing Data
-		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
-		std::thread th1(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.row.bin");
-		colFunc = &sparse::COL_ROW_VALUE::serialize_COL_BIN;
-		std::thread th2(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.col.bin");
-		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-		std::thread th3(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.data.bin");
-		// Process Training Data
-		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
-		std::thread th4(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_coo.row.bin");
-		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-		std::thread th5(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.data.bin");
-		rowFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-		std::thread th6(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.data.bin");
-		colFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
-		std::thread th7(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indptr.bin");
-		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
-		std::thread th8(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indptr.bin");
-		colFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
-		std::thread th9(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indices.bin");
-		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
-		std::thread th10(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indices.bin");
-
-		th1.join();
-		th2.join();
-		th3.join();
-		th4.join();
-		th5.join();
-		th6.join();
-		th7.join();
-		th8.join();
-		th9.join();
-		th10.join();
-	}
-	else {
-		// Process Testing Data
-		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
-		sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
-		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
-		// Process Training Data
-		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
-		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
-		sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
-		sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
-		sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
-		sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
-		sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
-	}
-	printf("Input Data processed into binaries.\n");
-}
-
-int main(int argc, char **argv)
-{
-	if (argc != 4) {
-		printf("Usage: training_data testing_data output_folder.\n");
-		return 0;
-	}
-	std::string training_data_file(argv[1]);
-	std::string test_data_file(argv[2]);
-	std::string output_folder(argv[3]);
-	std::string slash("/");
-	if (!endsWith(output_folder, slash)) output_folder += "/";
-	sparse::TestTrainDataHeader parameters;
-
-	process_test_train_data(test_data_file, training_data_file, output_folder, parameters);
-
+	process_test_train_data(test_data_file, train_data_file, output_folder, parameters);
 
 	cudaSetDevice(DEVICEID);
 	int* csrRowIndexHostPtr;
@@ -166,11 +65,11 @@ int main(int argc, char **argv)
 	int* cooRowIndexHostPtr;
 	cudacall(cudaMallocHost( (void** ) &cooRowIndexHostPtr, parameters.nnz_train * sizeof(cooRowIndexHostPtr[0])) );
 
-	//calculate X from thetaT first, need to initialize thetaT
-	float* thetaTHost;
+	//calculatethetaTHost, XTHost X from thetaT first, need to initialize thetaT
+	//float* thetaTHost;
 	cudacall(cudaMallocHost( (void** ) &thetaTHost, parameters.n * parameters.F * sizeof(thetaTHost[0])) );
 
-	float* XTHost;
+	//float* XTHost;
 	cudacall(cudaMallocHost( (void** ) &XTHost, parameters.m * parameters.F * sizeof(XTHost[0])) );
 
 	//initialize thetaT on host
@@ -209,7 +108,7 @@ int main(int argc, char **argv)
 
 #define DEBUG 1
 #ifdef DEBUG
-    printf("\nloaded training csr to host; print data, row and col array\n");
+	printf("\nloaded training csr to host; print data, row and col array\n");
 	for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
 		printf("%.1f ", csrValHostPtr[i]);
 	}
@@ -262,7 +161,131 @@ int main(int argc, char **argv)
 	cudaFreeHost(XTHost);
 	cudaFreeHost(thetaTHost);
 	cudacall(cudaDeviceReset());
-	printf("\nALS Done.\n");
+
+}
+
+template<typename Type=float, bool Multithreaded=true>
+void process_test_train_data(const std::string& test_data_file,
+		const std::string& train_data_file,
+		const std::string& output_folder,
+		sparse::TestTrainDataHeader& parameters,
+		int F=100,
+		float lambda=0.048,
+		int X_BATCH=1,
+		int THETA_BATCH=3)
+{
+	parameters.setF(F);
+	parameters.setLambda(lambda);
+	parameters.setXBatch(X_BATCH);
+	parameters.setThetaBatch(THETA_BATCH);
+
+	typedef Eigen::SparseMatrix<Type, Eigen::ColMajor> CMatrix;
+	typedef Eigen::SparseMatrix<Type, Eigen::RowMajor> RMatrix;
+
+	CMatrix colMatrixTest, colMatrixTrain; RMatrix rowMatrixTest, rowMatrixTrain;
+	// read test and training data file in files/memory
+	bool result = sparse::loadFileAsSparseMatrix<decltype(colMatrixTest), sparse::InputFormatFile::column_row_value>(colMatrixTest, test_data_file);
+	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for test data file!");
+	result = sparse::loadFileAsSparseMatrix(rowMatrixTest, test_data_file);
+	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for test data file!");
+
+	result = sparse::loadFileAsSparseMatrix(colMatrixTrain, train_data_file);
+	if (!result) throw std::invalid_argument("Column Sparse Matrix cannot be loaded for training data file!");
+	result = sparse::loadFileAsSparseMatrix(rowMatrixTrain, train_data_file);
+	if (!result) throw std::invalid_argument("Row Sparse Matrix cannot be loaded for training data file!");
+
+
+	// generate TEST output data files
+	int m = rowMatrixTrain.rows();
+	int n = rowMatrixTrain.cols();
+	int nnzs_test = rowMatrixTest.nonZeros();
+	int nnzs_train = rowMatrixTrain.nonZeros();
+
+	parameters.m = m;
+	parameters.n = n;
+	parameters.nnz_test = nnzs_test;
+	parameters.nnz_train = nnzs_train;
+
+	std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
+
+	if (Multithreaded) {
+		std::cout << "\nMultithreading ON.\n";
+		typedef void (*callback_col)(CMatrix&, const std::string&);
+		typedef void (*callback_row)(RMatrix&, const std::string&);
+		callback_col colFunc;
+		callback_row rowFunc;
+
+		auto funcCol = [](callback_col pColFunc, CMatrix& matrix, const std::string filename) {
+			pColFunc(matrix, filename);
+		};
+		auto funcRow = [](callback_row pRowFunc, RMatrix& matrix, const std::string filename) {
+			pRowFunc(matrix, filename);
+		};
+		// Process Testing Data
+		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
+		std::thread th1(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.row.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_COL_BIN;
+		std::thread th2(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.col.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th3(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.data.bin");
+		// Process Training Data
+		colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
+		std::thread th4(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_coo.row.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th5(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.data.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
+		std::thread th6(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.data.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
+		std::thread th7(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indptr.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
+		std::thread th8(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indptr.bin");
+		colFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
+		std::thread th9(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indices.bin");
+		rowFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
+		std::thread th10(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indices.bin");
+
+		th1.join();
+		th2.join();
+		th3.join();
+		th4.join();
+		th5.join();
+		th6.join();
+		th7.join();
+		th8.join();
+		th9.join();
+		th10.join();
+	}
+	else {
+		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
+		sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
+		// Process Training Data
+		sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
+		sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
+		sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
+		sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
+		sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
+		sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
+	}
+	printf("Input Data processed into binaries.\n");
+}
+
+int main(int argc, char **argv)
+{
+	if (argc != 4) {
+		printf("Usage: training_data testing_data output_folder.\n");
+		return 0;
+	}
+	std::string training_data_file(argv[1]);
+	std::string test_data_file(argv[2]);
+	std::string output_folder(argv[3]);
+	std::string slash("/");
+	if (!endsWith(output_folder, slash)) output_folder += "/";
+	sparse::TestTrainDataHeader parameters;
+	float *thetaTHost, *XTHost;
+
+	calculateTheta(test_data_file, training_data_file, output_folder, parameters, thetaTHost, XTHost);
 
 	return 0;
 }
