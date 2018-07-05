@@ -25,12 +25,11 @@
 #ifndef EIGEN_SPARSE_MANAGER_H_
 #define EIGEN_SPARSE_MANAGER_H_
 
+#include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-//#include <Eigen/Dense>
 #include <vector>
 #include <cstddef>
 #include <type_traits>
@@ -96,9 +95,9 @@ namespace sparse {
 
 	/* reads file into matrix */
 	template<typename SparseMatrixType, InputFormatFile FormatFile = column_row_value>
-	bool loadFileAsSparseMatrix(SparseMatrixType& matrix, const std::string& filename) {
+	bool loadFileAsSparseMatrix(SparseMatrixType& matrix, const char* filename) {
 		typedef typename SparseMatrixType::Scalar Type;
-		std::ifstream input(filename.c_str(), std::ios::in);
+		std::ifstream input(filename, std::ios::in);
 		if (!input) return false;
 
 		const int maxBufferSize = 2048;
@@ -157,7 +156,7 @@ namespace sparse {
 	}
 
 	template<typename Type, int options, typename StorageIndex>
-	void serialize_indices(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
+	void serialize_indices(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const char* filename) {
 		std::fstream wFile;
 		StorageIndex nnzs = matrix.nonZeros();
 
@@ -181,7 +180,7 @@ namespace sparse {
 
 	/* row.bin */
 	template <typename Type, typename StorageIndex=int>
-	void serialize_ROW_BIN(Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>& matrix, const std::string& filename="R_test_coo.col.bin") {
+	void serialize_ROW_BIN(Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>& matrix, const char* filename="R_test_coo.col.bin") {
 		typedef typename Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>::InnerIterator InnerIterator;
 		std::fstream wFile;
 		StorageIndex nnzs = matrix.nonZeros();
@@ -330,6 +329,19 @@ namespace sparse {
 	}
 
 	} // end of namespace COL_ROW_VALUE
+
+
+	static bool endsWith(const std::string& str, const std::string& suffix)
+	{
+		return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
+	}
+
+	static bool startsWith(const std::string& str, const std::string& prefix)
+	{
+		return str.size() >= prefix.size() && 0 == str.compare(0, prefix.size(), prefix);
+	}
+
+
 
 } // namespase sparse
 

@@ -17,3 +17,4 @@
 %include "solver/tsvd.i"
 %include "matrix/matrix_dense.i"
 %include "util/gpu.i"
+%include "solver/matrixfactorization.i"

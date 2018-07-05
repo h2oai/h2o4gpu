@@ -40,6 +40,26 @@ ADD_DEFINITIONS(
         -DH2O4GPU_SINGLE
 )
 
+# monika
+#============= MULTITHREADING
+function(add_multithreading APPLICATION_NAME)
+		message(STATUS "Adding CPU multithreading.")
+		if (${CMAKE_VERSION} VERSION_LESS "3.1.0")
+			find_package(Threads REQUIRED)
+			if (THREADS_HAVE_PTHREAD_ARG)
+				target_compile_options(${APPLICATION_NAME} PUBLIC "-pthread")
+			endif()
+			if (CMAKE_THREAD_LIBS_INIT)
+				target_link_libraries(${APPLICATION_NAME} "${CMAKE_THREAD_LIBS_INIT}")
+			endif()
+		else()
+			set(THREADS_PREFER_PTHREAD_FLAG_ON)
+			find_package(Threads REQUIRED)
+			target_link_libraries(${APPLICATION_NAME} Threads::Threads)
+		endif()
+endfunction()
+# monika
+
 #============= BUILD COMMON CPU/GPU CODE
 FILE(GLOB_RECURSE COMMON_SOURCES
         src/common/*.cpp
@@ -92,6 +112,9 @@ SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
 if(USE_CUDA)
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
         FIND_PACKAGE(NVML REQUIRED)
+        # monika
+        add_multithreading("cpuh2o4gpu")
+        # monika
 
         #============= BUILD GPU LIBRARY
         ADD_DEFINITIONS(
