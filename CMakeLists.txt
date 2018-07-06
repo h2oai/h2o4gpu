@@ -7,13 +7,12 @@ SET_DEFAULT_CONFIGURATION_RELEASE()
 
 FIND_PACKAGE(OpenMP)
 FIND_PACKAGE(BLAS REQUIRED)
-FIND_PACKAGE(SWIG REQUIRED)
-FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
-
-INCLUDE(${SWIG_USE_FILE})
 
 #============= OPTIONS & SETTINGS
 OPTION(USE_CUDA  "Build with GPU acceleration" ON)
+OPTION(USE_SWIG "Use swig to generate language bindings." ON)
+OPTION(BUILD_TESTS "Build tests." ON)
+OPTION(USE_SYSTEM_GTEST "Use system google tests." ON)
 OPTION(DEV_BUILD  "Dev build" OFF)
 
 # Compiler flags
@@ -21,12 +20,6 @@ SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
-
-# PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
-# Open to suggestions how to do this better.
-EXECUTE_PROCESS(COMMAND python -c "import numpy; print(numpy.get_include())"
-        OUTPUT_VARIABLE PYTHON_INCLUDE_PATH_CUST
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 if(OpenMP_CXX_FOUND OR OPENMP_FOUND)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -49,13 +42,10 @@ FILE(GLOB_RECURSE COMMON_SOURCES
         )
 
 INCLUDE_DIRECTORIES(
-        src/include
-        src/cpu/include
-        # Here and not in target_include_directories b/c cmake < 3.7 which we use in Dockerfiles does not support it
-        src/gpu/include
-        ${PYTHON_INCLUDE_PATH}
-        ${PYTHON_INCLUDE_PATH_CUST}
-)
+  src/include
+  src/cpu/include
+  # Here and not in target_include_directories b/c cmake < 3.7 which we use in Dockerfiles does not support it
+  src/gpu/include)
 
 ADD_LIBRARY(commonh2o4gpu OBJECT ${COMMON_SOURCES})
 #============= BUILD COMMON CPU/GPU CODE
@@ -69,25 +59,6 @@ FILE(GLOB_RECURSE CPU_SOURCES
 ADD_LIBRARY(cpuh2o4gpu STATIC ${CPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu>)
 TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 #============= BUILD CPU LIBRARY
-
-#============= SWIG
-SET(CMAKE_SWIG_FLAGS -Werror)
-#============= SWIG
-
-#============= CPU SWIG
-SET_SOURCE_FILES_PROPERTIES(src/swig/ch2o4gpu_cpu.i PROPERTIES CPLUSPLUS ON)
-
-if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
-        SWIG_ADD_MODULE(ch2o4gpu_cpu python src/swig/ch2o4gpu_cpu.i)
-else()
-        SWIG_ADD_LIBRARY(ch2o4gpu_cpu LANGUAGE python SOURCES src/swig/ch2o4gpu_cpu.i)
-endif()
-
-SWIG_LINK_LIBRARIES(ch2o4gpu_cpu cpuh2o4gpu ${PYTHON_LIBRARIES})
-
-SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
-        LINK_FLAGS ${OpenMP_CXX_FLAGS})
-#============= CPU SWIG
 
 if(USE_CUDA)
         FIND_PACKAGE(CUDA 8.0 REQUIRED)
@@ -140,18 +111,29 @@ if(USE_CUDA)
                 ${NVTX_LIBRARY}
                 ${NVML_LIBRARY})
         #============= BUILD GPU LIBRARY
-
-        #============= GPU SWIG
-        SET_SOURCE_FILES_PROPERTIES(src/swig/ch2o4gpu_gpu.i PROPERTIES CPLUSPLUS ON)
-
-        if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
-                SWIG_ADD_MODULE(ch2o4gpu_gpu python src/swig/ch2o4gpu_gpu.i)
-        else()
-                SWIG_ADD_LIBRARY(ch2o4gpu_gpu LANGUAGE python SOURCES src/swig/ch2o4gpu_gpu.i)
-        endif()
-        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu ${PYTHON_LIBRARIES})
-
-        SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
-                LINK_FLAGS ${OpenMP_CXX_FLAGS})
-        #============= GPU SWIG
 endif()
+
+if(USE_SWIG)
+  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/src/swig)
+endif(USE_SWIG)
+
+#============= Tests
+if(BUILD_TESTS)
+  ENABLE_TESTING()
+  if (USE_SYSTEM_GTEST)
+    FIND_PACKAGE(GTest REQUIRED)
+  else ()
+    ADD_SUBDIRECTORY(${CMAKE_CURRENT_LIST_DIR}/tests/googletest)
+    SET(GTEST_LIBRARIES gtest gtest_main)
+  endif (USE_SYSTEM_GTEST)
+  if (USE_CUDA)
+    FILE(GLOB_RECURSE CUDA_TEST_SOURCES "tests/cpp/*.cu")
+    CUDA_COMPILE(CUDA_TEST_OBJS ${CUDA_TEST_SOURCES})
+  endif(USE_CUDA)
+
+  ADD_EXECUTABLE(test-h2o4gpu ${CUDA_TEST_OBJS})
+  TARGET_LINK_LIBRARIES(test-h2o4gpu ${GTEST_LIBRARIES})
+  TARGET_LINK_LIBRARIES(test-h2o4gpu gpuh2o4gpu)
+  ADD_TEST(TestH2O4GPU test-h2o4gpu)
+endif(BUILD_TESTS)
+#============= Tests

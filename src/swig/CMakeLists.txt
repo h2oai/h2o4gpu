@@ -1,0 +1,48 @@
+FIND_PACKAGE(SWIG REQUIRED)
+FIND_PACKAGE(PythonLibs REQUIRED)
+
+INCLUDE(${SWIG_USE_FILE})
+# PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
+# Open to suggestions how to do this better.
+include_directories(
+  ${PYTHON_INCLUDE_PATH}
+  ${PYTHON_INCLUDE_PATH_CUST})
+
+EXECUTE_PROCESS(COMMAND python -c "import numpy; print(numpy.get_include())"
+  OUTPUT_VARIABLE PYTHON_INCLUDE_PATH_CUST
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+#============= SWIG
+SET(CMAKE_SWIG_FLAGS -Werror)
+#============= SWIG
+
+#============= CPU SWIG
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_cpu.i PROPERTIES CPLUSPLUS ON)
+
+if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
+  SWIG_ADD_MODULE(ch2o4gpu_cpu python ${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_cpu.i)
+else()
+  SWIG_ADD_LIBRARY(ch2o4gpu_cpu LANGUAGE python SOURCES ${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_cpu.i)
+endif()
+
+SWIG_LINK_LIBRARIES(ch2o4gpu_cpu cpuh2o4gpu ${PYTHON_LIBRARIES})
+
+SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_cpu_REAL_NAME} PROPERTIES
+  LINK_FLAGS ${OpenMP_CXX_FLAGS})
+#============= CPU SWIG
+
+#============= GPU SWIG
+if(USE_CUDA)
+  SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_gpu.i PROPERTIES CPLUSPLUS ON)
+
+  if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
+    SWIG_ADD_MODULE(ch2o4gpu_gpu python ${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_gpu.i)
+  else()
+    SWIG_ADD_LIBRARY(ch2o4gpu_gpu LANGUAGE python SOURCES ${CMAKE_CURRENT_LIST_DIR}/ch2o4gpu_gpu.i)
+  endif()
+  SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu ${PYTHON_LIBRARIES})
+
+  SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
+    LINK_FLAGS ${OpenMP_CXX_FLAGS})
+endif(USE_CUDA)
+#============= GPU SWIG
