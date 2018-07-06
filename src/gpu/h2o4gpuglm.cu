@@ -10,6 +10,7 @@
 #include <thrust/transform.h>
 
 #include <algorithm>
+#include <numeric>
 #include <limits>
 #include <deque>
 
