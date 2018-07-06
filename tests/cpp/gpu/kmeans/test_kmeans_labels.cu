@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_labels.h"
+#include "../../../../src/gpu/kmeans/kmeans_labels.h"
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 

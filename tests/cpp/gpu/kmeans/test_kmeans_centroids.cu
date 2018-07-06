@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_centroids.h"
+#include "../../../../src/gpu/kmeans/kmeans_centroids.h"
 #include <thrust/host_vector.h>
 
 TEST(KMeansCentroids, CalculateCentroids) {
