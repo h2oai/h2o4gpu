@@ -4,7 +4,7 @@
  */
 #pragma once
 #include <vector>
-#include "cblas.h"
+#include "cblas/cblas.h"
 
 template<typename T>
 void self_dot(std::vector<T> array_in, int n, int dim,
