@@ -118,3 +118,5 @@ DOCKER_ARCH=
 ifeq (${ARCH}, ppc64le)
     DOCKER_ARCH="-ppc64le"
 endif
+
+TOP := $(shell pwd)

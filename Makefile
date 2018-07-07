@@ -52,7 +52,7 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-alldeps-install: deps_install fullinstall-xgboost libsklearn
+alldeps-install: deps_install fullinstall-xgboost
 
 alldeps: deps_fetch alldeps-install
 
@@ -63,12 +63,8 @@ deps_fetch:
 
 deps_install:
 	@echo "---- Install dependencies ----"
-	#-xargs -a requirements.txt -n 1 -P 1 $(PYTHON) -m pip install
 	easy_install pip
 	easy_install setuptools
-	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
-	$(PYTHON) -m pip install -r requirements.txt
-	rm -rf requirements.txt
 	bash scripts/install_r_deps.sh
 
 #########################################
@@ -82,12 +78,10 @@ cpp:
 	mkdir -p build && \
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
-	make -j && \
-	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
-	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
+	make -j
 
-py: apply-sklearn_simple build/VERSION.txt
-	$(MAKE) -j all -C src/interface_py
+py: cpp
+	cd src/interface_py && BINARY_DIR=$(TOP)/build $(PYTHON) setup.py install
 
 .PHONY: xgboost
 xgboost:
@@ -315,31 +309,6 @@ liblightgbm: # only done if user directly requests, never an explicit dependency
 	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
 	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; $(PYTHON) setup.py install --precompile --gpu && cd ../ && $(PYTHON) -m pip install arff tqdm keras runipy h5py
-
-libsklearn:	# assume already submodule gets sklearn
-	@echo "----- Make sklearn wheel -----"
-	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
-	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && $(PYTHON) setup.py sdist bdist_wheel
-
-apply-sklearn: libsklearn apply-sklearn_simple
-
-apply-sklearn_simple:
-    #	bash ./scripts/apply_sklearn.sh
-    ## apply sklearn
-	bash ./scripts/apply_sklearn_pipinstall.sh
-    ## link-up recursively
-	bash ./scripts/apply_sklearn_link.sh
-    # handle base __init__.py file appending
-	bash ./scripts/apply_sklearn_initmerge.sh
-
-apply-sklearn_pipinstall:
-	bash ./scripts/apply_sklearn_pipinstall.sh
-
-apply-sklearn_link:
-	bash ./scripts/apply_sklearn_link.sh
-
-apply-sklearn_initmerge:
-	bash ./scripts/apply_sklearn_initmerge.sh
 
 .PHONY: mrproper
 mrproper: clean
