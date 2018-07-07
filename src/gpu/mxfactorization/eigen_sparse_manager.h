@@ -25,7 +25,14 @@
 #ifndef EIGEN_SPARSE_MANAGER_H_
 #define EIGEN_SPARSE_MANAGER_H_
 
+#include "../../common/logger.h"
 #include <cstdio>
+/*************************************************************************
+ *
+ * Copyright (c) 2018, H2O.ai, Inc. All rights reserved.
+ *
+ ************************************************************************/
+
 #include <iostream>
 #include <fstream>
 #include <Eigen/Core>
@@ -34,19 +41,23 @@
 #include <cstddef>
 #include <type_traits>
 #include <stdexcept>
-
-#if DEBUG
-#define log(...) {											\
-	char str[82];											\
-	sprintf(str, __VA_ARGS__);								\
-	std::cout << "LOG: <" << __FILE__ << "><"<<__FUNCTION__<< "> "<<str << std::endl;\
-}
-#else
-#define log(...)
-#endif
+#include <string>
 
 
 namespace sparse {
+
+	struct Verbose {
+		static int value;
+	} v;
+
+	int Verbose::value = 300;
+
+	auto file_name_creator = [](const char* a, const char* b)->
+			const char* {
+							std::string as = a;
+							std::string bs = b;
+							return (as+bs).c_str();
+						};
 
 	struct TestTrainDataHeader {
 		int m;
@@ -131,21 +142,21 @@ namespace sparse {
 						++count;
 						elements.push_back(T(i,j,value));
 					} else {
-						std::cerr << "Invalid read: "<< i << ","<< j << "\n";
+						log_error(Verbose::value, "Invalid file read: %d, %d", i,j);
 					}
 				} else {
 					if (getLine(line, m, n, i, j, value)) {
 						++count;
 						elements.push_back(T(i,j,value));
 					} else {
-						std::cerr << "Invalid read: "<< i << ","<< j << "\n";
+						log_error(Verbose::value, "Invalid file read: %d, %d", i,j);
 					}
 				}
 			}
 		}
 		matrix.setFromTriplets(elements.begin(), elements.end());
 		if (count != nnz)
-			std::cerr << count << "!=" << nnz << "\n";
+			log_error(Verbose::value, "NNZ is not correct: %d != %d", count, nnz);
 		input.close();
 		return true;
 	}
@@ -156,7 +167,7 @@ namespace sparse {
 	}
 
 	template<typename Type, int options, typename StorageIndex>
-	void serialize_indices(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const char* filename) {
+	void serialize_indices(Eigen::SparseMatrix<Type, options, StorageIndex>& matrix, const std::string& filename) {
 		std::fstream wFile;
 		StorageIndex nnzs = matrix.nonZeros();
 
@@ -166,40 +177,34 @@ namespace sparse {
 			wFile.close();
 		}
 
-#if DEBUG
-		std::cout << "indices\n";
+
 		auto iip = matrix.innerIndexPtr();
 		for (StorageIndex i = 0; i < nnzs; i++) {
-			std::cout << iip[i] << ' ';
+			log_debug(Verbose::value, "%d, ", iip[i]);
+			if (i > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 	}
 
 	namespace COL_ROW_VALUE {
 
 	/* row.bin */
 	template <typename Type, typename StorageIndex=int>
-	void serialize_ROW_BIN(Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>& matrix, const char* filename="R_test_coo.col.bin") {
+	void serialize_ROW_BIN(Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>& matrix, const std::string& filename="R_test_coo.col.bin") {
 		typedef typename Eigen::SparseMatrix<Type, Eigen::ColMajor, StorageIndex>::InnerIterator InnerIterator;
 		std::fstream wFile;
 		StorageIndex nnzs = matrix.nonZeros();
 
 		wFile.open(filename, std::ios::binary | std::ios::out);
 		if (wFile.is_open()) {
-
 			wFile.write((const char *)(matrix.innerIndexPtr()), sizeof(StorageIndex) * nnzs);
 			wFile.close();
 		}
-#if DEBUG
-		log(" ");
+
 		auto iip = matrix.innerIndexPtr();
 		for (int i = 0; i < nnzs; i++) {
-			std::cout << iip[i]<< ' ';
+			log_debug(Verbose::value, "%d, ", iip[i]);
 			if (i > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 	}
 
 	/* col.bin */
@@ -220,14 +225,11 @@ namespace sparse {
 			}
 		}
 
-#if DEBUG
-		log(" ");
+
 		for (size_t i = 0; i < outer_rows.size(); ++i) {
-			std::cout << outer_rows[i] << ' ';
+			log_debug(Verbose::value, "%d, ", outer_rows[i]);
 			if (i > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 
 		wFile.open(filename, std::ios::binary | std::ios::out);
 		if (wFile.is_open()) {
@@ -252,15 +254,12 @@ namespace sparse {
 			wFile.close();
 		}
 
-#if DEBUG
-		log(" ");
+
 		auto iip = matrix.valuePtr();
 		for (int i = 0; i < nnzs; i++) {
-			std::cout << iip[i]<< ' ';
+			log_debug(Verbose::value, "%d, ", iip[i]);
 			if (i > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 	}
 
 	/* train Indptr */
@@ -295,15 +294,12 @@ namespace sparse {
 			wFile.close();
 		}
 
-#if DEBUG
-		log(" ");
+
 		int counter = 0;
 		for (typename std::vector<StorageIndex>::const_iterator i = indPtrVec.begin(); i != indPtrVec.end(); ++i, ++counter) {
-			std::cout << *i << ' ';
+			log_debug(Verbose::value, "%d, ", *i);
 			if (counter > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 	}
 
 	/* Indices */
@@ -317,15 +313,11 @@ namespace sparse {
 			wFile.write((const char *)(matrix.innerIndexPtr()), sizeof(StorageIndex) * nnzs);
 			wFile.close();
 		}
-#if DEBUG
-		log(" ");
 		auto iip = matrix.innerIndexPtr();
 		for (StorageIndex i = 0; i < nnzs; i++) {
-			std::cout << iip[i] << ' ';
+			log_debug(Verbose::value, "%d, ", iip[i]);
 			if (i > 10) break;
 		}
-		std::cout << std::endl;
-#endif
 	}
 
 	} // end of namespace COL_ROW_VALUE

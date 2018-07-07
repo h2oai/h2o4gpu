@@ -1,18 +1,19 @@
-/*
- * mxfactorization.cu
+/*************************************************************************
  *
- *  Created on: Jul 4, 2018
- *      Author: monika
- */
+ * Copyright (c) 2018, H2O.ai, Inc. All rights reserved.
+ *
+ ************************************************************************/
+
 #include "../../include/solver/matrixfactorization.h"
+#include "../../common/logger.h"
 #include "als.h"
 #include "eigen_sparse_manager.h"
-#include "host_utilities"
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "host_utilities.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stdexcept>
-#include <cthread>
+#include <thread>
 
 namespace matrixfactorization {
 
@@ -25,7 +26,7 @@ namespace matrixfactorization {
 	 * @param parameters
 	 */
 	
-	template<typename Type=float, bool Multithreaded=true>
+	template<typename Type, bool Multithreaded>
 	void process_data(const char* test_data_file,
 			const char* train_data_file,
 			const char* output_folder,
@@ -59,10 +60,11 @@ namespace matrixfactorization {
 		parameters.nnz_test = nnzs_test;
 		parameters.nnz_train = nnzs_train;
 
-		std::cout << "m = "<<m<<" , n = "<<n<<" , nnz_test = "<<nnzs_test<<" , nnz_train = "<<nnzs_train<< '\n';
+		log_info(sparse::Verbose::value, "Sparse matrix %dx%d, nnz_test=%d, nnz_train=%d", m, n, nnzs_test, nnzs_train);
 
 		if (Multithreaded) {
 			std::cout << "\nMultithreading ON.\n";
+			
 			typedef void (*callback_col)(CMatrix&, const std::string&);
 			typedef void (*callback_row)(RMatrix&, const std::string&);
 			callback_col colFunc;
@@ -76,26 +78,26 @@ namespace matrixfactorization {
 			};
 			// Process Testing Data
 			colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
-			std::thread th1(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.row.bin");
+			std::thread th1(funcCol, colFunc, std::ref(colMatrixTest), sparse::file_name_creator(output_folder,"R_test_coo.row.bin"));
 			colFunc = &sparse::COL_ROW_VALUE::serialize_COL_BIN;
-			std::thread th2(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.col.bin");
+			std::thread th2(funcCol, colFunc, std::ref(colMatrixTest), sparse::file_name_creator(output_folder,"R_test_coo.col.bin"));
 			colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-			std::thread th3(funcCol, colFunc, std::ref(colMatrixTest), output_folder+"R_test_coo.data.bin");
+			std::thread th3(funcCol, colFunc, std::ref(colMatrixTest), sparse::file_name_creator(output_folder,"R_test_coo.data.bin"));
 			// Process Training Data
 			colFunc = &sparse::COL_ROW_VALUE::serialize_ROW_BIN;
-			std::thread th4(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_coo.row.bin");
+			std::thread th4(funcCol, colFunc, std::ref(colMatrixTrain), sparse::file_name_creator(output_folder,"R_train_coo.row.bin"));
 			colFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-			std::thread th5(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.data.bin");
+			std::thread th5(funcCol, colFunc, std::ref(colMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csc.data.bin"));
 			rowFunc = &sparse::COL_ROW_VALUE::serialize_DATA_BIN;
-			std::thread th6(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.data.bin");
+			std::thread th6(funcRow, rowFunc, std::ref(rowMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csr.data.bin"));
 			colFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
-			std::thread th7(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indptr.bin");
+			std::thread th7(funcCol, colFunc, std::ref(colMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csc.indptr.bin"));
 			rowFunc = &sparse::COL_ROW_VALUE::serialize_INDPTR;
-			std::thread th8(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indptr.bin");
+			std::thread th8(funcRow, rowFunc, std::ref(rowMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csr.indptr.bin"));
 			colFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
-			std::thread th9(funcCol, colFunc, std::ref(colMatrixTrain), output_folder+"R_train_csc.indices.bin");
+			std::thread th9(funcCol, colFunc, std::ref(colMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csc.indices.bin"));
 			rowFunc = &sparse::COL_ROW_VALUE::serialize_INDICES;
-			std::thread th10(funcRow, rowFunc, std::ref(rowMatrixTrain), output_folder+"R_train_csr.indices.bin");
+			std::thread th10(funcRow, rowFunc, std::ref(rowMatrixTrain), sparse::file_name_creator(output_folder,"R_train_csr.indices.bin"));
 
 			th1.join();
 			th2.join();
@@ -109,19 +111,19 @@ namespace matrixfactorization {
 			th10.join();
 		}
 		else {
-			sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, output_folder+"R_test_coo.row.bin");
-			sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, output_folder+"R_test_coo.col.bin");
-			sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, output_folder+"R_test_coo.data.bin");
+			sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTest, sparse::file_name_creator(output_folder, "R_test_coo.row.bin"));
+			sparse::COL_ROW_VALUE::serialize_COL_BIN(colMatrixTest, sparse::file_name_creator(output_folder,"R_test_coo.col.bin"));
+			sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTest, sparse::file_name_creator(output_folder,"R_test_coo.data.bin"));
 			// Process Training Data
-			sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, output_folder+"R_train_coo.row.bin");
-			sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, output_folder+"R_train_csc.data.bin");
-			sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, output_folder+"R_train_csr.data.bin");
-			sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, output_folder+"R_train_csc.indptr.bin");
-			sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, output_folder+"R_train_csr.indptr.bin");
-			sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, output_folder+"R_train_csc.indices.bin");
-			sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, output_folder+"R_train_csr.indices.bin");
+			sparse::COL_ROW_VALUE::serialize_ROW_BIN(colMatrixTrain, sparse::file_name_creator(output_folder,"R_train_coo.row.bin"));
+			sparse::COL_ROW_VALUE::serialize_DATA_BIN(colMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csc.data.bin"));
+			sparse::COL_ROW_VALUE::serialize_DATA_BIN(rowMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csr.data.bin"));
+			sparse::COL_ROW_VALUE::serialize_INDPTR(colMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csc.indptr.bin"));
+			sparse::COL_ROW_VALUE::serialize_INDPTR(rowMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csr.indptr.bin"));
+			sparse::COL_ROW_VALUE::serialize_INDICES(colMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csc.indices.bin"));
+			sparse::COL_ROW_VALUE::serialize_INDICES(rowMatrixTrain, sparse::file_name_creator(output_folder,"R_train_csr.indices.bin"));
 		}
-		printf("Input Data processed into binaries.\n");
+		log_info(sparse::Verbose::value, "Input Data processed into binaries.");
 	}
 	
 	/** 
@@ -144,17 +146,21 @@ namespace matrixfactorization {
 			int F,
 			float lambda,
 			int X_BATCH,
-			int THETA_BATCH) {
+			int THETA_BATCH,
+			int n_iter,
+			int verbose,
+			int gpu_id) {
 					
+		sparse::Verbose::value = verbose;
 		sparse::TestTrainDataHeader parameters;
 		parameters.setF(F);
 		parameters.setLambda(lambda);
 		parameters.setXBatch(X_BATCH);
 		parameters.setThetaBatch(THETA_BATCH);
 
-		process_test_train_data(test_data_file, train_data_file, output_folder, parameters);
+		process_data<float, true>(test_data_file, train_data_file, output_folder, parameters);
 
-		cudaSetDevice(DEVICEID);
+		cudaSetDevice(gpu_id);
 		int* csrRowIndexHostPtr;
 		cudacall(cudaMallocHost( (void** ) &csrRowIndexHostPtr, (parameters.m + 1) * sizeof(csrRowIndexHostPtr[0])) );
 		int* csrColIndexHostPtr;
@@ -185,7 +191,7 @@ namespace matrixfactorization {
 		//CG needs to initialize X as well
 		for (int k = 0; k < parameters.m * parameters.F; k++)
 			XTHost[k] = 0;//0.1*((float) rand() / (float)RAND_MAX);;
-		printf("*******start loading training and testing sets to host.\n");
+		log_info(sparse::Verbose::value, "Start loading training and testing sets to host.");
 		//testing set
 		int* cooRowIndexTestHostPtr = (int *) malloc(
 				parameters.nnz_test * sizeof(cooRowIndexTestHostPtr[0]));
@@ -197,53 +203,51 @@ namespace matrixfactorization {
 		gettimeofday(&tv0, NULL);
 
 		/* load sparseMatrixBins */
-		loadCooSparseMatrixBin( (output_folder + "R_test_coo.data.bin").c_str(), (output_folder + "R_test_coo.row.bin").c_str(),
-								(output_folder + "R_test_coo.col.bin").c_str(),
+		loadCooSparseMatrixBin( sparse::file_name_creator(output_folder,"R_test_coo.data.bin"), 
+								sparse::file_name_creator(output_folder,"R_test_coo.row.bin"),
+								sparse::file_name_creator(output_folder,"R_test_coo.col.bin"),
 								cooValHostTestPtr, cooRowIndexTestHostPtr, cooColIndexTestHostPtr, parameters.nnz_test);
 
-		loadCSRSparseMatrixBin( (output_folder + "R_train_csr.data.bin").c_str(), (output_folder + "R_train_csr.indptr.bin").c_str(),
-								(output_folder + "R_train_csr.indices.bin").c_str(),
+		loadCSRSparseMatrixBin( sparse::file_name_creator(output_folder,"R_train_csr.data.bin"), 
+								sparse::file_name_creator(output_folder,"R_train_csr.indptr.bin"),
+								sparse::file_name_creator(output_folder,"R_train_csr.indices.bin"),
 								csrValHostPtr, csrRowIndexHostPtr, csrColIndexHostPtr, parameters.m, parameters.nnz_train);
 
-		loadCSCSparseMatrixBin( (output_folder + "R_train_csc.data.bin").c_str(), (output_folder + "R_train_csc.indices.bin").c_str(),
-								(output_folder +"R_train_csc.indptr.bin").c_str(),
+		loadCSCSparseMatrixBin( sparse::file_name_creator(output_folder,"R_train_csc.data.bin"), 
+								sparse::file_name_creator(output_folder,"R_train_csc.indices.bin"),
+								sparse::file_name_creator(output_folder,"R_train_csc.indptr.bin"),
 								cscValHostPtr, cscRowIndexHostPtr, cscColIndexHostPtr, parameters.n, parameters.nnz_train);
 
-		loadCooSparseMatrixRowPtrBin( (output_folder + "R_train_coo.row.bin").c_str(), cooRowIndexHostPtr, parameters.nnz_train);
+		loadCooSparseMatrixRowPtrBin( sparse::file_name_creator(output_folder,"R_train_coo.row.bin"), 
+								cooRowIndexHostPtr, 
+								parameters.nnz_train);
 
-	#define DEBUG 1
-	#ifdef DEBUG
-		printf("\nloaded training csr to host; print data, row and col array\n");
-		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%.1f ", csrValHostPtr[i]);
-		}
-		printf("\n");
 
+		log_debug(sparse::Verbose::value, "Loaded training csr to host; print data, row and col array.");
 		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%d ", csrRowIndexHostPtr[i]);
+			log_debug(sparse::Verbose::value, "%.1f ", csrValHostPtr[i]);
 		}
-		printf("\n");
-		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%d ", csrColIndexHostPtr[i]);
-		}
-		printf("\n");
-
-		printf("\nloaded testing coo to host; print data, row and col array\n");
-		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%.1f ", cooValHostTestPtr[i]);
-		}
-		printf("\n");
 
 		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%d ", cooRowIndexTestHostPtr[i]);
+			log_debug(sparse::Verbose::value, "%d ", csrRowIndexHostPtr[i]);
 		}
-		printf("\n");
+		
 		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
-			printf("%d ", cooColIndexTestHostPtr[i]);
+			log_debug(sparse::Verbose::value, "%d ", csrColIndexHostPtr[i]);
 		}
-		printf("\n");
+		
+		log_debug(sparse::Verbose::value, "Loaded training coo to host; print data, row and col array.");
+		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+			log_debug(sparse::Verbose::value, "%.1f ", cooValHostTestPtr[i]);
+		}
 
-	#endif
+		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+			log_debug(sparse::Verbose::value, "%d ", cooRowIndexTestHostPtr[i]);
+		}
+		
+		for (int i = 0; i < parameters.nnz_train && i < 10; i++) {
+			log_debug(sparse::Verbose::value, "%d ", cooColIndexTestHostPtr[i]);
+		}
 
 
 		double t0 = seconds();
@@ -252,9 +256,8 @@ namespace matrixfactorization {
 			cooRowIndexHostPtr, thetaTHost, XTHost,
 			cooRowIndexTestHostPtr, cooColIndexTestHostPtr, cooValHostTestPtr,
 			parameters.m, parameters.n, parameters.F, parameters.nnz_train, parameters.nnz_test, parameters.lambda,
-			ITERS, parameters.X_BATCH, parameters.THETA_BATCH, DEVICEID);
-		printf("\ndoALS takes seconds: %.3f for F = %d\n", seconds() - t0, parameters.F);
-
+			n_iter, parameters.X_BATCH, parameters.THETA_BATCH, gpu_id);
+		log_info(sparse::Verbose::value, "doALS takes seconds: %.3f for F = %d\n", seconds() - t0, parameters.F);
 
 		cudaFreeHost(csrRowIndexHostPtr);
 		cudaFreeHost(csrColIndexHostPtr);
@@ -266,9 +269,7 @@ namespace matrixfactorization {
 		cudaFreeHost(XTHost);
 		cudaFreeHost(thetaTHost);
 		cudacall(cudaDeviceReset());
-
 	}
 	
 }  // namespace matrixfactorization
 
-#endif /* SRC_GPU_MXFACTORIZATION_MATRIXFACTORIZATION_CU_ */
