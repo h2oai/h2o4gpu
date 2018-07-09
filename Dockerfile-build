@@ -169,6 +169,7 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
+    apt-get install -y software-properties-common && \
     add-apt-repository universe && \
     apt-get update && \
 	apt-get install -y libboost-dev libboost-system-dev libboost-filesystem-dev cmake opencl-headers
