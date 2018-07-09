@@ -170,15 +170,15 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
 	yum install -y opencl-headers && \
-	yum install -y boost boost-devel boost-system boost-filesystem boost-thread && \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
     tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
     ./b2 install --prefix=/opt/boost/ --with=all -j 20 && \
-    cd /usr/include ; rm -rf boost ; cp -a /opt/boost/include boost/ && \
-    cd /usr/lib ; rm -rf boost ; cp -a /opt/boost/lib boost/
+    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
+    cd /usr/lib64/ ; ln -s /opt/boost/lib/* .
 
+#	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
 ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
 
