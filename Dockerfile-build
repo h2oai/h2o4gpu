@@ -169,14 +169,14 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y opencl-headers && \
+	yum install -y opencl-headers icu bzip2 bzip2-devel icu-devel zlib-devel && \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
     tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
-    ./b2 install --prefix=/opt/boost/ --with=all -j 20 && \
+    ./b2 -a -d0 install --prefix=/opt/boost/ --with=all -j 20 && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; rm -rf libboost* ; ln -s /opt/boost/lib/* .
+    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* .
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
