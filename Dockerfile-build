@@ -176,7 +176,7 @@ RUN \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
     ./b2 install --prefix=/opt/boost/ --with=all -j 20 && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; ln -s /opt/boost/lib/* .
+    cd /usr/lib64/ ; rm -rf libboost* ; ln -s /opt/boost/lib/* .
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
