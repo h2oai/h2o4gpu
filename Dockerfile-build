@@ -169,7 +169,18 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y boost boost-devel boost-system boost-filesystem boost-thread opencl-headers
+	yum install -y opencl-headers && \
+	yum install -y boost boost-devel boost-system boost-filesystem boost-thread && \
+    wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
+    tar xvjf boost_1_56_0.tar.bz2 && \
+    cd boost_1_56_0 && \
+    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
+    ./b2 install --prefix=/opt/boost/ --with=all -j 20 && \
+    cd /usr/include ; rm -rf boost ; cp -a /opt/boost/include boost/ && \
+    cd /usr/lib ; rm -rf boost ; cp -a /opt/boost/lib boost/
+
+ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
+
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
