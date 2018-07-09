@@ -52,7 +52,7 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-alldeps-install: deps_install fullinstall-xgboost libsklearn
+alldeps-install: deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
 
 alldeps: deps_fetch alldeps-install
 
@@ -96,6 +96,25 @@ xgboost:
 
 fullinstall-xgboost: xgboost install_xgboost
 
+.PHONY: lightgbm
+lightgbm:
+	@echo "----- Building LightGBM target $(LIGHTGBM_TARGET) -----"
+	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
+	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
+	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
+	cd LightGBM && (rm -rf build || true) && mkdir -p build ; cd build && cmake .. -DUSE_GPU=1 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && \
+	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. && \
+	cd python-package ; $(PYTHON) setup.py install --precompile --gpu && cd .. && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && ln -s ../../include . && cd ../../ && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && ln -s ../../src . && cd ../../ && \
+	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && \
+	$(PYTHON) -m pip install arff tqdm keras runipy h5py
+
+
+fullinstall-lightgbm: lightgbm install_lightgbm
+
 #########################################
 # SOURCE QUALITY CHECK TARGETS
 #########################################
@@ -121,6 +140,10 @@ install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-0.*-py3-none-any.whl --target ../
 
+install_lightgbm:
+	@echo "----- pip install lightgbm built locally -----"
+	cd LightGBM/python-package/dist && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target ../
+
 install_py:
 	$(MAKE) -j install -C src/interface_py
 
@@ -130,7 +153,7 @@ install: install_py
 # CLEANING TARGETS
 #########################################
 
-clean: clean_py3nvml clean_xgboost clean_deps clean_py  clean_cpp
+clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
@@ -144,6 +167,10 @@ clean_py:
 clean_xgboost:
 	-$(PYTHON) -m pip uninstall -y xgboost
 	rm -rf xgboost/build/
+
+clean_lightgbm:
+	-$(PYTHON) -m pip uninstall -y lightgbm
+	rm -rf LightGBM/build/
 
 clean_py3nvml:
 	-$(PYTHON) -m pip uninstall -y py3nvml
@@ -310,11 +337,11 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-liblightgbm: # only done if user directly requests, never an explicit dependency
-	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
-	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
-	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
-	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; $(PYTHON) setup.py install --precompile --gpu && cd ../ && $(PYTHON) -m pip install arff tqdm keras runipy h5py
+#liblightgbm: # only done if user directly requests, never an explicit dependency
+#	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
+#	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
+#	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
+#	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; $(PYTHON) setup.py install --precompile --gpu && cd ../ && $(PYTHON) -m pip install arff tqdm keras runipy h5py
 
 libsklearn:	# assume already submodule gets sklearn
 	@echo "----- Make sklearn wheel -----"

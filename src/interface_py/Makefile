@@ -30,8 +30,9 @@ prep:
 
 all: prep
 
-	# for incorporating xgboost and py3nvml builds
+	# for incorporating xgboost and py3nvml and lightgbm builds
 	ln -sf ../../xgboost/python-package/xgboost .
+	ln -sf ../../LightGBM/python-package/lightgbm .
 	ln -sf ../../py3nvml/py3nvml .
 
 	$(PYTHON) setup.py sdist bdist_wheel
@@ -39,6 +40,10 @@ all: prep
 	# update build with xgboost shared library
 	mkdir -p build/lib/xgboost/
 	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/python-package/xgboost/libxgboost.so . ; cd ../../../
+
+	# update build with xgboost shared library
+	mkdir -p build/lib/lightgbm/
+	cd build/lib/lightgbm/ ; ln -sf ../../../../../LightGBM/lib_lightgbm.so . ; cd ../../../
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
@@ -53,6 +58,7 @@ install:
 	-cd ../.. && $(PYTHON) -m pip uninstall -y h2o4gpu
 	-cd ../.. && $(PYTHON) -m pip uninstall -y xgboost
 	-cd ../.. && $(PYTHON) -m pip uninstall -y py3nvml
+	-cd ../.. && $(PYTHON) -m pip uninstall -y lightgbm
 	find -name *.pyc | xargs rm -rf
 	find -name *__pycache__ | xargs rm -rf
 	# something wrong with below
