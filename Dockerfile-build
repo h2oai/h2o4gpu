@@ -172,7 +172,7 @@ RUN \
 	yum install -y opencl-headers && \
 	yum install -y boost boost-devel boost-system boost-filesystem boost-thread && \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
-    tar xvjf boost_1_56_0.tar.bz2 && \
+    tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
     ./b2 install --prefix=/opt/boost/ --with=all -j 20 && \
