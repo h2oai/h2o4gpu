@@ -337,12 +337,6 @@ libnccl2:
 	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
 	sudo apt install libnccl2 libnccl-dev
 
-#liblightgbm: # only done if user directly requests, never an explicit dependency
-#	echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
-#	echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
-#	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM`
-#	cd LightGBM && mkdir build ; cd build && cmake .. -DUSE_GPU=1 -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && make -j && cd ../python-package ; $(PYTHON) setup.py install --precompile --gpu && cd ../ && $(PYTHON) -m pip install arff tqdm keras runipy h5py
-
 libsklearn:	# assume already submodule gets sklearn
 	@echo "----- Make sklearn wheel -----"
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
