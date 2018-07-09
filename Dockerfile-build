@@ -171,7 +171,7 @@ RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
     add-apt-repository universe && \
     apt-get update && \
-	apt-get install -y libboost-dev libboost-system-dev libboost-filesystem-dev cmake opencl-headers && \
+	apt-get install -y libboost-dev libboost-system-dev libboost-filesystem-dev cmake opencl-headers
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
