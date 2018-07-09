@@ -169,7 +169,7 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y boost-dev opencl-headers
+	yum install -y boost boost-devel boost-system boost-filesystem boost-thread opencl-headers
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
