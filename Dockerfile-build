@@ -162,6 +162,17 @@ RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
 
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+
+# See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
+# https://github.com/Microsoft/LightGBM/pull/929/files
+RUN \
+    export CUDA_HOME=/usr/local/cuda/ && \
+    add-apt-repository universe && \
+    apt-get update && \
+	apt-get install -y libboost-dev libboost-system-dev libboost-filesystem-dev cmake opencl-headers && \
+
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
 
