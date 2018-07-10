@@ -165,6 +165,11 @@ RUN pip install -r requirements_runtime_demos.txt
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
 
+RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+
 # See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
@@ -185,11 +190,6 @@ RUN \
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
 ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
-
-RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
-
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
