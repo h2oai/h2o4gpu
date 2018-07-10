@@ -186,6 +186,9 @@ RUN \
 
 ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
 
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
