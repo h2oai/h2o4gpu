@@ -32,7 +32,9 @@ all: prep
 
 	# for incorporating xgboost and py3nvml and lightgbm builds
 	ln -sf ../../xgboost/python-package/xgboost .
-	ln -sf ../../LightGBM/python-package/lightgbm .
+	if [ `arch` != "ppc64le" ]; then \
+	ln -sf ../../LightGBM/python-package/lightgbm . ; \
+	fi
 	ln -sf ../../py3nvml/py3nvml .
 
 	$(PYTHON) setup.py sdist bdist_wheel
@@ -41,9 +43,10 @@ all: prep
 	mkdir -p build/lib/xgboost/
 	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/python-package/xgboost/libxgboost.so . ; cd ../../../
 
-	# update build with xgboost shared library
-	mkdir -p build/lib/lightgbm/
-	cd build/lib/lightgbm/ ; ln -sf ../../../../../LightGBM/lib_lightgbm.so . ; cd ../../../
+	# update build with lightgbm shared library
+	if [ `arch` != "ppc64le" ]; then \
+	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm/ ; ln -sf ../../../../../LightGBM/lib_lightgbm.so . ; cd ../../../ ; \
+	fi
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
