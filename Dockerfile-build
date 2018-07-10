@@ -186,7 +186,7 @@ RUN \
 
 ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
 
-RUN localedef -v -c -i en_US -f UTF-8 en_US.UTF-8
+RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 
