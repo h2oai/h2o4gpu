@@ -169,7 +169,7 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel localedef && \
+	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
     tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
