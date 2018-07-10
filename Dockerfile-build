@@ -162,6 +162,37 @@ RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
 
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+
+RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+
+# See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
+# https://github.com/Microsoft/LightGBM/pull/929/files
+RUN \
+    bash -c 'if [ `arch` != "ppc64le" ]; then \
+    export CUDA_HOME=/usr/local/cuda/ && \
+	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
+    wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
+    tar xjf boost_1_56_0.tar.bz2 && \
+    cd boost_1_56_0 && \
+    export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
+    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
+    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
+    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
+    ./b2 -a -d0 install --prefix=/opt/boost/ --with=all -j 20 && \
+    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
+    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
+    cd / ; \
+    fi'
+
+#	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
+
+ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
+
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
 
