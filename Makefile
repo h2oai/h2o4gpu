@@ -144,7 +144,9 @@ install_xgboost:
 
 install_lightgbm:
 	@echo "----- pip install lightgbm built locally -----"
-	cd LightGBM/python-package/dist && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target ../
+	bash -c 'if [ `arch` != "ppc64le" ]; then \
+	cd LightGBM/python-package/dist && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target ../ ; \
+	fi'
 
 install_py:
 	$(MAKE) -j install -C src/interface_py

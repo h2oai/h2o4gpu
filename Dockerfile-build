@@ -186,7 +186,7 @@ RUN \
     ./b2 -a -d0 install --prefix=/opt/boost/ --with=all -j 20 && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
     cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
-    cd / && \
+    cd / ; \
     fi'
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
