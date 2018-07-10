@@ -9,7 +9,7 @@ Daal library added for CPU, currently supported only x86_64 architecture.
 
 ## Requirements
 
-* PC running Linux wit glibc 2.17+
+* PC running Linux with glibc 2.17+
 
 * Install CUDA with bundled display drivers (
   [CUDA 8](https://developer.nvidia.com/cuda-downloads)
