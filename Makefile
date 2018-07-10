@@ -106,10 +106,13 @@ lightgbm:
 	cd LightGBM && (rm -rf build || true) && mkdir -p build ; cd build && cmake .. -DUSE_GPU=1 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ && \
 	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. && \
 	cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
+	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
-	cd python-package && cd compile && ln -s ../../include . && cd ../../ && \
+	cd python-package && cd compile && (true || ln -fs ../../include .) && cd ../../ && \
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
-	cd python-package && cd compile && ln -s ../../src . && cd ../../ && \
+	cd python-package && cd compile && (true || ln -fs ../../src .) && cd ../../ && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && \
 	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
 	fi
