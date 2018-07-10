@@ -173,10 +173,14 @@ RUN \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
     tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
+    export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
+    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
+    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
     ./b2 -a -d0 install --prefix=/opt/boost/ --with=all -j 20 && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* .
+    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
+    cd /
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
