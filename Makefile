@@ -111,7 +111,7 @@ lightgbm:
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && ln -s ../../src . && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py && \
+	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
 	fi
 
 
