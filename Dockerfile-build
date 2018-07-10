@@ -169,7 +169,7 @@ RUN mkdir -p /etc/OpenCL/vendors && \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
+	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel localedef && \
     wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.bz2 && \
     tar xjf boost_1_56_0.tar.bz2 && \
     cd boost_1_56_0 && \
@@ -186,7 +186,7 @@ RUN \
 
 ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
 
-RUN locale-gen en_US.UTF-8
+RUN localedef -v -c -i en_US -f UTF-8 en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 
