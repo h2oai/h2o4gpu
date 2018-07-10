@@ -187,7 +187,7 @@ RUN \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
     cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
     cd / && \
-    fi
+    fi'
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
