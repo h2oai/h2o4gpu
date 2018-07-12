@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <vector>
 //#include "mkl.h"
-#include "cblas.h"
+#include "cblas/cblas.h"
 #include <atomic>
 #include <csignal>
 
