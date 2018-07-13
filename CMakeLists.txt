@@ -62,6 +62,7 @@ TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 if(USE_CUDA)
   FIND_PACKAGE(CUDA 8.0 REQUIRED)
   FIND_PACKAGE(NVML REQUIRED)
+  find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
   #============= BUILD GPU LIBRARY
   ADD_DEFINITIONS(
@@ -92,6 +93,7 @@ if(USE_CUDA)
   SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
   FILE(GLOB_RECURSE GPU_SOURCES
+    src/*.cu.cc
     src/*.cu
     src/*.cuh
     src/common/*.cpp
@@ -104,13 +106,15 @@ if(USE_CUDA)
     SET(NVTX_LIBRARY nvToolsExt)
   endif()
 
+  include_directories(${EIGEN3_INCLUDE_DIR})
   TARGET_LINK_LIBRARIES(gpuh2o4gpu
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_cusolver_LIBRARY}
     ${CUDA_cusparse_LIBRARY}
     ${BLAS_LIBRARIES}
     ${NVTX_LIBRARY}
-    ${NVML_LIBRARY})
+    ${NVML_LIBRARY}
+    Eigen3::Eigen)
   #============= BUILD GPU LIBRARY
 endif()
 
@@ -133,8 +137,9 @@ if(BUILD_TESTS)
   endif(USE_CUDA)
 
   ADD_EXECUTABLE(test-h2o4gpu ${CUDA_TEST_OBJS})
-  TARGET_LINK_LIBRARIES(test-h2o4gpu ${GTEST_LIBRARIES})
   TARGET_LINK_LIBRARIES(test-h2o4gpu gpuh2o4gpu)
+  TARGET_LINK_LIBRARIES(test-h2o4gpu ${GTEST_LIBRARIES})
+
   ADD_TEST(TestH2O4GPU test-h2o4gpu)
 endif(BUILD_TESTS)
 #============= Tests
