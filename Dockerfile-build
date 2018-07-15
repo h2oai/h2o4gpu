@@ -181,9 +181,9 @@ RUN \
     cd boost_1_58_0 && \
     export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
-    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
+    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/ -fPIC" && \
     export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
-    ./b2 -a -d0 install --prefix=/opt/boost/ --with=all -j 20 && \
+    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
     cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
     cd / ; \

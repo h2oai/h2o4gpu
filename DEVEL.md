@@ -41,11 +41,36 @@ If you are building the h2o4gpu R package, it is necessary to install the follow
 sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
-If you want lightgbm support to work:
+If you want lightgbm support to work, one needs to install boost from source to link statically:
 
+```
+# This can be done as a user as well, just change /opt/boost to a user path and avoid sudo.
+sudo bash
+export CUDA_HOME=/usr/local/cuda/
+apt-get install -y opencl-headers libicu-dev bzip2 bzip2-dev zlib1g-dev python-dev && \
+wget http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.bz2 && \
+tar xjf boost_1_58_0.tar.bz2 && \
+cd boost_1_58_0 && \
+export PYTHON_PREFIX=`python-config --prefix` && \
+./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
+export PYTHON_INCLUDES=`python-config --includes` && \
+export CPPFLAGS="$PYTHON_INCLUDES -fPIC" && \
+export C_INCLUDE_PATH="$PYTHON_PREFIX/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="$PYTHON_PREFIX/include/python3.6m/" && \
+./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="$CPPFLAGS"
+chmod -R a+rx /opt/boost
+```
+
+or for dynamic linking remove
+```
+-DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=1
+```
+from the Makefile and before compiling do:
 ```
 sudo apt-get -y install ibboost-dev libboost-system-dev libboost-filesystem-dev
 ```
+
+The default setup is to link statically, as the Dockerfile-build shows, in order to support broader installation types.
+
 
 If you are using `conda`, you probably need to do:
 ```

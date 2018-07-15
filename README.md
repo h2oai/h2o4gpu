@@ -48,13 +48,6 @@ If you are building the h2o4gpu R package, it is necessary to install the follow
 sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
-If you want lightgbm support to work:
-
-```
-sudo apt-get -y install ibboost-dev libboost-system-dev libboost-filesystem-dev
-```
-
-
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
   * Stable:
