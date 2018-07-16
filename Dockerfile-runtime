@@ -73,6 +73,17 @@ RUN \
   pip install --no-cache-dir -r requirements.txt && \
   pip install --no-cache-dir -r requirements_runtime_demos.txt
 
+
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+
+RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LD_LIBRARY_PATH_CUDA=$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+
+
 # Add a canned jupyter notebook demo to the container
 RUN \
   mkdir -p jupyter/demos
