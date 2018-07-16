@@ -69,6 +69,8 @@ template <typename T>
 KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other) :
     param_ (_other.param_){
   init_impls();
+  name_ = _other.orgi_.name_ + "(" + std::to_string(_other.start()) + "," +
+          std::to_string(_other.end()) + ")";
 #if defined (USE_CUDA)
   use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(
@@ -127,13 +129,7 @@ void KmMatrix<T>::init_impls() {
 }
 
 template <typename T>
-KmMatrix<T>::~KmMatrix() {
-  // std::cout << "name: " << name_ << std::endl;
-  // for (size_t i = 0; i < 4; ++i) {
-  //   if (impls[i] != nullptr)
-  //     delete impls[i];
-  // }
-}
+KmMatrix<T>::~KmMatrix() {}
 
 
 template <typename T>
@@ -152,8 +148,11 @@ size_t KmMatrix<T>::cols() const {
 }
 
 template <typename T>
-kParam<T> KmMatrix<T>::k_param () const {
-  return param_;
+kParam<T> KmMatrix<T>::k_param () {
+  T * ptr = dev_ptr();
+  kParam<T> param (param_);
+  param.ptr = ptr;
+  return param;
 }
 
 template <typename T>
@@ -201,14 +200,12 @@ KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
 }
 
 template <typename T>
-bool KmMatrix<T>::operator==(const KmMatrix<T> &_rhs) {
+bool KmMatrix<T>::operator==(KmMatrix<T>& _rhs) {
   if (_rhs.use_cuda && use_cuda) {
     std::shared_ptr<CudaKmMatrixImpl<T>> tmp =
-        std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(impls[CUDADense]);
+        std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(_rhs.impls[CUDADense]);
     bool res = std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
         impls[CUDADense])->equal(tmp);
-    // return std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(impls[CUDADense])->equal(
-    //     _rhs.impls[CUDADense]);
     return res;
   } else {
     // FIXME
@@ -252,12 +249,12 @@ std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
   template size_t KmMatrix<T>::size() const;                            \
   template size_t KmMatrix<T>::rows() const;                            \
   template size_t KmMatrix<T>::cols() const;                            \
-  template kParam<T> KmMatrix<T>::k_param () const;                     \
+  template kParam<T> KmMatrix<T>::k_param ();                           \
   template T * KmMatrix<T>::host_ptr();                                 \
   template T * KmMatrix<T>::dev_ptr();                                  \
   template bool KmMatrix<T>::on_device() const;                         \
   template KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem=true); \
-  template bool KmMatrix<T>::operator==(const KmMatrix<T> &_rhs);       \
+  template bool KmMatrix<T>::operator==(KmMatrix<T> &_rhs);             \
   /* Helper functions */                                                \
   template std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
 

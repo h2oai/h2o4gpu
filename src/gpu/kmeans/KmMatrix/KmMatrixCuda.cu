@@ -38,6 +38,9 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
     return;
 
   T* raw_ptr;
+
+  assert (raw_ptr != nullptr && raw_ptr != NULL);
+
   if (_other.on_device()) {
     raw_ptr = _other.dev_ptr();
     thrust::device_ptr<T> ptr (raw_ptr);
@@ -47,10 +50,6 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
     thrust::copy(ptr, ptr + _size, _d_vector.begin());
   } else {
     raw_ptr = _other.host_ptr();
-    if (raw_ptr == nullptr) {
-      std::cerr << "nullptr: " << _other.name();
-      abort();
-    }
     raw_ptr += _start;
     _h_vector.resize(_size);
     _on_device = false;
@@ -78,7 +77,7 @@ template <typename T>
 void CudaKmMatrixImpl<T>::host_to_device() {
   if (_on_device)
     return;
-  _h_vector.resize(_d_vector.size());
+  _d_vector.resize(_h_vector.size());
   thrust::copy(_h_vector.begin(), _h_vector.end(), _d_vector.begin());
   _on_device = true;
 }
@@ -113,7 +112,7 @@ bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
   host_to_device();
   bool res = thrust::equal(_d_vector.begin(), _d_vector.end(),
                            _rhs->_d_vector.begin());
-   return res;
+  return res;
 }
 
 #define INSTANTIATE(T)                                                  \

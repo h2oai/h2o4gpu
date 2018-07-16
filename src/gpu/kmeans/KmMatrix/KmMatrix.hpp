@@ -95,7 +95,7 @@ class KmMatrix {
   void operator=(const KmMatrix<T>& _other);
   void operator=(KmMatrix<T>&& _other);
 
-  bool operator==(const KmMatrix<T>& _rhs);
+  bool operator==(KmMatrix<T>& _rhs);
 
   virtual ~KmMatrix();
 
@@ -108,7 +108,7 @@ class KmMatrix {
 
   bool on_device() const;
 
-  kParam<T> k_param () const;
+  kParam<T> k_param ();
 
   std::string name() const { return name_; }
   void set_name (std::string _name) {name_ = _name;}
