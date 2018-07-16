@@ -103,7 +103,7 @@ lightgbm:
 	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	if [ `arch` != "ppc64le" ]; then \
 	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM` && \
-	cd LightGBM && (rm -rf build || true) && mkdir -p build ; cd build && cmake .. -DUSE_GPU=1 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=1 && \
+	cd LightGBM && (rm -rf build || true) && mkdir -p build ; cd build && cmake .. -DUSE_GPU=1 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
 	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. && \
 	cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
 	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
