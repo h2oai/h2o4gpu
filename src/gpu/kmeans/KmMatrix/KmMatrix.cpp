@@ -30,7 +30,8 @@ KmMatrix<T>::KmMatrix() :
   init_impls();
 #if defined (USE_CUDA)
   use_cuda = true;
-  impls[0].reset(new CudaKmMatrixImpl<T>(this));
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this);
+  impls[0].reset(ptr);
 #elif
   use_cuda = false;
   impls[0] = nullptr;
@@ -43,20 +44,36 @@ KmMatrix<T>::KmMatrix(size_t _rows, size_t _cols) :
   init_impls();
 #if defined (USE_CUDA)
   use_cuda = true;
-  impls[0].reset(new CudaKmMatrixImpl<T>(this));
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this);
+  impls[0].reset(ptr);
 #elif
   use_cuda = false;
 #endif
 }
 
 template <typename T>
-KmMatrix<T>::KmMatrix(thrust::host_vector<T> _other,
+KmMatrix<T>::KmMatrix(thrust::host_vector<T> _vec,
                       size_t _rows, size_t _cols) :
     param_ (_rows, _cols, nullptr) {
   init_impls();
 #if defined (USE_CUDA)
   use_cuda = true;
-  impls[0].reset(new CudaKmMatrixImpl<T>(_other, this));
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(_vec, this);
+  impls[0].reset(ptr);
+#elif
+  use_cuda = false;
+#endif
+}
+
+template <typename T>
+KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other) :
+    param_ (_other.param_){
+  init_impls();
+#if defined (USE_CUDA)
+  use_cuda = true;
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(
+      _other.orgi_, _other.start(), _other.size(), _other.stride(), this);
+  impls[0].reset(ptr);
 #elif
   use_cuda = false;
 #endif
@@ -79,7 +96,7 @@ KmMatrix<T>::KmMatrix(KmMatrix<T>&& _other) :
     impls[i] = std::move(_other.impls[i]);
   }
   use_cuda = _other.use_cuda;
-  name_ = std::move(_other.name_);
+  name_ = _other.name_ + "(copied [in move])";
 }
 
 template <typename T>
@@ -99,19 +116,7 @@ void KmMatrix<T>::operator=(KmMatrix<T>&& _other) {
   }
   param_ = _other.param_;
   use_cuda = _other.use_cuda;
-  name_ = std::move(_other.name_);
-}
-
-template <typename T>
-KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other) :
-    param_ (_other.param()){
-  init_impls();
-#if defined (USE_CUDA)
-  use_cuda = true;
-  impls[0].reset(new CudaKmMatrixImpl<T>(_other, this));
-#elif
-  use_cuda = false;
-#endif
+  name_ = _other.name_ + "(copied [in move])";
 }
 
 template <typename T>
@@ -171,36 +176,67 @@ T* KmMatrix<T>::dev_ptr() {
 }
 
 template <typename T>
+bool KmMatrix<T>::on_device() const {
+  if (use_cuda) {
+    return impls[CUDADense]->on_device();
+  } else {
+    return false;
+  }
+}
+
+template <typename T>
 KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem) {
   size_t start = param_.cols * idx;
   size_t stride = 1;
   size_t end = param_.cols * (idx + 1);
-
-  if (impls[0] != nullptr) {
-    if (dev_mem) {
-      std::cout << "row dev_mem" << std::endl;
-      return KmMatrixProxy<T>(thrust::device_ptr<T>(impls[0]->dev_ptr()),
-                              start, end, stride, param_, true);
-    } else {
-      std::cout << "row host_mem" << std::endl;
-      return KmMatrixProxy<T>(thrust::device_ptr<T>(impls[0]->host_ptr()),
-                              start, end, stride, param_, false);
-    }
-  }
-  std::cerr << "no cuda" << std::endl;
-  // FIXME
-  assert(false);
-  // return KmMatrixProxy<T>(thrust::device_ptr<T>(NULL), 0, 0, 0, param_, false);
+  kParam<T> param(1, param_.cols, nullptr);
+  return KmMatrixProxy<T>(*this, start, end, stride, param);
 }
 
 template <typename T>
 KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
   // FIXME
   assert (false);
-  return KmMatrixProxy<T>(nullptr, 0, 0, 0, param_, false);
+  return KmMatrixProxy<T>(*this, 0, 0, 0);
+}
+
+template <typename T>
+bool KmMatrix<T>::operator==(const KmMatrix<T> &_rhs) {
+  if (_rhs.use_cuda && use_cuda) {
+    std::shared_ptr<CudaKmMatrixImpl<T>> tmp =
+        std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(impls[CUDADense]);
+    bool res = std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
+        impls[CUDADense])->equal(tmp);
+    // return std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(impls[CUDADense])->equal(
+    //     _rhs.impls[CUDADense]);
+    return res;
+  } else {
+    // FIXME
+    assert(false);
+    return false;
+  }
+}
+
+// ==============================
+// Helper functions
+// ==============================
+template <typename T>
+std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
+  std::cout << "matrix: " << m.name() << std::endl << "---" << std::endl;
+  T * ptr = m.host_ptr();
+  kParam<T> param = m.k_param();
+  for (size_t i = 0; i < param.rows; ++i) {
+    for (size_t j = 0; j < param.cols; ++j) {
+      std::cout << std::setw(5) << ptr[i*param.cols + j] << ',';
+    }
+    std::cout << std::endl;
+  }
+  std::cout << "---" << std::endl;
+  return os;
 }
 
 #define INSTANTIATE(T)                                                  \
+  /* Standard con(de)structors*/                                        \
   template KmMatrixImpl<T>::KmMatrixImpl(KmMatrix<T> *_matrix);         \
   template KmMatrix<T>::KmMatrix();                                     \
   template KmMatrix<T>::KmMatrix(size_t _rows, size_t _cols);           \
@@ -212,13 +248,18 @@ KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
   template void KmMatrix<T>::operator=(KmMatrix<T>&& _other);           \
   template KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other);       \
   template KmMatrix<T>::~KmMatrix();                                    \
+  /* Methods */                                                         \
   template size_t KmMatrix<T>::size() const;                            \
   template size_t KmMatrix<T>::rows() const;                            \
   template size_t KmMatrix<T>::cols() const;                            \
   template kParam<T> KmMatrix<T>::k_param () const;                     \
   template T * KmMatrix<T>::host_ptr();                                 \
   template T * KmMatrix<T>::dev_ptr();                                  \
-  template KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem=true);
+  template bool KmMatrix<T>::on_device() const;                         \
+  template KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem=true); \
+  template bool KmMatrix<T>::operator==(const KmMatrix<T> &_rhs);       \
+  /* Helper functions */                                                \
+  template std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
 
 INSTANTIATE(float)
 INSTANTIATE(double)

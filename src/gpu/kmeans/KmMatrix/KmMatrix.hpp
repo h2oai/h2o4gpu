@@ -51,7 +51,7 @@ struct kParam {
 
 template <typename T>
 class KmMatrixImpl {
- private:
+ protected:
   KmMatrix<T> * matrix_;
  public:
   KmMatrixImpl(KmMatrix<T> *_matrix);
@@ -59,12 +59,15 @@ class KmMatrixImpl {
 
   virtual T* host_ptr() {}
   virtual T* dev_ptr() {}
+  virtual size_t size() const {}
   virtual bool on_device() const {}
 };
 
 template <typename T>
 class KmMatrix {
  private:
+
+  bool use_cuda;
 
   enum Backend {
     CUDADense = 0,
@@ -75,8 +78,6 @@ class KmMatrix {
 
   std::shared_ptr<KmMatrixImpl<T>> impls[4];
   kParam<T> param_;
-
-  bool use_cuda;
 
   void init_impls();
 
@@ -94,6 +95,8 @@ class KmMatrix {
   void operator=(const KmMatrix<T>& _other);
   void operator=(KmMatrix<T>&& _other);
 
+  bool operator==(const KmMatrix<T>& _rhs);
+
   virtual ~KmMatrix();
 
   size_t size () const;
@@ -102,6 +105,8 @@ class KmMatrix {
 
   T* host_ptr();
   T* dev_ptr();
+
+  bool on_device() const;
 
   kParam<T> k_param () const;
 
@@ -113,76 +118,36 @@ class KmMatrix {
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
-  std::cout << "matrix: " << m.name() << std::endl;
-  T * ptr = m.host_ptr();
-  kParam<T> param = m.k_param();
-  for (size_t i = 0; i < param.rows; ++i) {
-    for (size_t j = 0; j < param.cols; ++j) {
-      std::cout << "(" << i << ", "<< j << ", " << i*param.cols + j << ")" << std::setw(6) << ptr[i*param.cols + j] << ' ';
-    }
-    std::cout << std::endl;
-  }
-  std::cout << "---" << std::endl;
-}
+std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
 
 template <typename T>
 class KmMatrixProxy {
  private:
-  thrust::device_ptr<T> ptr_;
+  KmMatrix<T>& orgi_;
+
+  kParam<T> param_;
+
   size_t start_;
   size_t end_;
   size_t stride_;
 
-  bool on_device_;
-
-  kParam<T> param_;
+  size_t start() const;
+  size_t end() const;
+  size_t stride() const;
 
  public:
-  size_t start() const {
-    return start_;
-  }
-  size_t end() const {
-    return end_;
-  }
-  size_t stride() const {
-    return stride_;
-  }
-  size_t size() const {
-    return (end_ - start_) / stride_;
-  }
-  bool on_device() const {
-    return on_device_;
-  }
-  thrust::device_ptr<T> data() const {
-    return ptr_ + start_;
-  }
-  kParam<T> param() const {
-    return param_;
-  }
 
-  KmMatrixProxy(thrust::device_ptr<T> _ptr,
-                size_t _start, size_t _end, size_t _stride,
-                kParam<T> _param, bool _on_device)
-      : ptr_(_ptr), start_(_start), end_(_end), stride_(_stride),
-        param_(_param), on_device_(_on_device) {}
+  size_t size() const;
+  bool on_device() const;
 
-  void operator=(KmMatrix<T>& _other) {
-    assert(size() == _other.size);
+  KmMatrixProxy(KmMatrix<T>& _other,
+                size_t _start, size_t _end, size_t _stride, kParam<T>& _param);
 
-    assert (_other.size() == size());
-    // FIXME
-    assert(stride_ == 1);
+  bool operator==(const KmMatrix<T>& _rhs);
+  bool operator==(const KmMatrixProxy<T>& _rhs);
 
-    if (on_device_) {
-      auto _other_dev_ptr = thrust::device_ptr<T>(_other.dev_ptr());
-      
-      thrust::copy(_other_dev_ptr, _other_dev_ptr + size(), ptr_);
-    } else {
-      thrust::copy(_other.host_ptr(), _other.host_ptr() + size(),
-                   ptr_ + start_);
-    }
-  }
+  void operator=(KmMatrix<T>& _other);
+  friend KmMatrix<T>;
 };
 
 }  // namespace KMeans

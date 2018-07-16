@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <memory>
 
 #include <thrust/device_vector.h>
 
@@ -24,48 +25,36 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec,
     : _on_device(false), KmMatrixImpl<T>(_par) {
   _h_vector.resize(_h_vec.size());
   thrust::copy(_h_vec.begin(), _h_vec.end(), _h_vector.begin());
-  std::cout << "Copy host vector: " << _h_vector.size() << std::endl;
-  for (size_t i = 0; i < _h_vector.size(); ++i) {
-    std::cout << _h_vector[i] << ' ';
-  }
-  std::cout << std::endl;
 }
 
 template <typename T>
-CudaKmMatrixImpl<T>::CudaKmMatrixImpl(const KmMatrixProxy<T>& _other,
-                                      KmMatrix<T>* _par)
-    : KmMatrixImpl<T>(_par) {
-  thrust::device_ptr<T> ptr = _other.data();
-  if (_other.on_device()) {
-    std::cout << "proxy to dev" << std::endl;
-    if (_other.stride() == 1) {
-      _d_vector.resize(_other.size());
-      thrust::copy(ptr, ptr + _other.size(), _d_vector.begin());
-      std::cout << "copied" << std::endl;
-      for (size_t i = 0; i < _d_vector.size(); ++i) {
-        std::cout << _d_vector[i] << ' ';
-      }
-      std::cout << std::endl;
-    } else {
-      // FIXME
-      assert(false);
-    }
-    _on_device = true;
-  } else {
-    if (_other.stride() == 1) {
-      _h_vector.resize(_other.size());
-      std::cout << "_other.size(): " << _other.size() << std::endl;
-      for (size_t i = 0; i < _other.size(); ++i) {
-        std::cout << ptr[i] << ' ';
-      }
-      std::cout << std::endl;
-      thrust::copy(ptr, ptr + _other.size(), _h_vector.begin());
+CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
+    KmMatrix<T>& _other, size_t _start, size_t _size, size_t _stride,
+    KmMatrix<T> * _par) :
+    KmMatrixImpl<T>(_par) {
+  assert (_size > 0);
 
-    } else {
-      // FIXME
-      assert(false);
+  if (_size == 0)
+    return;
+
+  T* raw_ptr;
+  if (_other.on_device()) {
+    raw_ptr = _other.dev_ptr();
+    thrust::device_ptr<T> ptr (raw_ptr);
+    ptr += _start;
+    _d_vector.resize(_size);
+    _on_device = true;
+    thrust::copy(ptr, ptr + _size, _d_vector.begin());
+  } else {
+    raw_ptr = _other.host_ptr();
+    if (raw_ptr == nullptr) {
+      std::cerr << "nullptr: " << _other.name();
+      abort();
     }
+    raw_ptr += _start;
+    _h_vector.resize(_size);
     _on_device = false;
+    thrust::copy(raw_ptr, raw_ptr + _size, _h_vector.begin());
   }
 }
 
@@ -75,15 +64,7 @@ CudaKmMatrixImpl<T>::~CudaKmMatrixImpl() {}
 template <typename T>
 T* CudaKmMatrixImpl<T>::host_ptr() {
   device_to_host();
-  std::cout << "host ptr: " << _h_vector.size() << std::endl;
-  for (size_t i = 0; i < 4; ++i) {
-    for (size_t j = 0; j < 4; ++j) {
-      std::cout << std::setw(6) << _h_vector[i*4+j] << ' ';
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-  return _h_vector.data();
+  return thrust::raw_pointer_cast(_h_vector.data());
 }
 
 template <typename T>
@@ -106,8 +87,6 @@ template <typename T>
 void CudaKmMatrixImpl<T>::device_to_host() {
   if (!_on_device)
     return;
-  std::cout << "bring back to host" << std::endl;
-  std::cout << "_d_.size()" << _d_vector.size() << std::endl;
   _h_vector.resize(_d_vector.size());
   thrust::copy(_d_vector.begin(), _d_vector.end(), _h_vector.begin());
   _on_device = false;
@@ -118,18 +97,43 @@ bool CudaKmMatrixImpl<T>::on_device() const {
   return _on_device;
 }
 
+template <typename T>
+size_t CudaKmMatrixImpl<T>::size() const {
+  if (_on_device) {
+    return _d_vector.size();
+  } else {
+    return _h_vector.size();
+  }
+}
+
+template <typename T>
+bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
+  // FIXME, Is it floating compatible?
+  _rhs->host_to_device();
+  host_to_device();
+  bool res = thrust::equal(_d_vector.begin(), _d_vector.end(),
+                           _rhs->_d_vector.begin());
+   return res;
+}
+
 #define INSTANTIATE(T)                                                  \
+  /* Standard con(de)structors*/                                        \
+  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
+      KmMatrix<T>& _other, size_t _start, size_t _size, size_t _stride, \
+      KmMatrix<T> * _par);                                              \
+  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
+      const thrust::host_vector<T>& _h_vec, KmMatrix<T>* _par);         \
+  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par);   \
+  template CudaKmMatrixImpl<T>::~CudaKmMatrixImpl();                    \
+  /* Member functions */                                                \
   template bool CudaKmMatrixImpl<T>::on_device() const;                 \
   template void CudaKmMatrixImpl<T>::device_to_host();                  \
   template void CudaKmMatrixImpl<T>::host_to_device();                  \
   template T* CudaKmMatrixImpl<T>::dev_ptr();                           \
   template T* CudaKmMatrixImpl<T>::host_ptr();                          \
-  template CudaKmMatrixImpl<T>::~CudaKmMatrixImpl();                    \
-  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
-      const KmMatrixProxy<T>& _other, KmMatrix<T>* _par);               \
-  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
-      const thrust::host_vector<T>& _h_vec, KmMatrix<T>* _par);         \
-  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par);   \
+  template size_t CudaKmMatrixImpl<T>::size() const;                    \
+  template bool CudaKmMatrixImpl<T>::equal(                             \
+      std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs);
 
 INSTANTIATE(float)
 INSTANTIATE(double)

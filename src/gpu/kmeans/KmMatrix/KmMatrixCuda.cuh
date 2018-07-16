@@ -2,6 +2,7 @@
 #define KM_MATRIX_CUDA_CUH_
 
 #include "KmMatrix.hpp"
+#include <memory>
 
 namespace H2O4GPU {
 namespace KMeans {
@@ -44,17 +45,22 @@ class CudaKmMatrixImpl : public KmMatrixImpl<T> {
   CudaKmMatrixImpl(KmMatrix<T> * _par);
   CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec,
                    KmMatrix<T>* _par);
-  CudaKmMatrixImpl(const KmMatrixProxy<T>& _other,
-                   KmMatrix<T>* _par);
-
+  CudaKmMatrixImpl(KmMatrix<T>& _other,
+                   size_t _start, size_t _size, size_t _stride,
+                   KmMatrix<T> * _par);
   virtual ~CudaKmMatrixImpl();
-
-  bool on_device() const override;
 
   virtual T* host_ptr() override;
   virtual T* dev_ptr() override;
+
+  virtual size_t size() const override;
+
+  virtual bool equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs);
+
+  virtual bool on_device() const override;
 };
 
 }  // MkMatrix
 }  // H204GPU
+
 #endif
