@@ -4,6 +4,10 @@ git submodule init
 git submodule update
 cd scikit-learn
 
+### fix cython issue
+sed -i 's/cythonize(config.ext_modules)/cythonize(config.ext_modules, compiler_directives={'always_allow_keywords': True})/g' sklearn/_build_utils/__init__.py
+
+
 ########## DIRECTORIES and FILENAMES
 echo "Renaming paths and files"
 
@@ -69,3 +73,4 @@ echo "import h2o4gpu.solvers.lasso"                >> scikit-learn/h2o4gpu/linea
 echo "import h2o4gpu.solvers.logistic"             >> scikit-learn/h2o4gpu/linear_model/__init__.py
 echo "import h2o4gpu.solvers.linear_regression"    >> scikit-learn/h2o4gpu/linear_model/__init__.py
 echo "import h2o4gpu.solvers.elastic_net"          >> scikit-learn/h2o4gpu/linear_model/__init__.py
+
