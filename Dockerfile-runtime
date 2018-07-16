@@ -44,7 +44,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
 	git checkout tags/apache-arrow-0.8.0 && \
-  	pip install numpy cython && \
+  	pip install numpy==1.14.5 cython && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
