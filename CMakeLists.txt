@@ -93,9 +93,10 @@ if(USE_CUDA)
   SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
   FILE(GLOB_RECURSE GPU_SOURCES
-    src/*.cu.cc
     src/*.cu
     src/*.cuh
+    src/gpu/kmeans/KmMatrix/*.cpp
+    src/gpu/kmeans/KmMatrix/*.hpp
     src/common/*.cpp
     src/common/*.h)
 

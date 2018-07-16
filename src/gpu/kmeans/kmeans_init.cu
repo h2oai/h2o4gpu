@@ -7,130 +7,267 @@
 #include <thrust/random.h>
 #include <random>
 
-#include <Eigen/Dense>
+#define EIGNE_USE_GPU
+#include "Eigen/Dense"
 
 #include <stdio.h>
 
 #include "kmeans_general.h"
-#include "array.cuh"
 #include "kmeans_h2o4gpu.h"
 
 #include "kmeans_init.cuh"
+#include "KmMatrix/KmMatrix.hpp"
 
 namespace H2O4GPU {
 namespace KMeans {
 
-using namespace Array;
-
-// K-Means|| implementation
 template <typename T>
-__device__ float vector_dot(T lhs_start, T lhs_end, T rhs_start) {
-  float result = 0;
-  for (T lhs_iter = lhs_start, rhs_iter = rhs_start;
-       lhs_iter != lhs_end;
-       ++lhs_iter, ++rhs_iter) {
-    result += (*lhs_iter) * (*rhs_iter);
+__device__ __forceinline__
+T min_distance(VE_T(T) *x, MA_T(T) *centroids) {
+
+  KmShardMem<T> shared;
+  T * _distances = shared.ptr();
+
+  size_t n_rows = centroids->rows();
+  for (size_t i = 0; i < centroids->rows(); ++i) {
+    auto temp = *x - centroids->row(i);
+    _distances[i] = temp.dot(temp);
   }
+
+  __syncthreads();
+
+  Eigen::Map<MA_T(T)> _distances_vec(_distances, n_rows, 1);
+  T result = _distances_vec.minCoeff();
   return result;
 }
 
 template <typename T>
-__global__ void min_distance(T* __restrict__ result,
-                             T* __restrict__ data, size_t stride,
-                             T* __restrict__ cendroids, size_t n_centroids) {
-  for (size_t i = 0; i < n_centroids; ++i) {
-    result[i] =
-        vector_dot(data, data+stride, data);
-        // vector_dot(data, data+stride, &cendroids[i*stride]) +
-        // vector_dot(&cendroids[i*stride], &cendroids[(i+1)*stride], &cendroids[i*stride]);
-  }
-  T minimum = std::numeric_limits<T>::max();
-  for (size_t i = 0; i < n_centroids; ++i) {
-    if (result[i] < minimum) {
-      minimum = result[i];
-    }
+__global__
+void potential_kernel(kVParam<T> _dis, kMParam<T> _data, kMParam<T> _cent) {
+
+  MA_T(T) data = Eigen::Map<MA_T(T)>(_data.ptr, _data.rows, _data.cols);
+  MA_T(T) centroids = Eigen::Map<MA_T(T)>(_cent.ptr, _cent.rows, _cent.cols);
+
+  Eigen::Map<VE_T(T)> distances(_dis.ptr, _dis.size);
+
+  size_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if (tid < _dis.size) {
+    distances(tid) = min_distance<T>(&( (VE_T(T)) data.row(tid)),
+                                        &centroids);
+    printf("distance[%u] %f\n", tid, distances(tid));
   }
 }
 
+template <typename T>
+T KmeansLlInit<T>::potential(MA_T(T)& data, MA_T(T)& centroids) {
+
+  VE_T(T) distances (data.rows());
+
+  T* d_distances, * d_data, *d_centroids;
+
+  CUDACHECK(cudaMalloc((void**)&d_distances, sizeof(T) * distances.size()));
+  CUDACHECK(cudaMalloc((void**)&d_data, sizeof(T) * data.size()));
+  CUDACHECK(cudaMalloc((void**)&d_centroids, sizeof(T) * centroids.size()));
+
+  CUDACHECK(cudaMemcpy(d_distances, (void*)distances.data(),
+                       sizeof(T) * distances.size(),
+                       cudaMemcpyHostToDevice));
+  CUDACHECK(cudaMemcpy(d_data, (void*)data.data(),
+                       sizeof(T) * data.size(),
+                       cudaMemcpyHostToDevice));
+  CUDACHECK(cudaMemcpy(d_centroids, (void*)centroids.data(),
+                       sizeof(T) * centroids.size(),
+                       cudaMemcpyHostToDevice));
+
+  potential_kernel<T><<<256, div_roundup(data.rows(), 256),
+      sizeof(T)*centroids.rows()>>>(
+          kVParam<T>(d_distances, distances.size()),
+          kMParam<T>(d_data, data.rows(), data.cols()),
+          kMParam<T>(d_centroids, centroids.rows(), centroids.cols()));
+
+  CUDACHECK(cudaDeviceSynchronize());
+
+  thrust::device_ptr<T> distances_vec (d_distances);
+
+  T * temp = new T[distances.size()];
+  CUDACHECK(cudaMemcpy(temp, d_distances, sizeof(T)*distances.size(), cudaMemcpyDeviceToHost));
+
+  T res = thrust::reduce(distances_vec, distances_vec + distances.size(), (T)0,
+                         thrust::plus<T>());
+
+  CUDACHECK(cudaFree(d_distances));
+  CUDACHECK(cudaFree(d_data));
+
+  CUDACHECK(cudaFree(d_centroids));
+
+  CUDACHECK(cudaGetLastError());
+
+  return res;
+}
 
 template <typename T>
-CUDAArray<T> KmeansLlInit<T>::sample_centroids(CUDAArray<T>& data, CUDAArray<T>& prob) {
-  size_t n_new_centroids = thrust::count_if(
-      data.device_vector().begin(), data.device_vector().end(),
-      [=] __device__ (int idx) {
-        thrust::default_random_engine rng(seed);
-        thrust::uniform_real_distribution<> dist(0.0, 1.0);
-        rng.discard(idx);
-        T threshold = (T)dist(rng);
-        // T prob = prob[i];
-        T prob = 0.1f;
-        return prob > threshold;
-      });
+T KmeansLlInit<T>::probability(MA_T(T)& data, MA_T(T)& controids) {
 
-  CUDAArray<T> centroids (n_new_centroids);
-  thrust::copy_if(data.device_vector().begin(), data.device_vector().end(),
-                  centroids.device_vector().begin(),
-                  [=] __device__ (int idx) {
-                    thrust::default_random_engine rng(seed);
-                    thrust::uniform_real_distribution<> dist(0.0, 1.0);
-                    // rng.discard(row + device * rows_per_gpu);
-                    T prob_threshold = (T)dist(rng);
+}
 
-                    // T prob_x = ((2.0 * k * min_costs_ptr[row]) / total_min_cost);
-                    T prob_x = 0.1f;
+template <typename T>
+struct InplaceMulOp {
+  T a;
+  InplaceMulOp(T _a) : a(_a) {}
 
-                    return prob_x > prob_threshold;
-                  });
+  __host__ __device__
+  void operator()(T x) {
+    // *x = *x * a;
+  }
+};
+
+template <typename T>
+MA_T(T) KmeansLlInit<T>::sample_centroids(MA_T(T)& data, MA_T(T)& centroids) {
+  VE_T(T) distances (data.rows());
+
+  T* d_distances, * d_data, *d_centroids;
+
+  CUDACHECK(cudaMalloc((void**)&d_distances, sizeof(T) * distances.size()));
+  CUDACHECK(cudaMalloc((void**)&d_data, sizeof(T) * data.size()));
+  CUDACHECK(cudaMalloc((void**)&d_centroids, sizeof(T) * centroids.size()));
+
+  CUDACHECK(cudaMemcpy(d_distances, (void*)distances.data(),
+                       sizeof(T) * distances.size(),
+                       cudaMemcpyHostToDevice));
+  CUDACHECK(cudaMemcpy(d_data, (void*)data.data(),
+                       sizeof(T) * data.size(),
+                       cudaMemcpyHostToDevice));
+  CUDACHECK(cudaMemcpy(d_centroids, (void*)centroids.data(),
+                       sizeof(T) * centroids.size(),
+                       cudaMemcpyHostToDevice));
+
+  potential_kernel<T><<<256, div_roundup(data.rows(), 256),
+      sizeof(T)*centroids.rows()>>>(
+          kVParam<T>(d_distances, distances.size()),
+          kMParam<T>(d_data, data.rows(), data.cols()),
+          kMParam<T>(d_centroids, centroids.rows(), centroids.cols()));
+
+  CUDACHECK(cudaDeviceSynchronize());
+
+  thrust::device_ptr<T> distances_vec (d_distances);
+
+  // T * temp = new T[distances.size()];
+  // CUDACHECK(cudaMemcpy(temp, d_distances, sizeof(T)*distances.size(), cudaMemcpyDeviceToHost));
+
+  T pot = thrust::reduce(distances_vec, distances_vec + distances.size(), (T)0,
+                         thrust::plus<T>());
+
+  thrust::device_ptr<T>& prob_vec = distances_vec;
+  thrust::for_each(prob_vec, prob_vec + distances.size(), InplaceMulOp<T>(1/pot));
+
+  CUDACHECK(cudaDeviceSynchronize());
+
+  size_t _cols = data.cols();
+  size_t _rows = data.rows();
+
+  std::cout << "distances.size()" << distances.size() << std::endl;
+  auto pot_cent_filter_counter = thrust::make_counting_iterator(0);
+  size_t n_new_centroids =
+      thrust::count_if(pot_cent_filter_counter, pot_cent_filter_counter + distances.size()-1,
+                       [=] __device__(int idx) {
+                         thrust::default_random_engine rng(0);
+                         thrust::uniform_real_distribution<> dist(0.0, 1.0);
+                         rng.discard(idx + _rows);
+                         T threshold = (T) dist (rng);
+                         printf("count:thresh[%u]: %f\n", idx, threshold);
+                         // T prob = d_distances[idx] / pot;
+                         T prob = 0.5;
+                         printf("count:prob[%u]: %f\n", idx, prob);
+                         return prob > threshold; });
+
+  std::cout << "n_new_centroids:" << n_new_centroids << std::endl;
+  thrust::device_vector<T> d_new_centroids (n_new_centroids * data.cols());
+  auto range = thrust::make_counting_iterator(0);
+  thrust::device_ptr<T> d_data_vec (d_data);
+
+  // thrust::copy_if(
+  //     d_data_vec, d_data_vec + data.size(),
+  //     range,
+  //     d_new_centroids.begin(),
+  //     [=] __device__ (int idx) {
+  //       size_t row = idx / _cols;
+  //       thrust::default_random_engine rng(seed);
+  //       thrust::uniform_real_distribution<> dist(0.0f, 1.0f);
+  //       rng.discard(row);
+  //       T threshold = (T) dist (rng);
+  //       printf("copy:thresh[%u]: %f", row, threshold);
+  //       T prob = d_distances[row];
+  //       return prob > threshold;});
+
+  thrust::host_vector<T> h_new_centroids (n_new_centroids);
+  thrust::copy(d_new_centroids.begin(), d_new_centroids.end(),
+               h_new_centroids.begin());
+
+  size_t old_rows = centroids.rows();
+  centroids.conservativeResize(data.rows() + n_new_centroids, Eigen::NoChange);
+
+  for (size_t i = 0; i < n_new_centroids; i ++) {
+    centroids.row(i+old_rows) = Eigen::Map<MA_T(T)> (h_new_centroids.data(), 1, data.cols());
+  }
+
+  CUDACHECK(cudaFree(d_distances));
+  CUDACHECK(cudaFree(d_data));
+
+  CUDACHECK(cudaFree(d_centroids));
+
+  CUDACHECK(cudaGetLastError());
+
   return centroids;
 }
 
 template <typename T>
-CUDAArray<T> KmeansLlInit<T>::operator()(CUDAArray<T>& data) {
+KmMatrix<T>
+KmeansLlInit<T>::operator()(H2O4GPU::KMeans::KmMatrix<T>& data) {
+
   if (seed < 0) {
     std::random_device rd;
     seed = rd();
   }
 
-  std::mt19937 generator(seed);
-  std::uniform_int_distribution<> distribution(0, data.dims()[0] - 1);
+  std::mt19937 generator(0);
+  thrust::host_vector<T> vec (4);
+
+  std::uniform_int_distribution<> distribution(0, data.rows());
   size_t idx = distribution(generator);
-  CUDAArray<T> centroids = data.index(idx);
 
-  CUDAArray<T> distances (Dims(data.dims()[0], 1, 0, 0));
+  KmMatrix<T> centroids = data.row(idx);
+  std::cout << "centroids" << std::endl;
+  std::cout << centroids << std::endl;
 
-  distances.print();
+  // MA_T(T) centroids = data.row(idx);
 
-  min_distance<<<256, data.size() / 256>>>(
-      distances.get(), data.get(), data.dims()[1],
-      centroids.get(), 1);
+  // std::cout << "data\n" << data << std::endl;
+  // T pot = potential(data, centroids);
+  // std::cout << "pot: " << pot << std::endl;
 
-  cudaDeviceSynchronize();
-
-  // T potential = * min_element(distances.begin(), distances.end());
-  T potential = 1.0f;
-  // for (size_t i = 0; i < log(potential); ++i) {
-  //   min_distance(distances.device_ptr(),
-  //                data.device_ptr(), data.stride(),
-  //                centroids.device_ptr(), centroids.size());
-  //   T potential = * thrust::min_element(distances.begin(), distances.end());
-  //   T potential = 1.0f;
-  //   CUDAArray<T> prob = div(distances, potential);
-
-  //   CUDAArray<T> new_centroids = sample_centroids(data, prob);
-  //   thrust::copy(new_centroids.begin(), new_centroids.end(), centroids.begin());
+  // for (size_t i = 0; i < std::log(pot); ++i) {
+  //   sample_centroids(data, centroids);
+  //   std::cout << "new centroids" << std::endl;
+  //   std::cout << centroids << std::endl;
   // }
 
   // re-cluster
   // kmeans_plus_plus(centroids);
+  return data;
 }
 
 #define INSTANTIATE(T)                                                  \
-  template CUDAArray<T> KmeansLlInit<T>::operator()(CUDAArray<T>& data); \
-  template CUDAArray<T> KmeansLlInit<T>::sample_centroids(              \
-      CUDAArray<T>& data, CUDAArray<T>& prob);
+  template KmMatrix<T> KmeansLlInit<T>::operator()(                     \
+      KmMatrix<T>& data);                                               \
+  template MA_T(T) KmeansLlInit<T>::sample_centroids(                   \
+      MA_T(T)& data, MA_T(T)& centroids);                               \
+  template T KmeansLlInit<T>::probability(MA_T(T)& data, MA_T(T)& controids); \
+
 
 INSTANTIATE(float)
 INSTANTIATE(double)
+INSTANTIATE(int)
 
 }  // namespace Kmeans
 }  // namespace H2O4GPU
