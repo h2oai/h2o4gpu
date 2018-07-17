@@ -12,10 +12,9 @@
 #include <memory>
 #include <iomanip>
 
-// FIXME
-#define USE_CUDA 1
+#include "KmConfig.h"
 
-#if defined (USE_CUDA)
+#if USE_CUDA()
 #include "KmMatrixCuda.cuh"
 #endif
 
@@ -46,6 +45,10 @@ struct kParam {
     rows = _other.rows;
     cols = _other.cols;
     ptr = _other.ptr;
+  }
+
+  M_HOSTDEV size_t size() const {
+    return rows * cols;
   }
 };
 

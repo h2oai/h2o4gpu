@@ -4,7 +4,8 @@
  */
 
 #include "KmMatrix.hpp"
-#if defined (USE_CUDA)
+#include "KmConfig.h"
+#if USE_CUDA()
 #include "KmMatrixCuda.cuh"
 #endif
 
@@ -28,7 +29,7 @@ template <typename T>
 KmMatrix<T>::KmMatrix() :
     param_ (0, 0, nullptr) {
   init_impls();
-#if defined (USE_CUDA)
+#if USE_CUDA()
   use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this);
   impls[0].reset(ptr);
@@ -42,7 +43,7 @@ template <typename T>
 KmMatrix<T>::KmMatrix(size_t _rows, size_t _cols) :
     param_ (_rows, _cols, nullptr) {
   init_impls();
-#if defined (USE_CUDA)
+#if USE_CUDA()
   use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this, _rows * _cols);
   impls[0].reset(ptr);
@@ -56,7 +57,7 @@ KmMatrix<T>::KmMatrix(thrust::host_vector<T> _vec,
                       size_t _rows, size_t _cols) :
     param_ (_rows, _cols, nullptr) {
   init_impls();
-#if defined (USE_CUDA)
+#if USE_CUDA()
   use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(_vec, this);
   impls[0].reset(ptr);
@@ -71,7 +72,7 @@ KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other) :
   init_impls();
   name_ = _other.orgi_.name_ + "(" + std::to_string(_other.start()) + "," +
           std::to_string(_other.end()) + ")";
-#if defined (USE_CUDA)
+#if USE_CUDA()
   use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(
       _other.orgi_, _other.start(), _other.size(), _other.stride(), this);
