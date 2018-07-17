@@ -46,8 +46,9 @@ If you want lightgbm support to work, one needs to install boost from source to 
 ```
 # This can be done as a user as well, just change /opt/boost to a user path and avoid sudo.
 sudo bash
+mkdir -p /opt/boost
 export CUDA_HOME=/usr/local/cuda/
-apt-get install -y opencl-headers libicu-dev bzip2 bzip2-dev zlib1g-dev python-dev && \
+apt-get install -y opencl-headers libicu-dev bzip2 libbz2-dev zlib1g-dev python-dev && \
 wget http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.bz2 && \
 tar xjf boost_1_58_0.tar.bz2 && \
 cd boost_1_58_0 && \
