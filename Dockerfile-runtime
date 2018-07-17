@@ -96,7 +96,7 @@ RUN \
     cp nccl_2.2.13-1+cuda${CUDA_SHORT}_x86_64/include/nccl.h /usr/include && \
     cp nccl_2.2.13-1+cuda${CUDA_SHORT}_x86_64/lib/* /usr/lib && \
     rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_x86_64.txz && \
-    rm -r nccl_2.2.13-1+cuda${CUDA_SHORT}_x86_64 \
+    rm -r nccl_2.2.13-1+cuda${CUDA_SHORT}_x86_64 ; \
     fi
 
 # Add a canned jupyter notebook demo to the container
