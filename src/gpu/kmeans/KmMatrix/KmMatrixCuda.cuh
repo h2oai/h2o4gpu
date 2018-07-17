@@ -43,8 +43,8 @@ class CudaKmMatrixImpl : public KmMatrixImpl<T> {
 
  public:
   CudaKmMatrixImpl(KmMatrix<T> * _par);
-  CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec,
-                   KmMatrix<T>* _par);
+  CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec, KmMatrix<T>* _par);
+  CudaKmMatrixImpl(KmMatrix<T> * _par, size_t _size);
   CudaKmMatrixImpl(KmMatrix<T>& _other,
                    size_t _start, size_t _size, size_t _stride,
                    KmMatrix<T> * _par);

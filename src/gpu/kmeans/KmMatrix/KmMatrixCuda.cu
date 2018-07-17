@@ -28,6 +28,15 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec,
 }
 
 template <typename T>
+CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par, size_t _size) :
+    KmMatrixImpl<T>(_par) {
+  if (_size == 0) return;
+
+  _d_vector.resize(_size);
+  _on_device = true;
+}
+
+template <typename T>
 CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
     KmMatrix<T>& _other, size_t _start, size_t _size, size_t _stride,
     KmMatrix<T> * _par) :
@@ -41,6 +50,8 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
 
   assert (raw_ptr != nullptr && raw_ptr != NULL);
 
+  std::cerr << "Warning: Copying data from " << _other.name()
+            << "." << std::endl;
   if (_other.on_device()) {
     raw_ptr = _other.dev_ptr();
     thrust::device_ptr<T> ptr (raw_ptr);
@@ -123,6 +134,8 @@ bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
   template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
       const thrust::host_vector<T>& _h_vec, KmMatrix<T>* _par);         \
   template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par);   \
+  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par,    \
+                                                 size_t _size);         \
   template CudaKmMatrixImpl<T>::~CudaKmMatrixImpl();                    \
   /* Member functions */                                                \
   template bool CudaKmMatrixImpl<T>::on_device() const;                 \

@@ -44,7 +44,7 @@ KmMatrix<T>::KmMatrix(size_t _rows, size_t _cols) :
   init_impls();
 #if defined (USE_CUDA)
   use_cuda = true;
-  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this);
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this, _rows * _cols);
   impls[0].reset(ptr);
 #elif
   use_cuda = false;
