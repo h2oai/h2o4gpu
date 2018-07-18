@@ -42,20 +42,16 @@ pipeline {
         }
         stage("Publish to S3") {
             agent {
-                label "linux && docker && !micro"
+                label "s3Uploader"
             }
             steps {
                 dumpInfo()
                 script {
-                    docker.withRegistry("https://docker.h2o.ai", "docker.h2o.ai") {
-                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                            docker.image("docker.h2o.ai/s3cmd").inside {
-                                unstash 'r-docs'
-                                sh """
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        unstash 'r-docs'
+                        sh """
                            s3cmd put --recursive -P src/interface_r/docs s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Rdocs/$BUILD_ID/interface_r/
                            """
-                            }
-                        }
                     }
                 }
             }
