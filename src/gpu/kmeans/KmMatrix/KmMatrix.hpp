@@ -52,6 +52,11 @@ struct kParam {
   }
 };
 
+enum class MatrixDim {
+  ROW,
+  COL
+};
+
 template <typename T>
 class KmMatrixImpl {
  protected:
