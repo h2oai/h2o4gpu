@@ -42,7 +42,7 @@ pipeline {
         }
         stage("Publish to S3") {
             agent {
-                label "linux && docker && !micro"
+                label "mr-0xc8"
             }
             steps {
                 dumpInfo()
