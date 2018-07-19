@@ -32,11 +32,11 @@ struct CudaInfo {
 template <typename T>
 class CudaKmMatrixImpl : public KmMatrixImpl<T> {
  private:
-  thrust::device_vector<T> _d_vector;
-  thrust::host_vector<T> _h_vector;
+  thrust::device_vector<T> d_vector_;
+  thrust::host_vector<T> h_vector_;
 
-  bool _on_device;
-  KmMatrix<T>* _matrix;
+  bool on_device_;
+  KmMatrix<T>* matrix_;
 
   void host_to_device();
   void device_to_host();
