@@ -304,7 +304,7 @@ sudo /opt/h2oai/dai/dai-env.sh ./bin/mapdql
 # use password: HyperInteractive
 # paste into interactive mapdql shell the contents of entire create_table_ipums_easy.txt but change CLUSTER type to DOUBLE instead of INTEGER to avoid overflow issue.
 COPY ipums_easy FROM './ipums_easy.csv';
-# if any records rejected, check: ./lib/mapd/data/mapd_log/mapd_server.INFO
+# if any records rejected, check: /var/lib/mapd/data/mapd_log/mapd_server.INFO
 ```
 
 7) Notebook test
