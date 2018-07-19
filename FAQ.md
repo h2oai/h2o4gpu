@@ -249,6 +249,7 @@ sudo chmod -R a+rx /opt/h2oai/dai/python/
 
 4a) Install mapd servers
 
+```
 # https://www.mapd.com/docs/v3.1.3/getting-started/installation/
 sudo apt install default-jre-headless
 export LD_LIBRARY_PATH=/usr/lib/jvm/default-java/jre/lib/amd64/server:$LD_LIBRARY_PATH # can be added to env, like to end of ~/.bashrc file
@@ -258,16 +259,20 @@ https://www.mapd.com/platform/download-community/
 # typo: cd $MAPD_PATH/systemd sudo ./install_mapd_systemd.sh -> cd $MAPD_PATH/systemd && sudo ./install_mapd_systemd.sh
 # when following install_mapd_systemd.sh, just hit enter to accept all defaults (root as who runs, and ensure ~/.bashrc has correct MAPD_USER and MAPD_GROUP as root
 # Once reach "Activation" step, change slightly what one does: sudo $MAPD_PATH/insert_sample_data -> cd $MAPD_PATH ; sudo $MAPD_PATH/insert_sample_data
+```
 
 or 4b) Install mapd servers from open-source repo:
-
+```
 https://github.com/mapd/mapd-core
+```
 
 5) Install mapd for python
 
+```
 https://arrow.apache.org/docs/python/development.html#development # but uses conda
 /opt/h2oai/dai/dai-env.sh pip install pyarrow
 /opt/h2oai/dai/dai-env.sh pip install pymapd # needs libraries like arrow and arrow_python, which above arrow webpage says how to install everything from source but that requires conda.  Stuck?  I just need the libs, not conda, so annoying.
+```
 
 ```
     pip install pymapd
