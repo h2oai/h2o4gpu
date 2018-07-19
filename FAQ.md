@@ -290,11 +290,30 @@ import pygdf
 import pymapd
 ```
 
+7) Import data test
+
+```
+cd ~/
+git clone git@github.com:h2oai/gpuopenai.git
+cp gpuopenai/pygdf/notebooks/ipums_easy.csv.gz .
+cp gpuopenai/pygdf/notebooks/create_table_ipums_easy.txt .
+gunzip ipums_easy.csv.gz
+cd /opt/mapd/
+sudo cp ~/ipums_easy.csv .
+sudo /opt/h2oai/dai/dai-env.sh ./bin/mapdql
+# use password: HyperInteractive
+# paste into interactive mapdql shell the contents of entire create_table_ipums_easy.txt but change CLUSTER type to DOUBLE instead of INTEGER to avoid overflow issue.
+COPY ipums_easy FROM './ipums_easy.csv';
+# if any records rejected, check: ./lib/mapd/data/mapd_log/mapd_server.INFO
+```
+
 7) Notebook test
 
 ```
 emacs -nw ~/.local/./share/jupyter/kernels/python3/kernel.json # and edit so python (just after argv line) is instead /opt/h2oai/dai/python/bin/python and edit display name to "python (dai)" to ensure see this name in jupyter notebook
 cd ~/h2o4gpu/examples/py/goai/
 /opt/h2oai/dai/dai-env.sh /opt/h2oai/dai/python/bin/jupyter notebook
+# Choose http://localhost:8888/notebooks/mapd_to_pygdf_to_h2oaiglm.ipynb
+# Choose tab Cell and then select "Run All"
 ```
 
