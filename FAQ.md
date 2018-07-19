@@ -242,8 +242,8 @@ exit
 
 # Now install the wheel files
 cd ~/tmpw/
-sudo /opt/h2oai/dai/dai-env.sh python -m wheel install `ls libgdf_cffi*.whl` --force
-sudo /opt/h2oai/dai/dai-env.sh python -m wheel install `ls pygdf-*.whl` --force
+sudo /opt/h2oai/dai/dai-env.sh python3.6 -m wheel install `ls libgdf_cffi*.whl` --force
+sudo /opt/h2oai/dai/dai-env.sh python3.6 -m wheel install `ls pygdf-*.whl` --force
 sudo chmod -R a+rx /opt/h2oai/dai/python/
 ```
 
@@ -270,58 +270,15 @@ https://github.com/mapd/mapd-core
 
 ```
 https://arrow.apache.org/docs/python/development.html#development # but uses conda
-/opt/h2oai/dai/dai-env.sh pip install pyarrow
-/opt/h2oai/dai/dai-env.sh pip install pymapd # needs libraries like arrow and arrow_python, which above arrow webpage says how to install everything from source but that requires conda.  Stuck?  I just need the libs, not conda, so annoying.
-```
-
-```
-    pip install pymapd
-```
-```
-    creating build/temp.linux-x86_64-3.6/pymapd
-    gcc-4.9 -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC -I/home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/numpy/core/include -I/home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/pyarrow/include -I/home/jon/.pyenv/versions/3.6.4/include/python3.6m -c pymapd/shm.cpp -o build/temp.linux-x86_64-3.6/pymapd/shm.o -std=c++11
-    cc1plus: warning: command line option ‘-Wstrict-prototypes’ is valid for C/ObjC but not for C++
-    In file included from /home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1816:0,
-                     from /home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:18,
-                     from /home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
-                     from pymapd/shm.cpp:612:
-    /home/jon/.pyenv/versions/3.6.4/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:15:2: warning: #warning "Using deprecated NumPy API, disable it by " "#defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
-     #warning "Using deprecated NumPy API, disable it by " \
-      ^
-    g++-4.9 -pthread -shared -L/home/jon/.pyenv/versions/3.6.4/lib -Wl,-rpath=/home/jon/.pyenv/versions/3.6.4/lib -L/home/jon/.pyenv/versions/3.6.4/lib -Wl,-rpath=/home/jon/.pyenv/versions/3.6.4/lib build/temp.linux-x86_64-3.6/pymapd/shm.o -L/home/jon/.pyenv/versions/3.6.4/lib -larrow -larrow_python -lpython3.6m -o build/lib.linux-x86_64-3.6/pymapd/shm.cpython-36m-x86_64-linux-gnu.so -std=c++11
-    /usr/bin/ld: cannot find -larrow
-    /usr/bin/ld: cannot find -larrow_python
-    collect2: error: ld returned 1 exit status
-    error: command 'g++-4.9' failed with exit status 1
-```
-
-```
-/opt/h2oai/dai/dai-env.sh pip install pymapd
-```
-
-```
-  gcc-4.9 -Wno-unused-result -Wsign-compare -DNDEBUG -fwrapv -O2 -Wall -Wstrict-prototypes -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe -fPIC -I/opt/h2oai/dai/python/lib/python3.6/site-packages/numpy/core/include -I/opt/h2oai/dai/python/lib/python3.6/site-packages/pyarrow-0.8.0-py3.6-linux-x86_64.egg/pyarrow/include -I/opt/h2oai/dai/python/include/python3.6m -c pymapd/shm.cpp -o build/temp.linux-x86_64-3.6/pymapd/shm.o -std=c++11
-  gcc-4.9: error: unrecognized command line option ‘-fno-plt’
-  gcc-4.9: error: unrecognized command line option ‘-fno-plt’
-  error: command 'gcc-4.9' failed with exit status 1
-
-  ----------------------------------------
-
-```
-
-
-```
-unset CC
-unset CXX
-/opt/h2oai/dai/dai-env.sh pip install pymapd
-```
-
-```
-  x86_64-conda_cos6-linux-gnu-gcc -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -fwrapv -O2 -Wall -Wstrict-prototypes -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe -fPIC -I/opt/h2oai/dai/python/lib/python3.6/site-packages/numpy/core/include -I/opt/h2oai/dai/python/lib/python3.6/site-packages/pyarrow-0.8.0-py3.6-linux-x86_64.egg/pyarrow/include -I/opt/h2oai/dai/python/include/python3.6m -c pymapd/shm.cpp -o build/temp.linux-x86_64-3.6/pymapd/shm.o -std=c++11
-  unable to execute 'x86_64-conda_cos6-linux-gnu-gcc': No such file or directory
-  error: command 'x86_64-conda_cos6-linux-gnu-gcc' failed with exit status 1
-
-  -----
+sudo /opt/h2oai/dai/dai-env.sh conda install gxx_linux-64
+sudo /opt/h2oai/dai/dai-env.sh conda install python=3.6.4
+sudo chmod -R a+rx /opt/h2oai/dai/python
+sudo /opt/h2oai/dai/dai-env.sh python3.6 -m pip install arrow cython
+sudo chmod -R a+rx /opt/h2oai/dai/python
+sudo /opt/h2oai/dai/dai-env.sh python3.6 -m pip install pyarrow
+sudo chmod -R a+rx /opt/h2oai/dai/python
+sudo /opt/h2oai/dai/dai-env.sh python3.6 -m pip install pymapd # needs libraries like arrow and arrow_python, which above arrow webpage says how to install everything from source but that requires conda.  Stuck?  I just need the libs, not conda, so annoying.
+sudo chmod -R a+rx /opt/h2oai/dai/python
 ```
 
 6) Smoke test
@@ -330,6 +287,7 @@ unset CXX
 /opt/h2oai/dai/dai-env.sh python
 import h2o4gpu
 import pygdf
+import pymapd
 ```
 
 7) Notebook test
