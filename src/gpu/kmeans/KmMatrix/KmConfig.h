@@ -3,8 +3,11 @@
 
 #define USE_CUDA() 1
 
+#include "stdio.h"
+
 // Matrix host dev
 #define M_HOSTDEV __host__ __device__
+#define M_DEV __device__
 #define M_DEVINLINE __device__ __forceinline__
 #define M_HOSTDEVINLINE __host__ __device__ __forceinline__
 
@@ -58,5 +61,9 @@
       printf("%s", errmsg);                                             \
     }                                                                   \
   } while (false)
+
+#define M_ERROR(msg)                            \
+  printf("%s\n\t in %s, %u, %s\n", msg, __FILE__, __LINE__, __func__);  \
+  abort();
 
 #endif  // KM_CONFIG_H_

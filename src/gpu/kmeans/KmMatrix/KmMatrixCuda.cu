@@ -9,8 +9,9 @@
 
 #include <thrust/device_vector.h>
 
-#include "KmMatrix.hpp"
 #include "KmMatrixCuda.cuh"
+#include "KmMatrix.hpp"
+#include "backend.hpp"
 
 namespace H2O4GPU {
 namespace KMeans {
@@ -28,7 +29,7 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(const thrust::host_vector<T>& _h_vec,
 }
 
 template <typename T>
-CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par, size_t _size) :
+CudaKmMatrixImpl<T>::CudaKmMatrixImpl(size_t _size, KmMatrix<T> * _par) :
     KmMatrixImpl<T>(_par) {
   if (_size == 0) return;
 
@@ -70,6 +71,11 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
 
 template <typename T>
 CudaKmMatrixImpl<T>::~CudaKmMatrixImpl() {}
+
+template <typename T>
+void CudaKmMatrixImpl<T>::set_interface(KmMatrix<T>* _par) {
+  KmMatrixImpl<T>::matrix_ = _par;
+}
 
 template <typename T>
 T* CudaKmMatrixImpl<T>::host_ptr() {
@@ -117,14 +123,47 @@ size_t CudaKmMatrixImpl<T>::size() const {
 }
 
 template <typename T>
-bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
-  // FIXME, Is it floating compatible?
-  _rhs->host_to_device();
+bool CudaKmMatrixImpl<T>::equal(KmMatrix<T>& _rhs) {
+  T* rhs_raw_ptr = _rhs.dev_ptr();
   host_to_device();
+  thrust::device_ptr<T> rhs_ptr (rhs_raw_ptr);
+  // FIXME, Is it floating compatible?
   bool res = thrust::equal(d_vector_.begin(), d_vector_.end(),
-                           _rhs->d_vector_.begin());
+                           rhs_ptr);
   return res;
 }
+
+template <typename T>
+KmMatrix<T> CudaKmMatrixImpl<T>::stack(KmMatrix<T>& _second,
+                                       KmMatrixDim _dim) {
+  if (_dim == KmMatrixDim::ROW) {
+    if (KmMatrixImpl<T>::matrix_->cols() != _second.cols()) {
+      M_ERROR("Columns of first is not equal to second.");
+    }
+    host_to_device();
+
+    T * sec_raw_ptr = _second.dev_ptr();
+    thrust::device_ptr<T> self_ptr = d_vector_.data();
+
+    thrust::device_ptr<T> sec_ptr (sec_raw_ptr);
+
+    KmMatrix<T> res (KmMatrixImpl<T>::matrix_->rows() + _second.rows(),
+                     KmMatrixImpl<T>::matrix_->cols());
+
+    T * res_raw_ptr = res.dev_ptr();
+    thrust::device_ptr<T> res_ptr (res_raw_ptr);
+
+    thrust::copy(self_ptr, self_ptr + size(), res_ptr);
+    res_ptr = thrust::device_ptr<T>(res_raw_ptr) + size();
+    thrust::copy(sec_ptr, sec_ptr + _second.size(), res_ptr);
+
+    return res;
+  } else {
+    // FIXME
+    M_ERROR("Not implemented.");
+  }
+}
+
 
 #define INSTANTIATE(T)                                                  \
   /* Standard con(de)structors*/                                        \
@@ -134,9 +173,10 @@ bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
   template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(                       \
       const thrust::host_vector<T>& _h_vec, KmMatrix<T>* _par);         \
   template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par);   \
-  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par,    \
-                                                 size_t _size);         \
+  template CudaKmMatrixImpl<T>::CudaKmMatrixImpl(size_t _size,          \
+                                                 KmMatrix<T> * _par);   \
   template CudaKmMatrixImpl<T>::~CudaKmMatrixImpl();                    \
+  template void CudaKmMatrixImpl<T>::set_interface(KmMatrix<T>* _par);  \
   /* Member functions */                                                \
   template bool CudaKmMatrixImpl<T>::on_device() const;                 \
   template void CudaKmMatrixImpl<T>::device_to_host();                  \
@@ -144,8 +184,9 @@ bool CudaKmMatrixImpl<T>::equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs) {
   template T* CudaKmMatrixImpl<T>::dev_ptr();                           \
   template T* CudaKmMatrixImpl<T>::host_ptr();                          \
   template size_t CudaKmMatrixImpl<T>::size() const;                    \
-  template bool CudaKmMatrixImpl<T>::equal(                             \
-      std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs);
+  template bool CudaKmMatrixImpl<T>::equal(KmMatrix<T>& _rhs);  \
+  template KmMatrix<T> CudaKmMatrixImpl<T>::stack(KmMatrix<T>& _second, \
+                                                  KmMatrixDim _dim);
 
 INSTANTIATE(float)
 INSTANTIATE(double)

@@ -3,7 +3,7 @@
 
 #include "../../../../src/gpu/kmeans/KmMatrix/KmMatrix.hpp"
 
-// r --gtest_filter=KmMatrix.KmMatrix
+// r --gtest_filter=KmMatrix.KmMatrixEqual
 TEST(KmMatrix, KmMatrixEqual) {
   thrust::host_vector<double> vec (2048 * 1024);
   for (size_t i = 0; i < 2048 * 1024; ++i) {
@@ -56,4 +56,48 @@ TEST(KmMatrix, KmMatrixKparam) {
   ASSERT_EQ(param.ptr, mat.dev_ptr());
   ASSERT_EQ(param.rows, 12);
   ASSERT_EQ(param.cols, 16);
+}
+
+TEST(KmMatrix, KmMatrixCycle) {
+  thrust::host_vector<double> vec (2048 * 1024);
+  for (size_t i = 0; i < 2048 * 1024; ++i) {
+    vec[i] = i;
+  }
+  H2O4GPU::KMeans::KmMatrix<double> mat0 (vec, 2048, 1024);
+  for (size_t i = 0; i < 1000; ++i) {
+    H2O4GPU::KMeans::KmMatrix<double> mat1 = mat0;
+    H2O4GPU::KMeans::KmMatrix<double> mat2 = mat1;
+    mat0 = mat2;
+  }
+}
+
+// r --gtest_filter=KmMatrix.Stack
+TEST(KmMatrix, Stack) {
+  constexpr size_t rows = 16, cols = 16;
+  thrust::host_vector<double> vec (rows * cols);
+  for (size_t i = 0; i < rows * cols; ++i) {
+    vec[i] = i;
+  }
+  H2O4GPU::KMeans::KmMatrix<double> mat(vec, rows, cols);
+
+  thrust::host_vector<double> vec1 (rows * cols);
+  for (size_t i = rows * cols; i < 2 * rows * cols; ++i) {
+    vec1[i - rows * cols] = i;
+  }
+  H2O4GPU::KMeans::KmMatrix<double> mat1(vec1, rows, cols);
+
+  H2O4GPU::KMeans::KmMatrix<double> calculated =
+      H2O4GPU::KMeans::stack(mat, mat1, H2O4GPU::KMeans::KmMatrixDim::ROW);
+
+  thrust::host_vector<double> res (2 * rows * cols);
+  for (size_t i = 0; i < rows * cols; ++i) {
+    res[i] = i;
+  }
+  for (size_t i = rows * cols; i < 2 * rows * cols; ++i) {
+    res[i] = i;
+  }
+
+  H2O4GPU::KMeans::KmMatrix<double> res_mat (res, 2 * rows, cols);
+
+  ASSERT_TRUE(calculated == res_mat);
 }

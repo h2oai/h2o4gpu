@@ -30,12 +30,11 @@ KmMatrix<T>::KmMatrix() :
     param_ (0, 0, nullptr) {
   init_impls();
 #if USE_CUDA()
-  use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this);
-  impls[0].reset(ptr);
+  impls[(int)Backend::CUDADense].reset(ptr);
+  backend_ = Backend::CUDADense;
 #elif
-  use_cuda = false;
-  impls[0] = nullptr;
+  backend_ = Backend::CPUDense;
 #endif
 }
 
@@ -44,11 +43,11 @@ KmMatrix<T>::KmMatrix(size_t _rows, size_t _cols) :
     param_ (_rows, _cols, nullptr) {
   init_impls();
 #if USE_CUDA()
-  use_cuda = true;
-  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(this, _rows * _cols);
-  impls[0].reset(ptr);
+  KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(_rows * _cols, this);
+  impls[(int)Backend::CUDADense].reset(ptr);
+  backend_ = Backend::CUDADense;
 #elif
-  use_cuda = false;
+  backend_ = Backend::CPUDense;
 #endif
 }
 
@@ -58,11 +57,11 @@ KmMatrix<T>::KmMatrix(thrust::host_vector<T> _vec,
     param_ (_rows, _cols, nullptr) {
   init_impls();
 #if USE_CUDA()
-  use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(_vec, this);
-  impls[0].reset(ptr);
+  impls[(int)Backend::CUDADense].reset(ptr);
+  backend_ = Backend::CUDADense;
 #elif
-  use_cuda = false;
+  backend_ = Backend::CPUDense;
 #endif
 }
 
@@ -73,42 +72,46 @@ KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other) :
   name_ = _other.orgi_.name_ + "(" + std::to_string(_other.start()) + "," +
           std::to_string(_other.end()) + ")";
 #if USE_CUDA()
-  use_cuda = true;
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(
       _other.orgi_, _other.start(), _other.size(), _other.stride(), this);
-  impls[0].reset(ptr);
+  impls[(int)Backend::CUDADense].reset(ptr);
+  backend_ = Backend::CUDADense;
 #elif
-  use_cuda = false;
+  backend_ = Backend::CPUDense;
 #endif
 }
 
 template <typename T>
 KmMatrix<T>::KmMatrix(const KmMatrix<T>& _other) :
     param_(_other.param_) {
-  for (size_t i = 0; i < 4; ++i) {
-    impls[i] = _other.impls[i];
-  }
-  use_cuda = _other.use_cuda;
+  copy_impls(_other.impls);
+  backend_ = _other.backend_;
   name_ = _other.name_ + "(copied)";
 }
 
 template <typename T>
 KmMatrix<T>::KmMatrix(KmMatrix<T>&& _other) :
-    param_(_other.param_){
-  for (size_t i = 0; i < 4; ++i) {
-    impls[i] = std::move(_other.impls[i]);
-  }
-  use_cuda = _other.use_cuda;
+    param_(_other.param_) {
+  copy_impls(_other.impls);
+  backend_ = _other.backend_;
   name_ = _other.name_ + "(copied [in move])";
+}
+
+template<typename T>
+void KmMatrix<T>::copy_impls(const std::shared_ptr<KmMatrixImpl<T>>* _impls) {
+  for (size_t i = 0; i < 4; ++i) {
+    if (_impls[i].get() != nullptr) {
+      impls[i] = _impls[i];
+      impls[i]->set_interface(this);
+    }
+  }
 }
 
 template <typename T>
 void KmMatrix<T>::operator=(const KmMatrix<T>& _other) {
-  for (size_t i = 0; i < 4; ++i) {
-    impls[i] = _other.impls[i];
-  }
+  copy_impls(_other.impls);
   param_ = _other.param_;
-  use_cuda = _other.use_cuda;
+  backend_ = _other.backend_;
   name_ = _other.name_ + "(copied)";
 }
 
@@ -116,9 +119,11 @@ template <typename T>
 void KmMatrix<T>::operator=(KmMatrix<T>&& _other) {
   for (size_t i = 0; i < 4; ++i) {
     impls[i] = std::move(_other.impls[i]);
+    if (impls[i] != nullptr)
+      impls[i]->set_interface(this);
   }
   param_ = _other.param_;
-  use_cuda = _other.use_cuda;
+  backend_ = _other.backend_;
   name_ = _other.name_ + "(copied [in move])";
 }
 
@@ -158,7 +163,7 @@ kParam<T> KmMatrix<T>::k_param () {
 
 template <typename T>
 T* KmMatrix<T>::host_ptr() {
-  if (use_cuda) {
+  if (backend_ == Backend::CUDADense) {
     return impls[0]->host_ptr();
   } else {
     // FIXME
@@ -168,8 +173,8 @@ T* KmMatrix<T>::host_ptr() {
 
 template <typename T>
 T* KmMatrix<T>::dev_ptr() {
-  if (use_cuda) {
-    return impls[CUDADense]->dev_ptr();
+  if (backend_ == Backend::CUDADense) {
+    return impls[(int)Backend::CUDADense]->dev_ptr();
   } else {
     return nullptr;
   }
@@ -177,8 +182,8 @@ T* KmMatrix<T>::dev_ptr() {
 
 template <typename T>
 bool KmMatrix<T>::on_device() const {
-  if (use_cuda) {
-    return impls[CUDADense]->on_device();
+  if (backend_ == Backend::CUDADense) {
+    return impls[(int)Backend::CUDADense]->on_device();
   } else {
     return false;
   }
@@ -195,29 +200,54 @@ KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem) {
 
 template <typename T>
 KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
-  // FIXME
-  assert (false);
+  M_ERROR("Not implemented.");
   return KmMatrixProxy<T>(*this, 0, 0, 0);
 }
 
 template <typename T>
 bool KmMatrix<T>::operator==(KmMatrix<T>& _rhs) {
-  if (_rhs.use_cuda && use_cuda) {
-    std::shared_ptr<CudaKmMatrixImpl<T>> tmp =
-        std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(_rhs.impls[CUDADense]);
-    bool res = std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
-        impls[CUDADense])->equal(tmp);
+  if (_rhs.backend_ == Backend::CUDADense && backend_ == Backend::CUDADense) {
+    // std::shared_ptr<CudaKmMatrixImpl<T>> tmp =
+    //     std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
+    //         _rhs.impls[(int)Backend::CUDADense]);
+    bool res = impls[(int)Backend::CUDADense]->equal(_rhs);
+    // bool res = std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
+    //     impls[(int)Backend::CUDADense])->equal(*tmp);
     return res;
   } else {
-    // FIXME
-    assert(false);
+    M_ERROR("Not implemented.");
     return false;
   }
 }
 
+template <typename T>
+KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,
+                               KmMatrixDim _dim) {
+  KmMatrix<T> res;
+
+  if (_dim == KmMatrixDim::ROW) {
+    if (cols() != _second.cols()) {
+      M_ERROR("Columns of first is not equal to second.");
+    }
+
+    if (backend_ == Backend::CUDADense) {
+      res = impls[(int)Backend::CUDADense]->stack(_second, _dim);
+    } else {
+      M_ERROR("Not implemented.");
+    }
+
+  } else {
+    M_ERROR("Not implemented.");
+  }
+
+  return res;
+}
+
+
 // ==============================
 // Helper functions
 // ==============================
+
 template <typename T>
 std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
   std::cout << "matrix: " << m.name() << std::endl << "---" << std::endl;
@@ -233,6 +263,12 @@ std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
   return os;
 }
 
+template <typename T>
+KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second,
+                  KmMatrixDim _dim) {
+  return _first.stack(_second, _dim);
+}
+
 #define INSTANTIATE(T)                                                  \
   /* Standard con(de)structors*/                                        \
   template KmMatrixImpl<T>::KmMatrixImpl(KmMatrix<T> *_matrix);         \
@@ -242,6 +278,8 @@ std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
                                  size_t _rows, size_t _cols);           \
   template KmMatrix<T>::KmMatrix(const KmMatrix<T>& _other);            \
   template KmMatrix<T>::KmMatrix(KmMatrix<T>&& _other);                 \
+  template void KmMatrix<T>::copy_impls(                                \
+      const std::shared_ptr<KmMatrixImpl<T>>* _impls);                  \
   template void KmMatrix<T>::operator=(const KmMatrix<T>& _other);      \
   template void KmMatrix<T>::operator=(KmMatrix<T>&& _other);           \
   template KmMatrix<T>::KmMatrix(const KmMatrixProxy<T>& _other);       \
@@ -256,8 +294,13 @@ std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
   template bool KmMatrix<T>::on_device() const;                         \
   template KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem=true); \
   template bool KmMatrix<T>::operator==(KmMatrix<T> &_rhs);             \
+  template KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,         \
+      H2O4GPU::KMeans::KmMatrixDim _dim);                               \
   /* Helper functions */                                                \
-  template std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
+  template std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);  \
+  template KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second, \
+      KmMatrixDim _dim);
+
 
 INSTANTIATE(float)
 INSTANTIATE(double)

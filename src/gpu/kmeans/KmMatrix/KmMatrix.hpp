@@ -6,7 +6,7 @@
 #ifndef KM_MATRIX_HPP_
 #define KM_MATRIX_HPP_
 
-#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <cublas_v2.h>
 #include <string>
 #include <memory>
@@ -26,6 +26,18 @@ class KmMatrixProxy;
 
 template <typename T>
 class KmMatrix;
+
+enum class Backend {
+  CUDADense = 0,
+  CUDASparse = 1,
+  CPUDense = 2,
+  CPUSparse = 3
+};
+
+enum class KmMatrixDim {
+  ROW,
+  COL
+};
 
 // Kernel parameter
 template <typename T>
@@ -52,11 +64,6 @@ struct kParam {
   }
 };
 
-enum class MatrixDim {
-  ROW,
-  COL
-};
-
 template <typename T>
 class KmMatrixImpl {
  protected:
@@ -65,31 +72,35 @@ class KmMatrixImpl {
   KmMatrixImpl(KmMatrix<T> *_matrix);
   virtual ~KmMatrixImpl () {}
 
-  virtual T* host_ptr() {}
-  virtual T* dev_ptr() {}
-  virtual size_t size() const {}
-  virtual bool on_device() const {}
+  // FIXME
+  // Used in KmMatrix constructors to deal with temp return value.
+  // Maybe better solution.
+  virtual void set_interface(KmMatrix<T>* _par) = 0;
+
+  virtual T* host_ptr() = 0;
+  virtual T* dev_ptr() = 0;
+  virtual size_t size() const = 0;
+  virtual bool on_device() const = 0;
+
+  virtual KmMatrix<T> stack(KmMatrix<T>&, KmMatrixDim _dim) = 0;
+  virtual bool equal(KmMatrix<T>& _val) = 0;
+
+  friend KmMatrix<T>;
 };
 
 template <typename T>
 class KmMatrix {
  private:
 
-  bool use_cuda;
-
-  enum Backend {
-    CUDADense = 0,
-    CUDASparse = 1,
-    CPUDense = 2,
-    CPUSparse = 3
-  };
+  Backend backend_;
 
   std::shared_ptr<KmMatrixImpl<T>> impls[4];
   kParam<T> param_;
 
-  void init_impls();
-
   std::string name_;
+
+  void init_impls();
+  void copy_impls(const std::shared_ptr<KmMatrixImpl<T>>* _impls);
 
  public:
   explicit KmMatrix();
@@ -123,7 +134,14 @@ class KmMatrix {
 
   KmMatrixProxy<T> row(size_t idx, bool dev_mem=true);
   KmMatrixProxy<T> col(size_t idx);
+
+  KmMatrix<T> stack(KmMatrix<T>& _second, KmMatrixDim _dim);
 };
+
+template <typename T>
+KmMatrix<T> stack(KmMatrix<T>& _first,
+                  KmMatrix<T>& _second,
+                  KmMatrixDim _dim);
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
