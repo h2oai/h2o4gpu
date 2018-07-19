@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2018 H2O.ai, Inc.
+ * License   Apache License Version 2.0 (see LICENSE for details)
+ */
+
 #ifndef KM_CONFIG_H_
 #define KM_CONFIG_H_
 
@@ -62,8 +67,9 @@
     }                                                                   \
   } while (false)
 
-#define M_ERROR(msg)                            \
+#define M_ERROR(msg)                                                    \
   printf("%s\n\t in %s, %u, %s\n", msg, __FILE__, __LINE__, __func__);  \
   abort();
+
 
 #endif  // KM_CONFIG_H_

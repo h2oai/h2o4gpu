@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2018 H2O.ai, Inc.
+ * License   Apache License Version 2.0 (see LICENSE for details)
+ */
+
 #ifndef KM_MATRIX_CUDA_CUH_
 #define KM_MATRIX_CUDA_CUH_
 
@@ -16,6 +21,8 @@ class KmMatrixImpl;
 
 template <typename T>
 class KmMatrixProxy;
+
+enum class KmMatrixDim;
 
 struct CudaInfo {
   int n_devices;

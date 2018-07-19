@@ -11,7 +11,6 @@
 
 #include "KmMatrixCuda.cuh"
 #include "KmMatrix.hpp"
-#include "backend.hpp"
 
 namespace H2O4GPU {
 namespace KMeans {
