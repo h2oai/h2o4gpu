@@ -15,15 +15,21 @@ M_DEVINLINE size_t global_thread_idx () {
   return threadIdx.x + blockIdx.x * blockDim.x;
 }
 
-M_DEVINLINE size_t grid_stride () {
+M_DEVINLINE size_t global_thread_idy () {
+  return threadIdx.y + blockIdx.y * blockDim.y; 
+}
+
+M_DEVINLINE size_t grid_stride_x () {
   return blockDim.x * gridDim.x;
 }
 
-// This wrapper function is created to work around a possible bug in nvcc,
-// which threats GpuInfo::ins() as calling base class method when used inside a
-// class member function.
-size_t get_blocks(size_t _mul, int _device=0) {
-  return GpuInfo::ins().blocks(_mul, _device);
+M_DEVINLINE size_t grid_stride_y () {
+  return blockDim.y * gridDim.y;
+}
+
+template <typename T1, typename T2>
+T1 M_HOSTDEVINLINE div_roundup(const T1 a, const T2 b) {
+  return static_cast<T1>(ceil(static_cast<double>(a) / b));
 }
 
 }  // KMeans

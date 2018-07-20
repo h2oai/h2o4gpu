@@ -2,45 +2,50 @@
  * Copyright 2018 H2O.ai, Inc.
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
+#ifndef KMEANS_INIT_H_
+#define KMEANS_INIT_H_
 
-#include "Eigen/Dense"
+#include <cublas_v2.h>
+#include <curand_kernel.h>
+
+#include "KmMatrix/KmConfig.h"
 #include "KmMatrix/KmMatrix.hpp"
-// #include <vector>
+#include "KmMatrix/utils.cuh"
 
 namespace H2O4GPU{
 namespace KMeans {
 
 // Wrappers for Eigen matrix and vector
-template <typename T>
-struct EiMatrix;
+// template <typename T>
+// struct EiMatrix;
 
-template <>
-struct EiMatrix <float> {
-  using type = Eigen::MatrixXf;
-};
-template <>
-struct EiMatrix <double> {
-  using type = Eigen::MatrixXd;
-};
-template <>
-struct EiMatrix<int> {
-  using type = Eigen::MatrixXi;
-};
+// template <>
+// struct EiMatrix <float> {
+//   using type = Eigen::MatrixXf;
+// };
+// template <>
+// struct EiMatrix <double> {
+//   using type = Eigen::MatrixXd;
+// };
+// template <>
+// struct EiMatrix<int> {
+//   using type = Eigen::MatrixXi;
+// };
 
-template <typename T>
-struct EiVector;
-template <>
-struct EiVector<float> {
-  using type = Eigen::VectorXf;
-};
-template <>
-struct EiVector<double> {
-  using type = Eigen::VectorXd;
-};
-template <>
-struct EiVector<int> {
-  using type = Eigen::VectorXi;
-};
+// template <typename T>
+// struct EiVector;
+// template <>
+// struct EiVector<float> {
+//   using type = Eigen::VectorXf;
+// };
+// template <>
+// struct EiVector<double> {
+//   using type = Eigen::VectorXd;
+// };
+// template <>
+// struct EiVector<int> {
+//   using type = Eigen::VectorXi;
+// };
 
 // Work around for shared memory
 // https://stackoverflow.com/questions/20497209/getting-cuda-error-declaration-is-incompatible-with-previous-variable-name
@@ -96,69 +101,78 @@ struct kVParam {
   kVParam(T* _ptr, size_t _size) : ptr(_ptr), size(_size) {}
 };
 
-// template <typename T>
-// struct HostDeviceVector {
-//  private:
-//   kMParam<T> param;
-//   // thrust::device_vector<T> _d_vector;
-//   std::vector<T>* _h_vector;
+namespace kernel {
 
-//  public:
-//   HostDeviceVector (const std::vector<T>& _h_vec, size_t _cols) :
-//       param(_cols) {
-//     _h_vector = new std::vector<T>(_h_vec);
-//   }
-//   HostDeviceVector (const std::vector<T>& _h_vec,
-//                     size_t _rows, size_t _cols) :
-//       param(_rows, _cols) {
-//     _h_vector = new std::vector<T>(_h_vec);
-//   }
-//   ~HostDeviceVector() { delete _h_vector; }
-//   // HostDeviceVector (size_t _cols) :
-//   // param.rows {1}, param.cols (_cols) {
-//   //   _d_vector.resize(_cols);
-//   // }
-//   size_t rows() { return param.rows; }
-//   size_t cols() { return param.cols; }
-//   size_t size() { return param.rows * param.cols; }
+__global__ void setup_random_states(curandState *state, size_t size);
+__global__ void generate_uniform_kernel(float *_res,
+                                        curandState *_state,
+                                        int _size);
+__global__ void generate_uniform_kernel(double *_res,
+                                        curandState *_state,
+                                        int _size);
+}
 
-//   // kMParam<T> kParam() {
-//   //   param.ptr = _d_vector.data().get();
-//   //   return param;
-//   // }
-// };
+template <typename T>
+struct Generator {
+  // FIXME: Use KmMatrix
+  curandState *dev_states_;
+  size_t size_;
+  // FIXME: Cache random_numbers_ in a safer way.
+  KmMatrix<T> random_numbers_;
 
+  Generator (size_t _size) : size_(_size) , random_numbers_(1, _size) {
+    CUDA_CHECK(cudaMalloc((void **)&dev_states_, _size *
+                          sizeof(curandState)));
+    kernel::setup_random_states<<<div_roundup(size_, 256), 256>>>(
+        dev_states_, size_);
+  }
+  ~Generator () {
+    CUDA_CHECK(cudaFree(dev_states_));
+  }
+
+  KmMatrix<T> generate() {
+    kernel::generate_uniform_kernel<<<div_roundup(size_, 256), 256>>>
+        (random_numbers_.k_param().ptr, dev_states_, size_);
+    return random_numbers_;
+  }
+};
 
 template <typename T>
 class KmeansInitBase {
  public:
   virtual ~KmeansInitBase() {}
-  virtual KmMatrix<T> operator()(KmMatrix<T>& data) = 0;
+  virtual KmMatrix<T> operator()(KmMatrix<T>& data, size_t k) = 0;
 };
 
 template <typename T>
 struct KmeansLlInit : public KmeansInitBase<T> {
  private:
-  double over_sample;
-  int seed;
+  double over_sample_;
+  int seed_;
+  int k_;
+  // Buffer like variables
+  // store the self dot product of each data point
+  KmMatrix<T> data_dot_;
+  // store distances between each data point and centroids
+  KmMatrix<T> distance_pairs_;
 
-  T potential(MA_T(T)& data, MA_T(T)& centroids);
-  T probability(MA_T(T)& data, MA_T(T)& controids);
+  KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
 
  public:
-  KmeansLlInit () : over_sample (2.0), seed (0) {}
+  KmeansLlInit () : over_sample_ (2.0), seed_ (0), k_(0) {
+    data_dot_.set_name ("data_dot");
+    distance_pairs_.set_name ("distance pairs");
+  }
   virtual ~KmeansLlInit () override {}
 
-  MA_T(T) sample_centroids(MA_T(T)& data, MA_T(T)& centroids);
-
-  // MA_T(T) operator()(MA_T(T)&) override;
-  KmMatrix<T> operator()(KmMatrix<T>& data) override;
+  KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
+  KmMatrix<T> operator()(KmMatrix<T>& data, size_t k) override;
 };
 
-template <typename T1, typename T2>
-T1 div_roundup(const T1 a, const T2 b) {
-  return static_cast<T1>(ceil(static_cast<double>(a) / b));
-}
+
+// FIXME: Make kmeans++ a derived class of KmeansInitBase
 
 }  // namespace Kmeans
 }  // namespace H2O4GPU
+
+#endif  // KMEANS_INIT_H_

@@ -2,6 +2,7 @@
 #include <thrust/device_vector.h>
 
 #include "../../../../src/gpu/kmeans/KmMatrix/KmMatrix.hpp"
+#include <cmath>
 
 // r --gtest_filter=KmMatrix.KmMatrixEqual
 TEST(KmMatrix, KmMatrixEqual) {
@@ -59,12 +60,17 @@ TEST(KmMatrix, KmMatrixKparam) {
 }
 
 TEST(KmMatrix, KmMatrixCycle) {
-  thrust::host_vector<double> vec (2048 * 1024);
-  for (size_t i = 0; i < 2048 * 1024; ++i) {
+  size_t rows = 2048, cols = 1024;
+  thrust::host_vector<double> vec (rows * cols);
+  for (size_t i = 0; i < rows * cols; ++i) {
     vec[i] = i;
   }
-  H2O4GPU::KMeans::KmMatrix<double> mat0 (vec, 2048, 1024);
-  for (size_t i = 0; i < 1000; ++i) {
+  // Tweak this one to see if memory grows, there should be a better way to
+  // test memory leak.
+  size_t iters = std::pow(16, 1);
+  H2O4GPU::KMeans::KmMatrix<double> mat0 (vec, rows, cols);
+  mat0.dev_ptr();
+  for (size_t i = 0; i < iters; ++i) {
     H2O4GPU::KMeans::KmMatrix<double> mat1 = mat0;
     H2O4GPU::KMeans::KmMatrix<double> mat2 = mat1;
     mat0 = mat2;

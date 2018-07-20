@@ -250,7 +250,7 @@ KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
-  std::cout << "matrix: " << m.name() << std::endl << "---" << std::endl;
+  std::cout << "\nmatrix: " << m.name() << std::endl << "---" << std::endl;
   T * ptr = m.host_ptr();
   kParam<T> param = m.k_param();
   for (size_t i = 0; i < param.rows; ++i) {

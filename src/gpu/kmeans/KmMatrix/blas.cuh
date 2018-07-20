@@ -17,9 +17,9 @@ namespace KMeans {
 namespace Blas {
 // LEVEL 1
 inline void axpy(cublasHandle_t handle, int n,
-                           const float *alpha,
-                           const float *x, int incx,
-                           float *y, int incy) {
+                 const float *alpha,
+                 const float *x, int incx,
+                 float *y, int incy) {
   CUBLAS_CHECK(cublasSaxpy(handle, n,
                            alpha,
                            x, incx,
@@ -50,19 +50,13 @@ inline void gemm(cublasHandle_t handle,
                  float *C,
                  int ldc) {
   CUBLAS_CHECK(cublasSgemm(handle,
-                           transa,
-                           transb,
-                           m,
-                           n,
-                           k,
+                           transa, transb,
+                           m, n, k,
                            alpha, /* host or device pointer */
-                           A,
-                           lda,
-                           B,
-                           ldb,
+                           A, lda,
+                           B, ldb,
                            beta, /* host or device pointer */
-                           C,
-                           ldc));}
+                           C, ldc));}
 
 inline void gemm(cublasHandle_t handle,
                  cublasOperation_t transa,
@@ -93,8 +87,101 @@ inline void gemm(cublasHandle_t handle,
                            C,
                            ldc));}
 
-}  // Blas
+inline void gemm_batched(cublasHandle_t handle,
+                         cublasOperation_t transa, 
+                         cublasOperation_t transb,
+                         int m, int n, int k,
+                         const double *alpha,
+                         const double *Aarray[], int lda,
+                         const double *Barray[], int ldb,
+                         const double *beta,
+                         double          *Carray[], int ldc, 
+                         int batchCount) {
+  CUBLAS_CHECK(cublasDgemmBatched(handle,
+                                  transa, 
+                                  transb,
+                                  m, n, k,
+                                  alpha,
+                                  Aarray, lda,
+                                  Barray, ldb,
+                                  beta,
+                                  Carray, ldc, 
+                                  batchCount));
+}
 
+inline void gemm_batched(cublasHandle_t handle,
+                         cublasOperation_t transa, 
+                         cublasOperation_t transb,
+                         int m, int n, int k,
+                         const float *alpha,
+                         const float *Aarray[], int lda,
+                         const float *Barray[], int ldb,
+                         const float *beta,
+                         float *Carray[], int ldc, 
+                         int batchCount) {
+  CUBLAS_CHECK(cublasSgemmBatched(handle,
+                                  transa, 
+                                  transb,
+                                  m, n, k,
+                                  alpha,
+                                  Aarray, lda,
+                                  Barray, ldb,
+                                  beta,
+                                  Carray, ldc, 
+                                  batchCount));
+}
+
+inline void gemm_strided_batched(
+    cublasHandle_t handle, 
+    cublasOperation_t transA, cublasOperation_t transB,
+    int M, int N, int K, 
+    const double* alpha,
+    const double* A, int ldA, int strideA, 
+    const double* B, int ldB, int strideB, 
+    const double* beta,
+    double* C, int ldC, int strideC,
+    int batchCount) {
+  CUBLAS_CHECK(cublasDgemmStridedBatched(handle,
+                                         transA, 
+                                         transB,
+                                         M, N, K,
+                                         alpha,
+                                         A, ldA,
+                                         strideA,
+                                         B, ldB,
+                                         strideB,
+                                         beta,
+                                         C, ldC, 
+                                         strideC, 
+                                         batchCount));
+}
+
+inline void gemm_strided_batched(
+    cublasHandle_t handle, 
+    cublasOperation_t transA, cublasOperation_t transB,
+    int M, int N, int K, 
+    const float* alpha,
+    const float* A, int ldA, int strideA, 
+    const float* B, int ldB, int strideB, 
+    const float* beta,
+    float* C, int ldC, int strideC,
+    int batchCount) {
+  CUBLAS_CHECK(cublasSgemmStridedBatched(handle,
+                                         transA, 
+                                         transB,
+                                         M, N, K,
+                                         alpha,
+                                         A, ldA,
+                                         strideA,
+                                         B, ldB,
+                                         strideB,
+                                         beta,
+                                         C, ldC, 
+                                         strideC, 
+                                         batchCount));
+}
+
+}  // Blas
 }  // KMeans
 }  // H2O4GPU
 

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Singleton class storing gpu info.
 class GpuInfo {
  private:
   int n_gpu_;
@@ -66,7 +67,5 @@ class GpuInfo {
   }
 
 };
-
-// const GpuInfoImpl GpuInfo::impl = GpuInfoImpl();
 
 #endif  // GPU_INFO_HPP_
