@@ -36,5 +36,7 @@ TEST(KmeansLL, KmeansLLInit) {
 
   H2O4GPU::KMeans::KmMatrix<double> h_data (_h_data, 4, 4);
 
-  auto result = kmeans_ll_init (h_data);
+  auto result = kmeans_ll_init (h_data, 1.0f);
+  result.set_name ("kmeans result");
+  std::cout << result << std::endl;
 }

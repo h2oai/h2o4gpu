@@ -15,38 +15,6 @@
 namespace H2O4GPU{
 namespace KMeans {
 
-// Wrappers for Eigen matrix and vector
-// template <typename T>
-// struct EiMatrix;
-
-// template <>
-// struct EiMatrix <float> {
-//   using type = Eigen::MatrixXf;
-// };
-// template <>
-// struct EiMatrix <double> {
-//   using type = Eigen::MatrixXd;
-// };
-// template <>
-// struct EiMatrix<int> {
-//   using type = Eigen::MatrixXi;
-// };
-
-// template <typename T>
-// struct EiVector;
-// template <>
-// struct EiVector<float> {
-//   using type = Eigen::VectorXf;
-// };
-// template <>
-// struct EiVector<double> {
-//   using type = Eigen::VectorXd;
-// };
-// template <>
-// struct EiVector<int> {
-//   using type = Eigen::VectorXi;
-// };
-
 // Work around for shared memory
 // https://stackoverflow.com/questions/20497209/getting-cuda-error-declaration-is-incompatible-with-previous-variable-name
 template <typename T>
@@ -75,11 +43,6 @@ struct KmShardMem<int> {
     return s_int;
   }
 };
-
-#define MA_T(T)                                 \
-  typename EiMatrix<T>::type
-#define VE_T(T)                                 \
-  typename EiVector<T>::type
 
 template <typename T>
 struct kMParam {
@@ -113,43 +76,99 @@ __global__ void generate_uniform_kernel(double *_res,
 }
 
 template <typename T>
-struct Generator {
+struct UniformGenerator {
+  // private:
+
   // FIXME: Use KmMatrix
   curandState *dev_states_;
   size_t size_;
   // FIXME: Cache random_numbers_ in a safer way.
   KmMatrix<T> random_numbers_;
 
-  Generator (size_t _size) : size_(_size) , random_numbers_(1, _size) {
-    CUDA_CHECK(cudaMalloc((void **)&dev_states_, _size *
-                          sizeof(curandState)));
+  void initialize (size_t _size) {
+    size_ = _size;
+    random_numbers_ = KmMatrix<T> (1, size_);
+
+    if (dev_states_ != nullptr) {
+      CUDA_CHECK(cudaFree(dev_states_));
+    }
+    CUDA_CHECK(cudaMalloc((void **)&dev_states_, size_ * sizeof(curandState)));
     kernel::setup_random_states<<<div_roundup(size_, 256), 256>>>(
         dev_states_, size_);
   }
-  ~Generator () {
-    CUDA_CHECK(cudaFree(dev_states_));
+
+  // public:
+  UniformGenerator() : dev_states_ (nullptr), size_ (0){}
+
+  UniformGenerator (size_t _size) {
+    if (_size == 0) {
+      M_ERROR("Zero size for generate is not allowed.");
+    }
+    initialize(_size);
   }
+
+  ~UniformGenerator () {
+    if (dev_states_ != nullptr) {
+      CUDA_CHECK(cudaFree(dev_states_));
+    }
+  }
+
+  UniformGenerator(const UniformGenerator<T>& _rhs) = delete;
+  UniformGenerator(UniformGenerator<T>&& _rhs) = delete;
+  void operator=(const UniformGenerator<T>& _rhs) = delete;
+  void operator=(UniformGenerator<T>&& _rhs) = delete;
 
   KmMatrix<T> generate() {
     kernel::generate_uniform_kernel<<<div_roundup(size_, 256), 256>>>
         (random_numbers_.k_param().ptr, dev_states_, size_);
     return random_numbers_;
   }
+  KmMatrix<T> generate(size_t _size) {
+    if (_size == 0) {
+      M_ERROR("Zero size for generate is not allowed.");
+    }
+    if (_size != size_) {
+      initialize(_size);
+    }
+    return generate();
+  }
 };
 
+/*
+ * Base class used for all K-Means initialization algorithms.
+ */
 template <typename T>
 class KmeansInitBase {
  public:
   virtual ~KmeansInitBase() {}
+  /*
+   * Select k centroids from data.
+   *
+   * @param data data points stored in row major matrix.
+   * @param k number of centroids.
+   */
   virtual KmMatrix<T> operator()(KmMatrix<T>& data, size_t k) = 0;
 };
 
+/*
+ * Each instance of KmeansLlInit corresponds to one dataset, if a new data set
+ * is used, users need to create a new instance.
+ *
+ * k-means|| algorithm based on the paper:
+ * <a href="http://theory.stanford.edu/~sergei/papers/vldb12-kmpar.pdf">
+ * Scalable K-Means++
+ * </a>
+ *
+ * @tparam Data type, supported types are float and double.
+ */
 template <typename T>
 struct KmeansLlInit : public KmeansInitBase<T> {
  private:
-  double over_sample_;
+  T over_sample_;
   int seed_;
   int k_;
+  UniformGenerator<T> uniform_dist;
+
   // Buffer like variables
   // store the self dot product of each data point
   KmMatrix<T> data_dot_;
@@ -157,16 +176,50 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   KmMatrix<T> distance_pairs_;
 
   KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
-
  public:
-  KmeansLlInit (T _over_sample=2.0) :
-      over_sample_ (_over_sample), seed_ (0), k_(0) {
-    data_dot_.set_name ("data_dot");
-    distance_pairs_.set_name ("distance pairs");
-  }
+  // sample_centroids should not be part of the interface, but following error
+  // is generated when put in private section:
+  // The enclosing parent function ("sample_centroids") for an extended
+  // __device__ lambda cannot have private or protected access within its class
+  KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
+
+  /*
+   * Initialize KmeansLlInit algorithm, with default:
+   *  over_sample = 1.5,
+   *  seed = 0,
+   */
+  KmeansLlInit () :
+      over_sample_ (1.5f), seed_ (0), k_ (0) {}
+
+  /*
+   * Initialize KmeansLlInit algorithm, with default:
+   *  seed = 0,
+   *
+   * @param over_sample over_sample rate.
+   *    \f$p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}\f$
+   *    Note that when \f$over_sample != 1\f$, the probability for each data
+   *    point doesn't add to 1.
+   */
+  KmeansLlInit (T _over_sample) :
+      over_sample_ (_over_sample), seed_ (0), k_ (0) {}
+
+  /*
+   * Initialize KmeansLlInit algorithm.
+   *
+   * @param seed Seed used to generate threshold for sampling centroids.
+   * @param over_sample over_sample rate.
+   *    p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}
+   */
+  KmeansLlInit (int _seed, T _over_sample) :
+      seed_(_seed), seed_(_seed), k_(0) {}
+
   virtual ~KmeansLlInit () override {}
 
-  KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
+  /*
+   * Select k centroids from data.
+   * @param data data points stored in row major matrix.
+   * @param k number of centroids.
+   */
   KmMatrix<T> operator()(KmMatrix<T>& data, size_t k) override;
 };
 

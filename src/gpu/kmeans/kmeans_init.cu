@@ -27,8 +27,7 @@ namespace KMeans {
 
 namespace kernel {
 
-__global__ void setup_random_states(curandState *state, size_t size)
-{
+__global__ void setup_random_states(curandState *state, size_t size) {
   int id = threadIdx.x + blockIdx.x * threadIdx.x;
   /* Each thread gets same seed, a different sequence
      number, no offset */
@@ -38,39 +37,38 @@ __global__ void setup_random_states(curandState *state, size_t size)
 
 __global__ void generate_uniform_kernel(float *_res,
                                         curandState *_state,
-                                        int _size)
-{
+                                        int _size) {
     int idx = threadIdx.x + blockIdx.x * threadIdx.x;
     if (idx < _size) {
       float x;
-      curandState localState = _state[idx];
-      x = curand_uniform(&localState);
-      _state[idx] = localState;
+      curandState local_state = _state[idx];
+      x = curand_uniform(&local_state);
+      _state[idx] = local_state;
       _res[idx] = x;
     }
 }
 
 __global__ void generate_uniform_kernel(double *_res,
                                         curandState *_state,
-                                        int _size)
-{
+                                        int _size) {
     int idx = threadIdx.x + blockIdx.x * threadIdx.x;
     if (idx < _size) {
       double x;
-      curandState localState = _state[idx];
-      x = curand_uniform_double(&localState);
-      _state[idx] = localState;
+      curandState local_state = _state[idx];
+      x = curand_uniform_double(&local_state);
+      _state[idx] = local_state;
       _res[idx] = x;
     }
 }
 
 /*
+ * Compute min value for each row.
  * @tparam T Numeric type of the data
  * @param _res The output matrix with shape m x 1
  * @param _val The input matrix with shape m x n
  */
 template <typename T, size_t BATCH_SIZE=64>
-__global__ void col_min_sequential(kParam<T> _res, kParam<T> _val) {
+__global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
 
   size_t idx = global_thread_idx();
   size_t stride = grid_stride_x () * _val.cols;
@@ -175,8 +173,8 @@ struct MinOp {
 
   void min(KmMatrix<T>& _res, KmMatrix<T>& _val, KmMatrixDim _dim) {
     size_t blocks = GpuInfo::ins().blocks(32);
-    if (_dim == KmMatrixDim::COL) {
-      kernel::col_min_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
+    if (_dim == KmMatrixDim::ROW) {
+      kernel::row_min_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
           _res.k_param(), _val.k_param());
     } else {
       // FIXME
@@ -186,7 +184,7 @@ struct MinOp {
 };
 
 namespace kernel {
-// X^2 + Y^2
+// X^2 + Y^2, here only calculates the + operation.
 template <typename T>
 __global__ void construct_distance_pairs_kernel(
     kParam<T> _distance_pairs,
@@ -194,6 +192,8 @@ __global__ void construct_distance_pairs_kernel(
 
   size_t idx = global_thread_idx();  // indexing data
   size_t idy = global_thread_idy();  // indexing centroids
+
+  // FIXME: Is using shared memory necessary?
 
   size_t stride_x = grid_stride_x () * _data_dots.cols;
   // strides only for data.
@@ -206,8 +206,10 @@ __global__ void construct_distance_pairs_kernel(
     }
   }
 }
-}
 
+}  // namespace kernel
+
+// Extracted as an independent Op for k-means use.
 template <typename T>
 struct PairWiseDistanceOp {
   KmMatrix<T> data_dot_;
@@ -235,7 +237,7 @@ struct PairWiseDistanceOp {
 
     kernel::construct_distance_pairs_kernel<<<
         dim3(GpuInfo::ins().blocks(32), div_roundup(_centroids.rows(), 16)),
-        dim3(16, 16)>>>(  // FIXME: Tune this.
+        dim3(32, 16)>>>(  // FIXME: Tune this.
             distance_pairs_.k_param(),
             data_dot_.k_param(),
             centroids_dot_.k_param());
@@ -267,14 +269,9 @@ template <typename T>
 KmMatrix<T> KmeansLlInit<T>::probability(
     KmMatrix<T>& _data, KmMatrix<T>& _centroids) {
 
-  _centroids.set_name ("centroids");
-
   KmMatrix<T> centroids_dot (_centroids.rows(), 1);
-  centroids_dot.set_name ("centroids_dot");
 
   VecBatchDotOp<T>().dot(centroids_dot, _centroids);
-
-  std::cout << data_dot_ << centroids_dot << std::endl;
 
   // FIXME: Time this
   distance_pairs_ = KmMatrix<T>(_data.rows(), _centroids.rows());
@@ -282,52 +279,40 @@ KmMatrix<T> KmeansLlInit<T>::probability(
   distance_pairs_ = distance_op(_data, _centroids);
 
   KmMatrix<T> min_distances (_data.rows(), 1);
-  min_distances.set_name ("min distances");
 
-  MinOp<T>().min(min_distances, distance_pairs_, KmMatrixDim::COL);
-
-  CUDA_CHECK(cudaGetLastError());
-
-  std::cout << min_distances << std::endl;
+  MinOp<T>().min(min_distances, distance_pairs_, KmMatrixDim::ROW);
 
   T cost = SumOp<T>().sum(min_distances);
-  std::cout << "cost: " << cost << std::endl;
-
-  MulOp<T> mul_op;
 
   KmMatrix<T> prob (min_distances.rows(), 1);
-  mul_op.mul(prob, min_distances, (over_sample_ * k_ * 1) / cost);
-
-  std::cout << prob << std::endl;
+  MulOp<T>().mul(prob, min_distances, over_sample_ / cost);
 
   return prob;
 }
 
 
 template <typename T>
-KmMatrix<T> KmeansLlInit<T>::sample_centroids(KmMatrix<T>& _data, KmMatrix<T>& _prob) {
+KmMatrix<T> KmeansLlInit<T>::sample_centroids(
+    KmMatrix<T>& _data, KmMatrix<T>& _prob) {
 
-  KmMatrix<T> distances (1, _data.rows());
-
-  // FIXME: Keep generator out.
-  Generator<T> uniform_dist(_data.rows());
-  KmMatrix<T> thresholds = uniform_dist.generate();
+  KmMatrix<T> thresholds = uniform_dist.generate(_data.rows());
 
   T * thresholds_ptr = thresholds.dev_ptr();
 
   // If use kParam, nvcc complains:
   // identifier "H2O4GPU::KMeans::kParam<double> ::kParam" is undefined in
   // device code.
-  T* prob_ptr = _prob.k_param().ptr;
+  T* prob_ptr = _prob.dev_ptr();
 
   auto prob_iter = thrust::make_counting_iterator(0);
-  size_t n_new_centroids = thrust::count_if(thrust::device, prob_iter,
-                                            prob_iter + _prob.size(),
-                                            [=] __device__ (int idx) {
-                                              float thresh = thresholds_ptr[idx];
-                                              T prob_x = prob_ptr[idx];
-                                              return prob_x > thresh;
-                                            });
+  size_t n_new_centroids = thrust::count_if(
+      thrust::device, prob_iter,
+      prob_iter + _prob.size(),
+      [=] __device__ (int idx) {
+        float thresh = thresholds_ptr[idx];
+        T prob_x = prob_ptr[idx];
+        return prob_x > thresh;
+      });
 
   KmMatrix<T> new_centroids(n_new_centroids, _data.cols());
   thrust::device_ptr<T> new_centroids_ptr (new_centroids.dev_ptr());
@@ -337,16 +322,17 @@ KmMatrix<T> KmeansLlInit<T>::sample_centroids(KmMatrix<T>& _data, KmMatrix<T>& _
   size_t cols = _data.cols();
   // renew iterator
   prob_iter = thrust::make_counting_iterator(0);
-  thrust::copy_if(thrust::device,
-                  data_ptr, data_ptr + _data.size(), prob_iter,
-                  new_centroids_ptr,
-                  [=] __device__(int idx) {
-                    int row = idx / cols;
-                    T thresh = thresholds_ptr[row];
-                    T prob_x = prob_ptr[idx];
-                    return prob_x > thresh;
-                  });
-  std::cout << std::endl;
+  thrust::copy_if(
+      thrust::device,
+      data_ptr, data_ptr + _data.size(), prob_iter,
+      new_centroids_ptr,
+      [=] __device__(int idx) {
+        size_t row = idx / cols;
+        T thresh = thresholds_ptr[row];
+        T prob_x = prob_ptr[row];
+        return prob_x > thresh;
+      });
+
   return new_centroids;
 }
 
@@ -379,15 +365,12 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
   for (size_t i = 0; i < std::log(cost); ++i) {
     prob = probability(_data, centroids);
     KmMatrix<T> new_centroids = sample_centroids(_data, prob);
-    new_centroids.set_name ("new centroids");
-    std::cout << new_centroids << std::endl;
     centroids = stack(centroids, new_centroids, KmMatrixDim::ROW);
-    centroids.set_name ("centroids");
-    std::cout << centroids << std::endl;
   }
 
   if (centroids.rows() < k_) {
     // FIXME: When n_centroids < k
+    // Get random selection in?
   }
 
   // FIXME: re-cluster

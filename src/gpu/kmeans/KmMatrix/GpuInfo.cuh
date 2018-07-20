@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 // Singleton class storing gpu info.
+// Call GpuInfo::ins() to use the class;
 class GpuInfo {
  private:
   int n_gpu_;
@@ -29,7 +30,6 @@ class GpuInfo {
     for (int i = 0; i < n_gpu_; ++i) {
       cudaDeviceGetAttribute(&n_sm_[i], cudaDevAttrMultiProcessorCount, i);
       CUBLAS_CHECK(cublasCreate(&handles_[i]));
-      printf("n_sm[%d]: %d\n", i, n_sm_[i]);
     }
   }
   ~GpuInfo () {
@@ -38,6 +38,17 @@ class GpuInfo {
       CUBLAS_CHECK(cublasDestroy(handles_[i]));
     }
   }
+
+  static GpuInfo& ins() {
+    static GpuInfo obj;
+    return obj;
+  }
+
+  // Call the following methods with GpuInfo::ins(). For example:
+  // GpuInfo::ins().blocks(32)
+
+  // Get number of blocks for grid strided loop kernel.
+  // returns _mul * MultiProcessorCount[device].
   // FIXME, get active device
   size_t blocks (size_t _mul, int _device=0) {
     if (has_device(_device)) {
@@ -60,12 +71,6 @@ class GpuInfo {
   bool has_device(int _device) {
     return _device < n_gpu_ && _device >= 0;
   }
-
-  static GpuInfo& ins() {
-    static GpuInfo obj;
-    return obj;
-  }
-
 };
 
 #endif  // GPU_INFO_HPP_
