@@ -159,7 +159,8 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
 
  public:
-  KmeansLlInit () : over_sample_ (2.0), seed_ (0), k_(0) {
+  KmeansLlInit (T _over_sample=2.0) :
+      over_sample_ (_over_sample), seed_ (0), k_(0) {
     data_dot_.set_name ("data_dot");
     distance_pairs_.set_name ("distance pairs");
   }
