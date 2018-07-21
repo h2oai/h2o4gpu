@@ -78,8 +78,6 @@ class CudaKmMatrixImpl : public KmMatrixImpl<T> {
   virtual bool equal(KmMatrix<T>& _rhs);
 
   virtual bool on_device() const override;
-
-  friend KmMatrix<T>;
 };
 
 }  // MkMatrix

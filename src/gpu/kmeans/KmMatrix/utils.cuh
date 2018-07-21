@@ -32,6 +32,37 @@ T1 M_HOSTDEVINLINE div_roundup(const T1 a, const T2 b) {
   return static_cast<T1>(ceil(static_cast<double>(a) / b));
 }
 
+
+// Work around for shared memory
+// https://stackoverflow.com/questions/20497209/getting-cuda-error-declaration-is-incompatible-with-previous-variable-name
+template <typename T>
+struct KmShardMem;
+
+template <>
+struct KmShardMem<float> {
+  __device__ float * ptr() {
+    extern __shared__ __align__(sizeof(float)) float s_float[];
+    return s_float;
+  }
+};
+
+template <>
+struct KmShardMem<double> {
+  __device__ double * ptr() {
+    extern __shared__ __align__(sizeof(double)) double s_double[];
+    return s_double;
+  }
+};
+
+template <>
+struct KmShardMem<int> {
+  __device__ int * ptr() {
+    extern __shared__ __align__(sizeof(int)) int s_int[];
+    return s_int;
+  }
+};
+
+
 }  // KMeans
 }  // H2O4GPU
 

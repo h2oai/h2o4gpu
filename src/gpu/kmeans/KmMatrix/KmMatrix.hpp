@@ -84,8 +84,6 @@ class KmMatrixImpl {
 
   virtual KmMatrix<T> stack(KmMatrix<T>&, KmMatrixDim _dim) = 0;
   virtual bool equal(KmMatrix<T>& _val) = 0;
-
-  friend KmMatrix<T>;
 };
 
 template <typename T>

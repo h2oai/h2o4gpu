@@ -27,40 +27,6 @@ namespace KMeans {
 
 namespace kernel {
 
-__global__ void setup_random_states(curandState *state, size_t size) {
-  int id = threadIdx.x + blockIdx.x * threadIdx.x;
-  /* Each thread gets same seed, a different sequence
-     number, no offset */
-  if (id < size)
-    curand_init(1234, id, 0, &state[id]);
-}
-
-__global__ void generate_uniform_kernel(float *_res,
-                                        curandState *_state,
-                                        int _size) {
-    int idx = threadIdx.x + blockIdx.x * threadIdx.x;
-    if (idx < _size) {
-      float x;
-      curandState local_state = _state[idx];
-      x = curand_uniform(&local_state);
-      _state[idx] = local_state;
-      _res[idx] = x;
-    }
-}
-
-__global__ void generate_uniform_kernel(double *_res,
-                                        curandState *_state,
-                                        int _size) {
-    int idx = threadIdx.x + blockIdx.x * threadIdx.x;
-    if (idx < _size) {
-      double x;
-      curandState local_state = _state[idx];
-      x = curand_uniform_double(&local_state);
-      _state[idx] = local_state;
-      _res[idx] = x;
-    }
-}
-
 /*
  * Compute min value for each row.
  * @tparam T Numeric type of the data
@@ -134,9 +100,9 @@ struct VecBatchDotOp {
   }
 };
 
-// FIXME: Using struct for operations is just keeping the possibility to create
-// some unified operations for KmMatrix. For example, let KmMatrix
-// inherit those left associative ops, or create a inferface for elementwise
+// FIXME: Using struct for operations is just keeping the possibility of
+// creating an unified operations for KmMatrix. For example, let KmMatrix
+// inherit those left associative ops, or create an inferface for elementwise
 // operations.
 template <typename T>
 struct SumOp {
@@ -295,7 +261,7 @@ template <typename T>
 KmMatrix<T> KmeansLlInit<T>::sample_centroids(
     KmMatrix<T>& _data, KmMatrix<T>& _prob) {
 
-  KmMatrix<T> thresholds = uniform_dist.generate(_data.rows());
+  KmMatrix<T> thresholds = generator_->generate(_data.rows());
 
   T * thresholds_ptr = thresholds.dev_ptr();
 
@@ -378,13 +344,13 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
   return centroids;
 }
 
-#define INSTANTIATE(T)                                                  \
-  template KmMatrix<T> KmeansLlInit<T>::operator()(                     \
-      KmMatrix<T>& _data, size_t _k);                                   \
-  template KmMatrix<T> KmeansLlInit<T>::probability(KmMatrix<T>& data,  \
-                                                    KmMatrix<T>& centroids); \
-  template KmMatrix<T> KmeansLlInit<T>::sample_centroids(               \
-      KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
+#define INSTANTIATE(T)                                          \
+  template KmMatrix<T> KmeansLlInit<T>::operator()(             \
+      KmMatrix<T>& _data, size_t _k);                           \
+  template KmMatrix<T> KmeansLlInit<T>::probability(            \
+      KmMatrix<T>& data, KmMatrix<T>& centroids);               \
+  template KmMatrix<T> KmeansLlInit<T>::sample_centroids(       \
+      KmMatrix<T>& data, KmMatrix<T>& centroids);               \
 
 INSTANTIATE(float)
 INSTANTIATE(double)
