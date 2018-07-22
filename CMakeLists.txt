@@ -20,26 +20,26 @@ SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
+SET(GPU_COMPUTE_VER "" CACHE STRING
+  "Semicolon separated list of compute versions to be built against,  e.g. -DGPU_COMPUTE_VER='35;61'")
 
 if(OpenMP_CXX_FOUND OR OPENMP_FOUND)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 #============= OPTIONS & SETTINGS
 
 # TODO probably to be removed after POGS is out in favor of XGboost GLM
 ADD_DEFINITIONS(
-        -D_GITHASH_=0
-        -DH2O4GPU_DOUBLE
-        -DH2O4GPU_SINGLE
-)
+  -D_GITHASH_=0
+  -DH2O4GPU_DOUBLE
+  -DH2O4GPU_SINGLE)
 
 #============= BUILD COMMON CPU/GPU CODE
 FILE(GLOB_RECURSE COMMON_SOURCES
-        src/common/*.cpp
-        src/common/*.h
-        src/interface_c/*.cpp
-        src/interface_c/*.h
-        )
+  src/common/*.cpp
+  src/common/*.h
+  src/interface_c/*.cpp
+  src/interface_c/*.h)
 
 INCLUDE_DIRECTORIES(
   src/include
@@ -52,69 +52,70 @@ ADD_LIBRARY(commonh2o4gpu OBJECT ${COMMON_SOURCES})
 
 #============= BUILD CPU LIBRARY
 FILE(GLOB_RECURSE CPU_SOURCES
-        src/cpu/*.cpp
-        src/cpu/*.h
-        )
+  src/cpu/*.cpp
+  src/cpu/*.h)
 
 ADD_LIBRARY(cpuh2o4gpu STATIC ${CPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu>)
 TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 #============= BUILD CPU LIBRARY
 
 if(USE_CUDA)
-        FIND_PACKAGE(CUDA 8.0 REQUIRED)
-        FIND_PACKAGE(NVML REQUIRED)
+  FIND_PACKAGE(CUDA 8.0 REQUIRED)
+  FIND_PACKAGE(NVML REQUIRED)
 
-        #============= BUILD GPU LIBRARY
-        ADD_DEFINITIONS(
-                -DCUDA_MAJOR=${CUDA_VERSION_MAJOR}
-                -DHAVECUDA
-        )
+  #============= BUILD GPU LIBRARY
+  ADD_DEFINITIONS(
+    -DCUDA_MAJOR=${CUDA_VERSION_MAJOR}
+    -DHAVECUDA
+    )
 
-        if(DEV_BUILD)
-                MESSAGE(STATUS "Building DEVELOPER compute capability version.")
-                SET(GPU_COMPUTE_VER 61 CACHE STRING
-                        "Space separated list of compute versions to be built against")
-        else()
-                MESSAGE(STATUS "Building RELEASE compute capability version.")
-                SET(GPU_COMPUTE_VER 35;50;52;60;61 CACHE STRING
-                        "Space separated list of compute versions to be built against")
-        endif()
+  if(DEV_BUILD AND NOT GPU_COMPUTE_VER)
+    MESSAGE(STATUS "Building DEVELOPER compute capability version.")
+    SET(GPU_COMPUTE_VER 61)
+  elseif(NOT GPU_COMPUTE_VER)
+    MESSAGE(STATUS "Building RELEASE compute capability version.")
+    SET(GPU_COMPUTE_VER 35;50;52;60;61)
+  endif()
 
-        if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
-                MESSAGE(STATUS "CUDA 9.0 detected, adding Volta compute capability (7.0).")
-                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
-        endif()
+  if(((CUDA_VERSION_MAJOR EQUAL 9)
+	OR (CUDA_VERSION_MAJOR GREATER 9))
+      AND NOT DEV_BUILD
+      AND NOT GPU_COMPUTE_VER)
+    MESSAGE(STATUS "CUDA 9.0 detected, adding Volta compute capability (7.0).")
+    SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
+  endif()
 
-        SET(GENCODE_FLAGS "")
-        FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+  SET(GENCODE_FLAGS "")
+  FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
+  MESSAGE("CUDA architecture flags ${GENCODE_FLAGS}")
 
-        FILE(GLOB_RECURSE GPU_SOURCES
-                src/*.cu
-                src/*.cuh
-                src/common/*.cpp
-                src/common/*.h
-                )
+  SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
-        CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> STATIC)
+  FILE(GLOB_RECURSE GPU_SOURCES
+    src/*.cu
+    src/*.cuh
+    src/common/*.cpp
+    src/common/*.h)
 
-        if($ENV{USENVTX})
-                MESSAGE(STATUS "Building with NVTX support on.")
-                SET(NVTX_LIBRARY nvToolsExt)
-        endif()
+  CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> STATIC)
 
-        TARGET_LINK_LIBRARIES(gpuh2o4gpu
-                ${CUDA_CUBLAS_LIBRARIES}
-                ${CUDA_cusolver_LIBRARY}
-                ${CUDA_cusparse_LIBRARY}
-                ${BLAS_LIBRARIES}
-                ${NVTX_LIBRARY}
-                ${NVML_LIBRARY})
-        #============= BUILD GPU LIBRARY
+  if($ENV{USENVTX})
+    MESSAGE(STATUS "Building with NVTX support on.")
+    SET(NVTX_LIBRARY nvToolsExt)
+  endif()
+
+  TARGET_LINK_LIBRARIES(gpuh2o4gpu
+    ${CUDA_CUBLAS_LIBRARIES}
+    ${CUDA_cusolver_LIBRARY}
+    ${CUDA_cusparse_LIBRARY}
+    ${BLAS_LIBRARIES}
+    ${NVTX_LIBRARY}
+    ${NVML_LIBRARY})
+  #============= BUILD GPU LIBRARY
 endif()
 
 if(USE_SWIG)
-  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/src/swig)
+  ADD_SUBDIRECTORY(${CMAKE_CURRENT_LIST_DIR}/src/swig)
 endif(USE_SWIG)
 
 #============= Tests
