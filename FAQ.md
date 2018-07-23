@@ -281,7 +281,22 @@ sudo /opt/h2oai/dai/dai-env.sh python3.6 -m pip install pymapd # needs libraries
 sudo chmod -R a+rx /opt/h2oai/dai/python
 ```
 
-6) Smoke test
+Next time you reboot, don't have to re-run mapd as servers will already be going.  If disabled mapd servers, redo this by doing:
+```
+cd $MAPD_PATH
+sudo systemctl start mapd_server
+sudo systemctl start mapd_web_server
+sudo systemctl enable mapd_server
+sudo systemctl enable mapd_web_server
+```
+
+6) Install cuda toolkit for conda (should install cuda9.0)
+
+```
+sudo /opt/h2oai/dai/dai-env.sh conda install cudatoolkit
+```
+
+7) Smoke test
 
 ```
 /opt/h2oai/dai/dai-env.sh python
@@ -290,7 +305,7 @@ import pygdf
 import pymapd
 ```
 
-7) Import data test
+8) Import data test
 
 ```
 cd ~/
@@ -307,7 +322,15 @@ COPY ipums_easy FROM './ipums_easy.csv';
 # if any records rejected, check: /var/lib/mapd/data/mapd_log/mapd_server.INFO
 ```
 
-7) Notebook test
+9) Install other python dependencies for notebook
+
+```
+cd ~/h2o4gpu/src/interface_py
+sudo /opt/h2oai/dai/dai-env.sh pip install -r requirements_runtime_demos.txt
+sudo chmod -R a+rx /opt/h2oai/dai/python/
+```
+
+10) Notebook test
 
 ```
 emacs -nw ~/.local/./share/jupyter/kernels/python3/kernel.json # and edit so python (just after argv line) is instead /opt/h2oai/dai/python/bin/python and edit display name to "python (dai)" to ensure see this name in jupyter notebook
