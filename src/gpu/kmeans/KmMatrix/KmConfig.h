@@ -68,8 +68,14 @@
   } while (false)
 
 #define M_ERROR(msg)                                                    \
-  printf("%s\n\t in %s, %u, %s\n", msg, __FILE__, __LINE__, __func__);  \
+  printf("%s\n\t in %s, %u, %s\n", msg, __FILE__, __LINE__,             \
+         __PRETTY_FUNCTION__);                                          \
   abort();
 
+#define M_USER_ERROR(msg)                                               \
+  fprintf(stderr,                                                       \
+          "%s\n\t in %s, %u, %s\n", msg, __FILE__, __LINE__,            \
+          __PRETTY_FUNCTION__);                                         \
+  exit(1)
 
 #endif  // KM_CONFIG_H_

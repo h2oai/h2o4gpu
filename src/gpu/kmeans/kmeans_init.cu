@@ -7,6 +7,7 @@
 #include <thrust/random.h>
 
 #include <cub/device/device_select.cuh>
+#include <cub/device/device_histogram.cuh>
 
 #include <random>
 #include <limits>
@@ -157,11 +158,13 @@ struct MulOp {
 
 template <typename T>
 struct ArgMinOp {
-  void argmin(KmMatrix<T>& _res, KmMatrix<T>& _val, KmMatrixDim _dim) {
+  KmMatrix<T> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
     size_t blocks = GpuInfo::ins().blocks(32);
     if (_dim == KmMatrixDim::ROW) {
+      KmMatrix<T> _res(_val.rows(), 1);
       kernel::row_argmin_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
           _res.k_param(), _val.k_param());
+      return _res;
     } else {
       // FIXME
       M_ERROR("Not implemented");
@@ -172,11 +175,13 @@ struct ArgMinOp {
 template <typename T>
 struct MinOp {
 
-  void min(KmMatrix<T>& _res, KmMatrix<T>& _val, KmMatrixDim _dim) {
+  KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim) {
     size_t blocks = GpuInfo::ins().blocks(32);
     if (_dim == KmMatrixDim::ROW) {
+      KmMatrix<T> _res(_val.rows(), 1);
       kernel::row_min_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
           _res.k_param(), _val.k_param());
+      return _res;
     } else {
       // FIXME
       M_ERROR("Not implemented");
@@ -265,6 +270,33 @@ struct PairWiseDistanceOp {
   }
 };
 
+template <typename T>
+KmMatrix<int> KmeansLlInit<T>::weight_centroids(KmMatrix<T>& _centroids) {
+  KmMatrix<T> min_indices = ArgMinOp<T>().argmin(_centroids, KmMatrixDim::ROW);
+  KmMatrix<int> weights (1, _centroids.rows());
+
+  size_t temp_storage_bytes = 0;
+  void *d_temp_storage = NULL;
+
+  cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
+                                      min_indices.dev_ptr(),
+                                      weights.dev_ptr(),
+                                      _centroids.rows(),
+                                      (T)0.0,
+                                      (T)_centroids.rows(),
+                                      (int)_centroids.rows());
+
+  CUDA_CHECK(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
+  cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
+                                      min_indices.dev_ptr(),
+                                      weights.dev_ptr(),
+                                      _centroids.rows(),
+                                      (T)0.0,
+                                      (T)_centroids.rows(),
+                                      (int)_centroids.rows());
+  CUDA_CHECK(cudaFree(d_temp_storage));
+  return weights;
+}
 
 template <typename T>
 KmMatrix<T> KmeansLlInit<T>::probability(
@@ -279,9 +311,7 @@ KmMatrix<T> KmeansLlInit<T>::probability(
   PairWiseDistanceOp<T> distance_op (data_dot_, centroids_dot, distance_pairs_);
   distance_pairs_ = distance_op(_data, _centroids);
 
-  KmMatrix<T> min_distances (_data.rows(), 1);
-
-  MinOp<T>().min(min_distances, distance_pairs_, KmMatrixDim::ROW);
+  KmMatrix<T> min_distances = MinOp<T>().min(distance_pairs_, KmMatrixDim::ROW);
 
   T cost = SumOp<T>().sum(min_distances);
 
@@ -341,6 +371,16 @@ template <typename T>
 KmMatrix<T>
 KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
 
+  if (_k > _data.size()) {
+    char err_msg[128];
+    sprintf(
+        err_msg,
+        "k must be less than or equal to the number of data points"
+        ", k: %u, data points: %u",
+        _k, _data.rows());
+    M_USER_ERROR(err_msg);
+  }
+
   if (seed_ < 0) {
     std::random_device rd;
     seed_ = rd();
@@ -372,20 +412,27 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
   if (centroids.rows() < k_) {
     // FIXME: When n_centroids < k
     // Get random selection in?
+    M_ERROR("Not implemented.");
   }
+
+  KmMatrix<int> weights = weight_centroids(centroids);
+  weights.set_name ("weights");
+  std::cout << weights << std::endl;
 
   // FIXME: re-cluster
   // kmeans_plus_plus(centroids);
   return centroids;
 }
 
-#define INSTANTIATE(T)                                          \
-  template KmMatrix<T> KmeansLlInit<T>::operator()(             \
-      KmMatrix<T>& _data, size_t _k);                           \
-  template KmMatrix<T> KmeansLlInit<T>::probability(            \
-      KmMatrix<T>& data, KmMatrix<T>& centroids);               \
-  template KmMatrix<T> KmeansLlInit<T>::sample_centroids(       \
-      KmMatrix<T>& data, KmMatrix<T>& centroids);               \
+#define INSTANTIATE(T)                                                  \
+  template KmMatrix<T> KmeansLlInit<T>::operator()(                     \
+      KmMatrix<T>& _data, size_t _k);                                   \
+  template KmMatrix<int> KmeansLlInit<T>::weight_centroids(             \
+      KmMatrix<T>& centroids);                                          \
+  template KmMatrix<T> KmeansLlInit<T>::probability(                    \
+      KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
+  template KmMatrix<T> KmeansLlInit<T>::sample_centroids(               \
+      KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
 
 INSTANTIATE(float)
 INSTANTIATE(double)

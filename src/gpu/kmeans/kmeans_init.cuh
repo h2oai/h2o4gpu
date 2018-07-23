@@ -61,6 +61,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   // store distances between each data point and centroids
   KmMatrix<T> distance_pairs_;
 
+  KmMatrix<int> weight_centroids(KmMatrix<T>& centroids);
   KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
  public:
   // sample_centroids should not be part of the interface, but following error
