@@ -33,13 +33,11 @@ namespace kernel {
  * @param _res The output matrix with shape m x 1
  * @param _val The input matrix with shape m x n
  */
-template <typename T, size_t BATCH_SIZE=64>
+template <typename T>
 __global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
 
   size_t idx = global_thread_idx();
   size_t stride = grid_stride_x () * _val.cols;
-
-  size_t n_batches = div_roundup(_val.cols, 128);
 
   for (size_t i = idx; i < _val.size(); i += stride) {
     T min = std::numeric_limits<T>::max();
@@ -48,8 +46,31 @@ __global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
       T tmp = _val.ptr[i+j];
       if (tmp < min)
         min = tmp;
-      _res.ptr[idx] = tmp;
     }
+
+    _res.ptr[idx] = min;
+  }
+}
+
+template <typename T>
+__global__ void row_argmin_sequential(kParam<T> _res, kParam<T> _val) {
+
+  size_t idx = global_thread_idx();
+  size_t stride = grid_stride_x () * _val.cols;
+
+  for (size_t i = idx; i < _val.size(); i += stride) {
+    T min = std::numeric_limits<T>::max();
+    int min_idx = -1;
+
+    for (size_t j = 0; j < _val.cols; ++j) {
+      T tmp = _val.ptr[i+j];
+      if (tmp < min) {
+        min_idx = i;
+        min = tmp;
+      }
+    }
+
+    _res.ptr[idx] = min_idx;
   }
 }
 
@@ -131,6 +152,20 @@ struct MulOp {
         &_rhs,                // alpha
         _lhs.dev_ptr(), 1,
         _res.dev_ptr(), 1);
+  }
+};
+
+template <typename T>
+struct ArgMinOp {
+  void argmin(KmMatrix<T>& _res, KmMatrix<T>& _val, KmMatrixDim _dim) {
+    size_t blocks = GpuInfo::ins().blocks(32);
+    if (_dim == KmMatrixDim::ROW) {
+      kernel::row_argmin_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
+          _res.k_param(), _val.k_param());
+    } else {
+      // FIXME
+      M_ERROR("Not implemented");
+    }
   }
 };
 
