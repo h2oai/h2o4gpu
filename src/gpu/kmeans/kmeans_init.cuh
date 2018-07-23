@@ -52,7 +52,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   T over_sample_;
   int seed_;
   int k_;
-  // UniformGenerator<T> uniform_dist;
+
   std::unique_ptr<GeneratorBase<T>> generator_;
 
   // Buffer like variables
