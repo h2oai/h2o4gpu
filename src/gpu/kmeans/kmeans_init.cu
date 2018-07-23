@@ -54,7 +54,7 @@ __global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
 }
 
 template <typename T>
-__global__ void row_argmin_sequential(kParam<T> _res, kParam<T> _val) {
+__global__ void row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
 
   size_t idx = global_thread_idx();
   size_t stride = grid_stride_x () * _val.cols;
@@ -158,10 +158,10 @@ struct MulOp {
 
 template <typename T>
 struct ArgMinOp {
-  KmMatrix<T> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
+  KmMatrix<int> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
     size_t blocks = GpuInfo::ins().blocks(32);
     if (_dim == KmMatrixDim::ROW) {
-      KmMatrix<T> _res(_val.rows(), 1);
+      KmMatrix<int> _res(_val.rows(), 1);
       kernel::row_argmin_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
           _res.k_param(), _val.k_param());
       return _res;
@@ -270,14 +270,26 @@ struct PairWiseDistanceOp {
   }
 };
 
+// We use counting to construct the weight as described in the paper. Counting
+// is performed by histogram algorithm.
+// For re-cluster, the paper suggests using K-Means++, but that will require
+// copying data back to host. So we simply use those selected centroids with
+// highest probability.
+
+// FIXME:
+// Operations performed in K-Means|| loop leads to a-approximate.
+// Intuitively, choosing those centroids with highest probability should not
+// break this property. But I haven't make the proof.
+// And benchmarking should be performed to check the result.
 template <typename T>
-KmMatrix<int> KmeansLlInit<T>::weight_centroids(KmMatrix<T>& _centroids) {
-  KmMatrix<T> min_indices = ArgMinOp<T>().argmin(_centroids, KmMatrixDim::ROW);
+KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
+  KmMatrix<int> min_indices = ArgMinOp<T>().argmin(_centroids, KmMatrixDim::ROW);
   KmMatrix<int> weights (1, _centroids.rows());
 
   size_t temp_storage_bytes = 0;
   void *d_temp_storage = NULL;
 
+  // determine the temp_storage_bytes
   cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
                                       min_indices.dev_ptr(),
                                       weights.dev_ptr(),
@@ -295,7 +307,38 @@ KmMatrix<int> KmeansLlInit<T>::weight_centroids(KmMatrix<T>& _centroids) {
                                       (T)_centroids.rows(),
                                       (int)_centroids.rows());
   CUDA_CHECK(cudaFree(d_temp_storage));
-  return weights;
+
+  // Sort the indices by weights in ascending order, then use those at front
+  // as result.
+  thrust::sort_by_key(thrust::device,
+                      weights.dev_ptr(),
+                      weights.dev_ptr() + weights.size(),
+                      min_indices.dev_ptr(),
+                      thrust::greater<int>());
+
+  int * min_indices_ptr = min_indices.dev_ptr();
+
+  KmMatrix<T> centroids (k_, _centroids.cols());
+  int cols = _centroids.cols();
+  size_t k = k_;
+
+  min_indices.set_name ("min_indices");
+  std::cout << min_indices << std::endl;
+
+  thrust::copy_if(
+      thrust::device,
+      _centroids.dev_ptr(), _centroids.dev_ptr() + _centroids.size(),
+      centroids.dev_ptr(),
+      [=] __device__ (int idx) {
+        size_t row = idx / cols;
+        for (size_t i = 0; i < k; ++i) {
+          if (row == min_indices_ptr[i])
+            return true;
+        }
+        return false;
+      });
+
+  return centroids;
 }
 
 template <typename T>
@@ -415,19 +458,14 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
     M_ERROR("Not implemented.");
   }
 
-  KmMatrix<int> weights = weight_centroids(centroids);
-  weights.set_name ("weights");
-  std::cout << weights << std::endl;
-
-  // FIXME: re-cluster
-  // kmeans_plus_plus(centroids);
+  centroids = recluster(centroids);
   return centroids;
 }
 
 #define INSTANTIATE(T)                                                  \
   template KmMatrix<T> KmeansLlInit<T>::operator()(                     \
       KmMatrix<T>& _data, size_t _k);                                   \
-  template KmMatrix<int> KmeansLlInit<T>::weight_centroids(             \
+  template KmMatrix<T> KmeansLlInit<T>::recluster(                      \
       KmMatrix<T>& centroids);                                          \
   template KmMatrix<T> KmeansLlInit<T>::probability(                    \
       KmMatrix<T>& data, KmMatrix<T>& centroids);                       \

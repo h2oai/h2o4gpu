@@ -53,7 +53,7 @@ TEST(KmeansLL, KmeansLLInit) {
 
   H2O4GPU::KMeans::KmMatrix<double> h_data (_h_data, 4, 4);
 
-  auto result = kmeans_ll_init(h_data, 1.0f);
+  auto result = kmeans_ll_init(h_data, 2);
   result.set_name("kmeans with mock");
   std::cout << result << std::endl;
 }

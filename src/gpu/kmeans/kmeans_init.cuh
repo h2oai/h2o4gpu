@@ -61,14 +61,14 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   // store distances between each data point and centroids
   KmMatrix<T> distance_pairs_;
 
-  KmMatrix<int> weight_centroids(KmMatrix<T>& centroids);
   KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
  public:
-  // sample_centroids should not be part of the interface, but following error
-  // is generated when put in private section:
+  // sample_centroids/recluster should not be part of the interface, but
+  // following error is generated when put in private section:
   // The enclosing parent function ("sample_centroids") for an extended
   // __device__ lambda cannot have private or protected access within its class
   KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
+  KmMatrix<T> recluster(KmMatrix<T>& centroids);
 
   /*
    * Initialize KmeansLlInit algorithm, with default:
