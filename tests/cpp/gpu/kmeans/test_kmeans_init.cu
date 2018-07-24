@@ -31,6 +31,7 @@ struct GeneratorMock : GeneratorBase<T> {
   }
 };
 
+// r --gtest_filter=KmeansLL.PairWiseDistance
 TEST(KmeansLL, PairWiseDistance) {
 
   thrust::host_vector<double> h_data (20);
@@ -38,49 +39,41 @@ TEST(KmeansLL, PairWiseDistance) {
     h_data[i] = i * 2;
   }
   KmMatrix<double> data (h_data, 4, 5);
-  data.set_name ("data");
 
   thrust::host_vector<double> h_centroids(10);
   for (size_t i = 0; i < 10; ++i) {
     h_centroids[i] = i;
   }
   KmMatrix<double> centroids (h_centroids, 2, 5);
-  centroids.set_name ("centroids");
 
   KmMatrix<double> data_dot (4, 1);
-  data_dot.set_name ("data_dot");
   VecBatchDotOp<double>().dot(data_dot, data);
-  std::cout << data_dot << std::endl;
 
   KmMatrix<double> centroids_dot (2, 1);
-  centroids_dot.set_name ("centroids dot");
   VecBatchDotOp<double>().dot(centroids_dot, centroids);
-  std::cout << centroids_dot << std::endl;
-
 
   thrust::host_vector<float> h_pairs (8);
   for (size_t i = 0; i < 8; ++i) {
-    h_pairs[i] = 1;
+    h_pairs[i] = 0;
   }
   KmMatrix<double> distance_pairs (h_pairs, 4, 2);
 
   KmMatrix<double> res = detail::PairWiseDistanceOp<double>(
       data_dot, centroids_dot, distance_pairs)(data, centroids);
-  res.set_name ("pw res");
-  std::cout << res << std::endl;
 
   std::vector<float> h_sol
     {
-      151, 376,
-      1051, 1276,
-      2951, 3176,
-      5851, 6076
+      30.,   55.,
+      730.,  255.,
+      2430., 1455.,
+      5130., 3655.,
     };
   KmMatrix<double> sol (h_sol, 4, 2);
 
   ASSERT_TRUE(sol == res);
 }
 
+// r --gtest_filter=KmeansLL.KmeansLLInit
 TEST(KmeansLL, KmeansLLInit) {
   int k = 2;
   std::unique_ptr<GeneratorBase<double>> mock_ptr (new GeneratorMock<double>);
@@ -104,7 +97,7 @@ TEST(KmeansLL, KmeansLLInit) {
 
   H2O4GPU::KMeans::KmMatrix<double> h_data (_h_data, 4, 4);
 
-  // auto result = kmeans_ll_init(h_data, 2);
-  // result.set_name("kmeans with mock");
-  // std::cout << result << std::endl;
+  auto result = kmeans_ll_init(h_data, 2);
+  result.set_name("kmeans with mock");
+  std::cout << result << std::endl;
 }

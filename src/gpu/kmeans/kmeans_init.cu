@@ -38,13 +38,13 @@ __global__ void construct_distance_pairs_kernel(
 
   // FIXME: Is using shared memory necessary?
 
-  size_t stride_x = grid_stride_x () * _data_dots.cols;
+  size_t stride_x = grid_stride_x ();
   // strides only for data.
   for (size_t i = idx; i < _data_dots.rows; i += stride_x) {
     if (idy < _centroids_dots.rows ) {
       // i + idy: x^2 + y^2 between i^th data (a.k.a x) and idy^th
       // centroid (a.k.a y)
-      _distance_pairs.ptr[i + idy] =
+      _distance_pairs.ptr[i*_centroids_dots.rows + idy] =
           _data_dots.ptr[idx] + _centroids_dots.ptr[idy];
     }
   }
@@ -53,11 +53,12 @@ __global__ void construct_distance_pairs_kernel(
 }  // namespace kernel
 
 namespace detail {
+
 template <typename T>
 void PairWiseDistanceOp<T>::initialize(KmMatrix<T>& _data_dot,
                                        KmMatrix<T>& _centroids_dot,
                                        KmMatrix<T>& _distance_pairs) {
-  _data_dot = _data_dot;
+  data_dot_ = _data_dot;
   centroids_dot_ = _centroids_dot;
   distance_pairs_ = _distance_pairs;
   initialized_ = true;
@@ -83,9 +84,6 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
 
   CUDA_CHECK(cudaGetLastError());
 
-  distance_pairs_.set_name ("distance pairs");
-  std::cout << distance_pairs_ << std::endl;
-
   cublasHandle_t handle = GpuInfo::ins().cublas_handle();
 
   T alpha = -2.0;
@@ -95,12 +93,12 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
       handle,
       CUBLAS_OP_T, CUBLAS_OP_N,
       // n, d, d/k
-      _data.rows(), _data.cols(), _data.cols(),
+      _centroids.rows(), _data.rows(), _data.cols(),
       &alpha,
-      _data.dev_ptr(), _data.rows(),
       _centroids.dev_ptr(), _centroids.cols(),
+      _data.dev_ptr(), _data.cols(),
       &beta,
-      distance_pairs_.dev_ptr(), distance_pairs_.rows());
+      distance_pairs_.dev_ptr(), _centroids.rows());
 
   return distance_pairs_;
 }
@@ -120,7 +118,7 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
 // FIXME:
 // Operations performed in K-Means|| loop leads to a-approximation.
 // Intuitively, choosing those centroids with highest probability should not
-// break this property. But I haven't made the proof.
+// break this property. But I haven't made the argument.
 // And benchmarking should be performed to check the result.
 template <typename T>
 KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
