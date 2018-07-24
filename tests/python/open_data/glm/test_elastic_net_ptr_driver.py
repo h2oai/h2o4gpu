@@ -88,11 +88,18 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print(trainW.dtype)
   a,b,c,d,e = prepare_and_upload_data(enet, trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
 
+  # SWIG
+  use_raw = 0
   ## Solve
-  print("Solving")
+  print("Solving using Swig pointer")
   double_precision=0 # float
   order = 'c' if fortran else 'r'
-  enet.fit_ptr(mTrain, n, mvalid, double_precision, order, a, b, c, d, e, source_dev = sourceDev)
+  a_raw = 0
+  b_raw = 0
+  c_raw = 0
+  d_raw = 0
+  e_raw = 0
+  enet.fit_ptr(mTrain, n, mvalid, double_precision, order, use_raw, a, b, c, d, e, a_raw, b_raw, c_raw, d_raw, e_raw, source_dev = sourceDev)
   print("Done Solving")
 
   # show something about Xvsalphalambda and Xvsalpha
@@ -119,7 +126,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Predicting")
   if validX is not None:
       if 1==1:
-           validPredsvsalphapure = enet.predict_ptr(c, d)
+           validPredsvsalphapure = enet.predict_ptr(use_raw, c, d)
       else:
            validPredsvsalphapure = enet.predict(validX, validY)
 
@@ -128,10 +135,12 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
   # upload new validation for new predict
   _,_,e,f,_ = upload_data(enet, None, None, validX2, validY2, None, source_dev = sourceDev)
+  e_raw = int(e)
+  f_raw = int(f)
 
   print("Predicting2")
   if 1==1:
-       validPredsvsalphapure2 = enet.predict_ptr(e, f)
+       validPredsvsalphapure2 = enet.predict_ptr(use_raw, e, f)
   else:
        validPredsvsalphapure2 = enet.predict(validX2, validY2)
 
@@ -141,6 +150,78 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
   print("Done Predicting")
 
   # show something about validPredsvsalphalambdapure, validPredsvsalphapure
+
+
+  # RAW
+  use_raw = 1
+  a_raw = int(a) if a is not None else 0
+  b_raw = int(b) if a is not None else 0
+  c_raw = int(c) if a is not None else 0
+  d_raw = int(d) if a is not None else 0
+  e_raw = int(e) if a is not None else 0
+  a = None
+  b = None
+  c = None
+  d = None
+  e = None
+  ## Solve
+  print("Solving using Raw pointer")
+  double_precision = 0  # float
+  order = 'c' if fortran else 'r'
+  enet.fit_ptr(mTrain, n, mvalid, double_precision, order, use_raw, a, b, c, d, e, a_raw, b_raw, c_raw, d_raw, e_raw,
+               source_dev=sourceDev)
+  print("Done Solving using Raw pointer")
+
+  # show something about Xvsalphalambda and Xvsalpha
+  print("Xvsalpha")
+  print(enet.X)
+
+  rmse = enet.error
+  print("rmse")
+  print(rmse)
+
+  print("lambdas")
+  lambdas = enet.lambdas
+  print(lambdas)
+
+  print("alphas")
+  alphas = enet.alphas
+  print(alphas)
+
+  print("tols")
+  tols = enet.tols
+  print(tols)
+
+  print("Predicting")
+  if validX is not None:
+      if 1 == 1:
+          validPredsvsalphapure = enet.predict_ptr(use_raw, c, d, c_raw, d_raw)
+      else:
+          validPredsvsalphapure = enet.predict(validX, validY)
+
+      print("validPredsvsalphapure")
+      print(validPredsvsalphapure)
+
+  # upload new validation for new predict
+  _, _, e, f, _ = upload_data(enet, None, None, validX2, validY2, None, source_dev=sourceDev)
+  e_raw = int(e) if a is not None else 0
+  f_raw = int(f) if a is not None else 0
+  e = None
+  f = None
+
+  print("Predicting2")
+  if 1 == 1:
+      validPredsvsalphapure2 = enet.predict_ptr(use_raw, e, f, e_raw, f_raw)
+  else:
+      validPredsvsalphapure2 = enet.predict(validX2, validY2)
+
+  print("validPredsvsalphapure2")
+  print(validPredsvsalphapure2)
+
+  print("Done Predicting")
+
+  # show something about validPredsvsalphalambdapure, validPredsvsalphapure
+
 
   return enet
 

@@ -380,6 +380,7 @@ class ElasticNetH2O(object):
         # save global variable
         oldstorefullpath = self.store_full_path
 
+        use_raw = 0
         if self.store_full_path == 1:
             self.store_full_path = 1
             self._fitorpredict_ptr(
@@ -389,7 +390,7 @@ class ElasticNetH2O(object):
                 self.m_valid,
                 self.double_precision,
                 self.ord,
-                self.use_raw,
+                use_raw,
                 self.a,
                 self.b,
                 self.c,
@@ -411,7 +412,7 @@ class ElasticNetH2O(object):
             self.m_valid,
             self.double_precision,
             self.ord,
-            self.use_raw,
+            use_raw,
             self.a,
             self.b,
             self.c,
@@ -706,7 +707,7 @@ class ElasticNetH2O(object):
             self.lambda_min_ratio,
             self.n_lambdas,
             self.n_folds,
-            self.n_alphas,
+            self.n_alphas, # 20
             self.alpha_min,
             self.alpha_max,
             c_alphas,
@@ -716,7 +717,7 @@ class ElasticNetH2O(object):
             self.lambda_stop_early,
             self.glm_stop_early,
             self.glm_stop_early_error_fraction,
-            self.max_iter,
+            self.max_iter, # 30
             self.verbose,
             self.use_raw,
             a,
@@ -724,9 +725,9 @@ class ElasticNetH2O(object):
             c,
             d,
             e,
-            a_raw,
+            a_raw, # 38
             b_raw,
-            c_raw,
+            c_raw, # 40
             d_raw,
             e_raw,
             self.store_full_path,
@@ -880,7 +881,7 @@ class ElasticNetH2O(object):
 
     # pylint: disable=unused-argument
     def predict_ptr(self,
-                    use_raw=1,
+                    use_raw=0,
                     valid_xptr=None,
                     valid_yptr=None,
                     valid_xptr_raw=None,
@@ -918,7 +919,7 @@ class ElasticNetH2O(object):
                 self.m_valid,
                 self.double_precision,
                 self.ord,
-                self.use_raw,
+                use_raw,
                 self.a,
                 self.b,
                 valid_xptr,
@@ -940,7 +941,7 @@ class ElasticNetH2O(object):
             self.m_valid,
             self.double_precision,
             self.ord,
-            self.use_raw,
+            use_raw,
             self.a,
             self.b,
             valid_xptr,

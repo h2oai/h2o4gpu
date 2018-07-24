@@ -1841,7 +1841,7 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
 		int verbose,
-		int use_raw,
+		int use_raw, // 32
 		float *trainXptr, float *trainYptr, float *validXptr, float *validYptr, float *weightptr,
 		size_t trainXptr_raw, size_t trainYptr_raw, size_t validXptr_raw, size_t validYptr_raw, size_t weightptr_raw,
 		int givefullpath,
