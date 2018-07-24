@@ -31,8 +31,6 @@ extern int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrai
     %append_output(SWIG_NewPointerObj(%as_voidptr(*$1), $*1_descriptor, 0));
 }
 
-%apply int { size_t };
-
 %apply (float *IN_ARRAY1) {float *alphas, float *lambdas, float* trainX, float* trainY, float* validX, float* validY, float *weight};
 %apply (double *IN_ARRAY1) {double *alphas, double *lambdas, double* trainX, double* trainY, double* validX, double* validY, double *weight};
 
