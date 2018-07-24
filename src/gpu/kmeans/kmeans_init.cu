@@ -50,6 +50,24 @@ __global__ void construct_distance_pairs_kernel(
   }
 }
 
+template <typename T>
+__global__ void self_row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
+
+  size_t idx = global_thread_idx();
+  if (idx < _val.rows) {
+    T min = std::numeric_limits<T>::max();
+    int min_idx = -1;
+    for (size_t i = 0; i < _val.cols; ++i) {
+      T value = _val.ptr[idx * _val.cols + i];
+      if (value < min && value != 0) {
+        min = value;
+        min_idx = i;
+      }
+    }
+    _res.ptr[idx] = min_idx;
+  }
+}
+
 }  // namespace kernel
 
 namespace detail {
@@ -103,48 +121,72 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
   return distance_pairs_;
 }
 
-}  // namespace detail
+// ArgMin operation that exclude 0. Used when dealing with distance_pairs
+// in recluster where distance between points with itself is calculated,
+// hence the name.
+// FIXME: Maybe generalize it to selection algorithm.
+template <typename T>
+struct SelfArgMinOp {
 
+  KmMatrix<int> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
+    if (_dim == KmMatrixDim::ROW) {
+      KmMatrix<int> _res(_val.rows(), 1);
+      kernel::self_row_argmin_sequential<<<
+          div_roundup(_val.rows(), 256), 256>>>(_res.k_param(),
+                                                _val.k_param());
+      return _res;
+    } else {
+      // FIXME
+      M_ERROR("Not implemented");
+    }
+  }
 
-
-/* ============== Class member functions ============== */
+};
 
 // We use counting to construct the weight as described in the paper. Counting
 // is performed by histogram algorithm.
 // For re-cluster, the paper suggests using K-Means++, but that will require
 // copying data back to host. So we simply use those selected centroids with
 // highest probability.
-
-// FIXME:
-// Operations performed in K-Means|| loop leads to a-approximation.
-// Intuitively, choosing those centroids with highest probability should not
-// break this property. But I haven't made the argument.
-// And benchmarking should be performed to check the result.
 template <typename T>
-KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
-  KmMatrix<int> min_indices = ArgMinOp<T>().argmin(_centroids, KmMatrixDim::ROW);
+KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
+  // Get the distance pairs for centroids
+  KmMatrix<T> centroids_dot (_centroids.rows(), 1);
+  VecBatchDotOp<T>().dot(centroids_dot, _centroids);
+  KmMatrix<T> distance_pairs (_centroids.rows(), _centroids.rows());
+  PairWiseDistanceOp<T> centroids_distance_op(
+      centroids_dot, centroids_dot, distance_pairs);
+  distance_pairs = centroids_distance_op(_centroids, _centroids);
+
+  // get the closest x_j for each x_i in centroids.
+  KmMatrix<int> min_indices = SelfArgMinOp<T>().argmin(distance_pairs,
+                                                       KmMatrixDim::ROW);
+
+  // use historgram to get counting for weights
   KmMatrix<int> weights (1, _centroids.rows());
 
   size_t temp_storage_bytes = 0;
   void *d_temp_storage = NULL;
 
   // determine the temp_storage_bytes
-  cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
-                                      min_indices.dev_ptr(),
-                                      weights.dev_ptr(),
-                                      _centroids.rows(),
-                                      (T)0.0,
-                                      (T)_centroids.rows(),
-                                      (int)_centroids.rows());
+  CUDA_CHECK(cub::DeviceHistogram::HistogramEven(
+      d_temp_storage, temp_storage_bytes,
+      min_indices.dev_ptr(),
+      weights.dev_ptr(),
+      min_indices.rows() + 1,
+      (T)0.0,
+      (T)min_indices.rows(),
+      (int)_centroids.rows()));
 
   CUDA_CHECK(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
-  cub::DeviceHistogram::HistogramEven(d_temp_storage, temp_storage_bytes,
-                                      min_indices.dev_ptr(),
-                                      weights.dev_ptr(),
-                                      _centroids.rows(),
-                                      (T)0.0,
-                                      (T)_centroids.rows(),
-                                      (int)_centroids.rows());
+  CUDA_CHECK(cub::DeviceHistogram::HistogramEven(
+      d_temp_storage, temp_storage_bytes,
+      min_indices.dev_ptr(),    // d_samples
+      weights.dev_ptr(),        // d_histogram
+      min_indices.rows() + 1,   // num_levels
+      (T)0.0,                   // lower_level
+      (T)min_indices.rows(),    // upper_level
+      (int)_centroids.rows())); // num_samples
   CUDA_CHECK(cudaFree(d_temp_storage));
 
   // Sort the indices by weights in ascending order, then use those at front
@@ -157,9 +199,8 @@ KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
 
   int * min_indices_ptr = min_indices.dev_ptr();
 
-  KmMatrix<T> centroids (k_, _centroids.cols());
+  KmMatrix<T> centroids (_k, _centroids.cols());
   int cols = _centroids.cols();
-  size_t k = k_;
 
   thrust::copy_if(
       thrust::device,
@@ -167,7 +208,7 @@ KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
       centroids.dev_ptr(),
       [=] __device__ (int idx) {
         size_t row = idx / cols;
-        for (size_t i = 0; i < k; ++i) {
+        for (size_t i = 0; i < _k; ++i) {
           if (row == min_indices_ptr[i])
             return true;
         }
@@ -177,8 +218,13 @@ KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
   return centroids;
 }
 
-template <typename T>
-KmMatrix<T> KmeansLlInit<T>::probability(
+}  // namespace detail
+
+
+
+/* ============== KmeansLlInit Class member functions ============== */
+template <typename T, template <class> class ReclusterPolicy >
+KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::probability(
     KmMatrix<T>& _data, KmMatrix<T>& _centroids) {
 
   KmMatrix<T> centroids_dot (_centroids.rows(), 1);
@@ -202,8 +248,8 @@ KmMatrix<T> KmeansLlInit<T>::probability(
 }
 
 
-template <typename T>
-KmMatrix<T> KmeansLlInit<T>::sample_centroids(
+template <typename T, template <class> class ReclusterPolicy >
+KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::sample_centroids(
     KmMatrix<T>& _data, KmMatrix<T>& _prob) {
 
   KmMatrix<T> thresholds = generator_->generate(_data.rows());
@@ -247,9 +293,9 @@ KmMatrix<T> KmeansLlInit<T>::sample_centroids(
   return new_centroids;
 }
 
-template <typename T>
+template <typename T, template <class> class ReclusterPolicy>
 KmMatrix<T>
-KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
+KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
 
   if (_k > _data.size()) {
     char err_msg[128];
@@ -295,15 +341,14 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
     M_ERROR("Not implemented.");
   }
 
-  centroids = recluster(centroids);
+  std::cout << centroids << std::endl;
+  centroids = ReclusterPolicy<T>::recluster(centroids, k_);
   return centroids;
 }
 
 #define INSTANTIATE(T)                                                  \
   template KmMatrix<T> KmeansLlInit<T>::operator()(                     \
       KmMatrix<T>& _data, size_t _k);                                   \
-  template KmMatrix<T> KmeansLlInit<T>::recluster(                      \
-      KmMatrix<T>& centroids);                                          \
   template KmMatrix<T> KmeansLlInit<T>::probability(                    \
       KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
   template KmMatrix<T> KmeansLlInit<T>::sample_centroids(               \
@@ -327,7 +372,7 @@ namespace detail {
       KmMatrix<T>& _distance_pairs);                            \
   template KmMatrix<T> PairWiseDistanceOp<T>::operator()(       \
       KmMatrix<T>& _data,                                       \
-      KmMatrix<T>& _centroids);
+      KmMatrix<T>& _centroids);                                 \
 
 INSTANTIATE(float)
 INSTANTIATE(double)

@@ -21,6 +21,16 @@ namespace KMeans {
 
 namespace detail {
 
+// FIXME:
+// Operations performed in K-Means|| loop leads to a-approximation.
+// Intuitively, choosing those centroids with highest probability should not
+// break this property. But I haven't made the argument yet.
+// And benchmarking should be performed to check the result.
+template <typename T>
+struct GreedyRecluster {
+  static KmMatrix<T> recluster(KmMatrix<T>& _centroids, size_t _k);
+};
+
 // Extracted as an independent Op for k-means use.
 template <typename T>
 struct PairWiseDistanceOp {
@@ -72,7 +82,10 @@ class KmeansInitBase {
  *
  * @tparam Data type, supported types are float and double.
  */
-template <typename T>
+template <
+  typename T,
+  template <class>
+      class ReclusterPolicy = detail::GreedyRecluster>
 struct KmeansLlInit : public KmeansInitBase<T> {
  private:
   T over_sample_;
@@ -94,7 +107,6 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   // The enclosing parent function ("sample_centroids") for an extended
   // __device__ lambda cannot have private or protected access within its class
   KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
-  KmMatrix<T> recluster(KmMatrix<T>& centroids);
 
   /*
    * Initialize KmeansLlInit algorithm, with default:

@@ -73,6 +73,36 @@ TEST(KmeansLL, PairWiseDistance) {
   ASSERT_TRUE(sol == res);
 }
 
+// r --gtest_filter=KmeansLL.GreedyRecluster
+TEST(KmeansLL, GreedyRecluster) {
+  thrust::host_vector<double> h_centroids (20);
+  // close points
+  for (size_t i = 0; i < 5; ++i) {
+    h_centroids[i] = i + 4;
+  }
+  for (size_t i = 5; i < 10; ++i) {
+    h_centroids[i] = i;
+  }
+  for (size_t i = 10; i < 15; ++i) {
+    h_centroids[i] = i - 4;
+  }
+  // satelite
+  for (size_t i = 15; i < 20; ++i) {
+    h_centroids[i] = i;
+  }
+
+  KmMatrix<double> centroids (h_centroids, 4, 5);
+  KmMatrix<double> res = detail::GreedyRecluster<double>::recluster(centroids,
+                                                                    2);
+  std::vector<double> h_sol =
+      {
+        4,    5,    6,    7,    8,
+        5,    6,    7,    8,    9,
+      };
+  KmMatrix<double> sol (h_sol, 2, 5);
+  ASSERT_TRUE(res == sol);
+}
+
 // r --gtest_filter=KmeansLL.KmeansLLInit
 TEST(KmeansLL, KmeansLLInit) {
   int k = 2;
