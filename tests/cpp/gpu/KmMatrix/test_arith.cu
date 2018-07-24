@@ -103,8 +103,6 @@ TEST(KmMatrix, ArithArgMin) {
   KmMatrix<float> mat (h_data, 3, 4);
   KmMatrix<int> res = ArgMinOp<float>().argmin(mat, KmMatrixDim::ROW);
 
-  // std::cout << res << std::endl;
-
   std::vector<int> solution_vec {3, 2, 0};
   KmMatrix<int> solution (solution_vec, 3, 1);
 

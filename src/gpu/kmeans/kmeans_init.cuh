@@ -19,6 +19,32 @@
 namespace H2O4GPU{
 namespace KMeans {
 
+namespace detail {
+
+// Extracted as an independent Op for k-means use.
+template <typename T>
+struct PairWiseDistanceOp {
+ private:
+  KmMatrix<T> data_dot_;
+  KmMatrix<T> centroids_dot_;
+  KmMatrix<T> distance_pairs_;
+
+  bool initialized_;
+
+ public:
+  void initialize (KmMatrix<T>& _data_dot, KmMatrix<T>& _centroids_dot,
+                   KmMatrix<T>& _distance_pairs);
+
+  PairWiseDistanceOp () : initialized_(false) {}
+
+  PairWiseDistanceOp (KmMatrix<T>& _data_dot, KmMatrix<T>& _centroids_dot,
+                      KmMatrix<T>& _distance_pairs);
+
+  KmMatrix<T> operator()(KmMatrix<T>& _data, KmMatrix<T>& _centroids);
+};
+
+}  // namespace detail
+
 /*
  * Base class used for all K-Means initialization algorithms.
  */

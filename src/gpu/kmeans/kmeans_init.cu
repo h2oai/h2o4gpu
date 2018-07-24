@@ -41,7 +41,7 @@ __global__ void construct_distance_pairs_kernel(
   size_t stride_x = grid_stride_x () * _data_dots.cols;
   // strides only for data.
   for (size_t i = idx; i < _data_dots.rows; i += stride_x) {
-    if (i < _data_dots.rows && idy < _centroids_dots.rows ) {
+    if (idy < _centroids_dots.rows ) {
       // i + idy: x^2 + y^2 between i^th data (a.k.a x) and idy^th
       // centroid (a.k.a y)
       _distance_pairs.ptr[i + idy] =
@@ -52,60 +52,64 @@ __global__ void construct_distance_pairs_kernel(
 
 }  // namespace kernel
 
-// Extracted as an independent Op for k-means use.
+namespace detail {
 template <typename T>
-struct PairWiseDistanceOp {
-  KmMatrix<T> data_dot_;
-  KmMatrix<T> centroids_dot_;
-  KmMatrix<T> distance_pairs_;
+void PairWiseDistanceOp<T>::initialize(KmMatrix<T>& _data_dot,
+                                       KmMatrix<T>& _centroids_dot,
+                                       KmMatrix<T>& _distance_pairs) {
+  _data_dot = _data_dot;
+  centroids_dot_ = _centroids_dot;
+  distance_pairs_ = _distance_pairs;
+  initialized_ = true;
+}
 
-  bool initialized_;
+template <typename T>
+PairWiseDistanceOp<T>::PairWiseDistanceOp (KmMatrix<T>& _data_dot,
+                                           KmMatrix<T>& _centroids_dot,
+                                           KmMatrix<T>& _distance_pairs) :
+    data_dot_(_data_dot), centroids_dot_(_centroids_dot),
+    distance_pairs_(_distance_pairs), initialized_(true) {}
 
-  void initialize(size_t _n_data, size_t k, size_t _dim) {
-    // FIXME
-  }
+template <typename T>
+KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
+                                              KmMatrix<T>& _centroids) {
 
-  PairWiseDistanceOp () : initialized_(false) {}
+  kernel::construct_distance_pairs_kernel<<<
+      dim3(GpuInfo::ins().blocks(32), div_roundup(_centroids.rows(), 16)),
+      dim3(32, 16)>>>(  // FIXME: Tune this.
+          distance_pairs_.k_param(),
+          data_dot_.k_param(),
+          centroids_dot_.k_param());
 
-  PairWiseDistanceOp (KmMatrix<T>& _data_dot, KmMatrix<T>& _centroids_dot,
-                      KmMatrix<T>& _distance_pairs) :
-      data_dot_(_data_dot), centroids_dot_(_centroids_dot),
-      distance_pairs_(_distance_pairs), initialized_(true) {
-    data_dot_.set_name ("data dot");
-    centroids_dot_.set_name ("centroids_dot");
-    distance_pairs_.set_name ("distance pairs");
-  }
+  CUDA_CHECK(cudaGetLastError());
 
-  KmMatrix<T> operator()(KmMatrix<T>& _data, KmMatrix<T>& _centroids) {
+  distance_pairs_.set_name ("distance pairs");
+  std::cout << distance_pairs_ << std::endl;
 
-    kernel::construct_distance_pairs_kernel<<<
-        dim3(GpuInfo::ins().blocks(32), div_roundup(_centroids.rows(), 16)),
-        dim3(32, 16)>>>(  // FIXME: Tune this.
-            distance_pairs_.k_param(),
-            data_dot_.k_param(),
-            centroids_dot_.k_param());
+  cublasHandle_t handle = GpuInfo::ins().cublas_handle();
 
-    CUDA_CHECK(cudaGetLastError());
+  T alpha = -2.0;
+  T beta = 1.0;
 
-    cublasHandle_t handle = GpuInfo::ins().cublas_handle();
+  Blas::gemm(
+      handle,
+      CUBLAS_OP_T, CUBLAS_OP_N,
+      // n, d, d/k
+      _data.rows(), _data.cols(), _data.cols(),
+      &alpha,
+      _data.dev_ptr(), _data.rows(),
+      _centroids.dev_ptr(), _centroids.cols(),
+      &beta,
+      distance_pairs_.dev_ptr(), distance_pairs_.rows());
 
-    T alpha = -2.0;
-    T beta = 1.0;
+  return distance_pairs_;
+}
 
-    Blas::gemm(
-        handle,
-        CUBLAS_OP_T, CUBLAS_OP_N,
-        // n, d, d/k
-        _data.rows(), _data.cols(), _data.cols(),
-        &alpha,
-        _data.dev_ptr(), _data.rows(),
-        _centroids.dev_ptr(), _centroids.cols(),
-        &beta,
-        distance_pairs_.dev_ptr(), distance_pairs_.rows());
+}  // namespace detail
 
-    return distance_pairs_;
-  }
-};
+
+
+/* ============== Class member functions ============== */
 
 // We use counting to construct the weight as described in the paper. Counting
 // is performed by histogram algorithm.
@@ -159,9 +163,6 @@ KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
   int cols = _centroids.cols();
   size_t k = k_;
 
-  min_indices.set_name ("min_indices");
-  std::cout << min_indices << std::endl;
-
   thrust::copy_if(
       thrust::device,
       _centroids.dev_ptr(), _centroids.dev_ptr() + _centroids.size(),
@@ -188,7 +189,8 @@ KmMatrix<T> KmeansLlInit<T>::probability(
 
   // FIXME: Time this
   distance_pairs_ = KmMatrix<T>(_data.rows(), _centroids.rows());
-  PairWiseDistanceOp<T> distance_op (data_dot_, centroids_dot, distance_pairs_);
+  detail::PairWiseDistanceOp<T> distance_op (
+      data_dot_, centroids_dot, distance_pairs_);
   distance_pairs_ = distance_op(_data, _centroids);
 
   KmMatrix<T> min_distances = MinOp<T>().min(distance_pairs_, KmMatrixDim::ROW);
@@ -311,6 +313,29 @@ KmeansLlInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
 
 INSTANTIATE(float)
 INSTANTIATE(double)
+
+#undef INSTANTIATE
+
+namespace detail {
+
+#define INSTANTIATE(T)                                          \
+  template PairWiseDistanceOp<T>::PairWiseDistanceOp (          \
+      KmMatrix<T>& _data_dot,                                   \
+      KmMatrix<T>& _centroids_dot,                              \
+      KmMatrix<T>& _distance_pairs);                            \
+  template void PairWiseDistanceOp<T>::initialize(              \
+      KmMatrix<T>& _data_dot,                                   \
+      KmMatrix<T>& _centroids_dot,                              \
+      KmMatrix<T>& _distance_pairs);                            \
+  template KmMatrix<T> PairWiseDistanceOp<T>::operator()(       \
+      KmMatrix<T>& _data,                                       \
+      KmMatrix<T>& _centroids);
+
+INSTANTIATE(float)
+INSTANTIATE(double)
+
+#undef INSTANTIATE
+}
 // FIXME: int is not supported due to random kernel
 
 }  // namespace Kmeans
