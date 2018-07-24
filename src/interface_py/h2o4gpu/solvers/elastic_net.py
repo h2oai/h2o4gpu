@@ -884,8 +884,8 @@ class ElasticNetH2O(object):
                     use_raw=0,
                     valid_xptr=None,
                     valid_yptr=None,
-                    valid_xptr_raw=None,
-                    valid_yptr_raw=None,
+                    valid_xptr_raw=0,
+                    valid_yptr_raw=0,
                     free_input_data=0,
                     order=None):
         """Predict on a fitted GLM with with pointers to data on the GPU
