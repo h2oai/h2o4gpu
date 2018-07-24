@@ -615,14 +615,6 @@ class ElasticNetH2O(object):
         else:
             c_lambdas = None
 
-        print("DUPA")
-        print(int(a) if a is not None else None)
-        print(int(b) if b is not None else None)
-        print(int(c) if c is not None else None)
-        print(int(d) if d is not None else None)
-        print(int(e) if e is not None else None)
-        print(self.store_full_path)
-
         #call elastic net in C backend
         _, x_vs_alpha_lambda, x_vs_alpha, \
         valid_pred_vs_alpha_lambda, valid_pred_vs_alpha, \
