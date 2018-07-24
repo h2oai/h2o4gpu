@@ -122,7 +122,7 @@ inline void my_function(int sig) { // can be called asynchronously
 }
 
 bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
-		bool verbose, double norm, double *jump) {
+			   bool verbose, double norm, double *jump) {
 	if (val.size() - 1 < 2 * k)
 		return false; //need 2k scoring events (+1 to skip the very first one, which might be full of NaNs)
 	vector<double> moving_avg(k + 1); //one moving avg for the last k+1 scoring events (1 is reference, k consecutive attempts to improve)
@@ -138,7 +138,7 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 	if (verbose) {
 		cout << "JUnit: moving averages: ";
 		copy(moving_avg.begin(), moving_avg.end(),
-				ostream_iterator<double>(cout, " "));
+			 ostream_iterator<double>(cout, " "));
 		cout << endl;
 	}
 
@@ -185,11 +185,11 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 	if (improved) {
 		if (improved && verbose)
 			cout << "improved from " << ref << " to "
-					<< (moreIsBetter ?
-							*std::max_element(moving_avg.begin(),
-									moving_avg.end()) :
-							*std::min_element(moving_avg.begin(),
-									moving_avg.end())) << endl;
+				 << (moreIsBetter ?
+					 *std::max_element(moving_avg.begin(),
+									   moving_avg.end()) :
+					 *std::min_element(moving_avg.begin(),
+									   moving_avg.end())) << endl;
 		return false;
 	} else {
 		if (verbose)
@@ -209,12 +209,12 @@ bool stopEarly(vector<double> val, int k, double tolerance, bool moreIsBetter,
 */
 bool fileExists(const std::string& filename)
 {
-    struct stat buf;
-    if (stat(filename.c_str(), &buf) != -1)
-    {
-        return true;
-    }
-    return false;
+	struct stat buf;
+	if (stat(filename.c_str(), &buf) != -1)
+	{
+		return true;
+	}
+	return false;
 }
 // Elastic Net
 //   minimize    (1/2) ||Ax - b||_2^2 + \lambda \alpha ||x||_1 + \lambda 1-\alpha ||x||_2
@@ -245,44 +245,43 @@ double ElasticNetptr(
 		size_t *countshort, size_t *countmore) {
 
 	if(0){ // DEBUG
-	if(alphas!=NULL){
-	for(int i=0;i<nAlphas;i++){
-		fprintf(stderr,"alpha[%d]=%g",i,alphas[i]);
-	}
-	}
-	if(lambdas!=NULL){
-	for(int i=0;i<nLambdas;i++){
-		fprintf(stderr,"lambdas[%d]=%g",i,lambdas[i]);
-	}
-	}
-	fprintf(stderr,"lambda_min_ratio=%g", lambda_min_ratio);
-	fprintf(stderr,"lambda_max=%g", lambda_max);
-	fflush(stderr);
+		if(alphas!=NULL){
+			for(int i=0;i<nAlphas;i++){
+				fprintf(stderr,"alpha[%d]=%g",i,alphas[i]);
+			}
+		}
+		if(lambdas!=NULL){
+			for(int i=0;i<nLambdas;i++){
+				fprintf(stderr,"lambdas[%d]=%g",i,lambdas[i]);
+			}
+		}
+		fprintf(stderr,"lambda_min_ratio=%g", lambda_min_ratio);
+		fprintf(stderr,"lambda_max=%g", lambda_max);
+		fflush(stderr);
 	}
 
 	if (dopredict == 0) {
 		return ElasticNetptr_fit(family, sourceDev, datatype, sharedA, nThreads, gpu_id, nGPUs, totalnGPUs,
-				ord, mTrain, n, mValid, intercept, standardize,
-				lambda_max, lambda_min_ratio, nLambdas, nFolds,
-				nAlphas, alpha_min, alpha_max,
-				alphas, lambdas,
-				tol, tolseekfactor,
-				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose,
-				trainXptr, trainYptr, validXptr, validYptr, weightptr,
-				givefullpath,
-				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
-				validPredsvsalpha, countfull, countshort, countmore);
+								 ord, mTrain, n, mValid, intercept, standardize,
+								 lambda_max, lambda_min_ratio, nLambdas, nFolds,
+								 nAlphas, alpha_min, alpha_max,
+								 alphas, lambdas,
+								 tol, tolseekfactor,
+								 lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
+								 trainYptr, validXptr, validYptr, weightptr, givefullpath,
+								 Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+								 validPredsvsalpha, countfull, countshort, countmore);
 	} else {
 		return ElasticNetptr_predict(family, sourceDev, datatype, sharedA, nThreads, gpu_id, nGPUs, totalnGPUs,
-				ord, mTrain, n, mValid, intercept, standardize,
-				lambda_max, lambda_min_ratio, nLambdas, nFolds,
-				nAlphas, alpha_min, alpha_max,
-				alphas, lambdas,
-				tol, tolseekfactor,
-				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
-				trainYptr, validXptr, validYptr, weightptr, givefullpath,
-				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
-				validPredsvsalpha, countfull, countshort, countmore);
+									 ord, mTrain, n, mValid, intercept, standardize,
+									 lambda_max, lambda_min_ratio, nLambdas, nFolds,
+									 nAlphas, alpha_min, alpha_max,
+									 alphas, lambdas,
+									 tol, tolseekfactor,
+									 lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
+									 trainYptr, validXptr, validYptr, weightptr, givefullpath,
+									 Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
+									 validPredsvsalpha, countfull, countshort, countmore);
 	}
 
 }
@@ -295,18 +294,18 @@ double ElasticNetptr(
 
 template<typename T>
 double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sharedA, int nThreads,
-		int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
-		int intercept, int standardize,
-		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		T *alphas, T *lambdas,
-		double tol, double tolseekfactor,
-		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction,
-		int max_iterations, int verbose, T *trainXptr, T *trainYptr,
-		T *validXptr, T *validYptr, T *weightptr, int givefullpath,
-		T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
-		T **validPredsvsalpha, size_t *countfull, size_t *countshort,
-		size_t *countmore) {
+						 int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n, size_t mValid,
+						 int intercept, int standardize,
+						 double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
+						 int nAlphas, double alpha_min, double alpha_max,
+						 T *alphas, T *lambdas,
+						 double tol, double tolseekfactor,
+						 int lambdastopearly, int glmstopearly, double stopearlyerrorfraction,
+						 int max_iterations, int verbose, T *trainXptr, T *trainYptr,
+						 T *validXptr, T *validYptr, T *weightptr, int givefullpath,
+						 T **Xvsalphalambda, T **Xvsalpha, T **validPredsvsalphalambda,
+						 T **validPredsvsalpha, size_t *countfull, size_t *countshort,
+						 size_t *countmore) {
 
 	if (0) {
 		std::default_random_engine generator;
@@ -371,7 +370,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	size_t realfolds = (nFolds == 0 ? 1 : nFolds);
 	size_t totalfolds = nFolds * (nFolds > 1 ? 2 : 1);
 	DEBUG_FPRINTF(stderr, "Set folds=%d realfolds=%zu Total Folds=%zu\n",
-			nFolds, realfolds, totalfolds);
+				  nFolds, realfolds, totalfolds);
 
 	if (VERBOSEENET || verbose>3) {
 		fprintf(stderr, "Before malloc X\n");
@@ -405,9 +404,9 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	}
 	int sourceme = sourceDev;
 	h2o4gpu::MatrixDense<T> Asource_(sharedA, sourceme, sourceDev, datatype,
-			ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr),
-			reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr),
-			reinterpret_cast<T *>(validYptr), reinterpret_cast<T *>(weightptr));
+									 ord, mTrain, n, mValid, reinterpret_cast<T *>(trainXptr),
+									 reinterpret_cast<T *>(trainYptr), reinterpret_cast<T *>(validXptr),
+									 reinterpret_cast<T *>(validYptr), reinterpret_cast<T *>(weightptr));
 	if (VERBOSEENET || verbose>3) {
 		fprintf(stderr, "After Asource\n");
 		fflush(stderr);
@@ -591,16 +590,16 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 		FILE *fil = NULL;
 		if(VERBOSEANIM){
-		// Setup file output
-		char filename[100];
-		sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
-				TEXTARCH, sharedA, nThreads, nGPUs);
-		fil = fopen(filename, "wt");
-		if (fil == NULL) {
-			cerr << "Cannot open filename=" << filename << endl;
-			exit(0);
-		} else
-			fflush(fil);
+			// Setup file output
+			char filename[100];
+			sprintf(filename, "me%d.%d.%s.%s.%d.%d.%d.txt", me, wDev, _GITHASH_,
+					TEXTARCH, sharedA, nThreads, nGPUs);
+			fil = fopen(filename, "wt");
+			if (fil == NULL) {
+				cerr << "Cannot open filename=" << filename << endl;
+				exit(0);
+			} else
+				fflush(fil);
 		}
 
 		////////////
@@ -621,9 +620,9 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 			t1me0 = t1;
 		}
 		DEBUG_FPRINTF(fil, "Done moving data to the GPU. Stopping at %21.15g\n",
-				t1);
+					  t1);
 		DEBUG_FPRINTF(fil, "Done moving data to the GPU. Took %g secs\n",
-				t1 - t0);
+					  t1 - t0);
 
 		///////////////////////////////////////////////////
 		// BEGIN SVD
@@ -685,7 +684,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 				if(lambdas==NULL){
 					if (nlambdalocal > 1) {
 						double dec = std::pow(lambda_min_ratio,
-								1.0 / (nlambdalocal - 1.));
+											  1.0 / (nlambdalocal - 1.));
 						lambdaslocal[0] = lambda_max_use;
 						for (int i = 1; i < nlambdalocal; ++i)
 							lambdaslocal[i] = lambdaslocal[i - 1] * dec;
@@ -744,7 +743,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 					} else {
 						fractrain = (
 								realfolds > 1 ?
-										1.0 - 1.0 / ((double) realfolds) : 1.0);
+								1.0 - 1.0 / ((double) realfolds) : 1.0);
 					}
 					T fracvalid = 1.0 - fractrain;
 					T weights[mTrain];
@@ -847,7 +846,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							h2o4gpu_data.SetRelTol(tolnew);
 							h2o4gpu_data.SetAbsTol(
 									1.0 * std::numeric_limits<T>::epsilon()); // way code written, has 1+rho and other things where catastrophic cancellation occur for very small weights or rho, so can't go below certain absolute tolerance.  This affects adaptive rho and how warm-start on rho would work.
-											// see if getting below stddev, if so decrease tolerance
+							// see if getting below stddev, if so decrease tolerance
 							if (scoring_history.size() >= 1) {
 								double ratio = (norm - scoring_history.back())
 										/ norm;
@@ -868,8 +867,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 								//              fprintf(stderr,"me=%d a=%d i=%d jump=%g jumpuse=%g ratio=%g tolnew=%g norm=%g score=%g\n",me,a,i,jump,jumpuse,ratio,tolnew,norm,scoring_history.back());
 							}
 						} else { // single lambda
-								 // assume warm-start value of X and other internal variables
-								 //                fprintf(stderr,"tolnew to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
+							// assume warm-start value of X and other internal variables
+							//                fprintf(stderr,"tolnew to use for last alpha=%g lambda=%g is %g\n",alphaarrayofa[a],lambdaarrayofa[a],tolarrayofa[a]); fflush(stderr);
 							tolnew = tolarrayofa[a];
 							h2o4gpu_data.SetRelTol(tolnew);
 							h2o4gpu_data.SetAbsTol(
@@ -900,11 +899,11 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kLogistic, 1.0, 0.0, weights[j], -weights[j]*trainY[j]); // h2o4gpu.R
 							for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kAbs);
 							if (intercept) g.emplace_back(kZero);
-						// }else if(family == 's'){ //svm
-						// 	// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
-						// 	for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, weights[j]*lambda); // h2o4gpu.R}
-						// 	for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
-						// 	if (intercept) g.emplace_back(kZero);
+							// }else if(family == 's'){ //svm
+							// 	// minimize (1/2) ||w||_2^2 + \lambda \sum (a_i^T * [w; b] + 1)_+.
+							// 	for (unsigned int j = 0; j < mTrain; ++j) f.emplace_back(kMaxPos0, 1.0, -1.0, weights[j]*lambda); // h2o4gpu.R}
+							// 	for (unsigned int j = 0; j < n - intercept; ++j) g.emplace_back(kSquare);
+							// 	if (intercept) g.emplace_back(kZero);
 						}else{
 							//throw error
 							throw "Wrong family type selected. Should be either elasticnet or logistic";
@@ -959,18 +958,18 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 								// TODO: FIXME: Need to get (and have solver set) best solution or return all, because last is not best.
 								gotpreviousX0 = 1;
 								memcpy(X0, &h2o4gpu_data.GetX()[0],
-										n * sizeof(T));
+									   n * sizeof(T));
 								memcpy(L0, &h2o4gpu_data.GetLambda()[0],
-										mTrain * sizeof(T));
+									   mTrain * sizeof(T));
 							}
 
 						}
 
 						if (intercept) {
 							DEBUG_FPRINTF(fil, "intercept: %g\n",
-									h2o4gpu_data.GetX()[n - 1]);
+										  h2o4gpu_data.GetX()[n - 1]);
 							DEBUG_FPRINTF(stdout, "intercept: %g\n",
-									h2o4gpu_data.GetX()[n - 1]);
+										  h2o4gpu_data.GetX()[n - 1]);
 						}
 
 						////////////////////////////////////////
@@ -993,15 +992,15 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						T valuebeta[NUMBETA];
 						int whichmax = 1; // 0 : larger  1: largest absolute magnitude
 						h2o4gpu::topkwrap(whichmax, (int) (n - intercept),
-								(int) (NUMBETA),
-								const_cast<T*>(&h2o4gpu_data.GetX()[0]),
-								&whichbeta[0], &valuebeta[0]);
+										  (int) (NUMBETA),
+										  const_cast<T*>(&h2o4gpu_data.GetX()[0]),
+										  &whichbeta[0], &valuebeta[0]);
 
 						//              memcpy(X0,&h2o4gpu_data.GetX()[0],n*sizeof(T));
 						if (0) {
 							std::sort(const_cast<T*>(&h2o4gpu_data.GetX()[0]),
-									const_cast<T*>(&h2o4gpu_data.GetX()[n
-											- intercept]));
+									  const_cast<T*>(&h2o4gpu_data.GetX()[n
+											  - intercept]));
 							for (size_t i = 0; i < n - intercept; ++i) {
 								fprintf(stderr, "BETA: i=%zu beta=%g\n", i,
 										h2o4gpu_data.GetX()[i]);
@@ -1032,7 +1031,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						}
 						// Error: TRAIN
 						trainError = h2o4gpu::getError(weights, mTrain,
-								&trainPreds[0], trainY, family);
+													   &trainPreds[0], trainY, family);
 
 						if(verbose){
 							if(family == 'l'){
@@ -1055,7 +1054,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						if (realfolds > 1) {
 							const T offset = 1.0;
 							ivalidError = h2o4gpu::getError(offset, weights,
-									mTrain, &trainPreds[0], trainY, family);
+															mTrain, &trainPreds[0], trainY, family);
 							if(verbose){
 								if(family == 'l'){
 									std::cout << "Average CV Logloss = " << ivalidError << " for lambda = " << lambda << " and alpha = " << alpha << std::endl;
@@ -1097,7 +1096,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							}
 							// Error: VALIDs
 							validError = h2o4gpu::getError(weightsvalid, mValid,
-									&validPreds[0], validY, family);
+														   &validPreds[0], validY, family);
 
 							if(verbose){
 								if(family == 'l'){
@@ -1123,11 +1122,11 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 						//
 						////////////
 						if (VERBOSEENET)
-							Printmescore(fil);
+								Printmescore(fil);
 #pragma omp critical
 						{
 							if (VERBOSEENET)
-								Printmescore(stdout);
+									Printmescore(stdout);
 							if (VERBOSEANIM || verboseanimtriggered==1){
 								Printmescoresimple(filerror);
 								Printmescoresimple2(filvarimp);
@@ -1156,8 +1155,8 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 								//#define NUMOTHER 3 // for lambda, alpha, tolnew
 								// Save solution to return to user
 								memcpy(&((*Xvsalphalambda)[MAPXALL(i, a, 0)]),
-										&h2o4gpu_data.GetX()[0],
-										n * sizeof(T));
+									   &h2o4gpu_data.GetX()[0],
+									   n * sizeof(T));
 								// Save error to return to user
 								ErrorLOOP(ri)
 									(*Xvsalphalambda)[MAPXALL(i, a, n + ri)] =
@@ -1174,7 +1173,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 							}
 						} else {                  // only done if realfolds>1
 							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
-									&h2o4gpu_data.GetX()[0], n * sizeof(T));
+								   &h2o4gpu_data.GetX()[0], n * sizeof(T));
 							// Save error to return to user
 							ErrorLOOP(ri)
 								(*Xvsalpha)[MAPXBEST(a, n + ri)] =
@@ -1200,16 +1199,16 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 													&& (double) dof
 															> fracdof
 																	* (double) (n)) { // only consider stopping if explored most degrees of freedom, because at dof~0-1 error can increase due to tolerance in solver.
-															//                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
-															// STOP EARLY CHECK
+										//                  fprintf(stderr,"ratio=%g dof=%zu fracdof*n=%g\n",ratio,dof,fracdof*n); fflush(stderr);
+										// STOP EARLY CHECK
 										int k = 3; //TODO: ask the user for this parameter
 										double tolerance = 0.0; // stop when not improved over 3 successive lambdas (averaged over window 3) // NOTE: Don't use tolerance=0 because even for simple.txt test this stops way too early when error is quite high
 										bool moreIsBetter = false;
 										bool verbose =
 												static_cast<bool>(VERBOSEENET); // true;
 										if (stopEarly(scoring_history, k,
-												tolerance, moreIsBetter,
-												verbose, norm, &jump)) {
+													  tolerance, moreIsBetter,
+													  verbose, norm, &jump)) {
 											break;
 										}
 									}
@@ -1225,11 +1224,11 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 										break; // don't skip beyond existing lambda
 									lambda = lambdaslocal[i];
 									if (VERBOSEENET)
-										Printmescore(fil);
+											Printmescore(fil);
 #pragma omp critical
 									{
 										if (VERBOSEENET)
-											Printmescore(stdout);
+												Printmescore(stdout);
 										if (VERBOSEANIM || verboseanimtriggered==1){
 											Printmescoresimple(filerror);
 											Printmescoresimple2(filvarimp);
@@ -1258,7 +1257,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 					if (lambdatype == LAMBDATYPEPATH && nFolds < 2) {
 						if (fi == 0) { // only store first fold for user
 							memcpy(&((*Xvsalpha)[MAPXBEST(a, 0)]),
-									&h2o4gpu_data.GetX()[0], n * sizeof(T)); // not quite best, last lambda TODO FIXME
+								   &h2o4gpu_data.GetX()[0], n * sizeof(T)); // not quite best, last lambda TODO FIXME
 							//                for(unsigned int iii=0; iii<n;iii++) fprintf(stderr,"Xvsalpha[%d]=%g\n",iii,(*Xvsalpha)[MAPXBEST(a,iii)]); fflush(stderr);
 							// Save error to return to user
 							ErrorLOOP(ri)
@@ -1328,7 +1327,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 			// print result (all threads have same result, so only need to print on one thread)
 			if (me == 0 && VERBOSEENET)
-				PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,besterror[0],besterror[1],besterror[2]);
+					PrintmescoresimpleCV(stdout,lambdatype,bestalpha,bestlambda,besterror[0],besterror[1],besterror[2]);
 
 		} // over lambdatype
 
@@ -1391,17 +1390,17 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 template<typename T>
 double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int sharedA,
-		int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n,
-		size_t mValid, int intercept, int standardize,
-		double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
-		int nAlphas, double alpha_min, double alpha_max,
-		T *alphas, T *lambdas,
-		double tol, double tol_seek_factor,
-		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
-		T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
-		T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
-		T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
-		size_t *countshort, size_t *countmore) {
+							 int nThreads, int gpu_id, int nGPUs, int totalnGPUs, const char ord, size_t mTrain, size_t n,
+							 size_t mValid, int intercept, int standardize,
+							 double lambda_max, double lambda_min_ratio, int nLambdas, int nFolds,
+							 int nAlphas, double alpha_min, double alpha_max,
+							 T *alphas, T *lambdas,
+							 double tol, double tol_seek_factor,
+							 int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations, int verbose,
+							 T *trainXptr, T *trainYptr, T *validXptr, T *validYptr,
+							 T *weightptr, int givefullpath, T **Xvsalphalambda, T **Xvsalpha,
+							 T **validPredsvsalphalambda, T **validPredsvsalpha, size_t *countfull,
+							 size_t *countshort, size_t *countmore) {
 
 
 	// Adjust any parameters for user friendliness
@@ -1804,23 +1803,11 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose,
- 		int use_raw,
- 		double *trainXptr, double *trainYptr, double *validXptr, double *validYptr, double *weightptr,
- 		size_t trainXptr_raw, size_t trainYptr_raw, size_t validXptr_raw, size_t validYptr_raw, size_t weightptr_raw,
- 		int givefullpath,
+		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
+		double *validYptr, double *weightptr, int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
-
-        if(use_raw==1){ // over-write with casted pointer
-            trainXptr = reinterpret_cast<double*>(trainXptr_raw);
-            trainYptr = reinterpret_cast<double*>(trainYptr_raw);
-            validXptr = reinterpret_cast<double*>(validXptr_raw);
-            validYptr = reinterpret_cast<double*>(validYptr_raw);
-            weightptr = reinterpret_cast<double*>(weightptr_raw);
-        }
-
 	return ElasticNetptr<double>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
@@ -1840,23 +1827,11 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose,
-		int use_raw, // 32
-		float *trainXptr, float *trainYptr, float *validXptr, float *validYptr, float *weightptr,
-		size_t trainXptr_raw, size_t trainYptr_raw, size_t validXptr_raw, size_t validYptr_raw, size_t weightptr_raw,
-		int givefullpath,
+		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
+		float *validYptr, float *weightptr, int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
-
-        if(use_raw==1){ // over-write with casted pointer
-            trainXptr = reinterpret_cast<float*>(trainXptr_raw);
-            trainYptr = reinterpret_cast<float*>(trainYptr_raw);
-            validXptr = reinterpret_cast<float*>(validXptr_raw);
-            validYptr = reinterpret_cast<float*>(validYptr_raw);
-            weightptr = reinterpret_cast<float*>(weightptr_raw);
-        }
-
 	return ElasticNetptr<float>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,

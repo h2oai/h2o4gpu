@@ -31,7 +31,29 @@ extern int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrai
     %append_output(SWIG_NewPointerObj(%as_voidptr(*$1), $*1_descriptor, 0));
 }
 
-%apply int { size_t };
+%typemap(in) float *trainXptr,
+             float *trainYptr,
+             float *validXptr,
+             float *validYptr,
+             float *weightptr {
+    if($input >= 0) {
+        $1 = (float *)PyLong_AsVoidPtr($input);
+    } else {
+        $1 = NULL;
+    }
+}
+
+%typemap(in) double *trainXptr,
+             double *trainYptr,
+             double *validXptr,
+             double *validYptr,
+             double *weightptr {
+    if($input >= 0) {
+        $1 = (double *)PyLong_AsVoidPtr($input);
+    } else {
+        $1 = NULL;
+    }
+}
 
 %apply (float *IN_ARRAY1) {float *alphas, float *lambdas, float* trainX, float* trainY, float* validX, float* validY, float *weight};
 %apply (double *IN_ARRAY1) {double *alphas, double *lambdas, double* trainX, double* trainY, double* validX, double* validY, double *weight};
