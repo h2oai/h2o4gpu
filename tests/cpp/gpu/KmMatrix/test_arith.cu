@@ -122,7 +122,7 @@ TEST(KmMatrix, ArithMin) {
 
   KmMatrix<float> res = MinOp<float>().min(mat, KmMatrixDim::ROW);
 
-  std::vector<float> solution_vec {0.0f, 0.0f, 1.0f};
+   std::vector<float> solution_vec {0.0f, 0.0f, 1.0f};
   KmMatrix<float> solution (solution_vec, 3, 1);
 
   ASSERT_TRUE(res == solution);

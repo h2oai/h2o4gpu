@@ -20,20 +20,14 @@ template <typename T>
 __global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
 
   size_t idx = global_thread_idx();
-  size_t stride = grid_stride_x();
-
-  size_t cols = _val.cols;
-
-  for (size_t i = idx; i < _val.rows; i += stride) {
+  if (idx < _val.rows) {
     T min = std::numeric_limits<T>::max();
-    printf("cols outer: %u\n", cols);
-    for (size_t j = 0; j < cols; ++j) {
-      T tmp = _val.ptr[i+j];
-      printf("i: %u, j: %u, tmp: %f, cols: %u\n", i, j, tmp, cols);
-      if (tmp < min)
-        min = tmp;
+    for (size_t i = 0; i < _val.cols; ++i) {
+      T value = _val.ptr[idx * _val.cols + i];
+      if (value < min) {
+        min = value;
+      }
     }
-    printf("i: %u, min: %f\n", i, min);
     _res.ptr[idx] = min;
   }
 }
@@ -42,20 +36,16 @@ template <typename T>
 __global__ void row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
 
   size_t idx = global_thread_idx();
-  size_t stride = grid_stride_x () * _val.cols;
-
-  for (size_t i = idx; i < _val.size(); i += stride) {
+  if (idx < _val.rows) {
     T min = std::numeric_limits<T>::max();
     int min_idx = -1;
-
-    for (size_t j = 0; j < _val.cols; ++j) {
-      T tmp = _val.ptr[i+j];
-      if (tmp < min) {
+    for (size_t i = 0; i < _val.cols; ++i) {
+      T value = _val.ptr[idx * _val.cols + i];
+      if (value < min) {
+        min = value;
         min_idx = i;
-        min = tmp;
       }
     }
-
     _res.ptr[idx] = min_idx;
   }
 }
@@ -145,11 +135,11 @@ struct MeanOp {
 
 template <typename T>
 struct ArgMinOp {
+
   KmMatrix<int> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
-    size_t blocks = GpuInfo::ins().blocks(32);
     if (_dim == KmMatrixDim::ROW) {
       KmMatrix<int> _res(_val.rows(), 1);
-      kernel::row_argmin_sequential<<<blocks, 256>>>(
+      kernel::row_argmin_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
           _res.k_param(), _val.k_param());
       return _res;
     } else {
@@ -166,8 +156,8 @@ struct MinOp {
     size_t blocks = GpuInfo::ins().blocks(32);
     if (_dim == KmMatrixDim::ROW) {
       KmMatrix<T> _res(_val.rows(), 1);
-      kernel::row_min_sequential<<<blocks, 256>>>(_res.k_param(),
-                                                  _val.k_param());
+      kernel::row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
+          _res.k_param(), _val.k_param());
       return _res;
     } else {
       // FIXME
