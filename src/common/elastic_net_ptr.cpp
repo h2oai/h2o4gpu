@@ -267,8 +267,9 @@ double ElasticNetptr(
 				nAlphas, alpha_min, alpha_max,
 				alphas, lambdas,
 				tol, tolseekfactor,
-				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose, trainXptr,
-				trainYptr, validXptr, validYptr, weightptr, givefullpath,
+				lambdastopearly, glmstopearly, stopearlyerrorfraction, max_iterations, verbose,
+				trainXptr, trainYptr, validXptr, validYptr, weightptr,
+				givefullpath,
 				Xvsalphalambda, Xvsalpha, validPredsvsalphalambda,
 				validPredsvsalpha, countfull, countshort, countmore);
 	} else {
@@ -1803,11 +1804,23 @@ double elastic_net_ptr_double(const char family, int dopredict, int sourceDev, i
 		double *alphas, double *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, double *trainXptr, double *trainYptr, double *validXptr,
-		double *validYptr, double *weightptr, int givefullpath,
+		int verbose,
+ 		int use_raw,
+ 		double *trainXptr, double *trainYptr, double *validXptr, double *validYptr, double *weightptr,
+ 		size_t trainXptr_raw, size_t trainYptr_raw, size_t validXptr_raw, size_t validYptr_raw, size_t weightptr_raw,
+ 		int givefullpath,
 		double **Xvsalphalambda, double **Xvsalpha,
 		double **validPredsvsalphalambda, double **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
+
+        if(use_raw==1){ // over-write with casted pointer
+            trainXptr = reinterpret_cast<double*>(trainXptr_raw);
+            trainYptr = reinterpret_cast<double*>(trainYptr_raw);
+            validXptr = reinterpret_cast<double*>(validXptr_raw);
+            validYptr = reinterpret_cast<double*>(validYptr_raw);
+            weightptr = reinterpret_cast<double*>(weightptr_raw);
+        }
+
 	return ElasticNetptr<double>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,
@@ -1827,11 +1840,23 @@ double elastic_net_ptr_float(const char family, int dopredict, int sourceDev, in
 		float *alphas, float *lambdas,
 		double tol,  double tolseekfactor,
 		int lambdastopearly, int glmstopearly, double stopearlyerrorfraction, int max_iterations,
-		int verbose, float *trainXptr, float *trainYptr, float *validXptr,
-		float *validYptr, float *weightptr, int givefullpath,
+		int verbose,
+		int use_raw,
+		float *trainXptr, float *trainYptr, float *validXptr, float *validYptr, float *weightptr,
+		size_t trainXptr_raw, size_t trainYptr_raw, size_t validXptr_raw, size_t validYptr_raw, size_t weightptr_raw,
+		int givefullpath,
 		float **Xvsalphalambda, float **Xvsalpha,
 		float **validPredsvsalphalambda, float **validPredsvsalpha,
 		size_t *countfull, size_t *countshort, size_t *countmore) {
+
+        if(use_raw==1){ // over-write with casted pointer
+            trainXptr = reinterpret_cast<float*>(trainXptr_raw);
+            trainYptr = reinterpret_cast<float*>(trainYptr_raw);
+            validXptr = reinterpret_cast<float*>(validXptr_raw);
+            validYptr = reinterpret_cast<float*>(validYptr_raw);
+            weightptr = reinterpret_cast<float*>(weightptr_raw);
+        }
+
 	return ElasticNetptr<float>(family, dopredict, sourceDev, datatype, sharedA,
 			nThreads, gpu_id, nGPUs, totalnGPUs, ord, mTrain, n, mValid, intercept, standardize,
 			lambda_max, lambda_min_ratio, nLambdas, nFolds,

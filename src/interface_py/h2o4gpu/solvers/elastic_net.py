@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 # pylint: disable=fixme, line-too-long
 """
 :copyright: 2017-2018 H2O.ai, Inc.
@@ -17,6 +17,7 @@ from ..solvers.utils import _setter
 
 from ..libs.lib_utils import get_lib
 from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
+
 
 class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
@@ -157,8 +158,8 @@ class ElasticNetH2O(object):
         self.dtype = None
 
         ##############################
-        #overrides of input parameters
-        #override these if pass alphas or lambdas
+        # overrides of input parameters
+        # override these if pass alphas or lambdas
         if alphas is not None:
             alphas = np.ascontiguousarray(np.asarray(alphas))
             n_alphas = np.shape(alphas)[0]
@@ -167,7 +168,7 @@ class ElasticNetH2O(object):
             n_lambdas = np.shape(lambdas)[0]
 
         ##############################
-        #self assignments
+        # self assignments
         self.n = 0
         self.m_train = 0
         self.m_valid = 0
@@ -227,9 +228,9 @@ class ElasticNetH2O(object):
         self._tols = None
         self.intercept2_ = None
 
-        #Experimental features
-        #TODO _shared_a and _standardize do not work currently.
-        #TODO Always need to set to 0.
+        # Experimental features
+        # TODO _shared_a and _standardize do not work currently.
+        # TODO Always need to set to 0.
         self._shared_a = 0
         self._standardize = 0
 
@@ -240,9 +241,9 @@ class ElasticNetH2O(object):
         self._total_n_gpus = devices
 
         if n_threads is None:
-            #Not required number of threads, but normal.
-            #Bit more optimal to use 2 threads for CPU,
-            #but 1 thread per GPU is optimal.
+            # Not required number of threads, but normal.
+            # Bit more optimal to use 2 threads for CPU,
+            # but 1 thread per GPU is optimal.
             n_threads = (1 if self.n_gpus == 0 else self.n_gpus)
 
         self.n_threads = n_threads
@@ -257,7 +258,7 @@ class ElasticNetH2O(object):
         self.count_short = None
         self.count_more = None
 
-#TODO Add typechecking
+    # TODO Add typechecking
 
     def fit(self,
             train_x=None,
@@ -296,26 +297,33 @@ class ElasticNetH2O(object):
                 source_dev=source_dev)
 
         else:
-            #if all None, just assume fitting with new parameters
-            #and all else uses self.
+            # if all None, just assume fitting with new parameters
+            # and all else uses self.
             pass
 
+        use_raw = 0  # swig comes out of prepare_and_upload_data()
         self.fit_ptr(
             self.m_train,
             self.n,
             self.m_valid,
             self.double_precision,
             self.ord,
+            use_raw,
             self.a,
             self.b,
             self.c,
             self.d,
             self.e,
+            self.a_raw,
+            self.b_raw,
+            self.c_raw,
+            self.d_raw,
+            self.e_raw,
             free_input_data=free_input_data,
             source_dev=source_dev)
         return self
 
-#TODO Add typechecking
+    # TODO Add typechecking
     def predict(self,
                 valid_x=None,
                 valid_y=None,
@@ -369,9 +377,8 @@ class ElasticNetH2O(object):
         else:
             pass
 
-#save global variable
+        # save global variable
         oldstorefullpath = self.store_full_path
-
 
         if self.store_full_path == 1:
             self.store_full_path = 1
@@ -382,11 +389,17 @@ class ElasticNetH2O(object):
                 self.m_valid,
                 self.double_precision,
                 self.ord,
+                self.use_raw,
                 self.a,
                 self.b,
                 self.c,
                 self.d,
                 self.e,
+                self.a_raw,
+                self.b_raw,
+                self.c_raw,
+                self.d_raw,
+                self.e_raw,
                 do_predict=1,
                 free_input_data=free_input_data)
 
@@ -398,20 +411,27 @@ class ElasticNetH2O(object):
             self.m_valid,
             self.double_precision,
             self.ord,
+            self.use_raw,
             self.a,
             self.b,
             self.c,
             self.d,
             self.e,
+            self.a_raw,
+            self.b_raw,
+            self.c_raw,
+            self.d_raw,
+            self.e_raw,
             do_predict=1,
             free_input_data=free_input_data)
 
-        #restore variable
+        # restore variable
         self.store_full_path = oldstorefullpath
         return self.valid_pred_vs_alphapure  # something like valid_y
-#TODO Add type checking
-#source_dev here because generally want to take in any pointer,
-#not just from our test code
+
+    # TODO Add type checking
+    # source_dev here because generally want to take in any pointer,
+    # not just from our test code
 
     def fit_ptr(
             self,
@@ -420,11 +440,17 @@ class ElasticNetH2O(object):
             m_valid,
             double_precision,
             order,
+            use_raw,
             a,  # trainX_ptr or train_xptr
             b,  # trainY_ptr
             c,  # validX_ptr
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
+            a_raw,  # trainX_ptr or train_xptr
+            b_raw,  # trainY_ptr
+            c_raw,  # validX_ptr
+            d_raw,  # validY_ptr or valid_xptr  # keep consistent with later uses
+            e_raw,  # weight_ptr
             free_input_data=0,
             source_dev=0):
         """Train a GLM with pointers to data on the GPU
@@ -445,15 +471,27 @@ class ElasticNetH2O(object):
             Default is None, and assumed set by constructor or upload_data
             whether row 'r' or column 'c' major order.
 
-        :param a Pointer to training features array
+        :param use_raw Use raw value of pointer (1) or Swig pointer (0) as input
 
-        :param b Pointer to training response array
+        :param a Swig Pointer to training features array
 
-        :param c Pointer to validation features
+        :param b Swig Pointer to training response array
 
-        :param d Pointer to validation response
+        :param c Swig Pointer to validation features
 
-        :param e Pointer to weight column
+        :param d Swig Pointer to validation response
+
+        :param e Swig Pointer to weight column
+
+        :param a Raw value of Pointer to training features array
+
+        :param b Raw value of Pointer to training response array
+
+        :param c Raw value of Pointer to validation features
+
+        :param d Raw value of Pointer to validation response
+
+        :param e Raw value of Pointer to weight column
 
         :param int free_input_data : Indicate if input data should be freed at
             the end of fit(). Default is 1.
@@ -470,19 +508,25 @@ class ElasticNetH2O(object):
             m_valid,
             double_precision,
             order,
+            use_raw,
             a,
             b,
             c,
             d,
             e,
+            a_raw,
+            b_raw,
+            c_raw,
+            d_raw,
+            e_raw,
             do_predict=0,
             free_input_data=free_input_data)
         self.time_fitonly = time.time() - time_fit0
 
-#TODO Add type checking
+    # TODO Add type checking
 
-#source_dev here because generally want to take in any pointer,
-#not just from our test code
+    # source_dev here because generally want to take in any pointer,
+    # not just from our test code
 
     def _fitorpredict_ptr(
             self,
@@ -492,11 +536,17 @@ class ElasticNetH2O(object):
             m_valid,
             double_precision,
             order,
+            use_raw,
             a,  # trainX_ptr or train_xptr
             b,  # trainY_ptr
             c,  # validX_ptr
             d,  # validY_ptr or valid_xptr  # keep consistent with later uses
             e,  # weight_ptr
+            a_raw,  # trainX_ptr or train_xptr
+            b_raw,  # trainY_ptr
+            c_raw,  # validX_ptr
+            d_raw,  # validY_ptr or valid_xptr  # keep consistent with later uses
+            e_raw,  # weight_ptr
             do_predict=0,
             free_input_data=0):
         """Train a GLM with pointers to data on the GPU
@@ -518,15 +568,27 @@ class ElasticNetH2O(object):
         :param order: Order of data.  Default is None and set elsewhere
             whether row 'r' or column 'c' major order.
 
-        :param a Pointer to training features array
+        :param use_raw Use raw value of pointer (1) or Swig pointer (0) as input
 
-        :param b Pointer to training response array
+        :param a Swig Pointer to training features array
 
-        :param c Pointer to validation features
+        :param b Swig Pointer to training response array
 
-        :param d Pointer to validation response
+        :param c Swig Pointer to validation features
 
-        :param e Pointer to weight column
+        :param d Swig Pointer to validation response
+
+        :param e Swig Pointer to weight column
+
+        :param a Raw value of Pointer to training features array
+
+        :param b Raw value of Pointer to training response array
+
+        :param c Raw value of Pointer to validation features
+
+        :param d Raw value of Pointer to validation response
+
+        :param e Raw value of Pointer to weight column
 
         :param int do_predict : Indicate if prediction should be done on
             validation set after train. Default is 0.
@@ -535,22 +597,28 @@ class ElasticNetH2O(object):
             the end of fit(). Default is 1.
         """
 
-        #store some things for later call to predict_ptr()
+        # store some things for later call to predict_ptr()
 
         self.source_dev = source_dev
         self.m_train = m_train
         self.n = n
         self.m_valid = m_valid
+        self.use_raw = use_raw
         self.a = a
         self.b = b
         self.c = c
         self.d = d
         self.e = e
+        self.a_raw = a_raw
+        self.b_raw = b_raw
+        self.c_raw = c_raw
+        self.d_raw = d_raw
+        self.e_raw = e_raw
 
         # ########## #
 
-        #if fitted earlier clear
-        #otherwise don't clear solution, just use it
+        # if fitted earlier clear
+        # otherwise don't clear solution, just use it
         if do_predict == 0 and self.did_fit_ptr == 1:
             free_sols(self)
 
@@ -559,8 +627,8 @@ class ElasticNetH2O(object):
         self.did_fit_ptr = 1
 
         # ##############
-        #not calling with self.source_dev because want option to never use
-        #default but instead input pointers from foreign code's pointers
+        # not calling with self.source_dev because want option to never use
+        # default but instead input pointers from foreign code's pointers
 
         self.ord = order
 
@@ -574,7 +642,7 @@ class ElasticNetH2O(object):
         # ############ #
 
         if do_predict == 0:
-            #initialize if doing fit
+            # initialize if doing fit
             self.x_vs_alpha_lambda = None
             self.x_vs_alpha = None
             self.valid_pred_vs_alpha_lambda = None
@@ -583,7 +651,7 @@ class ElasticNetH2O(object):
             count_short = 0
             count_more = 0
         else:
-            #restore if predict
+            # restore if predict
             count_full = self.count_full
             count_short = self.count_short
             count_more = self.count_more
@@ -605,7 +673,7 @@ class ElasticNetH2O(object):
                 print('single precision fit')
                 sys.stdout.flush()
 
-        #precision - independent commands
+        # precision - independent commands
         if self.alphas_list is not None:
             c_alphas = (self.alphas_list.astype(self.dtype, copy=False))
         else:
@@ -615,7 +683,7 @@ class ElasticNetH2O(object):
         else:
             c_lambdas = None
 
-        #call elastic net in C backend
+        # call elastic net in C backend
         _, x_vs_alpha_lambda, x_vs_alpha, \
         valid_pred_vs_alpha_lambda, valid_pred_vs_alpha, \
         count_full, count_short, count_more = c_elastic_net(
@@ -650,11 +718,17 @@ class ElasticNetH2O(object):
             self.glm_stop_early_error_fraction,
             self.max_iter,
             self.verbose,
+            self.use_raw,
             a,
             b,
             c,
             d,
             e,
+            a_raw,
+            b_raw,
+            c_raw,
+            d_raw,
+            e_raw,
             self.store_full_path,
             self.x_vs_alpha_lambda,
             self.x_vs_alpha,
@@ -664,9 +738,9 @@ class ElasticNetH2O(object):
             count_short,
             count_more
         )
-        #if should or user wanted to save or free data,
-        #do that now that we are done using a, b, c, d, e
-        #This means have to upload_data() again before fit_ptr
+        # if should or user wanted to save or free data,
+        # do that now that we are done using a, b, c, d, e
+        # This means have to upload_data() again before fit_ptr
         # or predict_ptr or only call fit and predict
 
         self.x_vs_alpha_lambda = x_vs_alpha_lambda
@@ -682,8 +756,8 @@ class ElasticNetH2O(object):
             free_data(self)
 
         # ####################################
-        #PROCESS OUTPUT
-        #save pointers
+        # PROCESS OUTPUT
+        # save pointers
 
         if self.store_full_path == 1:
             num_all = int(count_full / (self.n_alphas * self.n_lambdas))
@@ -704,12 +778,12 @@ class ElasticNetH2O(object):
                                                    int(num_all),
                                                    int(num_all_other)))
             sys.stdout.flush()
-            #TODO raise an exception instead
+            # TODO raise an exception instead
             exit(0)
 
         if self.store_full_path == 1 and do_predict == 0:
-            #x_vs_alpha_lambda contains solution(and other data)
-            #for all lambda and alpha
+            # x_vs_alpha_lambda contains solution(and other data)
+            # for all lambda and alpha
 
             self.x_vs_alpha_lambdanew = \
                 np.fromiter(cast(self.x_vs_alpha_lambda.__int__(), POINTER(c_type)),
@@ -754,7 +828,7 @@ class ElasticNetH2O(object):
                 self.valid_pred_vs_alpha_lambdanew[:, :, 0:m_valid]
 
         if do_predict == 0:  # store_full_path==0 or 1
-            #x_vs_alpha contains only best of all lambda for each alpha
+            # x_vs_alpha contains only best of all lambda for each alpha
             self.x_vs_alphanew = np.fromiter(
                 cast(self.x_vs_alpha.__int__(), POINTER(c_type)),
                 dtype=self.dtype,
@@ -775,7 +849,7 @@ class ElasticNetH2O(object):
             else:
                 self.intercept2_ = None
 
-        #preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
+        # preds exclusively operate for x_vs_alpha or x_vs_alpha_lambda
         if self.store_full_path == 0 and do_predict == 1:
             thecount = int(count_short / (n + num_all_other) * m_valid)
             if self.verbose > 0:
@@ -806,8 +880,11 @@ class ElasticNetH2O(object):
 
     # pylint: disable=unused-argument
     def predict_ptr(self,
+                    use_raw=1,
                     valid_xptr=None,
                     valid_yptr=None,
+                    valid_xptr_raw=None,
+                    valid_yptr_raw=None,
                     free_input_data=0,
                     order=None):
         """Predict on a fitted GLM with with pointers to data on the GPU
@@ -829,8 +906,8 @@ class ElasticNetH2O(object):
         whether row 'r' or column 'c' major order.
         """
 
-        #assume self.ord already set by fit_ptr() at least
-        #override self if chose to pass this option
+        # assume self.ord already set by fit_ptr() at least
+        # override self if chose to pass this option
         oldstorefullpath = self.store_full_path
         if self.store_full_path == 1:  # then need to run twice
             self.store_full_path = 1
@@ -841,11 +918,17 @@ class ElasticNetH2O(object):
                 self.m_valid,
                 self.double_precision,
                 self.ord,
+                self.use_raw,
                 self.a,
                 self.b,
                 valid_xptr,
                 valid_yptr,
                 self.e,
+                self.a_raw,
+                self.b_raw,
+                valid_xptr_raw,
+                valid_yptr_raw,
+                self.e_raw,
                 do_predict=1,
                 free_input_data=free_input_data,
             )
@@ -857,14 +940,20 @@ class ElasticNetH2O(object):
             self.m_valid,
             self.double_precision,
             self.ord,
+            self.use_raw,
             self.a,
             self.b,
             valid_xptr,
             valid_yptr,
             self.e,
+            self.a_raw,
+            self.b_raw,
+            valid_xptr_raw,
+            valid_yptr_raw,
+            self.e_raw,
             do_predict=1,
         )
-        #restore global variable
+        # restore global variable
         self.store_full_path = oldstorefullpath
 
         return self.valid_pred_vs_alphapure  # something like valid_y
@@ -897,8 +986,8 @@ class ElasticNetH2O(object):
             whether row 'r' or column 'c' major order.
         """
 
-        #let fit() check and convert(to numpy)
-        #train_x, train_y, valid_x, valid_y, weight
+        # let fit() check and convert(to numpy)
+        # train_x, train_y, valid_x, valid_y, weight
         self.fit(
             train_x,
             train_y,
@@ -928,11 +1017,17 @@ class ElasticNetH2O(object):
                         m_valid,
                         double_precision,
                         order,
+                        use_raw,
                         a,
                         b,
                         c,
                         d,
                         e,
+                        a_raw,
+                        b_raw,
+                        c_raw,
+                        d_raw,
+                        e_raw,
                         free_input_data=0,
                         source_dev=0):
         """Train a GLM with pointers to data on the GPU and predict
@@ -950,15 +1045,27 @@ class ElasticNetH2O(object):
         :param order: Order of data.  Default is None, and internally determined
         whether row 'r' or column 'c' major order.
 
-        :param a Pointer to training features array
+        :param use_raw Use raw value of pointer (1) or Swig pointer (0) as input
 
-        :param b Pointer to training response array
+        :param a Swig Pointer to training features array
 
-        :param c Pointer to validation features
+        :param b Swig Pointer to training response array
 
-        :param d Pointer to validation response
+        :param c Swig Pointer to validation features
 
-        :param e Pointer to weight column
+        :param d Swig Pointer to validation response
+
+        :param e Swig Pointer to weight column
+
+        :param a Raw value of Pointer to training features array
+
+        :param b Raw value of Pointer to training response array
+
+        :param c Raw value of Pointer to validation features
+
+        :param d Raw value of Pointer to validation response
+
+        :param e Raw value of Pointer to weight column
 
         :param int free_input_data : Indicate if input data should be freed
             at the end of fit(). Default is 1.
@@ -976,19 +1083,29 @@ class ElasticNetH2O(object):
             m_valid,
             double_precision,
             self.ord,
+            use_raw,
             a,
             b,
             c,
             d,
             e,
+            a_raw,
+            b_raw,
+            c_raw,
+            d_raw,
+            e_raw,
             do_predict,
             free_input_data=0)
-        if c is None:
-            self.prediction = self.predict_ptr(
-                valid_xptr=a, valid_yptr=b, free_input_data=free_input_data)
+        if c is None and use_raw == 0 or c_raw is None and use_raw == 1:
+            self.prediction = self.predict_ptr(use_raw=use_raw,
+                                               valid_xptr=a, valid_yptr=b,
+                                               valid_xptr_raw=a_raw, valid_yptr_raw=b_raw,
+                                               free_input_data=free_input_data)
         else:
-            self.prediction = self.predict_ptr(
-                valid_xptr=c, valid_yptr=d, free_input_data=free_input_data)
+            self.prediction = self.predict_ptr(use_raw=use_raw,
+                                               valid_xptr=c, valid_yptr=d,
+                                               valid_xptr_raw=c_raw, valid_yptr_raw=d_raw,
+                                               free_input_data=free_input_data)
         return self.prediction  # something like valid_y
 
     def fit_transform(self,
@@ -1038,7 +1155,7 @@ class ElasticNetH2O(object):
             tabulate(
                 error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
-# ################## #Properties and setters of properties
+    # ################## #Properties and setters of properties
 
     @property
     def total_n_gpus(self):
@@ -1059,7 +1176,7 @@ class ElasticNetH2O(object):
 
     @family.setter
     def family(self, value):
-        #add check
+        # add check
         self.family = value
 
     @property
@@ -1068,7 +1185,7 @@ class ElasticNetH2O(object):
 
     @shared_a.setter
     def shared_a(self, value):
-        #add check
+        # add check
         self.__shared_a = value
 
     @property
@@ -1078,7 +1195,7 @@ class ElasticNetH2O(object):
     @standardize.setter
     def standardize(self, value):
 
-        #add check
+        # add check
         self._standardize = value
 
     @property
@@ -1203,30 +1320,30 @@ class ElasticNetH2O(object):
     def tols_best(self):
         return self._tols2
 
-#     def score(self, X=None, y=None, sample_weight=None):
-#         if X is not None and y is not None:
-#             self.prediction = self.predict(
-#                 valid_x=X, valid_y=y, sample_weight=sample_weight)
-# #otherwise score makes no sense, need both X and y,
-# #else just return existing error
-# #TODO : Should return R ^ 2 and redo predict if X and y are passed
-#         return self.error
+    #     def score(self, X=None, y=None, sample_weight=None):
+    #         if X is not None and y is not None:
+    #             self.prediction = self.predict(
+    #                 valid_x=X, valid_y=y, sample_weight=sample_weight)
+    # #otherwise score makes no sense, need both X and y,
+    # #else just return existing error
+    # #TODO : Should return R ^ 2 and redo predict if X and y are passed
+    #         return self.error
 
     @classmethod
     def _get_param_names(cls):
         """Get parameter names for the estimator"""
-        #fetch the constructor or the original constructor before
-        #deprecation wrapping if any
+        # fetch the constructor or the original constructor before
+        # deprecation wrapping if any
         init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
         if init is object.__init__:
-            #No explicit constructor to introspect
+            # No explicit constructor to introspect
             return []
 
-#introspect the constructor arguments to find the model parameters
-#to represent
+        # introspect the constructor arguments to find the model parameters
+        # to represent
         from ..utils.fixes import signature
         init_signature = signature(init)
-        #Consider the constructor parameters excluding 'self'
+        # Consider the constructor parameters excluding 'self'
         parameters = [
             p for p in init_signature.parameters.values()
             if p.name != 'self' and p.kind != p.VAR_KEYWORD
@@ -1239,7 +1356,7 @@ class ElasticNetH2O(object):
                                    " %s with constructor %s doesn't "
                                    " follow this convention." %
                                    (cls, init_signature))
-#Extract and sort argument names excluding 'self'
+                # Extract and sort argument names excluding 'self'
         return sorted([p.name for p in parameters])
 
     def get_params(self, deep=True):
@@ -1252,22 +1369,21 @@ class ElasticNetH2O(object):
         """
         out = dict()
         for key in self._get_param_names():
-            #We need deprecation warnings to always be on in order to
-            #catch deprecated param values.
-            #This is set in utils / __init__.py but it gets overwritten
-            #when running under python3 somehow.
+            # We need deprecation warnings to always be on in order to
+            # catch deprecated param values.
+            # This is set in utils / __init__.py but it gets overwritten
+            # when running under python3 somehow.
             warnings.simplefilter("always", DeprecationWarning)
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
                 if w and w[0].category == DeprecationWarning:
-                    #if the parameter is deprecated, don't show it
+                    # if the parameter is deprecated, don't show it
                     continue
             finally:
                 warnings.filters.pop(0)
 
-
-#XXX : should we rather test if instance of estimator ?
+            # XXX : should we rather test if instance of estimator ?
             if deep and hasattr(value, 'get_params'):
                 deep_items = value.get_params().items()
                 out.update((key + '__' + k, val) for k, val in deep_items)
@@ -1277,14 +1393,14 @@ class ElasticNetH2O(object):
     def set_params(self, **params):
         """Set the parameters of this estimator."""
         if not params:
-            #Simple optimization to gain speed(inspect is slow)
+            # Simple optimization to gain speed(inspect is slow)
             return self
         valid_params = self.get_params(deep=True)
         from ..externals import six
         for key, value in six.iteritems(params):
             split = key.split('__', 1)
             if len(split) > 1:
-                #nested objects case
+                # nested objects case
                 name, sub_name = split
                 if name not in valid_params:
                     raise ValueError('Invalid parameter %s for estimator %s. '
@@ -1294,7 +1410,7 @@ class ElasticNetH2O(object):
                 sub_object = valid_params[name]
                 sub_object.set_params(**{sub_name: value})
             else:
-                #simple objects case
+                # simple objects case
                 if key not in valid_params:
                     raise ValueError('Invalid parameter %s for estimator %s. '
                                      'Check the list of available parameters '
@@ -1460,41 +1576,42 @@ class ElasticNet(object):
         Saves as attribute for actual backend used.
 
     """
+
     def __init__(
             self,
-            alpha=1.0, #scikit
-            l1_ratio=0.5, #scikit
-            fit_intercept=True, #h2o4gpu and scikit
-            normalize=False, #scikit
-            precompute=False, #scikit
-            max_iter=5000, #scikit
-            copy_X=True, #scikit
-            tol=1e-2, #h2o4gpu and scikit
-            warm_start=False, #scikit
-            positive=False, #scikit
-            random_state=None, #scikit
-            selection='cyclic', #scikit
+            alpha=1.0,  # scikit
+            l1_ratio=0.5,  # scikit
+            fit_intercept=True,  # h2o4gpu and scikit
+            normalize=False,  # scikit
+            precompute=False,  # scikit
+            max_iter=5000,  # scikit
+            copy_X=True,  # scikit
+            tol=1e-2,  # h2o4gpu and scikit
+            warm_start=False,  # scikit
+            positive=False,  # scikit
+            random_state=None,  # scikit
+            selection='cyclic',  # scikit
             n_gpus=-1,  # h2o4gpu
             lambda_stop_early=True,  # h2o4gpu
             glm_stop_early=True,  # h2o4gpu
-            glm_stop_early_error_fraction=1.0,  #h2o4gpu
-            verbose=False, #h2o4gpu
-            n_threads=None, #h2o4gpu
-            gpu_id=0, #h2o4gpu
-            lambda_min_ratio=1E-7, #h2o4gpu
-            n_lambdas=100, #h2o4gpu
-            n_folds=5, #h2o4gpu
-            n_alphas=5, #h2o4gpu
-            tol_seek_factor=1E-1, #h2o4gpu
-            family='elasticnet', #h2o4gpu
-            store_full_path=0, #h2o4gpu
-            lambda_max=None, #h2o4gpu
-            alpha_max=1.0, #h2o4gpu
-            alpha_min=0.0, #h2o4gpu
-            alphas=None, #h2o4gpu
-            lambdas=None, #h2o4gpu
-            double_precision=None, #h2o4gpu
-            order=None, #h2o4gpu
+            glm_stop_early_error_fraction=1.0,  # h2o4gpu
+            verbose=False,  # h2o4gpu
+            n_threads=None,  # h2o4gpu
+            gpu_id=0,  # h2o4gpu
+            lambda_min_ratio=1E-7,  # h2o4gpu
+            n_lambdas=100,  # h2o4gpu
+            n_folds=5,  # h2o4gpu
+            n_alphas=5,  # h2o4gpu
+            tol_seek_factor=1E-1,  # h2o4gpu
+            family='elasticnet',  # h2o4gpu
+            store_full_path=0,  # h2o4gpu
+            lambda_max=None,  # h2o4gpu
+            alpha_max=1.0,  # h2o4gpu
+            alpha_min=0.0,  # h2o4gpu
+            alphas=None,  # h2o4gpu
+            lambdas=None,  # h2o4gpu
+            double_precision=None,  # h2o4gpu
+            order=None,  # h2o4gpu
             backend='auto'):  # h2o4gpu
 
         import os
@@ -1617,7 +1734,7 @@ class ElasticNet(object):
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y)  #Need to re-fit
+            self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 
