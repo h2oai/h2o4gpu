@@ -4,7 +4,6 @@
  */
 
 #include <thrust/device_vector.h>
-#include <thrust/random.h>
 
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_histogram.cuh>
@@ -18,176 +17,14 @@
 #include "kmeans_init.cuh"
 
 #include "KmMatrix/KmMatrix.hpp"
+#include "KmMatrix/Arith.hpp"
 #include "KmMatrix/utils.cuh"
 #include "KmMatrix/GpuInfo.cuh"
 #include "KmMatrix/blas.cuh"
 
-
 namespace H2O4GPU {
 namespace KMeans {
 
-namespace kernel {
-
-/*
- * Compute min value for each row.
- * @tparam T Numeric type of the data
- * @param _res The output matrix with shape m x 1
- * @param _val The input matrix with shape m x n
- */
-template <typename T>
-__global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
-
-  size_t idx = global_thread_idx();
-  size_t stride = grid_stride_x () * _val.cols;
-
-  for (size_t i = idx; i < _val.size(); i += stride) {
-    T min = std::numeric_limits<T>::max();
-
-    for (size_t j = 0; j < _val.cols; ++j) {
-      T tmp = _val.ptr[i+j];
-      if (tmp < min)
-        min = tmp;
-    }
-
-    _res.ptr[idx] = min;
-  }
-}
-
-template <typename T>
-__global__ void row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
-
-  size_t idx = global_thread_idx();
-  size_t stride = grid_stride_x () * _val.cols;
-
-  for (size_t i = idx; i < _val.size(); i += stride) {
-    T min = std::numeric_limits<T>::max();
-    int min_idx = -1;
-
-    for (size_t j = 0; j < _val.cols; ++j) {
-      T tmp = _val.ptr[i+j];
-      if (tmp < min) {
-        min_idx = i;
-        min = tmp;
-      }
-    }
-
-    _res.ptr[idx] = min_idx;
-  }
-}
-
-}  // namespace kernel
-
-
-template <typename T>
-struct DotOp {
-  void dot(KmMatrix<T>& _res, KmMatrix<T>& _val) {
-    this->dot(_res, _val, _val);
-  }
-  void dot(KmMatrix<T>& _res, KmMatrix<T>& _lhs,
-           KmMatrix<T>& _rhs) {
-    constexpr T alpha = 1.0;
-    constexpr T beta = 1.0;
-    cublasHandle_t handle = GpuInfo::ins().cublas_handle();
-    Blas::gemm(handle,
-               CUBLAS_OP_T, CUBLAS_OP_N,  // FIXME
-               _lhs.rows(), _rhs.cols(), _lhs.cols(),
-               &alpha,
-               _lhs.dev_ptr(), _lhs.cols(),
-               _rhs.dev_ptr(), _rhs.cols(),
-               &beta,
-               _res.dev_ptr(), _res.cols());
-  }
-};
-
-template <typename T>
-struct VecBatchDotOp {
-  void dot(KmMatrix<T>& _res, KmMatrix<T>& _val) {
-    this->dot(_res, _val, _val);
-  }
-  void dot(KmMatrix<T>& _res, KmMatrix<T>& _lhs, KmMatrix<T>& _rhs) {
-    constexpr T alpha = 1.0;
-    constexpr T beta = 1.0;
-    cublasHandle_t handle = GpuInfo::ins().cublas_handle();
-    Blas::gemm_strided_batched(
-        handle,
-        // k-means use row major, so transpose the second vector.
-        CUBLAS_OP_N, CUBLAS_OP_T,
-        1, 1, _rhs.cols(),  // m, n, k
-        &alpha,
-        _lhs.dev_ptr(), 1, _lhs.cols(),
-        _rhs.dev_ptr(), 1, _rhs.cols(),
-        &beta,
-        _res.dev_ptr(), _res.cols(), 1,  // c should be columun vector
-        _lhs.rows());
-  }
-};
-
-// FIXME: Using struct for operations is just keeping the possibility of
-// creating an unified operations for KmMatrix. For example, let KmMatrix
-// inherit those left associative ops, or create an inferface for elementwise
-// operations.
-template <typename T>
-struct SumOp {
-  T sum(KmMatrix<T>& _val) {
-    T* raw_ptr = _val.dev_ptr();
-    thrust::device_ptr<T> ptr (raw_ptr);
-    T res = thrust::reduce(ptr, ptr + _val.size(), (T)0, thrust::plus<T>());
-    return res;
-  }
-};
-
-template <typename T>
-struct MeanOp {
-  T mean(KmMatrix<T>& _val) {
-    T res = SumOp<T>().sum(_val);
-    return res;
-  }
-};
-
-template <typename T>
-struct MulOp {
-  void mul(KmMatrix<T>& _res, KmMatrix<T>& _lhs, T _rhs) {
-    cublasHandle_t handle = GpuInfo::ins().cublas_handle();
-    Blas::axpy(
-        handle, _lhs.size(),  // handle, n
-        &_rhs,                // alpha
-        _lhs.dev_ptr(), 1,
-        _res.dev_ptr(), 1);
-  }
-};
-
-template <typename T>
-struct ArgMinOp {
-  KmMatrix<int> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
-    size_t blocks = GpuInfo::ins().blocks(32);
-    if (_dim == KmMatrixDim::ROW) {
-      KmMatrix<int> _res(_val.rows(), 1);
-      kernel::row_argmin_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
-          _res.k_param(), _val.k_param());
-      return _res;
-    } else {
-      // FIXME
-      M_ERROR("Not implemented");
-    }
-  }
-};
-
-template <typename T>
-struct MinOp {
-
-  KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim) {
-    size_t blocks = GpuInfo::ins().blocks(32);
-    if (_dim == KmMatrixDim::ROW) {
-      KmMatrix<T> _res(_val.rows(), 1);
-      kernel::row_min_sequential<<<blocks, 256, sizeof(T)*_val.cols()>>>(
-          _res.k_param(), _val.k_param());
-      return _res;
-    } else {
-      // FIXME
-      M_ERROR("Not implemented");
-    }
-  }
-};
 
 namespace kernel {
 // X^2 + Y^2, here only calculates the + operation.
@@ -277,9 +114,9 @@ struct PairWiseDistanceOp {
 // highest probability.
 
 // FIXME:
-// Operations performed in K-Means|| loop leads to a-approximate.
+// Operations performed in K-Means|| loop leads to a-approximation.
 // Intuitively, choosing those centroids with highest probability should not
-// break this property. But I haven't make the proof.
+// break this property. But I haven't made the proof.
 // And benchmarking should be performed to check the result.
 template <typename T>
 KmMatrix<T> KmeansLlInit<T>::recluster(KmMatrix<T>& _centroids) {
@@ -359,7 +196,7 @@ KmMatrix<T> KmeansLlInit<T>::probability(
   T cost = SumOp<T>().sum(min_distances);
 
   KmMatrix<T> prob (min_distances.rows(), 1);
-  MulOp<T>().mul(prob, min_distances, over_sample_ / cost);
+  MulOp<T>().mul(prob, min_distances, over_sample_ * k_ / cost);
 
   return prob;
 }
