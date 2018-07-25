@@ -7,10 +7,10 @@
 #define KM_MATRIX_HPP_
 
 #include <thrust/host_vector.h>
-#include <cublas_v2.h>
 #include <string>
 #include <memory>
 #include <iomanip>
+#include <stdexcept>
 
 #include "KmConfig.h"
 
@@ -182,6 +182,13 @@ class KmMatrixProxy {
 
   void operator=(KmMatrix<T>& _other);
   friend KmMatrix<T>;
+};
+
+struct KmMatrixSizeError: public std::runtime_error
+{
+  KmMatrixSizeError(std::string const& message)
+      : std::runtime_error(message)
+  {}
 };
 
 }  // namespace KMeans

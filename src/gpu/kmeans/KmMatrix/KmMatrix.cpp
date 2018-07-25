@@ -56,6 +56,13 @@ KmMatrix<T>::KmMatrix(thrust::host_vector<T> _vec,
                       size_t _rows, size_t _cols) :
     param_ (_rows, _cols, nullptr) {
   init_impls();
+  if (_vec.size() != _rows * _cols) {
+    throw KmMatrixSizeError("Expecting hv::size() == rows * cols. " +
+                            std::string("Got hv::size(): ") +
+                            std::to_string(_vec.size()) +
+                            ", rows: " + std::to_string(_rows) +
+                            ", cols: " + std::to_string(_cols));
+  }
 #if USE_CUDA()
   KmMatrixImpl<T> * ptr = new CudaKmMatrixImpl<T>(_vec, this);
   impls[(int)Backend::CUDADense].reset(ptr);

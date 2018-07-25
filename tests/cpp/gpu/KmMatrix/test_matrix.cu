@@ -39,6 +39,49 @@ TEST(KmMatrix, KmMatrixAssig) {
   ASSERT_TRUE(mat1 == mat2);
 }
 
+TEST(KmMatrix, KmMatrixRows) {
+  thrust::host_vector<double> vec (12 * 16);
+  for (size_t i = 0; i < 12 * 16; ++i) {
+    vec[i] = i;
+  }
+  H2O4GPU::KMeans::KmMatrix<double> mat (vec, 12, 16);
+
+  thrust::host_vector<double> h_index (4, 1);
+  h_index[0] = 0;
+  h_index[1] = 2;
+  h_index[2] = 9;
+  h_index[3] = 1;
+  H2O4GPU::KMeans::KmMatrix<double> index (h_index, 4, 1);
+
+  H2O4GPU::KMeans::KmMatrix<double> rows = mat.rows(index);
+
+  thrust::host_vector<double> h_sol (4 * 16);
+  for (size_t i = 0; i < 16; ++i) {
+    h_sol[i] = vec[i];
+  }
+  for (size_t i = 16; i < 32; ++i) {
+    h_sol[i] = vec[16 * 2 + (i - 16)];
+  }
+  for (size_t i = 32; i < 48; ++i) {
+    h_sol[i] = vec[16 * 9 + (i - 32)];
+  }
+  for (size_t i = 48; i < 64; ++i) {
+    h_sol[i] = vec[16 * 1 + (i - 48)];
+  }
+
+  H2O4GPU::KMeans::KmMatrix<double> sol (h_sol, 4, 16);
+
+  ASSERT_TRUE(rows == sol);
+}
+
+TEST(KmMatrix, SizeError) {
+  thrust::host_vector<double> vec (12 * 16);
+  ASSERT_THROW(
+      H2O4GPU::KMeans::KmMatrix<double> mat (vec, 12, 4),
+      std::runtime_error);
+
+}
+
 TEST(KmMatrix, KmMatrixUtils) {
   thrust::host_vector<double> vec (12 * 16);
   H2O4GPU::KMeans::KmMatrix<double> mat (vec, 12, 16);
