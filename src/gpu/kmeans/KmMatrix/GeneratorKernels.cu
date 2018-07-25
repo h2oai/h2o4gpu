@@ -45,6 +45,19 @@ __global__ void generate_uniform_kernel(double *_res,
     }
 }
 
+__global__ void generate_uniform_kernel(int *_res,
+                                        curandState *_state,
+                                        int _size) {
+    int idx = threadIdx.x + blockIdx.x * threadIdx.x;
+    if (idx < _size) {
+      int x;
+      curandState local_state = _state[idx];
+      x = (int) curand_uniform_double(&local_state);
+      _state[idx] = local_state;
+      _res[idx] = x;
+    }
+}
+
 }  // namespace kernel
 }  // namespace KMeans
 }  // namespace H2O4GPU

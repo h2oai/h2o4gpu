@@ -79,7 +79,6 @@ TEST(KmMatrix, SizeError) {
   ASSERT_THROW(
       H2O4GPU::KMeans::KmMatrix<double> mat (vec, 12, 4),
       std::runtime_error);
-
 }
 
 TEST(KmMatrix, KmMatrixUtils) {

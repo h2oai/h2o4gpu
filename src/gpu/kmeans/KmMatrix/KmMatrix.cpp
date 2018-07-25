@@ -161,6 +161,21 @@ size_t KmMatrix<T>::cols() const {
 }
 
 template <typename T>
+KmMatrix<T> KmMatrix<T>::reshape(size_t _rows, size_t _cols) const {
+  if (_rows * _cols != param_.rows * param_.cols) {
+    throw KmMatrixSizeError("Expecting rows * cols == " +
+                            std::to_string(param_.rows * param_.cols) +
+                            ", get " +
+                            "rows: " + std::to_string(_rows) +
+                            ", cols: " + std::to_string(_cols));
+  }
+  KmMatrix<T> res (*this);
+  res.param_.rows = _rows;
+  res.param_.cols = _cols;
+  return res;
+}
+
+template <typename T>
 kParam<T> KmMatrix<T>::k_param () {
   T * ptr = dev_ptr();
   kParam<T> param (param_);
@@ -316,6 +331,8 @@ KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second,
   template size_t KmMatrix<T>::size() const;                            \
   template size_t KmMatrix<T>::rows() const;                            \
   template size_t KmMatrix<T>::cols() const;                            \
+  template KmMatrix<T> KmMatrix<T>::reshape(                            \
+      size_t _rows, size_t _cols) const;                                \
   template kParam<T> KmMatrix<T>::k_param ();                           \
   template T * KmMatrix<T>::host_ptr();                                 \
   template T * KmMatrix<T>::dev_ptr();                                  \

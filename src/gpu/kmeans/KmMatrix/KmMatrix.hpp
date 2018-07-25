@@ -122,6 +122,8 @@ class KmMatrix {
   size_t rows () const;
   size_t cols () const;
 
+  KmMatrix<T> reshape(size_t _rows, size_t _cols) const;
+
   T* host_ptr();
   T* dev_ptr();
 
