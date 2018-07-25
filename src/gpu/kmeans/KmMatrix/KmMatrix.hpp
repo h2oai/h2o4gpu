@@ -141,6 +141,11 @@ KmMatrix<T> stack(KmMatrix<T>& _first,
                   KmMatrix<T>& _second,
                   KmMatrixDim _dim);
 
+/*
+ * Print the matrix.
+ * The printed format is mimicing numpy, one can just copy the output to Python
+ * shell and let numpy to verify it.
+ */
 template <typename T>
 std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);
 

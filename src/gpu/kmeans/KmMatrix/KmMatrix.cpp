@@ -250,16 +250,20 @@ KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m) {
-  std::cout << "\nmatrix: " << m.name() << std::endl << "---" << std::endl;
+  std::cout << "\nmatrix: " << m.name() << std::endl;
+  std::cout << "shape: (" << m.rows() << ", " << m.cols() << ")\n" << "[";
   T * ptr = m.host_ptr();
   kParam<T> param = m.k_param();
   for (size_t i = 0; i < param.rows; ++i) {
+    if (i == 0) std::cout << "[";
+    else std::cout << " [";
     for (size_t j = 0; j < param.cols; ++j) {
       std::cout << std::setw(5) << ptr[i*param.cols + j] << ',';
     }
-    std::cout << std::endl;
+    std::cout << " ]";
+    if (i != param.rows - 1) std::cout << "," << std::endl;
   }
-  std::cout << "---" << std::endl;
+  std::cout << "]\n" << std::endl;
   return os;
 }
 
@@ -307,5 +311,5 @@ INSTANTIATE(double)
 INSTANTIATE(int)
 
 #undef INSTANTIATE
-}
-}  // H2O4GPU
+}  // namespace KMeans
+}  // namepsace H2O4GPU
