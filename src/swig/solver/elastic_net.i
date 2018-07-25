@@ -36,7 +36,7 @@ extern int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrai
              float *validXptr,
              float *validYptr,
              float *weightptr {
-    if($input >= 0) {
+    if(PyLong_AsLong($input) >= 0) {
         $1 = (float *)PyLong_AsVoidPtr($input);
     } else {
         $1 = NULL;
@@ -48,7 +48,7 @@ extern int make_ptr_float(int sharedA, int sourceme, int sourceDev, size_t mTrai
              double *validXptr,
              double *validYptr,
              double *weightptr {
-    if($input >= 0) {
+    if(PyLong_AsLong($input) >= 0) {
         $1 = (double *)PyLong_AsVoidPtr($input);
     } else {
         $1 = NULL;
