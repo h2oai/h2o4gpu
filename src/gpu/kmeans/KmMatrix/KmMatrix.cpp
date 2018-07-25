@@ -205,14 +205,31 @@ KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
 }
 
 template <typename T>
+KmMatrix<T> KmMatrix<T>::rows(KmMatrix<T>& _index) {
+  KmMatrix<T> res;
+  if (backend_ == Backend::CUDADense &&
+      _index.backend_ == Backend::CUDADense) {
+    if (! _index.on_device()) {
+      _index.dev_ptr();
+    }
+    res = impls[(int)Backend::CUDADense]->rows(_index);
+  } else {
+    M_ERROR("Not implemented.");
+  }
+  return res;
+}
+
+template <typename T>
+KmMatrix<T> KmMatrix<T>::cols(KmMatrix<T>& _index) {
+  M_ERROR("Not implemented.");
+  KmMatrix<T> res;
+  return res;
+}
+
+template <typename T>
 bool KmMatrix<T>::operator==(KmMatrix<T>& _rhs) {
   if (_rhs.backend_ == Backend::CUDADense && backend_ == Backend::CUDADense) {
-    // std::shared_ptr<CudaKmMatrixImpl<T>> tmp =
-    //     std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
-    //         _rhs.impls[(int)Backend::CUDADense]);
     bool res = impls[(int)Backend::CUDADense]->equal(_rhs);
-    // bool res = std::dynamic_pointer_cast<CudaKmMatrixImpl<T>>(
-    //     impls[(int)Backend::CUDADense])->equal(*tmp);
     return res;
   } else {
     M_ERROR("Not implemented.");
@@ -297,6 +314,8 @@ KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second,
   template T * KmMatrix<T>::dev_ptr();                                  \
   template bool KmMatrix<T>::on_device() const;                         \
   template KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem=true); \
+  template KmMatrix<T> KmMatrix<T>::rows(KmMatrix<T>& _index);          \
+  template KmMatrix<T> KmMatrix<T>::cols(KmMatrix<T>& _index);          \
   template bool KmMatrix<T>::operator==(KmMatrix<T> &_rhs);             \
   template KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,         \
       H2O4GPU::KMeans::KmMatrixDim _dim);                               \

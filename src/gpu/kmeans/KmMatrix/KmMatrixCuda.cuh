@@ -74,8 +74,9 @@ class CudaKmMatrixImpl : public KmMatrixImpl<T> {
 
   virtual size_t size() const override;
 
-  // virtual bool equal(std::shared_ptr<CudaKmMatrixImpl<T>>& _rhs);
   virtual bool equal(KmMatrix<T>& _rhs);
+
+  virtual KmMatrix<T> rows(KmMatrix<T>& _index) override;
 
   virtual bool on_device() const override;
 };

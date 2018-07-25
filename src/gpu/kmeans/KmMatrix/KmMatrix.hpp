@@ -84,6 +84,8 @@ class KmMatrixImpl {
 
   virtual KmMatrix<T> stack(KmMatrix<T>&, KmMatrixDim _dim) = 0;
   virtual bool equal(KmMatrix<T>& _val) = 0;
+
+  virtual KmMatrix<T> rows(KmMatrix<T>& _index) = 0;
 };
 
 template <typename T>
@@ -132,6 +134,9 @@ class KmMatrix {
 
   KmMatrixProxy<T> row(size_t idx, bool dev_mem=true);
   KmMatrixProxy<T> col(size_t idx);
+
+  KmMatrix<T> rows(KmMatrix<T>& index);
+  KmMatrix<T> cols(KmMatrix<T>& index);
 
   KmMatrix<T> stack(KmMatrix<T>& _second, KmMatrixDim _dim);
 };
