@@ -50,8 +50,6 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
 
   assert (raw_ptr != nullptr && raw_ptr != NULL);
 
-  std::cerr << "Warning: Copying data from " << _other.name()
-            << "." << std::endl;
   if (_other.on_device()) {
     raw_ptr = _other.dev_ptr();
     thrust::device_ptr<T> ptr (raw_ptr);
