@@ -88,37 +88,45 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
     print(trainW.dtype)
     a,b,c,d,e = prepare_and_upload_data(enet, trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
 
+    # swig a-e
+    fit_predict(enet, fortran, mTrain, n, mvalid, validX, validY, validX2, validY2, a, b, c, d, e, sourceDev)
+
+    # integer a-e
+    fit_predict(enet, fortran, mTrain, n, mvalid, validX, validY, validX2, validY2, int(a), int(b), int(c), int(d), int(e), sourceDev)
+
+    return enet
+
+def fit_predict(enet, fortran, mTrain, n, mvalid, validX, validY, validX2, validY2, a, b, c, d, e, sourceDev):
     ## Solve
     print("Solving")
-    double_precision=0 # float
+    double_precision = 0  # float
     order = 'c' if fortran else 'r'
-    enet.fit_ptr(mTrain, n, mvalid, double_precision, order, a, b, c, d, e, source_dev = sourceDev)
+    enet.fit_ptr(mTrain, n, mvalid, double_precision, order, a, b, c, d, e, source_dev=sourceDev)
     print("Done Solving")
 
     # show something about Xvsalphalambda and Xvsalpha
     print("Xvsalpha")
     print(enet.X)
 
-    rmse=enet.error
+    rmse = enet.error
     print("rmse")
     print(rmse)
 
     print("lambdas")
-    lambdas=enet.lambdas
+    lambdas = enet.lambdas
     print(lambdas)
 
     print("alphas")
-    alphas=enet.alphas
+    alphas = enet.alphas
     print(alphas)
 
     print("tols")
-    tols=enet.tols
+    tols = enet.tols
     print(tols)
-
 
     print("Predicting")
     if validX is not None:
-        if 1==1:
+        if 1 == 1:
             validPredsvsalphapure = enet.predict_ptr(c, d)
         else:
             validPredsvsalphapure = enet.predict(validX, validY)
@@ -127,10 +135,10 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
         print(validPredsvsalphapure)
 
     # upload new validation for new predict
-    _,_,e,f,_ = upload_data(enet, None, None, validX2, validY2, None, source_dev = sourceDev)
+    _, _, e, f, _ = upload_data(enet, None, None, validX2, validY2, None, source_dev=sourceDev)
 
     print("Predicting2")
-    if 1==1:
+    if 1 == 1:
         validPredsvsalphapure2 = enet.predict_ptr(e, f)
     else:
         validPredsvsalphapure2 = enet.predict(validX2, validY2)
@@ -142,7 +150,6 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
     # show something about validPredsvsalphalambdapure, validPredsvsalphapure
 
-    return enet
 
 def test_elastic_net_ptr_driver():
     import numpy as np
