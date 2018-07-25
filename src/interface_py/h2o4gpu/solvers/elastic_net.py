@@ -730,10 +730,10 @@ class ElasticNetH2O(object):
                 self.x_vs_alpha_lambdanew[:, :, n + num_error:n + num_error + 1]
 
             self._alphas = self.x_vs_alpha_lambdanew[:, :, n + num_error + 1:
-                                                           n + num_error + 2]
+                                                     n + num_error + 2]
 
             self._tols = self.x_vs_alpha_lambdanew[:, :, n + num_error + 2:
-                                                         n + num_error + 3]
+                                                   n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept_ = self.x_vs_alpha_lambdapure[:, :, -1]
@@ -764,11 +764,11 @@ class ElasticNetH2O(object):
             self.x_vs_alphapure = self.x_vs_alphanew[:, 0:n]
             self.error_vs_alpha = self.x_vs_alphanew[:, n:n + num_error]
             self._lambdas2 = self.x_vs_alphanew[:, n + num_error:
-                                                   n + num_error + 1]
+                                                n + num_error + 1]
             self._alphas2 = self.x_vs_alphanew[:, n + num_error + 1:
-                                                  n + num_error + 2]
+                                               n + num_error + 2]
             self._tols2 = self.x_vs_alphanew[:, n + num_error + 2:
-                                                n + num_error + 3]
+                                             n + num_error + 3]
 
             if self.fit_intercept == 1:
                 self.intercept2_ = self.x_vs_alphapure[:, -1]
