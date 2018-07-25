@@ -25,7 +25,6 @@
 namespace H2O4GPU {
 namespace KMeans {
 
-
 namespace kernel {
 // X^2 + Y^2, here only calculates the + operation.
 template <typename T>
@@ -77,10 +76,11 @@ __global__ void self_row_min_sequential(kParam<T> _res, kParam<T> _val) {
     T min = std::numeric_limits<T>::max();
     for (size_t i = 0; i < _val.cols; ++i) {
       T value = _val.ptr[idx * _val.cols + i];
-      if (value < min && value != 0) {
+      if (value < min) {
         min = value;
       }
     }
+    min += ESP;
     _res.ptr[idx] = min;
   }
 }
@@ -100,9 +100,9 @@ void PairWiseDistanceOp<T>::initialize(KmMatrix<T>& _data_dot,
 }
 
 template <typename T>
-PairWiseDistanceOp<T>::PairWiseDistanceOp (KmMatrix<T>& _data_dot,
-                                           KmMatrix<T>& _centroids_dot,
-                                           KmMatrix<T>& _distance_pairs) :
+PairWiseDistanceOp<T>::PairWiseDistanceOp(KmMatrix<T>& _data_dot,
+                                          KmMatrix<T>& _centroids_dot,
+                                          KmMatrix<T>& _distance_pairs) :
     data_dot_(_data_dot), centroids_dot_(_centroids_dot),
     distance_pairs_(_distance_pairs), initialized_(true) {}
 
@@ -138,41 +138,30 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
   return distance_pairs_;
 }
 
-// ArgMin operation that exclude 0. Used when dealing with distance_pairs
+// ArgMin operation that excludes 0. Used when dealing with distance_pairs
 // in recluster where distance between points with itself is calculated,
 // hence the name.
 // FIXME: Maybe generalize it to selection algorithm.
 template <typename T>
 struct SelfArgMinOp {
-
-  KmMatrix<int> argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
-    if (_dim == KmMatrixDim::ROW) {
-      KmMatrix<int> _res(_val.rows(), 1);
-      kernel::self_row_argmin_sequential<<<
-          div_roundup(_val.rows(), 256), 256>>>(_res.k_param(),
-                                                _val.k_param());
-      return _res;
-    } else {
-      // FIXME
-      M_ERROR("Not implemented");
-    }
+  KmMatrix<int> argmin(KmMatrix<T>& _val) {
+    KmMatrix<int> _res(_val.rows(), 1);
+    kernel::self_row_argmin_sequential<<<
+        div_roundup(_val.rows(), 256), 256>>>(_res.k_param(),
+                                              _val.k_param());
+    return _res;
   }
-
 };
 
+// MinOp that adds ESP to 0 value.
 template <typename T>
 struct SelfMinOp {
   KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim) {
     size_t blocks = GpuInfo::ins().blocks(32);
-    if (_dim == KmMatrixDim::ROW) {
-      KmMatrix<T> _res(_val.rows(), 1);
-      kernel::self_row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
-          _res.k_param(), _val.k_param());
-      return _res;
-    } else {
-      // FIXME
-      M_ERROR("Not implemented");
-    }
+    KmMatrix<T> _res(_val.rows(), 1);
+    kernel::self_row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
+        _res.k_param(), _val.k_param());
+    return _res;
   }
 };
 
@@ -183,17 +172,18 @@ struct SelfMinOp {
 // highest probability.
 template <typename T>
 KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
+
   // Get the distance pairs for centroids
   KmMatrix<T> centroids_dot (_centroids.rows(), 1);
   VecBatchDotOp<T>().dot(centroids_dot, _centroids);
   KmMatrix<T> distance_pairs (_centroids.rows(), _centroids.rows());
   PairWiseDistanceOp<T> centroids_distance_op(
       centroids_dot, centroids_dot, distance_pairs);
+
   distance_pairs = centroids_distance_op(_centroids, _centroids);
 
   // get the closest x_j for each x_i in centroids.
-  KmMatrix<int> min_indices = SelfArgMinOp<T>().argmin(distance_pairs,
-                                                       KmMatrixDim::ROW);
+  KmMatrix<int> min_indices = SelfArgMinOp<T>().argmin(distance_pairs);
 
   // use historgram to get counting for weights
   KmMatrix<int> weights (1, _centroids.rows());
@@ -362,8 +352,6 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
   // Calculate X^2 (point-wise)
   data_dot_ = KmMatrix<T>(_data.rows(), 1);
   VecBatchDotOp<T>().dot(data_dot_, _data);
-  data_dot_.set_name("data dot");
-  std::cout << data_dot_ << std::endl;
 
   // First centroid
   KmMatrix<T> centroids = _data.row(idx);
@@ -386,7 +374,6 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
   }
 
   centroids = ReclusterPolicy<T>::recluster(centroids, k_);
-  std::cout << centroids << std::endl;
 
   return centroids;
 }

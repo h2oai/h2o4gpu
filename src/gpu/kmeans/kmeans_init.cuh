@@ -143,7 +143,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    *    \f$p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}\f$
    */
   KmeansLlInit (int _seed, T _over_sample) :
-      seed_(_seed), k_(0),
+      seed_(_seed), over_sample_(_over_sample), k_(0),
       generator_ (new UniformGenerator<T>(seed_)) {}
 
   /*
