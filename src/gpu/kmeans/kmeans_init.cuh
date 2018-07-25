@@ -16,7 +16,9 @@
 #include "KmMatrix/Generator.cuh"
 #include "KmMatrix/GpuInfo.cuh"
 
-namespace H2O4GPU{
+constexpr double ESP = 1e-8;
+
+namespace H2O4GPU {
 namespace KMeans {
 
 namespace detail {
@@ -91,6 +93,9 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   T over_sample_;
   int seed_;
   int k_;
+
+  // Suggested in original paper, 8 is usually enough.
+  constexpr static float MAX_ITER = 8;
 
   std::unique_ptr<GeneratorBase<T>> generator_;
 

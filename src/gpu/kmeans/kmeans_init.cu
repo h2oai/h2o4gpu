@@ -50,6 +50,7 @@ __global__ void construct_distance_pairs_kernel(
   }
 }
 
+// See SelfArgMinOp
 template <typename T>
 __global__ void self_row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
 
@@ -65,6 +66,22 @@ __global__ void self_row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
       }
     }
     _res.ptr[idx] = min_idx;
+  }
+}
+
+template <typename T>
+__global__ void self_row_min_sequential(kParam<T> _res, kParam<T> _val) {
+
+  size_t idx = global_thread_idx();
+  if (idx < _val.rows) {
+    T min = std::numeric_limits<T>::max();
+    for (size_t i = 0; i < _val.cols; ++i) {
+      T value = _val.ptr[idx * _val.cols + i];
+      if (value < min && value != 0) {
+        min = value;
+      }
+    }
+    _res.ptr[idx] = min;
   }
 }
 
@@ -143,6 +160,22 @@ struct SelfArgMinOp {
 
 };
 
+template <typename T>
+struct SelfMinOp {
+  KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim) {
+    size_t blocks = GpuInfo::ins().blocks(32);
+    if (_dim == KmMatrixDim::ROW) {
+      KmMatrix<T> _res(_val.rows(), 1);
+      kernel::self_row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
+          _res.k_param(), _val.k_param());
+      return _res;
+    } else {
+      // FIXME
+      M_ERROR("Not implemented");
+    }
+  }
+};
+
 // We use counting to construct the weight as described in the paper. Counting
 // is performed by histogram algorithm.
 // For re-cluster, the paper suggests using K-Means++, but that will require
@@ -199,23 +232,30 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
 
   int * min_indices_ptr = min_indices.dev_ptr();
 
-  KmMatrix<T> centroids (_k, _centroids.cols());
+  KmMatrix<T> new_centroids (_k, _centroids.cols());
+  T * new_centroids_ptr = new_centroids.dev_ptr();
   int cols = _centroids.cols();
 
-  thrust::copy_if(
+  T * old_centroids_ptr = _centroids.dev_ptr();
+
+  auto k_iter = thrust::make_counting_iterator(0);
+  thrust::for_each(
       thrust::device,
-      _centroids.dev_ptr(), _centroids.dev_ptr() + _centroids.size(),
-      centroids.dev_ptr(),
+      k_iter, k_iter + _k,
       [=] __device__ (int idx) {
-        size_t row = idx / cols;
-        for (size_t i = 0; i < _k; ++i) {
-          if (row == min_indices_ptr[i])
-            return true;
+        size_t index = min_indices_ptr[idx];
+
+        size_t in_begin = index * cols;
+        size_t in_end = (index + 1) * cols;
+
+        size_t res_begin = idx * cols;
+        size_t res_end = (idx + 1) * cols;
+        for (size_t i = in_begin, j = res_begin; i < in_end; ++i, ++j) {
+          new_centroids_ptr[j] = old_centroids_ptr[i];
         }
-        return false;
       });
 
-  return centroids;
+  return new_centroids;
 }
 
 }  // namespace detail
@@ -223,12 +263,12 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
 
 
 /* ============== KmeansLlInit Class member functions ============== */
+
 template <typename T, template <class> class ReclusterPolicy >
 KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::probability(
     KmMatrix<T>& _data, KmMatrix<T>& _centroids) {
 
   KmMatrix<T> centroids_dot (_centroids.rows(), 1);
-
   VecBatchDotOp<T>().dot(centroids_dot, _centroids);
 
   // FIXME: Time this
@@ -237,7 +277,8 @@ KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::probability(
       data_dot_, centroids_dot, distance_pairs_);
   distance_pairs_ = distance_op(_data, _centroids);
 
-  KmMatrix<T> min_distances = MinOp<T>().min(distance_pairs_, KmMatrixDim::ROW);
+  KmMatrix<T> min_distances = detail::SelfMinOp<T>().min(distance_pairs_,
+                                                         KmMatrixDim::ROW);
 
   T cost = SumOp<T>().sum(min_distances);
 
@@ -321,6 +362,8 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
   // Calculate X^2 (point-wise)
   data_dot_ = KmMatrix<T>(_data.rows(), 1);
   VecBatchDotOp<T>().dot(data_dot_, _data);
+  data_dot_.set_name("data dot");
+  std::cout << data_dot_ << std::endl;
 
   // First centroid
   KmMatrix<T> centroids = _data.row(idx);
@@ -329,7 +372,8 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
 
   T cost = SumOp<T>().sum(prob);
 
-  for (size_t i = 0; i < std::log(cost); ++i) {
+  size_t max_iter = std::max(T(MAX_ITER), std::log(cost));
+  for (size_t i = 0; i < max_iter; ++i) {
     prob = probability(_data, centroids);
     KmMatrix<T> new_centroids = sample_centroids(_data, prob);
     centroids = stack(centroids, new_centroids, KmMatrixDim::ROW);
@@ -341,8 +385,9 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
     M_ERROR("Not implemented.");
   }
 
-  std::cout << centroids << std::endl;
   centroids = ReclusterPolicy<T>::recluster(centroids, k_);
+  std::cout << centroids << std::endl;
+
   return centroids;
 }
 
