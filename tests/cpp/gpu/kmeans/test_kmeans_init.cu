@@ -36,6 +36,26 @@ struct GeneratorMock : GeneratorBase<T> {
   }
 };
 
+TEST(KmeansRandom, Init) {
+  thrust::host_vector<float> h_data (20);
+  for (size_t i = 0; i < 20; ++i) {
+    h_data[i] = i * 2;
+  }
+  KmMatrix<float> data (h_data, 4, 5);
+  std::unique_ptr<GeneratorBase<float>> gen (new GeneratorMock<float>());
+  KmeansRandomInit<float> init (gen);
+
+  auto res = init(data, 2);
+
+  std::vector<float> h_sol =
+      {
+        30, 32, 34, 36, 38,
+        0,  2,  4,  6,  8
+      };
+  KmMatrix<float> sol (h_sol, 2, 5);
+  ASSERT_TRUE(sol == res);
+}
+
 // r --gtest_filter=KmeansLL.PairWiseDistance
 TEST(KmeansLL, PairWiseDistance) {
 

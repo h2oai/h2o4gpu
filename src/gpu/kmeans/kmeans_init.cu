@@ -5,7 +5,6 @@
 
 #include <thrust/device_vector.h>
 
-#include <cub/device/device_select.cuh>
 #include <cub/device/device_histogram.cuh>
 
 #include <random>
@@ -250,10 +249,28 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
 
 }  // namespace detail
 
+
+/* ============ KmeansRandomInit Class member functions ============ */
+
+template <typename T>
+KmMatrix<T> KmeansRandomInit<T>::operator()(KmMatrix<T>& _data, size_t _k) {
+
+  KmMatrix<T> dist = generator_impl_->generate(_k);
+  MulOp<T>().mul(dist, dist, (T)_data.rows() - 1);
+
+  dist = dist.reshape(dist.cols(), dist.rows());
+
+  KmMatrix<T> centroids = _data.rows(dist);
+
+  return centroids;
+}
 
 
 /* ============== KmeansLlInit Class member functions ============== */
 
+// Although the paper suggested calculating the probability independently,
+// but due to zero distance between a point and itself, the already selected
+// points will have very low probability.
 template <typename T, template <class> class ReclusterPolicy >
 KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::probability(
     KmMatrix<T>& _data, KmMatrix<T>& _centroids) {
@@ -360,7 +377,8 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
 
   T cost = SumOp<T>().sum(prob);
 
-  size_t max_iter = std::max(T(MAX_ITER), std::log(cost));
+  size_t max_iter = std::max((size_t)(MAX_ITER),
+                             (size_t)std::ceil(std::log(cost)));
   for (size_t i = 0; i < max_iter; ++i) {
     prob = probability(_data, centroids);
     KmMatrix<T> new_centroids = sample_centroids(_data, prob);
@@ -368,9 +386,9 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
   }
 
   if (centroids.rows() < _k) {
-    // FIXME: When n_centroids < k
-    // Get random selection in?
-    M_ERROR("Not implemented.");
+    KmMatrix<T> new_centroids = KmeansRandomInit<T>(generator_)(_data,
+        _k - centroids.rows());
+    centroids = stack(centroids, new_centroids, KmMatrixDim::ROW);
   }
 
   centroids = ReclusterPolicy<T>::recluster(centroids, k_);
@@ -385,9 +403,12 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
       KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
   template KmMatrix<T> KmeansLlInit<T>::sample_centroids(               \
       KmMatrix<T>& data, KmMatrix<T>& centroids);                       \
+  template KmMatrix<T> KmeansRandomInit<T>::operator()(                 \
+      KmMatrix<T>& _data, size_t _k);
 
 INSTANTIATE(float)
 INSTANTIATE(double)
+INSTANTIATE(int)
 
 #undef INSTANTIATE
 
@@ -403,15 +424,14 @@ namespace detail {
       KmMatrix<T>& _centroids_dot,                              \
       KmMatrix<T>& _distance_pairs);                            \
   template KmMatrix<T> PairWiseDistanceOp<T>::operator()(       \
-      KmMatrix<T>& _data,                                       \
-      KmMatrix<T>& _centroids);                                 \
+      KmMatrix<T>& _data, KmMatrix<T>& _centroids);             \
 
 INSTANTIATE(float)
 INSTANTIATE(double)
+INSTANTIATE(int)
 
 #undef INSTANTIATE
 }
-// FIXME: int is not supported due to random kernel
 
 }  // namespace Kmeans
 }  // namespace H2O4GPU

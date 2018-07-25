@@ -74,6 +74,38 @@ class KmeansInitBase {
 };
 
 /*
+ * Random initialization.
+ * @tparam Numeric data type.
+ */
+template <typename T>
+class KmeansRandomInit : public KmeansInitBase<T> {
+ private:
+  int seed_;
+  std::unique_ptr<GeneratorBase<T>> generator_impl_;
+
+ public:
+  /*
+   * @param seed Random seed for generating centroids.
+   */
+  KmeansRandomInit(size_t _seed) :
+      seed_(_seed), generator_impl_ (new UniformGenerator<T>) {}
+
+  /*
+   * @param gen Unique pointer to Random generator for generating centroids.
+   */
+  KmeansRandomInit(std::unique_ptr<GeneratorBase<T>>& _gen) :
+      generator_impl_(std::move(_gen)) {}
+
+  virtual ~KmeansRandomInit() override {}
+
+  /*
+   * @param data Data points stored in row major matrix.
+   * @param k Number of centroids.
+   */
+  virtual KmMatrix<T> operator()(KmMatrix<T>& data, size_t k) override;
+};
+
+/*
  * Each instance of KmeansLlInit corresponds to one dataset, if a new data set
  * is used, users need to create a new instance.
  *
@@ -82,7 +114,7 @@ class KmeansInitBase {
  * Scalable K-Means++
  * </a>
  *
- * @tparam Data type, supported types are float and double.
+ * @tparam Numeric data type.
  */
 template <
   typename T,
@@ -107,8 +139,8 @@ struct KmeansLlInit : public KmeansInitBase<T> {
 
   KmMatrix<T> probability(KmMatrix<T>& data, KmMatrix<T>& centroids);
  public:
-  // sample_centroids/recluster should not be part of the interface, but
-  // following error is generated when put in private section:
+  // sample_centroids should not be part of the interface, but following error
+  // is generated when put in private section:
   // The enclosing parent function ("sample_centroids") for an extended
   // __device__ lambda cannot have private or protected access within its class
   KmMatrix<T> sample_centroids(KmMatrix<T>& data, KmMatrix<T>& centroids);
