@@ -10,7 +10,7 @@
 
 #include "cblas/cblas.h"
 
-#define USE_CUDA() 1
+#define USE_CUDA() @HG_USE_CUDA@
 
 template<typename T>
 void self_dot(std::vector<T> array_in, int n, int dim,
