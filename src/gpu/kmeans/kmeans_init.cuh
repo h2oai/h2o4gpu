@@ -9,17 +9,18 @@
 
 #include <memory>
 
-#include "KmMatrix/KmConfig.h"
-#include "KmMatrix/KmMatrix.hpp"
-#include "KmMatrix/utils.cuh"
-#include "KmMatrix/Generator.hpp"
-#include "KmMatrix/Generator.cuh"
-#include "KmMatrix/GpuInfo.cuh"
+#include "../matrix/KmMatrix/KmMatrix.hpp"
+#include "../matrix/KmMatrix/Generator.hpp"
+#include "../matrix/KmMatrix/Generator.cuh"
+#include "../utils/GpuInfo.cuh"
+#include "../utils/utils.cuh"
 
 constexpr double ESP = 1e-8;
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace kMeans {
+
+using namespace Matrix;
 
 namespace detail {
 
@@ -202,7 +203,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
 
 // FIXME: Make kmeans++ a derived class of KmeansInitBase
 
-}  // namespace Kmeans
-}  // namespace H2O4GPU
+}  // namespace kMeans
+}  // namespace h2o4gpu
 
 #endif  // KMEANS_INIT_H_

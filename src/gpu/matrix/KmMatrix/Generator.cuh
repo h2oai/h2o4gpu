@@ -10,11 +10,11 @@
 
 #include "Generator.hpp"
 #include "KmMatrix.hpp"
-#include "utils.cuh"
+#include "../../utils/utils.cuh"
 
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 namespace kernel {
 // Split the definition to avoid multiple definition.
@@ -45,9 +45,9 @@ struct UniformGenerator : public GeneratorBase<T> {
     random_numbers_ = KmMatrix<T> (1, size_);
 
     if (dev_states_ != nullptr) {
-      CUDA_CHECK(cudaFree(dev_states_));
+      safe_cuda(cudaFree(dev_states_));
     }
-    CUDA_CHECK(cudaMalloc((void **)&dev_states_, size_ * sizeof(curandState)));
+    safe_cuda(cudaMalloc((void **)&dev_states_, size_ * sizeof(curandState)));
     kernel::setup_random_states<<<div_roundup(size_, 256), 256>>>(
         seed_, dev_states_, size_);
   }
@@ -60,7 +60,7 @@ struct UniformGenerator : public GeneratorBase<T> {
 
   UniformGenerator (size_t _size, int _seed) {
     if (_size == 0) {
-      M_ERROR("Zero size for generate is not allowed.");
+      h2o4gpu_error("Zero size for generate is not allowed.");
     }
     initialize(_size);
   }
@@ -70,7 +70,7 @@ struct UniformGenerator : public GeneratorBase<T> {
 
   ~UniformGenerator () {
     if (dev_states_ != nullptr) {
-      CUDA_CHECK(cudaFree(dev_states_));
+      safe_cuda(cudaFree(dev_states_));
     }
   }
 
@@ -87,7 +87,7 @@ struct UniformGenerator : public GeneratorBase<T> {
 
   KmMatrix<T> generate(size_t _size) override {
     if (_size == 0) {
-      M_ERROR("Zero size for generate is not allowed.");
+      h2o4gpu_error("Zero size for generate is not allowed.");
     }
     if (_size != size_) {
       initialize(_size);
@@ -96,5 +96,5 @@ struct UniformGenerator : public GeneratorBase<T> {
   }
 };
   
-}  // H2O4GPU
-}  // KMeans
+}  // namespace h2o4gpu
+}  // namespace Matrix

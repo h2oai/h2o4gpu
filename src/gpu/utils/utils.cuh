@@ -9,29 +9,10 @@
 #include <ctime>
 #include <cusparse.h>
 
+#include "../../common/utils.h"
+
 namespace h2o4gpu
 {
-#define h2o4gpu_error(x) error(x, __FILE__, __LINE__);
-
-	inline void error(const char* e, const char* file, int line)
-	{
-		std::stringstream ss;
-		ss << e << " - " << file << "(" << line << ")";
-		//throw error_text;
-		std::cerr << ss.str() << std::endl;
-		exit(-1);
-	}
-
-#define h2o4gpu_check(condition, msg) check(condition, msg, __FILE__, __LINE__);
-
-	inline void check(bool val, const char* e, const char* file, int line)
-	{
-		if (!val)
-		{
-			error(e, file, line);
-		}
-	}
-
 
 #define safe_cuda(ans) throw_on_cuda_error((ans), __FILE__, __LINE__)
 
@@ -366,4 +347,56 @@ namespace h2o4gpu
 			                  return idx * col_size;
 		                  });
 	}
+
+HG_DEVINLINE size_t global_thread_idx () {
+  return threadIdx.x + blockIdx.x * blockDim.x;
+}
+
+HG_DEVINLINE size_t global_thread_idy () {
+  return threadIdx.y + blockIdx.y * blockDim.y; 
+}
+
+HG_DEVINLINE size_t grid_stride_x () {
+  return blockDim.x * gridDim.x;
+}
+
+HG_DEVINLINE size_t grid_stride_y () {
+  return blockDim.y * gridDim.y;
+}
+
+template <typename T1, typename T2>
+T1 HG_HOSTDEVINLINE div_roundup(const T1 a, const T2 b) {
+  return static_cast<T1>(ceil(static_cast<double>(a) / b));
+}
+
+
+// Work around for shared memory
+// https://stackoverflow.com/questions/20497209/getting-cuda-error-declaration-is-incompatible-with-previous-variable-name
+template <typename T>
+struct KernelSharedMem;
+
+template <>
+struct KernelSharedMem<float> {
+  __device__ float * ptr() {
+    extern __shared__ __align__(sizeof(float)) float s_float[];
+    return s_float;
+  }
+};
+
+template <>
+struct KernelSharedMem<double> {
+  __device__ double * ptr() {
+    extern __shared__ __align__(sizeof(double)) double s_double[];
+    return s_double;
+  }
+};
+
+template <>
+struct KernelSharedMem<int> {
+  __device__ int * ptr() {
+    extern __shared__ __align__(sizeof(int)) int s_int[];
+    return s_int;
+  }
+};
+
 }

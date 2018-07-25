@@ -5,8 +5,8 @@
 
 #include "KmMatrix.hpp"
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 template <typename T>
 KmMatrixProxy<T>::KmMatrixProxy(KmMatrix<T>& _other,
@@ -64,5 +64,5 @@ INSTANTIATE(float)
 INSTANTIATE(double)
 INSTANTIATE(int)
 
-}
-}
+}  // namespace Matrix
+}  // namespace h2o4gpu

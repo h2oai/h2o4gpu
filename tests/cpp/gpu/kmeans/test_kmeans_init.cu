@@ -5,22 +5,26 @@
 
 #include <gtest/gtest.h>
 
-#include "../../../../src/gpu/kmeans/KmMatrix/KmMatrix.hpp"
-#include "../../../../src/gpu/kmeans/KmMatrix/Generator.hpp"
-#include "../../../../src/gpu/kmeans/KmMatrix/Arith.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/KmMatrix.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/Generator.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/Arith.hpp"
 #include "../../../../src/gpu/kmeans/kmeans_init.cuh"
+#include "../../../../src/common/utils.h"
 
 #include <thrust/device_vector.h>
 #include <iostream>
 #include <memory>
 
-using namespace H2O4GPU::KMeans;
+using namespace h2o4gpu::kMeans;
+using namespace h2o4gpu::Matrix;
 
 template <typename T>
 struct GeneratorMock : GeneratorBase<T> {
  public:
   KmMatrix<T> generate() override {
-    M_ERROR("Not implemented");
+    h2o4gpu_error("Not implemented");
+    KmMatrix<T> res;
+    return res;
   }
 
   KmMatrix<T> generate(size_t _size) override {
@@ -155,7 +159,7 @@ TEST(KmeansLL, KmeansLLInit) {
     h_data[i] = i - 4;
   }
 
-  H2O4GPU::KMeans::KmMatrix<double> data (h_data, 6, 5);
+  KmMatrix<double> data (h_data, 6, 5);
 
   auto res = kmeans_ll_init(data, 2);
 

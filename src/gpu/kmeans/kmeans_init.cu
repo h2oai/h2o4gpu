@@ -15,14 +15,16 @@
 
 #include "kmeans_init.cuh"
 
-#include "KmMatrix/KmMatrix.hpp"
-#include "KmMatrix/Arith.hpp"
-#include "KmMatrix/utils.cuh"
-#include "KmMatrix/GpuInfo.cuh"
-#include "KmMatrix/blas.cuh"
+#include "../matrix/KmMatrix/KmMatrix.hpp"
+#include "../matrix/KmMatrix/Arith.hpp"
+#include "../matrix/KmMatrix/blas.cuh"
+#include "../utils/utils.cuh"
+#include "../utils/GpuInfo.cuh"
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace kMeans {
+
+using namespace Matrix;
 
 namespace kernel {
 // X^2 + Y^2, here only calculates the + operation.
@@ -116,7 +118,7 @@ KmMatrix<T> PairWiseDistanceOp<T>::operator()(KmMatrix<T>& _data,
           data_dot_.k_param(),
           centroids_dot_.k_param());
 
-  CUDA_CHECK(cudaGetLastError());
+  safe_cuda(cudaGetLastError());
 
   cublasHandle_t handle = GpuInfo::ins().cublas_handle();
 
@@ -191,7 +193,7 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
   void *d_temp_storage = NULL;
 
   // determine the temp_storage_bytes
-  CUDA_CHECK(cub::DeviceHistogram::HistogramEven(
+  safe_cuda(cub::DeviceHistogram::HistogramEven(
       d_temp_storage, temp_storage_bytes,
       min_indices.dev_ptr(),
       weights.dev_ptr(),
@@ -200,8 +202,8 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
       (T)min_indices.rows(),
       (int)_centroids.rows()));
 
-  CUDA_CHECK(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
-  CUDA_CHECK(cub::DeviceHistogram::HistogramEven(
+  safe_cuda(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
+  safe_cuda(cub::DeviceHistogram::HistogramEven(
       d_temp_storage, temp_storage_bytes,
       min_indices.dev_ptr(),    // d_samples
       weights.dev_ptr(),        // d_histogram
@@ -209,7 +211,7 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
       (T)0.0,                   // lower_level
       (T)min_indices.rows(),    // upper_level
       (int)_centroids.rows())); // num_samples
-  CUDA_CHECK(cudaFree(d_temp_storage));
+  safe_cuda(cudaFree(d_temp_storage));
 
   // Sort the indices by weights in ascending order, then use those at front
   // as result.
@@ -352,7 +354,7 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
         "k must be less than or equal to the number of data points"
         ", k: %lu, data points: %lu",
         _k, _data.rows());
-    M_USER_ERROR(err_msg);
+    h2o4gpu_error(err_msg);
   }
 
   if (seed_ < 0) {
@@ -433,5 +435,5 @@ INSTANTIATE(int)
 #undef INSTANTIATE
 }
 
-}  // namespace Kmeans
-}  // namespace H2O4GPU
+}  // namespace kMeans
+}  // namespace h2o4gpu

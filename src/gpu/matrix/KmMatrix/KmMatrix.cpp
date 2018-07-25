@@ -4,13 +4,13 @@
  */
 
 #include "KmMatrix.hpp"
-#include "KmConfig.h"
+
 #if USE_CUDA()
 #include "KmMatrixCuda.cuh"
 #endif
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 // ==============================
 // KmMatrixImpl implementation
@@ -222,7 +222,7 @@ KmMatrixProxy<T> KmMatrix<T>::row(size_t idx, bool dev_mem) {
 
 template <typename T>
 KmMatrixProxy<T> KmMatrix<T>::col(size_t idx) {
-  M_ERROR("Not implemented.");
+  h2o4gpu_error("Not implemented.");
   return KmMatrixProxy<T>(*this, 0, 0, 0);
 }
 
@@ -236,14 +236,14 @@ KmMatrix<T> KmMatrix<T>::rows(KmMatrix<T>& _index) {
     }
     res = impls[(int)Backend::CUDADense]->rows(_index);
   } else {
-    M_ERROR("Not implemented.");
+    h2o4gpu_error("Not implemented.");
   }
   return res;
 }
 
 template <typename T>
 KmMatrix<T> KmMatrix<T>::cols(KmMatrix<T>& _index) {
-  M_ERROR("Not implemented.");
+  h2o4gpu_error("Not implemented.");
   KmMatrix<T> res;
   return res;
 }
@@ -254,7 +254,7 @@ bool KmMatrix<T>::operator==(KmMatrix<T>& _rhs) {
     bool res = impls[(int)Backend::CUDADense]->equal(_rhs);
     return res;
   } else {
-    M_ERROR("Not implemented.");
+    h2o4gpu_error("Not implemented.");
     return false;
   }
 }
@@ -266,17 +266,17 @@ KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,
 
   if (_dim == KmMatrixDim::ROW) {
     if (cols() != _second.cols()) {
-      M_ERROR("Columns of first is not equal to second.");
+      h2o4gpu_error("Columns of first is not equal to second.");
     }
 
     if (backend_ == Backend::CUDADense) {
       res = impls[(int)Backend::CUDADense]->stack(_second, _dim);
     } else {
-      M_ERROR("Not implemented.");
+      h2o4gpu_error("Not implemented.");
     }
 
   } else {
-    M_ERROR("Not implemented.");
+    h2o4gpu_error("Not implemented.");
   }
 
   return res;
@@ -342,7 +342,7 @@ KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second,
   template KmMatrix<T> KmMatrix<T>::cols(KmMatrix<T>& _index);          \
   template bool KmMatrix<T>::operator==(KmMatrix<T> &_rhs);             \
   template KmMatrix<T> KmMatrix<T>::stack(KmMatrix<T> &_second,         \
-      H2O4GPU::KMeans::KmMatrixDim _dim);                               \
+                                          KmMatrixDim _dim);            \
   /* Helper functions */                                                \
   template std::ostream& operator<<(std::ostream& os, KmMatrix<T>& m);  \
   template KmMatrix<T> stack(KmMatrix<T>& _first, KmMatrix<T>& _second, \
@@ -354,5 +354,5 @@ INSTANTIATE(double)
 INSTANTIATE(int)
 
 #undef INSTANTIATE
-}  // namespace KMeans
-}  // namepsace H2O4GPU
+}  // namespace Matrix
+}  // namepsace h2o4gpu

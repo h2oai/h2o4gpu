@@ -3,10 +3,10 @@
 
 #include "KmMatrix.hpp"
 #include "blas.cuh"
-#include "utils.cuh"
+#include "../../utils/utils.cuh"
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 // FIXME: Using struct for operations is just keeping the possibility of
 // creating an unified operations for KmMatrix. For example, let KmMatrix
@@ -52,7 +52,7 @@ struct MinOp {
   KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim);
 };
 
-}      // namespace KMenas
-}      // namespace H204GPU
+}      // namespace Matrix
+}      // namespace h2o4gpu
 
 #endif  // M_ARITH_HPP_

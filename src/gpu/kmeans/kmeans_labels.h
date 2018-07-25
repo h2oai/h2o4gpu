@@ -9,8 +9,12 @@
 #include <sstream>
 #include <cublas_v2.h>
 #include <cfloat>
-#include "kmeans_general.h"
 #include <thrust/fill.h>
+
+#include "kmeans_general.h"
+#include "../utils/utils.cuh"
+
+using namespace h2o4gpu;
 
 inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=true) {
 	if (code != cudaSuccess) {
@@ -21,20 +25,6 @@ inline void gpu_assert(cudaError_t code, const char *file, int line, bool abort=
 		ss >> file_and_line;
 		thrust::system_error(code, thrust::cuda_category(), file_and_line);
 	}
-}
-
-
-inline cudaError_t throw_on_cuda_error(cudaError_t code, const char *file,
-                                       int line) {
-  if (code != cudaSuccess) {
-    std::stringstream ss;
-    ss << file << "(" << line << ")";
-    std::string file_and_line;
-    ss >> file_and_line;
-    thrust::system_error(code, thrust::cuda_category(), file_and_line);
-  }
-
-  return code;
 }
 
 #ifdef CUBLAS_API_H_
@@ -71,23 +61,6 @@ static const char *cudaGetErrorEnum(cublasStatus_t error)
     return "<unknown>";
 }
 #endif
-
-inline cublasStatus_t throw_on_cublas_error(cublasStatus_t code, const char *file,
-                                       int line) {
-
-
-  if (code != CUBLAS_STATUS_SUCCESS) {
-    fprintf(stderr,"cublas error: %s %s %d\n", cudaGetErrorEnum(code), file, line);
-    std::stringstream ss;
-    ss << file << "(" << line << ")";
-    std::string file_and_line;
-    ss >> file_and_line;
-    thrust::system_error(code, thrust::cuda_category(), file_and_line);
-  }
-
-  return code;
-}
-
 
 extern cudaStream_t cuda_stream[MAX_NGPUS];
 

@@ -12,8 +12,8 @@
 #include "KmMatrixCuda.cuh"
 #include "KmMatrix.hpp"
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 template <typename T>
 CudaKmMatrixImpl<T>::CudaKmMatrixImpl(KmMatrix<T> * _par) :
@@ -173,7 +173,7 @@ KmMatrix<T> CudaKmMatrixImpl<T>::stack(KmMatrix<T>& _second,
                                        KmMatrixDim _dim) {
   if (_dim == KmMatrixDim::ROW) {
     if (KmMatrixImpl<T>::matrix_->cols() != _second.cols()) {
-      M_ERROR("Columns of first is not equal to second.");
+      h2o4gpu_error("Columns of first is not equal to second.");
     }
     host_to_device();
 
@@ -195,7 +195,9 @@ KmMatrix<T> CudaKmMatrixImpl<T>::stack(KmMatrix<T>& _second,
     return res;
   } else {
     // FIXME
-    M_ERROR("Not implemented.");
+    h2o4gpu_error("Not implemented.");
+    KmMatrix<T> res;
+    return res;
   }
 }
 
@@ -229,5 +231,6 @@ INSTANTIATE(double)
 INSTANTIATE(int)
 
 #undef INSTANTIATE
-}  // namespace H204GPU
-}  // namespace Array
+
+}  // namespace Matrix
+}  // namespace h2o4gpu

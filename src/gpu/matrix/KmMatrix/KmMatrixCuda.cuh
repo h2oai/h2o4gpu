@@ -10,8 +10,8 @@
 #include "thrust/device_vector.h"
 #include <memory>
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 template <typename T>
 class KmMatrix;
@@ -81,7 +81,7 @@ class CudaKmMatrixImpl : public KmMatrixImpl<T> {
   virtual bool on_device() const override;
 };
 
-}  // MkMatrix
-}  // H204GPU
+}  // namespace Matrix
+}  // namespace h2o4gpu
 
 #endif

@@ -1,6 +1,8 @@
 #include "Arith.hpp"
-namespace H2O4GPU {
-namespace KMeans {
+#include "../../utils/GpuInfo.cuh"
+
+namespace h2o4gpu {
+namespace Matrix {
 
 namespace kernel {
 
@@ -121,7 +123,9 @@ KmMatrix<int> ArgMinOp<T>::argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
     return _res;
   } else {
     // FIXME
-    M_ERROR("Not implemented");
+    h2o4gpu_error("Not implemented");
+    KmMatrix<int> res;
+    return res;
   }
 }
 
@@ -135,7 +139,9 @@ KmMatrix<T> MinOp<T>::min(KmMatrix<T>& _val, KmMatrixDim _dim) {
     return _res;
   } else {
     // FIXME
-    M_ERROR("Not implemented");
+    h2o4gpu_error("Not implemented");
+    KmMatrix<T> res;
+    return res;
   }
 }
 
@@ -159,5 +165,5 @@ INSTANTIATE(double)
 INSTANTIATE(float)
 INSTANTIATE(int)
 
-}      // namespace KMenas
-}      // namespace H204GPU
+}      // namespace Matrix
+}      // namespace h2o4gpu

@@ -6,8 +6,8 @@
 #include <cublas_v2.h>
 #include <curand_kernel.h>
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 namespace kernel {
 
 __global__ void setup_random_states(int _seed, curandState *_state,
@@ -59,5 +59,5 @@ __global__ void generate_uniform_kernel(int *_res,
 }
 
 }  // namespace kernel
-}  // namespace KMeans
-}  // namespace H2O4GPU
+}  // namespace Matrix
+}  // namespace h2o4gpu

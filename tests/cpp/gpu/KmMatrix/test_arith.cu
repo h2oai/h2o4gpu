@@ -2,12 +2,12 @@
 #include <thrust/device_vector.h>
 #include <vector>
 
-#include "../../../../src/gpu/kmeans/KmMatrix/KmMatrix.hpp"
-#include "../../../../src/gpu/kmeans/KmMatrix/Arith.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/KmMatrix.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/Arith.hpp"
 
 #include <iostream>
 
-using namespace H2O4GPU::KMeans;
+using namespace h2o4gpu::Matrix;
 
 constexpr float esp = 0.001f;
 

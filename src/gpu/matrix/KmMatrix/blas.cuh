@@ -7,12 +7,12 @@
 #define KM_BLAS_CUH_
 
 #include <cublas_v2.h>
-#include "KmConfig.h"
+#include "../../utils/utils.cuh"
 
 // C++ Wrappers for cublas
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 namespace Blas {
 // LEVEL 1
@@ -20,7 +20,7 @@ inline void axpy(cublasHandle_t handle, int n,
                  const double *alpha,
                  const double *x, int incx,
                  double *y, int incy) {
-  CUBLAS_CHECK(cublasDaxpy(handle, n,
+  safe_cublas(cublasDaxpy(handle, n,
                            alpha,
                            x, incx,
                            y, incy));}
@@ -29,7 +29,7 @@ inline void axpy(cublasHandle_t handle, int n,
                  const float *alpha,
                  const float *x, int incx,
                  float *y, int incy) {
-  CUBLAS_CHECK(cublasSaxpy(handle, n,
+  safe_cublas(cublasSaxpy(handle, n,
                            alpha,
                            x, incx,
                            y, incy));}
@@ -38,7 +38,7 @@ inline void axpy(cublasHandle_t handle, int n,
                  const int *alpha,
                  const int *x, int incx,
                  int *y, int incy) {
-  CUBLAS_CHECK(cublasSaxpy(handle, n,
+  safe_cublas(cublasSaxpy(handle, n,
                            (const float *)alpha,
                            (const float *)x, incx,
                            (float *)y, incy));}
@@ -57,7 +57,7 @@ inline void gemm(cublasHandle_t handle,
                  const float *beta, /* host or device pointer */
                  float *C,
                  int ldc) {
-  CUBLAS_CHECK(cublasSgemm(handle,
+  safe_cublas(cublasSgemm(handle,
                            transa, transb,
                            m, n, k,
                            alpha, /* host or device pointer */
@@ -80,7 +80,7 @@ inline void gemm(cublasHandle_t handle,
                  const double *beta, /* host or device pointer */
                  double *C,
                  int ldc) {
-  CUBLAS_CHECK(cublasDgemm(handle,
+  safe_cublas(cublasDgemm(handle,
                            transa,
                            transb,
                            m,
@@ -109,7 +109,7 @@ inline void gemm(cublasHandle_t handle,
                  const int *beta, /* host or device pointer */
                  int *C,
                  int ldc) {
-  CUBLAS_CHECK(cublasSgemm(handle,
+  safe_cublas(cublasSgemm(handle,
                            transa, transb,
                            m, n, k,
                            (const float*)alpha, /* host or device pointer */
@@ -129,7 +129,7 @@ inline void gemm_batched(cublasHandle_t handle,
                          const double *beta,
                          double          *Carray[], int ldc, 
                          int batchCount) {
-  CUBLAS_CHECK(cublasDgemmBatched(handle,
+  safe_cublas(cublasDgemmBatched(handle,
                                   transa, 
                                   transb,
                                   m, n, k,
@@ -151,7 +151,7 @@ inline void gemm_batched(cublasHandle_t handle,
                          const float *beta,
                          float *Carray[], int ldc, 
                          int batchCount) {
-  CUBLAS_CHECK(cublasSgemmBatched(handle,
+  safe_cublas(cublasSgemmBatched(handle,
                                   transa, 
                                   transb,
                                   m, n, k,
@@ -173,7 +173,7 @@ inline void gemm_batched(cublasHandle_t handle,
                          const int *beta,
                          float *Carray[], int ldc, 
                          int batchCount) {
-  CUBLAS_CHECK(cublasSgemmBatched(handle,
+  safe_cublas(cublasSgemmBatched(handle,
                                   transa, 
                                   transb,
                                   m, n, k,
@@ -196,7 +196,7 @@ inline void gemm_strided_batched(
     const double* beta,
     double* C, int ldC, int strideC,
     int batchCount) {
-  CUBLAS_CHECK(cublasDgemmStridedBatched(handle,
+  safe_cublas(cublasDgemmStridedBatched(handle,
                                          transA, 
                                          transB,
                                          M, N, K,
@@ -221,7 +221,7 @@ inline void gemm_strided_batched(
     const float* beta,
     float* C, int ldC, int strideC,
     int batchCount) {
-  CUBLAS_CHECK(cublasSgemmStridedBatched(handle,
+  safe_cublas(cublasSgemmStridedBatched(handle,
                                          transA, 
                                          transB,
                                          M, N, K,
@@ -246,7 +246,7 @@ inline void gemm_strided_batched(
     const int* beta,
     int* C, int ldC, int strideC,
     int batchCount) {
-  CUBLAS_CHECK(cublasSgemmStridedBatched(handle,
+  safe_cublas(cublasSgemmStridedBatched(handle,
                                          transA, 
                                          transB,
                                          M, N, K,
@@ -262,7 +262,7 @@ inline void gemm_strided_batched(
 }
 
 }  // Blas
-}  // KMeans
-}  // H2O4GPU
+}  // Matrix
+}  // h2o4gpu
 
 #endif  // KM_BLAS_CUH_

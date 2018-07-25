@@ -11,15 +11,14 @@
 #include <memory>
 #include <iomanip>
 #include <stdexcept>
-
-#include "KmConfig.h"
+#include "../../../common/utils.h"
 
 #if USE_CUDA()
 #include "KmMatrixCuda.cuh"
 #endif
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 template <typename T>
 class KmMatrixProxy;
@@ -53,13 +52,13 @@ struct kParam {
     cols = _other.cols;
     ptr = _other.ptr;
   }
-  M_HOSTDEV void operator=(const kParam& _other) {
+  HG_HOSTDEV void operator=(const kParam& _other) {
     rows = _other.rows;
     cols = _other.cols;
     ptr = _other.ptr;
   }
 
-  M_HOSTDEV size_t size() const {
+  HG_HOSTDEV size_t size() const {
     return rows * cols;
   }
 };
@@ -193,7 +192,7 @@ struct KmMatrixSizeError: public std::runtime_error
   {}
 };
 
-}  // namespace KMeans
-}  // namespace H2O4GPU
+}  // namespace Matrix
+}  // namespace h2o4gpu
 
 #endif

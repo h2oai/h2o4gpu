@@ -8,8 +8,8 @@
 
 #include "KmMatrix.hpp"
 
-namespace H2O4GPU {
-namespace KMeans {
+namespace h2o4gpu {
+namespace Matrix {
 
 template <typename T>
 class GeneratorBase {
@@ -18,8 +18,8 @@ class GeneratorBase {
   virtual KmMatrix<T> generate(size_t _size) = 0;
 };
 
-}
-}
+}  // namespace Matrix
+}  // namespace h2o4gpu
 
 
 #endif  // GENERATOR_HPP_

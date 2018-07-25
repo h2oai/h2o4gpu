@@ -774,9 +774,9 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
             thrust::device,
             data[i]->begin(), data[i]->end(), h_init_data.begin());
       }
-      H2O4GPU::KMeans::KmMatrix<T> init_data(h_init_data, rows, cols);
-      H2O4GPU::KMeans::KmMatrix<T> final_centroids_matrix =
-          H2O4GPU::KMeans::KmeansLlInit<T>(seed, 1.5)(init_data, k);
+      h2o4gpu::kMeans::KmMatrix<T> init_data(h_init_data, rows, cols);
+      h2o4gpu::kMeans::KmMatrix<T> final_centroids_matrix =
+          h2o4gpu::kMeans::KmeansLlInit<T>(seed, 1.5)(init_data, k);
       thrust::host_vector<T> final_centroids (final_centroids_matrix.size());
       thrust::copy(
           final_centroids_matrix.dev_ptr(),

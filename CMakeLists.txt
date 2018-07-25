@@ -94,8 +94,7 @@ if(USE_CUDA)
   FILE(GLOB_RECURSE GPU_SOURCES
     src/*.cu
     src/*.cuh
-    src/gpu/kmeans/KmMatrix/*.cpp
-    src/gpu/kmeans/KmMatrix/*.hpp
+    src/gpu/matrix/*.cpp
     src/common/*.cpp
     src/common/*.h)
 

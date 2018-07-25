@@ -6,13 +6,14 @@
 #ifndef GPU_INFO_HPP_
 #define GPU_INFO_HPP_
 
-#include "KmConfig.h"
+#include "utils.cuh"
 
 #include <cublas_v2.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 
+namespace h2o4gpu {
 // Singleton class storing gpu info.
 // Call GpuInfo::ins() to use the class;
 class GpuInfo {
@@ -23,19 +24,19 @@ class GpuInfo {
 
  public:
   GpuInfo () {
-    CUDA_CHECK(cudaGetDeviceCount(&n_gpu_));
+    safe_cuda(cudaGetDeviceCount(&n_gpu_));
     n_sm_ = (int*) malloc (n_gpu_);
     handles_ = (cublasHandle_t*) malloc (n_gpu_);
 
     for (int i = 0; i < n_gpu_; ++i) {
       cudaDeviceGetAttribute(&n_sm_[i], cudaDevAttrMultiProcessorCount, i);
-      CUBLAS_CHECK(cublasCreate(&handles_[i]));
+      safe_cublas(cublasCreate(&handles_[i]));
     }
   }
   ~GpuInfo () {
     free (n_sm_);
     for (int i = 0; i < n_gpu_; ++i) {
-      CUBLAS_CHECK(cublasDestroy(handles_[i]));
+      safe_cublas(cublasDestroy(handles_[i]));
     }
     free (handles_);
   }
@@ -73,5 +74,7 @@ class GpuInfo {
     return _device < n_gpu_ && _device >= 0;
   }
 };
+
+}      // namespace h2o4gpu
 
 #endif  // GPU_INFO_HPP_

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <thrust/device_vector.h>
-#include "../../../../src/gpu/kmeans/KmMatrix/KmMatrix.hpp"
+#include "../../../../src/gpu/matrix/KmMatrix/KmMatrix.hpp"
 
 // r --gtest_filter=KmMatrix.KmMatrixHostProxy
 TEST(KmMatrix, KmMatrixProxyHostEqual) {
@@ -10,9 +10,9 @@ TEST(KmMatrix, KmMatrixProxyHostEqual) {
     vec[i] = i;
   }
 
-  H2O4GPU::KMeans::KmMatrix<double> mat (vec, rows, cols);
+  h2o4gpu::Matrix::KmMatrix<double> mat (vec, rows, cols);
 
-  H2O4GPU::KMeans::KmMatrix<double> row = mat.row(1);
+  h2o4gpu::Matrix::KmMatrix<double> row = mat.row(1);
 
   thrust::host_vector<double> res (cols);
 
@@ -20,7 +20,7 @@ TEST(KmMatrix, KmMatrixProxyHostEqual) {
     res[i] = v;
   }
 
-  H2O4GPU::KMeans::KmMatrix<double> res_mat (res, 1, cols);
+  h2o4gpu::Matrix::KmMatrix<double> res_mat (res, 1, cols);
 
   ASSERT_TRUE(res_mat == row);
 }
@@ -34,12 +34,12 @@ TEST(KmMatrix, KmMatrixProxyDevEqual) {
     vec[i] = i;
   }
 
-  H2O4GPU::KMeans::KmMatrix<double> mat (vec, rows, cols);
+  h2o4gpu::Matrix::KmMatrix<double> mat (vec, rows, cols);
   mat.set_name ("mat");
 
   mat.dev_ptr();
 
-  H2O4GPU::KMeans::KmMatrix<double> row = mat.row(1);
+  h2o4gpu::Matrix::KmMatrix<double> row = mat.row(1);
   row.set_name ("row");
 
   thrust::host_vector<double> res (cols);
@@ -48,7 +48,7 @@ TEST(KmMatrix, KmMatrixProxyDevEqual) {
     res[i] = v;
   }
 
-  H2O4GPU::KMeans::KmMatrix<double> res_mat (res, 1, cols);
+  h2o4gpu::Matrix::KmMatrix<double> res_mat (res, 1, cols);
   res_mat.set_name("res");
 
   ASSERT_TRUE(res_mat == row);
