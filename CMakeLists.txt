@@ -19,7 +19,7 @@ OPTION(DEV_BUILD  "Dev build" OFF)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
 SET(GPU_COMPUTE_VER "" CACHE STRING
   "Semicolon separated list of compute versions to be built against,  e.g. -DGPU_COMPUTE_VER='35;61'")
 
@@ -62,7 +62,6 @@ TARGET_LINK_LIBRARIES(cpuh2o4gpu ${BLAS_LIBRARIES})
 if(USE_CUDA)
   FIND_PACKAGE(CUDA 8.0 REQUIRED)
   FIND_PACKAGE(NVML REQUIRED)
-  find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
   #============= BUILD GPU LIBRARY
   ADD_DEFINITIONS(
@@ -90,7 +89,7 @@ if(USE_CUDA)
   FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
   MESSAGE("CUDA architecture flags ${GENCODE_FLAGS}")
 
-  SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+  SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -Wall;")
 
   FILE(GLOB_RECURSE GPU_SOURCES
     src/*.cu
@@ -107,15 +106,13 @@ if(USE_CUDA)
     SET(NVTX_LIBRARY nvToolsExt)
   endif()
 
-  include_directories(${EIGEN3_INCLUDE_DIR})
   TARGET_LINK_LIBRARIES(gpuh2o4gpu
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_cusolver_LIBRARY}
     ${CUDA_cusparse_LIBRARY}
     ${BLAS_LIBRARIES}
     ${NVTX_LIBRARY}
-    ${NVML_LIBRARY}
-    Eigen3::Eigen)
+    ${NVML_LIBRARY})
   #============= BUILD GPU LIBRARY
 endif()
 
