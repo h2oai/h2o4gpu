@@ -53,7 +53,7 @@ struct kParam {
     cols = _other.cols;
     ptr = _other.ptr;
   }
-  kParam operator=(const kParam& _other) {
+  M_HOSTDEV void operator=(const kParam& _other) {
     rows = _other.rows;
     cols = _other.cols;
     ptr = _other.ptr;

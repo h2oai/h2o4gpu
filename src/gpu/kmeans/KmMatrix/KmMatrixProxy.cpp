@@ -12,8 +12,8 @@ template <typename T>
 KmMatrixProxy<T>::KmMatrixProxy(KmMatrix<T>& _other,
                                 size_t _start, size_t _end, size_t _stride,
                                 kParam<T>& _param)
-    : orgi_ (_other), start_(_start), end_(_end), stride_(_stride),
-      param_(_param) {
+    : orgi_ (_other), param_(_param), start_(_start), end_(_end),
+      stride_(_stride) {
   assert(size() > 0);
 }
 

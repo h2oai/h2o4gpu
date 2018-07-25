@@ -34,7 +34,7 @@ class GpuInfo {
   }
   ~GpuInfo () {
     free (n_sm_);
-    for (size_t i = 0; i < n_gpu_; ++i) {
+    for (int i = 0; i < n_gpu_; ++i) {
       CUBLAS_CHECK(cublasDestroy(handles_[i]));
     }
     free (handles_);

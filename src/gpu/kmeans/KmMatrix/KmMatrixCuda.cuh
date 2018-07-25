@@ -7,7 +7,7 @@
 #define KM_MATRIX_CUDA_CUH_
 
 #include "KmMatrix.hpp"
-#include "thrust/device_vector.h";
+#include "thrust/device_vector.h"
 #include <memory>
 
 namespace H2O4GPU {

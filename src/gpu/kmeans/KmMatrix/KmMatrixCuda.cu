@@ -48,10 +48,9 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
 
   T* raw_ptr;
 
-  assert (raw_ptr != nullptr && raw_ptr != NULL);
-
   if (_other.on_device()) {
     raw_ptr = _other.dev_ptr();
+    assert (raw_ptr);
     thrust::device_ptr<T> ptr (raw_ptr);
     ptr += _start;
     d_vector_.resize(_size);
@@ -59,6 +58,7 @@ CudaKmMatrixImpl<T>::CudaKmMatrixImpl(
     thrust::copy(ptr, ptr + _size, d_vector_.begin());
   } else {
     raw_ptr = _other.host_ptr();
+    assert (raw_ptr);
     raw_ptr += _start;
     h_vector_.resize(_size);
     on_device_ = false;

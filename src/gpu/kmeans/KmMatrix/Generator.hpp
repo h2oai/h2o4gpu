@@ -14,8 +14,8 @@ namespace KMeans {
 template <typename T>
 class GeneratorBase {
  public:
-  virtual KmMatrix<T> generate() {};
-  virtual KmMatrix<T> generate(size_t _size) {};
+  virtual KmMatrix<T> generate() = 0;
+  virtual KmMatrix<T> generate(size_t _size) = 0;
 };
 
 }

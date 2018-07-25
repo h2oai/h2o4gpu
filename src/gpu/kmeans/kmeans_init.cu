@@ -239,7 +239,7 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
         size_t in_end = (index + 1) * cols;
 
         size_t res_begin = idx * cols;
-        size_t res_end = (idx + 1) * cols;
+
         for (size_t i = in_begin, j = res_begin; i < in_end; ++i, ++j) {
           new_centroids_ptr[j] = old_centroids_ptr[i];
         }
@@ -333,7 +333,7 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
     sprintf(
         err_msg,
         "k must be less than or equal to the number of data points"
-        ", k: %u, data points: %u",
+        ", k: %lu, data points: %lu",
         _k, _data.rows());
     M_USER_ERROR(err_msg);
   }
@@ -367,7 +367,7 @@ KmeansLlInit<T, ReclusterPolicy>::operator()(KmMatrix<T>& _data, size_t _k) {
     centroids = stack(centroids, new_centroids, KmMatrixDim::ROW);
   }
 
-  if (centroids.rows() < k_) {
+  if (centroids.rows() < _k) {
     // FIXME: When n_centroids < k
     // Get random selection in?
     M_ERROR("Not implemented.");

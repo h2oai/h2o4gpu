@@ -110,7 +110,6 @@ TEST(KmeansLL, GreedyRecluster) {
 
 // r --gtest_filter=KmeansLL.KmeansLLInit
 TEST(KmeansLL, KmeansLLInit) {
-  int k = 2;
   std::unique_ptr<GeneratorBase<double>> mock_ptr (new GeneratorMock<double>);
   KmeansLlInit<double> kmeans_ll_init (mock_ptr, 2.5);
   thrust::host_vector<double> h_data (30);
