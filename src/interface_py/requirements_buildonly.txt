@@ -31,3 +31,4 @@ awscli==1.15.6
 # for pycharm
 matplotlib==2.0.2
 llvmlite==0.20.0
+pyzmq==17.0.0
