@@ -134,14 +134,40 @@ git clone https://github.com/h2oai/xgboost
 cd xgboost
 git checkout h2oai
 make -f Makefile2
-pip install python-package/dist/xgboost-0.71-py3-none-any.whl --upgrade
+pip install python-package/dist/xgboost*.whl --upgrade
 ```
 Note: By default the GPU NCCL version is installed using your local cuda version.
 
 If fully understand build, can do jump to latter steps of
 "fullinstall", but when in doubt always do "fullinstall."
 
+## Re-builds:
+
+"fullinstall" compiles and installs the entire package, which can take a while.  If you only changes certain files, a more limited re-build can be done:
+
+If only change C++ files, can just do:
+```
+make cpp
+```
+
+If only change python files, can just do:
+```
+make py
+```
+
+If only changed how python files were packages, can just do:
+```
+make install
+```
+
+If changed cpp files and want the python install to build and install, do:
+```
+make build install # same as make cpp py install
+```
+
 ## Build flags and options:
+
+To find a full list of used flags and options please refer to `make/config.mk`. Here are the most useful ones:
 
 To find a full list of used flags and options please refer to `make/config.mk`. Here are the most useful ones:
 

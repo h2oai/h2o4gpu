@@ -21,6 +21,8 @@ RUN yum install -y \
     make \
     ncurses-devel \
 	zlib-devel \
+    epel-release \
+    zeromq-devel \
 	wget \
 	blas-devel \
     openblas-devel \

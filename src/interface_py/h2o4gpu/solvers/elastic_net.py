@@ -257,7 +257,7 @@ class ElasticNetH2O(object):
         self.count_short = None
         self.count_more = None
 
-#TODO Add typechecking
+    #TODO Add typechecking
 
     def fit(self,
             train_x=None,
@@ -315,7 +315,7 @@ class ElasticNetH2O(object):
             source_dev=source_dev)
         return self
 
-#TODO Add typechecking
+    #TODO Add typechecking
     def predict(self,
                 valid_x=None,
                 valid_y=None,
@@ -369,7 +369,7 @@ class ElasticNetH2O(object):
         else:
             pass
 
-#save global variable
+        #save global variable
         oldstorefullpath = self.store_full_path
 
 
@@ -409,9 +409,9 @@ class ElasticNetH2O(object):
         #restore variable
         self.store_full_path = oldstorefullpath
         return self.valid_pred_vs_alphapure  # something like valid_y
-#TODO Add type checking
-#source_dev here because generally want to take in any pointer,
-#not just from our test code
+    #TODO Add type checking
+    #source_dev here because generally want to take in any pointer,
+    #not just from our test code
 
     def fit_ptr(
             self,
@@ -479,10 +479,10 @@ class ElasticNetH2O(object):
             free_input_data=free_input_data)
         self.time_fitonly = time.time() - time_fit0
 
-#TODO Add type checking
+    #TODO Add type checking
 
-#source_dev here because generally want to take in any pointer,
-#not just from our test code
+    #source_dev here because generally want to take in any pointer,
+    #not just from our test code
 
     def _fitorpredict_ptr(
             self,
@@ -628,7 +628,7 @@ class ElasticNetH2O(object):
             self._gpu_id,
             self.n_gpus,
             self._total_n_gpus,
-            self.ord,
+            self.ord, # 10
             m_train,
             n,
             m_valid,
@@ -638,7 +638,7 @@ class ElasticNetH2O(object):
             self.lambda_min_ratio,
             self.n_lambdas,
             self.n_folds,
-            self.n_alphas,
+            self.n_alphas, #20
             self.alpha_min,
             self.alpha_max,
             c_alphas,
@@ -648,17 +648,17 @@ class ElasticNetH2O(object):
             self.lambda_stop_early,
             self.glm_stop_early,
             self.glm_stop_early_error_fraction,
-            self.max_iter,
+            self.max_iter, # 30
             self.verbose,
-            a,
-            b,
-            c,
-            d,
-            e,
+            int(a) if a is not None else -1,
+            int(b) if b is not None else -1,
+            int(c) if c is not None else -1,
+            int(d) if d is not None else -1,
+            int(e) if e is not None else -1,
             self.store_full_path,
             self.x_vs_alpha_lambda,
             self.x_vs_alpha,
-            self.valid_pred_vs_alpha_lambda,
+            self.valid_pred_vs_alpha_lambda, # 40
             self.valid_pred_vs_alpha,
             count_full,
             count_short,
@@ -1038,7 +1038,7 @@ class ElasticNetH2O(object):
             tabulate(
                 error_train, headers=headers, tablefmt="pipe", floatfmt=".2f"))
 
-# ################## #Properties and setters of properties
+    # ################## #Properties and setters of properties
 
     @property
     def total_n_gpus(self):
@@ -1203,14 +1203,14 @@ class ElasticNetH2O(object):
     def tols_best(self):
         return self._tols2
 
-#     def score(self, X=None, y=None, sample_weight=None):
-#         if X is not None and y is not None:
-#             self.prediction = self.predict(
-#                 valid_x=X, valid_y=y, sample_weight=sample_weight)
-# #otherwise score makes no sense, need both X and y,
-# #else just return existing error
-# #TODO : Should return R ^ 2 and redo predict if X and y are passed
-#         return self.error
+    #     def score(self, X=None, y=None, sample_weight=None):
+    #         if X is not None and y is not None:
+    #             self.prediction = self.predict(
+    #                 valid_x=X, valid_y=y, sample_weight=sample_weight)
+    # #otherwise score makes no sense, need both X and y,
+    # #else just return existing error
+    # #TODO : Should return R ^ 2 and redo predict if X and y are passed
+    #         return self.error
 
     @classmethod
     def _get_param_names(cls):
@@ -1222,8 +1222,8 @@ class ElasticNetH2O(object):
             #No explicit constructor to introspect
             return []
 
-#introspect the constructor arguments to find the model parameters
-#to represent
+        #introspect the constructor arguments to find the model parameters
+        #to represent
         from ..utils.fixes import signature
         init_signature = signature(init)
         #Consider the constructor parameters excluding 'self'
@@ -1239,7 +1239,7 @@ class ElasticNetH2O(object):
                                    " %s with constructor %s doesn't "
                                    " follow this convention." %
                                    (cls, init_signature))
-#Extract and sort argument names excluding 'self'
+        #Extract and sort argument names excluding 'self'
         return sorted([p.name for p in parameters])
 
     def get_params(self, deep=True):
@@ -1267,7 +1267,7 @@ class ElasticNetH2O(object):
                 warnings.filters.pop(0)
 
 
-#XXX : should we rather test if instance of estimator ?
+            #XXX : should we rather test if instance of estimator ?
             if deep and hasattr(value, 'get_params'):
                 deep_items = value.get_params().items()
                 out.update((key + '__' + k, val) for k, val in deep_items)

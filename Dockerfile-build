@@ -63,6 +63,8 @@ RUN yum install -y \
         libpng-devel \
         freetype-devel \
         blas-devel \
+        epel-release \
+        zeromq-devel \
         openblas-devel && \
     wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
