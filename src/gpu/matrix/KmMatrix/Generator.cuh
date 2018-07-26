@@ -6,8 +6,6 @@
 #include <thrust/random.h>
 #include <random>
 
-#include <curand_kernel.h>
-
 #include "Generator.hpp"
 #include "KmMatrix.hpp"
 #include "../../utils/utils.cuh"
@@ -16,25 +14,9 @@
 namespace h2o4gpu {
 namespace Matrix {
 
-namespace kernel {
-// Split the definition to avoid multiple definition.
-__global__ void setup_random_states(int _seed, curandState *_state,
-                                    size_t _size);
-
-__global__ void generate_uniform_kernel(float *_res,
-                                        curandState *_state,
-                                        int _size);
-
-__global__ void generate_uniform_kernel(double *_res,
-                                        curandState *_state,
-                                        int _size);
-}
-
 template <typename T>
 struct UniformGenerator : public GeneratorBase<T> {
  private:
-  // FIXME: Use KmMatrix
-  curandState *dev_states_;
   size_t size_;
   // FIXME: Cache random_numbers_ in a safer way.
   KmMatrix<T> random_numbers_;
@@ -43,22 +25,15 @@ struct UniformGenerator : public GeneratorBase<T> {
   void initialize (size_t _size) {
     size_ = _size;
     random_numbers_ = KmMatrix<T> (1, size_);
-
-    if (dev_states_ != nullptr) {
-      safe_cuda(cudaFree(dev_states_));
-    }
-    safe_cuda(cudaMalloc((void **)&dev_states_, size_ * sizeof(curandState)));
-    kernel::setup_random_states<<<div_roundup(size_, 256), 256>>>(
-        seed_, dev_states_, size_);
   }
 
  public:
-  UniformGenerator() : dev_states_ (nullptr), size_ (0) {
+  UniformGenerator() : size_ (0) {
     std::random_device rd;
     seed_ = rd();
   }
 
-  UniformGenerator (size_t _size, int _seed) {
+  UniformGenerator (size_t _size, int _seed) : seed_(_seed) {
     if (_size == 0) {
       h2o4gpu_error("Zero size for generate is not allowed.");
     }
@@ -66,13 +41,9 @@ struct UniformGenerator : public GeneratorBase<T> {
   }
 
   UniformGenerator(int _seed) :
-      seed_(_seed), dev_states_(nullptr), size_ (0) {}
+      seed_(_seed), size_ (0) {}
 
-  ~UniformGenerator () {
-    if (dev_states_ != nullptr) {
-      safe_cuda(cudaFree(dev_states_));
-    }
-  }
+  ~UniformGenerator () {}
 
   UniformGenerator(const UniformGenerator<T>& _rhs) = delete;
   UniformGenerator(UniformGenerator<T>&& _rhs) = delete;
@@ -80,8 +51,18 @@ struct UniformGenerator : public GeneratorBase<T> {
   void operator=(UniformGenerator<T>&& _rhs) = delete;
 
   KmMatrix<T> generate() override {
-    kernel::generate_uniform_kernel<<<div_roundup(size_, 256), 256>>>
-        (random_numbers_.k_param().ptr, dev_states_, size_);
+    thrust::device_ptr<T> rn_ptr (random_numbers_.dev_ptr());
+    thrust::transform(
+        thrust::make_counting_iterator((size_t)0),
+        thrust::make_counting_iterator(size_),
+        rn_ptr,
+        [=] __device__ (int idx) {
+          thrust::default_random_engine rng(seed_);
+          thrust::uniform_real_distribution<T> dist;
+          rng.discard(idx);
+          return dist(rng);
+        });
+
     return random_numbers_;
   }
 
@@ -95,6 +76,6 @@ struct UniformGenerator : public GeneratorBase<T> {
     return generate();
   }
 };
-  
+
 }  // namespace h2o4gpu
 }  // namespace Matrix
