@@ -115,6 +115,8 @@ class KmeansRandomInit : public KmeansInitBase<T> {
  * Scalable K-Means++
  * </a>
  *
+ * @tparam ReclusterPolicy Policy for final recluster, default is
+ *    GreedyRecluster
  * @tparam Numeric data type.
  */
 template <
@@ -148,16 +150,14 @@ struct KmeansLlInit : public KmeansInitBase<T> {
 
   /*
    * Initialize KmeansLlInit algorithm, with default:
-   *  over_sample = 1.5,
-   *  seed = 0,
+   *  over_sample = 1.5.
    */
   KmeansLlInit () :
       over_sample_ (1.5f), seed_ (-1), k_ (0),
       generator_ (new UniformGenerator<T>) {}
 
   /*
-   * Initialize KmeansLlInit algorithm, with default:
-   *  seed = 0,
+   * Initialize KmeansLlInit algorithm.
    *
    * @param over_sample over_sample rate.
    *    \f$p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}\f$
@@ -174,6 +174,8 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    * @param seed Seed used to generate threshold for sampling centroids.
    * @param over_sample over_sample rate.
    *    \f$p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}\f$
+   *    Note that when \f$over_sample != 1\f$, the probability for each data
+   *    point doesn't add to 1.
    */
   KmeansLlInit (int _seed, T _over_sample) :
       seed_(_seed), over_sample_(_over_sample), k_(0),
@@ -186,6 +188,8 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    *    sampling centroids.
    * @param over_sample over_sample rate.
    *    \f$p_x = over_sample \times \frac{d^2(x, C)}{\Phi_X (C)}\f$
+   *    Note that when \f$over_sample != 1\f$, the probability for each data
+   *    point doesn't add to 1.
    */
   KmeansLlInit (std::unique_ptr<GeneratorBase<T>>& _gen, T _over_sample) :
       generator_(std::move(_gen)), over_sample_ (1.5f), seed_ (-1), k_(0) {}
