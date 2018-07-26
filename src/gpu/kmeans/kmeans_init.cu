@@ -69,23 +69,6 @@ __global__ void self_row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
   }
 }
 
-template <typename T>
-__global__ void self_row_min_sequential(kParam<T> _res, kParam<T> _val) {
-
-  size_t idx = global_thread_idx();
-  if (idx < _val.rows) {
-    T min = std::numeric_limits<T>::max();
-    for (size_t i = 0; i < _val.cols; ++i) {
-      T value = _val.ptr[idx * _val.cols + i];
-      if (value < min) {
-        min = value;
-      }
-    }
-    min += ESP;
-    _res.ptr[idx] = min;
-  }
-}
-
 }  // namespace kernel
 
 namespace detail {
@@ -154,18 +137,6 @@ struct SelfArgMinOp {
   }
 };
 
-// MinOp that adds ESP to 0 value.
-template <typename T>
-struct SelfMinOp {
-  KmMatrix<T> min(KmMatrix<T>& _val, KmMatrixDim _dim) {
-    size_t blocks = GpuInfo::ins().blocks(32);
-    KmMatrix<T> _res(_val.rows(), 1);
-    kernel::self_row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
-        _res.k_param(), _val.k_param());
-    return _res;
-  }
-};
-
 // We use counting to construct the weight as described in the paper. Counting
 // is performed by histogram algorithm.
 // For re-cluster, the paper suggests using K-Means++, but that will require
@@ -202,6 +173,7 @@ KmMatrix<T> GreedyRecluster<T>::recluster(KmMatrix<T>& _centroids, size_t _k) {
       (T)min_indices.rows(),
       (int)_centroids.rows()));
 
+  // cub has level bound, which deals with -1 returned by SelfArgMinOp
   safe_cuda(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
   safe_cuda(cub::DeviceHistogram::HistogramEven(
       d_temp_storage, temp_storage_bytes,
@@ -286,10 +258,11 @@ KmMatrix<T> KmeansLlInit<T, ReclusterPolicy>::probability(
       data_dot_, centroids_dot, distance_pairs_);
   distance_pairs_ = distance_op(_data, _centroids);
 
-  KmMatrix<T> min_distances = detail::SelfMinOp<T>().min(distance_pairs_,
-                                                         KmMatrixDim::ROW);
+  KmMatrix<T> min_distances = MinOp<T>().min(distance_pairs_,
+                                             KmMatrixDim::ROW);
 
   T cost = SumOp<T>().sum(min_distances);
+  cost += ESP;
 
   KmMatrix<T> prob (min_distances.rows(), 1);
   MulOp<T>().mul(prob, min_distances, over_sample_ * k_ / cost);

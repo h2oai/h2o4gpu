@@ -116,7 +116,9 @@ class KmeansRandomInit : public KmeansInitBase<T> {
  * </a>
  *
  * @tparam ReclusterPolicy Policy for final recluster, default is
- *    GreedyRecluster
+ *    GreedyRecluster.
+ *    Contract:
+ *      ReclusterPolicy::recluster(KmMatrix<T>& centroids, size_t _k)
  * @tparam Numeric data type.
  */
 template <

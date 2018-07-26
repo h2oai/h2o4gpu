@@ -165,8 +165,8 @@ TEST(KmeansLL, KmeansLLInit) {
 
   std::vector<double> h_sol =
       {
+        4,    5,    6,    7,    8,
         19,   20,   21,   22,   23,
-        5,    6,    7,    8,    9
       };
   KmMatrix<double> sol (h_sol, 2, 5);
   ASSERT_TRUE(sol == res);
