@@ -1,3 +1,4 @@
+#include <cub/device/device_segmented_reduce.cuh>
 #include "Arith.hpp"
 #include "../../utils/GpuInfo.cuh"
 
@@ -6,28 +7,21 @@ namespace Matrix {
 
 namespace kernel {
 
+// Compute segment offsets for cub segment funtion.
+template <typename T>
+__global__ void segment_offsets(kParam<int> _res, kParam<T> _val) {
+  size_t idx = global_thread_idx();
+  if (idx < _res.size()) {
+    _res.ptr[idx] = _val.cols * idx;
+  }
+}
+
 /*
  * Compute min value for each row.
  * @tparam T Numeric type of the data
  * @param _res The output matrix with shape m x 1
  * @param _val The input matrix with shape m x n
  */
-template <typename T>
-__global__ void row_min_sequential(kParam<T> _res, kParam<T> _val) {
-
-  size_t idx = global_thread_idx();
-  if (idx < _val.rows) {
-    T min = std::numeric_limits<T>::max();
-    for (size_t i = 0; i < _val.cols; ++i) {
-      T value = _val.ptr[idx * _val.cols + i];
-      if (value < min) {
-        min = value;
-      }
-    }
-    _res.ptr[idx] = min;
-  }
-}
-
 template <typename T>
 __global__ void row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
 
@@ -48,6 +42,7 @@ __global__ void row_argmin_sequential(kParam<int> _res, kParam<T> _val) {
 
 }  // namespace kernel
 
+// FIXME: The dot function deals with vector, not matrix.
 template <typename T>
 void DotOp<T>::dot(KmMatrix<T>& _res, KmMatrix<T>& _val) {
   this->dot(_res, _val, _val);
@@ -73,7 +68,8 @@ void VecBatchDotOp<T>::dot(KmMatrix<T>& _res, KmMatrix<T>& _val) {
   this->dot(_res, _val, _val);
 }
 template <typename T>
-void VecBatchDotOp<T>::dot(KmMatrix<T>& _res, KmMatrix<T>& _lhs, KmMatrix<T>& _rhs) {
+void VecBatchDotOp<T>::dot(KmMatrix<T>& _res,
+                           KmMatrix<T>& _lhs, KmMatrix<T>& _rhs) {
   constexpr T alpha = 1.0;
   constexpr T beta = 1.0;
   cublasHandle_t handle = GpuInfo::ins().cublas_handle();
@@ -117,6 +113,9 @@ T MeanOp<T>::mean(KmMatrix<T>& _val) {
 template <typename T>
 KmMatrix<int> ArgMinOp<T>::argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
   if (_dim == KmMatrixDim::ROW) {
+    // FIXME: Didn't use cub function, offsets occupies n * sizeof(T) memory,
+    // <index, value> occupies 2 * n * sizeof(T) memory considering memory
+    // alignment. That would be 3 * n * sizeof(T) in total.
     KmMatrix<int> _res(_val.rows(), 1);
     kernel::row_argmin_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
         _res.k_param(), _val.k_param());
@@ -131,12 +130,37 @@ KmMatrix<int> ArgMinOp<T>::argmin(KmMatrix<T>& _val, KmMatrixDim _dim) {
 
 template <typename T>
 KmMatrix<T> MinOp<T>::min(KmMatrix<T>& _val, KmMatrixDim _dim) {
-  size_t blocks = GpuInfo::ins().blocks(32);
   if (_dim == KmMatrixDim::ROW) {
-    KmMatrix<T> _res(_val.rows(), 1);
-    kernel::row_min_sequential<<<div_roundup(_val.rows(), 256), 256>>>(
-        _res.k_param(), _val.k_param());
-    return _res;
+    KmMatrix<T> res (_val.rows(), 1);
+    KmMatrix<int> offsets (_val.rows() + 1, 1);
+
+    kernel::segment_offsets<<<div_roundup(offsets.rows(), 256), 256>>>(
+        offsets.k_param(), _val.k_param());
+
+    void *d_temp_storage = NULL;
+    size_t temp_storage_bytes = 0;
+
+    safe_cuda(cub::DeviceSegmentedReduce::Min(
+        d_temp_storage,
+        temp_storage_bytes,
+        _val.dev_ptr(),
+        res.dev_ptr(),
+        _val.rows(),
+        offsets.dev_ptr(),
+        offsets.dev_ptr() + 1));
+
+    safe_cuda(cudaMalloc((void**)&d_temp_storage, temp_storage_bytes));
+    safe_cuda(cub::DeviceSegmentedReduce::Min(
+        d_temp_storage,
+        temp_storage_bytes,
+        _val.dev_ptr(),
+        res.dev_ptr(),
+        _val.rows(),
+        offsets.dev_ptr(),
+        offsets.dev_ptr() + 1));
+    safe_cuda(cudaFree(d_temp_storage));
+
+    return res;
   } else {
     // FIXME
     h2o4gpu_error("Not implemented");
