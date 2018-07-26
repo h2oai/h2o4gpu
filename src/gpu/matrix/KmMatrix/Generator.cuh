@@ -10,12 +10,11 @@
 #include "KmMatrix.hpp"
 #include "../../utils/utils.cuh"
 
-
 namespace h2o4gpu {
 namespace Matrix {
 
 template <typename T>
-struct UniformGenerator : public GeneratorBase<T> {
+struct UniformRandomGenerator : public RandomGeneratorBase<T> {
  private:
   size_t size_;
   // FIXME: Cache random_numbers_ in a safer way.
@@ -28,27 +27,27 @@ struct UniformGenerator : public GeneratorBase<T> {
   }
 
  public:
-  UniformGenerator() : size_ (0) {
+  UniformRandomGenerator() : size_ (0) {
     std::random_device rd;
     seed_ = rd();
   }
 
-  UniformGenerator (size_t _size, int _seed) : seed_(_seed) {
+  UniformRandomGenerator (size_t _size, int _seed) : seed_(_seed) {
     if (_size == 0) {
       h2o4gpu_error("Zero size for generate is not allowed.");
     }
     initialize(_size);
   }
 
-  UniformGenerator(int _seed) :
+  UniformRandomGenerator(int _seed) :
       seed_(_seed), size_ (0) {}
 
-  ~UniformGenerator () {}
+  ~UniformRandomGenerator () {}
 
-  UniformGenerator(const UniformGenerator<T>& _rhs) = delete;
-  UniformGenerator(UniformGenerator<T>&& _rhs) = delete;
-  void operator=(const UniformGenerator<T>& _rhs) = delete;
-  void operator=(UniformGenerator<T>&& _rhs) = delete;
+  UniformRandomGenerator(const UniformRandomGenerator<T>& _rhs) = delete;
+  UniformRandomGenerator(UniformRandomGenerator<T>&& _rhs) = delete;
+  void operator=(const UniformRandomGenerator<T>& _rhs) = delete;
+  void operator=(UniformRandomGenerator<T>&& _rhs) = delete;
 
   KmMatrix<T> generate() override {
     thrust::device_ptr<T> rn_ptr (random_numbers_.dev_ptr());

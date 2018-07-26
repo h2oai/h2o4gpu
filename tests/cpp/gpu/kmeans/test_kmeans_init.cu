@@ -19,7 +19,7 @@ using namespace h2o4gpu::kMeans;
 using namespace h2o4gpu::Matrix;
 
 template <typename T>
-struct GeneratorMock : GeneratorBase<T> {
+struct GeneratorMock : RandomGeneratorBase<T> {
  public:
   KmMatrix<T> generate() override {
     h2o4gpu_error("Not implemented");
@@ -46,7 +46,7 @@ TEST(KmeansRandom, Init) {
     h_data[i] = i * 2;
   }
   KmMatrix<float> data (h_data, 4, 5);
-  std::unique_ptr<GeneratorBase<float>> gen (new GeneratorMock<float>());
+  std::unique_ptr<RandomGeneratorBase<float>> gen (new GeneratorMock<float>());
   KmeansRandomInit<float> init (gen);
 
   auto res = init(data, 2);
@@ -134,7 +134,7 @@ TEST(KmeansLL, GreedyRecluster) {
 
 // r --gtest_filter=KmeansLL.KmeansLLInit
 TEST(KmeansLL, KmeansLLInit) {
-  std::unique_ptr<GeneratorBase<double>> mock_ptr (new GeneratorMock<double>);
+  std::unique_ptr<RandomGeneratorBase<double>> mock_ptr (new GeneratorMock<double>);
   KmeansLlInit<double> kmeans_ll_init (mock_ptr, 2.5);
   thrust::host_vector<double> h_data (30);
   // We split the points into two groups, but the result is statistic.

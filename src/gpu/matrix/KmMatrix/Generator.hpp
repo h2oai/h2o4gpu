@@ -12,7 +12,7 @@ namespace h2o4gpu {
 namespace Matrix {
 
 template <typename T>
-class GeneratorBase {
+class RandomGeneratorBase {
  public:
   virtual KmMatrix<T> generate() = 0;
   virtual KmMatrix<T> generate(size_t _size) = 0;

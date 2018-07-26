@@ -82,19 +82,19 @@ template <typename T>
 class KmeansRandomInit : public KmeansInitBase<T> {
  private:
   int seed_;
-  std::unique_ptr<GeneratorBase<T>> generator_impl_;
+  std::unique_ptr<RandomGeneratorBase<T>> generator_impl_;
 
  public:
   /*
    * @param seed Random seed for generating centroids.
    */
   KmeansRandomInit(size_t _seed) :
-      seed_(_seed), generator_impl_ (new UniformGenerator<T>) {}
+      seed_(_seed), generator_impl_ (new UniformRandomGenerator<T>) {}
 
   /*
    * @param gen Unique pointer to Random generator for generating centroids.
    */
-  KmeansRandomInit(std::unique_ptr<GeneratorBase<T>>& _gen) :
+  KmeansRandomInit(std::unique_ptr<RandomGeneratorBase<T>>& _gen) :
       generator_impl_(std::move(_gen)) {}
 
   virtual ~KmeansRandomInit() override {}
@@ -134,7 +134,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
   // Suggested in original paper, 8 is usually enough.
   constexpr static float MAX_ITER = 8;
 
-  std::unique_ptr<GeneratorBase<T>> generator_;
+  std::unique_ptr<RandomGeneratorBase<T>> generator_;
 
   // Buffer like variables
   // store the self dot product of each data point
@@ -156,7 +156,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    */
   KmeansLlInit () :
       over_sample_ (1.5f), seed_ (-1), k_ (0),
-      generator_ (new UniformGenerator<T>) {}
+      generator_ (new UniformRandomGenerator<T>) {}
 
   /*
    * Initialize KmeansLlInit algorithm.
@@ -168,7 +168,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    */
   KmeansLlInit (T _over_sample) :
       over_sample_ (_over_sample), seed_ (-1), k_ (0),
-      generator_ (new UniformGenerator<T>) {}
+      generator_ (new UniformRandomGenerator<T>) {}
 
   /*
    * Initialize KmeansLlInit algorithm.
@@ -181,7 +181,7 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    */
   KmeansLlInit (int _seed, T _over_sample) :
       seed_(_seed), over_sample_(_over_sample), k_(0),
-      generator_ (new UniformGenerator<T>(seed_)) {}
+      generator_ (new UniformRandomGenerator<T>(seed_)) {}
 
   /*
    * Initialize KmeansLlInit algorithm.
@@ -193,8 +193,9 @@ struct KmeansLlInit : public KmeansInitBase<T> {
    *    Note that when \f$over_sample != 1\f$, the probability for each data
    *    point doesn't add to 1.
    */
-  KmeansLlInit (std::unique_ptr<GeneratorBase<T>>& _gen, T _over_sample) :
-      generator_(std::move(_gen)), over_sample_ (1.5f), seed_ (-1), k_(0) {}
+  KmeansLlInit (std::unique_ptr<RandomGeneratorBase<T>>& _gen, T _over_sample) :
+      generator_(std::move(_gen)), over_sample_ (_over_sample), seed_ (-1),
+      k_(0) {}
 
   virtual ~KmeansLlInit () override {}
 
