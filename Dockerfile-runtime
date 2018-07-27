@@ -72,6 +72,7 @@ COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
   chmod a+rwx requirements*.txt && \
+  python -m pip install --upgrade pip && \
   pip install --no-cache-dir -r requirements.txt && \
   pip install --no-cache-dir -r requirements_runtime_demos.txt
 
