@@ -38,7 +38,7 @@ namespace pca
 			matrix::Matrix<float>XOnes(X.rows(), 1);
 			XOnes.fill(1.0f);
 			matrix::Matrix<float>XColMean(X.columns(), 1);
-			matrix:multiply(X, XOnes, XColMean, context, true, false, 1.0f);
+			matrix::multiply(X, XOnes, XColMean, context, true, false, 1.0f);
 			float m = X.rows();
 			multiply(XColMean, 1/m, context);
 			XColMean.copy_to_host(_mean);
