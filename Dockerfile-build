@@ -65,7 +65,8 @@ RUN yum install -y \
         blas-devel \
         epel-release \
         zeromq-devel \
-        openblas-devel && \
+        openblas-devel \
+	zeromq-devel && \
     wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/`arch`-centos7/llvm.tar.bz2 && \
