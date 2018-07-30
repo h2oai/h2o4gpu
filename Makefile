@@ -179,7 +179,10 @@ clean_py:
 
 clean_xgboost:
 	-$(PYTHON) -m pip uninstall -y xgboost
-	rm -rf xgboost/build/
+	-rm -rf xgboost/build/
+	-rm -rf xgboost
+	git submodule init xgboost
+	git submodule update xgboost
 
 clean_lightgbm:
 	-$(PYTHON) -m pip uninstall -y lightgbm
