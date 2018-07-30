@@ -170,8 +170,8 @@ def test_elastic_net_ptr_driver():
     print(df.shape)
     X = np.array(df.iloc[:,:df.shape[1]-1], dtype='float32', order='C')
     y = np.array(df.iloc[:, df.shape[1]-1], dtype='float32', order='C')
-    #ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2)
-    ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
+    ElasticNet(X, y, nGPUs=2, nlambda=100, nfolds=5, nalpha=5, validFraction=0)
+    #ElasticNet(X, y, nGPUs=1, nlambda=100, nfolds=1, nalpha=1, validFraction=0)
 
 def test_elastic_net_ptr_driver2():
     import numpy as np

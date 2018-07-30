@@ -573,8 +573,14 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		int physicalcores=omt;///2; // asssume hyperthreading Intel processor (doens't improve much to ensure physical cores used0
 		// set number of mkl threads per openmp thread so that not oversubscribing cores
 		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
+		if(verbose){
+		    cerr << "OpenMP: %d" << me << endl;
+		}
 #else
 		int me = 0;
+		if(verbose){
+		    cerr << "No OpenMP: %d" << me << endl;
+		}
 #endif
 
 		int blasnumber;
@@ -587,6 +593,10 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		// choose GPU device ID for each thread
 		int wDev = gpu_id + (nGPUs > 0 ? me % nGPUs : 0);
 		wDev = wDev % totalnGPUs;
+		if(verbose){
+		    cerr << "OpenMP: wDev=%d" << wDev << endl;
+		}
+
 
 		FILE *fil = NULL;
 		if(VERBOSEANIM){

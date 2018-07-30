@@ -80,9 +80,13 @@ T getError(const T*weights, size_t len, const T *predicted, const T *actual,
 		for (size_t i = 0; i < len; ++i) {
 			double d = predicted[i] - actual[i];
 			rmse += d * d * weights[i];
+			// std::cerr << "predicted " << predicted[i] << " actual " << actual[i] << " weight " << weights[i] << std::endl;
 		}
 
+	    // std::cerr << "rmse " << rmse << std::endl;
 		rmse /= weightsum;
+	    // std::cerr << "rmse2 " << rmse << std::endl;
+	    // std::cerr << "weightsum " << weightsum << std::endl;
 		return static_cast<T>(std::sqrt(rmse));
 	} else { //logistic
 		double weightsum = 0;
