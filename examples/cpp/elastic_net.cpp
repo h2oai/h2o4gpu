@@ -189,10 +189,12 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 
   
   double t = timer<double>();
-#if USEPARALLEL != 0
+#ifdef DONTUSEPARALLEL
+
+#else
 #pragma omp parallel proc_bind(master)
 #endif
-  {
+    {
 #ifdef _OPENMP
     int me = omp_get_thread_num();
 #else

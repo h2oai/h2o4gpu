@@ -563,10 +563,12 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 
 	////////////////////////////////
 	// PARALLEL REGION
-#if USEPARALLEL != 0
+#ifdef DONTUSEPARALLEL
+
+#else
 #pragma omp parallel proc_bind(master)
 #endif
-	{
+    {
 #ifdef _OPENMP
 		int me = omp_get_thread_num();
 		//https://software.intel.com/en-us/node/522115
@@ -1499,10 +1501,12 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 
 	////////////////////////////////
 	// PARALLEL REGION
-#if USEPARALLEL != 0
+#ifdef DONTUSEPARALLEL
+
+#else
 #pragma omp parallel proc_bind(master)
 #endif
-	{
+    {
 #ifdef _OPENMP
 		int me = omp_get_thread_num();
 		//https://software.intel.com/en-us/node/522115
