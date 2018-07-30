@@ -76,7 +76,7 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
 
     ## Constructor
     print("Setting up solver")
-    enet = Solver(n_gpus = nGPUs,  fit_intercept = intercept, lambda_min_ratio = lambda_min_ratio, n_lambdas = nLambdas, n_folds = nFolds, n_alphas = nAlphas)
+    enet = Solver(n_gpus = nGPUs,  fit_intercept = intercept, lambda_min_ratio = lambda_min_ratio, n_lambdas = nLambdas, n_folds = nFolds, n_alphas = nAlphas, verbose=5)
 
     ## First, get backend pointers
     print("Uploading")

@@ -358,9 +358,9 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 	omp_set_dynamic(0);
 	omp_set_nested(1);
 	omp_set_max_active_levels(2);
-#ifdef DEBUG
-	cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
-#endif
+    if(verbose){
+	    cout << "Number of original threads=" << omt << " Number of final threads=" << nth << endl;
+	}
 	if (nAlphas % nThreads != 0) {
 		DEBUG_FPRINTF(stderr, "NOTE: Number of alpha's not evenly divisible by number of Threads, so not efficint load balancing: %d\n",0);
 	}
@@ -574,12 +574,12 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		// set number of mkl threads per openmp thread so that not oversubscribing cores
 		int mklperthread=MAX(1,(physicalcores % nThreads==0 ? physicalcores/nThreads : physicalcores/nThreads+1));
 		if(verbose){
-		    cerr << "OpenMP: %d" << me << endl;
+		    cerr << "OpenMP: " << me << endl;
 		}
 #else
 		int me = 0;
 		if(verbose){
-		    cerr << "No OpenMP: %d" << me << endl;
+		    cerr << "No OpenMP: " << me << endl;
 		}
 #endif
 
@@ -594,7 +594,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 		int wDev = gpu_id + (nGPUs > 0 ? me % nGPUs : 0);
 		wDev = wDev % totalnGPUs;
 		if(verbose){
-		    cerr << "OpenMP: wDev=%d" << wDev << endl;
+		    cerr << "OpenMP: wDev=" << wDev << endl;
 		}
 
 
