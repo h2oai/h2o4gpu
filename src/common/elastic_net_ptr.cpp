@@ -566,7 +566,7 @@ double ElasticNetptr_fit(const char family, int sourceDev, int datatype, int sha
 #ifdef DONTUSEPARALLEL
 
 #else
-#pragma omp parallel proc_bind(master)
+#pragma omp parallel // proc_bind(master)
 #endif
     {
 #ifdef _OPENMP
@@ -1504,7 +1504,7 @@ double ElasticNetptr_predict(const char family, int sourceDev, int datatype, int
 #ifdef DONTUSEPARALLEL
 
 #else
-#pragma omp parallel proc_bind(master)
+#pragma omp parallel // proc_bind(master)
 #endif
     {
 #ifdef _OPENMP

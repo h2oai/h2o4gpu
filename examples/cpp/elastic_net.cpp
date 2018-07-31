@@ -192,7 +192,7 @@ double ElasticNet(const std::vector<T>&A, const std::vector<T>&b, const std::vec
 #ifdef DONTUSEPARALLEL
 
 #else
-#pragma omp parallel proc_bind(master)
+#pragma omp parallel // proc_bind(master)
 #endif
     {
 #ifdef _OPENMP
