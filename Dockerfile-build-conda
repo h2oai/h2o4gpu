@@ -39,16 +39,17 @@ RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 # Git requirements
 RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
 
+# TODO - install Git using conda as it has the latest version. No need to compile from source
 # Compile from source because yum's latest version is 1.8.3
 # --depth for submodule update which we use was added in 1.8.4
-RUN \
-    wget https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz && \
-    tar xf git-${GIT_VERSION}.tar.xz && \
-    cd git-${GIT_VERSION} && \
-    make configure && \
-    ./configure --prefix=/usr && \
-    make all && \
-    make install;
+#RUN \
+#    wget https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz && \
+#    tar xf git-${GIT_VERSION}.tar.xz && \
+#    cd git-${GIT_VERSION} && \
+#    make configure && \
+#    ./configure --prefix=/usr && \
+#    make all && \
+#    make install;
 
 # H2O4GPU requirements + util programs
 RUN yum install -y \
