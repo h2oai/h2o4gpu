@@ -169,15 +169,20 @@ clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
 	-rm -rf ./results/ ./tmp/
 
 clean_cpp:
+	-rm -rf build/
 	rm -rf src/interface_c/_ch2o4gpu_*pu.so
 	rm -rf src/interface_py/h2o4gpu/libs/ch2o4gpu_*pu.py
 
 clean_py:
+	-rm -rf src/interface_py/build/
 	$(MAKE) -j clean -C src/interface_py
 
 clean_xgboost:
 	-$(PYTHON) -m pip uninstall -y xgboost
-	rm -rf xgboost/build/
+	-rm -rf xgboost/build/
+	-rm -rf xgboost
+	git submodule init xgboost
+	git submodule update xgboost
 
 clean_lightgbm:
 	-$(PYTHON) -m pip uninstall -y lightgbm
