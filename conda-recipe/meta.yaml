@@ -32,13 +32,13 @@ build:
 requirements:
   build:
     - python {{ python }}
-    {% for dep in setup_data['install_requires'] %}
+    {% for dep in setup_data.install_requires %}
     - {{ dep.lower() }}
     {% endfor %}
   run:
     - python {{ python }}
-    {% for dep in setup_data['install_requires'] %}
-    - {{ dep.lower() }}
+    {% for dep in setup_data.install_requires %}
+    - {{ dep }}
     {% endfor %}
 
 test:
