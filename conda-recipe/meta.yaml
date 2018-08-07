@@ -17,6 +17,17 @@ source:
 build:
   string: "{{ build_string }}"
   number: 0
+  script_env:
+    - HOME
+    - CUDA_HOME
+    - CUDADIR
+    - PATH
+    - LD_LIBRARY_PATH
+    - OMP_NUM_THREADS
+    - MKL_NUM_THREADSVECLIB_MAXIMUM_THREADS
+    - LLVM4
+    - LANG
+    - LANGUAGE
 
 requirements:
   build:
