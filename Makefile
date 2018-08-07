@@ -61,6 +61,10 @@ deps_fetch:
 	bash scripts/gitshallow_submodules.sh
 	git submodule update
 
+.PHONY: deps_py
+deps_py:
+	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
+
 deps_install:
 	@echo "---- Install dependencies ----"
 	#-xargs -a requirements.txt -n 1 -P 1 $(PYTHON) -m pip install
