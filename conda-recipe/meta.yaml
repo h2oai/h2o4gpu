@@ -13,6 +13,8 @@ package:
 
 source:
   path: ../
+  patches:
+    - 0001-conda_reqs_in_setup.patch
 
 build:
   string: "{{ build_string }}"
