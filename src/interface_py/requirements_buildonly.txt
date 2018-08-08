@@ -15,7 +15,7 @@ pillow==4.2.1
 wheel==0.31.1
 Cython==0.27.3
 # for make testperf
-h2o==3.18.0.10
+h2o==3.18.0.11
 pandas==0.22.0
 numpy==1.14.5
 # for some utilities
