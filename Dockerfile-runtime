@@ -87,7 +87,7 @@ ENV LD_LIBRARY_PATH_CUDA=$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64
 
 # NCCL2 (License: https://docs.nvidia.com/deeplearning/sdk/nccl-sla/index.html)
 RUN \
-    bash -c 'if [ `arch` != "x86_64" ]; then \
+    bash -c 'if [ `arch` == "x86_64" ]; then \
     export CUDA_HOME=/usr/local/cuda ; if [ -d "$CUDA_HOME" ]; then \
     export CUDA_LIB=$CUDA_HOME/lib64 && \
     export CUDA_VERSION=`ls $CUDA_LIB/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev` && \
@@ -105,7 +105,7 @@ RUN \
 
 # NCCL2 (License: https://docs.nvidia.com/deeplearning/sdk/nccl-sla/index.html)
 RUN \
-    bash -c 'if [ `arch` != "ppc64le" ]; then \
+    bash -c 'if [ `arch` == "ppc64le" ]; then \
     export CUDA_HOME=/usr/local/cuda ; if [ -d "$CUDA_HOME" ]; then \
     export CUDA_LIB=$CUDA_HOME/lib64 && \
     export CUDA_VERSION=`ls $CUDA_LIB/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev` && \
