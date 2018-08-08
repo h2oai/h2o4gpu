@@ -68,7 +68,7 @@ class H2O4GPUInstall(install):
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 requirements_file = 'requirements_runtime.txt'
 import os
-if os.environ.get('CONDA_BUILD') is not None:
+if os.environ.get('CONDA_BUILD_STATE') is not None:
     requirements_file = 'requirements_conda.txt'
 with open(requirements_file, "r") as fs:
     reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
