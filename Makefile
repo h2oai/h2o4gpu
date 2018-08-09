@@ -333,26 +333,6 @@ run_in_docker-cpu:
 # TARGETS INSTALLING LIBRARIES
 #########################################
 
-# http://developer2.download.nvidia.com/compute/cuda/9.0/secure/rc/docs/sidebar/CUDA_Quick_Start_Guide.pdf?_ZyOB0PlGZzBUluXp3FtoWC-LMsTsc5H6SxIaU0i9pGNyWzZCgE-mhnAg2m66Nc3WMDvxWvvQWsXGMqr1hUliGOZvoothMTVnDe12dQQgxwS4Asjoz8XiOvPYOjV6yVQtkFhvDztUlJbNSD4srPWUU2-XegCRFII8_FIpxXERaWV
-libcuda9:
-	# wget https://developer.nvidia.com/compute/cuda/9.0/rc/local_installers/cuda-repo-ubuntu1604-9-0-local-rc_9.0.103-1_amd64-deb
-	sudo dpkg --install cuda-repo-ubuntu1604-9-0-local-rc_9.0.103-1_amd64.deb
-	# wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/7fa2af80.pub
-	sudo apt-key add 7fa2af80.pub
-	sudo apt-get update
-	sudo apt-get install cuda
-
-# http://docs.nvidia.com/deeplearning/sdk/nccl-install-guide/index.html
-libnccl2:
-	# cuda8 nccl2
-	#wget https://developer.nvidia.com/compute/machine-learning/nccl/secure/v2.0/prod/nccl-repo-ubuntu1604-2.0.5-ga-cuda8.0_2-1_amd64-deb
-	# cuda9 nccl2
-	# wget https://developer.nvidia.com/compute/machine-learning/nccl/secure/v2.0/prod/nccl-repo-ubuntu1604-2.0.5-ga-cuda9.0_2-1_amd64-deb
-	sudo dpkg -i nccl-repo-ubuntu1604-2.0.5-ga-cuda9.0_2-1_amd64.deb
-	sudo apt update
-	sudo apt-key add /var/nccl-repo-2.0.5-ga-cuda9.0/7fa2af80.pub
-	sudo apt install libnccl2 libnccl-dev
-
 libsklearn:	# assume already submodule gets sklearn
 	@echo "----- Make sklearn wheel -----"
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
