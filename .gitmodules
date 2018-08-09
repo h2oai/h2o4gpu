@@ -15,4 +15,4 @@
 	url = https://github.com/google/googletest.git
 [submodule "LightGBM"]
 	path = LightGBM
-	url = git@github.com:h2oai/LightGBM.git
+	url = https://github.com/h2oai/LightGBM.git
