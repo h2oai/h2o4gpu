@@ -218,9 +218,9 @@ RUN \
     bash -c 'if [ `arch` != "ppc64le" ]; then \
     export CUDA_HOME=/usr/local/cuda/ && \
 	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
-    wget http://sourceforge.net/projects/boost/files/boost/1.58.0/boost_1_58_0.tar.bz2 && \
-    tar xjf boost_1_58_0.tar.bz2 && \
-    cd boost_1_58_0 && \
+    wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
+    tar xjf boost_1_61_0.tar.bz2 && \
+    cd boost_1_61_0 && \
     export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
     export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/ -fPIC" && \
