@@ -204,6 +204,8 @@ RUN \
     cp cuda/targets/`arch`-linux/include/nccl.h /usr/include && \
     cp cuda/targets/`arch`-linux/lib/* /usr/lib && \
     rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz && \
+    chmod -R a+rx /usr/include/ && \
+    chmod -R a+rx /usr/lib/ && \
     rm -rf cuda ; \
     fi ; \
     fi'
