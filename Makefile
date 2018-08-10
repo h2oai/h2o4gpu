@@ -102,7 +102,6 @@ lightgbm:
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	if [ `arch` != "ppc64le" ]; then \
-	rm -rf LightGBM ; result=`git clone --recursive https://github.com/Microsoft/LightGBM` && \
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \

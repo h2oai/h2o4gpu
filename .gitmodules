@@ -13,3 +13,6 @@
 [submodule "tests/googletest"]
 	path = tests/googletest
 	url = https://github.com/google/googletest.git
+[submodule "LightGBM"]
+	path = LightGBM
+	url = https://github.com/h2oai/LightGBM.git
