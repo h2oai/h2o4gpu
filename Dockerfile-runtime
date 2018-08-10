@@ -114,9 +114,12 @@ RUN \
     export CUDA_SHORT=`echo $CUDA_VERSION | egrep -o '[0-9]\.[0-9]'` && \
     wget https://developer.download.nvidia.com/compute/redist/nccl/v2.2/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.tgz && \
     tar xzf "nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz" && \
-    cp cuda/targets/`arch`-linux/include/nccl.h /usr/include && \
-    cp cuda/targets/`arch`-linux/lib/* /usr/lib && \
+    cp cuda/targets/`arch`-linux/include/nccl.h /usr/local/cuda/include/ && \
+    cp cuda/targets/`arch`-linux/lib/* /usr/local/cuda/lib64/ && \
     rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz && \
+    chmod -R a+rx /usr/local/cuda/include/ && \
+    chmod -R a+rx /usr/local/cuda/lib64/ && \
+    ldconfig && \
     rm -rf cuda ; \
     fi ; \
     fi'
