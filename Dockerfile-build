@@ -206,7 +206,7 @@ RUN \
     rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz && \
     rm -rf cuda ; \
     fi ; \
-    fi'
+    fi' || true
 
 # See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
 # https://github.com/Microsoft/LightGBM/pull/929/files
