@@ -1,5 +1,5 @@
 {% set setup_data = load_setup_py_data(setup_file="../src/interface_py/setup.py", from_recipe_dir=True) %}
-{% set build_number = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='suffix="\+(\w+)_.*"').group(1) %}
+{% set build_number = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='build="(\w+).*"').group(1) %}
 {% set version = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='base_version="([\d.]+)"').group(1) %}
 
 package:
