@@ -1,6 +1,6 @@
 # testing code
 apipkg==1.4
-attrs==17.3.0
+attrs==17.4.0
 execnet==1.5.0
 pluggy==0.6.0
 py==1.5.2
