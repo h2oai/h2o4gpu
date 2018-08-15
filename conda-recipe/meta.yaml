@@ -1,10 +1,5 @@
 {% set setup_data = load_setup_py_data(setup_file="../src/interface_py/setup.py", from_recipe_dir=True) %}
 {% set build_number = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='suffix="\+(\w+)_.*"').group(1) %}
-{% set commit = load_file_regex(load_file="src/interface_py/h2o4gpu/BUILD_INFO.txt", regex_pattern='commit="(\w+)"').group(1) %}
-{% set build_date = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='build_date="(\d+)"').group(1) %}
-{% set py = 'py' ~ CONDA_PY %}
-{% set platform = SUBDIR|replace('-','') %}
-{% set build_string = platform ~ '_' ~ py ~ '_' ~ build_date ~ '_' ~ commit|truncate(9,end='') ~ '_' ~ build_number %}
 {% set version = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='base_version="([\d.]+)"').group(1) %}
 
 package:
@@ -15,8 +10,7 @@ source:
   path: ../
 
 build:
-  string: "{{ build_string }}"
-  number: 0
+  number: {{ build_number }}
   script_env:
     - HOME
     - CUDA_HOME
