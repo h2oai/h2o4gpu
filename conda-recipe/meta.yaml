@@ -32,7 +32,7 @@ requirements:
   run:
     - python {{ python }}
     {% for dep in setup_data.install_requires %}
-    - {{ dep }}
+    - {{ dep.lower() }}
     {% endfor %}
 
 test:
