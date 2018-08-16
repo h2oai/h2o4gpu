@@ -4,7 +4,7 @@
 {% set py = 'py' ~ CONDA_PY %}
 {% set platform = SUBDIR|replace('-','_') %}
 {% set commit = load_file_regex(load_file="src/interface_py/h2o4gpu/BUILD_INFO.txt", regex_pattern='commit="(\w+)"').group(1) %}
-{% set build_string = py ~ '_' ~ platform ~ '_' ~ commit ~ '_' ~ build_number %}
+{% set build_string = py ~ '_' ~ platform ~ '_' ~ commit|truncate(7, end='') ~ '_' ~ build_number %}
 
 package:
   name: "h2o4gpu"
