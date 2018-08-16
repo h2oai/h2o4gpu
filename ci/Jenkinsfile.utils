@@ -137,7 +137,7 @@ void publishToPoboys(String platform) {
             condaPlatform = ""
     }
 
-    sh "curl -vv -H 'Expect:' -F platform=${condaPlatform} -F fileupload=@condapkgs/${condaPlatform}/h2o4gpu-*.tar.bz2 ${uploadURL}"
+    sh "cd condapkgs/${condaPlatform} && curl -vv -H 'Expect:' -F platform=${condaPlatform} -F fileupload=@`ls h2o4gpu-*.tar.bz2` ${uploadURL}"
 }
 
 
