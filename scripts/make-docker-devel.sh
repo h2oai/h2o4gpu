@@ -32,7 +32,7 @@ $DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/dist src/interfa
 echo "Docker devel - Copying VERSION.txt"
 mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt build/
 
-echp "Docker devel - Copying conda package"
+echo "Docker devel - Copying conda package"
 [ -d condapkg ] && rm -rf condapkg; $DOCKER_CLI cp -a ${CONTAINER_NAME}:/opt/h2oai/h2o4gpu/python/conda condapkg
 
 echo "Docker devel - Stopping docker"
