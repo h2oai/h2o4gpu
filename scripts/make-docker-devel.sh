@@ -8,6 +8,8 @@ makeopts="${makeopts:-}"
 
 DOCKER_CLI='nvidia-docker'
 
+CONDA_PKG_NAME="h2o4gpu${extratag}"
+
 #--build-arg http_proxy=http://172.16.2.142:3128/
 echo "Docker devel - BEGIN"
 $DOCKER_CLI build -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg docker_name=${dockerimage} .
@@ -23,6 +25,7 @@ $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo ; make ${makeopts} buildinst
 echo "Docker devel - Creating conda package"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "mkdir -p repo/condapkgs"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py; cat requirements_*.txt | grep -v '#' | sort | uniq > requirements_conda.txt"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe; sed -i 's/condapkgname/${CONDA_PKG_NAME}/g' meta.yaml; popd"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe; conda build --output-folder ../condapkgs  -c h2oai -c conda-forge .; popd"
 
 echo "Docker devel - Clean local wheels and Copying wheel from docker"

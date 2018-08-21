@@ -7,7 +7,7 @@
 {% set build_string = py ~ '_' ~ platform ~ '_' ~ commit|truncate(7, end='') ~ '_' ~ build_number %}
 
 package:
-  name: "h2o4gpu"
+  name: "condapkgname"
   version: "{{ version }}"
 
 source:
