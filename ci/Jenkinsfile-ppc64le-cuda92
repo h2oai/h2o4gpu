@@ -158,6 +158,16 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
+                    sh """
+                        echo "Before unstash condapkg:"
+                        ls -l condapkgs  || true
+                        rm -rf condapkgs || true
+                       """
+                    unstash "condapkg"
+                    sh """
+                        echo "After unstash condapkg:"
+                        ls -l condapkgs  || true
+                       """
                     //h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
@@ -165,6 +175,11 @@ pipeline {
                         script {
                             h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}")
                         }
+                    }
+                }
+                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
+                    script{
+                        h2o4gpuUtils.publishToPoboys("${platform}")
                     }
                 }
             }
