@@ -47,6 +47,7 @@ test:
 about:
   home: "{{ setup_data.url }}"
   license: "{{ setup_data.license }}"
+  license_file: LICENSE
   summary: "H2O4GPU is a collection of GPU solvers by H2O.ai with APIs in Python and R."
   doc_url: https://github.com/h2oai/h2o4gpu/blob/master/README.md
   dev_url: https://github.com/h2oai/h2o4gpu
