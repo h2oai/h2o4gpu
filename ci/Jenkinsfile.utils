@@ -120,7 +120,7 @@ void publishToPoboys(String platform) {
     echo "Publishing to Poboy's internal conda repository - http://mr-dl19:6969/"
 
 
-    def uploadURL = "http://mr-dl19:6969/poboys/upload"
+    def uploadURL = "http://poboys.h2o.ai:6969/poboys/upload"
 
     def buildArch = platform.split('-')[0]
 
