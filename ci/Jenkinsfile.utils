@@ -214,10 +214,10 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
                """
             stash includes: "src/interface_py/dist/${platform}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
-            stash includes: "condapkgs/*/h2o4gpu-*.tar.bz2", name: 'condapkg'
+            stash includes: "condapkgs/*/h2o4gpu-*.tar.bz2", name: 'condapkg', allowEmpty: true
             sh "echo \"Archive artifacts\""
             arch "src/interface_py/dist/${platform}/*h2o4gpu-*.whl"
-            arch "condapkgs/*/h2o4gpu-*.tar.bz2"
+            archiveArtifacts artifacts: "condapkgs/*/h2o4gpu-*.tar.bz2", allowEmptyArchive: true
             currentBuild.result = "SUCCESS"
         }  catch (error) {
             currentBuild.result = "FAILURE"
