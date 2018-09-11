@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 def test_lightgbm_gpu():
     import numpy as np
     import pandas as pd
+    from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
     import lightgbm as lgb
 
     X1= np.repeat(np.arange(10), 1000)
@@ -41,6 +42,7 @@ def test_lightgbm_gpu():
 def test_lightgbm_cpu():
     import numpy as np
     import pandas as pd
+    from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
     import lightgbm as lgb
 
     X1 = np.repeat(np.arange(10), 1000)

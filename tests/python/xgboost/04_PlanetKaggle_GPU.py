@@ -19,6 +19,7 @@ import pkg_resources
 from libs.loaders import load_planet_kaggle
 from libs.planet_kaggle import threshold_prediction
 from libs.timer import Timer
+from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score

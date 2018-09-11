@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import xgboost as xgb
+from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 import json
