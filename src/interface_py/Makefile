@@ -34,7 +34,10 @@ all: prep
 	ln -sf ../../xgboost/python-package/xgboost .
 	rm -rf ../../xgboost/python-package/xgboost/src/
 	if [ `arch` != "ppc64le" ]; then \
-	ln -sf ../../LightGBM/python-package/lightgbm . ; \
+	ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu ; \
+	fi
+	if [ `arch` != "ppc64le" ]; then \
+	ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu ; \
 	fi
 	ln -sf ../../py3nvml/py3nvml .
 
@@ -46,7 +49,10 @@ all: prep
 
 	# update build with lightgbm shared library
 	if [ `arch` != "ppc64le" ]; then \
-	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm/ ; ln -sf ../../../../../LightGBM/lib_lightgbm.so . ; cd ../../../ ; \
+	mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; \
+	fi
+	if [ `arch` != "ppc64le" ]; then \
+	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; \
 	fi
 
 	# Make wheel with other builds added
