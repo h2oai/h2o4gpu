@@ -22,6 +22,7 @@ import itertools
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
+from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
 import lightgbm as lgb
 from libs.loaders import load_football
 from libs.football import get_fifa_data, create_feables

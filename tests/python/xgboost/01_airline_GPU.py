@@ -15,6 +15,7 @@
 import os,sys
 import numpy as np
 import pandas as pd
+from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.metrics import roc_auc_score

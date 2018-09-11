@@ -21,6 +21,7 @@ from libs.loaders import load_fraud
 from libs.timer import Timer
 from libs.metrics import classification_metrics_binary, classification_metrics_binary_prob, binarize_prediction
 import xgboost as xgb
+from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 

@@ -96,9 +96,9 @@ xgboost:
 
 fullinstall-xgboost: xgboost install_xgboost
 
-.PHONY: lightgbm
-lightgbm:
-	@echo "----- Building LightGBM target $(LIGHTGBM_TARGET) -----"
+.PHONY: lightgbm_gpu
+lightgbm_gpu:
+	@echo "----- Building LightGBM (GPU) target $(LIGHTGBM_TARGET) -----"
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
 	if [ `arch` != "ppc64le" ]; then \
@@ -115,13 +115,36 @@ lightgbm:
 	cd python-package && cd compile && (true || ln -fs ../../src .) && cd ../../ && \
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
-	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && \
+	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
+	cd python-package && rm -rf dist_gpu && mv dist dist_gpu && \
 	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
 	fi
 
-#	cd python-package ; $(PYTHON) setup.py install --precompile --gpu && cd .. && \
+.PHONY: lightgbm_cpu
+lightgbm_cpu:
+	@echo "----- Building LightGBM (CPU) target $(LIGHTGBM_TARGET) -----"
+	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
+	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
+	if [ `arch` != "ppc64le" ]; then \
+	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
+	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
+	cd build && \
+	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
+	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. && \
+	cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
+	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && (true || ln -fs ../../include .) && cd ../../ && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && (true || ln -fs ../../src .) && cd ../../ && \
+	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
+	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
+	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
+	cd python-package && rm -rf dist_cpu && mv dist dist_cpu && \
+	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
+	fi
 
-fullinstall-lightgbm: lightgbm install_lightgbm
+fullinstall-lightgbm: lightgbm_gpu lightgbm_cpu install_lightgbm_gpu install_lightgbm_cpu
 
 #########################################
 # SOURCE QUALITY CHECK TARGETS
@@ -148,10 +171,16 @@ install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-0.*-py3-none-any.whl --target ../
 
-install_lightgbm:
-	@echo "----- pip install lightgbm built locally -----"
+install_lightgbm_gpu:
+	@echo "----- pip install lightgbm_gpu built locally -----"
 	bash -c 'if [ `arch` != "ppc64le" ]; then \
-	cd LightGBM/python-package/dist && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target ../ ; \
+	cd LightGBM/python-package/dist_gpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target . ; \
+	fi'
+
+install_lightgbm_cpu:
+	@echo "----- pip install lightgbm (for CPU) built locally -----"
+	bash -c 'if [ `arch` != "ppc64le" ]; then \
+	cd LightGBM/python-package/dist_cpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target . ; \
 	fi'
 
 install_py:
