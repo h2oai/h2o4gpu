@@ -67,24 +67,14 @@ RUN yum install -y \
         zeromq-devel \
         openblas-devel && \
     wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
-    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/`arch`-centos7/llvm.tar.bz2 && \
-    tar xvf llvm.tar.bz2 && \
-    cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
-    rm -rf llvm*
+    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python
 
-ENV LLVM4=/opt/h2oai/h2o4gpu
 ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 ENV PATH=/usr/local/bin:$PATH
-ENV PATH=$LLVM4/bin:$PATH
-ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
 
 #
 # Symlinks
 #
-
-# AR for conda
-RUN ln /usr/bin/ar $LLVM4/bin/`arch`-conda_cos6-linux-gnu-ar
 
 # CentOS' yum install cmake has only 2.X so need to install cmake3 and make a symlink
 RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
