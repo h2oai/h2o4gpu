@@ -74,6 +74,8 @@ deps_install:
 #########################################
 # SUBMODULE BUILD TARGETS
 #########################################
+# SUBMODULE BUILD TARGETS
+#########################################
 
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
@@ -231,7 +233,6 @@ clean_deps:
 #########################################
 # FULL BUILD AND INSTALL TARGETS
 #########################################
-
 fullinstall: clean alldeps build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
@@ -241,7 +242,6 @@ buildinstall: alldeps build install
 #########################################
 # DOCKER TARGETS
 #########################################
-
 DOCKER_CUDA_VERSION?=9.0
 
 ifeq (${DOCKER_CUDA_VERSION},8.0)

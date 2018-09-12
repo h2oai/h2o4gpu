@@ -13,5 +13,6 @@
 %include "solver/kmeans.i"
 %include "solver/elastic_net.i"
 %include "solver/pogs.i"
+%include "solver/ffm.i"
 %include "matrix/matrix_dense.i"
 %include "metrics.i"
