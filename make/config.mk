@@ -98,7 +98,7 @@ DOCKER_VERSION_TAG ?= "latest"
 
 # BUILD_INFO setup
 H2O4GPU_COMMIT ?= $(shell git rev-parse HEAD)
-H2O4GPU_BUILD_DATE := $(shell date)
+H2O4GPU_BUILD_DATE := $(shell date "+%Y%m%d")
 H2O4GPU_BUILD ?= "LOCAL BUILD @ $(shell git rev-parse --short HEAD) build at $(H2O4GPU_BUILD_DATE)"
 H2O4GPU_SUFFIX ?= "+local_$(shell git describe --always --dirty)"
 

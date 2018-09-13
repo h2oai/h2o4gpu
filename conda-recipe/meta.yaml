@@ -1,0 +1,59 @@
+{% set setup_data = load_setup_py_data(setup_file="../src/interface_py/setup.py", from_recipe_dir=True) %}
+{% set build_number = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='build="(\w+).*"').group(1) %}
+{% set version = load_file_regex(load_file='src/interface_py/h2o4gpu/BUILD_INFO.txt', regex_pattern='base_version="([\d.]+)"').group(1) %}
+{% set py = 'py' ~ CONDA_PY %}
+{% set platform = SUBDIR|replace('-','_') %}
+{% set commit = load_file_regex(load_file="src/interface_py/h2o4gpu/BUILD_INFO.txt", regex_pattern='commit="(\w+)"').group(1) %}
+{% set build_string = py ~ '_' ~ platform ~ '_' ~ commit|truncate(7, end='') ~ '_' ~ build_number %}
+
+package:
+  name: "condapkgname"
+  version: "{{ version }}"
+
+source:
+  path: ../
+
+build:
+  string: "{{ build_string }}"
+  number: {{ build_number }}
+  script_env:
+    - HOME
+    - CUDA_HOME
+    - CUDADIR
+    - PATH
+    - LD_LIBRARY_PATH
+    - OMP_NUM_THREADS
+    - MKL_NUM_THREADSVECLIB_MAXIMUM_THREADS
+    - LLVM4
+    - LANG
+    - LANGUAGE
+
+requirements:
+  build:
+    - python {{ python }}
+    {% for dep in setup_data.install_requires %}
+    - {{ dep.lower() }}
+    {% endfor %}
+  run:
+    - python {{ python }}
+    {% for dep in setup_data.install_requires %}
+    - {{ dep.lower() }}
+    {% endfor %}
+
+test:
+  imports:
+    - h2o4gpu
+
+about:
+  home: "{{ setup_data.url }}"
+  license: "{{ setup_data.license }}"
+  license_file: LICENSE
+  summary: "H2O4GPU is a collection of GPU solvers by H2O.ai with APIs in Python and R."
+  doc_url: https://github.com/h2oai/h2o4gpu/blob/master/README.md
+  dev_url: https://github.com/h2oai/h2o4gpu
+
+extra:
+  maintainers:
+    - h2oai
+
+

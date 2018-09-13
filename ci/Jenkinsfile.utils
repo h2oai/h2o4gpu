@@ -116,6 +116,31 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
     }
 }
 
+void publishToPoboys(String platform) {
+    echo "Publishing to Poboy's internal conda repository - http://mr-dl19:6969/"
+
+
+    def uploadURL = "http://poboys.h2o.ai:6969/poboys/upload"
+
+    def buildArch = platform.split('-')[0]
+
+    def condaPlatform = ""
+
+    switch(buildArch) {
+        case "x86_64":
+            condaPlatform = "linux-64"
+            break
+        case "ppc64le":
+            condaPlatform = "linux-ppc64le"
+            break
+        default:
+            condaPlatform = ""
+    }
+
+    sh "cd condapkgs/${condaPlatform} && curl -vv -H 'Expect:' -F platform=${condaPlatform} -F fileupload=@`ls h2o4gpu-*.tar.bz2` ${uploadURL}"
+}
+
+
 void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     echo "Publishing runtime to S3"
 
@@ -189,8 +214,10 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
                """
             stash includes: "src/interface_py/dist/${platform}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
+            stash includes: "condapkgs/*/h2o4gpu-*.tar.bz2", name: 'condapkg', allowEmpty: true
             sh "echo \"Archive artifacts\""
             arch "src/interface_py/dist/${platform}/*h2o4gpu-*.whl"
+            archiveArtifacts artifacts: "condapkgs/*/h2o4gpu-*.tar.bz2", allowEmptyArchive: true
             currentBuild.result = "SUCCESS"
         }  catch (error) {
             currentBuild.result = "FAILURE"

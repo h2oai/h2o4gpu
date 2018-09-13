@@ -68,7 +68,8 @@ RUN yum install -y \
         openblas-devel && \
     wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps-llvm/1.0-master-21/`arch`-centos7/llvm.tar.bz2 && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y conda-build six=1.11.0 && \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
     rm -rf llvm*
@@ -181,7 +182,7 @@ RUN \
     export CUDA_MAJOR=`echo $CUDA_VERSION | cut -d "." -f 1` && \
     export CUDA_MINOR=`echo $CUDA_VERSION | cut -d "." -f 2| sed 's/@//g'` && \
     export CUDA_SHORT=`echo $CUDA_VERSION | egrep -o '[0-9]\.[0-9]'` && \
-    wget https://developer.download.nvidia.com/compute/redist/nccl/v2.2/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.txz && \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/nccl/v2.2.13/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.txz && \
     tar xf "nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.txz" && \
     cp nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`/include/nccl.h /usr/include && \
     cp nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`/lib/* /usr/lib && \
@@ -199,7 +200,7 @@ RUN \
     export CUDA_MAJOR=`echo $CUDA_VERSION | cut -d "." -f 1` && \
     export CUDA_MINOR=`echo $CUDA_VERSION | cut -d "." -f 2| sed 's/@//g'` && \
     export CUDA_SHORT=`echo $CUDA_VERSION | egrep -o '[0-9]\.[0-9]'` && \
-    wget https://developer.download.nvidia.com/compute/redist/nccl/v2.2/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.tgz && \
+    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/nccl/v2.2.13/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.tgz && \
     tar xzf "nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz" && \
     cp cuda/targets/`arch`-linux/include/nccl.h /usr/include/ && \
     cp cuda/targets/`arch`-linux/lib/* /usr/lib64/ && \
