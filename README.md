@@ -16,6 +16,8 @@ Daal library added for CPU, currently supported only x86_64 architecture.
   or
   [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download) )
 
+* Python shared libraries (e.g. On Ubuntu:  sudo apt-get install libpython3.6-dev)
+
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
 
