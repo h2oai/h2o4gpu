@@ -70,10 +70,11 @@ WORKDIR /
 # Add requirements
 COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
-RUN \
-  chmod a+rwx requirements*.txt && \
-  pip install --no-cache-dir -r requirements.txt && \
-  pip install --no-cache-dir -r requirements_runtime_demos.txt
+# No pip install, h2o4gpu and dependencies will be created via conda install from poboys
+#RUN \
+#  chmod a+rwx requirements*.txt && \
+#  pip install --no-cache-dir -r requirements.txt && \
+#  pip install --no-cache-dir -r requirements_runtime_demos.txt
 
 
 RUN mkdir -p /etc/OpenCL/vendors && \
