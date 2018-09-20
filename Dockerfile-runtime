@@ -78,7 +78,7 @@ COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.
 # TODO - hard coded cuda 9.2 package - need to make it parameterised
 RUN conda create -n h2o4gpuenv -y -c http://poboys.h2o.ai:6969/poboys/pkgs/ -c h2oai -c conda-forge h2o4gpu-cuda92 && \
     source activate h2o4gpuenv && \
-    conda install -y tornado==4.5.3"
+    conda install -y tornado==4.5.3
 
 
 RUN mkdir -p /etc/OpenCL/vendors && \
