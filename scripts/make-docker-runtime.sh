@@ -19,8 +19,6 @@ $DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} 
 # Do not pip install, instead create conda environment and install h2o4gpu from internal poboys server.
 # echo "Docker runtime - pip install h2o4gpu and pip freeze"
 # $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` ; pip freeze'
-CONDA_PKG=`echo h2o4gpu${extratag} | sed 's/\.//'`
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "conda create -n h2o4gpuenv -y -c http://poboys.h2o.ai:6969/poboys/pkgs/ -c h2oai -c conda-forge ${CONDA_PKG}; source activate h2o4gpuenv && conda install -y tornado==4.5.3"
 
 { # try
     echo "Docker runtime - Getting Data"
