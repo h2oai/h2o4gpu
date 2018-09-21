@@ -235,7 +235,7 @@ class ElasticNetH2O(object):
 
         from ..util.gpu import device_count
         (self.n_gpus, devices) = device_count(n_gpus)
-        gpu_id = gpu_id % devices
+        gpu_id = gpu_id % devices if devices != 0 else 0
         self._gpu_id = gpu_id
         self._total_n_gpus = devices
 

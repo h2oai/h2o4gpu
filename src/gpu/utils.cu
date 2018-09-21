@@ -118,7 +118,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
     gpu_total_memory[i] = memory.total;
     gpu_free_memory[i] = memory.free;
 
-    rv = nvmlDeviceGetName(device, gpu_name[i], 30);
+    rv = nvmlDeviceGetName(device, gpu_name[i], 100);
 
     if (rv != NVML_SUCCESS) {
       log_fatal(verbose, "Failed to get device %d name: %s", i, nvmlErrorString(rv));
