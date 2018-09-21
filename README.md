@@ -12,9 +12,13 @@ Daal library added for CPU, currently supported only x86_64 architecture.
 * PC running Linux with glibc 2.17+
 
 * Install CUDA with bundled display drivers (
-  [CUDA 8](https://developer.nvidia.com/cuda-downloads)
+  [CUDA 8](https://docs.nvidia.com/cuda/archive/8.0/cuda-installation-guide-linux/index.html)
   or
-  [CUDA 9](https://developer.nvidia.com/cuda-release-candidate-download) )
+  [CUDA 9](https://docs.nvidia.com/cuda/archive/9.0/cuda-installation-guide-linux/index.html)
+  or
+  [CUDA 9.2](https://docs.nvidia.com/cuda/archive/9.2/cuda-installation-guide-linux/index.html))
+
+* Python shared libraries (e.g. On Ubuntu:  sudo apt-get install libpython3.6-dev)
 
 When installing, choose to link the cuda install to /usr/local/cuda .
 Ensure to reboot after installing the new nvidia drivers.
@@ -27,8 +31,12 @@ Ensure to reboot after installing the new nvidia drivers.
 
 ## User Installation
 
-Note: This installation is for users who download the wheel file and are not expecting to develop the code.  See [DEVEL.md](DEVEL.md) for developer installation.
+Note: Installation steps mentioned below are for users planning to use H2O4GPU. See [DEVEL.md](DEVEL.md) for developer installation.
 
+H2O4GPU can be installed using either PIP or Conda
+
+
+### Prerequisites
 Add to `~/.bashrc` or environment (set appropriate paths for your OS):
 
 ```
@@ -48,19 +56,16 @@ If you are building the h2o4gpu R package, it is necessary to install the follow
 sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
+### PIP install 
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
   * Stable:
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda8/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda9/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-  * [For Conda (unsupported and untested by H2O.ai)]
-    ```
-        pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
-    ```
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
 
  Start a fresh pyenv or virtualenv session.
 
@@ -69,8 +74,28 @@ overwrite your py3nvml and xgboost installations to use our validated
 versions.
 
 ```
-pip install h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl
+pip install h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl
 ```
+
+### Conda installation
+
+Ensure you meet the Requirements and have installed the Prerequisites.
+
+If not already done you need to [install conda package manager](https://conda.io/docs/user-guide/install/linux.html). Ensure you [test your conda installation](https://conda.io/docs/user-guide/install/test-installation.html)
+
+H204GPU packages for CUDA8, CUDA 9 and CUDA 9.2 are available from [h2oai channel in anaconda cloud](https://anaconda.org/h2oai). 
+
+Create a new conda environment with H2O4GPU based on CUDA 9.2 and all its dependencies using the following command. For other cuda versions substitute the package name as needed. Note the requirement for h2oai and conda-forge channels. 
+
+```bash
+conda create -n h2o4gpuenv -c h2oai -c conda-forge h2o4gpu-cuda92
+```
+
+Once the environment is created activate it `source activate h2o4gpuenv`. 
+
+To test, start an interactive python session in the environment and follow the steps in the Test Installation section below.
+
+### h2o4gpu R package
 
 At this point, you should have installed the H2O4GPU Python package successfully. You can then go ahead and install the `h2o4gpu` R package via the following:
 
@@ -80,6 +105,8 @@ devtools::install_github("h2oai/h2o4gpu", subdir = "src/interface_r")
 ```
 
 Detailed instructions can be found [here](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r).
+
+
 
 ## Test Installation
 
@@ -131,7 +158,24 @@ and then run the jupyter notebook demos.
 
 For more examples using R API, please visit the [vignettes](https://github.com/h2oai/h2o4gpu/tree/master/src/interface_r/vignettes).
 
-## Running Jupyter Notebooks with Docker
+## Running Jupyter Notebooks
+
+You can run Jupyter Notebooks with H2O4GPU in the below two ways
+
+### Creating a Conda Environment
+
+Ensure you have a machine that meets the Requirements and Prerequisites mentioned above. 
+
+Next follow Conda installation instructions mentioned above. Once you have activated the environment, you will need to downgrade tornado to version 4.5.3 [refer issue #680](https://github.com/h2oai/h2o4gpu/issues/680). Start Jupyter notebook, and navigate to the URL shown in the log output in your browser. 
+
+```bash
+source activate h2o4gpuenv
+conda install tornado==4.5.3
+jupyter notebook --ip='*' --no-browser
+```
+Start a Python 3 kernel, and try the code in [example notebooks](https://github.com/h2oai/h2o4gpu/tree/master/examples/py/demos)
+
+### Using precompiled docker image
 
 Requirements:
 
@@ -142,14 +186,14 @@ Requirements:
 Download the Docker file (for linux_x86_64):
 
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cuda8-runtime.tar.bz2)
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cuda9-runtime.tar.bz2)
-    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cuda92-runtime.tar.bz2)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.9999-cuda8-runtime.tar.bz2)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.9999-cuda9-runtime.tar.bz2)
+    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.9999-cuda92-runtime.tar.bz2)
     
 Load and run docker file (e.g. for bleeding-edge of cuda90):
 ```
-pbzip2 -dc h2o4gpu-0.2.0.9999-cuda90-runtime.tar.bz2 | nvidia-docker load
-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0.9999-cuda90-runtime &
+pbzip2 -dc h2o4gpu-0.3.0.9999-cuda90-runtime.tar.bz2 | nvidia-docker load
+mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.3.0.9999-cuda90-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
 Copy/paste the http link shown into your browser.  If the "find" command doesn't work, look for the latest jupyter.log file and look at contents for the http link and token.
