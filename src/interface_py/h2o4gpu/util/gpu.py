@@ -175,8 +175,8 @@ def get_gpu_info_c(return_usage=False,
     usages_tmp = np.zeros(max_gpus, dtype=np.int32)
     total_mems_tmp = np.zeros(max_gpus, dtype=np.uint64)
     free_mems_tmp = np.zeros(max_gpus, dtype=np.uint64)
-    # This 30 should be same as the gpu type in get_gpu_info_c
-    gpu_types_tmp = [' ' * 30 for _ in range(64)]
+    # This 100 should be same as the gpu type in get_gpu_info_c
+    gpu_types_tmp = [' ' * 100 for _ in range(max_gpus)]
     majors_tmp = np.zeros(max_gpus, dtype=np.int32)
     minors_tmp = np.zeros(max_gpus, dtype=np.int32)
     max_pids = 2000
