@@ -53,12 +53,12 @@ sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 Download the Python wheel file (For Python 3.6 on linux_x86_64):
 
   * Stable:
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda8/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.2-nccl-cuda9/h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda8/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda9/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.0](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.9999-cp36-cp36m-linux_x86_64.whl)
   * [For Conda (unsupported and untested by H2O.ai)]
     ```
         pip install --extra-index-url https://pypi.anaconda.org/gpuopenanalytics/simple h2o4gpu
@@ -71,7 +71,7 @@ overwrite your py3nvml and xgboost installations to use our validated
 versions.
 
 ```
-pip install h2o4gpu-0.2.0-cp36-cp36m-linux_x86_64.whl
+pip install h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl
 ```
 
 At this point, you should have installed the H2O4GPU Python package successfully. You can then go ahead and install the `h2o4gpu` R package via the following:
@@ -144,14 +144,14 @@ Requirements:
 Download the Docker file (for linux_x86_64):
 
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda8/h2o4gpu-0.2.0.9999-cuda8-runtime.tar.bz2)
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda9/h2o4gpu-0.2.0.9999-cuda9-runtime.tar.bz2)
-    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.2-cuda92/h2o4gpu-0.2.0.9999-cuda92-runtime.tar.bz2)
+    * [CUDA8](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.9999-cuda8-runtime.tar.bz2)
+    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.9999-cuda9-runtime.tar.bz2)
+    * [CUDA9.2](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.9999-cuda92-runtime.tar.bz2)
     
 Load and run docker file (e.g. for bleeding-edge of cuda90):
 ```
-pbzip2 -dc h2o4gpu-0.2.0.9999-cuda90-runtime.tar.bz2 | nvidia-docker load
-mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.2.0.9999-cuda90-runtime &
+pbzip2 -dc h2o4gpu-0.3.0.9999-cuda90-runtime.tar.bz2 | nvidia-docker load
+mkdir -p log ; nvidia-docker run --name localhost --rm -p 8888:8888 -u `id -u`:`id -g` -v `pwd`/log:/log --entrypoint=./run.sh opsh2oai/h2o4gpu-0.3.0.9999-cuda90-runtime &
 find log -name jupyter* -type f -printf '%T@ %p\n' | sort -k1 -n | awk '{print $2}' | tail -1 | xargs cat | grep token | grep http | grep -v NotebookApp
 ```
 Copy/paste the http link shown into your browser.  If the "find" command doesn't work, look for the latest jupyter.log file and look at contents for the http link and token.
