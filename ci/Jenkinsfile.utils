@@ -321,8 +321,11 @@ def doBuild() {
         def doTrigger11 = changedFiles.any { filepath ->
             filepath.contains("py3nvml")
         }
-        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7} ${doTrigger8} ${doTrigger9} ${doTrigger10} ${doTrigger11}"
-        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7 || doTrigger8 || doTrigger9 || doTrigger10 || doTrigger11
+        def doTrigger12 = changedFiles.any { filepath ->
+            filepath.contains("LightGBM")
+        }
+        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7} ${doTrigger8} ${doTrigger9} ${doTrigger10} ${doTrigger11} ${doTrigger12}"
+        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7 || doTrigger8 || doTrigger9 || doTrigger10 || doTrigger11 || doTrigger12
     } else {
         echo "doBuild() No Triggers"
         return 1 == 1
