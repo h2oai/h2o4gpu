@@ -105,7 +105,6 @@ lightgbm_gpu:
 	@echo "----- Building LightGBM (GPU) target $(LIGHTGBM_TARGET) -----"
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
-	if [ `arch` != "ppc64le" ]; then \
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
@@ -121,15 +120,13 @@ lightgbm_gpu:
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
 	cd python-package && rm -rf dist_gpu && mv dist dist_gpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
-	fi
+	$(PYTHON) -m pip install arff tqdm keras runipy h5py
 
 .PHONY: lightgbm_cpu
 lightgbm_cpu:
 	@echo "----- Building LightGBM (CPU) target $(LIGHTGBM_TARGET) -----"
 	@echo "See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details"
 	@echo "sudo apt-get install libboost-dev libboost-system-dev libboost-filesystem-dev cmake"
-	if [ `arch` != "ppc64le" ]; then \
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
@@ -145,8 +142,7 @@ lightgbm_cpu:
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
 	cd python-package && rm -rf dist_cpu && mv dist dist_cpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
-	fi
+	$(PYTHON) -m pip install arff tqdm keras runipy h5py
 
 fullinstall-lightgbm: lightgbm_gpu lightgbm_cpu install_lightgbm_gpu install_lightgbm_cpu
 
