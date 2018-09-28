@@ -263,6 +263,15 @@ centos7_cuda90_in_docker:
 centos7_cuda92_in_docker:
 	$(MAKE) DOCKER_CUDA_VERSION=9.2 docker-build
 
+docker-runtime-cuda80:
+	$(MAKE) DOCKER_CUDA_VERSION=8.0 docker-runtime
+
+docker-runtime-cuda90:
+	$(MAKE) DOCKER_CUDA_VERSION=9.0 docker-runtime
+
+docker-runtime-cuda80:
+	$(MAKE) DOCKER_CUDA_VERSION=9.2 docker-runtime
+
 docker-build:
 	@echo "+-- Building Wheel in Docker --+"
 	export CONTAINER_NAME="local-make-build-cuda$(DOCKER_CUDA_VERSION)" ;\
