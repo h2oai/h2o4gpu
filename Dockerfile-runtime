@@ -1,4 +1,5 @@
 ARG docker_name
+ARG cudaversion
 
 FROM $docker_name
 
@@ -75,8 +76,7 @@ COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.
 #  chmod a+rwx requirements*.txt && \
 #  pip install --no-cache-dir -r requirements.txt && \
 #  pip install --no-cache-dir -r requirements_runtime_demos.txt
-# TODO - hard coded cuda 9.2 package - need to make it parameterised
-RUN conda create -n h2o4gpuenv -y -c h2oai -c conda-forge h2o4gpu-cuda92 && \
+RUN conda create -n h2o4gpuenv -y -c h2oai -c conda-forge h2o4gpu$cudaversion && \
     source activate h2o4gpuenv && \
     conda install -y tornado==4.5.3
 
@@ -156,6 +156,7 @@ RUN \
   source activate h2o4gpuenv && \
   HOME=/jupyter jupyter notebook --generate-config && \
   sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
+  echo "c.NotebookApp.allow_remote_access = False" >> /jupyter/.jupyter/jupyter_notebook_config.py && \
   chmod -R a+rwx /jupyter/.jupyter
 
 # Add shell wrapper
