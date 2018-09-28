@@ -1,9 +1,11 @@
 ARG docker_name
-ARG cudaversion
 
 FROM $docker_name
 
 MAINTAINER H2o.ai <ops@h2o.ai>
+
+# Refer https://github.com/moby/moby/issues/34129 for weird ARG behavior
+ARG cudaversion
 
 ENV HOME=/root
 ENV CUDA_HOME=/usr/local/cuda
