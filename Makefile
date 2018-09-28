@@ -269,7 +269,7 @@ docker-runtime-cuda80:
 docker-runtime-cuda90:
 	$(MAKE) DOCKER_CUDA_VERSION=9.0 docker-runtime
 
-docker-runtime-cuda80:
+docker-runtime-cuda92:
 	$(MAKE) DOCKER_CUDA_VERSION=9.2 docker-runtime
 
 docker-build:
