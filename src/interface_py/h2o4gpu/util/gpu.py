@@ -152,6 +152,7 @@ def get_gpu_info_c(return_usage=False,
                    return_free_memory=False,
                    return_capability=False,
                    return_memory_by_pid=False,
+                   return_usage_by_pid=False,
                    return_all=False,
                    verbose=0):
     """Gets the GPU info from C call
@@ -183,6 +184,9 @@ def get_gpu_info_c(return_usage=False,
     num_pids_tmp = np.zeros(max_pids, dtype=np.uint32)
     pids_tmp = np.zeros(max_pids * max_gpus, dtype=np.uint32)
     usedGpuMemorys_tmp = np.zeros(max_pids * max_gpus, dtype=np.uint64)
+    num_pids_usage_tmp = np.zeros(max_pids, dtype=np.uint32)
+    pids_usage_tmp = np.zeros(max_pids * max_gpus, dtype=np.uint32)
+    usedGpuUsage_tmp = np.zeros(max_pids * max_gpus, dtype=np.uint64)
 
     try:
         from ..libs.lib_utils import GPUlib
@@ -192,7 +196,9 @@ def get_gpu_info_c(return_usage=False,
             lib.get_gpu_info_c(verbose,
                                usages_tmp, total_mems_tmp, free_mems_tmp,
                                gpu_types_tmp, majors_tmp, minors_tmp,
-                               num_pids_tmp, pids_tmp, usedGpuMemorys_tmp)
+                               num_pids_tmp, pids_tmp, usedGpuMemorys_tmp,
+                               num_pids_usage_tmp, pids_usage_tmp,
+                               usedGpuUsage_tmp)
 
         if status != 0:
             return None
@@ -226,6 +232,10 @@ def get_gpu_info_c(return_usage=False,
     pids_actual = np.resize(pids_tmp, total_gpus_actual * max_pids)
     usedGpuMemorys_actual = np.resize(usedGpuMemorys_tmp,
                                       total_gpus_actual * max_pids)
+    num_pids_usage_actual = np.resize(num_pids_usage_tmp, total_gpus_actual)
+    pids_usage_actual = np.resize(pids_usage_tmp, total_gpus_actual * max_pids)
+    usedGpuUsage_actual = np.resize(usedGpuUsage_tmp,
+                                    total_gpus_actual * max_pids)
 
     total_mems = np.resize(np.copy(total_mems_actual), total_gpus)
     free_mems = np.resize(np.copy(free_mems_actual), total_gpus)
@@ -237,6 +247,10 @@ def get_gpu_info_c(return_usage=False,
     pids = np.resize(np.copy(pids_actual), total_gpus * max_pids)
     usedGpuMemorys = np.resize(np.copy(usedGpuMemorys_actual),
                                total_gpus * max_pids)
+    num_pids_usage = np.resize(np.copy(num_pids_usage_actual), total_gpus)
+    pids_usage = np.resize(np.copy(pids_usage_actual), total_gpus * max_pids)
+    usedGpuUsage = np.resize(np.copy(usedGpuUsage_actual),
+                             total_gpus * max_pids)
 
     gpu_i = 0
     for j in range(total_gpus_actual):
@@ -250,9 +264,14 @@ def get_gpu_info_c(return_usage=False,
             num_pids[gpu_i] = num_pids_actual[j]
             pids[gpu_i] = pids_actual[j]
             usedGpuMemorys[gpu_i] = usedGpuMemorys_actual[j]
+            num_pids_usage[gpu_i] = num_pids_usage_actual[j]
+            pids_usage[gpu_i] = pids_usage_actual[j]
+            usedGpuUsage[gpu_i] = usedGpuUsage_actual[j]
             gpu_i += 1
     pids = np.reshape(pids, (total_gpus, max_pids))
     usedGpuMemorys = np.reshape(usedGpuMemorys, (total_gpus, max_pids))
+    pids_usage = np.reshape(pids_usage, (total_gpus, max_pids))
+    usedGpuUsage = np.reshape(usedGpuUsage, (total_gpus, max_pids))
 
     to_return = [total_gpus, total_mems, gpu_types]
     if return_all or return_usage:
@@ -263,6 +282,8 @@ def get_gpu_info_c(return_usage=False,
         to_return.extend([majors, minors])
     if return_all or return_memory_by_pid:
         to_return.extend([num_pids, pids, usedGpuMemorys])
+    if return_all or return_usage_by_pid:
+        to_return.extend([num_pids_usage, pids_usage, usedGpuUsage])
 
     return tuple(to_return)
 

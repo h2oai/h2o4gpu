@@ -6,7 +6,8 @@ extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_us
  unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
- unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys);
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys,
+ unsigned int *num_pids_usage, unsigned int *pids_usage, unsigned long long *usedGpuUsage);
 extern int cudaresetdevice_bare(void);
 %}
 
@@ -60,5 +61,6 @@ extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_us
  unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
- unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys);
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys,
+ unsigned int *num_pids_usage, unsigned int *pids_usage, unsigned long long *usedGpuUsage);
 extern int cudaresetdevice_bare(void);
