@@ -193,6 +193,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
       log_verbose(verbose, "i=%d pidi=%u pids=%u gpuusage=%llu", i, pidi, pids_usage[pidi + i * max_pids], usedGpuUsage[pidi + i * max_pids]);
     }
 #else
+    num_pids_usage[i] = 0;
     pids_usage[i] = 0;
     usedGpuUsage[i] = 0;
 #endif
