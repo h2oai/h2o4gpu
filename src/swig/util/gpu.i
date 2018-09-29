@@ -54,6 +54,9 @@ extern int cudaresetdevice_bare(void);
 %apply (unsigned int *INPLACE_ARRAY1) {unsigned int *num_pids};
 %apply (unsigned int *INPLACE_ARRAY1) {unsigned int *pids};
 %apply (unsigned long long *INPLACE_ARRAY1) {unsigned long long *usedGpuMemorys};
+%apply (unsigned int *INPLACE_ARRAY1) {unsigned int *num_pids_usage};
+%apply (unsigned int *INPLACE_ARRAY1) {unsigned int *pids_usage};
+%apply (unsigned long long *INPLACE_ARRAY1) {unsigned long long *usedGpuUsage};
 
 extern int cudaresetdevice(int wDev, int nDev);
 extern int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf);
