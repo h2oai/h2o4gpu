@@ -57,7 +57,8 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
  unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
- unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys) {
+ unsigned int *num_pids, unsigned int *pids, unsigned long long *usedGpuMemorys,
+ unsigned int *num_pids_usage, unsigned int *pids_usage, unsigned long long *usedGpuUsage) {
 
   log_verbose(verbose, "Inside get_gpu_info_c c function");
 
@@ -146,10 +147,8 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
     unsigned int max_pids=2000;
     unsigned int infoCount;
-    //rv = nvmlDeviceGetComputeRunningProcesses(device, &infoCount, NULL);
     infoCount = max_pids;
     nvmlProcessInfo_t infos[infoCount];
-    unsigned int num_pid_local;
     num_pids[i] = infoCount;
     rv = nvmlDeviceGetComputeRunningProcesses(device, &num_pids[i], infos);
 
@@ -168,6 +167,36 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
       log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi, pids[pidi + i * max_pids], usedGpuMemorys[pidi + i * max_pids]);
     }
+
+#if (CUDART_VERSION >= 9000)
+    nvmlProcessUtilizationSample_t utilization_perprocess[infoCount];
+    unsigned int processSamplesCount;
+    unsigned long long lastSeenTimeStamp = 0;
+
+    num_pids_usage[i] = infoCount;
+    rv = nvmlDeviceGetProcessUtilization(device, utilization_perprocess, &num_pids_usage[i], lastSeenTimeStamp);
+
+    if (rv != NVML_SUCCESS) {
+      log_fatal(verbose, "Failed to get per-process device %d utilization: %s", i, nvmlErrorString(rv));
+      return 1;
+    }
+
+    if(num_pids_usage[i] > max_pids){
+      log_debug(verbose, "Too many pids: %u. Increase max_pids: %u.", num_pids_usage[i], max_pids );
+      return 1;
+    }
+
+    for (unsigned int pidi=0; pidi < num_pids_usage[i]; pidi++) {
+      pids_usage[pidi + i * max_pids] = utilization_perprocess[pidi].pid;
+      usedGpuUsage[pidi + i * max_pids] = utilization_perprocess[pidi].smUtil;
+
+      log_verbose(verbose, "i=%d pidi=%u pids=%u gpuusage=%llu", i, pidi, pids_usage[pidi + i * max_pids], usedGpuUsage[pidi + i * max_pids]);
+    }
+#else
+    num_pids_usage[i] = 0;
+    pids_usage[i] = 0;
+    usedGpuUsage[i] = 0;
+#endif
   }
 
   return 0;
