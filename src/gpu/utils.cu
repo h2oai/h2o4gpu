@@ -168,6 +168,7 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
       log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi, pids[pidi + i * max_pids], usedGpuMemorys[pidi + i * max_pids]);
     }
 
+#if (CUDART_VERSION >= 9000)
     nvmlProcessUtilizationSample_t utilization_perprocess[infoCount];
     unsigned int processSamplesCount;
     unsigned long long lastSeenTimeStamp = 0;
@@ -191,7 +192,10 @@ int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage, un
 
       log_verbose(verbose, "i=%d pidi=%u pids=%u gpuusage=%llu", i, pidi, pids_usage[pidi + i * max_pids], usedGpuUsage[pidi + i * max_pids]);
     }
-
+#else
+    pids_usage[i] = 0;
+    usedGpuUsage[i] = 0;
+#endif
   }
 
   return 0;
