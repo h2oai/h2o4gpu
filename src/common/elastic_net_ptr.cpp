@@ -43,6 +43,7 @@ string cmd(const string& cmd) {
 	return res;
 }
 
+#if(VERBOSEENET)
 const std::string CPUTYPE =
 		cmd(
 				"lscpu | grep 'Model name' | cut -d: -f2- | sed 's/ \\+//g' | sed 's/Intel(R)//' | sed 's/Core(TM)//' | sed 's/CPU//'");
@@ -55,6 +56,13 @@ const std::string GPUTYPE =
 const std::string NGPUS =
 		cmd(
 				"nvidia-smi -q | grep 'Product Name' | cut -d: -f2- | sed 's/ \\+//g' | wc -l");
+#else
+const std::string CPUTYPE = "";
+const std::string SOCKETS = "";
+
+const std::string GPUTYPE = "";
+const std::string NGPUS = "";
+#endif
 
 #ifdef HAVECUDA
 const std::string HARDWARE = NGPUS + "x" + GPUTYPE;
