@@ -2,7 +2,16 @@
 %{
 extern int cudaresetdevice(int wDev, int nDev);
 extern int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf);
-extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage,
+extern int get_gpu_info_c(int verbose,
+                   int return_memory,
+                   int return_name,
+                   int return_usage,
+                   int return_free_memory,
+                   int return_capability,
+                   int return_memory_by_pid,
+                   int return_usage_by_pid,
+                   int return_all,
+ unsigned int *n_gpus, int *gpu_percent_usage,
  unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
@@ -60,7 +69,16 @@ extern int cudaresetdevice_bare(void);
 
 extern int cudaresetdevice(int wDev, int nDev);
 extern int get_compute_capability(int d_idx, int *major, int *minor, int *ratioperf);
-extern int get_gpu_info_c(int verbose, unsigned int *n_gpus, int *gpu_percent_usage,
+extern int get_gpu_info_c(int verbose,
+                   int return_memory,
+                   int return_name,
+                   int return_usage,
+                   int return_free_memory,
+                   int return_capability,
+                   int return_memory_by_pid,
+                   int return_usage_by_pid,
+                   int return_all,
+ unsigned int *n_gpus, int *gpu_percent_usage,
  unsigned long long *gpu_total_memory, unsigned long long *gpu_free_memory,
  char **gpu_name,
  int *majors, int *minors,
