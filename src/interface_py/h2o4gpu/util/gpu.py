@@ -20,7 +20,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count, _, _ = get_gpu_info_c()
+    available_device_count = get_gpu_info_c()[0]
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -338,7 +338,7 @@ def get_compute_capability(gpu_id):
     Get compute capability for all gpus
     """
     try:
-        total_gpus, _, _, majors, minors =\
+        total_gpus, majors, minors =\
             get_gpu_info_c(return_capability=True)
     # pylint: disable=bare-except
     except:
