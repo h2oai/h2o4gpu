@@ -20,7 +20,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count, _, _ = get_gpu_info_c()
+    available_device_count = get_gpu_info_c()[0]
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -148,7 +148,9 @@ def get_gpu_info_subprocess(return_usage=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def get_gpu_info_c(return_usage=False,
+def get_gpu_info_c(return_memory=False,
+                   return_name=False,
+                   return_usage=False,
                    return_free_memory=False,
                    return_capability=False,
                    return_memory_by_pid=False,
@@ -194,6 +196,14 @@ def get_gpu_info_c(return_usage=False,
 
         status, total_gpus_actual = \
             lib.get_gpu_info_c(verbose,
+                               1 if return_memory else 0,
+                               1 if return_name else 0,
+                               1 if return_usage else 0,
+                               1 if return_free_memory else 0,
+                               1 if return_capability else 0,
+                               1 if return_memory_by_pid else 0,
+                               1 if return_usage_by_pid else 0,
+                               1 if return_all else 0,
                                usages_tmp, total_mems_tmp, free_mems_tmp,
                                gpu_types_tmp, majors_tmp, minors_tmp,
                                num_pids_tmp, pids_tmp, usedGpuMemorys_tmp,
@@ -273,7 +283,11 @@ def get_gpu_info_c(return_usage=False,
     pids_usage = np.reshape(pids_usage, (total_gpus, max_pids))
     usedGpuUsage = np.reshape(usedGpuUsage, (total_gpus, max_pids))
 
-    to_return = [total_gpus, total_mems, gpu_types]
+    to_return = [total_gpus]
+    if return_all or return_memory:
+        to_return.append(total_mems)
+    if return_all or return_name:
+        to_return.append(gpu_types)
     if return_all or return_usage:
         to_return.append(usages)
     if return_all or return_free_memory:
@@ -324,7 +338,7 @@ def get_compute_capability(gpu_id):
     Get compute capability for all gpus
     """
     try:
-        total_gpus, _, _, majors, minors =\
+        total_gpus, majors, minors =\
             get_gpu_info_c(return_capability=True)
     # pylint: disable=bare-except
     except:
