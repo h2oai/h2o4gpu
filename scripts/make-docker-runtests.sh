@@ -9,7 +9,8 @@ DATA_DIRS="${DATA_DIRS:-}"
 
 echo "Docker devel test and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
+cudaversion=$(echo "${extratag}" | sed 's/\.//' | sed 's/90/9/' | sed 's/80/8/')
+$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg cudaversion=${cudaversion} .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 $DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
