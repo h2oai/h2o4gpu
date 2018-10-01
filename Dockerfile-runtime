@@ -76,14 +76,14 @@ COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.
 RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
     chmod a+rwx requirements*.txt && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -r requirements_runtime_demos.txt \
+    pip install --no-cache-dir -r requirements_runtime_demos.txt; \
     fi'
 
 RUN bash -c 'if [ `arch` == "x86_64" ]; then \
     conda create -n h2o4gpuenv -y -c h2oai -c conda-forge h2o4gpu$cudaversion && \
     source activate h2o4gpuenv && \
-    conda install -y tornado==4.5.3 \
-    fi '
+    conda install -y tornado==4.5.3; \
+    fi'
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
