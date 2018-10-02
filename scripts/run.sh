@@ -17,5 +17,6 @@ mkdir -p "$logdir"
 
 export HOME=/jupyter && \
 cd /jupyter && \
+source activate h2o4gpuenv && \
 jupyter --paths >> "$logdir"/jupyter.log && \
 exec jupyter notebook --ip='*' --no-browser --allow-root >> "$logdir"/jupyter.log 2>&1

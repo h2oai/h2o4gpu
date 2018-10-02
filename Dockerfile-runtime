@@ -4,6 +4,10 @@ FROM $docker_name
 
 MAINTAINER H2o.ai <ops@h2o.ai>
 
+# Refer https://github.com/moby/moby/issues/34129 for weird ARG behavior
+ARG cudaversion
+ARG PM=pip
+
 ENV HOME=/root
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=/usr/local/cuda/bin:$PATH
@@ -70,11 +74,17 @@ WORKDIR /
 # Add requirements
 COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
-RUN \
-  chmod a+rwx requirements*.txt && \
-  pip install --no-cache-dir -r requirements.txt && \
-  pip install --no-cache-dir -r requirements_runtime_demos.txt
+RUN bash -c 'if [ `arch` = "ppc64le" || $PM = "pip" ]; then \
+    chmod a+rwx requirements*.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements_runtime_demos.txt; \
+    fi'
 
+RUN bash -c 'if [ `arch` = "x86_64" && $PM = "conda" ]; then \
+    conda create -n h2o4gpuenv -y -c h2oai -c conda-forge h2o4gpu$cudaversion && \
+    source activate h2o4gpuenv && \
+    conda install -y tornado==4.5.3; \
+    fi'
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
@@ -148,8 +158,10 @@ RUN \
   chmod -R a+rwx /jupyter/scikit_learn_data/covertype && \
   mkdir -p /jupyter/scikit_learn_data/lfw_home && \
   chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
+  if [ `arch` == "x86_64" ]; then source activate h2o4gpuenv; fi && \
   HOME=/jupyter jupyter notebook --generate-config && \
   sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
+  echo "c.NotebookApp.allow_remote_access = False" >> /jupyter/.jupyter/jupyter_notebook_config.py && \
   chmod -R a+rwx /jupyter/.jupyter
 
 # Add shell wrapper

@@ -10,14 +10,17 @@ echo "Docker runtime - BEGIN"
 echo "Docker runtime - Build"
 # wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-cp36-cp36m-linux_x86_64.whl # use this if want to pull from s3 in Dockerfile-runtime
 #  --build-arg http_proxy=http://172.16.2.142:3128/
-$DOCKER_CLI build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
+cudaversion=$(echo "${extratag}" | sed 's/\.//' | sed 's/90/9/' | sed 's/80/8/')
+
+$DOCKER_CLI build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg cudaversion=${cudaversion} --build-arg PM=conda .
 # -u `id -u`:`id -g` -d -t -w `pwd` -v `pwd`:`pwd`:rw
 
 echo "Runtime Docker - Run"
 $DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
 
-echo "Docker runtime - pip install h2o4gpu and pip freeze"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` ; pip freeze'
+# Do not pip install, instead create conda environment and install h2o4gpu from internal poboys server.
+# echo "Docker runtime - pip install h2o4gpu and pip freeze"
+# $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` ; pip freeze'
 
 { # try
     echo "Docker runtime - Getting Data"
