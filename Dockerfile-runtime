@@ -6,6 +6,7 @@ MAINTAINER H2o.ai <ops@h2o.ai>
 
 # Refer https://github.com/moby/moby/issues/34129 for weird ARG behavior
 ARG cudaversion
+ARG PM=pip
 
 ENV HOME=/root
 ENV CUDA_HOME=/usr/local/cuda
@@ -73,13 +74,13 @@ WORKDIR /
 # Add requirements
 COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
-RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
+RUN bash -c 'if [ `arch` = "ppc64le" || $PM = "pip" ]; then \
     chmod a+rwx requirements*.txt && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -r requirements_runtime_demos.txt; \
     fi'
 
-RUN bash -c 'if [ `arch` == "x86_64" ]; then \
+RUN bash -c 'if [ `arch` = "x86_64" && $PM = "conda" ]; then \
     conda create -n h2o4gpuenv -y -c h2oai -c conda-forge h2o4gpu$cudaversion && \
     source activate h2o4gpuenv && \
     conda install -y tornado==4.5.3; \
