@@ -157,6 +157,15 @@ COPY scripts/run.sh /run.sh
 RUN \
   chmod a+rwx run.sh
 
+RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
+    tar xvf llvm.tar.bz2 && \
+    cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
+    rm -rf llvm*
+
+ENV LLVM4=/opt/h2oai/h2o4gpu
+ENV PATH=$LLVM4/bin:$PATH
+ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
+
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT
 ARG DOCKER_VERSION_TAG
