@@ -74,7 +74,7 @@ if enable_lightgbm_import:
                     got_lgb = True
                     got_cpu_lgb = True
                 except Exception as e:
-                    expt_cpu = str(e)
+                    expt_other = str(e)
                     pass
             if not got_lgb:
                 print(

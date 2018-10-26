@@ -155,7 +155,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 # Install Python requirements
 #
-RUN pip install numpy==1.14.5 setuptools==39.0.1
+RUN pip install numpy==1.14.5 scipy==1.1.0 setuptools==39.0.1
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
@@ -236,6 +236,14 @@ ENV LD_LIBRARY_PATH=/opt/boost/lib/:$LD_LIBRARY_PATH
 
 RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
+RUN yum install -y hdf5-devel
+RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
+	yum install -y ocl-icd; \
+    fi'
+
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64/nvidia
+ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-9.2
 
 WORKDIR $HOME
 
