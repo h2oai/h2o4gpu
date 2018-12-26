@@ -15,6 +15,9 @@
 #include "kmeans_impl.h"
 #include "kmeans_general.h"
 #include "kmeans_h2o4gpu.h"
+
+#include "kmeans_init.cuh"
+
 #include <random>
 #include <algorithm>
 #include <vector>
@@ -764,7 +767,21 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry,
     } else if (1 == init_from_data) { // kmeans||
       log_debug(verbose, "KMeans - Using K-Means|| initialization.");
 
-      thrust::host_vector<T> final_centroids = kmeans_parallel(verbose, seed, ord, data, data_dots, rows, cols, k, n_gpu, threshold);
+      thrust::host_vector<T> h_init_data (rows * cols);
+      // Gather
+      for (size_t i = 0; i < n_gpu; ++i) {
+        thrust::copy(
+            thrust::device,
+            data[i]->begin(), data[i]->end(), h_init_data.begin());
+      }
+      h2o4gpu::kMeans::KmMatrix<T> init_data(h_init_data, rows, cols);
+      h2o4gpu::kMeans::KmMatrix<T> final_centroids_matrix =
+          h2o4gpu::kMeans::KmeansLlInit<T>(seed, 1.5)(init_data, k);
+      thrust::host_vector<T> final_centroids (final_centroids_matrix.size());
+      thrust::copy(
+          final_centroids_matrix.dev_ptr(),
+          final_centroids_matrix.dev_ptr() + final_centroids_matrix.size(),
+          final_centroids.begin());
 
 #pragma omp parallel for
       for (int q = 0; q < n_gpu; q++) {

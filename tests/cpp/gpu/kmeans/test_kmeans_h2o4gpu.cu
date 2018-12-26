@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_h2o4gpu.h"
-#include "../src/gpu/kmeans/kmeans_labels.h"
+#include "../../../../src/gpu/kmeans/kmeans_h2o4gpu.h"
+#include "../../../../src/gpu/kmeans/kmeans_labels.h"
 #include <thrust/host_vector.h>
 
 TEST(KMeans, CountsPerCentroids) {
