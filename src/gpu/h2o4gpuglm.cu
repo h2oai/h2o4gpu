@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <deque>
+#include <numeric>
 
 #include "cml/cml_blas.cuh"
 #include "cml/cml_vector.cuh"

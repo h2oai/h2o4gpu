@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <limits>
 #include <deque>
+#include <numeric>
 
 #include <functional>
 #include <cstring>
