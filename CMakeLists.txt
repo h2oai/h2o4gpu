@@ -10,6 +10,11 @@ FIND_PACKAGE(BLAS REQUIRED)
 FIND_PACKAGE(SWIG REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
 
+# SWIG behaviour was changed 
+if (${CMAKE_VERSION} GREATER "3.12")
+        cmake_policy(SET CMP0078 OLD)
+endif()
+
 INCLUDE(${SWIG_USE_FILE})
 
 #============= OPTIONS & SETTINGS
@@ -110,7 +115,7 @@ if(USE_CUDA)
         endif()
 
         if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
-                MESSAGE(STATUS "CUDA 9.0 detected, adding Volta compute capability (7.0).")
+                MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 9.0 detected, adding Volta compute capability (7.0).")
                 SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
         endif()
 

@@ -3,7 +3,7 @@
 	url = https://github.com/h2oai/cub
 [submodule "xgboost"]
 	path = xgboost
-url=git@github.com:sh1ng/xgboost.git
+	url = https://github.com/h2oai/xgboost
 [submodule "py3nvml"]
 	path = py3nvml
 	url = https://github.com/h2oai/py3nvml
