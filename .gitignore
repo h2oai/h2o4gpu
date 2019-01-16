@@ -178,3 +178,4 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt
 
 # Temp requirement file generated for Conda
 src/interface_py/requirements_conda.txt
+open_data/
