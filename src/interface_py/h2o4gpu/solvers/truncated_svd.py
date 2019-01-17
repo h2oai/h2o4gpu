@@ -183,7 +183,7 @@ class TruncatedSVDH2O(object):
         if convert and data.dtype != np.float64 and data.dtype != np.float32:
             self._print_verbose(0, "Detected numeric data format which is not "
                                    "supported. Casting to np.float32.")
-            data = np.ascontiguousarray(data, dtype=np.floa32)
+            data = np.ascontiguousarray(data, dtype=np.float32)
         if data.dtype == np.float64:
             self._print_verbose(0, "Detected np.float64 data")
             self.double_precision = 1
