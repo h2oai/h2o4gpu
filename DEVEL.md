@@ -34,6 +34,7 @@ pip install setuptools --no-cache-dir
 ```
 sudo apt-get install -y libopenblas-dev pbzip2 swig
 sudo apt-get purge libatlas-dev libatlas-base-dev
+sudo apt install python3-dev
 ```
 
 If you are building the h2o4gpu R package, it is necessary to install the following dependencies:
@@ -54,13 +55,16 @@ apt-get install -y opencl-headers libicu-dev bzip2 libbz2-dev zlib1g-dev python-
 wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
 tar xjf boost_1_61_0.tar.bz2 && \
 cd boost_1_61_0 && \
-export PYTHON_PREFIX=`python-config --prefix` && \
+export PYTHON_PREFIX=`python3-config --prefix` && \
 ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
-export PYTHON_INCLUDES=`python-config --includes` && \
+export PYTHON_INCLUDES=`python3-config --includes` && \
 export CPPFLAGS="$PYTHON_INCLUDES -fPIC" && \
 export C_INCLUDE_PATH="$PYTHON_PREFIX/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="$PYTHON_PREFIX/include/python3.6m/" && \
 ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="$CPPFLAGS"
 chmod -R a+rx /opt/boost
+unset PYTHON_INCLUDES
+unset CPPFLAGS
+unset CPLUS_INCLUDE_PATH
 ```
 
 or for dynamic linking remove

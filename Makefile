@@ -67,9 +67,6 @@ deps_py:
 
 deps_install:
 	@echo "---- Install dependencies ----"
-	#-xargs -a requirements.txt -n 1 -P 1 $(PYTHON) -m pip install
-	easy_install pip
-	easy_install setuptools
 	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
 	$(PYTHON) -m pip install -r requirements.txt
 	rm -rf requirements.txt
@@ -96,7 +93,7 @@ py: apply-sklearn_simple build/VERSION.txt
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost ; make -f Makefile2 $(XGBOOST_TARGET)
+	cd xgboost ; make -f Makefile2 PYTHON=$(PYTHON) $(XGBOOST_TARGET)
 
 fullinstall-xgboost: xgboost install_xgboost
 

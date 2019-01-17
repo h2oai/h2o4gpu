@@ -46,30 +46,28 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
     print("Column Means")
     print(h2o4gpu_pca.mean_)
     print(scikit_pca.mean_)
-    if convert_to_float32:
-        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_, 1e-4)
-    else:
-        assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_)
+
+    assert np.allclose(h2o4gpu_pca.mean_, scikit_pca.mean_, (1e-5, 1e-4)[convert_to_float32])
 
     print("Noise Variance")
     print(h2o4gpu_pca.noise_variance_)
     print(scikit_pca.noise_variance_)
-    assert np.allclose(h2o4gpu_pca.noise_variance_, h2o4gpu_pca.noise_variance_)
+    assert np.allclose(h2o4gpu_pca.noise_variance_, h2o4gpu_pca.noise_variance_, (1e-5, 1e-4)[convert_to_float32])
 
     print("Explained variance")
     print(h2o4gpu_pca.explained_variance_)
     print(scikit_pca.explained_variance_)
-    assert np.allclose(h2o4gpu_pca.explained_variance_, scikit_pca.explained_variance_)
+    assert np.allclose(h2o4gpu_pca.explained_variance_, scikit_pca.explained_variance_, (1e-5, 1e-1)[convert_to_float32])
 
     print("Explained variance ratio")
     print(h2o4gpu_pca.explained_variance_ratio_)
     print(scikit_pca.explained_variance_ratio_)
-    assert np.allclose(h2o4gpu_pca.explained_variance_ratio_, scikit_pca.explained_variance_ratio_, .1)
+    assert np.allclose(h2o4gpu_pca.explained_variance_ratio_, scikit_pca.explained_variance_ratio_, (1e-4, 1e-3)[convert_to_float32])
 
     print("Singular values")
     print(h2o4gpu_pca.singular_values_)
     print(scikit_pca.singular_values_)
-    assert np.allclose(h2o4gpu_pca.singular_values_, scikit_pca.singular_values_)
+    assert np.allclose(h2o4gpu_pca.singular_values_, scikit_pca.singular_values_, (1e-5, 1e-1)[convert_to_float32])
 
     print("Components")
     if whiten:
@@ -78,7 +76,7 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
         scikit_pca.components_ = (scikit_pca.components_ * sqrt(X.shape[0])) / scikit_pca.singular_values_[:, np.newaxis]
     print(h2o4gpu_pca.components_)
     print(scikit_pca.components_)
-    assert np.allclose(h2o4gpu_pca.components_, scikit_pca.components_, .1)
+    assert np.allclose(h2o4gpu_pca.components_, scikit_pca.components_, (1e-2, 1e-1)[convert_to_float32])
 
     print("Num components")
     print(h2o4gpu_pca.n_components)
