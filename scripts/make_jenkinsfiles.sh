@@ -21,12 +21,12 @@ do
    echo "//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)" >> ci/Jenkinsfile-$i
    cat ci/Jenkinsfile.template >> ci/Jenkinsfile-$i
 
-   sed -i .bck 's/stage\(.*\)\"/stage\1 '$i'\"/g' ci/Jenkinsfile-$i
+   sed -i.bck 's/stage\(.*\)\"/stage\1 '$i'\"/g' ci/Jenkinsfile-$i
 
    if [[ $i == *"benchmark"* ]]; then
        echo "More for benchmarks"
-       sed -i .bck 's/dobenchmark = \"1\"/dobenchmark = \"0\"/g' ci/Jenkinsfile-$i
-       sed -i .bck 's/doruntime = \"1\"/doruntime = \"0\"/g' ci/Jenkinsfile-$i
+       sed -i.bck 's/dobenchmark = \"1\"/dobenchmark = \"0\"/g' ci/Jenkinsfile-$i
+       sed -i.bck 's/doruntime = \"1\"/doruntime = \"0\"/g' ci/Jenkinsfile-$i
    fi
 
    rm -rf ci/Jenkinsfile-$i.bck
