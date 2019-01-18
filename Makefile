@@ -416,7 +416,7 @@ dotest:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 --numprocesses 1 --max-worker-restart 4 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest -s --verbose --durations=10 --numprocesses 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package when appropriate
 	bash scripts/test_r_pkg.sh
 
