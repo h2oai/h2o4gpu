@@ -22,6 +22,7 @@ do
    cat ci/Jenkinsfile.template >> ci/Jenkinsfile-$i
 
    sed -i.bck 's/stage\(.*\)\"/stage\1 '$i'\"/g' ci/Jenkinsfile-$i
+   sed -i.bck 's/wasStageSuccessful\(.*\)\"/wasStageSuccessful\1 '$i'\"/g' ci/Jenkinsfile-$i
 
    if [[ $i == *"benchmark"* ]]; then
        echo "More for benchmarks"

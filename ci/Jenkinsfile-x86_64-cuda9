@@ -88,7 +88,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7")
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7 x86_64-cuda9")
                 }
             }
             steps {
@@ -130,7 +130,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7"))
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 x86_64-cuda9"))
                 }
             }
             steps {
