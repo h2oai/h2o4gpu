@@ -169,7 +169,12 @@ if(USE_CUDA)
         else()
                 SWIG_ADD_LIBRARY(ch2o4gpu_gpu LANGUAGE python SOURCES src/swig/ch2o4gpu_gpu.i)
         endif()
-        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu ${PYTHON_LIBRARIES})
+        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu 
+                ${PYTHON_LIBRARIES}
+                ${CUBLAS_STATIC_LIB}
+                ${CULIBOS_STATIC_LIB}
+                ${CUSOLVER_STATIC_LIB}
+                ${CUSPARSE_STATIC_LIB})
 
         SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
                 LINK_FLAGS ${OpenMP_CXX_FLAGS})
