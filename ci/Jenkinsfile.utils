@@ -324,8 +324,11 @@ def doBuild() {
         def doTrigger12 = changedFiles.any { filepath ->
             filepath.contains("LightGBM")
         }
-        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7} ${doTrigger8} ${doTrigger9} ${doTrigger10} ${doTrigger11} ${doTrigger12}"
-        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7 || doTrigger8 || doTrigger9 || doTrigger10 || doTrigger11 || doTrigger12
+        def doTrigger13 = changedFiles.any { filepath ->
+            filepath.contains("CMakeList")
+        }
+        echo "doBuild() Triggers: ${doTrigger1} ${doTrigger2} ${doTrigger3} ${doTrigger4} ${doTrigger5} ${doTrigger6} ${doTrigger7} ${doTrigger8} ${doTrigger9} ${doTrigger10} ${doTrigger11} ${doTrigger12} ${doTrigger13}"
+        return doTrigger1 || doTrigger2 || doTrigger3 || doTrigger4 || doTrigger5 || doTrigger6 || doTrigger7 || doTrigger8 || doTrigger9 || doTrigger10 || doTrigger11 || doTrigger12 || doTrigger13
     } else {
         echo "doBuild() No Triggers"
         return 1 == 1
