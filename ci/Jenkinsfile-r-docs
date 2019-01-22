@@ -19,7 +19,7 @@ pipeline {
     stages {
         stage("Generate Docs") {
             agent {
-                label "mr-0xc8"
+                label "linux && docker"
             }
             steps {
                 // Get source code
@@ -42,7 +42,7 @@ pipeline {
         }
         stage("Publish to S3") {
             agent {
-                label "mr-0xc8"
+                label "linux && docker"
             }
             steps {
                 dumpInfo()
