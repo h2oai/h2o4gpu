@@ -41,13 +41,14 @@ WORKDIR $HOME
 
 # Arrow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	yum install -y git boost-devel cmake3 && \
+	yum install -y git boost-devel cmake3  autoconf && \
 	ln -s /usr/bin/cmake3 /usr/bin/cmake && \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.12.0 && \
-  	pip install numpy==1.14.5 cython && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=release  && make -j && make install && \
+  git checkout tags/apache-arrow-0.12.0 && \
+  pip install numpy==1.14.5 cython && \
+  export ARROW_BUILD_TYPE=release && \
+	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=$ARROW_BUILD_TYPE -DARROW_BUILD_TESTS=OFF && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
 	yum install -y libjpeg-devel; \
