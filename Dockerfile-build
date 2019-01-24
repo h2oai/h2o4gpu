@@ -155,7 +155,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 # Install Python requirements
 #
-RUN pip install numpy==1.14.5 scipy==1.1.0 setuptools==39.0.1
+RUN pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt

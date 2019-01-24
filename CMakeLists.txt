@@ -11,7 +11,7 @@ FIND_PACKAGE(SWIG REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
 
 # SWIG behaviour was changed 
-if (${CMAKE_VERSION} GREATER "3.12")
+if (${CMAKE_VERSION} VERSION_GREATER "3.13")
         cmake_policy(SET CMP0078 OLD)
 endif()
 
