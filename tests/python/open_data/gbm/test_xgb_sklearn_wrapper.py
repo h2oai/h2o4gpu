@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # TODO: remove when support NCCL on ppc64le platform
 def n_gpus():
-    return (1, -1)[platform.machine().startswith('ppc64le')]
+    return (-1, 1)[platform.machine().startswith('ppc64le')]
 
 
 # Function to check fall back to sklearn
