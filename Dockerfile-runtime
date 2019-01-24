@@ -8,7 +8,7 @@ ENV HOME=/root
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=/usr/local/cuda/bin:$PATH
 ENV CUDADIR=/usr/local/cuda/include/
-ENV LD_LIBRARY_PATH=/usr/lib64:/usr/local/lib:/usr/local/lib64:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH
 
 ENV MINICONDA_VERSION=4.4.10
 
@@ -45,9 +45,9 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	ln -s /usr/bin/cmake3 /usr/bin/cmake && \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.8.0 && \
+	git checkout tags/apache-arrow-0.12.0 && \
   	pip install numpy==1.14.5 cython && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
+	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=release  && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
 	yum install -y libjpeg-devel; \
