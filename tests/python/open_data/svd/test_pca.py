@@ -76,7 +76,7 @@ def func(m=5000000, n=10, k=9, change_gpu_id=False, use_wrappper=False, convert_
         scikit_pca.components_ = (scikit_pca.components_ * sqrt(X.shape[0])) / scikit_pca.singular_values_[:, np.newaxis]
     print(h2o4gpu_pca.components_)
     print(scikit_pca.components_)
-    assert np.allclose(h2o4gpu_pca.components_, scikit_pca.components_, (1e-2, 1e-1)[convert_to_float32])
+    assert np.allclose(h2o4gpu_pca.components_, scikit_pca.components_, 1e-1, 1e-2)
 
     print("Num components")
     print(h2o4gpu_pca.n_components)

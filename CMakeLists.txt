@@ -11,7 +11,7 @@ FIND_PACKAGE(SWIG REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
 
 # SWIG behaviour was changed 
-if (${CMAKE_VERSION} GREATER "3.12")
+if (${CMAKE_VERSION} VERSION_GREATER "3.13")
         cmake_policy(SET CMP0078 OLD)
 endif()
 
@@ -119,8 +119,14 @@ if(USE_CUDA)
                 SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
         endif()
 
+        if(((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10)) AND NOT DEV_BUILD)
+                MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 10.0 detected, adding Turing compute capability (7.5).")
+                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
+        endif()
+
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
+        MESSAGE(STATUS "cuda architecture flags: ${GENCODE_FLAGS}")
         SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
@@ -131,6 +137,7 @@ if(USE_CUDA)
                 )
 
         CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> STATIC)
+        SET_TARGET_PROPERTIES(gpuh2o4gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
         if($ENV{USENVTX})
                 MESSAGE(STATUS "Building with NVTX support on.")

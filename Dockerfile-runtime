@@ -41,28 +41,17 @@ WORKDIR $HOME
 
 # Arrow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	yum install -y git boost-devel cmake3 && \
+  yum install -y git boost-devel cmake3  autoconf libjpeg-devel && \
 	ln -s /usr/bin/cmake3 /usr/bin/cmake && \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.8.0 && \
-  	pip install numpy==1.14.5 cython && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
+    git checkout tags/apache-arrow-0.12.0 && \
+    pip install numpy==1.15.1 cython && \
+    export ARROW_BUILD_TYPE=release && \
+    export ARROW_HOME=/usr/local && \
+	cmake -DARROW_CXXFLAGS="-lutil" -DCMAKE_INSTALL_PREFIX=$ARROW_HOME -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=$ARROW_BUILD_TYPE -DARROW_BUILD_TESTS=OFF && make -j && make install && \
 	cd $HOME/arrow/python && \
-	ARROW_HOME=/usr/local python setup.py install && \
-	yum install -y libjpeg-devel; \
-	fi'
-
-# Pillow
-ENV PILLOW_VERSION=4.2.1
-RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	wget https://files.pythonhosted.org/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-${PILLOW_VERSION}.tar.gz && \
-	tar xvf Pillow-${PILLOW_VERSION}.tar.gz && \
-	cd $HOME/Pillow-${PILLOW_VERSION} && \
-	sed -i "s/'ppc64'/'ppc64le'/g" setup.py && \
-	python setup.py install && \
-	cd $HOME && \
-	rm -rf Pillow-${PILLOW_VERSION}*; \
+	python setup.py install; \
 	fi'
 
 WORKDIR /

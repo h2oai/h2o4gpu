@@ -1,13 +1,15 @@
 import time
 import sys
-import os
+import platform
 import logging
+
+import pytest
 
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-
+@pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
 def test_lightgbm_gpu():
     import numpy as np
     import pandas as pd

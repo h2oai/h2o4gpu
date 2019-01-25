@@ -88,7 +88,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests()
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7 x86_64-cuda92")
                 }
             }
             steps {
@@ -130,7 +130,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Fast Test Wheel & Pylint & S3up on Linux"))
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 x86_64-cuda92"))
                 }
             }
             steps {
@@ -158,16 +158,6 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
-                    sh """
-                        echo "Before unstash condapkg:"
-                        ls -l condapkgs  || true
-                        rm -rf condapkgs || true
-                       """
-                    unstash "condapkg"
-                    sh """
-                        echo "After unstash condapkg:"
-                        ls -l condapkgs  || true
-                       """
                     h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
@@ -175,11 +165,6 @@ pipeline {
                         script {
                             h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}")
                         }
-                    }
-                }
-                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
-                    script {
-                        h2o4gpuUtils.publishToPoboys("${platform}")
                     }
                 }
             }
@@ -221,6 +206,16 @@ pipeline {
                        """
                     unstash 'version_info'
                     sh 'echo "Stashed version file:" && ls -l build/'
+                    sh """
+                        echo "Before unstash condapkg:"
+                        ls -l condapkgs  || true
+                        rm -rf condapkgs || true
+                       """
+                    unstash "condapkg"
+                    sh """
+                        echo "After unstash condapkg:"
+                        ls -l condapkgs  || true
+                       """
                 }
                 script {
                     h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${platform}", "${extratag}", "${data_dirs}")
@@ -231,6 +226,12 @@ pipeline {
                         h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "${extratag}")
                     }
                 }
+                }
+                // manually remove following block for ppc64le, until we fixed conda build
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
+                    script {
+                        h2o4gpuUtils.publishToPoboys("${platform}")
+                    }
                 }
             }
         }

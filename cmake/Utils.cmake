@@ -1,8 +1,15 @@
-function(format_gencode_flags flags out)
-    foreach(ver ${flags})
-        set(${out} "${${out}}-gencode arch=compute_${ver},code=sm_${ver};")
-    endforeach()
-    set(${out} "${${out}}" PARENT_SCOPE)
+# Generate nvcc compiler flags given a list of architectures
+# Also generates PTX for the most recent architecture for forwards compatibility
+ function(format_gencode_flags flags out)
+  # Generate SASS
+   foreach(ver ${flags})
+     set(${out} "${${out}}-gencode=arch=compute_${ver},code=sm_${ver};")
+   endforeach()
+  # Generate PTX for last architecture
+  list(GET flags -1 ver)
+  set(${out} "${${out}}-gencode=arch=compute_${ver},code=compute_${ver};")
+
+  set(${out} "${${out}}" PARENT_SCOPE)
 endfunction(format_gencode_flags flags)
 
 # Set a default build type to release if none was specified
