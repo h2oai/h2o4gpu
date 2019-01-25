@@ -23,7 +23,7 @@ def extratag = "-cuda8"
 def linuxwheel = "ppc64le-centos7-cuda8.whl"
 def testtype = "dotest"
 def labelbuild = "ibm-power || ibm-power-gpu"
-def labeltest = "ibm-power || ibm-power-gpu"
+def labeltest = "ibm-power-gpu"
 def labelruntime = "ibm-power || ibm-power-gpu"
 def doingbenchmark = "0"
 def dobenchmark = "0"
@@ -227,11 +227,11 @@ pipeline {
                     }
                 }
                 }
-                //retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
-                //    script {
-                //        h2o4gpuUtils.publishToPoboys("${platform}")
-                //    }
-                //}
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
+                    script {
+                        h2o4gpuUtils.publishToPoboys("${platform}")
+                    }
+                }
             }
         }
 
