@@ -227,11 +227,6 @@ pipeline {
                     }
                 }
                 }
-                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
-                    script {
-                        h2o4gpuUtils.publishToPoboys("${platform}")
-                    }
-                }
             }
         }
 
