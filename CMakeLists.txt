@@ -144,10 +144,25 @@ if(USE_CUDA)
                 SET(NVTX_LIBRARY nvToolsExt)
         endif()
 
+        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a 
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/") # cuda-10
+        find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+        find_library(CUSPARSE_STATIC_LIB NAMES libcusparse_static.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+        find_library(CUSOLVER_STATIC_LIB NAMES libcusolver_static.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+        
+
         TARGET_LINK_LIBRARIES(gpuh2o4gpu
-                ${CUDA_CUBLAS_LIBRARIES}
-                ${CUDA_cusolver_LIBRARY}
-                ${CUDA_cusparse_LIBRARY}
+                ${CUBLAS_STATIC_LIB}
+                ${CULIBOS_STATIC_LIB}
+                ${CUSOLVER_STATIC_LIB}
+                ${CUSPARSE_STATIC_LIB}
                 ${BLAS_LIBRARIES}
                 ${NVTX_LIBRARY}
                 ${NVML_LIBRARY})
