@@ -25,7 +25,7 @@ OPTION(DEV_BUILD  "Dev build" OFF)
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w -g")
 
 # PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
 # Open to suggestions how to do this better.
@@ -127,7 +127,7 @@ if(USE_CUDA)
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
         MESSAGE(STATUS "cuda architecture flags: ${GENCODE_FLAGS}")
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -g; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu
