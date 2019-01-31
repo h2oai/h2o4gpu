@@ -42,9 +42,8 @@ RUN yum -y update
 # Setup gcc etc.
 RUN yum install -y development gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
 
-RUN yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel
+RUN yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel libjpeg-devel hdf5-devel
 
-RUN yum install -y hdf5-devel
 RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
 	yum install -y ocl-icd; \
     fi'
@@ -130,18 +129,29 @@ RUN \
 # PPC64 specific - certain libs/whl don't support PPC64LE
 #
 
+# Boost
+RUN \
+    wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
+    tar xjf boost_1_61_0.tar.bz2 && \
+    cd boost_1_61_0 && \
+    export PYTHONPATH=/usr/lib64/python3.6 && \
+    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6 && \
+    export CPPFLAGS="-I/usr/include/python3.6dm/ -fPIC" && \
+    export C_INCLUDE_PATH="/usr/include/python3.6dm/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6dm/" && \
+    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /usr/include/python3.6dm" && \
+    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
+    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
+    cd /
+
 # Arrow
-RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
+RUN \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.8.0 && \
-    yum install -y boost-devel && \
-  	pip install numpy==1.14.5 cython && \
+	git checkout tags/apache-arrow-0.12.0 && \
+  	python3.6-debug -m pip install numpy==1.15.1 Cython==0.28.6 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
-	ARROW_HOME=/usr/local python setup.py install && \
-	yum install -y libjpeg-devel;\
-	fi'
+	ARROW_HOME=/usr/local python setup.py install;
 
 # Pillow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
@@ -158,15 +168,15 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 # Install Python requirements
 #
-RUN pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1
+RUN python3.6-debug -m pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1 Cython==0.28.6
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 
-RUN pip install -r requirements_buildonly.txt
-RUN pip install -r requirements_runtime.txt
-RUN pip install -r requirements_runtime_demos.txt
+RUN python3.6-debug -m pip install -r requirements_buildonly.txt
+RUN python3.6-debug -m pip install -r requirements_runtime.txt
+RUN python3.6-debug -m pip install -r requirements_runtime_demos.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
@@ -219,18 +229,7 @@ RUN \
 # https://github.com/Microsoft/LightGBM/pull/929/files
 # Could compile with these as well: -DBOOST_COMPUTE_USE_OFFLINE_CACHE=OFF -DBOOST_COMPUTE_THREAD_SAFE=ON
 RUN \
-    export CUDA_HOME=/usr/local/cuda/ && \
-    wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
-    tar xjf boost_1_61_0.tar.bz2 && \
-    cd boost_1_61_0 && \
-    export PYTHONPATH=/usr/lib64/python3.6 && \
-    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6 && \
-    export CPPFLAGS="-I/usr/include/python3.6dm/ -fPIC" && \
-    export C_INCLUDE_PATH="/usr/include/python3.6dm/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6dm/" && \
-    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /usr/include/python3.6dm" && \
-    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
-    cd / 
+    export CUDA_HOME=/usr/local/cuda/ 
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
 
