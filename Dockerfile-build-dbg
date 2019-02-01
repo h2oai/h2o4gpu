@@ -92,6 +92,8 @@ RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 RUN ln -fs /usr/bin/python3.6-debug /usr/bin/python
 RUN ln -fs /usr/bin/pip3.6 /usr/bin/pip
 
+RUN python -m pip install --upgrade pip
+
 # Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
 #RUN \
 #    mkdir -p /usr/lib64/ && \
@@ -139,7 +141,6 @@ RUN \
     wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
     tar xjf boost_1_61_0.tar.bz2 && \
     cd boost_1_61_0 && \
-    export PYTHONPATH=/usr/lib64/python3.6 && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6 && \
     export CPPFLAGS="-I/usr/include/python3.6dm/ -fPIC" && \
     export C_INCLUDE_PATH="/usr/include/python3.6dm/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6dm/" && \
