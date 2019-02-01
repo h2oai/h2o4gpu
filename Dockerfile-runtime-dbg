@@ -69,8 +69,8 @@ COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  pip install --no-cache-dir -r requirements.txt && \
-  pip install --no-cache-dir -r requirements_runtime_demos.txt
+  python3.6-debug -m pip install --no-cache-dir -r requirements.txt && \
+  python3.6-debug -m pip install --no-cache-dir -r requirements_runtime_demos.txt
 
 
 RUN mkdir -p /etc/OpenCL/vendors && \

@@ -18,11 +18,11 @@ echo "Docker devel test and pylint - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd ./repo ; ln -sf /data . || true ; ln -sf /open_data . || true'
 
-echo "Docker devel test and pylint - pip install wheel from dist/${platform}, make ${target}"
+echo "Docker devel test and pylint - python -m pip install wheel from dist/${platform}, make ${target}"
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean dist/${platform}/*.whl before unstash in jenkins
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd` ; cd repo ; pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd` ; cd repo ; python -m install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"`; python -m pip freeze ; make '${target}
 
 { # try
     echo "Docker devel test and pylint - copy any dat results"
