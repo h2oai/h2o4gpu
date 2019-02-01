@@ -21,6 +21,8 @@ RUN yum -y update
 
 RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 
+RUN yum install -y development gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
+
 RUN yum install -y \
     make \
     ncurses-devel \
@@ -32,7 +34,7 @@ RUN yum install -y \
     openblas-devel \
     libpng-devel \
     freetype-devel \
-	bzip2 && \
+	bzip2 \
     python36-pip \
     python36-debug;
 
@@ -43,8 +45,6 @@ RUN yum install -y \
 # CentOS uses python2 by default
 # this will brake yum, so install all dependency before
 RUN ln -fs /usr/bin/python3.6-debug /usr/bin/python
-RUN ln -fs /usr/bin/pip3.6 /usr/bin/pip
-
 
 RUN python -m pip install --upgrade pip
 

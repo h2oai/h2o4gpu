@@ -128,7 +128,7 @@ RUN \
 #
 # Install Python dependencies
 #
-RUN python3.6-debug -m pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1 Cython==0.29.3
+RUN python3.6-debug -m pip install numpy==1.15.1 setuptools==39.0.1 Cython==0.29.3
 
 # TODO Install DAAL
 
