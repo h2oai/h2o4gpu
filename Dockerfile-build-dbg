@@ -123,6 +123,11 @@ RUN \
     cd $HOME && \
     rm -rf swig-3*
 
+#
+# Install Python dependencies
+#
+RUN python3.6-debug -m pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1 Cython==0.29.3
+
 # TODO Install DAAL
 
 #
@@ -148,7 +153,6 @@ RUN \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
 	git checkout tags/apache-arrow-0.12.0 && \
-  	python3.6-debug -m pip install numpy==1.15.1 Cython==0.28.6 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install;
@@ -164,11 +168,6 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	rm -rf Pillow-${PILLOW_VERSION}*; \
 	fi'
 
-
-#
-# Install Python requirements
-#
-RUN python3.6-debug -m pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1 Cython==0.28.6
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
