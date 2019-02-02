@@ -19,9 +19,12 @@ RUN yum -y install https://centos7.iuscommunity.org/ius-release.rpm
 
 RUN yum -y update
 
-RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
+RUN mkdir -p /opt/h2oai/h2o4gpu/
 
-RUN yum install -y development gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
+# Setup gcc etc.
+RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc gdb git2u wget
+
+RUN yum install -y boost-devel cmake3 autoconf libjpeg-devel 
 
 RUN yum install -y \
     make \
@@ -42,6 +45,9 @@ RUN yum install -y \
 # PPC64 specific - certain libs/whl don't support PPC64LE
 #
 
+# CentOS' yum install cmake has only 2.X so need to install cmake3 and make a symlink
+RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
+
 # CentOS uses python2 by default
 # this will brake yum, so install all dependency before
 RUN ln -fs /usr/bin/python3.6-debug /usr/bin/python
@@ -51,7 +57,7 @@ RUN python -m pip install --upgrade pip
 #
 # Install Python dependencies
 #
-RUN python3.6-debug -m pip install numpy==1.15.1 scipy==1.1.0 setuptools==39.0.1 Cython==0.29.3
+RUN python3.6-debug -m pip install numpy==1.15.1 setuptools==39.0.1 Cython==0.29.3
 
 
 WORKDIR $HOME
@@ -72,8 +78,8 @@ COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  python3.6-debug -m pip install --no-cache-dir -r requirements.txt && \
-  python3.6-debug -m pip install --no-cache-dir -r requirements_runtime_demos.txt
+  python3.6-debug -m pip install -r requirements.txt && \
+  python3.6-debug -m pip install -r requirements_runtime_demos.txt
 
 
 RUN mkdir -p /etc/OpenCL/vendors && \

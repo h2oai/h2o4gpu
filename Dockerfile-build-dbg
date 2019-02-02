@@ -40,7 +40,7 @@ RUN yum -y install https://centos7.iuscommunity.org/ius-release.rpm
 RUN yum -y update
 
 # Setup gcc etc.
-RUN yum install -y development gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
+RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u wget make autoconf
 
 RUN yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel libjpeg-devel hdf5-devel
 
