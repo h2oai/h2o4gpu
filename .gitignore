@@ -18,6 +18,8 @@ src/interface_py/h2o4gpu/multioutput.py
 src/interface_py/h2o4gpu/naive_bayes.py
 src/interface_py/h2o4gpu/pipeline.py
 src/interface_py/h2o4gpu/random_projection.py
+src/interface_py/h2o4gpu/_config.py
+src/interface_py/h2o4gpu/impute.py
 
 #Sphinx docs
 _build
@@ -70,6 +72,7 @@ src/py3nvml/
 tmp/
 tests/results
 examples/py/sourced.png
+
 
 # temp data generated
 tests/python/xgboost/fifa_data.pk
@@ -175,6 +178,7 @@ src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.cxx
 src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.cxx
 
 src/interface_py/h2o4gpu/BUILD_INFO.txt
+src/interface_py/build_info.txt
 
 # Temp requirement file generated for Conda
 src/interface_py/requirements_conda.txt

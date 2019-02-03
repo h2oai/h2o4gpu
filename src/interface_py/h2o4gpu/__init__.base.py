@@ -6,9 +6,6 @@
 #Skip pylint b / c this is automatically concatenated at compile time
 #with other init files
 
-# stub value
-__version__ = "0.0.0.0000"
-
 DAAL_SUPPORTED=True
 
 try:

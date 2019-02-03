@@ -2,7 +2,7 @@
 apipkg==1.4
 attrs==17.4.0
 execnet==1.5.0
-pluggy==0.6.0
+pluggy==0.7.1
 py==1.5.2
 six==1.11.0
 yapf==0.17.0
@@ -13,11 +13,11 @@ sphinx_rtd_theme==0.2.4
 pillow==4.2.1
 # compile wheel
 wheel==0.31.1
-Cython==0.27.3
+Cython==0.29.3
 # for make testperf
 h2o==3.18.0.11
 pandas==0.23.4
-numpy==1.15.1
+numpy==1.16.1
 # for some utilities
 nbconvert==5.3.1
 nbformat==4.3.0

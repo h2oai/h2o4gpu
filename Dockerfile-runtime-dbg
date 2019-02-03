@@ -36,8 +36,12 @@ RUN yum install -y \
     libpng-devel \
     freetype-devel \
 	bzip2 \
+    python36 \
+    python36-devel \
     python36-pip \
-    python36-debug;
+    python36-debuginfo;
+
+RUN debuginfo-install -y python36-debug-3.6.6-1.el7.x86_64
 
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
@@ -48,14 +52,14 @@ RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
 # CentOS uses python2 by default
 # this will brake yum, so install all dependency before
-RUN ln -fs /usr/bin/python3.6-debug /usr/bin/python
+RUN ln -fs /usr/bin/python3.6 /usr/bin/python
 
 RUN python -m pip install --upgrade pip
 
 #
 # Install Python dependencies
 #
-RUN python3.6-debug -m pip install numpy==1.15.1 setuptools==39.0.1 Cython==0.29.3
+RUN python3.6 -m pip install numpy==1.16.1 setuptools==39.0.1 Cython==0.29.3
 
 
 WORKDIR $HOME
@@ -78,8 +82,8 @@ COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  python3.6-debug -m pip install -r requirements.txt && \
-  python3.6-debug -m pip install -r requirements_runtime_demos.txt
+  python3.6 -m pip install -r requirements.txt && \
+  python3.6 -m pip install -r requirements_runtime_demos.txt
 
 
 RUN mkdir -p /etc/OpenCL/vendors && \

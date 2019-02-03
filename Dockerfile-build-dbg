@@ -62,12 +62,17 @@ RUN yum install -y \
         epel-release \
         zeromq-devel \
         openblas-devel \
+        python36 \
+        python36-devel \
         python36-pip \
-        python36-debug && \
+        python36-debuginfo && \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
     rm -rf llvm*
+
+#Arrow dependency
+RUN yum install -y boost-devel 
 
 ENV LLVM4=/opt/h2oai/h2o4gpu
 #ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
@@ -87,7 +92,7 @@ RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
 # CentOS uses python2 by default
 # this will brake yum, so install all dependency before
-RUN ln -fs /usr/bin/python3.6-debug /usr/bin/python
+RUN ln -fs /usr/bin/python3.6 /usr/bin/python
 RUN ln -fs /usr/bin/pip3.6 /usr/bin/pip
 
 RUN python -m pip install --upgrade pip
@@ -126,26 +131,13 @@ RUN \
 #
 # Install Python dependencies
 #
-RUN python3.6-debug -m pip install numpy==1.15.1 setuptools==39.0.1 Cython==0.29.3
+RUN python3.6 -m pip install numpy==1.16.1 setuptools==39.0.1 Cython==0.29.3
 
 # TODO Install DAAL
 
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
 #
-
-# Boost
-RUN \
-    wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
-    tar xjf boost_1_61_0.tar.bz2 && \
-    cd boost_1_61_0 && \
-    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6-debug && \
-    export CPPFLAGS="-I/usr/include/python3.6dm/ -fPIC" && \
-    export C_INCLUDE_PATH="/usr/include/python3.6dm/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6dm/" && \
-    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /usr/include/python3.6dm" && \
-    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
-    cd /
 
 # Arrow
 RUN \
@@ -172,9 +164,9 @@ COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 
-RUN python3.6-debug -m pip install -r requirements_buildonly.txt
-RUN python3.6-debug -m pip install -r requirements_runtime.txt
-RUN python3.6-debug -m pip install -r requirements_runtime_demos.txt
+RUN python3.6 -m pip install -r requirements_buildonly.txt
+RUN python3.6 -m pip install -r requirements_runtime.txt
+RUN python3.6 -m pip install -r requirements_runtime_demos.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
@@ -183,6 +175,20 @@ RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
+
+
+# Boost
+RUN \
+    wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
+    tar xjf boost_1_61_0.tar.bz2 && \
+    cd boost_1_61_0 && \
+    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6 && \
+    export CPPFLAGS="-I/usr/include/python3.6m/ -fPIC" && \
+    export C_INCLUDE_PATH="/usr/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6m/" && \
+    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /usr/include/python3.6m" && \
+    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
+    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
+    cd /
 
 # NCCL2 (License: https://docs.nvidia.com/deeplearning/sdk/nccl-sla/index.html)
 RUN \
