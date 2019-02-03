@@ -69,7 +69,7 @@ RUN \
     export ARROW_HOME=/usr/local && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DCMAKE_INSTALL_PREFIX=$ARROW_HOME -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=$ARROW_BUILD_TYPE -DARROW_BUILD_TESTS=OFF && make -j && make install && \
 	cd $HOME/arrow/python && \
-	python setup.py install; \
+	python setup.py install;
 
 WORKDIR /
 
