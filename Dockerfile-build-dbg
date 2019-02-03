@@ -37,8 +37,6 @@ RUN yum install -y epel-release
 
 RUN yum -y install https://centos7.iuscommunity.org/ius-release.rpm
 
-RUN yum -y update
-
 # Setup gcc etc.
 RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc git2u wget make autoconf
 
@@ -141,7 +139,7 @@ RUN \
     wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
     tar xjf boost_1_61_0.tar.bz2 && \
     cd boost_1_61_0 && \
-    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6 && \
+    ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3.6-debug && \
     export CPPFLAGS="-I/usr/include/python3.6dm/ -fPIC" && \
     export C_INCLUDE_PATH="/usr/include/python3.6dm/" ; export CPLUS_INCLUDE_PATH="/usr/include/python3.6dm/" && \
     ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /usr/include/python3.6dm" && \
