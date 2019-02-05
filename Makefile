@@ -536,6 +536,8 @@ src/interface_py/h2o4gpu/BUILD_INFO.txt:
 	@echo "build_user=\"`id -u -n`\"" >> $@
 	@echo "base_version=\"$(BASE_VERSION)\"" >> $@
 	@echo "h2o4gpu_commit=\"$(H2O4GPU_COMMIT)\"" >> $@
+	@echo "cuda_version=\"$(MAKEFILE_CUDA_VERSION)\"" >> $@
+	@echo "cuda_nccl=\"$(USENCCL)\"" >> $@
 
 build/VERSION.txt: src/interface_py/h2o4gpu/BUILD_INFO.txt
 	@mkdir -p build

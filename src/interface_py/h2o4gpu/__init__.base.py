@@ -5,8 +5,9 @@
 """
 #Skip pylint b / c this is automatically concatenated at compile time
 #with other init files
-# TODO: grab this from BUILD_INFO.txt or __about__.py
-__version__ = "0.3.0.9999"
+
+# stub value
+__version__ = "0.0.0.0000"
 
 DAAL_SUPPORTED=True
 

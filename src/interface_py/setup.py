@@ -100,6 +100,14 @@ class BinaryDistribution(Distribution):
 about_info={}
 with open('__about__.py') as f: exec(f.read(), about_info)
 
+lines = []
+lines.append("__version__ = '" + about_info['__build_info__']['base_version'] + "'")
+lines.append("__git_revision__ = '" + about_info['__build_info__']['commit'] + "'")
+lines.append("__cuda_version__ = '" + about_info['__build_info__']['cuda_version'] + "'")
+lines.append("__cuda_nccl__ = '" + about_info['__build_info__']['cuda_nccl'] + "'")
+with open('build_info.txt','w') as fp:
+    fp.write('\n'.join(lines)+'\n')
+
 # Make the .whl contain required python and OS as we are version and distro specific
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel

@@ -14,7 +14,9 @@ build_info = {
     'build_machine' : '',
     'build_date' : '',
     'build_user' : '',
-    'base_version' : '0.0.0'
+    'base_version' : '0.0.0',
+    'cuda_version' : '',
+    'cuda_nccl' : '',
 }
 
 import pkg_resources
