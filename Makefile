@@ -58,8 +58,7 @@ alldeps: deps_fetch alldeps-install
 
 deps_fetch:
 	@echo "---- Fetch dependencies ---- "
-	bash scripts/gitshallow_submodules.sh
-	git submodule update
+	git submodule update --init --recursive
 
 .PHONY: deps_py
 deps_py:
