@@ -78,6 +78,12 @@ deps_install:
 update_submodule:
 	echo ADD UPDATE SUBMODULE HERE
 
+nccl: nccl/build/lib/libnccl_static.a
+
+nccl/build/lib/libnccl_static.a:
+	@echo "----- Building NCCL -----"
+	cd nccl && $(MAKE) src.build CUDA_HOME=$(CUDA_HOME)
+
 cpp:
 	mkdir -p build && \
 	cd build && \
@@ -94,7 +100,7 @@ xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
 	cd xgboost ; make -f Makefile2 PYTHON=$(PYTHON) $(XGBOOST_TARGET)
 
-fullinstall-xgboost: xgboost install_xgboost
+fullinstall-xgboost: nccl xgboost install_xgboost
 
 .PHONY: lightgbm_gpu
 lightgbm_gpu:
@@ -197,7 +203,7 @@ install: install_py
 # CLEANING TARGETS
 #########################################
 
-clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
+clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp clean_nccl
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
 
@@ -232,6 +238,9 @@ clean_deps:
 	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) $(PYTHON) -m pip uninstall -y
 	rm -rf requirements_plain.txt requirements.txt
+
+clean_nccl:
+	rm -rf nccl/build
 
 #########################################
 # FULL BUILD AND INSTALL TARGETS
