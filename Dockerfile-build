@@ -173,44 +173,6 @@ RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 
-# NCCL2 (License: https://docs.nvidia.com/deeplearning/sdk/nccl-sla/index.html)
-RUN \
-    bash -c 'if [ `arch` == "x86_64" ]; then \
-    export CUDA_HOME=/usr/local/cuda ; if [ -d "$CUDA_HOME" ]; then \
-    export CUDA_LIB=$CUDA_HOME/lib64 && \
-    export CUDA_VERSION=`ls $CUDA_LIB/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev` && \
-    export CUDA_MAJOR=`echo $CUDA_VERSION | cut -d "." -f 1` && \
-    export CUDA_MINOR=`echo $CUDA_VERSION | cut -d "." -f 2| sed 's/@//g'` && \
-    export CUDA_SHORT=`echo $CUDA_VERSION | egrep -o '[0-9]\.[0-9]'` && \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/nccl/v2.2.13/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.txz && \
-    tar xf "nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.txz" && \
-    cp nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`/include/nccl.h /usr/include && \
-    cp nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`/lib/* /usr/lib && \
-    rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.txz && \
-    rm -r nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch` ; \
-    fi ; \
-    fi'
-
-# NCCL2 (License: https://docs.nvidia.com/deeplearning/sdk/nccl-sla/index.html)
-RUN \
-    bash -c 'if [ `arch` == "ppc64le" ]; then \
-    export CUDA_HOME=/usr/local/cuda ; if [ -d "$CUDA_HOME" ]; then \
-    export CUDA_LIB=$CUDA_HOME/lib64 && \
-    export CUDA_VERSION=`ls $CUDA_LIB/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev` && \
-    export CUDA_MAJOR=`echo $CUDA_VERSION | cut -d "." -f 1` && \
-    export CUDA_MINOR=`echo $CUDA_VERSION | cut -d "." -f 2| sed 's/@//g'` && \
-    export CUDA_SHORT=`echo $CUDA_VERSION | egrep -o '[0-9]\.[0-9]'` && \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/nccl/v2.2.13/nccl_2.2.13-1%2Bcuda${CUDA_SHORT}_`arch`.tgz && \
-    tar xzf "nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz" && \
-    cp cuda/targets/`arch`-linux/include/nccl.h /usr/include/ && \
-    cp cuda/targets/`arch`-linux/lib/* /usr/lib64/ && \
-    rm -f nccl_2.2.13-1+cuda${CUDA_SHORT}_`arch`.tgz && \
-    chmod -R a+rx /usr/include/ && \
-    chmod -R a+rx /usr/lib64/ && \
-    ldconfig && \
-    rm -rf cuda ; \
-    fi ; \
-    fi' || true
 
 # See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
 # https://github.com/Microsoft/LightGBM/pull/929/files
