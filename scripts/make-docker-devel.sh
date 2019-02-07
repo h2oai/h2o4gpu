@@ -21,7 +21,7 @@ $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 
 # workaround to not compile nccl every time 
 echo "Docker devel - Copying nccl build artifacts"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /dot/nccl rev-parse HEAD) !=  $(git -C /root/nccl rev-parse HEAD) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /root/nccl rev-parse HEAD) !=  $(git -C /root/repo rev-parse  @:nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /root/nccl/build /root/repo/nccl'
 
 echo "shallow clone, and make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
