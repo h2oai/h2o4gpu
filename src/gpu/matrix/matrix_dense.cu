@@ -633,13 +633,12 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
 
-  
   // return;//TODO: Some deconstructor issue FIXME.  Segfaults after adding weights.  Can't find issue.
   
   checkwDev(_wDev);
   CUDACHECK(cudaSetDevice(_wDev));
 
-  if(0){
+  if(1){
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     GpuData<T> *infoy = reinterpret_cast<GpuData<T>*>(this->_infoy);
     GpuData<T> *vinfo = reinterpret_cast<GpuData<T>*>(this->_vinfo);
@@ -655,8 +654,10 @@ MatrixDense<T>::~MatrixDense() {
 
   //  fprintf(stderr,"HERE1\n"); fflush(stderr);
 
-  if(0){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
-    // If 0 is used, then need to ensure user calls a finish() or something to free memory.  If 0, also allows user to call (say) fit() or fitptr() multiple times
+  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, 
+    // and might want more fine-grained control over GPU memory if inside (say) high-level python API
+    // If 0 is used, then need to ensure user calls a finish() or something to free memory.  If 0, also 
+    // allows user to call (say) fit() or fitptr() multiple times
     
     if (this->_done_init && _data) {
       //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);
@@ -1451,7 +1452,7 @@ int MatrixDense<T>::Equil(bool equillocal) {
 
   // Create bit-vector with signs of entries in A and then let A = f(A),
   // where f = |A| or f = |A|.^2.
-  unsigned char *sign;
+  unsigned char *sign = NULL;
   size_t num_sign_bytes = (num_el + 7) / 8;
   cudaMalloc(&sign, num_sign_bytes);
   CUDA_CHECK_ERR();
@@ -1820,9 +1821,11 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
     cml::vector<T> weight_vec;
+    auto free_weight_vec = false;
     if(_weight) weight_vec = cml::vector_view_array(_weight, this->_m); // weight
     else{
       weight_vec = cml::vector_calloc<T>(this->_m); // weight make up
+      free_weight_vec = true;
       cml::vector_add_constant(&weight_vec, static_cast<T>(1.0)); // make unity weights
     }
     cml::vector<T> ytemp = cml::vector_calloc<T>(this->_m); // b
@@ -1848,6 +1851,9 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
                                            absolute_value<T>(),
                                            static_cast<T>(0.0),
                                            thrust::maximum<T>());
+    cml::vector_free(&ytemp);
+    cml::vector_free(&xtemp);
+    if(free_weight_vec) cml::vector_free(&weight_vec);
   }
   else{
     lambda_max0 = 7000; // test
@@ -2035,11 +2041,13 @@ int modelFree1(T *aptr){
 
 }  // namespace h2o4gpu
 
-int modelfree1_double(double *aptr){
-  return h2o4gpu::modelFree1<double>(aptr);
+int modelfree1_double(double **aptr){
+    fprintf(stderr,"modelfree1_double: %p\n",(void**)aptr); fflush(stderr);
+  return h2o4gpu::modelFree1<double>(*aptr);
 }
-int modelfree1_float(float *aptr){
-  return h2o4gpu::modelFree1<float>(aptr);
+int modelfree1_float(float **aptr){
+    fprintf(stderr,"modelfree1_float: %p\n",(void**)aptr); fflush(stderr);
+  return h2o4gpu::modelFree1<float>(*aptr);
 }
 
 

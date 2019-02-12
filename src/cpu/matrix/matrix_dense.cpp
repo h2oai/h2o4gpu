@@ -52,8 +52,11 @@ void MultDiag(const T *d, const T *e, size_t m, size_t n,
 
 }  // namespace
 
-  // TODO: Can have Equil (or whatever wants to modify _data) called by single core first when inporting data into _data.  Then rest of cores (in multi-threaded call to another MatrixDense(wDev,A) would not do equil and could pass only the pointer instead of creating new memory.
-  // TODO: For first core, could assign pointer if ok with input being modified.  Could have function call argument that allows user to say if ok to modify input data in order to save memory.
+  // TODO: Can have Equil (or whatever wants to modify _data) called by single core first when inporting 
+  // data into _data.  Then rest of cores (in multi-threaded call to another MatrixDense(wDev,A) would not 
+  // do equil and could pass only the pointer instead of creating new memory.
+  // TODO: For first core, could assign pointer if ok with input being modified.  Could have function call 
+  // argument that allows user to say if ok to modify input data in order to save memory.
   
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////// MatrixDense Implementation /////////////////////////////
@@ -465,7 +468,7 @@ MatrixDense<T>::MatrixDense(const MatrixDense<T>& A)
 template <typename T>
 MatrixDense<T>::~MatrixDense() {
 
-  if(0){
+  if(1){
     CpuData<T> *info = reinterpret_cast<CpuData<T>*>(this->_info);
     CpuData<T> *infoy = reinterpret_cast<CpuData<T>*>(this->_infoy);
     CpuData<T> *vinfo = reinterpret_cast<CpuData<T>*>(this->_vinfo);
@@ -482,7 +485,7 @@ MatrixDense<T>::~MatrixDense() {
     this->_weightinfo = 0;
   }
   
-  if(0){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
+  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, and might want more fine-grained control over GPU memory if inside (say) high-level python API
 
     if (this->_done_init && _data) {
       //      fprintf(stderr,"Freeing _data: %p\n",(void*)_data); fflush(stderr);
@@ -1039,11 +1042,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 }  // namespace h2o4gpu
 
-int modelfree1_float(float *aptr){
-  return h2o4gpu::modelFree1<float>(aptr);
+int modelfree1_float(float **aptr){
+  return h2o4gpu::modelFree1<float>(*aptr);
 }
-int modelfree1_double(double *aptr){
-  return h2o4gpu::modelFree1<double>(aptr);
+int modelfree1_double(double **aptr){
+  return h2o4gpu::modelFree1<double>(*aptr);
 }
 
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
