@@ -2,17 +2,11 @@ import sys
 import numpy as np
 import logging
 import pandas as pd
-import platform
 
 print(sys.path)
 
 
 logging.basicConfig(level=logging.DEBUG)
-
-# TODO: remove when support NCCL on ppc64le platform
-def n_gpus():
-    return (-1, 1)[platform.machine().startswith('ppc64le')]
-
 
 # Function to check fall back to sklearn
 def test_drf_regressor_backupsklearn(backend='auto'):
@@ -76,7 +70,7 @@ def test_drf_classifier_backupsklearn(backend='auto'):
     Solver = h2o4gpu.RandomForestClassifier
 
     #Run h2o4gpu version of RandomForest Regression
-    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10, n_gpus=n_gpus())
+    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
@@ -137,7 +131,7 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
     Solver = h2o4gpu.GradientBoostingRegressor
 
     #Run h2o4gpu version of RandomForest Regression
-    gbm = Solver(backend=backend, random_state=1234, n_gpus=n_gpus())
+    gbm = Solver(backend=backend, random_state=1234)
     print("h2o4gpu fit()")
     gbm.fit(X, y)
 

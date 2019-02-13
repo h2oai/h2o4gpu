@@ -16,3 +16,6 @@
 [submodule "LightGBM"]
 	path = LightGBM
 	url = https://github.com/h2oai/LightGBM.git
+[submodule "nccl"]
+	path = nccl
+	url = https://github.com/NVIDIA/nccl.git
