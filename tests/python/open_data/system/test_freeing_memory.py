@@ -17,7 +17,7 @@ def run(model, m, n, s):
     model.fit(X, y)
 
 def run_stress(model):
-    runs = 8
+    runs = 4
     n = 2048
     m_ratio = 2
     s_ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
