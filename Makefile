@@ -204,7 +204,7 @@ install: install_py
 #########################################
 
 clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
-	@echo "nccl is not clearned as it takes too long to compile"
+	@echo "nccl is not cleaned as it takes too long to compile"
 	@echo "use 'make clean_nccl' to do it mannualy"
 	-rm -rf ./build
 	-rm -rf ./results/ ./tmp/
