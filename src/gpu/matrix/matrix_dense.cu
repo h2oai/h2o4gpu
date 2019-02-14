@@ -2041,11 +2041,11 @@ int modelFree1(T *aptr){
 
 }  // namespace h2o4gpu
 
-int modelfree1_double(double **aptr){
-  return h2o4gpu::modelFree1<double>(*aptr);
+int modelfree1_double(double *aptr){
+  return h2o4gpu::modelFree1<double>(aptr);
 }
-int modelfree1_float(float **aptr){
-  return h2o4gpu::modelFree1<float>(*aptr);
+int modelfree1_float(float *aptr){
+  return h2o4gpu::modelFree1<float>(aptr);
 }
 
 

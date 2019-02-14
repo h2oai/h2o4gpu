@@ -1042,11 +1042,11 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 }  // namespace h2o4gpu
 
-int modelfree1_float(float **aptr){
-  return h2o4gpu::modelFree1<float>(*aptr);
+int modelfree1_float(float *aptr){
+  return h2o4gpu::modelFree1<float>(aptr);
 }
-int modelfree1_double(double **aptr){
-  return h2o4gpu::modelFree1<double>(*aptr);
+int modelfree1_double(double *aptr){
+  return h2o4gpu::modelFree1<double>(aptr);
 }
 
   int make_ptr_double(int sharedA, int sourceme, int sourceDev, size_t mTrain, size_t n, size_t mValid, const char ord,
