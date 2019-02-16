@@ -951,15 +951,15 @@ H2O4GPU<T, M, P>::~H2O4GPU() {
 
 	if(1){
 	if (_z)
-		cudaFree(_z);
+		CUDACHECK(cudaFree(_z));
 	if (_zt)
-		cudaFree(_zt);
+        CUDACHECK(cudaFree(_zt));
 	if (_xp)
-		cudaFree(_xp);
+        CUDACHECK(cudaFree(_xp));
 	if (_trainPredsp)
-		cudaFree(_trainPredsp);
+        CUDACHECK(cudaFree(_trainPredsp));
 	if (_validPredsp)
-		cudaFree(_validPredsp);
+        CUDACHECK(cudaFree(_validPredsp));
 	CUDA_CHECK_ERR();
 	}
 	_z = _zt = _xp = _trainPredsp = _validPredsp = 0;

@@ -9,6 +9,17 @@ import numpy as np
 
 # Data utils
 
+class WrappedPointer(object):
+    def __init__(self, p, double_precision, lib):
+        self.p = p
+        self.double_precision = double_precision
+        self.lib = lib
+    def __del__(self):
+        if self.double_precision:
+            self.lib.modelfree1_double(self.p)
+        else:
+            self.lib.modelfree1_float(self.p)
+
 def _get_order(data, fortran, order):
     """ Return the Unicode code point representing the
     order of this data set. """
@@ -271,12 +282,6 @@ def upload_data(self,
                 sample_weight=None,
                 source_dev=0):
     """Upload the data through the backend library"""
-    if self.uploaded_data == 1:
-        free_data(self)
-    self.uploaded_data = 1
-
-    #
-    # ################
 
     self.double_precision1, m_train, n1 = _data_info(train_x, self.verbose)
     self.m_train = m_train
@@ -392,12 +397,16 @@ def upload_data(self,
 
     assert status == 0, 'Failure uploading the data'
 
-    self.a = a
-    self.b = b
-    self.c = c
-    self.d = d
-    self.e = e
-    return a, b, c, d, e
+    # self.a = a
+    # self.b = b
+    # self.c = c
+    # self.d = d
+    # self.e = e
+    return WrappedPointer(a, self.double_precision == 1, self.lib),\
+           WrappedPointer(b, self.double_precision == 1, self.lib),\
+           WrappedPointer(c, self.double_precision == 1, self.lib),\
+           WrappedPointer(d, self.double_precision == 1, self.lib),\
+           WrappedPointer(e, self.double_precision == 1, self.lib)
 
 
 # Functions that free memory

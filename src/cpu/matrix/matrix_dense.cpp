@@ -1032,7 +1032,7 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
   template <typename T>
   int modelFree1(T *aptr){
     if(aptr!=NULL){
-      //      delete aptr; // for now, freed during ~
+        delete aptr;
     }
     return(0);
   }

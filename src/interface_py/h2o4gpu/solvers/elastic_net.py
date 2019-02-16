@@ -650,11 +650,11 @@ class ElasticNetH2O(object):
             self.glm_stop_early_error_fraction,
             self.max_iter, # 30
             self.verbose,
-            int(a) if a is not None else -1,
-            int(b) if b is not None else -1,
-            int(c) if c is not None else -1,
-            int(d) if d is not None else -1,
-            int(e) if e is not None else -1,
+            int(a.p) if a.p is not None else -1,
+            int(b.p) if b.p is not None else -1,
+            int(c.p) if c.p is not None else -1,
+            int(d.p) if d.p is not None else -1,
+            int(e.p) if e.p is not None else -1,
             self.store_full_path,
             self.x_vs_alpha_lambda,
             self.x_vs_alpha,
@@ -678,8 +678,8 @@ class ElasticNetH2O(object):
         self.count_short = count_short
         self.count_more = count_more
 
-        if free_input_data == 1:
-            free_data(self)
+        # if free_input_data == 1:
+        #     free_data(self)
 
         # ####################################
         #PROCESS OUTPUT

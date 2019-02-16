@@ -424,15 +424,18 @@ MatrixDense<T>::MatrixDense(int sharedA, int me, int wDev, int datatype, char or
     
       
     if(!this->_done_alloc){
-      this->_done_alloc = true;
-      cudaMalloc(&_de, (m + n) * sizeof(T));
-      thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(static_cast<T*>(&_de[0]));
-      T fill_value=0.0;
-      thrust::fill(dev_ptr, dev_ptr + (m + n), fill_value);
+      CUDACHECK(cudaMalloc(&_de, (m + n) * sizeof(T)));
+      CUDACHECK(cudaDeviceSynchronize());
+      CUDACHECK(cudaGetLastError());
+      const thrust::device_ptr<T> dev_ptr = thrust::device_pointer_cast(_de);
+      const T fill_value=0.0;
+      thrust::fill_n(dev_ptr, m + n, fill_value);
+      
       if(sharedA>0){
         Init(); // does nothing right now
         Equil(1); // JONTODO: Hack for now.  Need to pass equil
       }
+      this->_done_alloc = true;
     }
   }
   else{
@@ -654,7 +657,7 @@ MatrixDense<T>::~MatrixDense() {
 
   //  fprintf(stderr,"HERE1\n"); fflush(stderr);
 
-  if(1){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, 
+  if(0){ // Note that this frees these pointers as soon as MatrixDense constructor goes out of scope, 
     // and might want more fine-grained control over GPU memory if inside (say) high-level python API
     // If 0 is used, then need to ensure user calls a finish() or something to free memory.  If 0, also 
     // allows user to call (say) fit() or fitptr() multiple times
@@ -1817,7 +1820,7 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     // Get Cublas handle
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     cublasHandle_t hdl = info->handle;
-
+    fprintf(stderr,"_datay: %p\n",(void*)_datay); fflush(stderr);
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
     cml::vector<T> weight_vec;
@@ -2026,11 +2029,8 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 
 template <typename T>
 int modelFree1(T *aptr){
-
   if(aptr!=NULL){
-    // for now, freed during ~
-    //cudaFree(aptr);
-    //CUDA_CHECK_ERR();
+    CUDACHECK(cudaFree(aptr));
   }
   return(0);
 }
