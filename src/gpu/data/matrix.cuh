@@ -1,5 +1,5 @@
 #pragma once
-#include "../utils/utils.cuh"
+#include "utils.cuh"
 #include "../device/device_context.cuh"
 #include "cusolverDn.h"
 #include <../../../cub/cub/cub.cuh>
