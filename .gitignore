@@ -175,6 +175,7 @@ src/interface_py/h2o4gpu/libs/ch2o4gpu_cpuPYTHON_wrap.cxx
 src/interface_py/h2o4gpu/libs/ch2o4gpu_gpuPYTHON_wrap.cxx
 
 src/interface_py/h2o4gpu/BUILD_INFO.txt
+src/interface_py/build_info.txt
 
 # Temp requirement file generated for Conda
 src/interface_py/requirements_conda.txt
