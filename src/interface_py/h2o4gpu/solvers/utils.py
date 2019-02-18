@@ -10,9 +10,9 @@ import numpy as np
 # Data utils
 
 class WrappedPointer(object):
-    '''Wraps a native pointer and release underlying resources 
+    '''Wraps a native pointer and release underlying resources
     when notified by GC
-    
+
     Arguments:
         p {[type]} -- pointer
         double_precision {bool} -- use double precision
@@ -441,7 +441,8 @@ def free_preds(self):
 
 def finish(self):
     import warnings
-    warnings.warn("finish will be removed in a next version, please use 'del'", DeprecationWarning, stacklevel=2)
+    warnings.warn("finish will be removed in a next version, please use 'del'",
+                  DeprecationWarning, stacklevel=2)
     free_sols(self)
     free_preds(self)
 
