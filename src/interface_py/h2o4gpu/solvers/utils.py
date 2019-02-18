@@ -10,6 +10,15 @@ import numpy as np
 # Data utils
 
 class WrappedPointer(object):
+    '''Wraps a native pointer and release underlying resources 
+    when notified by GC
+    
+    Arguments:
+        p {[type]} -- pointer
+        double_precision {bool} -- use double precision
+        lib{object} -- python wrapper over lib.so
+    '''
+
     def __init__(self, p, double_precision, lib):
         self.p = p
         self.double_precision = double_precision
@@ -409,28 +418,6 @@ def upload_data(self,
            WrappedPointer(e, self.double_precision == 1, self.lib)
 
 
-# Functions that free memory
-def free_data(self):
-    """Free Data
-    """
-    # NOTE : For now, these are automatically freed
-    # when done with fit-- ok, since not used again
-
-    if self.uploaded_data == 1:
-        self.uploaded_data = 0
-        if self.double_precision == 1:
-            self.lib.modelfree1_double(self.a)
-            self.lib.modelfree1_double(self.b)
-            self.lib.modelfree1_double(self.c)
-            self.lib.modelfree1_double(self.d)
-            self.lib.modelfree1_double(self.e)
-        else:
-            self.lib.modelfree1_float(self.a)
-            self.lib.modelfree1_float(self.b)
-            self.lib.modelfree1_float(self.c)
-            self.lib.modelfree1_float(self.d)
-            self.lib.modelfree1_float(self.e)
-
 def free_sols(self):
     if self.did_fit_ptr == 1:
         self.did_fit_ptr = 0
@@ -453,7 +440,12 @@ def free_preds(self):
             self.lib.modelfree2_float(self.valid_pred_vs_alpha)
 
 def finish(self):
-    free_data(self)
+    import warnings
+    warnings.warn("finish will be removed in a next version, please use 'del'", DeprecationWarning, stacklevel=2)
+    free_sols(self)
+    free_preds(self)
+
+def __del__(self):
     free_sols(self)
     free_preds(self)
 

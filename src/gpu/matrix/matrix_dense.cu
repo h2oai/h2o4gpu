@@ -1820,7 +1820,6 @@ int MatrixDense<T>::Stats(int intercept, T *min, T *max, T *mean, T *var, T *sd,
     // Get Cublas handle
     GpuData<T> *info = reinterpret_cast<GpuData<T>*>(this->_info);
     cublasHandle_t hdl = info->handle;
-    fprintf(stderr,"_datay: %p\n",(void*)_datay); fflush(stderr);
     // Set up views for raw vectors.
     cml::vector<T> y_vec = cml::vector_view_array(_datay, this->_m); // b
     cml::vector<T> weight_vec;
@@ -2030,6 +2029,8 @@ int makePtr_dense(int sharedA, int me, int wDev, size_t m, size_t n, size_t mVal
 template <typename T>
 int modelFree1(T *aptr){
   if(aptr!=NULL){
+    // TODO: use T** instead everywhere to prevent a scenario when we keep an address of allocated memory 
+    // TODO: flush cpu cache as it can be invoked by background GC thread 
     CUDACHECK(cudaFree(aptr));
   }
   return(0);

@@ -1,7 +1,6 @@
 #ifndef SRC_GPU_INCLUDE_UTILS_CUH
 #define SRC_GPU_INCLUDE_UTILS_CUH
 
-// #pragma once
 #include "cublas_v2.h"
 #include <thrust/device_vector.h>
 #include <thrust/random.h>
@@ -14,7 +13,6 @@
 
 namespace h2o4gpu
 {
-
 #define h2o4gpu_error(x) error(x, __FILE__, __LINE__);
 
 	inline void error(const char* e, const char* file, int line)

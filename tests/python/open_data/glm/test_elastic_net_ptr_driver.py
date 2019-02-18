@@ -88,23 +88,9 @@ def ElasticNet(X, y, nGPUs=0, nlambda=100, nfolds=5, nalpha=5, validFraction=0.2
     print(trainW.dtype)
     a,b,c,d,e = prepare_and_upload_data(enet, trainX, trainY, validX, validY, trainW, source_dev = sourceDev)
 
-    print("=================================")
-    print(a, b, c, d, e)
-    print("=================================")
-
     # # swig a-e
     fit_predict(enet, fortran, mTrain, n, mvalid, validX, validY, validX2, validY2, a, b, c, d, e, sourceDev)
 
-    print("=================================")
-    print(a, b, c, d, e)
-    print("=================================")
-
-    # # integer a-e
-    # a_int = int(a) if a is not None else 0
-    # b_int = int(b) if b is not None else 0
-    # c_int = int(c) if c is not None else 0
-    # d_int = int(d) if d is not None else 0
-    # e_int = int(e) if e is not None else 0
     fit_predict(enet, fortran, mTrain, n, mvalid, validX, validY, validX2, validY2, a, b, c, d, e, sourceDev)
 
     return enet
