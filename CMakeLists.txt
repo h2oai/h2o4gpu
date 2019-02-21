@@ -108,6 +108,8 @@ if(USE_CUDA)
                 MESSAGE(STATUS "Building DEVELOPER compute capability version.")
                 SET(GPU_COMPUTE_VER 61 CACHE STRING
                         "Space separated list of compute versions to be built against")
+                SET(CMAKE_BUILD_TYPE Debug)
+                # add_compile_definitions(SYNC)
         else()
                 MESSAGE(STATUS "Building RELEASE compute capability version.")
                 SET(GPU_COMPUTE_VER 35;50;52;60;61 CACHE STRING

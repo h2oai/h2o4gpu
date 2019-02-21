@@ -117,7 +117,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
 }
 
 void publishToPoboys(String platform) {
-    echo "Publishing to Poboy's internal conda repository - http://mr-dl19:6969/"
+    echo "Publishing to Poboy's internal conda repository - http://poboys.h2o.ai:6969/poboys/upload"
 
 
     def uploadURL = "http://poboys.h2o.ai:6969/poboys/upload"

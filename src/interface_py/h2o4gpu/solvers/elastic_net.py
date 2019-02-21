@@ -16,7 +16,7 @@ from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
 
 from ..libs.lib_utils import get_lib
-from ..solvers.utils import prepare_and_upload_data, free_data, free_sols
+from ..solvers.utils import prepare_and_upload_data, free_sols
 
 class ElasticNetH2O(object):
     """H2O Elastic Net Solver for GPUs
@@ -484,6 +484,7 @@ class ElasticNetH2O(object):
     #source_dev here because generally want to take in any pointer,
     #not just from our test code
 
+    # pylint: disable=unused-argument
     def _fitorpredict_ptr(
             self,
             source_dev,
@@ -650,11 +651,11 @@ class ElasticNetH2O(object):
             self.glm_stop_early_error_fraction,
             self.max_iter, # 30
             self.verbose,
-            int(a) if a is not None else -1,
-            int(b) if b is not None else -1,
-            int(c) if c is not None else -1,
-            int(d) if d is not None else -1,
-            int(e) if e is not None else -1,
+            int(a.p) if a.p is not None else -1,
+            int(b.p) if b.p is not None else -1,
+            int(c.p) if c.p is not None else -1,
+            int(d.p) if d.p is not None else -1,
+            int(e.p) if e.p is not None else -1,
             self.store_full_path,
             self.x_vs_alpha_lambda,
             self.x_vs_alpha,
@@ -677,9 +678,6 @@ class ElasticNetH2O(object):
         self.count_full = count_full
         self.count_short = count_short
         self.count_more = count_more
-
-        if free_input_data == 1:
-            free_data(self)
 
         # ####################################
         #PROCESS OUTPUT

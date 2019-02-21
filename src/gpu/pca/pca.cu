@@ -1,5 +1,5 @@
 #include "../../include/solver/pca.h"
-#include "../utils/utils.cuh"
+#include "utils.cuh"
 #include "../data/matrix.cuh"
 #include "../device/device_context.cuh"
 #include "../../include/solver/tsvd.h"

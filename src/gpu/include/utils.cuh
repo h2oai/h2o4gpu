@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SRC_GPU_INCLUDE_UTILS_CUH
+#define SRC_GPU_INCLUDE_UTILS_CUH
+
 #include "cublas_v2.h"
 #include <thrust/device_vector.h>
 #include <thrust/random.h>
@@ -33,7 +35,7 @@ namespace h2o4gpu
 	}
 
 
-#define safe_cuda(ans) throw_on_cuda_error((ans), __FILE__, __LINE__)
+#define safe_cuda(ans) h2o4gpu::throw_on_cuda_error((ans), __FILE__, __LINE__)
 
 	inline cudaError_t throw_on_cuda_error(cudaError_t code, const char* file, int line)
 	{
@@ -367,3 +369,5 @@ namespace h2o4gpu
 		                  });
 	}
 }
+
+#endif SRC_GPU_INCLUDE_UTILS_CUH

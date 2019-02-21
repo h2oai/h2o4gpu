@@ -1,6 +1,6 @@
 #pragma once
 #include "cublas_v2.h"
-#include "../utils/utils.cuh"
+#include "utils.cuh"
 #include <cusparse.h>
 #include <cusolverDn.h>
 

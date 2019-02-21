@@ -15,6 +15,7 @@
 #include <cuda_runtime_api.h>
 #include "nvml.h"
 
+#include "include/utils.cuh"
 #include "include/cuda_utils2.h"
 
 int cudaresetdevice(int wDev, int nDev) {

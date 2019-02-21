@@ -76,7 +76,7 @@ template <typename T, typename M>
 ProjectorDirect<T, M>::~ProjectorDirect() {
 
 
-  if(0){ // FIXME: segfaults sometimes
+  if(1){ // FIXME: segfaults sometimes
 	  checkwDev(_wDev);
 	  CUDACHECK(cudaSetDevice(_wDev));
 

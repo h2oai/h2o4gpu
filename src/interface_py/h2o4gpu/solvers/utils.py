@@ -9,6 +9,26 @@ import numpy as np
 
 # Data utils
 
+class WrappedPointer(object):
+    '''Wraps a native pointer and release underlying resources
+    when notified by GC
+
+    Arguments:
+        p {[type]} -- pointer
+        double_precision {bool} -- use double precision
+        lib{object} -- python wrapper over lib.so
+    '''
+
+    def __init__(self, p, double_precision, lib):
+        self.p = p
+        self.double_precision = double_precision
+        self.lib = lib
+    def __del__(self):
+        if self.double_precision:
+            self.lib.modelfree1_double(self.p)
+        else:
+            self.lib.modelfree1_float(self.p)
+
 def _get_order(data, fortran, order):
     """ Return the Unicode code point representing the
     order of this data set. """
@@ -271,12 +291,6 @@ def upload_data(self,
                 sample_weight=None,
                 source_dev=0):
     """Upload the data through the backend library"""
-    if self.uploaded_data == 1:
-        free_data(self)
-    self.uploaded_data = 1
-
-    #
-    # ################
 
     self.double_precision1, m_train, n1 = _data_info(train_x, self.verbose)
     self.m_train = m_train
@@ -392,35 +406,17 @@ def upload_data(self,
 
     assert status == 0, 'Failure uploading the data'
 
-    self.a = a
-    self.b = b
-    self.c = c
-    self.d = d
-    self.e = e
-    return a, b, c, d, e
+    # self.a = a
+    # self.b = b
+    # self.c = c
+    # self.d = d
+    # self.e = e
+    return WrappedPointer(a, self.double_precision == 1, self.lib),\
+           WrappedPointer(b, self.double_precision == 1, self.lib),\
+           WrappedPointer(c, self.double_precision == 1, self.lib),\
+           WrappedPointer(d, self.double_precision == 1, self.lib),\
+           WrappedPointer(e, self.double_precision == 1, self.lib)
 
-
-# Functions that free memory
-def free_data(self):
-    """Free Data
-    """
-    # NOTE : For now, these are automatically freed
-    # when done with fit-- ok, since not used again
-
-    if self.uploaded_data == 1:
-        self.uploaded_data = 0
-        if self.double_precision == 1:
-            self.lib.modelfree1_double(self.a)
-            self.lib.modelfree1_double(self.b)
-            self.lib.modelfree1_double(self.c)
-            self.lib.modelfree1_double(self.d)
-            self.lib.modelfree1_double(self.e)
-        else:
-            self.lib.modelfree1_float(self.a)
-            self.lib.modelfree1_float(self.b)
-            self.lib.modelfree1_float(self.c)
-            self.lib.modelfree1_float(self.d)
-            self.lib.modelfree1_float(self.e)
 
 def free_sols(self):
     if self.did_fit_ptr == 1:
@@ -444,7 +440,13 @@ def free_preds(self):
             self.lib.modelfree2_float(self.valid_pred_vs_alpha)
 
 def finish(self):
-    free_data(self)
+    import warnings
+    warnings.warn("finish will be removed in a next version, please use 'del'",
+                  DeprecationWarning, stacklevel=2)
+    free_sols(self)
+    free_preds(self)
+
+def __del__(self):
     free_sols(self)
     free_preds(self)
 
