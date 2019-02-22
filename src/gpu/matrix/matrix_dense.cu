@@ -699,8 +699,8 @@ MatrixDense<T>::~MatrixDense() {
     }
   }
   
+    // Risky, but looks like we don't use code that may become broken 
     //  fprintf(stderr,"HERE6\n"); fflush(stderr);
-
     if(this->_done_init && _de && !_sharedA){ // JONTODO: When sharedA=1, only free on sourceme thread and sourcewDev device (can store sourcethread for-- sourceme -- data and only free if on source thread)
     //      fprintf(stderr,"Freeing _de: %p\n",(void*)_weight); fflush(stderr);
     cudaFree(_de);
