@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_labels.h"
+// TODO: make it clear(use proper include)
+#include "../gpu/kmeans/kmeans_labels.h"
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 

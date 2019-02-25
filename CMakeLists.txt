@@ -188,4 +188,32 @@ if(USE_CUDA)
         SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
                 LINK_FLAGS ${OpenMP_CXX_FLAGS})
         #============= GPU SWIG
+
+
+        #============= GTest
+        ADD_SUBDIRECTORY (tests/googletest)
+        enable_testing()
+        INCLUDE(GoogleTest)
+        include_directories(tests/googletest/include tests/googletest)
+
+        #============= Unit Tests
+        # file(GLOB_RECURSE TESTS tests/cpp/gpu/*.cu)
+        FILE(GLOB_RECURSE TEST_SOURCES
+        tests/cpp/gpu/*.cu
+        tests/cpp/gpu/*.cuh
+        tests/cpp/gpu/*.h
+        )
+
+        CUDA_ADD_EXECUTABLE(h2o4gpu_test tests/cpp/test_main.cu ${TEST_SOURCES})
+        target_link_libraries(h2o4gpu_test
+        gtest
+        commonh2o4gpu
+        gpuh2o4gpu
+        ${CUBLAS_STATIC_LIB}
+        ${CULIBOS_STATIC_LIB}
+        ${CUSOLVER_STATIC_LIB}
+        ${CUSPARSE_STATIC_LIB}
+        ${BLAS_LIBRARIES}
+        ${NVTX_LIBRARY}
+        ${NVML_LIBRARY})
 endif()
