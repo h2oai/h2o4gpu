@@ -17,6 +17,7 @@ help:
 	$(call inform, "make testbig         Run tests for big data.")
 	$(call inform, "make testperf        Run performance and accuracy tests.")
 	$(call inform, "make testbigperf     Run performance and accuracy tests for big data.")
+	$(call inform, "make testunit        Run c++/cuda tests.")
 	$(call inform, " -------- Docker ---------")
 	$(call inform, "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/ (for cuda9 with nccl in xgboost).")
 	$(call inform, "make docker-runtime  Build runtime docker and save to local path (for cuda9 with nccl in xgboost).")
@@ -458,6 +459,12 @@ dotestbig:
 	mkdir -p ./tmp/
 	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests/python/big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 
+testunit:
+	mkdir -p build && \
+	cd build && \
+	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
+	make h2o4gpu_test -j && \
+	./h2o4gpu_test
 #########################################
 # BENCHMARKING TARGETS
 #########################################

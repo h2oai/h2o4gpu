@@ -1,7 +1,8 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_h2o4gpu.h"
-#include "../src/gpu/kmeans/kmeans_labels.h"
+// TODO: make it less vague(use proper include)
+#include "../gpu/kmeans/kmeans_h2o4gpu.h"
+#include "../gpu/kmeans/kmeans_labels.h"
 #include <thrust/host_vector.h>
 
 TEST(KMeans, CountsPerCentroids) {

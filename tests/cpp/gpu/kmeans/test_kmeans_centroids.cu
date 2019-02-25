@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
-#include "../src/gpu/kmeans/kmeans_centroids.h"
+// TODO: make it less vague(use proper include)
+#include "../gpu/kmeans/kmeans_centroids.h"
 #include <thrust/host_vector.h>
 
 TEST(KMeansCentroids, CalculateCentroids) {
@@ -124,7 +125,8 @@ TEST(KMeansCentroids, CalculateCentroids2GPU) {
   labelsDevice = labelsHost;
   centroidsDevice = centroidsHost;
 
-  kmeans::detail::memzero(countsDevice); kmeans::detail::memzero(centroidsDevice);
+  kmeans::detail::memzero(countsDevice); 
+  kmeans::detail::memzero(centroidsDevice);
 
   // Run on "gpu2"
   kmeans::detail::calculate_centroids <<< dim3(1, 30), dim3(n_threads_x, n_threads_y), 0 >>> (
