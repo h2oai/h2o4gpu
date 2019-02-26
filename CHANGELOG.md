@@ -1,7 +1,7 @@
 
 ## Release 0.3.1
 * Fix memory leak [#175](https://github.com/h2oai/h2o4gpu/issues/175) [#204](https://github.com/h2oai/h2o4gpu/issues/204)
-* Static linking with CUDA dependencies 
+* Static linking with CUDA dependencies
 * CUDA forward compatibility
 * Update NCCL to 2.4
 * Update arrow to 0.12.0
