@@ -10,7 +10,7 @@ FIND_PACKAGE(BLAS REQUIRED)
 FIND_PACKAGE(SWIG REQUIRED)
 FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
 
-# SWIG behaviour was changed 
+# SWIG behaviour was changed
 if (${CMAKE_VERSION} VERSION_GREATER "3.13")
         cmake_policy(SET CMP0078 OLD)
 endif()
@@ -20,6 +20,7 @@ INCLUDE(${SWIG_USE_FILE})
 #============= OPTIONS & SETTINGS
 OPTION(USE_CUDA  "Build with GPU acceleration" ON)
 OPTION(DEV_BUILD  "Dev build" OFF)
+OPTION(DEV_SYNC  "call cudaDeviceSynchronize after each cuda call" OFF)
 
 # Compiler flags
 SET(CMAKE_CXX_STANDARD 11)
@@ -108,10 +109,14 @@ if(USE_CUDA)
                 MESSAGE(STATUS "Building DEVELOPER compute capability version.")
                 SET(GPU_COMPUTE_VER 61)
                 SET(CMAKE_BUILD_TYPE Debug)
-                # add_compile_definitions(SYNC)
         else()
                 MESSAGE(STATUS "Building RELEASE compute capability version.")
                 SET(GPU_COMPUTE_VER 35;50;52;60;61)
+        endif()
+
+        if(DEV_SYNC)
+            MESSAGE(STATUS "Building with device sync.")
+            add_compile_definitions(SYNC)
         endif()
 
         if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
@@ -127,7 +132,7 @@ if(USE_CUDA)
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
         MESSAGE(STATUS "cuda architecture flags: ${GENCODE_FLAGS}")
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -g; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu

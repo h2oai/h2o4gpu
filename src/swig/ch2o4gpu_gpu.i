@@ -15,5 +15,6 @@
 %include "solver/pca.i"
 %include "solver/pogs.i"
 %include "solver/tsvd.i"
+%include "solver/factorization.i"
 %include "matrix/matrix_dense.i"
 %include "util/gpu.i"
