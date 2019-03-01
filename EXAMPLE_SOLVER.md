@@ -349,6 +349,10 @@ class solver_nameH2O(object):
 class solver_name(object):
 
 ```
+Register your solver in `solvers/__init__.py` 
+```
+from ..solvers.solver_name import solver_nameH2O
+```
 
 ### Java
 
