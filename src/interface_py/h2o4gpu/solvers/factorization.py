@@ -6,18 +6,22 @@ KMeans clustering solver.
 :copyright: 2017-2019 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-import sys
-
 import numpy as np
 import scipy
 import scipy.sparse
 
-from ..solvers.utils import _check_data_content, \
-    _get_data, _setter
-from ..typecheck.typechecks import assert_satisfies
 
 class FactorizationH2O(object):
-    def __init__(self, f, lambda_, max_iter = 100, double_precision=False, thetaT = None, XT = None):
+    '''[summary]
+
+    Arguments:
+        object {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    '''
+
+    def __init__(self, f, lambda_, max_iter=100, double_precision=False, thetaT=None, XT=None):
         self.max_iter = max_iter
         assert f % 10 == 0, 'f has to be a multiple of 10'
         self.f = f
@@ -26,19 +30,33 @@ class FactorizationH2O(object):
         self.thetaT = thetaT
         self.XT = XT
 
-        # Util to load gpu lib
     def _load_lib(self):
         from ..libs.lib_utils import GPUlib
 
         gpu_lib = GPUlib().get(1)
         return gpu_lib
 
-    def fit(self, X, X_test = None, X_BATCHES = 1, THETA_BATCHES = 1, early_stopping_rounds=None, verbose = False):
+    def fit(self, X, X_test=None, X_BATCHES=1, THETA_BATCHES=1, early_stopping_rounds=None, verbose=False):
+        '''[summary]
+
+        Arguments:
+            X {[type]} -- [description]
+
+        Keyword Arguments:
+            X_test {[type]} -- [description] (default: {None})
+            X_BATCHES {int} -- [description] (default: {1})
+            THETA_BATCHES {int} -- [description] (default: {1})
+            early_stopping_rounds {[type]} -- [description] (default: {None})
+            verbose {bool} -- [description] (default: {False})
+        '''
+
         if early_stopping_rounds is not None:
             assert X_test is not None, 'X_test is mandatory with early stopping'
-        assert scipy.sparse.isspmatrix_csc(X), 'X must be a csc sparse scipy matrix'
+        assert scipy.sparse.isspmatrix_csc(
+            X), 'X must be a csc sparse scipy matrix'
         if X_test is not None:
-            assert scipy.sparse.isspmatrix_coo(X_test), 'X_test must be a coo sparse scipy matrix'
+            assert scipy.sparse.isspmatrix_coo(
+                X_test), 'X_test must be a coo sparse scipy matrix'
             assert X.shape == X_test.shape
 
         dtype = np.float64 if self.double_precision else np.float32
@@ -53,7 +71,6 @@ class FactorizationH2O(object):
         coo_X_test = X_test
 
         lib = self._load_lib()
-        # assert lib is not None 'Unable to load library'
         if self.double_precision:
             make_data = lib.make_factorization_data_double
             run_step = lib.run_factorization_step_double
@@ -96,19 +113,19 @@ class FactorizationH2O(object):
         cooValTestDevicePtr = None
 
         status, csrRowIndexDevicePtr, csrColIndexDevicePtr, csrValDevicePtr, \
-        cscRowIndexDevicePtr, cscColIndexDevicePtr, cscValDevicePtr, \
-        cooRowIndexDevicePtr, cooColIndexDevicePtr, cooValDevicePtr, \
-        thetaTDevice, XTDevice, cooRowIndexTestDevicePtr, \
-        cooColIndexTestDevicePtr, cooValTestDevicePtr = make_data( # pylint: disable=W0212
-                                                        m, n, self.f, nnz, nnz_test, csr_X.indptr, csr_X.indices, csr_X.data,
-                                                        csc_X.indices, csc_X.indptr, csc_X.data,
-                                                        coo_X.row, coo_X.col, coo_X.data,
-                                                        thetaT, XT, coo_X_test.row,
-                                                        coo_X_test.col, coo_X_test.data, csrRowIndexDevicePtr, csrColIndexDevicePtr,
-                                                        csrValDevicePtr, cscRowIndexDevicePtr, cscColIndexDevicePtr, cscValDevicePtr,
-                                                        cooRowIndexDevicePtr, cooColIndexDevicePtr, cooValDevicePtr,
-                                                        thetaTDevice, XTDevice, cooRowIndexTestDevicePtr,
-                                                        cooColIndexTestDevicePtr, cooValTestDevicePtr)
+            cscRowIndexDevicePtr, cscColIndexDevicePtr, cscValDevicePtr, \
+            cooRowIndexDevicePtr, cooColIndexDevicePtr, cooValDevicePtr, \
+            thetaTDevice, XTDevice, cooRowIndexTestDevicePtr, \
+            cooColIndexTestDevicePtr, cooValTestDevicePtr = make_data(  # pylint: disable=W0212
+                m, n, self.f, nnz, nnz_test, csr_X.indptr, csr_X.indices, csr_X.data,
+                csc_X.indices, csc_X.indptr, csc_X.data,
+                coo_X.row, coo_X.col, coo_X.data,
+                thetaT, XT, coo_X_test.row,
+                coo_X_test.col, coo_X_test.data, csrRowIndexDevicePtr, csrColIndexDevicePtr,
+                csrValDevicePtr, cscRowIndexDevicePtr, cscColIndexDevicePtr, cscValDevicePtr,
+                cooRowIndexDevicePtr, cooColIndexDevicePtr, cooValDevicePtr,
+                thetaTDevice, XTDevice, cooRowIndexTestDevicePtr,
+                cooColIndexTestDevicePtr, cooValTestDevicePtr)
 
         assert status == 0, 'Failure uploading the data'
 
@@ -130,9 +147,6 @@ class FactorizationH2O(object):
                               XTDevice,
                               X_BATCHES,
                               THETA_BATCHES)
-                            #   (const int m, const int n, const int f, const long nnz,
-                            #     const float lambda, float** thetaTDevice, float** XTDevice,
-                            #     int** cooRowIndexDevicePtr, int** cooColIndexDevicePtr, float** cooValDevicePtr)
             result = factorization_score(m,
                                          n,
                                          self.f,
@@ -143,7 +157,7 @@ class FactorizationH2O(object):
                                          cooRowIndexDevicePtr,
                                          cooColIndexDevicePtr,
                                          cooValDevicePtr)
-            print('train:{0}'.format(result[0]))
+            train_score = result[0]
             result = factorization_score(m,
                                          n,
                                          self.f,
@@ -154,11 +168,14 @@ class FactorizationH2O(object):
                                          cooRowIndexTestDevicePtr,
                                          cooColIndexTestDevicePtr,
                                          cooValTestDevicePtr)
-            print('cv:{0}'.format(result[0]))
+            cv_score = result[0]
+            if verbose:
+                print("iteration {0} train: {1} cv: {2}".format(
+                    i, train_score, cv_score))
 
-            # if early_stopping_rounds is not None:
-            #     if best_CV > status[0]:
-            #         best_CV = status[0]
-            #         best_Iter = i
-            #     if (i - best_Iter) > early_stopping_rounds:
-            #         break
+            if early_stopping_rounds is not None:
+                if best_CV > cv_score:
+                    best_CV = cv_score
+                    best_Iter = i
+                if (i - best_Iter) > early_stopping_rounds:
+                    break
