@@ -270,11 +270,11 @@ class ElasticNetH2O(object):
 
         :param ndarray train_x : Training features array
 
-        :param ndarray train_ y : Training response array
+        :param ndarray train_y : Training response array
 
         :param ndarray valid_x : Validation features
 
-        :param ndarray valid_ y : Validation response
+        :param ndarray valid_y : Validation response
 
         :param ndarray weight : Observation weights
 
@@ -812,7 +812,7 @@ class ElasticNetH2O(object):
 
         :param ndarray valid_xptr : Pointer to validation features
 
-        :param ndarray valid_ yptr : Pointer to validation response
+        :param ndarray valid_yptr : Pointer to validation response
 
         :param int store_full_path : Store full regularization path
             from glm model
@@ -880,11 +880,11 @@ class ElasticNetH2O(object):
 
         :param ndarray train_x : Training features array
 
-        :param ndarray train_ y : Training response array
+        :param ndarray train_y : Training response array
 
         :param ndarray valid_x : Validation features
 
-        :param ndarray valid_ y : Validation response
+        :param ndarray valid_y : Validation response
 
         :param ndarray weight : Observation weights
 
@@ -1000,11 +1000,11 @@ class ElasticNetH2O(object):
 
         :param ndarray train_x : Training features array
 
-        :param ndarray train_ y : Training response array
+        :param ndarray train_y : Training response array
 
         :param ndarray valid_x : Validation features
 
-        :param ndarray valid_ y : Validation response
+        :param ndarray valid_y : Validation response
 
         :param ndarray weight : Observation weights
 

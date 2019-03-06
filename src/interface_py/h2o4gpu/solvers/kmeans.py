@@ -14,6 +14,7 @@ from ..solvers.utils import _check_data_content, \
     _get_data, _setter
 from ..typecheck.typechecks import assert_satisfies
 
+
 class KMeansH2O(object):
     """K-Means clustering
 
@@ -104,13 +105,18 @@ class KMeansH2O(object):
         If set to 0 GPU error check will not be performed.
 
     Attributes:
-        cluster_centers_ : array, [n_clusters, n_features], Cluster centers
-        labels_ : array, [n_rows,],
-            Labels assigned to each row during fitting.
-        inertia_ : float Sum of distances of samples
-            to their closest cluster center.
+    ----------
+    cluster_centers_ : array, [n_clusters, n_features]
+        Cluster centers
+
+    labels_ : array, [n_rows,],
+        Labels assigned to each row during fitting.
+
+    inertia_ : float
+        Sum of distances of samples to their closest cluster center.
 
     Example:
+    -------
         >>> from h2o4gpu import KMeans
         >>> import numpy as np
         >>> X = np.array([[1, 2], [1, 4], [1, 0],
@@ -592,7 +598,7 @@ class KMeans(object):
     """
      K-Means clustering Wrapper
 
-     Selects between h2o4gpu.cluster.k_means_.KMeansSklearn
+     Selects between h2o4gpu.cluster.KMeansSklearn
      and h2o4gpu.solvers.kmeans.KMeansH2O
 
      Parameters
