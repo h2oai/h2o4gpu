@@ -8,7 +8,7 @@ for py in `find h2o4gpu -name "*.py" -type f`; do
 		echo "Skip $py"; 
 	else echo $py; 
 	mkdir -p ../pylint.d ;
-	stderr="$( PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -rn $py < /dev/stdin 2>&1 1>&3)";
+	stderr="$( PYLINTHOME=../pylint.d pylint --rcfile=../../tools/pylintrc -j 0 -rn $py < /dev/stdin 2>&1 1>&3)";
 	tmp=$?;
 		if [ $tmp -ne 0 ]; then
 			echo "STATUS=$?, STDERR: $stderr, file: $py"
