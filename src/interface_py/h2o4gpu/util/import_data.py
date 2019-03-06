@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -14,34 +14,32 @@ def import_data(data_path,
 
     This function will read in data and prepare it for H2O4GPU's GLM solver.
 
-    Note, the data is assumed to be all numeric,i.e.,
-    categoricals are one hot encoded, etc.
+    Note, the data is assumed to be all numeric,i.e., categoricals are one hot encoded, etc.
 
-    :param data_path : str
-                 A path to a dataset (The dataset needs to be all numeric)
-    :param use_pandas : bool
-                  Indicate if Pandas should be used to parse
-    :param intercept : bool
-                  Indicate if intercept term is needed
-    :param valid_fraction : float
-                      Percentage of dataset reserved for a validation set
-    :param classification : bool
-                      Classification problem?
+    :param data_path: str
+        A path to a dataset (The dataset needs to be all numeric)
+    :param use_pandas: bool
+        Indicate if Pandas should be used to parse
+    :param intercept: bool
+        Indicate if intercept term is needed
+    :param valid_fraction: float
+        Percentage of dataset reserved for a validation set
+    :param classification: bool
+        Classification problem?
+
     :returns
-    If valid_fraction > 0 it will return the following:
-        train_x: numpy array of train input variables
-        train_y: numpy array of y variable
-        valid_x: numpy array of valid input variables
-        valid_y: numpy array of valid y variable
-        family : string that would either be "logistic" if classification is set
-            to True, otherwise "elasticnet"
-    If valid_fraction == 0 it will return the following:
-        train_x: numpy array of train input variables
-        train_y: numpy array of y variable
-        family : string that would either be "logistic" if classification is set
-            to True, otherwise "elasticnet"
+        If valid_fraction > 0 it will return the following:
+            train_x: numpy array of train input variables
+            train_y: numpy array of y variable
+            valid_x: numpy array of valid input variables
+            valid_y: numpy array of valid y variable
+            family : string that would either be "logistic" if classification is set to True, otherwise "elasticnet"
+        If valid_fraction == 0 it will return the following:
+            train_x: numpy array of train input variables
+            train_y: numpy array of y variable
+            family : string that would either be "logistic" if classification is set to True, otherwise "elasticnet"
     """
-    #Can import data using pandas or feather.
+    # Can import data using pandas or feather.
     use_pandas = use_pandas
 
     data_file = data_path  # If importing using pandas
@@ -64,15 +62,15 @@ def import_data(data_path,
     data_y = np.array(
         data.iloc[:, data.shape[1] - 1], dtype='float32', order='C', copy=False)
 
-    #Setup train / validation set split
-    #(assuming form of mxn where m = row count and n = col count)
+    # Setup train / validation set split
+    # (assuming form of mxn where m = row count and n = col count)
     morig = data_x.shape[0]
     norig = data_x.shape[1]
     print("Original m=%d n=%d" % (morig, norig))
     import sys
     sys.stdout.flush()
 
-    #Do train / valid split
+    # Do train / valid split
     if valid_fraction > 0:
         valid_fraction = valid_fraction
         HO = int(valid_fraction * morig)
@@ -90,7 +88,7 @@ def import_data(data_path,
         train_y = data_y
 
 
-#Using intercept
+# Using intercept
     if intercept:
         train_x = np.hstack(
             [train_x,
