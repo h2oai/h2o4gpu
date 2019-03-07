@@ -319,7 +319,7 @@ class LogisticRegression(object):
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y)  #Need to re-fit
+            self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

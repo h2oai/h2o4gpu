@@ -2,7 +2,7 @@
 
 
 The H2O4GPU Python Module
-=====================
+=========================
 
 H2O4GPU is a collection of GPU (and CPU) solvers by H2Oai, as drop-in replacement of sklearn with GPU capabilities.
 

@@ -50,7 +50,7 @@ h2o4gpu\.solvers\.kmeans module
     :show-inheritance:
 
 h2o4gpu\.solvers\.truncated\_svd module
--------------------------------
+---------------------------------------
 
 .. automodule:: h2o4gpu.solvers.truncated_svd
     :members:
@@ -58,7 +58,7 @@ h2o4gpu\.solvers\.truncated\_svd module
     :show-inheritance:
 
 h2o4gpu\.solvers\.pca module
--------------------------------
+----------------------------
 
 .. automodule:: h2o4gpu.solvers.pca
     :members:

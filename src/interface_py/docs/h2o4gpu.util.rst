@@ -24,11 +24,3 @@ h2o4gpu\.util\.import_data module
     :members:
     :undoc-members:
     :show-inheritance:
-
-h2o4gpu\.util\.lightgbm_dynamic module
---------------------------------------
-
-.. automodule:: h2o4gpu.util.lightgbm_dynamic
-    :members:
-    :undoc-members:
-    :show-inheritance:

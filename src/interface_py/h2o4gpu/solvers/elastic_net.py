@@ -824,7 +824,7 @@ class ElasticNetH2O(object):
             if set to > 0. Default is 0.
 
         :param order: Order of data.  Default is None, and internally determined
-        whether row 'r' or column 'c' major order.
+            whether row 'r' or column 'c' major order.
         """
 
         #assume self.ord already set by fit_ptr() at least
@@ -946,7 +946,7 @@ class ElasticNetH2O(object):
             Default None.
 
         :param order: Order of data.  Default is None, and internally determined
-        whether row 'r' or column 'c' major order.
+            whether row 'r' or column 'c' major order.
 
         :param a Pointer to training features array
 
