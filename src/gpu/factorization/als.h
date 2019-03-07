@@ -2222,9 +2222,7 @@ class ALSFactorization
 #ifdef DEBUG
         printf("update X run %f seconds, gridSize: %d, blockSize %d.\n", seconds() - t0, m, f);
 #endif
-        // cudacall(cudaFree(csrRowIndex));
-        // cudacall(cudaFree(csrColIndex));
-        // cudacall(cudaFree(ythetaT));
+        cudacall(cudaFree(ythetaT));
 
 #ifdef DEBUG
         t0 = seconds();
@@ -2363,8 +2361,6 @@ class ALSFactorization
     cublasHandle_t handle;
     cusparseHandle_t cushandle;
     cusparseMatDescr_t descr;
-    T *ytheta = 0;
-    T *ythetaT = 0;
     T *thetaT;
     T *XT;
 };

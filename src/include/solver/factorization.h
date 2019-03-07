@@ -1,5 +1,17 @@
 #ifndef SRC_INCLUDE_SOLVER_FACTORIZATION_H
 
+void free_data_float(float **ptr);
+
+void free_data_double(double **ptr);
+
+void free_data_int(int **ptr);
+
+void copy_fecatorization_result_float(float *dst, const float **src,
+                                      const int size);
+
+void copy_fecatorization_result_double(double *dst, const double **src,
+                                       const int size);
+
 int make_factorization_data_double(
     const int m, const int n, const int f, const long nnz, const long nnz_test,
     const int *csrRowIndexHostPtr, const int *csrColIndexHostPtr,

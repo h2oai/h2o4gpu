@@ -36,7 +36,7 @@
 %apply (int *IN_ARRAY1) {int* csrRowIndexHostPtr, int* csrColIndexHostPtr, int* cscRowIndexHostPtr,
                          int* cscColIndexHostPtr, int* cooRowIndexHostPtr, int* cooColIndexHostPtr,
                          int* cooRowIndexTestHostPtr, int* cooColIndexTestHostPtr};
-%apply (float *IN_ARRAY1) {float* csrValHostPtr, float* cscValHostPtr, float* cooValHostPtr, float* thetaTHost, float* XTHost, float* cooValTestHostPtr};
-%apply (double *IN_ARRAY1) {double* csrValHostPtr, double* cscValHostPtr, double* cooValHostPtr, double* thetaTHost, double* XTHost, double* cooValTestHostPtr};
+%apply (float *IN_ARRAY1) {float* dst, float* csrValHostPtr, float* cscValHostPtr, float* cooValHostPtr, float* thetaTHost, float* XTHost, float* cooValTestHostPtr};
+%apply (double *IN_ARRAY1) {double* dst, double* csrValHostPtr, double* cscValHostPtr, double* cooValHostPtr, double* thetaTHost, double* XTHost, double* cooValTestHostPtr};
 
 %include "../../include/solver/factorization.h"

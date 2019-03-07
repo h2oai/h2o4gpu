@@ -1,3 +1,5 @@
+from setuptools.dist import Distribution
+from setuptools import setup
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -13,6 +15,7 @@ H2O4GPUPATH = os.path.join(BASEPATH, '../interface_c/')
 
 class H2O4GPUBuild(build):
     """H2O4GPU library compiler"""
+
     def run(self):
         """Run the compilation"""
         NVCC = os.popen("which nvcc").read() != ""
@@ -64,14 +67,16 @@ class H2O4GPUInstall(install):
         # install H2O4GPU executables
         self.copy_tree(self.build_lib, self.install_lib)
 
+
 # reqs is a list of requirement
 # e.g. ['django==1.5.1', 'mezzanine==1.4.6']
 requirements_file = 'requirements_runtime.txt'
-import os
 if os.environ.get('CONDA_BUILD_STATE') is not None:
     requirements_file = 'requirements_conda.txt'
 with open(requirements_file, "r") as fs:
-    reqs = [r for r in fs.read().splitlines() if (len(r) > 0 and not r.startswith("#"))]
+    reqs = [r for r in fs.read().splitlines() if (
+        len(r) > 0 and not r.startswith("#"))]
+
 
 def get_packages(directory):
     paths = []
@@ -82,35 +87,40 @@ def get_packages(directory):
             paths.append(path[2:])
     return paths
 
+
 packages = get_packages('./')
 
 package_data = {}
 for package in packages:
-   package_data[package] = ['*']
+    package_data[package] = ['*']
 
-import os
-from setuptools import setup
-from setuptools.dist import Distribution
 
 class BinaryDistribution(Distribution):
     def is_pure(self):
         return False
 
+
 # Read version
-about_info={}
-with open('__about__.py') as f: exec(f.read(), about_info)
+about_info = {}
+with open('__about__.py') as f:
+    exec(f.read(), about_info)
 
 lines = []
-lines.append("__version__ = '" + about_info['__build_info__']['base_version'] + "'")
-lines.append("__git_revision__ = '" + about_info['__build_info__']['commit'] + "'")
-lines.append("__cuda_version__ = '" + about_info['__build_info__']['cuda_version'] + "'")
-lines.append("__cuda_nccl__ = '" + about_info['__build_info__']['cuda_nccl'] + "'")
-with open('build_info.txt','w') as fp:
+lines.append("__version__ = '" +
+             about_info['__build_info__']['base_version'] + "'")
+lines.append("__git_revision__ = '" +
+             about_info['__build_info__']['commit'] + "'")
+lines.append("__cuda_version__ = '" +
+             about_info['__build_info__']['cuda_version'] + "'")
+lines.append("__cuda_nccl__ = '" +
+             about_info['__build_info__']['cuda_nccl'] + "'")
+with open('build_info.txt', 'w') as fp:
     fp.write('\n'.join(lines)+'\n')
 
 # Make the .whl contain required python and OS as we are version and distro specific
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
             _bdist_wheel.finalize_options(self)
@@ -134,5 +144,6 @@ setup(
     zip_safe=False,
     description='H2O.ai GPU Edition',
     install_requires=reqs,
-    cmdclass={'bdist_wheel': bdist_wheel, 'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
+    cmdclass={'bdist_wheel': bdist_wheel,
+              'build': H2O4GPUBuild, 'install': H2O4GPUInstall},
 )

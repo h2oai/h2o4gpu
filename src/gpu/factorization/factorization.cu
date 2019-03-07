@@ -2,6 +2,32 @@
 #include "cuda_utils.h"
 #include "solver/factorization.h"
 
+template <class T> void free_data(T **ptr) {
+  if (ptr)
+    CUDACHECK(cudaFree(*ptr));
+}
+
+void free_data_float(float **ptr) { free_data<float>(ptr); }
+
+void free_data_double(double **ptr) { free_data<double>(ptr); }
+
+void free_data_int(int **ptr) { free_data<int>(ptr); }
+
+template <class T>
+void copy_fecatorization_result(T *dst, const T **src, const int size) {
+  CUDACHECK(cudaMemcpy(dst, *src, sizeof(T) * size, cudaMemcpyDeviceToHost));
+}
+
+void copy_fecatorization_result_float(float *dst, const float **src,
+                                      const int size) {
+  copy_fecatorization_result(dst, src, size);
+}
+
+void copy_fecatorization_result_double(double *dst, const double **src,
+                                       const int size) {
+  copy_fecatorization_result(dst, src, size);
+}
+
 template <class T>
 int make_factorization_data(
     const int m, const int n, const int f, const long nnz, const long nnz_test,
@@ -77,7 +103,8 @@ int make_factorization_data(
                        (size_t)(nnz * sizeof(**csrValDevicePtr)),
                        cudaMemcpyHostToDevice));
 
-  if (cooColIndexTestHostPtr && cooRowIndexTestHostPtr && cooValTestHostPtr) {
+  if (cooColIndexTestHostPtr && cooRowIndexTestHostPtr && cooValTestHostPtr &&
+      nnz_test > 0) {
     CUDACHECK(cudaMalloc((void **)cooRowIndexTestDevicePtr,
                          nnz_test * sizeof(**cooRowIndexTestDevicePtr)));
     CUDACHECK(cudaMalloc((void **)cooColIndexTestDevicePtr,
