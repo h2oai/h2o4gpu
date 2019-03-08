@@ -83,7 +83,7 @@ nccl: nccl/build/lib/libnccl_static.a
 
 nccl/build/lib/libnccl_static.a:
 	@echo "----- Building NCCL -----"
-	cd nccl && $(MAKE) src.build CUDA_HOME=$(CUDA_HOME)
+	cd nccl && $(MAKE) -j src.build CUDA_HOME=$(CUDA_HOME)
 
 cpp:
 	mkdir -p build && \
