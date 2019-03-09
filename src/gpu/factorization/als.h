@@ -2162,8 +2162,11 @@ class ALSFactorization
 
         float *yTX = 0;
         float *yTXT = 0;
-        cudacall(cudaMalloc((void **)&yTXT, f * n * sizeof(yTXT[0])));
-        cudacall(cudaMalloc((void **)&yTX, n * f * sizeof(yTX[0])));
+        cudacall(cudaMalloc((void **)&yTXT, f * n * sizeof(*yTXT)));
+        cudacall(cudaMalloc((void **)&yTX, n * f * sizeof(*yTX)));
+        cudacall(cudaMemset(yTXT, 0, f * n * sizeof(*yTXT)));
+        cudacall(cudaMemset(yTX, 0, f * n * sizeof(*yTX)));
+
         cusparsecall(cusparseScsrmm2(cushandle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                      CUSPARSE_OPERATION_TRANSPOSE, n, f, m, nnz, &alpha, descr, cscVal,
                                      cscColIndex, cscRowIndex, XT, f, &beta, yTX, n));
