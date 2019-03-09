@@ -2159,8 +2159,10 @@ class ALSFactorization
 //use fp16 in tt
 #ifdef CUMF_TT_FP16
             cudacall(cudaMalloc((void **)&tt, f / 2 * f * batch_size * sizeof(float)));
+            cudacall(cudaMemset(tt, 0, f / 2 * f * batch_size * sizeof(float)));
 #else
             cudacall(cudaMalloc((void **)&tt, f * f * batch_size * sizeof(float)));
+            cudacall(cudaMemset(tt, 0, f * f * batch_size * sizeof(float)));
 #endif
 #ifdef DEBUG
             t1 = seconds();
