@@ -2085,9 +2085,6 @@ class ALSFactorization
         cusparsecall(cusparseCreateMatDescr(&descr));
         cusparseSetMatType(descr, CUSPARSE_MATRIX_TYPE_GENERAL);
         cusparseSetMatIndexBase(descr, CUSPARSE_INDEX_BASE_ZERO);
-
-        // safe_cuda(cudaMalloc((void** ) &ytheta, f * m * sizeof(ytheta[0])));
-        // safe_cuda(cudaMalloc((void** ) &ythetaT, f * m * sizeof(ythetaT[0])));
     }
     ~ALSFactorization()
     {
@@ -2100,22 +2097,8 @@ class ALSFactorization
               const int *cscRowIndex, const int *cscColIndex, const T *cscVal,
               const long nnz, const int X_BATCH, const int THETA_BATCH)
     {
+        // ---------------------------ALS iteration %d, update X.----------------------------------
         float *tt = 0;
-#ifdef DEBUG
-        printf("---------------------------ALS iteration %d, update X.----------------------------------\n", iter);
-        t0 = seconds();
-        t1 = seconds();
-#endif
-//copy csr matrix in
-// cudacall(cudaMalloc((void** ) &csrRowIndex,(m + 1) * sizeof(csrRowIndex[0])));
-// cudacall(cudaMalloc((void** ) &csrColIndex, nnz * sizeof(csrColIndex[0])));
-// cudacall(cudaMalloc((void** ) &csrVal, nnz * sizeof(csrVal[0])));
-// cudacall(cudaMemcpy(csrRowIndex, csrRowIndexHostPtr,(size_t ) ((m + 1) * sizeof(csrRowIndex[0])), cudaMemcpyHostToDevice));
-// cudacall(cudaMemcpy(csrColIndex, csrColIndexHostPtr,(size_t ) (nnz * sizeof(csrColIndex[0])), cudaMemcpyHostToDevice));
-// cudacall(cudaMemcpy(csrVal, 1csrValHostPtr,(size_t ) (nnz * sizeof(csrVal[0])),cudaMemcpyHostToDevice));
-#ifdef DEBUG
-        printf("\tgenerate: Y*theta using cusparse.\n");
-#endif
         float *ytheta = 0;
         float *ythetaT = 0;
         cudacall(cudaMalloc((void **)&ytheta, f * m * sizeof(ytheta[0])));
@@ -2138,9 +2121,6 @@ class ALSFactorization
         //cudaCheckError();
         cudacall(cudaFree(ytheta));
         float *errors_train = 0;
-#ifdef DEBUG
-        printf("\tgenerate: Y*theta run %f seconds.\n", seconds() - t1);
-#endif
 
         int block_dim = f / T10 * (f / T10 + 1) / 2;
         if (block_dim < f / 2)
@@ -2156,55 +2136,16 @@ class ALSFactorization
             else
                 batch_size = m - batch_id * (m / X_BATCH);
             int batch_offset = batch_id * (m / X_BATCH);
-//use fp16 in tt
-#ifdef CUMF_TT_FP16
-            cudacall(cudaMalloc((void **)&tt, f / 2 * f * batch_size * sizeof(float)));
-            cudacall(cudaMemset(tt, 0, f / 2 * f * batch_size * sizeof(float)));
-#else
             cudacall(cudaMalloc((void **)&tt, f * f * batch_size * sizeof(float)));
             cudacall(cudaMemset(tt, 0, f * f * batch_size * sizeof(float)));
-#endif
-#ifdef DEBUG
-            t1 = seconds();
-            printf("\tupdateXByBlock kernel.\n");
-#endif
             if (f == 100)
-            {
-//do not use fp16 by default
-#ifdef CUMF_USE_HALF
-                half *thetaT_fp16 = 0;
-                cudacall(cudaMalloc((void **)&thetaT_fp16, f * n * sizeof(thetaT_fp16[0])));
-                fp32Array2fp16Array<<<(n * f - 1) / 1024 + 1, 1024>>>(thetaT, thetaT_fp16, f * n);
-                get_hermitian100WithHalf<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, tt, csrRowIndex, csrColIndex, lambda, m, f, thetaT_fp16);
-                cudacall(cudaFree(thetaT_fp16));
-#elif defined(CUMF_TT_FP16)
-                get_hermitian100_tt_fp16<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, (half2 *)tt, csrRowIndex, csrColIndex, lambda, m, f, (float2 *)thetaT);
-#else
                 get_hermitian100<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, (float2 *)tt, csrRowIndex, csrColIndex, lambda, m, f, (float2 *)thetaT);
-#ifdef CUMF_SAVE_MODEL
-// saveDeviceFloatArrayToFile(std::string("./log/0904/tt32.") + std::to_string(iter),  f * f * batch_size, tt);
-#endif
-//This commented out is the fused kernel
-//performance not good due to register pressure and low occupancy
-//alsUpdateFeature100Host
-//	(batch_offset, csrRowIndex, csrColIndex, lambda, m, f, thetaT, XT, ythetaT, 6);
-#endif
-            }
             else
                 get_hermitianT10<<<batch_size, block_dim, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, tt, csrRowIndex, csrColIndex, lambda, m, f, thetaT);
             cudaDeviceSynchronize();
             cudaCheckError();
-#ifdef DEBUG
-            printf("\tupdate Theta kernel run %f seconds, gridSize: %d, blockSize %d.\n", seconds() - t1, batch_size, f);
-            t1 = seconds();
-#endif
 #ifdef USE_CG //use CG iterative solver
-#ifdef CUMF_TT_FP16
-            //cg_iter = als_iter: solve more carefully in later ALS iterations
-            updateXWithCGHost_tt_fp16(tt, &XT[batch_offset * f], &ythetaT[batch_offset * f], batch_size, f, CG_ITER);
-#else
             updateXWithCGHost(tt, &XT[batch_offset * f], &ythetaT[batch_offset * f], batch_size, f, CG_ITER);
-#endif
 #else //use LU solver instead \
       //host pointers for cublas batch operations
             float **devPtrTTHost = 0;
@@ -2215,23 +2156,10 @@ class ALSFactorization
             cudacall(cudaFreeHost(devPtrTTHost));
             cudacall(cudaFreeHost(devPtrYthetaTHost));
 #endif
-#ifdef DEBUG
-            printf("\tinvoke updateX with batch_size: %d, batch_offset: %d..\n", batch_size, batch_offset);
-            printf("\tupdateX solver run seconds: %f \n", seconds() - t1);
-#endif
             cudacall(cudaFree(tt));
         }
-#ifdef DEBUG
-        printf("update X run %f seconds, gridSize: %d, blockSize %d.\n", seconds() - t0, m, f);
-#endif
         cudacall(cudaFree(ythetaT));
 
-#ifdef DEBUG
-        t0 = seconds();
-        t1 = seconds();
-        printf("---------------------------------- ALS iteration %d, update theta ----------------------------------\n", iter);
-        printf("\tgenerate: Y'*X using cusparse.\n");
-#endif
         float *yTX = 0;
         float *yTXT = 0;
         cudacall(cudaMalloc((void **)&yTXT, f * n * sizeof(yTXT[0])));
@@ -2246,15 +2174,9 @@ class ALSFactorization
                                (const float *)yTX, n, &beta, yTXT, f, yTXT, f));
         cudaDeviceSynchronize();
         cudacall(cudaFree(yTX));
-#ifdef DEBUG
-        printf("\tgenerate: Y'*X run %f seconds.\n", seconds() - t1);
-#endif
         //in batches, when N is huge
         for (int batch_id = 0; batch_id < THETA_BATCH; batch_id++)
         {
-#ifdef DEBUG
-            printf("*******batch %d / %d.*******\n", batch_id, THETA_BATCH);
-#endif
             int batch_size = 0;
             if (batch_id != THETA_BATCH - 1)
                 batch_size = n / THETA_BATCH;
@@ -2263,51 +2185,16 @@ class ALSFactorization
             int batch_offset = batch_id * (n / THETA_BATCH);
 
             float *xx = 0;
-#ifdef CUMF_XX_FP16
-            cudacall(cudaMalloc((void **)&xx, f / 2 * f * batch_size * sizeof(xx[0])));
-            cudacall(cudaMemset(xx, 0, f / 2 * f * batch_size * sizeof(float)));
-#else
             cudacall(cudaMalloc((void **)&xx, f * f * batch_size * sizeof(xx[0])));
             cudacall(cudaMemset(xx, 0, f * f * batch_size * sizeof(float)));
-#endif
-#ifdef DEBUG
-            t1 = seconds();
-            printf("\tupdateThetaByBlock kernel.\n");
-#endif
-            //get_hermitian_theta<<<batch_size, 64>>>(batch_offset, xx, cscRowIndex, cscColIndex, lambda, n);
-            //updateThetaByBlock2pRegDsmemTile<<<batch_size, F>>>
             if (f == 100)
-            {
-#ifdef CUMF_USE_HALF
-                half *XT_fp16 = 0;
-                cudacall(cudaMalloc((void **)&XT_fp16, f * m * sizeof(XT_fp16[0])));
-                fp32Array2fp16Array<<<(n * f - 1) / 1024 + 1, 1024>>>(XT, XT_fp16, f * m);
-                get_hermitian100WithHalf<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, xx, cscColIndex, cscRowIndex, lambda, n, f, XT_fp16);
-                cudacall(cudaFree(XT_fp16));
-#elif defined(CUMF_XX_FP16)
-                get_hermitian100_tt_fp16<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, (half2 *)xx, cscColIndex, cscRowIndex, lambda, n, f, (float2 *)XT);
-#else
                 get_hermitian100<<<batch_size, 64, SCAN_BATCH * f / 2 * sizeof(float2)>>>(batch_offset, (float2 *)xx, cscColIndex, cscRowIndex, lambda, n, f, (float2 *)XT);
-#endif
-            }
             else
                 get_hermitianT10<<<batch_size, block_dim, SCAN_BATCH * f * sizeof(float)>>>(batch_offset, xx, cscColIndex, cscRowIndex, lambda, n, f, XT);
             cudaDeviceSynchronize();
             cudaCheckError();
-#ifdef DEBUG
-            printf("\tupdate Theta kernel run %f seconds, gridSize: %d, blockSize %d.\n",
-                   seconds() - t1, batch_size, f);
-            t1 = seconds();
-#endif
-#ifdef DEBUG
-            printf("*******invoke updateTheta with batch_size: %d, batch_offset: %d.\n", batch_size, batch_offset);
-#endif
 #ifdef USE_CG
-#ifdef CUMF_XX_FP16
-            updateXWithCGHost_tt_fp16(xx, &thetaT[batch_offset * f], &yTXT[batch_offset * f], batch_size, f, CG_ITER);
-#else
             updateXWithCGHost(xx, &thetaT[batch_offset * f], &yTXT[batch_offset * f], batch_size, f, CG_ITER);
-#endif
 #else
             float **devPtrXXHost = 0;
             cudacall(cudaMallocHost((void **)&devPtrXXHost, batch_size * sizeof(**devPtrXXHost)));
@@ -2315,23 +2202,12 @@ class ALSFactorization
             cudacall(cudaMallocHost((void **)&devPtrYTXTHost, batch_size * sizeof(**devPtrYTXTHost)));
             updateTheta(batch_size, batch_offset, xx, yTXT, thetaT, handle, m, n, f, nnz,
                         devPtrXXHost, devPtrYTXTHost);
-#ifdef CUMF_SAVE_MODEL
-// saveDeviceFloatArrayToFile(std::string("./log/0827/lu-xx32.iter") + std::to_string(iter) + std::string(".batch") + std::to_string(batch_id),  f * f * batch_size, xx);
-#endif
             cudacall(cudaFreeHost(devPtrXXHost));
             cudacall(cudaFreeHost(devPtrYTXTHost));
-#endif
-#ifdef DEBUG
-            printf("\tupdateTheta solver run seconds: %f \n", seconds() - t1);
 #endif
             cudacall(cudaFree(xx));
         }
         cudacall(cudaFree(yTXT));
-#ifdef DEBUG
-        printf("update theta run %f seconds, gridSize: %d, blockSize %d.\n",
-               seconds() - t0, n, f);
-        printf("Calculate RMSE.\n");
-#endif
     }
     T Score(const int *cooRowIndex, const int *cooColIndex, const T *cooData, const long nnz)
     {
