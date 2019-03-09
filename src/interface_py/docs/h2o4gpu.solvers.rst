@@ -64,3 +64,12 @@ h2o4gpu\.solvers\.pca module
     :members:
     :undoc-members:
     :show-inheritance:
+
+
+h2o4gpu\.solvers\.factorization module
+--------------------------------------
+
+.. automodule:: h2o4gpu.solvers.factorization
+    :members:
+    :undoc-members:
+    :show-inheritance:

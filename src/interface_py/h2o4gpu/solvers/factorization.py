@@ -1,7 +1,7 @@
 # - * - encoding : utf - 8 - * -
 # pylint: disable=fixme, line-too-long
 """
-KMeans clustering solver.
+Matrix factorization solver.
 
 :copyright: 2017-2019 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -40,22 +40,41 @@ def _get_sparse_matrixes(X):
 
 
 class FactorizationH2O(object):
-    '''Factors a sparse rating matrix X (m by n, with N_z non-zero elements)
-        into a m-by-f and a f-by-n matrices.
+    '''Matrix Factorization on GPU with Alternating Least Square (ALS) algorithm.
 
-    Arguments:
-        f {int} -- decomposition size
-        lambda_ {float} -- lambda regularization
+    Factors a sparse rating matrix X (m by n, with N_z non-zero elements)
+    into a m-by-f and a f-by-n matrices.
 
-    Keyword Arguments:
-        max_iter {int} -- number of training iterations (default: {100})
-        double_precision {bool} -- use double presition, not yet supported (default: {False})
-        thetaT {array-like} shape (n, f) -- initial theta matrix (default: {None})
-        XT {array-like} shape (m, f) -- initial XT matrix (default: {None})
+    Parameters
+    ----------
+    f int
+        decomposition size
+    lambda_ float
+        lambda regularization
+    max_iter int, default: 100
+        number of training iterations
+    double_precision bool, default: False
+        use double presition, not yet supported
+    thetaT {array-like} shape (n, f),  default: None
+        initial theta matrix
+    XT {array-like} shape (m, f), default: None
+        initial XT matrix
 
-    Attributes:
-        X {array-like} shape (m, f) -- X matrix contains User's features
-        thetaT {array-like} shape (n, f) -- transposed theta matrix, item's features
+    Attributes
+    ----------
+    XT {array-like} shape (m, f)
+        XT matrix contains User's features
+    thetaT {array-like} shape (n, f)
+        transposed theta matrix, item's features
+
+    Warnings
+    --------
+    Matrixes ``XT`` and ``thetaT`` may contain nan elements. This is because in some datasets,
+    there are users or items with no ratings in training set. That results in solutions of
+    a system of linear equations becomes nan. Such elements can be easily removed with numpy
+    functions like numpy.nan_to_num, but existence of them may be usefull for troubleshooting
+    perposes.
+
     '''
 
     def __init__(self, f, lambda_, max_iter=100, double_precision=False, thetaT=None, XT=None):
@@ -77,23 +96,34 @@ class FactorizationH2O(object):
 
     def fit(self, X, y=None, X_test=None, X_BATCHES=1, THETA_BATCHES=1, early_stopping_rounds=None, verbose=False, scores=None):
         #pylint: disable=unused-argument
-        '''earn model from rating matrix X
+        '''Learn model from rating matrix X.
 
-        Arguments:
-            X {array-like, sparse matrix}, shape (m, n) -- Data matrix to be decomposed
+        Parameters
+        ----------
+        X {array-like, sparse matrix}, shape (m, n)
+            Data matrix to be decomposed.
+        y None
+            Ignored
+        X_test {array-like, coo sparse matrix}, shape (m, n)
+            Data matrix for cross validation.
+        X_BATCHES int, default: 1
+            Batches to split XT, increase this parameter in case out of memory error.
+        THETA_BATCHES int, default: 1
+            Batches to split theta, increase this parameter in case out of memory error.
+        early_stopping_rounds int, default: None
+            Activates early stopping. Cross validation error needs to decrease
+            at least every <early_stopping_rounds> round(s) to continue training. Requires <X_test>.
+            Returns the model from the last iteration (not the best one). If early stopping occurs,
+            the model will have three additional fields: best_cv_score, best_train_score and best_iteration.
+        verbose bool, default: False
+            Prints training and validation score(if applicable) on each iteration.
+        scores {list}
+            List of tuples with train, cv score for every iteration.
 
-        Keyword Arguments:
-            y -- ignored
-            X_test {array-like, coo sparse matrix}, shape (m, n) -- Data matrix for cross validation
-            X_BATCHES {int} -- batches to split XT (default: {1})
-            THETA_BATCHES {int} -- batches to split theta (default: {1})
-            early_stopping_rounds {int} -- Activates early stopping. Cross validation error needs to decrease
-                at least every <early_stopping_rounds> round(s) to continue training. Requires <>. If there’s
-                more than one, will use the last. Returns the model from the last iteration (not the best one).
-                If early stopping occurs, the model will have three additional fields: best_cv_score,
-                best_train_score and best_iteration.
-            verbose {bool} -- prints training and validation score(if applicable) on each iteration (default: {False})
-            scores {list} -- list of tuples with train, cv score for every iteration
+        Returns
+        -------
+        self : returns an instance of self.
+
         '''
 
         csc_X, csr_X, coo_X = _get_sparse_matrixes(X)
@@ -258,12 +288,18 @@ class FactorizationH2O(object):
         return self
 
     def predict(self, X):
-        '''Predict none zero elements of coo sparse matrix X according to the fitted model
-        Arguments:
+        '''Predict none zero elements of coo sparse matrix X according to the fitted model.
+
+        Parameters
+        ----------
             X {array-like, sparse coo matrix} shape (m, n)
-            Data matrix in coo format
+                Data matrix in coo format. Values are ignored.
+
         Returns
-            prediction : array,shape (m, n)
+        -------
+            {array-like, sparse coo matrix} shape (m, n)
+                Predicted values.
+
         '''
 
         assert self.XT is not None and self.thetaT is not None, 'tranform is invoked on an unfitted model'
