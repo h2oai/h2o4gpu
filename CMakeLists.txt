@@ -149,7 +149,7 @@ if(USE_CUDA)
                 SET(NVTX_LIBRARY nvToolsExt)
         endif()
 
-        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a 
+        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
                 PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
                         "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/") # cuda-10
         find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
@@ -161,7 +161,7 @@ if(USE_CUDA)
         find_library(CUSOLVER_STATIC_LIB NAMES libcusolver_static.a
                 PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
                         "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
-        
+
 
         TARGET_LINK_LIBRARIES(gpuh2o4gpu
                 ${CUBLAS_STATIC_LIB}
@@ -181,7 +181,7 @@ if(USE_CUDA)
         else()
                 SWIG_ADD_LIBRARY(ch2o4gpu_gpu LANGUAGE python SOURCES src/swig/ch2o4gpu_gpu.i)
         endif()
-        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu 
+        SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu
                 ${PYTHON_LIBRARIES}
                 ${CUBLAS_STATIC_LIB}
                 ${CULIBOS_STATIC_LIB}
