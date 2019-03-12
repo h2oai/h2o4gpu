@@ -61,7 +61,7 @@ def test_multi_batches():
     X, X_test = _load_train_test()
     scores = []
     factorization = h2o4gpu.solvers.FactorizationH2O(
-        80, 0.1, max_iter=40)
+        90, 0.1, max_iter=40)
     factorization.fit(X, scores=scores, X_BATCHES=2, THETA_BATCHES=2)
     X_pred = factorization.predict(X.tocoo())
     not_nan = ~np.isnan(X_pred.data)
