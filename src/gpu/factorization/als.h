@@ -2277,16 +2277,16 @@ iter*SCAN_BATCH + threadIdx.x%32; int col_local; if(anchor < end &&
 threadIdx.x%32 < SCAN_BATCH) col_local = csrColIndex[anchor]; int stop
 = (end - start - iter*SCAN_BATCH < SCAN_BATCH)? end - start -
 iter*SCAN_BATCH: SCAN_BATCH; for (int k = 0; k < stop; k++){
-    //deal with col_local in lane[k]
-    int col = __shfl(col_local, k);
-    //if(blockIdx.x==0 && threadIdx.x==0)
-    //
+//deal with col_local in lane[k]
+int col = __shfl(col_local, k);
+//if(blockIdx.x==0 && threadIdx.x==0)
+//
 printf("iter=%d,k=%d,col=%d,stop=%d,anchor=%d\n", iter,k, col, stop,
 anchor);
-    //this type of for is bad in performance
-    //for(int i = threadIdx.x; i < F; i += 64)
-    if(threadIdx.x<F/2)
-            thetaTemp[k*F/2 + threadIdx.x] =
+//this type of for is bad in performance
+//for(int i = threadIdx.x; i < F; i += 64)
+if(threadIdx.x<F/2)
+thetaTemp[k*F/2 + threadIdx.x] =
 __ldg(&thetaT[ F/2 * col + threadIdx.x]);
 }
 */
