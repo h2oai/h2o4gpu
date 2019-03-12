@@ -52,9 +52,9 @@ rm -rf /opt/boost
 mkdir -p /opt/boost
 export CUDA_HOME=/usr/local/cuda/
 apt-get install -y opencl-headers libicu-dev bzip2 libbz2-dev zlib1g-dev python-dev && \
-wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 && \
-tar xjf boost_1_61_0.tar.bz2 && \
-cd boost_1_61_0 && \
+wget https://s3.amazonaws.com/0xdata-public/boost/boost_1_69_0.tar.bz2 && \
+tar xjf boost_1_69_0.tar.bz2 && \
+cd boost_1_69_0 && \
 export PYTHON_PREFIX=`python3-config --prefix` && \
 ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
 export PYTHON_INCLUDES=`python3-config --includes` && \
