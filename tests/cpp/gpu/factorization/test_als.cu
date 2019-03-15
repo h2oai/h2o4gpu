@@ -4,13 +4,13 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-TEST(Factorization, get_hermitianT10_eye) {
-  // most simple test case, all sizes 20
-  constexpr float lambda = 0.0;
-  constexpr int f = 20;
-  constexpr int m = 20;
-  constexpr int n = 20;
-  constexpr int batch_size = m;
+// TODO: hermitianT10 had a race condition bug that was not detected by such
+// simple tests It was reproducable when F >=70 on test data. Probably when
+// a sparse matrix is inbalanced.
+// TODO: Use BLAS instead of naive matrix multiplication
+
+void Test_hermitianT10_eye(int f, int m, float lambda) {
+  int batch_size = m;
   int block_dim = f / ALS_T10 * (f / ALS_T10 + 1) / 2;
   if (block_dim < f / 2)
     block_dim = f / 2;
@@ -18,11 +18,14 @@ TEST(Factorization, get_hermitianT10_eye) {
   thrust::device_vector<float> tt_device(f * f * batch_size, 0.0);
 
   // sparse eye matrix
-  int csrRowIndex_host[m + 1] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
-                                 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+  int csrRowIndex_host[m + 1];
+  int csrColIndex_host[m];
 
-  int csrColIndex_host[20] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                              10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+  for (int i = 0; i < m + 1; ++i)
+    csrRowIndex_host[i] = i;
+
+  for (int i = 0; i < m; ++i)
+    csrColIndex_host[i] = i;
 
   thrust::device_vector<int> csrRowIndex_device(csrRowIndex_host,
                                                 csrRowIndex_host + m + 1);
@@ -44,13 +47,15 @@ TEST(Factorization, get_hermitianT10_eye) {
 
   OK(cudaDeviceSynchronize());
 
-  for (int v = 0; v < n; ++v) {
+  for (int v = 0; v < m; ++v) {
     thrust::host_vector<float> thetaT_theta =
         thrust::host_vector<float>(f * f, 0.0);
     for (int row = 0; row < f; ++row) {
       for (int col = 0; col < f; ++col) {
         thetaT_theta[row * f + col] =
             thetaT_device[row + v * f] * thetaT_device[col + v * f];
+        if (row == col)
+          thetaT_theta[row * f + col] += lambda;
         ASSERT_FLOAT_EQ(tt_device[v * f * f + row * f + col],
                         thetaT_theta[row * f + col])
             << v << ", " << row << ", " << col;
@@ -59,28 +64,28 @@ TEST(Factorization, get_hermitianT10_eye) {
   }
 }
 
-TEST(Factorization, get_hermitianT10_2columns) {
+void Test_hermitianT10_2columns(int f, int m, float lambda) {
   // most simple test case, all sizes 20
-  constexpr float lambda = 0.0;
-  constexpr int f = 20;
-  constexpr int m = 20;
-  constexpr int n = 20;
-  constexpr int batch_size = m;
+  int offset = 10;
+  int batch_size = m;
   int block_dim = f / ALS_T10 * (f / ALS_T10 + 1) / 2;
   if (block_dim < f / 2)
     block_dim = f / 2;
 
   thrust::device_vector<float> tt_device(f * f * batch_size, 0.0);
 
-  int csrRowIndex_host[m + 1] = {0,  2,  4,  6,  8,  10, 12, 14, 16, 18, 20,
-                                 22, 24, 26, 28, 30, 32, 34, 36, 38, 40};
+  int csrRowIndex_host[m + 1];
 
   // v , (v + 1) % m
-  int csrColIndex_host[40] = {0,  1,  1,  2,  2,  3,  3,  4,  4,  5,
-                              5,  6,  6,  7,  7,  8,  8,  9,  9,  10,
-                              10, 11, 11, 12, 12, 13, 13, 14, 14, 15,
-                              15, 16, 16, 17, 17, 18, 18, 19, 0,  19};
+  int csrColIndex_host[2 * m];
 
+  for (int i = 0; i < m + 1; ++i)
+    csrRowIndex_host[i] = 2 * i;
+  for (int i = 0; i < 2 * m; ++i)
+    if (i % 2 == 0)
+      csrColIndex_host[i] = i / 2;
+    else
+      csrColIndex_host[i] = ((i / 2) + offset) % m;
   thrust::device_vector<int> csrRowIndex_device(csrRowIndex_host,
                                                 csrRowIndex_host + m + 1);
   thrust::device_vector<int> csrColIndex_device(
@@ -101,16 +106,18 @@ TEST(Factorization, get_hermitianT10_2columns) {
 
   OK(cudaDeviceSynchronize());
 
-  for (int v = 0; v < n; ++v) {
+  for (int v = 0; v < m; ++v) {
     thrust::host_vector<float> thetaT_theta =
         thrust::host_vector<float>(f * f, 0.0);
     for (int row = 0; row < f; ++row) {
       for (int col = 0; col < f; ++col) {
         thetaT_theta[row * f + col] +=
             thetaT_device[row + v * f] * thetaT_device[col + v * f];
-        int v1 = (v + 1) % n;
+        int v1 = (v + offset) % m;
         thetaT_theta[row * f + col] +=
             thetaT_device[row + v1 * f] * thetaT_device[col + v1 * f];
+        if (row == col)
+          thetaT_theta[row * f + col] += 2 * lambda;
 
         ASSERT_FLOAT_EQ(tt_device[v * f * f + row * f + col],
                         thetaT_theta[row * f + col])
@@ -120,69 +127,47 @@ TEST(Factorization, get_hermitianT10_2columns) {
   }
 }
 
-TEST(Factorization, get_hermitianT10_eye_2_batches) {
-  constexpr int X_BATCH = 2;
-  // most simple test case, all sizes 20
-  constexpr float lambda = 0.0;
-  constexpr int f = 20;
-  constexpr int m = 20;
-  constexpr int n = 20;
-  int block_dim = f / ALS_T10 * (f / ALS_T10 + 1) / 2;
-  if (block_dim < f / 2)
-    block_dim = f / 2;
+// Those tests are really slow
+// TEST(Factorization, get_hermitianT10_eye_70) {
+//   Test_hermitianT10_eye(70, 150, 1.0);
+// }
 
-  // sparse eye matrix
-  int csrRowIndex_host[m + 1] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,
-                                 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
+// TEST(Factorization, get_hermitianT10_eye_60) {
+//   Test_hermitianT10_eye(60, 150, 1.0);
+// }
 
-  int csrColIndex_host[20] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                              10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+// TEST(Factorization, get_hermitianT10_eye_50) {
+//   Test_hermitianT10_eye(50, 150, 1.0);
+// }
 
-  thrust::device_vector<int> csrRowIndex_device(csrRowIndex_host,
-                                                csrRowIndex_host + m + 1);
-  thrust::device_vector<int> csrColIndex_device(
-      csrColIndex_host, csrColIndex_host + sizeof(csrColIndex_host) /
-                                               sizeof(csrColIndex_host[0]));
-
-  thrust::device_vector<float> thetaT_device(f * m);
-  for (int i = 0; i < f * m; ++i) {
-    thetaT_device[i] = float(i * 0.1);
-  }
-
-  for (int batch_id = 0; batch_id < X_BATCH; batch_id++) {
-    int batch_size = 0;
-    if (batch_id != X_BATCH - 1)
-      batch_size = m / X_BATCH;
-    else
-      batch_size = m - batch_id * (m / X_BATCH);
-
-    int batch_offset = batch_id * (m / X_BATCH);
-
-    thrust::device_vector<float> tt_device(f * f * batch_size, 0.0);
-
-    get_hermitianT10<<<batch_size, block_dim,
-                       SCAN_BATCH * f / 2 * sizeof(float2)>>>(
-        batch_offset, thrust::raw_pointer_cast(tt_device.data()),
-        thrust::raw_pointer_cast(csrRowIndex_device.data()),
-        thrust::raw_pointer_cast(csrColIndex_device.data()), lambda, m, f,
-        thrust::raw_pointer_cast(thetaT_device.data()));
-
-    OK(cudaDeviceSynchronize());
-
-    for (int v = 0; v < batch_size; ++v) {
-      thrust::host_vector<float> thetaT_theta =
-          thrust::host_vector<float>(f * f, 0.0);
-      for (int row = 0; row < f; ++row) {
-        for (int col = 0; col < f; ++col) {
-          thetaT_theta[row * f + col] =
-              thetaT_device[row + (v + batch_offset) * f] *
-              thetaT_device[col + (v + batch_offset) * f];
-
-          ASSERT_FLOAT_EQ(tt_device[v * f * f + row * f + col],
-                          thetaT_theta[row * f + col])
-              << v << ", " << row << ", " << col;
-        }
-      }
-    }
-  }
+TEST(Factorization, get_hermitianT10_eye_40) {
+  Test_hermitianT10_eye(40, 150, 1.0);
 }
+
+TEST(Factorization, get_hermitianT10_eye_30) {
+  Test_hermitianT10_eye(30, 100, 1.0);
+}
+
+TEST(Factorization, get_hermitianT10_eye_20) {
+  Test_hermitianT10_eye(20, 100, 1.0);
+}
+
+TEST(Factorization, get_hermitianT10_2columns_20) {
+  Test_hermitianT10_2columns(20, 200, 1.0);
+}
+TEST(Factorization, get_hermitianT10_2columns_30) {
+  Test_hermitianT10_2columns(30, 200, 1.0);
+}
+TEST(Factorization, get_hermitianT10_2columns_40) {
+  Test_hermitianT10_2columns(40, 200, 1.0);
+}
+// Those tests are really slow
+// TEST(Factorization, get_hermitianT10_2columns_50) {
+//   Test_hermitianT10_2columns(50, 200, 1.0);
+// }
+// TEST(Factorization, get_hermitianT10_2columns_60) {
+//   Test_hermitianT10_2columns(60, 200, 1.0);
+// }
+// TEST(Factorization, get_hermitianT10_2columns_70) {
+//   Test_hermitianT10_2columns(70, 200, 1.0);
+// }

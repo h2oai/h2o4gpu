@@ -1108,8 +1108,8 @@ __global__ void updateXWithCGKernel(float *A, float *x, float *b,
         // r=r-alpha*Ap;
         sharedr[threadIdx.x] =
             sharedr[threadIdx.x] - alpha[0] * sharedap[threadIdx.x];
-// NOT needed?
-//__syncthreads();
+        // NOT needed?
+        __syncthreads();
 #ifdef DEBUG
         __syncthreads();
         if (threadIdx.x == 0)
@@ -1686,7 +1686,7 @@ void updateXWithCGHost(float *A, float *x, float *b, const int batchSize,
     updateXWithCGKernel<<<batchSize, f, (4 * f + 4) * sizeof(float)>>>
         // updateXWithCGKernel2<<<batchSize, 96, (4*f+4)*sizeof(float)>>>
         (A, x, b, batchSize, f, cgIter);
-    cudaDeviceSynchronize();
+    OK(cudaDeviceSynchronize());
     cudaCheckError();
 
 #ifdef DEBUG
@@ -1728,7 +1728,7 @@ void updateXWithCGHost(float *A, float *x, float *b, const int batchSize,
 
 int updateX(const int batch_size, const int batch_offset, float *ythetaT,
             float *tt, float *XT, cublasHandle_t handle, const int m,
-            const int n, const int f, const int nnz, float **devPtrTTHost,
+            const int n, const int f, float **devPtrTTHost,
             float **devPtrYthetaTHost)
 {
 #ifdef DEBUG
@@ -1753,6 +1753,7 @@ int updateX(const int batch_size, const int batch_offset, float *ythetaT,
         cublasSgetrfBatched(handle, f, devPtrTT, f, NULL, INFO, batch_size));
 
     cudaThreadSynchronize();
+    OK(cudaDeviceSynchronize());
 #ifdef DEBUG
     gettimeofday(&tv1, NULL);
     elapsed = (tv1.tv_sec - tv0.tv_sec) + (tv1.tv_usec - tv0.tv_usec) / 1000000.0;
@@ -1780,6 +1781,7 @@ int updateX(const int batch_size, const int batch_offset, float *ythetaT,
                                    devPtrYthetaT, f, info2, batch_size));
 
     cudaThreadSynchronize();
+    OK(cudaDeviceSynchronize());
     cudaError_t cudaStat1 = cudaGetLastError();
     if (cudaStat1 != cudaSuccess)
     {
@@ -1798,18 +1800,18 @@ int updateX(const int batch_size, const int batch_offset, float *ythetaT,
 #endif
 
     cudacall(cudaFree(devPtrTT));
-    // cudacall(cudaFree(P));
     cudacall(cudaFree(INFO));
+    free(info2);
     cudacall(cudaFree(devPtrYthetaT));
     return 0;
 }
 
 int updateTheta(const int batch_size, const int batch_offset, float *xx,
-                float *yTXT, float *thetaT, cublasHandle_t handle, const int m,
-                const int n, const int f, const int nnz, float **devPtrXXHost,
-                float **devPtrYTXTHost)
+                float *yTXT, float *thetaT,
+                cublasHandle_t handle,
+                const int m, const int n, const int f,
+                float **devPtrXXHost, float **devPtrYTXTHost)
 {
-
 #ifdef DEBUG
     float elapsed;
     struct timeval tv0, tv1, tv2;
@@ -1823,13 +1825,12 @@ int updateTheta(const int batch_size, const int batch_offset, float *xx,
         devPtrXXHost[k] = &xx[k * f * f];
     }
     cudacall(cudaMalloc((void **)&devPtrXX, batch_size * sizeof(*devPtrXX)));
-    cudacall(cudaMemcpy(devPtrXX, devPtrXXHost, batch_size * sizeof(*devPtrXX),
-                        cudaMemcpyHostToDevice));
-    // int *INFO;
-    // cudacall(cudaMalloc(&P, f * batch_size * sizeof(int)));
-    // cudacall(cudaMalloc(&INFO, batch_size * sizeof(int)));
-    // cublascall(cublasSgetrfBatched(handle, f, devPtrXX, f, NULL, INFO,
-    // batch_size)); cudaThreadSynchronize();
+    cudacall(cudaMemcpy(devPtrXX, devPtrXXHost, batch_size * sizeof(*devPtrXX), cudaMemcpyHostToDevice));
+    int *INFO;
+    //cudacall(cudaMalloc(&P, f * batch_size * sizeof(int)));
+    cudacall(cudaMalloc(&INFO, batch_size * sizeof(int)));
+    cublascall(cublasSgetrfBatched(handle, f, devPtrXX, f, NULL, INFO, batch_size));
+    cudaThreadSynchronize();
 #ifdef DEBUG
     gettimeofday(&tv1, NULL);
     elapsed = (tv1.tv_sec - tv0.tv_sec) + (tv1.tv_usec - tv0.tv_usec) / 1000000.0;
@@ -1845,26 +1846,21 @@ int updateTheta(const int batch_size, const int batch_offset, float *xx,
     }
 
     cudacall(cudaMalloc((void **)&devPtrYTXT, batch_size * sizeof(*devPtrYTXT)));
-    cudacall(cudaMemcpy(devPtrYTXT, devPtrYTXTHost,
-                        batch_size * sizeof(*devPtrYTXT),
-                        cudaMemcpyHostToDevice));
+    cudacall(cudaMemcpy(devPtrYTXT, devPtrYTXTHost, batch_size * sizeof(*devPtrYTXT), cudaMemcpyHostToDevice));
 
     int *info2 = (int *)malloc(sizeof(int));
     cublascall(cublasSgetrsBatched(handle, CUBLAS_OP_N, f, 1,
-                                   (const float **)devPtrXX, f, NULL, devPtrYTXT,
-                                   f, info2, batch_size));
+                                   (const float **)devPtrXX, f, NULL, devPtrYTXT, f, info2, batch_size));
     cudaThreadSynchronize();
     cudaError_t cudaStat1 = cudaGetLastError();
     if (cudaStat1 != cudaSuccess)
     {
-        fprintf(stderr, "Failed to launch cublasSgetrsBatched (error code: %s)!\n",
-                cudaGetErrorString(cudaStat1));
+        fprintf(stderr, "Failed to launch cublasSgetrsBatched (error code: %s)!\n", cudaGetErrorString(cudaStat1));
         exit(EXIT_FAILURE);
     }
 
     cudacall(cudaMemcpy(&thetaT[batch_offset * f], &yTXT[batch_offset * f],
-                        batch_size * f * sizeof(float),
-                        cudaMemcpyDeviceToDevice));
+                        batch_size * f * sizeof(float), cudaMemcpyDeviceToDevice));
 #ifdef DEBUG
     gettimeofday(&tv2, NULL);
     elapsed = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000000.0;
@@ -1872,7 +1868,7 @@ int updateTheta(const int batch_size, const int batch_offset, float *xx,
 #endif
 
     cudaFree(devPtrXX);
-    // cudaFree(INFO);
+    cudaFree(INFO);
     free(info2);
     cudaFree(devPtrYTXT);
     return 0;
@@ -2306,6 +2302,7 @@ __ldg(&thetaT[ F/2 * col + threadIdx.x]);
                         accumulate_in_registers();
                 }
             }
+             __syncthreads();
             //*/
         }
         // end of iteration in copying from smem and aggregating in register
@@ -2343,6 +2340,7 @@ __ldg(&thetaT[ F/2 * col + threadIdx.x]);
                 fill_upper_half_from_registers_float2();
             }
         }
+         __syncthreads();
     }
 }
 
@@ -2441,6 +2439,7 @@ __global__ void get_hermitianT10(const int batch_offset, float *tt,
                     accumulate_in_registers();
                 }
             }
+            __syncthreads();
         }
         // end of iteration in copying from smem and aggregating in register
         __syncthreads();
@@ -2508,24 +2507,27 @@ class ALSFactorization
                            CUSPARSE_OPERATION_TRANSPOSE, m, f, n, nnz, &alpha,
                            descr, csrVal, csrRowIndex, csrColIndex, thetaT, f,
                            &beta, ytheta, m));
-        // cudaDeviceSynchronize();
+        OK(cudaDeviceSynchronize());
+
         // printf("*******transpose ytheta use cublas.\n");
         // ytheta: m*f; need ythetaT = (ytheta).T = f*m
         cublascall(geam(handle, CUBLAS_OP_T, CUBLAS_OP_N, f, m, &alpha,
                         (const float *)ytheta, m, &beta, ythetaT, f, ythetaT, f));
-        // cudaDeviceSynchronize();
-        // cudaCheckError();
+        OK(cudaDeviceSynchronize());
+
+        cudaCheckError();
         cudacall(cudaFree(ytheta));
         float *errors_train = 0;
 
         int block_dim = f / ALS_T10 * (f / ALS_T10 + 1) / 2;
         if (block_dim < f / 2)
             block_dim = f / 2;
+
         for (int batch_id = 0; batch_id < X_BATCH; batch_id++)
         {
-#ifdef DEBUG
-            printf("*******batch %d / %d.*******\n", batch_id, X_BATCH);
-#endif
+            // #ifdef DEBUG
+            // printf("*******batch %d / %d.*******\n", batch_id, X_BATCH);
+            // #endif
             int batch_size = 0;
             if (batch_id != X_BATCH - 1)
                 batch_size = m / X_BATCH;
@@ -2543,7 +2545,8 @@ class ALSFactorization
                 get_hermitianT10<<<batch_size, block_dim,
                                    SCAN_BATCH * f / 2 * sizeof(float2)>>>(
                     batch_offset, tt, csrRowIndex, csrColIndex, lambda, m, f, thetaT);
-            cudaDeviceSynchronize();
+            OK(cudaDeviceSynchronize());
+
             cudaCheckError();
 #ifdef USE_CG // use CG iterative solver
             updateXWithCGHost(tt, &XT[batch_offset * f], &ythetaT[batch_offset * f],
@@ -2551,13 +2554,10 @@ class ALSFactorization
 #else //use LU solver instead \
       //host pointers for cublas batch operations
             float **devPtrTTHost = 0;
-            cudacall(cudaMallocHost((void **)&devPtrTTHost,
-                                    batch_size * sizeof(*devPtrTTHost)));
+            cudacall(cudaMallocHost((void **)&devPtrTTHost, batch_size * sizeof(*devPtrTTHost)));
             float **devPtrYthetaTHost = 0;
-            cudacall(cudaMallocHost((void **)&devPtrYthetaTHost,
-                                    batch_size * sizeof(*devPtrYthetaTHost)));
-            updateX(batch_size, batch_offset, ythetaT, tt, XT, handle, m, n, f, nnz,
-                    devPtrTTHost, devPtrYthetaTHost);
+            cudacall(cudaMallocHost((void **)&devPtrYthetaTHost, batch_size * sizeof(*devPtrYthetaTHost)));
+            updateX(batch_size, batch_offset, ythetaT, tt, XT, handle, m, n, f, devPtrTTHost, devPtrYthetaTHost);
             cudacall(cudaFreeHost(devPtrTTHost));
             cudacall(cudaFreeHost(devPtrYthetaTHost));
 #endif
@@ -2605,22 +2605,19 @@ class ALSFactorization
                 get_hermitianT10<<<batch_size, block_dim,
                                    SCAN_BATCH * f * sizeof(float)>>>(
                     batch_offset, xx, cscColIndex, cscRowIndex, lambda, n, f, XT);
-            cudaDeviceSynchronize();
+            OK(cudaDeviceSynchronize());
             cudaCheckError();
+
 #ifdef USE_CG
             updateXWithCGHost(xx, &thetaT[batch_offset * f], &yTXT[batch_offset * f],
                               batch_size, f, CG_ITER);
 #else
             float **devPtrXXHost = 0;
-            cudacall(cudaMallocHost((void **)&devPtrXXHost,
-                                    batch_size * sizeof(**devPtrXXHost)));
+            cudacall(cudaMallocHost((void **)&devPtrXXHost, batch_size * sizeof(*devPtrXXHost)));
             float **devPtrYTXTHost = 0;
-            cudacall(cudaMallocHost((void **)&devPtrYTXTHost,
-                                    batch_size * sizeof(**devPtrYTXTHost)));
+            cudacall(cudaMallocHost((void **)&devPtrYTXTHost, batch_size * sizeof(*devPtrYTXTHost)));
             updateTheta(batch_size, batch_offset, xx, yTXT, thetaT, handle, m, n, f,
-                        nnz, devPtrXXHost, devPtrYTXTHost);
-            cudacall(cudaFreeHost(devPtrXXHost));
-            cudacall(cudaFreeHost(devPtrYTXTHost));
+                        devPtrXXHost, devPtrYTXTHost);
 #endif
             cudacall(cudaFree(xx));
         }
@@ -2638,7 +2635,7 @@ class ALSFactorization
         RMSE<<<(nnz + block - 1) / block, block>>>(cooData, cooRowIndex,
                                                    cooColIndex, thetaT, XT,
                                                    errors_test, nnz, error_size, f);
-        cudaDeviceSynchronize();
+        OK(cudaDeviceSynchronize());
         cudaCheckError();
 
         T *rmse = (T *)malloc(sizeof(T));
