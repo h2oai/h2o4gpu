@@ -10,16 +10,6 @@
 #include <stdio.h>
 #include "timer.h"
 
-// Check CUDA calls
-#define CUDACHECK(cmd) do {                         \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));   \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
-  } while(0)
-
 #ifdef USE_NCCL2
 #include "nccl.h"
 

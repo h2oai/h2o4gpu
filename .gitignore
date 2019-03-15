@@ -179,4 +179,4 @@ src/interface_py/build_info.txt
 
 # Temp requirement file generated for Conda
 src/interface_py/requirements_conda.txt
-open_data/
+open_data/*
