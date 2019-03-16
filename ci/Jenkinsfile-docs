@@ -56,7 +56,7 @@ pipeline {
                                cd src/interface_py/docs &&
                                make html
                                """
-                            stash includes: 'src/interface/docs/_build/*', name: 'py-docs'
+                            stash includes: 'src/interface_py/docs/_build/*', name: 'py-docs'
                         }
 
                     }
@@ -95,7 +95,7 @@ pipeline {
                             docker.image("harbor.h2o.ai/library/s3cmd").inside {
                                 unstash 'py-docs'
                                 sh """
-                           s3cmd put --recursive -P src/interface/docs/_build/html s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Pydocs/$BUILD_ID/
+                           s3cmd put --recursive -P src/interface_py/docs/_build/html s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Pydocs/$BUILD_ID/
                            """
                             }
                         }
