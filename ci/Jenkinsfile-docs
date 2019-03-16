@@ -56,7 +56,7 @@ pipeline {
                                cd src/interface_py/docs &&
                                make html
                                """
-                            stash includes: 'src/interface_py/docs/_build/*', name: 'py-docs'
+                            stash includes: 'src/interface_py/docs/_build/**/*', name: 'py-docs'
                         }
 
                     }
