@@ -18,7 +18,7 @@ version we tried to install.  E.g. on conda you might need to do:
 
 ```
 pip uninstall numpy
-pip install numpy==1.15.1 # or whatever version was attempted to be installed by the wheel
+pip install numpy==1.16.1 # or whatever version was attempted to be installed by the wheel
 ```
 
 ### h2o4gpu not found ###

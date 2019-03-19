@@ -148,6 +148,7 @@ class KMeansH2O(object):
             do_checks=1):
 
         # fix-up tol in case input was numpy
+        # pylint: disable=assignment-from-no-return
         example = np.fabs(1.0)
         # pylint: disable=unidiomatic-typecheck
         if type(tol) == type(example):
