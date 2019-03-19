@@ -9,7 +9,7 @@ future==0.16.0
 # below for some testing utils that can be run at runtime
 psutil==5.4.5
 # below for xgboost
-scikit-learn==0.19.1
+scikit-learn==0.20.2
 #sklearn==0.0
 pytest==3.10.1
 pytest-forked==0.2
