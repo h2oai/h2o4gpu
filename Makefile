@@ -536,6 +536,16 @@ test_cpp:
 clean_test_cpp:
 	$(MAKE) -j clean_cpp_tests -C src/
 
+#################### Documentation
+
+docs: py_docs r_docs
+
+py_docs:
+	cd src/interface_py/docs && $(MAKE) html
+
+r_docs:
+	cd src/interface_r && R3 -e 'pkgdown::build_site(examples=FALSE)'
+
 #########################################
 # BUILD INFO TARGETS
 #########################################
