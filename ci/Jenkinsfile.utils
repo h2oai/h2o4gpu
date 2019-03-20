@@ -225,7 +225,7 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
             stash includes: "src/interface_py/dist/${platform}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
             stash includes: "condapkgs/*/h2o4gpu-*.tar.bz2", name: 'condapkg', allowEmpty: true
-            stash includes: "src/interface_py/dist/_build/*/*", name: 'py_docs'
+            stash includes: "src/interface_py/docs/_build/**/*", name: 'py_docs'
             sh "echo \"Archive artifacts\""
             arch "src/interface_py/dist/${platform}/*h2o4gpu-*.whl"
             archiveArtifacts artifacts: "condapkgs/*/h2o4gpu-*.tar.bz2", allowEmptyArchive: true

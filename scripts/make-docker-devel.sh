@@ -35,8 +35,8 @@ rm -rf src/interface_py/dist/
 $DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/dist src/interface_py/
 
 echo "Docker devel - Clean local python docs and Copying docs from docker"
-rm -rf src/interface_py/docs
-$DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/docs/_build src/interface_py/docs
+rm -rf src/interface_py/docs/_build
+$DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/docs/_build/ src/interface_py/docs
 
 echo "Docker devel - Copying VERSION.txt"
 mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt build/
