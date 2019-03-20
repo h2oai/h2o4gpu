@@ -64,12 +64,12 @@ Download the Python wheel file (For Python 3.6):
     * [CUDA9.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda9/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
     * [CUDA9.2 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-nccl-cuda92/h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA8 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.2 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA8 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_ppc64le.whl)
-    * [CUDA9.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_ppc64le.whl)
-    * [CUDA9.2 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.0.10000-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA8 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA9.2 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA8 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda8/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA9.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA9.2 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda92/h2o4gpu-0.3.1.10000-cp36-cp36m-linux_ppc64le.whl)
 
  Start a fresh pyenv or virtualenv session.
 
