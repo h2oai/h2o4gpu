@@ -18,6 +18,9 @@ src/interface_py/h2o4gpu/multioutput.py
 src/interface_py/h2o4gpu/naive_bayes.py
 src/interface_py/h2o4gpu/pipeline.py
 src/interface_py/h2o4gpu/random_projection.py
+src/interface_py/h2o4gpu/impute.py
+src/interface_py/h2o4gpu/_config.py
+src/interface_py/h2o4gpu/compose
 
 #Sphinx docs
 _build
