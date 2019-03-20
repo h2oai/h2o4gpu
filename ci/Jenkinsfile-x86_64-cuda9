@@ -29,7 +29,7 @@ def doingbenchmark = "0"
 def dobenchmark = "0"
 def doruntime = "1"
 def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
-//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)
+def publish_docs = true//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)
 def benchmark_commit_trigger
 
 pipeline {
@@ -158,12 +158,17 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
+                    unstash "py_docs"
+                    sh """
+                        echo "After Stashed py documentation file:"
+                        ls -l src/interface_py/docs/_build  || true
+                       """
                     h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}")
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}", "${publish_docs}")
                         }
                     }
                 }
