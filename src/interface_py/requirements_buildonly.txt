@@ -8,8 +8,9 @@ six==1.11.0
 yapf==0.17.0
 coverage==4.4.1
 # docs
-sphinx==1.5.6
-sphinx_rtd_theme==0.2.4
+numpydoc==0.8.0
+sphinx==1.8.5
+sphinx_rtd_theme==0.4.3
 pillow==4.2.1
 # compile wheel
 wheel==0.31.1

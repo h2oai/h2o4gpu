@@ -28,11 +28,15 @@ $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /root/nccl rev-parse 
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /root/nccl/build /root/repo/nccl'
 
 echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo ; make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"
 
 echo "Docker devel - Clean local wheels and Copying wheel from docker"
 rm -rf src/interface_py/dist/
 $DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/dist src/interface_py/
+
+echo "Docker devel - Clean local python docs and Copying docs from docker"
+rm -rf src/interface_py/docs/_build
+$DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/docs/_build/ src/interface_py/docs
 
 echo "Docker devel - Copying VERSION.txt"
 mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt build/

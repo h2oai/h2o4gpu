@@ -68,13 +68,15 @@ String changeId() {
     return "-master"
 }
 
-void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
+void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean publishDocs) {
     echo "Publishing artifact to S3"
 
     def buildArch = platform.split('-')[0]
 
     def versionTag = buildInfo.getVersion()
+    def buildVersion = buildInfo.getBuildVersion()
     def majorVersionTag = buildInfo.getMajorVersion()
+    def sha = buildInfo.getGitSha()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-cp36-cp36m-linux_${buildArch}.whl"
     def localArtifact = "src/interface_py/dist/${platform}/${artifact}"
@@ -87,6 +89,17 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     sh "s3cmd del ${bucket}${localArtifact}"
 
+    if(publishDocs){
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${versionTag}-${env.BUILD_ID}/"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${versionTag}/"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${sha}/"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+    }
+
     if (isRelease()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
@@ -97,6 +110,11 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
         build_id_bucket = "s3://artifacts.h2o.ai/releases/ai/h2o/${artifactId}/${env.BRANCH_NAME}/${env.BUILD_ID}/${platform}${extratag}/"
         sh "s3cmd put ${localArtifact} ${build_id_bucket}"
         sh "s3cmd setacl --acl-public  ${build_id_bucket}${artifact}"
+
+        if(publishDocs){
+            bucket = "s3://h2o-release/h2o4gpu/releases/h2o4gpu-py-docs/${majorVersionTag}/"
+            sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        }
     }
     if (isBleedingEdge()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
@@ -113,6 +131,10 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform) {
         sh "s3cmd put ${localArtifact} ${build_id_bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${build_id_bucket}${bleedingEdgeArtifact}"
 
+        if(publishDocs){
+            bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/nightly/"
+            sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        }
     }
 }
 
@@ -215,6 +237,7 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
             stash includes: "src/interface_py/dist/${platform}/*h2o4gpu-*.whl", name: stashName
             stash includes: 'build/VERSION.txt', name: 'version_info'
             stash includes: "condapkgs/*/h2o4gpu-*.tar.bz2", name: 'condapkg', allowEmpty: true
+            stash includes: "src/interface_py/docs/_build/**/*", name: 'py_docs'
             sh "echo \"Archive artifacts\""
             arch "src/interface_py/dist/${platform}/*h2o4gpu-*.whl"
             archiveArtifacts artifacts: "condapkgs/*/h2o4gpu-*.tar.bz2", allowEmptyArchive: true
