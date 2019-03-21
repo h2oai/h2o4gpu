@@ -74,7 +74,9 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
     def buildArch = platform.split('-')[0]
 
     def versionTag = buildInfo.getVersion()
+    def buildVersion = buildInfo.getBuildVersion()
     def majorVersionTag = buildInfo.getMajorVersion()
+    def sha = buildInfo.getGitSha()
     def artifactId = "h2o4gpu"
     def artifact = "${artifactId}-${versionTag}-cp36-cp36m-linux_${buildArch}.whl"
     def localArtifact = "src/interface_py/dist/${platform}/${artifact}"
@@ -88,7 +90,13 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
     sh "s3cmd del ${bucket}${localArtifact}"
 
     if(publishDocs){
-        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${artifactId}-${versionTag}-${env.BUILD_ID}/"
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${versionTag}-${env.BUILD_ID}/"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${versionTag}/"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
+
+        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${sha}/"
         sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
     }
 

@@ -40,29 +40,6 @@ pipeline {
                 }
             }
         }
-        stage("Generate Py Docs") {
-            agent {
-                label "mr-0xg3"
-            }
-            steps {
-                // Get source code
-                deleteDir()
-                checkout scm
-                dumpInfo()
-                script {
-                    docker.withRegistry("https://harbor.h2o.ai", "harbor.h2o.ai") {
-                        docker.image("harbor.h2o.ai/library/py-r-3-5:latest").inside {
-                            sh """
-                               cd src/interface_py/docs &&
-                               make html
-                               """
-                            stash includes: 'src/interface_py/docs/_build/**/*', name: 'py-docs'
-                        }
-
-                    }
-                }
-            }
-        }
         stage("Publish R Docs to S3") {
             agent {
                 label "mr-0xg3"
@@ -76,26 +53,6 @@ pipeline {
                                 unstash 'r-docs'
                                 sh """
                            s3cmd put --recursive -P src/interface_r/docs s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Rdocs/$BUILD_ID/interface_r/
-                           """
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        stage("Publish Py Docs to S3") {
-            agent {
-                label "mr-0xg3"
-            }
-            steps {
-                dumpInfo()
-                script {
-                    docker.withRegistry("https://harbor.h2o.ai", "harbor.h2o.ai") {
-                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
-                            docker.image("harbor.h2o.ai/library/s3cmd").inside {
-                                unstash 'py-docs'
-                                sh """
-                           s3cmd put --recursive -P src/interface_py/docs/_build/html s3://h2o-release/h2o4gpu/nightly/h2o4gpu-Pydocs/$BUILD_ID/
                            """
                             }
                         }
