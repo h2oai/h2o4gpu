@@ -208,7 +208,7 @@ If the link shows no token or shows ... for token, try a token of "h2o" (without
 
 This container has a /demos directory which contains Jupyter notebooks and some data.
 
-## Plans and RoadMap
+## Plans
 
 The vision is to develop fast GPU algorithms to complement the CPU
 algorithms in scikit-learn while keeping full scikit-learn API
@@ -241,8 +241,16 @@ API language these are called fit\_ptr, predict\_ptr, transform\_ptr,
 etc., where ptr stands for memory pointer.
 
 
-![Alt text](https://github.com/h2oai/h2o4gpu/blob/master/roadmap.jpg
- "ROADMAP.")
+## RoadMap
+### 2018 Q2:
+* A new processing engine that allows to scale beyond GPU memory limits
+* k-Nearest Neighbors
+* Matrix Factorization
+* Factorization Machines
+* API Support: GOAI API support
+* Data.table support
+
+More precise information can be found in the [milestone's list](https://github.com/h2oai/h2o4gpu/milestones).
 
 ## Solver Classes
 
