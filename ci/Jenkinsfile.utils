@@ -89,7 +89,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
 
     if(publishDocs){
         bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${artifactId}-${versionTag}-${env.BUILD_ID}/"
-        sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
     }
 
     if (isRelease()) {
@@ -105,7 +105,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
 
         if(publishDocs){
             bucket = "s3://h2o-release/h2o4gpu/releases/h2o4gpu-py-docs/${majorVersionTag}/"
-            sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+            sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
         }
     }
     if (isBleedingEdge()) {
@@ -125,7 +125,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
 
         if(publishDocs){
             bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/nightly/"
-            sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+            sh "s3cmd put --no-mime-magic --guess-mime-type --recursive -P src/interface_py/docs/_build/html ${bucket}"
         }
     }
 }
