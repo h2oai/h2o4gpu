@@ -103,8 +103,10 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
         sh "s3cmd put ${localArtifact} ${build_id_bucket}"
         sh "s3cmd setacl --acl-public  ${build_id_bucket}${artifact}"
 
-        bucket = "s3://h2o-release/h2o4gpu/releases/h2o4gpu-py-docs/${majorVersionTag}/"
-        sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        if(publishDocs){
+            bucket = "s3://h2o-release/h2o4gpu/releases/h2o4gpu-py-docs/${majorVersionTag}/"
+            sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        }
     }
     if (isBleedingEdge()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
@@ -121,8 +123,10 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
         sh "s3cmd put ${localArtifact} ${build_id_bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${build_id_bucket}${bleedingEdgeArtifact}"
 
-        bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/nightly/"
-        sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        if(publishDocs){
+            bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/nightly/"
+            sh "s3cmd put --recursive -P src/interface_py/docs/_build/html ${bucket}"
+        }
     }
 }
 

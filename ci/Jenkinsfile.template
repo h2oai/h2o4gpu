@@ -136,7 +136,7 @@ pipeline {
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
-                            h2o4gpuUtils.publishToS3(buildInfo.get(), "${extratag}" , "${platform}", "${publish_docs}")
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), extratag ,platform, publish_docs)
                         }
                     }
                 }
