@@ -242,7 +242,7 @@ etc., where ptr stands for memory pointer.
 
 
 ## RoadMap
-### 2018 Q2:
+### 2019 Q2:
 * A new processing engine that allows to scale beyond GPU memory limits
 * k-Nearest Neighbors
 * Matrix Factorization
