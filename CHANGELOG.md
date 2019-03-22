@@ -6,6 +6,8 @@
 * Update NCCL to 2.4
 * Update arrow to 0.12.0
 * Update XGBoost
+* Update numpy, scipy and scikit-learn
+* Add experimental Matrix Factorization
 
 
 
