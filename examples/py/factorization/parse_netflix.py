@@ -37,11 +37,17 @@ if __name__ == '__main__':
     coo_val = np.array(coo_val).astype(np.float32)
 
     coo_matrix = scipy.sparse.coo_matrix((coo_val, (indices, coo_col)))
-    print(coo_matrix.shape)
+    shape = coo_matrix.shape
+    print(shape)
 
-    train, test = train_test_split(
-        coo_matrix.tocsc(), test_size=0.2, random_state=42)
-    print(train.shape, test.shape)
+    train_row, test_row, train_col, test_col, train_data, test_data = train_test_split(
+        coo_matrix.row, coo_matrix.col, coo_matrix.data, test_size=0.2, random_state=42)
+
+    train = scipy.sparse.coo_matrix(
+        (train_data, (train_row, train_col)), shape=shape)
+    test = scipy.sparse.coo_matrix(
+        (test_data, (test_row, test_col)), shape=shape)
+
     scipy.sparse.save_npz('../data/netflix_train.npz', train)
     scipy.sparse.save_npz('../data/netflix_test.npz', test)
-    np.savez_compressed('../data/netflix_user.npz', user)
+    np.savez_compressed('../data/netflix_.npz', user)
