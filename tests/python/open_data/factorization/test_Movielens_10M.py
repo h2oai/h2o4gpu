@@ -4,7 +4,9 @@ import scipy.sparse
 import h2o4gpu
 from sklearn.metrics import mean_squared_error
 
+
 def _load_train_test():
+    # preprocessed http://files.grouplens.org/datasets/movielens/ml-10m-README.html
     R_csc_data = np.fromfile(
         'open_data/factorization/R_train_csc.data.bin', dtype=np.float32)
     R_csc_indices = np.fromfile(
@@ -28,6 +30,7 @@ def test_factorization_memory_leak():
         X, _ = _load_train_test()
         factorization = h2o4gpu.solvers.FactorizationH2O(20, 0.1, max_iter=5)
         factorization.fit(X)
+
 
 def factorization_fit_predict(F, BATCHES=1):
     X, X_test = _load_train_test()
@@ -120,7 +123,8 @@ def test_factorization_fit_predict_110_3_batches(
 
 
 if __name__ == '__main__':
-    test_factorization_memory_leak()
-    test_early_stop()
-    test_factorization_fit_predict_70()
-    test_factorization_fit_predict_100_3_batches()
+    test_factorization_fit_predict_30()
+    # test_factorization_memory_leak()
+    # test_early_stop()
+    # test_factorization_fit_predict_70()
+    # test_factorization_fit_predict_100_3_batches()
