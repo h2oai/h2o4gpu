@@ -27,16 +27,18 @@ if __name__ == '__main__':
         factorization.fit(train, X_test=test, scores=scores, verbose=True)
         user_vec = np.take(factorization.XT, train.row, axis=0)
         movie_vec = np.take(factorization.thetaT, train.col, axis=0)
-        features = np.stack([user_vec, movie_vec])
+        features = np.concatenate([user_vec, movie_vec], axis=1)
         print('training boosting model')
-        boosting = h2o4gpu.GradientBoostingRegressor(verbose=True)
-        pred = boosting.fit_predict(features, y=train.data)
+        boosting = h2o4gpu.GradientBoostingRegressor(
+            verbose=True, criterion='friedman_mse')
+        boosting.fit(features, y=train.data)
+        pred = boosting.predict(features)
         print('train score: {0}'.format(
             np.sqrt(mean_squared_error(pred, train.data))))
 
         user_vec = np.take(factorization.XT, test.row, axis=0)
         movie_vec = np.take(factorization.thetaT, test.col, axis=0)
-        features = np.stack([user_vec, movie_vec])
+        features = np.stack([user_vec, movie_vec], axis=1)
         pred = boosting.predict(features, y=test.data)
         print('cv score: {0}'.format(
             np.sqrt(mean_squared_error(pred, train.data))))

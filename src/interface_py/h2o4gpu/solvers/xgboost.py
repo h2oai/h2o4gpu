@@ -984,7 +984,7 @@ class GradientBoostingClassifier(object):
                 min_impurity_split, init, max_features, max_leaf_nodes, presort
             ]
             params_default = [
-                'deviance', 'friedman-mse', 2, 1, 0.0, 0.0, None, None, 'auto',
+                'deviance', 'friedman_mse', 2, 1, 0.0, 0.0, None, None, 'auto',
                 None, 'auto'
             ]
 
@@ -1447,7 +1447,7 @@ class GradientBoostingRegressor(object):
                 presort
             ]
             params_default = [
-                'ls', 'friedman-mse', 2, 1, 0.0, 0.0, None, None, 'auto', 0.9,
+                'ls', 'friedman_mse', 2, 1, 0.0, 0.0, None, None, 'auto', 0.9,
                 None, 'auto'
             ]
 
