@@ -18,13 +18,15 @@ if __name__ == '__main__':
     train = scipy.sparse.load_npz('../data/netflix_train.npz').tocsc()
     test = scipy.sparse.load_npz('../data/netflix_test.npz').tocoo()
 
+    n_components = 20
+
     if args.lib == _lib_h2o4gpu:
         scores = []
         factorization = h2o4gpu.solvers.FactorizationH2O(
-            50, 0.01, max_iter=100)
+            n_components, 0.005, max_iter=100)
         factorization.fit(train, X_test=test, scores=scores, verbose=True)
     else:
-        model = NMF(n_components=50, init='random',
+        model = NMF(n_components=n_components, init='random',
                     random_state=0, max_iter=100)
         W = model.fit_transform(train)
         H = model.components_.T
