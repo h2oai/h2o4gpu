@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train = scipy.sparse.load_npz('../data/netflix_train.npz').tocsc()
+    train = scipy.sparse.load_npz('../data/netflix_train.npz').tocoo()
     test = scipy.sparse.load_npz('../data/netflix_test.npz').tocoo()
 
     n_components = 20
