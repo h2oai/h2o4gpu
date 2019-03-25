@@ -21,11 +21,11 @@ if __name__ == '__main__':
     if args.lib == _lib_h2o4gpu:
         scores = []
         factorization = h2o4gpu.solvers.FactorizationH2O(
-            10, 0.001, max_iter=100)
+            50, 0.01, max_iter=100)
         factorization.fit(train, X_test=test, scores=scores, verbose=True)
     else:
-        model = NMF(n_components=10, init='random',
-                    random_state=0, max_iter=100, verbose=True)
+        model = NMF(n_components=50, init='random',
+                    random_state=0, max_iter=100)
         W = model.fit_transform(train)
         H = model.components_.T
 
