@@ -23,8 +23,24 @@ if __name__ == '__main__':
     if args.lib == _lib_h2o4gpu:
         scores = []
         factorization = h2o4gpu.solvers.FactorizationH2O(
-            n_components, 0.005, max_iter=100)
+            n_components, 0.005, max_iter=85)
         factorization.fit(train, X_test=test, scores=scores, verbose=True)
+        user_vec = np.take(factorization.XT, train.row, axis=0)
+        movie_vec = np.take(factorization.thetaT, train.col, axis=0)
+        features = np.stack([user_vec, movie_vec])
+        print('training boosting model')
+        boosting = h2o4gpu.GradientBoostingRegressor(verbose=True)
+        pred = boosting.fit_predict(features, y=train.data)
+        print('train score: {0}'.format(
+            np.sqrt(mean_squared_error(pred, train.data))))
+
+        user_vec = np.take(factorization.XT, test.row, axis=0)
+        movie_vec = np.take(factorization.thetaT, test.col, axis=0)
+        features = np.stack([user_vec, movie_vec])
+        pred = boosting.predict(features, y=test.data)
+        print('cv score: {0}'.format(
+            np.sqrt(mean_squared_error(pred, train.data))))
+
     else:
         model = NMF(n_components=n_components, init='random',
                     random_state=0, max_iter=100)
