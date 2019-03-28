@@ -361,8 +361,6 @@ class KMeansH2O(object):
         cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
         c_res = np.zeros(rows, np.int32)
 
-        data_ord = 'c' if np.isfortran(X_np) else 'r'
-
         if self.double_precision == 0:
             c_kmeans = lib.make_ptr_float_kmeans
         else:
@@ -370,7 +368,7 @@ class KMeansH2O(object):
 
         c_kmeans(1, self.verbose,
                  self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                 data_ord, self._n_clusters, self._max_iter, 0,
+                 self._n_clusters, self._max_iter, 0,
                  self.tol, c_X_np, cluster_centers_, np.empty([], X_np.dtype), c_res)
 
         return c_res
@@ -408,17 +406,15 @@ class KMeansH2O(object):
         cluster_centers_ = self._toc(self.cluster_centers_, convert=False)
         c_res = np.zeros(rows * self._n_clusters, X_np.dtype)
 
-        data_ord = 'c' if np.isfortran(X_np) else 'r'
-
         if self.double_precision == 0:
             lib.kmeans_transform_float(
                 self.verbose, self._gpu_id, self.n_gpus, rows, cols,
-                data_ord, self._n_clusters, c_X_np, cluster_centers_,
+                self._n_clusters, c_X_np, cluster_centers_,
                 c_res)
         else:
             lib.kmeans_transform_double(
                 self.verbose, self._gpu_id, self.n_gpus, rows, cols,
-                data_ord, self._n_clusters, c_X_np, cluster_centers_,
+                self._n_clusters, c_X_np, cluster_centers_,
                 c_res)
 
         transformed = np.reshape(
@@ -471,8 +467,6 @@ class KMeansH2O(object):
         """Actual method calling the underlying fitting implementation."""
         lib = self._load_lib()
 
-        data_ord = 'c' if data.flags.f_contiguous else 'r'
-
         c_data = self._toc(data)
 
         if self.init == "k-means++":
@@ -491,14 +485,14 @@ class KMeansH2O(object):
             lib.make_ptr_float_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                data_ord, self._n_clusters, self._max_iter, c_init,
+                self._n_clusters, self._max_iter, c_init,
                 self.tol, c_data, centroids,
                 pred_centers, pred_labels)
         else:
             lib.make_ptr_double_kmeans(
                 0, self.verbose,
                 self.random_state, self._gpu_id, self.n_gpus, rows, cols,
-                data_ord, self._n_clusters, self._max_iter, c_init,
+                self._n_clusters, self._max_iter, c_init,
                 self.tol, c_data, centroids,
                 pred_centers, pred_labels)
 
