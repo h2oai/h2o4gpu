@@ -5,7 +5,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-void sort_by_key_int(thrust::device_vector<int>& keys, thrust::device_vector<int>& values);
+void sort_by_key_int(thrust::device_vector<int> &keys,
+                     thrust::device_vector<int> &values);
 
 TEST(KMeansLabels, Sorting) {
   // GIVEN
@@ -33,10 +34,7 @@ TEST(KMeansLabels, Sorting) {
 
   // WHEN
   // TODO not sorting :-(
-  mycub::sort_by_key_int(
-      deviceLabels,
-      deviceIndices
-  );
+  mycub::sort_by_key_int(deviceLabels, deviceIndices);
 
   // THEN
   hostLabels = deviceLabels;
