@@ -1,18 +1,18 @@
 /*!
  * Modifications Copyright 2017-2018 H2O.ai, Inc.
  */
-#include "matrix/matrix.h"
-#include "matrix/matrix_dense.h"
-#include "solver/kmeans.h"
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <random>
 #include <vector>
+#include "matrix/matrix.h"
+#include "matrix/matrix_dense.h"
+#include "solver/kmeans.h"
 //#include "mkl.h"
-#include "cblas.h"
 #include <atomic>
 #include <csignal>
+#include "cblas.h"
 
 #define VERBOSE 1
 
@@ -39,8 +39,8 @@ void nonrandom_data(int verbose, const char ord, std::vector<T> &array,
     int indexi, indexj;
     for (int i = 0; i < npercpu * d; i++) {
 #if (1)
-      indexi = i % d;               // col
-      indexj = i / d + q * npercpu; // row (shifted by which cpu)
+      indexi = i % d;                // col
+      indexj = i / d + q * npercpu;  // row (shifted by which cpu)
       //      array[i] = srcdata[indexi*n + indexj];
       array[i] = srcdata[indexi * n + indexj];
 #else
@@ -64,7 +64,7 @@ void nonrandom_data(int verbose, const char ord, std::vector<T> &array,
       fflush(stderr);
     }
     for (int i = 0; i < npercpu * d; i++) {
-      array[i] = srcdata[q * npercpu * d + i]; // shift by which cpu
+      array[i] = srcdata[q * npercpu * d + i];  // shift by which cpu
     }
   }
 }
@@ -73,7 +73,6 @@ template <typename T>
 void nonrandom_data_new(int verbose, std::vector<int> v, const char ord,
                         std::vector<T> &array, const T *srcdata, int q, int n,
                         int npercpu, int d) {
-
   if (ord == 'c') {
     if (verbose) {
       fprintf(stderr, "COL ORDER -> ROW ORconst char ord, DER\n");
@@ -82,7 +81,7 @@ void nonrandom_data_new(int verbose, std::vector<int> v, const char ord,
     for (int i = 0; i < npercpu; i++) {
       for (int j = 0; j < d; j++) {
         array[i * d + j] =
-            srcdata[v[q * npercpu + i] + j * n]; // shift by which cpu
+            srcdata[v[q * npercpu + i] + j * n];  // shift by which cpu
       }
     }
 #if (DEBUGKMEANS)
@@ -101,7 +100,7 @@ void nonrandom_data_new(int verbose, std::vector<int> v, const char ord,
     for (int i = 0; i < npercpu; i++) {
       for (int j = 0; j < d; j++) {
         array[i * d + j] =
-            srcdata[v[q * npercpu + i] * d + j]; // shift by which cpu
+            srcdata[v[q * npercpu + i] * d + j];  // shift by which cpu
       }
     }
   }
@@ -118,13 +117,14 @@ void random_centroids(int verbose, const char ord, std::vector<T> &array,
                       const T *srcdata, int q, int n, int npercpu, int d,
                       int k) {
   std::random_device
-      rd; // Will be used to obtain a seed for the random number engine
+      rd;  // Will be used to obtain a seed for the random number engine
   std::mt19937 gen(rd());
   //  std::uniform_int_distribution<>dis(0, npercpu-1); // random i in range
   //  from 0..npercpu-1
   std::uniform_int_distribution<> dis(
       0,
-      n - 1); // random i in range from 0..n-1 (i.e. only 1 cpu gets centroids)
+      n - 1);  // random i in range from 0..n-1 (i.e. only 1 cpu gets
+               // centroids)
 
   if (ord == 'c') {
     if (verbose) {
@@ -133,9 +133,10 @@ void random_centroids(int verbose, const char ord, std::vector<T> &array,
         fflush(stderr);
       }
     }
-    for (int i = 0; i < k; i++) { // rows
-      int reali = dis(gen); // + q*npercpu; // row sampled (called indexj above)
-      for (int j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) {  // rows
+      int reali =
+          dis(gen);  // + q*npercpu; // row sampled (called indexj above)
+      for (int j = 0; j < d; j++) {  // cols
         array[i * d + j] = srcdata[reali + j * n];
 #if (DEBUGKMEANS)
         fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, reali,
@@ -149,9 +150,9 @@ void random_centroids(int verbose, const char ord, std::vector<T> &array,
       fprintf(stderr, "ROW ORDER not changed\n");
       fflush(stderr);
     }
-    for (int i = 0; i < k; i++) {   // rows
-      int reali = dis(gen);         // + q*npercpu ; // row sampled
-      for (int j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) {    // rows
+      int reali = dis(gen);          // + q*npercpu ; // row sampled
+      for (int j = 0; j < d; j++) {  // cols
         array[i * d + j] = srcdata[reali * d + j];
       }
     }
@@ -167,8 +168,8 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord,
       fprintf(stderr, "COL ORDER -> ROW ORDER\n");
       fflush(stderr);
     }
-    for (int i = 0; i < k; i++) {   // rows
-      for (int j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) {    // rows
+      for (int j = 0; j < d; j++) {  // cols
         array[i * d + j] = srcdata[v[i] + j * n];
 #if (DEBUGKMEANS)
         fprintf(stderr, "q=%d initcent[%d,%d reali=%d]=%g\n", q, i, j, v[i],
@@ -182,22 +183,23 @@ void random_centroids_new(int verbose, std::vector<int> v, const char ord,
       fprintf(stderr, "ROW ORDER not changed\n");
       fflush(stderr);
     }
-    for (int i = 0; i < k; i++) {   // rows
-      for (int j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) {    // rows
+      for (int j = 0; j < d; j++) {  // cols
         array[i * d + j] = srcdata[v[i] * d + j];
       }
     }
   }
 }
 
-#define __HBAR__                                                               \
-  "--------------------------------------------------------------------------" \
+#define __HBAR__                                                             \
+  "------------------------------------------------------------------------" \
+  "--"                                                                       \
   "--\n"
 
 namespace h2o4gpukmeans {
 volatile std::atomic_int flag(0);
 
-inline void my_function(int sig) { // can be called asynchronously
+inline void my_function(int sig) {  // can be called asynchronously
   fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
   flag = 1;
 }
@@ -237,9 +239,9 @@ int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows,
     fflush(stderr);
   }
 
-  int n_cpu = 1;        // ignore try
-  int cpu_id = 0;       // ignore try
-  int n_cpuvis = n_cpu; // fake
+  int n_cpu = 1;         // ignore try
+  int cpu_id = 0;        // ignore try
+  int n_cpuvis = n_cpu;  // fake
 
   // setup CPU list to use
   std::vector<int> dList(n_cpu);
@@ -270,7 +272,7 @@ int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows,
   //      std::random_device rd;
   //      std::mt19937 g(rd());
   std::vector<int> v(n);
-  std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., 99.
+  std::iota(std::begin(v), std::end(v), 0);  // Fill with 0, 1, ..., 99.
   std::random_shuffle(v.begin(), v.end());
 
   for (int q = 0; q < n_cpu; q++) {
@@ -279,8 +281,8 @@ int kmeans_fit(int verbose, int seed, int cpu_idtry, int n_cputry, size_t rows,
   // get non-random centroids on 1 cpu, then share with rest.
   if (init_from_data == 0) {
     int masterq = 0;
-    // random_centroids(verbose, ord, *centroids[masterq], &srcdata[0], masterq,
-    // n, n/n_cpu, d, k);
+    // random_centroids(verbose, ord, *centroids[masterq], &srcdata[0],
+    // masterq, n, n/n_cpu, d, k);
     random_centroids_new(verbose, v, 'r', *l_centroids[masterq], &srcdata[0],
                          masterq, n, n / n_cpu, d, k);
 #if (DEBUGKMEANS)
@@ -547,7 +549,7 @@ template class H2O4GPUKMeansCPU<float>;
 
 #endif
 
-} // namespace h2o4gpukmeans
+}  // namespace h2o4gpukmeans
 
 // Fit and Predict
 int make_ptr_float_kmeans(int dopredict, int verbose, int seed, int cpu_id,

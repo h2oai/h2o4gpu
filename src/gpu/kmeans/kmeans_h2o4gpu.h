@@ -3,11 +3,11 @@
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
 #pragma once
-#include "kmeans_centroids.h"
-#include "kmeans_labels.h"
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
+#include "kmeans_centroids.h"
+#include "kmeans_labels.h"
 
 /**
  * Copies data from srcdata to array
@@ -28,8 +28,8 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array,
     thrust::host_vector<T> host_array(npergpu * d);
     log_debug(verbose, "Copy data COL ORDER -> ROW ORDER");
     for (size_t i = 0; i < npergpu * d; i++) {
-      size_t indexi = i % d;               // col
-      size_t indexj = i / d + q * npergpu; // row (shifted by which gpu)
+      size_t indexi = i % d;                // col
+      size_t indexj = i / d + q * npergpu;  // row (shifted by which gpu)
       host_array[i] = srcdata[indexi * n + indexj];
     }
     array = host_array;
@@ -41,7 +41,8 @@ void copy_data(int verbose, const char ord, thrust::device_vector<T> &array,
   }
 }
 
-template <typename T> struct count_functor {
+template <typename T>
+struct count_functor {
   T *pairwise_distances_ptr;
   int *counts_ptr;
   int k;

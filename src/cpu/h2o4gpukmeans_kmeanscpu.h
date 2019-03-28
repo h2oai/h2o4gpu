@@ -20,10 +20,10 @@ template <typename T>
 void find_centroids(std::vector<T> array_in, int n, int dim,
                     std::vector<int> labels_in, std::vector<T> &centroids,
                     int k) {
-  std::vector<int> members(k); // Number of points in each cluster
+  std::vector<int> members(k);  // Number of points in each cluster
 
   std::fill(members.begin(), members.end(), 0);
-  if (0) { // see gpu code for comments
+  if (0) {  // see gpu code for comments
     std::fill(centroids.begin(), centroids.end(), 0.0);
   }
 
@@ -40,11 +40,9 @@ void find_centroids(std::vector<T> array_in, int n, int dim,
       std::cout << cluster << "(" << members[cluster] << " members):  ";
     for (int i = 0; i < dim; i++) {
       centroids[cluster * dim + i] /= members[cluster];
-      if (dim < 6)
-        std::cout << centroids[cluster * dim + i] << "  ";
+      if (dim < 6) std::cout << centroids[cluster * dim + i] << "  ";
     }
-    if (dim < 6)
-      std::cout << std::endl;
+    if (dim < 6) std::cout << std::endl;
   }
 }
 
@@ -109,7 +107,6 @@ int kmeans(int verbose, volatile std::atomic_int *flag, int n, int d, int k,
            std::vector<T> &data, std::vector<int> &labels,
            std::vector<T> &centroids, int max_iterations,
            int init_from_data = 0, double threshold = 1e-3) {
-
   // TRANSLATE to CPU CODE
   std::vector<T> data_dots(n);
   std::vector<T> centroid_dots(k);
@@ -146,7 +143,7 @@ int kmeans(int verbose, volatile std::atomic_int *flag, int n, int d, int k,
     if (*flag) {
       fprintf(stderr, "Signal caught. Terminated early.\n");
       fflush(stderr);
-      *flag = 0; // set flag
+      *flag = 0;  // set flag
     }
 
     find_centroids(data, n, d, labels, centroids, k);
@@ -155,4 +152,4 @@ int kmeans(int verbose, volatile std::atomic_int *flag, int n, int d, int k,
   return i;
 }
 
-} // namespace kmeans
+}  // namespace kmeans

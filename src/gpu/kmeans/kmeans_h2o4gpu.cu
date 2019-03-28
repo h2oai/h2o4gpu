@@ -2,26 +2,26 @@
  * Copyright 2017-2018 H2O.ai, Inc.
  * License   Apache License Version 2.0 (see LICENSE for details)
  */
-#include "../../common/utils.h"
-#include "cuda.h"
-#include "kmeans_general.h"
-#include "kmeans_h2o4gpu.h"
-#include "kmeans_impl.h"
-#include "solver/kmeans.h"
-#include <algorithm>
-#include <csignal>
-#include <cstdlib>
-#include <iostream>
 #include <math.h>
-#include <random>
-#include <set>
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 #include <unistd.h>
+#include <algorithm>
+#include <csignal>
+#include <cstdlib>
+#include <iostream>
+#include <random>
+#include <set>
 #include <vector>
+#include "../../common/utils.h"
+#include "cuda.h"
+#include "kmeans_general.h"
+#include "kmeans_h2o4gpu.h"
+#include "kmeans_impl.h"
+#include "solver/kmeans.h"
 
 /**
  * METHODS FOR DATA COPYING AND GENERATION
@@ -60,7 +60,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord,
     for (int i = 0; i < npergpu; i++) {
       for (size_t j = 0; j < d; j++) {
         host_array[i * d + j] =
-            srcdata[v[q * npergpu + i] + j * n]; // shift by which gpu
+            srcdata[v[q * npergpu + i] + j * n];  // shift by which gpu
       }
     }
   } else {
@@ -69,7 +69,7 @@ void copy_data_shuffled(int verbose, std::vector<int> v, const char ord,
     for (int i = 0; i < npergpu; i++) {
       for (size_t j = 0; j < d; j++) {
         host_array[i * d + j] =
-            srcdata[v[q * npergpu + i] * d + j]; // shift by which gpu
+            srcdata[v[q * npergpu + i] * d + j];  // shift by which gpu
       }
     }
   }
@@ -104,28 +104,29 @@ void random_centroids(int verbose, int seed, const char ord,
   thrust::host_vector<T> host_array(k * d);
   if (seed < 0) {
     std::random_device
-        rd; // Will be used to obtain a seed for the random number engine
+        rd;  // Will be used to obtain a seed for the random number engine
     seed = rd();
   }
   std::mt19937 gen(seed);
   std::uniform_int_distribution<> dis(
       0,
-      n - 1); // random i in range from 0..n-1 (i.e. only 1 gpu gets centroids)
+      n - 1);  // random i in range from 0..n-1 (i.e. only 1 gpu gets
+               // centroids)
 
   if (ord == 'c') {
     log_debug(verbose, "Random centroids COL ORDER -> ROW ORDER");
-    for (int i = 0; i < k; i++) { // clusters
+    for (int i = 0; i < k; i++) {  // clusters
       size_t reali =
-          dis(gen); // + q*npergpu; // row sampled (called indexj above)
-      for (size_t j = 0; j < d; j++) { // cols
+          dis(gen);  // + q*npergpu; // row sampled (called indexj above)
+      for (size_t j = 0; j < d; j++) {  // cols
         host_array[i * d + j] = srcdata[reali + j * n];
       }
     }
   } else {
     log_debug(verbose, "Random centroids ROW ORDER not changed");
-    for (int i = 0; i < k; i++) {      // rows
-      size_t reali = dis(gen);         // + q*npergpu ; // row sampled
-      for (size_t j = 0; j < d; j++) { // cols
+    for (int i = 0; i < k; i++) {       // rows
+      size_t reali = dis(gen);          // + q*npergpu ; // row sampled
+      for (size_t j = 0; j < d; j++) {  // cols
         host_array[i * d + j] = srcdata[reali * d + j];
       }
     }
@@ -137,8 +138,9 @@ void random_centroids(int verbose, int seed, const char ord,
  * KMEANS METHODS FIT, PREDICT, TRANSFORM
  */
 
-#define __HBAR__                                                               \
-  "--------------------------------------------------------------------------" \
+#define __HBAR__                                                             \
+  "------------------------------------------------------------------------" \
+  "--"                                                                       \
   "--\n"
 
 namespace h2o4gpukmeans {
@@ -230,7 +232,6 @@ template <typename T>
 void kmeans_plus_plus(int verbose, int seed, thrust::host_vector<T> data,
                       thrust::host_vector<T> weights, int k, int cols,
                       thrust::host_vector<T> &centroids) {
-
   std::vector<T> std_centroids(0);
   std_centroids.reserve(k * cols);
 
@@ -240,7 +241,7 @@ void kmeans_plus_plus(int verbose, int seed, thrust::host_vector<T> data,
   add_centroid(centroid_idx, cols, data, weights, std_centroids);
 
   std::vector<T> best_pairwise_distances(data.size() /
-                                         cols); // one for each row in data
+                                         cols);  // one for each row in data
   std::vector<T> std_data(data.begin(), data.end());
 
   compute_distances(std_data, std_centroids, best_pairwise_distances,
@@ -277,7 +278,8 @@ void kmeans_plus_plus(int verbose, int seed, thrust::host_vector<T> data,
   centroids.assign(std_centroids.begin(), std_centroids.end());
 }
 
-template <typename T> struct min_calc_functor {
+template <typename T>
+struct min_calc_functor {
   T *all_costs_ptr;
   T *min_costs_ptr;
   T max = std::numeric_limits<T>::max();
@@ -327,10 +329,11 @@ template <typename T> struct min_calc_functor {
  * @param threshold
  */
 template <typename T>
-thrust::host_vector<T>
-kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
-                thrust::device_vector<T> **data_dots, size_t rows, int cols,
-                int k, int num_gpu, T threshold) {
+thrust::host_vector<T> kmeans_parallel(int verbose, int seed,
+                                       thrust::device_vector<T> **data,
+                                       thrust::device_vector<T> **data_dots,
+                                       size_t rows, int cols, int k,
+                                       int num_gpu, T threshold) {
   if (seed < 0) {
     std::random_device rd;
     int seed = rd();
@@ -349,17 +352,17 @@ kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
   log_verbose(verbose, "KMeans|| - Initial centroid %d on GPU %d.",
               first_center_idx, first_center_gpu);
 
-  // Copies the initial centroid to potential centroids vector. That vector will
-  // store all potential centroids found in the previous iteration.
+  // Copies the initial centroid to potential centroids vector. That vector
+  // will store all potential centroids found in the previous iteration.
   thrust::host_vector<T> h_potential_centroids(cols);
   std::vector<thrust::host_vector<T>> h_potential_centroids_per_gpu(num_gpu);
 
   CUDACHECK(cudaSetDevice(first_center_gpu));
 
-  thrust::copy((*data[first_center_gpu]).begin() + first_center_idx * cols,
-               (*data[first_center_gpu]).begin() +
-                   (first_center_idx + 1) * cols,
-               h_potential_centroids.begin());
+  thrust::copy(
+      (*data[first_center_gpu]).begin() + first_center_idx * cols,
+      (*data[first_center_gpu]).begin() + (first_center_idx + 1) * cols,
+      h_potential_centroids.begin());
 
   thrust::host_vector<T> h_all_potential_centroids = h_potential_centroids;
 
@@ -407,8 +410,9 @@ kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
                 thrust::raw_pointer_cast(d_min_costs[i].data() + offset);
             thrust::for_each(
                 min_cost_counter, min_cost_counter + rows_per_run,
-                // Functor instead of a lambda b/c nvcc is complaining about
-                // nesting a __device__ lambda inside a regular lambda
+                // Functor instead of a lambda b/c nvcc is complaining
+                // about nesting a __device__ lambda inside a regular
+                // lambda
                 min_calc_functor<T>(all_costs_ptr, min_costs_ptr,
                                     potential_k_rows, rows_per_run));
           });
@@ -433,8 +437,8 @@ kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
       CUDACHECK(cudaSetDevice(i));
 
       // Count how many potential centroids there are using probabilities
-      // The further the row is from the closest cluster center the higher the
-      // probability
+      // The further the row is from the closest cluster center the higher
+      // the probability
       auto pot_cent_filter_counter = thrust::make_counting_iterator(0);
       auto min_costs_ptr = thrust::raw_pointer_cast(d_min_costs[i].data());
       int pot_cent_num = thrust::count_if(
@@ -528,10 +532,10 @@ kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
                  h_all_potential_centroids.end(), final_centroids.begin());
     // TODO what if potential_centroids_num < k ?? we don't want 0s
   } else {
-    // If we found more than k potential cluster centers we need to take only a
-    // subset This is done using a weighted k-means++ method, since the set
-    // should be very small it should converge very fast and is all done on the
-    // CPU.
+    // If we found more than k potential cluster centers we need to take
+    // only a subset This is done using a weighted k-means++ method, since
+    // the set should be very small it should converge very fast and is all
+    // done on the CPU.
     thrust::host_vector<T> weights(potential_centroids_num);
 
     double tc0 = timer<double>();
@@ -560,7 +564,7 @@ kmeans_parallel(int verbose, int seed, thrust::device_vector<T> **data,
 
 volatile std::atomic_int flaggpu(0);
 
-inline void my_function_gpu(int sig) { // can be called asynchronously
+inline void my_function_gpu(int sig) {  // can be called asynchronously
   fprintf(stderr, "Caught signal %d. Terminating shortly.\n", sig);
   flaggpu = 1;
 }
@@ -656,7 +660,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows,
   log_debug(verbose, "Stopping threshold: %d", threshold);
 
   std::vector<int> v(rows);
-  std::iota(std::begin(v), std::end(v), 0); // Fill with 0, 1, ..., rows.
+  std::iota(std::begin(v), std::end(v), 0);  // Fill with 0, 1, ..., rows.
 
   if (seed >= 0) {
     std::shuffle(v.begin(), v.end(), std::default_random_engine(seed));
@@ -679,7 +683,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows,
   }
 
   // Get random points as centroids
-  int bytecount = cols * k * sizeof(T); // all centroids
+  int bytecount = cols * k * sizeof(T);  // all centroids
   if (0 == init_from_data) {
     log_debug(verbose, "KMeans - Using random initialization.");
 
@@ -693,8 +697,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows,
     streams.resize(n_gpu);
 #pragma omp parallel for
     for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq)
-        continue;
+      if (q == masterq) continue;
 
       CUDACHECK(cudaSetDevice(dList[q]));
       if (verbose > 0) {
@@ -712,8 +715,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows,
     }
     //#pragma omp parallel for
     for (int q = 0; q < n_gpu; q++) {
-      if (q == masterq)
-        continue;
+      if (q == masterq) continue;
       cudaSetDevice(dList[q]);
       cudaStreamDestroy(*(streams[q]));
 #if (DEBUGKMEANS)
@@ -724,7 +726,7 @@ int kmeans_fit(int verbose, int seed, int gpu_idtry, int n_gputry, size_t rows,
       }
 #endif
     }
-  } else if (1 == init_from_data) { // kmeans||
+  } else if (1 == init_from_data) {  // kmeans||
     log_debug(verbose, "KMeans - Using K-Means|| initialization.");
 
     thrust::host_vector<T> final_centroids = kmeans_parallel(
@@ -1046,7 +1048,7 @@ template class H2O4GPUKMeans<float>;
 
 #endif
 
-} // namespace h2o4gpukmeans
+}  // namespace h2o4gpukmeans
 
 /*
  * Interface for other languages
