@@ -3,6 +3,7 @@ import numpy as np
 import h2o4gpu
 from sklearn.decomposition import NMF
 from sklearn.metrics import mean_squared_error
+import argparse
 
 _lib_h2o4gpu = 'h2o4gpu'
 _lib_sklearn = 'sklearn'
