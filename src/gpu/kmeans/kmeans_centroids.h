@@ -117,8 +117,8 @@ void find_centroids(int q, int n, int d, int k, thrust::device_vector<T> &data,
 
   // If no scaling then this step will be handled on the host
   // when aggregating centroids from all GPUs
-  // Cache original centroids in case some centroids are not present in labels
-  // and would get zeroed
+  // Cache original centroids in case some centroids are not present in
+  // labels and would get zeroed
   thrust::device_vector<T> tmp_centroids;
   if (scale) {
     tmp_centroids = thrust::device_vector<T>(k * d);
@@ -126,8 +126,8 @@ void find_centroids(int q, int n, int d, int k, thrust::device_vector<T> &data,
   }
 
   memcpy(indices, range);
-  // TODO the rest of the algorithm doesn't necessarily require labels/data to
-  // be sorted but *might* make if faster due to less atomic updates
+  // TODO the rest of the algorithm doesn't necessarily require labels/data
+  // to be sorted but *might* make if faster due to less atomic updates
   thrust::sort_by_key(labels.begin(), labels.end(), indices.begin());
   // TODO cub is faster but sort_by_key_int isn't sorting, possibly a bug
   //    mycub::sort_by_key_int(labels, indices);

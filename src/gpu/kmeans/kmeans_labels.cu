@@ -99,8 +99,8 @@ __global__ void matmul(const float_t *A, const float_t *B, float_t *C,
 
   // Thread/Block combination either too far for data array
   // Or is calculating for index that should be calculated in a different
-  // blocks - in some edge cases "col_c * n + abs_row_c" can yield same result
-  // in different thread/block combinations
+  // blocks - in some edge cases "col_c * n + abs_row_c" can yield same
+  // result in different thread/block combinations
   if (abs_row_c >= n || threadIdx.x >= block_rows * k) {
     return;
   }

@@ -217,8 +217,8 @@ H2O4GPUStatus H2O4GPU<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
 
   // TODO: Need to give scale to these
   //  const T kRhoMin     = static_cast<T>(1e-4); // lower range for adaptive
-  //  rho const T kRhoMax     = static_cast<T>(1e4); // upper range for adaptive
-  //  rho
+  //  rho const T kRhoMax     = static_cast<T>(1e4); // upper range for
+  //  adaptive rho
   const T kRhoMin = static_cast<T>(
       std::numeric_limits<T>::epsilon());  // lower range for adaptive rho
   const T kRhoMax =
@@ -276,10 +276,10 @@ H2O4GPUStatus H2O4GPU<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
   if (_verbose > 1) {
 #pragma omp critical
     {
-      Printf(
-          __HBAR__
-          " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps gap |"
-          " pri obj\n" __HBAR__);
+      Printf(__HBAR__
+             " Iter | pri res | pri tol | dua res | dua tol |   gap   | eps "
+             "gap |"
+             " pri obj\n" __HBAR__);
     }
   }
 
@@ -482,18 +482,19 @@ H2O4GPUStatus H2O4GPU<T, M, P>::Solve(const std::vector<FunctionObj<T> > &f,
            "Timing: Total = %3.2e s, Init = %3.2e s\n"
            "Iter  : %u\n",
            H2O4GPUStatusString(status).c_str(), _time, time_init, k);
-    Printf(
-        __HBAR__
-        "Error Metrics:\n"
-        "Pri: "
-        "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = %.2e\n"
-        "Dua: "
-        "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = %.2e\n"
-        "Gap: "
-        "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = "
-        "%.2e\n" __HBAR__,
-        _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
-        _rel_tol * gap / eps_gap);
+    Printf(__HBAR__
+           "Error Metrics:\n"
+           "Pri: "
+           "|Ax - y|    / (abs_tol sqrt(m)     / rel_tol + |y|)          = "
+           "%.2e\n"
+           "Dua: "
+           "|A'l + u|   / (abs_tol sqrt(n)     / rel_tol + |u|)          = "
+           "%.2e\n"
+           "Gap: "
+           "|x'u + y'l| / (abs_tol sqrt(m + n) / rel_tol + |x,u| |y,l|)  = "
+           "%.2e\n" __HBAR__,
+           _rel_tol * nrm_r / eps_pri, _rel_tol * nrm_s / eps_dua,
+           _rel_tol * gap / eps_gap);
   }
 
   // Scale x, y, lambda and mu for output.
