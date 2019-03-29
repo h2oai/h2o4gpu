@@ -85,7 +85,7 @@ def test_lightgbm_cpu_airlines(booster):
     data = pd.read_csv('./open_data/allyears.1987.2013.zip',
                        dtype={'UniqueCarrier': 'category', 'Origin': 'category', 'Dest': 'category',
                               'TailNum': 'category', 'CancellationCode': 'category',
-                              'IsArrDelayed': 'category'})
+                              'IsArrDelayed': 'category', 'IsDepDelayed': 'category'})
 
     y = data["IsArrDelayed"]
     data = data[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
