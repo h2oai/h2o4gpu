@@ -140,13 +140,13 @@ void Test_hermitianT10_2columns(int f, int m, float lambda) {
 //   Test_hermitianT10_eye(50, 150, 1.0);
 // }
 
-TEST(Factorization, get_hermitianT10_eye_40) {
-  Test_hermitianT10_eye(40, 150, 1.0);
-}
+// TEST(Factorization, get_hermitianT10_eye_40) {
+//   Test_hermitianT10_eye(40, 150, 1.0);
+// }
 
-TEST(Factorization, get_hermitianT10_eye_30) {
-  Test_hermitianT10_eye(30, 100, 1.0);
-}
+// TEST(Factorization, get_hermitianT10_eye_30) {
+//   Test_hermitianT10_eye(30, 100, 1.0);
+// }
 
 TEST(Factorization, get_hermitianT10_eye_20) {
   Test_hermitianT10_eye(20, 100, 1.0);
@@ -155,12 +155,12 @@ TEST(Factorization, get_hermitianT10_eye_20) {
 TEST(Factorization, get_hermitianT10_2columns_20) {
   Test_hermitianT10_2columns(20, 200, 1.0);
 }
-TEST(Factorization, get_hermitianT10_2columns_30) {
-  Test_hermitianT10_2columns(30, 200, 1.0);
-}
-TEST(Factorization, get_hermitianT10_2columns_40) {
-  Test_hermitianT10_2columns(40, 200, 1.0);
-}
+// TEST(Factorization, get_hermitianT10_2columns_30) {
+//   Test_hermitianT10_2columns(30, 200, 1.0);
+// }
+// TEST(Factorization, get_hermitianT10_2columns_40) {
+//   Test_hermitianT10_2columns(40, 200, 1.0);
+// }
 // Those tests are really slow
 // TEST(Factorization, get_hermitianT10_2columns_50) {
 //   Test_hermitianT10_2columns(50, 200, 1.0);

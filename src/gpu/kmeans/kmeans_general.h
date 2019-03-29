@@ -10,17 +10,20 @@
 #define CHECK 1
 #define DEBUGKMEANS 0
 
-// TODO(pseudotensor): Avoid throw for python exception handling.  Need to avoid all exit's and return exit code all the way back.
-#define gpuErrchk(ans) { gpu_assert((ans), __FILE__, __LINE__); }
+// TODO(pseudotensor): Avoid throw for python exception handling.  Need to avoid
+// all exit's and return exit code all the way back.
+#define gpuErrchk(ans) \
+  { gpu_assert((ans), __FILE__, __LINE__); }
 #define safe_cuda(ans) throw_on_cuda_error((ans), __FILE__, __LINE__);
 #define safe_cublas(ans) throw_on_cublas_error((ans), __FILE__, __LINE__);
 
-#define CUDACHECK(cmd) do {                           \
-    cudaError_t e = cmd;                              \
-    if( e != cudaSuccess ) {                          \
-      printf("Cuda failure %s:%d '%s'\n",             \
-             __FILE__,__LINE__,cudaGetErrorString(e));\
-      fflush( stdout );                               \
-      exit(EXIT_FAILURE);                             \
-    }                                                 \
-  } while(0)
+#define CUDACHECK(cmd)                                        \
+  do {                                                        \
+    cudaError_t e = cmd;                                      \
+    if (e != cudaSuccess) {                                   \
+      printf("Cuda failure %s:%d '%s'\n", __FILE__, __LINE__, \
+             cudaGetErrorString(e));                          \
+      fflush(stdout);                                         \
+      exit(EXIT_FAILURE);                                     \
+    }                                                         \
+  } while (0)
