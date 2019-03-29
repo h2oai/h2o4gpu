@@ -82,17 +82,19 @@ def test_lightgbm_cpu_airlines(booster):
     from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
     import lightgbm as lgb
 
-    data = pd.read_csv('./open_data/allyears.1987.2013.zip')
+    data = pd.read_csv('./open_data/allyears.1987.2013.zip',
+                       dtype={'UniqueCarrier': 'category', 'Origin': 'category', 'Dest': 'category',
+                              'TailNum': 'category', 'CancellationCode': 'category',
+                              'IsArrDelayed': 'category'})
 
-    y = data["IsArrDelayed"] == "YES"
-    # remove 'UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed'
-    data = data[['Year', 'Month', 'DayofMonth', 'DayOfWeek', 'DepTime', 'CRSDepTime',
+    y = data["IsArrDelayed"]
+    data = data[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
+                 'DayofMonth', 'DayOfWeek', 'DepTime', 'CRSDepTime',
                  'ArrTime', 'CRSArrTime', 'FlightNum', 'TailNum',
                  'ActualElapsedTime', 'CRSElapsedTime', 'AirTime', 'ArrDelay',
                  'DepDelay', 'Distance', 'TaxiIn', 'TaxiOut',
                  'Cancelled', 'CancellationCode', 'Diverted', 'CarrierDelay',
                  'WeatherDelay', 'NASDelay', 'SecurityDelay', 'LateAircraftDelay']]
-    # data = data.drop(["IsArrDelayed"], axis=1)
 
     lgb_params = {'learning_rate': 0.1,
                   'boosting': booster,
