@@ -85,7 +85,17 @@ def test_lightgbm_cpu_airlines(booster):
     data = pd.read_csv('./open_data/allyears.1987.2013.zip',
                        dtype={'UniqueCarrier': 'category', 'Origin': 'category', 'Dest': 'category',
                               'TailNum': 'category', 'CancellationCode': 'category',
-                              'IsArrDelayed': 'category', 'IsDepDelayed': 'category'})
+                              'IsArrDelayed': 'category', 'IsDepDelayed': 'category',
+                              'DepTime': np.float32, 'CRSDepTime': np.float32, 'ArrTime': np.float32,
+                              'CRSArrTime': np.float32, 'ActualElapsedTime': np.float32,
+                              'CRSElapsedTime': np.float32, 'AirTime': np.float32,
+                              'ArrDelay': np.float32, 'DepDelay': np.float32, 'Distance': np.float32,
+                              'TaxiIn': np.float32, 'TaxiOut': np.float32, 'Diverted': np.float32,
+                              'Year': np.int32, 'Month': np.int32, 'DayOfWeek': np.int32,
+                              'DayofMonth': np.int32, 'Cancelled': np.float32,
+                              'CarrierDelay': np.float32, 'WeatherDelay': np.float32,
+                              'NASDelay': np.float32, 'SecurityDelay': np.float32,
+                              'LateAircraftDelay': np.float32})
 
     y = data["IsArrDelayed"]
     data = data[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
