@@ -74,7 +74,7 @@ def test_lightgbm_cpu(booster):
                 stratified=False,
                 verbose_eval=50)
 
-
+@pytest.mark.skip(reason="Huge memory footprint")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
 def test_lightgbm_cpu_airlines_full(booster):
     import numpy as np
