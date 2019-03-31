@@ -173,7 +173,7 @@ pylint:
 
 build: update_submodule build_quick
 
-build_quick: cpp testunit py
+build_quick: cpp py
 
 build_py: update_submodule clean_py py # avoid cpp
 
