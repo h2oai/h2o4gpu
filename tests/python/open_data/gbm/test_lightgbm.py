@@ -136,7 +136,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
     from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
     import lightgbm as lgb
 
-    data = pd.read_csv('./open_data/airlines/{0}.csv.bz2'.format(year),
+    data = pd.read_csv('./open_data/airlines/{0}.zip'.format(year),
                        dtype={'UniqueCarrier': 'category', 'Origin': 'category', 'Dest': 'category',
                               'TailNum': 'category', 'CancellationCode': 'category',
                               'IsArrDelayed': 'category', 'IsDepDelayed': 'category',
