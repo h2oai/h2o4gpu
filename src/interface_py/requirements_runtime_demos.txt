@@ -13,3 +13,5 @@ seaborn==0.8.1
 # for some demos/tests
 feather-format==0.4.0
 psutil==5.4.5
+# for jupiter notebooks
+pillow==4.2.1
