@@ -841,6 +841,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry, size_t rows,
 
 #pragma omp parallel for
   for (int q = 0; q < n_gpu; q++) {
+    // TODO: that may ignore up to n_gpu - 1 rows
     const size_t chunk_size = rows / n_gpu;
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
@@ -866,7 +867,7 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry, size_t rows,
             thrust::device_vector<T> &pairwise_distances) {
           kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
         });
-
+#pragma omp critical
     h_labels->insert(h_labels->begin() + q * chunk_size, d_labels.begin(),
                      d_labels.end());
   }
