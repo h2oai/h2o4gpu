@@ -868,8 +868,8 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry, size_t rows,
           kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
         });
 #pragma omp critical
-    h_labels->insert(h_labels->begin() + q * chunk_size, d_labels.begin(),
-                     d_labels.end());
+    thrust::copy(d_labels.begin(), d_labels.end(),
+                 h_labels->begin() + q * chunk_size);
   }
 
   // TODO: check memory freeing
