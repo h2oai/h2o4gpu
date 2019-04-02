@@ -837,40 +837,41 @@ int kmeans_predict(int verbose, int gpu_idtry, int n_gputry, size_t rows,
   thrust::device_vector<T> *d_centroids[n_gpu];
   thrust::device_vector<T> *data_dots[n_gpu];
   thrust::device_vector<T> *centroid_dots[n_gpu];
-  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(0);
+  thrust::host_vector<int> *h_labels = new thrust::host_vector<int>(rows);
 
 #pragma omp parallel for
   for (int q = 0; q < n_gpu; q++) {
+    const size_t chunk_size = rows / n_gpu;
     CUDACHECK(cudaSetDevice(dList[q]));
     kmeans::detail::labels_init();
 
-    data_dots[q] = new thrust::device_vector<T>(rows / n_gpu);
+    data_dots[q] = new thrust::device_vector<T>(chunk_size);
     centroid_dots[q] = new thrust::device_vector<T>(k);
 
     d_centroids[q] = new thrust::device_vector<T>(k * cols);
-    d_data[q] = new thrust::device_vector<T>(rows / n_gpu * cols);
+    d_data[q] = new thrust::device_vector<T>(chunk_size * cols);
 
     copy_data(verbose, 'r', *d_centroids[q], &centroids[0], 0, k, k, cols);
 
-    copy_data(verbose, 'r', *d_data[q], &srcdata[0], q, rows, rows / n_gpu,
-              cols);
+    copy_data(verbose, 'r', *d_data[q], &srcdata[0], q, rows, chunk_size, cols);
 
-    kmeans::detail::make_self_dots(rows / n_gpu, cols, *d_data[q],
-                                   *data_dots[q]);
+    kmeans::detail::make_self_dots(chunk_size, cols, *d_data[q], *data_dots[q]);
 
-    thrust::device_vector<int> d_labels(rows / n_gpu);
+    thrust::device_vector<int> d_labels(chunk_size);
 
     kmeans::detail::batch_calculate_distances(
-        verbose, q, rows / n_gpu, cols, k, *d_data[q], *d_centroids[q],
+        verbose, q, chunk_size, cols, k, *d_data[q], *d_centroids[q],
         *data_dots[q], *centroid_dots[q],
         [&](int n, size_t offset,
             thrust::device_vector<T> &pairwise_distances) {
           kmeans::detail::relabel(n, k, pairwise_distances, d_labels, offset);
         });
 
-    h_labels->insert(h_labels->end(), d_labels.begin(), d_labels.end());
+    h_labels->insert(h_labels->begin() + q * chunk_size, d_labels.begin(),
+                     d_labels.end());
   }
 
+  // TODO: check memory freeing
   *pred_labels = h_labels->data();
 
 #pragma omp parallel for
