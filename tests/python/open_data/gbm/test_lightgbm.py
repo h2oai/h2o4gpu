@@ -235,6 +235,7 @@ def test_lightgbm_cpu_airlines_year_datatable(booster, year):
 
 
 if __name__ == '__main__':
+    pass
     # test_lightgbm_cpu_airlines_year_datatable('dart', '1987')
     # test_lightgbm_cpu()
     # test_lightgbm_gpu()
