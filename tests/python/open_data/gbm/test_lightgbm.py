@@ -178,8 +178,64 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                 verbose_eval=10)
 
 
+@pytest.mark.parametrize('booster,', ["dart", "gbdt"])
+@pytest.mark.parametrize('year,', ["1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994",
+                                   "1995", "1996", "1997", "1998", "1999",
+                                   #    "2000", "2001", "2002", "2003", "2004",
+                                   "2005", "2006", "2007", "2008", "2009",
+                                   "2010", "2011", "2012", "2013"])
+def test_lightgbm_cpu_airlines_year_datatable(booster, year):
+    import numpy as np
+    import datatable as dt
+    from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
+    import lightgbm as lgb
+
+    data = dt.fread('./open_data/airlines/year{0}.zip'.format(year))
+    for i in range(len(data.names)):
+        if data.stypes[i] == dt.str32:
+            print(data.names[i])
+    print(data.names)
+    print(data.stypes)
+    y = np.array(data[:, "IsArrDelayed"]).reshape((-1, )) == 'YES'
+
+    # removed UniqueCarrier
+    # Origin
+    # Dest
+    # IsArrDelayed
+    # IsDepDelayed
+
+    data = data[:, ['Year', 'Month',
+                    'DayofMonth', 'DayOfWeek', 'DepTime', 'CRSDepTime',
+                    'ArrTime', 'CRSArrTime', 'FlightNum', 'TailNum',
+                    'ActualElapsedTime', 'CRSElapsedTime', 'AirTime', 'ArrDelay',
+                    'DepDelay', 'Distance', 'TaxiIn', 'TaxiOut',
+                    'Cancelled', 'CancellationCode', 'Diverted', 'CarrierDelay',
+                    'WeatherDelay', 'NASDelay',
+                    'SecurityDelay', 'LateAircraftDelay'
+                    ]]
+
+    print(y.shape, data.shape)
+
+    lgb_params = {'learning_rate': 0.1,
+                  'boosting': booster,
+                  'objective': 'binary',
+                  'metric': 'rmse',
+                  'feature_fraction': 0.9,
+                  'bagging_fraction': 0.75,
+                  'num_leaves': 31,
+                  'bagging_freq': 1,
+                  'min_data_per_leaf': 250}
+    lgb_train = lgb.Dataset(data=data, label=y)
+    cv = lgb.cv(lgb_params,
+                lgb_train,
+                num_boost_round=50,
+                early_stopping_rounds=5,
+                stratified=False,
+                verbose_eval=10)
+
+
 if __name__ == '__main__':
-    pass
+    # test_lightgbm_cpu_airlines_year_datatable('dart', '1987')
     # test_lightgbm_cpu()
     # test_lightgbm_gpu()
     # test_lightgbm_cpu_airlines()

@@ -16,3 +16,4 @@ pytest-forked==0.2
 pytest-xdist==1.22.2
 pytest-cov==2.5.1
 pylint==1.8.4
+datatable == 0.8.0
