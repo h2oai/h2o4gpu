@@ -342,8 +342,7 @@ class ElasticNetH2O(object):
         res = self.predict_proba(valid_x, valid_y, sample_weight, free_input_data)
         if self.family == "logistic":
             return self.classes_[(res >= 0.5).astype(np.int8)]
-        else:
-            return res
+        return res
 
     def predict_proba(self,
                       valid_x=None,
