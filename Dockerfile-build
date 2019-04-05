@@ -93,7 +93,7 @@ RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 # Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
 RUN \
     mkdir -p /usr/lib64/ && \
-    ln -s /opt/h2oai/h2o4gpu/python/lib/*python* /usr/lib64/ && \
+    ln -sf /opt/h2oai/h2o4gpu/python/lib/libpython* /usr/lib64/ && \
     mkdir -p /usr/include/python3.6m && \
     ln -s /opt/h2oai/h2o4gpu/python/include/python3.6m/* /usr/include/python3.6m
 
