@@ -286,6 +286,12 @@ class ElasticNetH2O(object):
         if not (train_x is None and train_y is None and valid_x is None and
                 valid_y is None and sample_weight is None):
 
+            if self.family == "logistic" and train_y is not None:
+                self.classes_ = np.unique(train_y)
+                train_y = np.searchsorted(self.classes_, train_y)
+                if valid_y is not None:
+                    valid_y = np.searchsorted(self.classes_, valid_y)
+
             self.prepare_and_upload_data = prepare_and_upload_data(
                 self,
                 train_x=train_x,
@@ -335,8 +341,7 @@ class ElasticNetH2O(object):
         """
         res = self.predict_proba(valid_x, valid_y, sample_weight, free_input_data)
         if self.family == "logistic":
-            res[res < 0.5] = 0
-            res[res > 0.5] = 1
+            return self.classes_[(res >= 0.5).astype(np.int8)]
         return res
 
     def predict_proba(self,
