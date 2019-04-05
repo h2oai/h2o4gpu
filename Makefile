@@ -142,7 +142,7 @@ lightgbm_cpu:
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
-	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/opt/h2oai/h2o4gpu/bin/clang -DCMAKE_CXX_COMPILER=/opt/h2oai/h2o4gpu/bin/clang++ -DOpenCL_LIBRARY=/lib64/libOpenCL.so.1 -DOpenCL_INCLUDE_DIR=/usr/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON -DOpenMP_C_FLAGS="-L/opt/h2oai/h2o4gpu/lib -I/opt/h2oai/h2o4gpu/include" -DOpenMP_C_LIB_NAMES=omp -DOpenMP_omp_LIBRARY=/opt/h2oai/h2o4gpu/lib/libomp.so -DOpenMP_CXX_FLAGS="-L/opt/h2oai/h2o4gpu/lib -I/opt/h2oai/h2o4gpu/include -fopenmp" -DOpenMP_CXX_LIB_NAMES=omp && \
+	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=/lib64/libOpenCL.so.1 -DOpenCL_INCLUDE_DIR=/usr/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
 	make -j && cd .. ; \
 	fi 	
 	cd LightGBM && cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
