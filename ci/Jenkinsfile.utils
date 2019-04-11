@@ -102,6 +102,9 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
 
     if (isRelease()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        if(isDAIRelease()) {
+            bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}-${env.BRANCH_NAME}${extratag}/"
+        }
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
@@ -181,6 +184,9 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
 
     if (isRelease()) {
         bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        if (isDAIRelease()) {
+            bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}-${env.BRANCH_NAME}${extratag}/"
+        }
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
@@ -285,6 +291,10 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String platform, Stri
 
 def isRelease() {
     return env.BRANCH_NAME.startsWith("rel")
+}
+
+def isDAIRelease() {
+    return env.BRANCH_NAME.startsWith("rel-dai")
 }
 
 def isBleedingEdge() {
