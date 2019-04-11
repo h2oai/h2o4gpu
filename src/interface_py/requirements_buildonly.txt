@@ -32,3 +32,5 @@ awscli==1.15.6
 matplotlib==2.0.2
 llvmlite==0.23.0
 pyzmq==17.0.0
+numpydoc==0.8.0
+
