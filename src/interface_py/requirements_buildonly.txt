@@ -8,21 +8,20 @@ six==1.11.0
 yapf==0.17.0
 coverage==4.4.1
 # docs
-numpydoc==0.8.0
-sphinx==1.8.5
-sphinx_rtd_theme==0.4.3
+sphinx==1.5.6
+sphinx_rtd_theme==0.2.4
 pillow==4.2.1
 # compile wheel
 wheel==0.31.1
-Cython==0.29.3
+Cython==0.27.3
 # for make testperf
 h2o==3.18.0.11
-pandas==0.24.1
-numpy==1.16.1
+pandas==0.23.4
+numpy==1.15.1
 # for some utilities
 nbconvert==5.3.1
 nbformat==4.3.0
-notebook==5.7.8
+notebook==5.7.2
 # below for some tests
 numba==0.38.0
 feather-format==0.4.0
