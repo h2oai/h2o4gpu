@@ -33,7 +33,7 @@ pipeline {
                             $class                           : 'GitSCM',
                             branches                         : scm.branches,
                             doGenerateSubmoduleConfigurations: false,
-                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: false]],
                             submoduleCfg                     : [],
                             userRemoteConfigs                : scm.userRemoteConfigs])
                 }
