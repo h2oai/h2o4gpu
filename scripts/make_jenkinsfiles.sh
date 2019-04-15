@@ -4,7 +4,7 @@
 # jenkins that stage names have to be static text labels
 
 ## declare an array variable
-declare -a arr=("x86_64-cuda8" "x86_64-cuda9" "x86_64-cuda92" "ppc64le-cuda8" "ppc64le-cuda9" "ppc64le-cuda92")
+declare -a arr=("x86_64-cuda8" "x86_64-cuda9" "x86_64-cuda92" "x86_64-cuda10" "ppc64le-cuda8" "ppc64le-cuda9" "ppc64le-cuda92" "ppc64le-cuda10")
 
 ## now loop through the above array
 for i in "${arr[@]}"
