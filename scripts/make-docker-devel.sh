@@ -24,7 +24,7 @@ echo "init submodules ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo ; make ${makeopts} deps_fetch H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
 
 echo "Docker devel - Copying nccl build artifacts"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /root/nccl rev-parse HEAD) !=  $(git -C /root/repo rev-parse  @:nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /root/nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /root/nccl/build /root/repo/nccl'
 
 echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
