@@ -101,6 +101,7 @@ RUN \
   chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
   HOME=/jupyter jupyter notebook --generate-config && \
   sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
+  echo "c.NotebookApp.allow_remote_access = False" >> /jupyter/.jupyter/jupyter_notebook_config.py && \
   chmod -R a+rwx /jupyter/.jupyter
 
 # Add shell wrapper
