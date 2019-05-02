@@ -1,4 +1,9 @@
 
+## Release 0.3.2
+* Fix K-means demo for multi-GPU [#630](https://github.com/h2oai/h2o4gpu/issues/630)
+* CUDA-10
+* Use gcc to build LightGBM on ppc64le
+
 ## Release 0.3.1
 * Fix memory leak [#175](https://github.com/h2oai/h2o4gpu/issues/175) [#204](https://github.com/h2oai/h2o4gpu/issues/204)
 * Static linking with CUDA dependencies
