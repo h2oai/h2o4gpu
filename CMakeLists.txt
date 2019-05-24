@@ -105,13 +105,33 @@ if(USE_CUDA)
                 -DHAVECUDA
         )
 
+        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/" # cuda-10
+                        "/usr/lib64")  #cuda-10.1
+
+        find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+        find_library(CUSPARSE_STATIC_LIB NAMES libcusparse_static.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+        find_library(CUSOLVER_STATIC_LIB NAMES libcusolver_static.a
+                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
+
+        set(STATIC_LIBS ${CUBLAS_STATIC_LIB})
+        list(APPEND STATIC_LIBS ${CULIBOS_STATIC_LIB})
+        list(APPEND STATIC_LIBS ${CUSPARSE_STATIC_LIB})
+        list(APPEND STATIC_LIBS ${CUSOLVER_STATIC_LIB})
+
         if(DEV_BUILD)
-                MESSAGE(STATUS "Building DEVELOPER compute capability version.")
-                SET(GPU_COMPUTE_VER 61)
-                SET(CMAKE_BUILD_TYPE Debug)
+            MESSAGE(STATUS "Building DEVELOPER compute capability version.")
+            SET(GPU_COMPUTE_VER 61)
+            SET(CMAKE_BUILD_TYPE Debug)
         else()
-                MESSAGE(STATUS "Building RELEASE compute capability version.")
-                SET(GPU_COMPUTE_VER 35;50;52;60;61)
+            MESSAGE(STATUS "Building RELEASE compute capability version.")
+            SET(GPU_COMPUTE_VER 35;50;52;60;61)
         endif()
 
         if(DEV_SYNC)
@@ -120,13 +140,19 @@ if(USE_CUDA)
         endif()
 
         if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
-                MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 9.0 detected, adding Volta compute capability (7.0).")
-                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
+            MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 9.0 detected, adding Volta compute capability (7.0).")
+            SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
         endif()
 
         if(((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10)) AND NOT DEV_BUILD)
-                MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 10.0 detected, adding Turing compute capability (7.5).")
-                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
+            MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 10.0 detected, adding Turing compute capability (7.5).")
+            SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
+        endif()
+
+        if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
+            find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a
+            PATHS   "/usr/lib64")  #cuda-10.1
+            list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
         endif()
 
         SET(GENCODE_FLAGS "")
@@ -145,29 +171,14 @@ if(USE_CUDA)
         SET_TARGET_PROPERTIES(gpuh2o4gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
         if($ENV{USENVTX})
-                MESSAGE(STATUS "Building with NVTX support on.")
-                SET(NVTX_LIBRARY nvToolsExt)
+            MESSAGE(STATUS "Building with NVTX support on.")
+            SET(NVTX_LIBRARY nvToolsExt)
         endif()
 
-        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/") # cuda-10
-        find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
-        find_library(CUSPARSE_STATIC_LIB NAMES libcusparse_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
-        find_library(CUSOLVER_STATIC_LIB NAMES libcusolver_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
 
 
         TARGET_LINK_LIBRARIES(gpuh2o4gpu
-                ${CUBLAS_STATIC_LIB}
-                ${CULIBOS_STATIC_LIB}
-                ${CUSOLVER_STATIC_LIB}
-                ${CUSPARSE_STATIC_LIB}
+                ${STATIC_LIBS}
                 ${BLAS_LIBRARIES}
                 ${NVTX_LIBRARY}
                 ${NVML_LIBRARY})
@@ -183,10 +194,7 @@ if(USE_CUDA)
         endif()
         SWIG_LINK_LIBRARIES(ch2o4gpu_gpu gpuh2o4gpu
                 ${PYTHON_LIBRARIES}
-                ${CUBLAS_STATIC_LIB}
-                ${CULIBOS_STATIC_LIB}
-                ${CUSOLVER_STATIC_LIB}
-                ${CUSPARSE_STATIC_LIB})
+                ${STATIC_LIBS})
 
         SET_TARGET_PROPERTIES(${SWIG_MODULE_ch2o4gpu_gpu_REAL_NAME} PROPERTIES
                 LINK_FLAGS ${OpenMP_CXX_FLAGS})
@@ -212,10 +220,7 @@ if(USE_CUDA)
         gtest
         commonh2o4gpu
         gpuh2o4gpu
-        ${CUBLAS_STATIC_LIB}
-        ${CULIBOS_STATIC_LIB}
-        ${CUSOLVER_STATIC_LIB}
-        ${CUSPARSE_STATIC_LIB}
+        ${STATIC_LIBS}
         ${BLAS_LIBRARIES}
         ${NVTX_LIBRARY}
         ${NVML_LIBRARY})
