@@ -4,6 +4,8 @@
 // original code from https://github.com/NVIDIA/kmeans (Apache V2.0 License)
 #pragma once
 #include <cublas_v2.h>
+#include <thrust/device_allocator.h>
+#include <thrust/device_malloc_allocator.h>
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <cfloat>
@@ -132,6 +134,43 @@ void memzero(thrust::device_vector<T, thrust::device_malloc_allocator<T>> &D) {
   safe_cuda(cudaMemsetAsync(thrust::raw_pointer_cast(D.data()), 0,
                             sizeof(T) * D.size(), cuda_stream[dev_num]));
 }
+
+template <typename T>
+void memcpy(thrust::host_vector<T, std::allocator<T>> &H,
+            thrust::device_vector<T, thrust::device_allocator<T>> &D) {
+  int dev_num;
+  safe_cuda(cudaGetDevice(&dev_num));
+  safe_cuda(cudaMemcpyAsync(
+      thrust::raw_pointer_cast(H.data()), thrust::raw_pointer_cast(D.data()),
+      sizeof(T) * D.size(), cudaMemcpyDeviceToHost, cuda_stream[dev_num]));
+}
+
+template <typename T>
+void memcpy(thrust::device_vector<T, thrust::device_allocator<T>> &D,
+            thrust::host_vector<T, std::allocator<T>> &H) {
+  int dev_num;
+  safe_cuda(cudaGetDevice(&dev_num));
+  safe_cuda(cudaMemcpyAsync(
+      thrust::raw_pointer_cast(D.data()), thrust::raw_pointer_cast(H.data()),
+      sizeof(T) * H.size(), cudaMemcpyHostToDevice, cuda_stream[dev_num]));
+}
+template <typename T>
+void memcpy(thrust::device_vector<T, thrust::device_allocator<T>> &Do,
+            thrust::device_vector<T, thrust::device_allocator<T>> &Di) {
+  int dev_num;
+  safe_cuda(cudaGetDevice(&dev_num));
+  safe_cuda(cudaMemcpyAsync(
+      thrust::raw_pointer_cast(Do.data()), thrust::raw_pointer_cast(Di.data()),
+      sizeof(T) * Di.size(), cudaMemcpyDeviceToDevice, cuda_stream[dev_num]));
+}
+template <typename T>
+void memzero(thrust::device_vector<T, thrust::device_allocator<T>> &D) {
+  int dev_num;
+  safe_cuda(cudaGetDevice(&dev_num));
+  safe_cuda(cudaMemsetAsync(thrust::raw_pointer_cast(D.data()), 0,
+                            sizeof(T) * D.size(), cuda_stream[dev_num]));
+}
+
 void streamsync(int dev_num);
 
 // n: number of points
