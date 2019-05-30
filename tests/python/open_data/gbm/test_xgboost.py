@@ -9,7 +9,11 @@ import time
 import sys
 import os
 import logging
+<<<<<<< HEAD
 import platform
+=======
+import pytest
+>>>>>>> add a few xgboost tests varying num_gpus
 
 print(sys.path)
 
@@ -22,7 +26,8 @@ def n_gpus():
     return -1
 
 
-def fun():
+@pytest.mark.parametrize("n_gpus", [-1, 1, None])
+def test_xgboost_covtype(n_gpus):
     import xgboost as xgb
     import numpy as np
     from sklearn.datasets import fetch_covtype
@@ -45,9 +50,14 @@ def fun():
     param = {'objective': 'multi:softmax',  # Specify multiclass classification
              'num_class': 8,  # Number of possible output classes
              'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
+<<<<<<< HEAD
              # TODO: workaround, remove it when xgboost is fixes
              'n_gpus': n_gpus(),
+=======
+>>>>>>> add a few xgboost tests varying num_gpus
              }
+    if n_gpus is not None:
+        param['n_gpus'] = n_gpus
 
     # Convert input data from numpy to XGBoost format
     dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
@@ -60,6 +70,9 @@ def fun():
               (dtest, 'test')], evals_result=gpu_res)
     print("GPU Training Time: %s seconds" % (str(time.time() - tmp)))
 
+    # TODO: https://github.com/dmlc/xgboost/issues/4518
+    dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
+    dtest = xgb.DMatrix(X_test, label=y_test, nthread=-1)
     # Repeat for CPU algorithm
     tmp = time.time()
     param['tree_method'] = 'hist'
@@ -67,10 +80,3 @@ def fun():
     xgb.train(param, dtrain, num_round, evals=[
               (dtest, 'test')], evals_result=cpu_res)
     print("CPU Training Time: %s seconds" % (str(time.time() - tmp)))
-
-
-def test_xgboost_covtype(): fun()
-
-
-if __name__ == '__main__':
-    test_xgboost_covtype()
