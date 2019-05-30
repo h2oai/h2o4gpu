@@ -205,8 +205,6 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
-        # TODO: workaround, remove it when xgboost is fixes
-        kwargs['n_gpus'] = -1
 
         model = XGBClassifier(**kwargs)
         model.fit(X, y)
