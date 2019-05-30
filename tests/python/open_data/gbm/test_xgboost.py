@@ -14,6 +14,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def fun():
     import xgboost as xgb
     import numpy as np
@@ -34,28 +35,31 @@ def fun():
     num_round = 10
 
     # Leave most parameters as default
-    param = {'objective': 'multi:softmax', # Specify multiclass classification
-             'num_class': 8, # Number of possible output classes
-             'tree_method': 'gpu_hist' # Use GPU accelerated algorithm
+    param = {'objective': 'multi:softmax',  # Specify multiclass classification
+             'num_class': 8,  # Number of possible output classes
+             'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
+             # TODO: workaround, remove it when xgboost is fixes
+             'n_gpus': -1,
              }
 
     # Convert input data from numpy to XGBoost format
     dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
     dtest = xgb.DMatrix(X_test, label=y_test, nthread=-1)
 
-    gpu_res = {} # Store accuracy result
+    gpu_res = {}  # Store accuracy result
     tmp = time.time()
     # Train model
-    xgb.train(param, dtrain, num_round, evals=[(dtest, 'test')], evals_result=gpu_res)
+    xgb.train(param, dtrain, num_round, evals=[
+              (dtest, 'test')], evals_result=gpu_res)
     print("GPU Training Time: %s seconds" % (str(time.time() - tmp)))
 
     # Repeat for CPU algorithm
     tmp = time.time()
     param['tree_method'] = 'hist'
     cpu_res = {}
-    xgb.train(param, dtrain, num_round, evals=[(dtest, 'test')], evals_result=cpu_res)
+    xgb.train(param, dtrain, num_round, evals=[
+              (dtest, 'test')], evals_result=cpu_res)
     print("CPU Training Time: %s seconds" % (str(time.time() - tmp)))
-
 
 
 def test_xgboost_covtype(): fun()
