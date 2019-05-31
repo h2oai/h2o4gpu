@@ -12,7 +12,7 @@ echo "Docker devel test and pylint - BEGIN"
 $DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
-$DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
+$DOCKER_CLI run --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
 echo "Docker devel test and pylint - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
