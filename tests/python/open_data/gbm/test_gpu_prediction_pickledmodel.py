@@ -6,11 +6,19 @@ import xgboost as xgb
 import os
 import sys
 import time
+import platform
 
 try:
     from nose.plugins.attrib import attr
 except:
     pass
+
+# TODO: remove when nccl works on ppc
+
+
+def n_gpus():
+    return -1 if platform.machine() == 'x86_64' else 1
+
 
 rng = np.random.RandomState(1994)
 
@@ -206,7 +214,7 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
         # TODO: workaround, remove it when xgboost is fixes
-        kwargs['n_gpus'] = -1
+        kwargs['n_gpus'] = n_gpus()
 
         model = XGBClassifier(**kwargs)
         model.fit(X, y)

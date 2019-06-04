@@ -9,10 +9,17 @@ import time
 import sys
 import os
 import logging
+import platform
 
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
+
+# TODO: remove when nccl works on ppc
+
+
+def n_gpus():
+    return -1 if platform.machine() == 'x86_64' else 1
 
 
 def fun():
@@ -39,7 +46,7 @@ def fun():
              'num_class': 8,  # Number of possible output classes
              'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
              # TODO: workaround, remove it when xgboost is fixes
-             'n_gpus': -1,
+             'n_gpus': n_gpus(),
              }
 
     # Convert input data from numpy to XGBoost format
