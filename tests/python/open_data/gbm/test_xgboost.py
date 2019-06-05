@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def n_gpus():
-    return -1 if platform.machine() == 'x86_64' else 1
+    return 1
 
 
 def fun():

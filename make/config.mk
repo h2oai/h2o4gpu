@@ -22,7 +22,8 @@ $(warning ARCH is $(ARCH))
 DEPS_DIR = deps
 
 # NCCL support in XGBoost. To turn off set USENCCL=0 during build
-USENCCL=1
+# temperary disabled until xgboost is fixed
+USENCCL=0
 
 # By default build both CPU and GPU variant
 USECUDA=1
