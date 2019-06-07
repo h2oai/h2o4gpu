@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # TODO: remove when nccl works on ppc
 def n_gpus():
-    return 1
+    return -1
 
 # Function to check fall back to sklearn
 def test_drf_regressor_backupsklearn(backend='auto'):
