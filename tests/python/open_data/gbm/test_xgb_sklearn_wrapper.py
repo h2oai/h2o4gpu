@@ -22,13 +22,13 @@ def test_drf_regressor_backupsklearn(backend='auto'):
     Solver = h2o4gpu.RandomForestRegressor
 
     #Run h2o4gpu version of RandomForest Regression
-    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10, n_gpus=n_gpus())
+    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10, n_gpus=n_gpus(), n_jobs=-1)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
     from h2o4gpu.ensemble import RandomForestRegressorSklearn
-    drf_sk = RandomForestRegressorSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10)
+    drf_sk = RandomForestRegressorSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10, n_jobs=-1)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
@@ -75,13 +75,13 @@ def test_drf_classifier_backupsklearn(backend='auto'):
     Solver = h2o4gpu.RandomForestClassifier
 
     #Run h2o4gpu version of RandomForest Regression
-    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10, n_gpus=n_gpus())
+    drf = Solver(backend=backend, random_state=1234, oob_score=True, n_estimators=10, n_gpus=n_gpus(), n_jobs=-1)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
     #Run Sklearn version of RandomForest Regression
     from h2o4gpu.ensemble import RandomForestClassifierSklearn
-    drf_sk = RandomForestClassifierSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10)
+    drf_sk = RandomForestClassifierSklearn(random_state=1234, oob_score=True, max_depth=3, n_estimators=10, n_jobs=-1)
     print("Scikit fit()")
     drf_sk.fit(X, y)
 
@@ -136,7 +136,7 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
     Solver = h2o4gpu.GradientBoostingRegressor
 
     #Run h2o4gpu version of RandomForest Regression
-    gbm = Solver(backend=backend, random_state=1234, n_gpus=n_gpus())
+    gbm = Solver(backend=backend, random_state=1234, n_gpus=n_gpus(), n_jobs=-1)
     print("h2o4gpu fit()")
     gbm.fit(X, y)
 
@@ -186,7 +186,7 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
     Solver = h2o4gpu.GradientBoostingClassifier
 
     # Run h2o4gpu version of RandomForest Regression
-    gbm = Solver(backend=backend, random_state=1234, n_gpus=n_gpus())
+    gbm = Solver(backend=backend, random_state=1234, n_gpus=n_gpus(), n_jobs=-1)
     print("h2o4gpu fit()")
     gbm.fit(X, y)
 
@@ -246,5 +246,8 @@ def test_sklearn_gbm_regression_h2o4gpu(): test_gbm_classifier_backupsklearn(bac
 def test_sklearn_gbm_regression(): test_gbm_regressor_backupsklearn()
 def test_sklearn_gbm_regression_sklearn(): test_gbm_regressor_backupsklearn(backend='sklearn')
 def test_sklearn_gbm_regression_h2o4gpu(): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
+
+
+test_sklearn_gbm_classification()
 
 
