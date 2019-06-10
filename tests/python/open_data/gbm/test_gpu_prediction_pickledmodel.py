@@ -17,7 +17,7 @@ except:
 
 
 def n_gpus():
-    return 1
+    return -1 if platform.machine() == 'x86_64' else 1
 
 
 rng = np.random.RandomState(1994)
