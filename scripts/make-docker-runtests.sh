@@ -12,7 +12,7 @@ echo "Docker devel test and pylint - BEGIN"
 $DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
-$DOCKER_CLI run --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
+$DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
 echo "Docker devel test and pylint - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
@@ -22,7 +22,7 @@ echo "Docker devel test and pylint - pip install wheel from dist/${platform}, ma
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean dist/${platform}/*.whl before unstash in jenkins
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export NCCL_DEBUG=WARN; export HOME=`pwd` ; cd repo ; pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export HOME=`pwd` ; cd repo ; pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"`; pip freeze ; make '${target}
 
 { # try
     echo "Docker devel test and pylint - copy any dat results"
