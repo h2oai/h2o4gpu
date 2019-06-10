@@ -8,11 +8,8 @@ USENVTX=0
 # By default 0 means Release, set to "Debug" if you want to compile sources with debug flags
 CMAKE_BUILD_TYPE=0
 
-ARCH := $(shell arch)
-
 $(warning USENVTX is $(USENVTX))
 $(warning CMAKE_BUILD_TYPE is $(CMAKE_BUILD_TYPE))
-$(warning ARCH is $(ARCH))
 
 #
 # PROJECT DEPENDENCY RELATED VARIABLES
@@ -26,11 +23,6 @@ USENCCL=1
 
 # By default build both CPU and GPU variant
 USECUDA=1
-
-# TODO: remove when fixed https://github.com/dmlc/xgboost/issues/4523
-ifeq (${ARCH}, ppc64le)
-	USENCCL = 0
-endif
 
 ifeq ($(USECUDA), 0)
     $(warning Building with only CPU support ON.)
@@ -115,6 +107,7 @@ S3_CMD_LINE := aws s3
 
 DIST_DIR = dist
 
+ARCH := $(shell arch)
 ifdef CUDA_MAJOR_VERSION
     PLATFORM = $(ARCH)-centos7-cuda$(MAKEFILE_CUDA_VERSION)
 else
