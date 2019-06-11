@@ -6,7 +6,7 @@ import xgboost as xgb
 import os
 import sys
 import time
-import platform
+import pytest
 
 try:
     from nose.plugins.attrib import attr
@@ -55,8 +55,9 @@ def makeXtest():
 
 
 # @attr('gpu')
-class TestGPUPredict(unittest.TestCase):
-    def test_predict_nopickle(self):
+@pytest.mark.parametrize("n_gpus", [-1, 1, None])
+class TestGPUPredict(object):
+    def test_predict_nopickle(self, n_gpus):
         X, y = makeXy()
 
         dm = xgb.DMatrix(X, label=y)
@@ -67,6 +68,7 @@ class TestGPUPredict(unittest.TestCase):
             "predictor": "gpu_predictor",
             'eval_metric': 'auc',
         }
+        param = self.set_n_gpus(param, n_gpus)
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         assert self.non_decreasing(res["train"]["auc"])
@@ -88,7 +90,7 @@ class TestGPUPredict(unittest.TestCase):
         print("A2 CPU Time to predict = %g" % (time.time() - tmp))
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
-    def test_predict_nodm(self):
+    def test_predict_nodm(self, n_gpus):
 
         tmp = time.time()
         X, y = makeXy()
@@ -108,6 +110,7 @@ class TestGPUPredict(unittest.TestCase):
             "predictor": "gpu_predictor",
             'eval_metric': 'auc',
         }
+        param = self.set_n_gpus(param, n_gpus)
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         print("Time to Train = %g" % (time.time() - tmp))
@@ -132,7 +135,7 @@ class TestGPUPredict(unittest.TestCase):
 
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
-    def test_predict_pickle(self):
+    def test_predict_pickle(self, n_gpus):
         X, y = makeXy()
 
         dm = xgb.DMatrix(X, label=y)
@@ -142,9 +145,8 @@ class TestGPUPredict(unittest.TestCase):
             "objective": "binary:logistic",
             "predictor": "gpu_predictor",
             'eval_metric': 'auc',
-            # TODO: workaround, remove it when xgboost is fixes
-            'n_gpus': -1
         }
+        param = self.set_n_gpus(param, n_gpus)
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         assert self.non_decreasing(res["train"]["auc"])
@@ -175,7 +177,7 @@ class TestGPUPredict(unittest.TestCase):
         print("C2 CPU Time to predict = %g" % (time.time() - tmp))
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
-    def test_predict_sklearn_nopickle(self):
+    def test_predict_sklearn_nopickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
 
@@ -185,7 +187,7 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
-        kwargs['n_jobs'] =-1
+        kwargs = self.set_n_gpus(kwargs, n_gpus)
 
         model = XGBClassifier(n_estimators=n_estimators, **kwargs)
         model.fit(X, y)
@@ -202,9 +204,9 @@ class TestGPUPredict(unittest.TestCase):
         # MAJOR issue: gpu predictions wrong  -- all zeros
         # ISSUE1: Doesn't use gpu_predictor.
         # ISSUE2: Also, no way to switch to cpu_predictor?
-        #np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
+        # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
-    def test_predict_sklearn_pickle(self):
+    def test_predict_sklearn_pickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
 
@@ -214,9 +216,7 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
-        kwargs['n_jobs'] =-1
-        # TODO: workaround, remove it when xgboost is fixes
-        kwargs['n_gpus'] = n_gpus()
+        kwargs = self.set_n_gpus(kwargs, n_gpus)
 
         model = XGBClassifier(**kwargs)
         model.fit(X, y)
@@ -240,11 +240,11 @@ class TestGPUPredict(unittest.TestCase):
         print("E GPU Time to predict = %g" % (time.time() - tmp))
         # ISSUE1: Doesn't use gpu_predictor.
         # ISSUE2: Also, no way to switch to cpu_predictor?
-        #np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
+        # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
     # only run the below after the above
 
-    def test_predict_sklearn_frompickle(self):
+    def test_predict_sklearn_frompickle(self, n_gpus):
         Xtest = makeXtest()
 
         # load model
@@ -260,7 +260,12 @@ class TestGPUPredict(unittest.TestCase):
         print("F GPU Time to predict = %g" % (time.time() - tmp))
         # ISSUE1: Doesn't use gpu_predictor.
         # ISSUE2: Also, no way to switch to cpu_predictor?
-        #np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
+        # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
     def non_decreasing(self, L):
         return all((x - y) < 0.001 for x, y in zip(L, L[1:]))
+
+    def set_n_gpus(self, params, n_gpus):
+        if n_gpus is not None:
+            params['n_gpus'] = n_gpus
+        return params

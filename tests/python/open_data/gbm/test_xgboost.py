@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+import pytest
+import platform
 """
 XGBoost solver tests using Kaggle datasets.
 
@@ -9,20 +11,14 @@ import time
 import sys
 import os
 import logging
-import platform
 
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-# TODO: remove when nccl works on ppc
 
-
-def n_gpus():
-    return -1
-
-
-def fun():
+@pytest.mark.parametrize("n_gpus", [-1, 1, None])
+def test_xgboost_covtype(n_gpus):
     import xgboost as xgb
     import numpy as np
     from sklearn.datasets import fetch_covtype
@@ -45,9 +41,9 @@ def fun():
     param = {'objective': 'multi:softmax',  # Specify multiclass classification
              'num_class': 8,  # Number of possible output classes
              'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
-             # TODO: workaround, remove it when xgboost is fixes
-             'n_gpus': n_gpus(),
              }
+    if n_gpus is not None:
+        param['n_gpus'] = n_gpus
 
     # Convert input data from numpy to XGBoost format
     dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
@@ -60,6 +56,9 @@ def fun():
               (dtest, 'test')], evals_result=gpu_res)
     print("GPU Training Time: %s seconds" % (str(time.time() - tmp)))
 
+    # TODO: https://github.com/dmlc/xgboost/issues/4518
+    dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
+    dtest = xgb.DMatrix(X_test, label=y_test, nthread=-1)
     # Repeat for CPU algorithm
     tmp = time.time()
     param['tree_method'] = 'hist'
@@ -67,10 +66,3 @@ def fun():
     xgb.train(param, dtrain, num_round, evals=[
               (dtest, 'test')], evals_result=cpu_res)
     print("CPU Training Time: %s seconds" % (str(time.time() - tmp)))
-
-
-def test_xgboost_covtype(): fun()
-
-
-if __name__ == '__main__':
-    test_xgboost_covtype()
