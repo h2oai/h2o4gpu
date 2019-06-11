@@ -11,9 +11,6 @@ import time
 import sys
 import os
 import logging
-<< << << < HEAD
-== == == =
->>>>>> > add a few xgboost tests varying num_gpus
 
 print(sys.path)
 
