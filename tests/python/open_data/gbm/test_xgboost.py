@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+import pytest
+import platform
 """
 XGBoost solver tests using Kaggle datasets.
 
@@ -9,21 +11,13 @@ import time
 import sys
 import os
 import logging
-<<<<<<< HEAD
-import platform
-=======
-import pytest
->>>>>>> add a few xgboost tests varying num_gpus
+<< << << < HEAD
+== == == =
+>>>>>> > add a few xgboost tests varying num_gpus
 
 print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
-
-# TODO: remove when nccl works on ppc
-
-
-def n_gpus():
-    return -1
 
 
 @pytest.mark.parametrize("n_gpus", [-1, 1, None])
@@ -50,11 +44,6 @@ def test_xgboost_covtype(n_gpus):
     param = {'objective': 'multi:softmax',  # Specify multiclass classification
              'num_class': 8,  # Number of possible output classes
              'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
-<<<<<<< HEAD
-             # TODO: workaround, remove it when xgboost is fixes
-             'n_gpus': n_gpus(),
-=======
->>>>>>> add a few xgboost tests varying num_gpus
              }
     if n_gpus is not None:
         param['n_gpus'] = n_gpus

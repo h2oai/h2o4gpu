@@ -6,11 +6,7 @@ import xgboost as xgb
 import os
 import sys
 import time
-<<<<<<< HEAD
-import platform
-=======
 import pytest
->>>>>>> add a few xgboost tests varying num_gpus
 
 try:
     from nose.plugins.attrib import attr
@@ -191,11 +187,7 @@ class TestGPUPredict(object):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
-<<<<<<< HEAD
-        kwargs['n_jobs'] =-1
-=======
         kwargs = self.set_n_gpus(kwargs, n_gpus)
->>>>>>> add a few xgboost tests varying num_gpus
 
         model = XGBClassifier(n_estimators=n_estimators, **kwargs)
         model.fit(X, y)
@@ -224,13 +216,7 @@ class TestGPUPredict(object):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
-<<<<<<< HEAD
-        kwargs['n_jobs'] =-1
-        # TODO: workaround, remove it when xgboost is fixes
-        kwargs['n_gpus'] = n_gpus()
-=======
         kwargs = self.set_n_gpus(kwargs, n_gpus)
->>>>>>> add a few xgboost tests varying num_gpus
 
         model = XGBClassifier(**kwargs)
         model.fit(X, y)
