@@ -21,17 +21,12 @@ $(warning ARCH is $(ARCH))
 # Location of local directory with dependencies
 DEPS_DIR = deps
 
-# NCCL support in XGBoost. To turn off set USENCCL=0 during build
-# temperary disabled until xgboost is fixed
-USENCCL=0
+# NCCL support in XGBoost.
+USENCCL=1
 
 # By default build both CPU and GPU variant
 USECUDA=1
 
-# TODO: remove when fixed https://github.com/dmlc/xgboost/issues/4523
-ifeq (${ARCH}, ppc64le)
-	USENCCL = 0
-endif
 
 ifeq ($(USECUDA), 0)
     $(warning Building with only CPU support ON.)

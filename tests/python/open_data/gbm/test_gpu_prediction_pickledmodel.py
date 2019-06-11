@@ -17,7 +17,7 @@ except:
 
 
 def n_gpus():
-    return 1
+    return -1
 
 
 rng = np.random.RandomState(1994)
@@ -185,6 +185,7 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
+        kwargs['n_jobs'] =-1
 
         model = XGBClassifier(n_estimators=n_estimators, **kwargs)
         model.fit(X, y)
@@ -213,6 +214,7 @@ class TestGPUPredict(unittest.TestCase):
         kwargs['predictor'] = 'gpu_predictor'
         kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
+        kwargs['n_jobs'] =-1
         # TODO: workaround, remove it when xgboost is fixes
         kwargs['n_gpus'] = n_gpus()
 
