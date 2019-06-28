@@ -12,6 +12,6 @@ matplotlib==2.0.2
 seaborn==0.8.1
 # for some demos/tests
 feather-format==0.4.0
-psutil==5.4.5
+psutil==5.6.3
 # for jupiter notebooks
 pillow==4.2.1
