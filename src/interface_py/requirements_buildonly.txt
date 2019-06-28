@@ -14,7 +14,7 @@ sphinx_rtd_theme==0.4.3
 pillow==4.2.1
 # compile wheel
 wheel==0.33.4
-Cython==0.29.10
+cython==0.29.10
 # for make testperf
 h2o==3.18.0.11
 pandas==0.24.2

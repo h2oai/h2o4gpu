@@ -133,7 +133,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	cd $HOME/arrow/cpp && \
 	git checkout tags/apache-arrow-0.12.0 && \
     yum install -y boost-devel && \
-  	pip install numpy==1.16.4 cython==0.29.3 && \
+  	pip install numpy==1.16.4 cython==0.29.10 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
