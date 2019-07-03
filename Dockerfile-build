@@ -38,8 +38,17 @@ RUN yum install -y epel-release
 # Setup gcc etc.
 RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 
-# Git requirements
-RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext
+# Git & gcc requirements
+RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext gmp-devel mpfr-devel libmpc-devel
+
+#Install gcc from sources
+RUN wget https://0xdata-public.s3.amazonaws.com/gcc/gcc-6.5.0.tar.gz && \
+    tar zxf gcc-6.5.0.tar.gz && \
+    mkdir gcc-6.5.0-build && \
+    cd gcc-6.5.0-build && \
+    ../gcc-6.5.0/configure --program-suffix=-6.5 --enable-languages=c,c++ --disable-multilib && \
+    make -j$(nproc) && \
+    make install
 
 # Compile from source because yum's latest version is 1.8.3
 # --depth for submodule update which we use was added in 1.8.4
@@ -52,23 +61,25 @@ RUN \
     make all && \
     make install;
 
-# H2O4GPU requirements + util programs
+#H2O4GPU requirements
 RUN yum install -y \
     ncurses-devel \
-        bzip2 \
-        which \
-        axel \
-        cmake3 \
-        openssl-devel \
-        libpng-devel \
-        freetype-devel \
-        blas-devel \
-        epel-release \
-        zeromq-devel \
-        openblas-devel && \
-    wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
+    bzip2 \
+    which \
+    axel \
+    cmake3 \
+    openssl-devel \
+    libpng-devel \
+    freetype-devel \
+    blas-devel \
+    epel-release \
+    zeromq-devel \
+    openblas-devel
+
+# conda
+RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -y conda-build six=1.11.0 && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 pip=9.0.3 conda-build six=1.11.0 && \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
@@ -110,9 +121,12 @@ RUN \
 #
 WORKDIR $HOME
 
+RUN python --version
+RUN pip --version
+
 # SWIG
 RUN \
-    wget https://sourceforge.net/projects/swig/files/swig/swig-${SWIG_VERSION}/swig-${SWIG_VERSION}.tar.gz && \
+    wget https://0xdata-public.s3.amazonaws.com/swig/swig-${SWIG_VERSION}.tar.gz && \
     tar -zxvf swig-${SWIG_VERSION}.tar.gz && \
     cd swig-${SWIG_VERSION} && \
     ./configure --prefix=/usr && \
@@ -161,16 +175,21 @@ RUN \
     git clone https://github.com/NVIDIA/nccl.git && \
     cd nccl && \
     git checkout tags/v2.4.7-1 && \
-    make -j src.build;
+    make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build;
 
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 
+RUN python --version
+RUN pip --version
+
 RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
+
+RUN python --version
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
@@ -212,7 +231,7 @@ RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
 
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64/nvidia
-ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-9.2
+ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
 
 WORKDIR $HOME
 
