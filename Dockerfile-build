@@ -169,7 +169,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 # Install Python requirements
 #
-RUN pip install numpy==1.16.4 scipy==1.2.2 setuptools==39.0.1
+RUN pip install numpy==1.16.4 scipy==1.2.1 setuptools==39.0.1
 
 RUN \
     git clone https://github.com/NVIDIA/nccl.git && \
