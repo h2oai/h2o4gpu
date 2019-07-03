@@ -76,10 +76,16 @@ RUN yum install -y \
     zeromq-devel \
     openblas-devel
 
+RUN \
+    git clone https://github.com/NVIDIA/nccl.git && \
+    cd nccl && \
+    git checkout tags/v2.4.7-1 && \
+    make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build;
+
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 conda-build six=1.11.0 && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 PyYAML=3.13 conda-build six=1.11.0 && \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
@@ -120,9 +126,6 @@ RUN \
 # Builds from source due to too old versions in yum
 #
 WORKDIR $HOME
-
-RUN python --version
-RUN pip --version
 
 # SWIG
 RUN \
@@ -171,25 +174,13 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 RUN pip install numpy==1.16.4 scipy==1.2.1 setuptools==39.0.1
 
-RUN \
-    git clone https://github.com/NVIDIA/nccl.git && \
-    cd nccl && \
-    git checkout tags/v2.4.7-1 && \
-    make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build;
-
-
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 
-RUN python --version
-RUN pip --version
-
 RUN pip install -r requirements_buildonly.txt
 RUN pip install -r requirements_runtime.txt
 RUN pip install -r requirements_runtime_demos.txt
-
-RUN python --version
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
