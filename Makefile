@@ -99,7 +99,7 @@ py: apply-sklearn_simple build/VERSION.txt
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost ; make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) $(XGBOOST_TARGET)
+	cd xgboost ; make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)
 
 fullinstall-xgboost: nccl xgboost install_xgboost
 
