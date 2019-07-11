@@ -21,11 +21,11 @@ $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
 
 # workaround to not compile nccl every time
 echo "init submodules ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo ; make ${makeopts} deps_fetch H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo && make ${makeopts} deps_fetch H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
 
 echo "Docker devel - Copying nccl build artifacts"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /root/nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /root/nccl/build /root/repo/nccl'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /nccl/build /root/repo/nccl'
 
 echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"
@@ -44,9 +44,9 @@ mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt b
 if [ `arch` != "ppc64le" ]; then
     echo "Docker devel - Creating conda package"
     $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "mkdir -p repo/condapkgs"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py; cat requirements_*.txt | grep -v '#' | sort | uniq > requirements_conda.txt"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe; sed -i 's/condapkgname/${CONDA_PKG_NAME}/g' meta.yaml; popd"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe; conda build --output-folder ../condapkgs  -c h2oai -c conda-forge .; popd"
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py && cat requirements_*.txt | grep -v '#' | sort | uniq > requirements_conda.txt"
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && sed -i 's/condapkgname/${CONDA_PKG_NAME}/g' meta.yaml && popd"
+    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && conda build --output-folder ../condapkgs  -c h2oai -c conda-forge .&& popd"
 
     echo "Docker devel - Copying conda package"
     rm -rf condapkgs
