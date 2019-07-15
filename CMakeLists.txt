@@ -149,7 +149,7 @@ if(USE_CUDA)
             SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
         endif()
 
-        if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
+        if(CUDA_VERSION VERSION_GREATER "10.0" OR CUDA_VERSION VERSION_EQUAL "10.0")
             find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a
             PATHS   "/usr/lib64")  #cuda-10.1
             list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
