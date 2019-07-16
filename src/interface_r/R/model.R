@@ -13,15 +13,15 @@ attach_attrs_to_model <- function(r_model_obj) {
     "fit", "fit_predict", "fit_transform", "score", "predict", "transform",
     "init")
   attrs_exclude_from_attach <- c(attrs_exclude_from_attach, names(r_model_obj$params))
-  
+
   if (grepl("H2O", as.character(r_model_obj$model))){
     model_attrs <- names(r_model_obj$model)
   } else {
     model_attrs <- names(r_model_obj$model$model)
   }
-  if (grepl("xgboost.(RandomForestClassifier|RandomForestRegressor|GradientBoostingRegressor|GradientBoostingClassifier)", 
+  if (grepl("xgboost.(RandomForestClassifier|RandomForestRegressor|GradientBoostingRegressor|GradientBoostingClassifier)",
     as.character(r_model_obj$model))){
-        attrs_exclude_from_attach <- c(attrs_exclude_from_attach, "coef_")
+        attrs_exclude_from_attach <- c(attrs_exclude_from_attach, "coef_", "intercept_")
     }
   # Attach attributes to the returned R model
   invisible(
