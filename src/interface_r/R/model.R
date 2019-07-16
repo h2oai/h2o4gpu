@@ -19,6 +19,10 @@ attach_attrs_to_model <- function(r_model_obj) {
   } else {
     model_attrs <- names(r_model_obj$model$model)
   }
+  if (grepl("xgboost.(RandomForestClassifier|RandomForestRegressor|GradientBoostingRegressor|GradientBoostingClassifier)", 
+    as.character(r_model_obj$model))){
+        attrs_exclude_from_attach <- c(attrs_exclude_from_attach, "coef_")
+    }
   # Attach attributes to the returned R model
   invisible(
     lapply(
