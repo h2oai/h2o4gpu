@@ -1,13 +1,14 @@
 Package: h2o4gpu
 Type: Package
 Title: Interface to 'H2O4GPU'
-Version: 0.3.0.9999
+Version: 0.3.2
 Authors@R: c(
   person("Yuan", "Tang", role = c("aut"),
          email = "terrytangyuan@gmail.com",
          comment = c(ORCID = "0000-0001-5243-233X")),
   person("Navdeep", "Gill", role = c("aut", "cre"), email = "navdeep@h2o.ai"),
   person("Erin", "LeDell", role = c("aut"), email = "erin@h2o.ai"),
+  person("Vladimir", "Ovsyannikov", role = c("aut"), email = "vladimir.ovsyannikov@h2o.ai"),
   person("H2O.ai", role = c("cph", "fnd")))
 Description: Interface to 'H2O4GPU' <https://github.com/h2oai/h2o4gpu>, a collection of 'GPU' solvers for machine learning algorithms.
 License: Apache License 2.0
