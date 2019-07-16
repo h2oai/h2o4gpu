@@ -107,8 +107,11 @@ if(USE_CUDA)
 
         find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
                 PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/" # cuda-10
-                        "/usr/lib64")  #cuda-10.1
+                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/" NO_DEFAULT_PATH) # cuda-10
+        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
+                PATHS   "/usr/lib64")  #cuda-10.1
+
+        message(${CUBLAS_STATIC_LIB})
 
         find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
                 PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
