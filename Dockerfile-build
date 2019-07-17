@@ -175,12 +175,8 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 RUN pip install numpy==1.16.4 scipy==1.2.1 setuptools==39.0.1
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
-COPY src/interface_py/requirements_runtime.txt requirements_runtime.txt
-COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
 
 RUN pip install -r requirements_buildonly.txt
-RUN pip install -r requirements_runtime.txt
-RUN pip install -r requirements_runtime_demos.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
