@@ -64,6 +64,7 @@ RUN \
   pip install --no-cache-dir -r requirements.txt && \
   pip install --no-cache-dir -r requirements_runtime_demos.txt
 
+RUN pip install --no-cache-dir pytest==3.10.1 pytest-forked==0.2 pytest-xdist==1.22.2 pytest-cov==2.5.1 pylint==1.8.4 pytest-timeout==1.3.3
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
