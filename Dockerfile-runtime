@@ -59,11 +59,12 @@ WORKDIR /
 # Add requirements
 COPY src/interface_py/requirements_runtime.txt requirements.txt
 COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
+COPY src/interface_py/requirements_test.txt requirements_test.txt
 RUN \
   chmod a+rwx requirements*.txt && \
   pip install --no-cache-dir -r requirements.txt && \
+  pip install --no-cache-dir -r requirements_test.txt && \
   pip install --no-cache-dir -r requirements_runtime_demos.txt
-
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
