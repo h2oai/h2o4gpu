@@ -229,3 +229,4 @@ ENV GIT_COMMITTER_EMAIL="anonymous@h2o.ai"
 ENV EMAIL="anonymous@h2o.ai"
 ENV XGB_CXX=g++-5.3
 ENV XGB_CC=gcc-5.3
+ENV XGB_LIB_SRC="/usr/local/lib64/libstdc++*.so*"
