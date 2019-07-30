@@ -27,6 +27,7 @@ USENCCL=1
 # xgboost cxx
 XGB_CXX ?= c++
 XGB_CC ?= cc
+XGB_LIB_SRC ?= ""
 
 # By default build both CPU and GPU variant
 USECUDA=1
