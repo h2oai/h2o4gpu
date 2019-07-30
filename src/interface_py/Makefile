@@ -43,7 +43,7 @@ all: prep
 
 	# update build with xgboost shared library
 	mkdir -p build/lib/xgboost/
-	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/python-package/xgboost/*.so* . ; cd ../../../
+	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/python-package/xgboost/lib . ; cd ../../../
 
 	# update build with lightgbm shared library
 	if [ `arch` != "ppc64le" ]; then \
