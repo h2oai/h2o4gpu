@@ -184,7 +184,7 @@ build_py: update_submodule clean_py py # avoid cpp
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-0.*-py3-none-any.whl --target ../ && \
-	if [ $XGB_LIB_SRC != "" ]; then cp XGB_LIB_SRC ../ ; fi
+	if [ ${XGB_LIB_SRC} != "" ]; then cp ${XGB_LIB_SRC} ../ ; fi
 
 install_lightgbm_gpu:
 	@echo "----- pip install lightgbm_gpu built locally -----"
