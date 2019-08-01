@@ -42,11 +42,11 @@ RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext gmp-devel mpfr-devel libmpc-devel
 
 #Install gcc from sources
-RUN wget https://0xdata-public.s3.amazonaws.com/gcc/gcc-5.4.0.tar.gz && \
-    tar zxf gcc-5.4.0.tar.gz && \
-    mkdir gcc-5.4.0-build && \
-    cd gcc-5.4.0-build && \
-    ../gcc-5.4.0/configure --program-suffix=-5.4 --enable-languages=c,c++ --disable-multilib && \
+RUN wget https://0xdata-public.s3.amazonaws.com/gcc/gcc-6.1.0.tar.gz && \
+    tar zxf gcc-6.1.0.tar.gz && \
+    mkdir gcc-6.1.0-build && \
+    cd gcc-6.1.0-build && \
+    ../gcc-6.1.0/configure --program-suffix=-6.1 --enable-languages=c,c++ --disable-multilib && \
     make -j$(nproc) && \
     make install
 
@@ -227,5 +227,5 @@ ENV GIT_AUTHOR_EMAIL="anonymous@h2o.ai"
 ENV GIT_COMMITTER_NAME="anonymous"
 ENV GIT_COMMITTER_EMAIL="anonymous@h2o.ai"
 ENV EMAIL="anonymous@h2o.ai"
-ENV XGB_CXX=g++-5.4
-ENV XGB_CC=gcc-5.4
+ENV XGB_CXX=g++-6.1
+ENV XGB_CC=gcc-6.1
