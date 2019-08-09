@@ -93,8 +93,6 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
     scl enable devtoolset-6 '"'"'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build'"'"'; \
 	fi'
 
-#RUN cd nccl && ls && make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build
-
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
