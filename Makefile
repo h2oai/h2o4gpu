@@ -99,7 +99,7 @@ py: apply-sklearn_simple build/VERSION.txt
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost ; make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)
+	cd xgboost ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
 
@@ -183,8 +183,7 @@ build_py: update_submodule clean_py py # avoid cpp
 
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --target ../ && \
-	if [[ ${XGB_LIB_SRC} != "" ]]; then cp ${XGB_LIB_SRC} ../xgboost/lib ; fi
+	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --target ../
 
 install_lightgbm_gpu:
 	@echo "----- pip install lightgbm_gpu built locally -----"
