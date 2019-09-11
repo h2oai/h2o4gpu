@@ -2,7 +2,7 @@
 # Requires one has already done(e.g.): make docker-build-nccl-cuda9 to get wheel built or wheel was unstashed on jenkins
 set -e
 
-DOCKER_CLI='nvidia-docker'
+DOCKER_CLI='docker'
 
 H2O4GPU_BUILD="${H2O4GPU_BUILD:-0}"
 DATA_DIRS="${DATA_DIRS:-}"
@@ -35,7 +35,7 @@ echo "Docker devel test(miniconda) and pylint - BEGIN"
 $DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
-$DOCKER_CLI run --shm-size="512m" --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
+$DOCKER_CLI run --runtime=nvidia --shm-size="512m" --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
 echo "Docker devel test(miniconda) and pylint - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'

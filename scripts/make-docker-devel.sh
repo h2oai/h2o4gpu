@@ -6,7 +6,7 @@ H2O4GPU_SUFFIX="${H2O4GPU_SUFFIX:-''}"
 CONTAINER_NAME="${CONTAINER_NAME:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)}"
 makeopts="${makeopts:-}"
 
-DOCKER_CLI='nvidia-docker'
+DOCKER_CLI='docker'
 
 CONDA_PKG_NAME="h2o4gpu${extratag}"
 
@@ -14,7 +14,7 @@ CONDA_PKG_NAME="h2o4gpu${extratag}"
 echo "Docker devel - BEGIN"
 $DOCKER_CLI build -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg docker_name=${dockerimage} .
 
-$DOCKER_CLI run --init --rm --name ${CONTAINER_NAME} -d -t -u root -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
+$DOCKER_CLI run --runtime=nvidia --init --rm --name ${CONTAINER_NAME} -d -t -u root -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 
 echo "Docker devel - Copying files"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'mkdir -p repo ; cp -a /dot/. ./repo'
