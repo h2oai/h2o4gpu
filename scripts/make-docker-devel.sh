@@ -59,6 +59,6 @@ if [ `arch` != "ppc64le" ]; then
 fi
 
 echo "Docker devel - Stopping docker"
-# $DOCKER_CLI stop ${CONTAINER_NAME}
+$DOCKER_CLI stop ${CONTAINER_NAME}
 
 echo "Docker devel - END"
