@@ -20,19 +20,29 @@ class ARIMAModel {
   const int length;
 
   static void AsMatrix(T* ts_data, T* A, int depth, int lda, int length);
+  static void ApplyAR(T* residual, const T* ts_data, const T* phi, int p,
+                      int length);
 
   void Fit(const T* data);
   void AR(T* X, T* residual);
   void MA(T* epsilon, T* residual);
 
+  inline int ARLength() { return this->length - this->p; }
+  inline int MALength() { return this->length - this->q; }
+  inline T* Theta() { return this->theta; }
+  inline T* Phi() { return this->phi; }
+
  private:
   T* d_data_src;
   T* d_data_differenced;
+  T* theta;
+  T* phi;
 };
 
 class LeastSquaresSolver {
  public:
   LeastSquaresSolver(int rows, int cols);
+  ~LeastSquaresSolver();
   void Solve(float* A, float* B);
   const int rows;
   const int cols;

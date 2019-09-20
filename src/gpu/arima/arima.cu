@@ -32,10 +32,29 @@ __global__ void ts_data_to_matrix_kernel(const T *__restrict data, T *X,
   if (i < n) X[j * ldx + i] = data[j + i];
 }
 
+template <class T>
+__global__ void update_AR_kernel(const T *data, T *residual, const T *phi,
+                                 const int p, const int n) {
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  // TODO: optimize with shared memory(read data only once)
+  if (i < n) {
+    T AR_prediction = data[i];
+    for (int j = 0; j < p; ++j) {
+      AR_prediction -= data[i + j + 1] * phi[j];
+    }
+    residual[i] = AR_prediction;
+  }
+}
+
 LeastSquaresSolver::LeastSquaresSolver(int rows, int cols)
     : rows(rows), cols(cols) {
   safe_cusolver(cusolverDnCreate(&this->solver_handle));
   safe_cublas(cublasCreate(&this->cublas_handle));
+}
+
+LeastSquaresSolver::~LeastSquaresSolver() {
+  safe_cusolver(cusolverDnDestroy(this->solver_handle));
+  safe_cublas(cublasDestroy(this->cublas_handle));
 }
 
 void LeastSquaresSolver::Solve(float *A, float *B) {
@@ -43,13 +62,6 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
   int *devInfo;
 
   OK(cudaMalloc(&devInfo, sizeof(int)));
-  // --- CUDA solver initialization
-  cusolverDnHandle_t solver_handle;
-  safe_cusolver(cusolverDnCreate(&solver_handle));
-
-  // --- CUBLAS initialization
-  cublasHandle_t cublas_handle;
-  safe_cublas(cublasCreate(&cublas_handle));
 
   /**********************************/
   /* COMPUTING THE QR DECOMPOSITION */
@@ -86,23 +98,11 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
                                  rows, work, work_size, devInfo));
 
   OK(cudaMemcpy(&devInfo_h, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
+  OK(cudaFree(d_TAU));
 
   assert(devInfo_h == 0);
-  // --- Reducing the linear system size
-  float *d_R;
-  OK(cudaMalloc(&d_R, cols * cols * sizeof(float)));
-  //   float *d_B;
-  //   OK(cudaMalloc(&d_B, cols * sizeof(float)));
-  //   dim3 Grid(DIVUP(cols, BLOCK_SIZE), DIVUP(cols, BLOCK_SIZE));
-  //   dim3 Block(BLOCK_SIZE, BLOCK_SIZE);
-  //   copy_kernel<float><<<Grid, Block>>>(A, d_R, rows, cols);
-  //   OK(cudaMemcpy(d_B, B, cols * sizeof(float), cudaMemcpyDeviceToDevice));
 
   // --- Solving an upper triangular linear system R * x = Q^T * B
-  // R*x = B
-
-  thrust::device_vector<float> d_r(d_R, d_R + cols * cols);
-  thrust::host_vector<float> h_r = d_r;
 
   const float alpha = 1.;
   safe_cublas(cublasStrsm(
@@ -110,7 +110,6 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
       CUBLAS_DIAG_NON_UNIT, cols, 1, &alpha, A, rows, B, cols));
 
   OK(cudaDeviceSynchronize());
-  OK(cudaFree(d_R));
 }
 
 template <class T>
@@ -137,12 +136,25 @@ __global__ void undifferencing(T *out, const T *in, const int n) {
 
 template <class T>
 ARIMAModel<T>::ARIMAModel(int p, int d, int q, int length)
-    : p(p), d(d), q(q), length(length){};
+    : p(p), d(d), q(q), length(length) {
+  assert(q >= 0);
+  assert(p >= 0);
+  assert(length > 0);
+  if (q > 0) {
+    OK(cudaMallocHost(&this->theta, sizeof(T) * q));
+    memset(this->theta, 0, sizeof(T) * q);
+  }
+
+  if (p > 0) {
+    OK(cudaMallocHost(&this->phi, sizeof(T) * p));
+    memset(this->phi, 0, sizeof(T) * p);
+  }
+};
 
 template <class T>
 ARIMAModel<T>::~ARIMAModel() {
-  OK(cudaFree(this->d_data_src));
-  OK(cudaFree(this->d_data_differenced));
+  if (q > 0) OK(cudaFreeHost(this->theta));
+  if (p > 0) OK(cudaFreeHost(this->phi));
 }
 
 template <class T>
@@ -151,6 +163,17 @@ void ARIMAModel<T>::AsMatrix(T *ts_data, T *A, int depth, int lda, int length) {
   dim3 grid_size(DIVUP(n, BLOCK_SIZE), depth);
   dim3 block_size(BLOCK_SIZE, 1);
   ts_data_to_matrix_kernel<T><<<grid_size, block_size>>>(ts_data, A, lda, n);
+}
+
+template <class T>
+void ARIMAModel<T>::ApplyAR(T *residual, const T *ts_data, const T *phi, int p,
+                            int length) {
+  int block_size, grid_size;
+  compute1DInvokeConfig(length - p, &grid_size, &block_size,
+                        update_AR_kernel<T>);
+
+  update_AR_kernel<T>
+      <<<grid_size, block_size>>>(ts_data, residual, phi, p, length - p);
 }
 
 template <class T>
@@ -169,10 +192,33 @@ void ARIMAModel<T>::Fit(const T *data) {
     OK(cudaDeviceSynchronize());
     std::swap(this->d_data_src, this->d_data_differenced);
   }
+
+  OK(cudaMemcpy(this->d_data_differenced, this->d_data_src,
+                this->length * sizeof(T), cudaMemcpyDeviceToDevice));
+
+  if (this->p > 0) {
+    T *X;
+    OK(cudaMalloc(&X, sizeof(T) * this->ARLength() * this->p));
+    this->AsMatrix(this->d_data_src + 1, X, this->p, this->ARLength(),
+                   this->length);
+
+    LeastSquaresSolver solver(this->ARLength(), this->p);
+    solver.Solve(X, this->d_data_differenced);
+
+    OK(cudaMemcpy(this->phi, this->d_data_differenced, sizeof(T) * this->p,
+                  cudaMemcpyDeviceToHost));
+    OK(cudaFree(X));
+  }
+  if (this->q > 0) {
+  }
+  OK(cudaFree(this->d_data_src));
+  OK(cudaFree(this->d_data_differenced));
 }
 
 template <class T>
-void ARIMAModel<T>::AR(T *X, T *residual) {}
+void ARIMAModel<T>::AR(T *X, T *residual) {
+  //   const rows = this->length - this->p + 1;
+}
 
 template <class T>
 void ARIMAModel<T>::MA(T *epsilon, T *residual) {}
@@ -182,5 +228,5 @@ void arima_fit_float(int p, int d, int q, int n, float *data) {}
 void arima_fit_double(int p, int d, int q, int n, double *data) {}
 
 template class ARIMAModel<float>;
-template class ARIMAModel<double>;
+// template class ARIMAModel<double>;
 }  // namespace h2o4gpu
