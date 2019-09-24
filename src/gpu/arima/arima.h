@@ -12,6 +12,14 @@ __global__ void ts_data_to_matrix_kernel(const T* __restrict data, T* X,
 template <class T>
 class ARIMAModel {
  public:
+  /**
+   * @brief Construct a new ARIMAModel object
+   *
+   * @param p ARIMA AR parameter
+   * @param d ARIMA differencing order
+   * @param q ARIMA MA parameter
+   * @param length length of time series
+   */
   ARIMAModel(int p, int d, int q, int length);
   ~ARIMAModel();
   const int p;
@@ -19,22 +27,68 @@ class ARIMAModel {
   const int q;
   const int length;
 
-  static void AsMatrix(T* ts_data, T* A, int depth, int lda, int length);
+  /**
+   * @brief perform time series data differencing
+   *
+   * @param out
+   * @param in
+   * @param length
+   */
+  static void Difference(T* out, const T* in, int length);
+  /**
+   * @brief convert ts data into a matrix where every row is shifted by time
+   *
+   * @param ts_data ts data
+   * @param A matrix
+   * @param depth how many time series components are taken to create a row
+   * @param lda A's leading dimension
+   * @param length ts length
+   */
+  static void AsMatrix(const T* ts_data, T* A, int depth, int lda, int length);
+  /**
+   * @brief convert two ts arrays into a matrix where every row is created by
+   * appending data from each array and shifted by time.
+   *
+   * @param ts_a first ts array
+   * @param ts_b second ts array
+   * @param A resulting matrix
+   * @param a_depth ts depth for the first array
+   * @param b_depth ts depth for the second array
+   * @param lda A's leading dimesion size
+   * @param length ts length
+   */
+  static void AsMatrix(const T* ts_a, const T* ts_b, T* A, int a_depth,
+                       int b_depth, int lda, int length);
+  /**
+   * @brief applies AR model and computes residuals
+   *
+   * @param residual
+   * @param ts_data
+   * @param phi
+   * @param p
+   * @param length
+   */
   static void ApplyAR(T* residual, const T* ts_data, const T* phi, int p,
                       int length);
 
+  /**
+   * @brief fit ARIMA model
+   *
+   * @param data
+   */
   void Fit(const T* data);
-  void AR(T* X, T* residual);
-  void MA(T* epsilon, T* residual);
 
-  inline int ARLength() { return this->length - this->p; }
-  inline int MALength() { return this->length - this->q; }
+  inline int ARLength() { return this->DifferencedLength() - this->p; }
+  inline int MALength() { return this->DifferencedLength() - this->q; }
+  inline int DifferencedLength() { return this->length - this->d; }
   inline T* Theta() { return this->theta; }
   inline T* Phi() { return this->phi; }
 
  private:
   T* d_data_src;
   T* d_data_differenced;
+  T* d_theta;
+  T* d_phi;
   T* theta;
   T* phi;
 };

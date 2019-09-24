@@ -24,12 +24,15 @@ __global__ void copy_kernel(const T *__restrict d_in, T *__restrict d_out,
 template <class T>
 __global__ void ts_data_to_matrix_kernel(const T *__restrict data, T *X,
                                          const int ldx, const int n) {
+  // row
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  // time axis
+  // col, time axis
   const int j = blockIdx.y * blockDim.y + threadIdx.y;
 
   // TODO: optimize with shared memory(read data only once)
-  if (i < n) X[j * ldx + i] = data[j + i];
+  if (i < n && i < ldx) {
+    X[j * ldx + i] = data[j + i];
+  }
 }
 
 template <class T>
@@ -69,7 +72,7 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
 
   // --- CUDA QR GEQRF preliminary operations
   float *d_TAU;
-  OK(cudaMalloc((void **)&d_TAU, min(rows, cols) * sizeof(float)));
+  OK(cudaMalloc(&d_TAU, min(rows, cols) * sizeof(float)));
   safe_cusolver(cusolverDnSgeqrf_bufferSize(solver_handle, rows, cols, A, rows,
                                             &work_size));
   float *work;
@@ -79,13 +82,12 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
   // part of A, including diagonal
   // elements. The matrix Q is not formed explicitly, instead, a sequence of
   // householder vectors are stored in lower triangular part of A.
+
   safe_cusolver(cusolverDnSgeqrf(solver_handle, rows, cols, A, rows, d_TAU,
                                  work, work_size, devInfo));
-  OK(cudaDeviceSynchronize());
   int devInfo_h = 0;
   OK(cudaMemcpy(&devInfo_h, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
   assert(devInfo_h == 0);
-  //   if (devInfo_h != 0) std::cout << "Unsuccessful gerf execution\n\n";
 
   /*****************************/
   /* SOLVING THE LINEAR SYSTEM */
@@ -116,10 +118,10 @@ template <class T>
 __global__ void differencing(T *out, const T *in, const int n) {
   for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < n;
        i += gridDim.x * blockDim.x) {
-    if (i > 0)
-      out[i] = in[i] - in[i - 1];
+    if (i < n - 1)
+      out[i] = in[i] - in[i + 1];
     else
-      out[0] = NAN;
+      out[n - 1] = NAN;
   }
 }
 
@@ -138,31 +140,60 @@ template <class T>
 ARIMAModel<T>::ARIMAModel(int p, int d, int q, int length)
     : p(p), d(d), q(q), length(length) {
   assert(q >= 0);
+  assert(d >= 0);
   assert(p >= 0);
   assert(length > 0);
+  assert(p > 0 || q > 0);
   if (q > 0) {
     OK(cudaMallocHost(&this->theta, sizeof(T) * q));
     memset(this->theta, 0, sizeof(T) * q);
+    OK(cudaMalloc(&this->d_theta, sizeof(T) * q));
+    OK(cudaMemset(this->d_theta, 0, sizeof(T) * q));
   }
 
   if (p > 0) {
     OK(cudaMallocHost(&this->phi, sizeof(T) * p));
     memset(this->phi, 0, sizeof(T) * p);
+    OK(cudaMalloc(&this->d_phi, sizeof(T) * p));
+    OK(cudaMemset(this->d_phi, 0, sizeof(T) * p));
   }
 };
 
 template <class T>
 ARIMAModel<T>::~ARIMAModel() {
-  if (q > 0) OK(cudaFreeHost(this->theta));
-  if (p > 0) OK(cudaFreeHost(this->phi));
+  if (q > 0) {
+    OK(cudaFreeHost(this->theta));
+    OK(cudaFree(this->d_theta));
+  }
+  if (p > 0) {
+    OK(cudaFreeHost(this->phi));
+    OK(cudaFree(this->d_phi));
+  }
 }
 
 template <class T>
-void ARIMAModel<T>::AsMatrix(T *ts_data, T *A, int depth, int lda, int length) {
-  int n = length - depth + 1;
-  dim3 grid_size(DIVUP(n, BLOCK_SIZE), depth);
-  dim3 block_size(BLOCK_SIZE, 1);
-  ts_data_to_matrix_kernel<T><<<grid_size, block_size>>>(ts_data, A, lda, n);
+void ARIMAModel<T>::Difference(T *out, const T *in, int length) {
+  int block_size, grid_size;
+  compute1DInvokeConfig(length, &grid_size, &block_size, differencing<T>);
+  differencing<T><<<grid_size, block_size>>>(out, in, length);
+}
+
+template <class T>
+void ARIMAModel<T>::AsMatrix(const T *ts_data, T *A, int depth, int lda,
+                             int length) {
+  if (depth > 0) {
+    int n = length - depth + 1;
+    dim3 grid_size(DIVUP(n, BLOCK_SIZE), depth);
+    dim3 block_size(BLOCK_SIZE, 1);
+    ts_data_to_matrix_kernel<T><<<grid_size, block_size>>>(ts_data, A, lda, n);
+  }
+}
+
+template <class T>
+void ARIMAModel<T>::AsMatrix(const T *ts_a, const T *ts_b, T *A, int a_depth,
+                             int b_depth, int lda, int length) {
+  ARIMAModel<T>::AsMatrix(ts_a, A, a_depth, lda, length);
+  ARIMAModel<T>::AsMatrix(ts_b, A + a_depth * lda, b_depth, lda, length);
 }
 
 template <class T>
@@ -184,11 +215,9 @@ void ARIMAModel<T>::Fit(const T *data) {
   OK(cudaMemcpy(this->d_data_src, data, sizeof(T) * this->length,
                 cudaMemcpyHostToDevice));
 
-  int block_size, grid_size;
-  compute1DInvokeConfig(this->length, &grid_size, &block_size, differencing<T>);
   for (auto i = 0; i < this->d; ++i) {
-    differencing<T><<<grid_size, block_size>>>(this->d_data_differenced,
-                                               this->d_data_src, this->length);
+    this->Difference(this->d_data_differenced, this->d_data_src, this->length);
+    OK(cudaGetLastError());
     OK(cudaDeviceSynchronize());
     std::swap(this->d_data_src, this->d_data_differenced);
   }
@@ -200,28 +229,64 @@ void ARIMAModel<T>::Fit(const T *data) {
     T *X;
     OK(cudaMalloc(&X, sizeof(T) * this->ARLength() * this->p));
     this->AsMatrix(this->d_data_src + 1, X, this->p, this->ARLength(),
-                   this->length);
+                   this->DifferencedLength());
+
+    OK(cudaGetLastError());
+    OK(cudaDeviceSynchronize());
 
     LeastSquaresSolver solver(this->ARLength(), this->p);
     solver.Solve(X, this->d_data_differenced);
+
+    OK(cudaMemcpy(this->d_phi, this->d_data_differenced, sizeof(T) * this->p,
+                  cudaMemcpyDeviceToDevice));
 
     OK(cudaMemcpy(this->phi, this->d_data_differenced, sizeof(T) * this->p,
                   cudaMemcpyDeviceToHost));
     OK(cudaFree(X));
   }
+
   if (this->q > 0) {
+    this->ApplyAR(this->d_data_differenced, this->d_data_src, this->d_phi,
+                  this->p, this->DifferencedLength());
+    OK(cudaGetLastError());
+    OK(cudaDeviceSynchronize());
+
+    T *X;
+    int rows = min(this->MALength() == 0 ? this->ARLength() : this->MALength(),
+                   this->ARLength() == 0 ? this->MALength() : this->ARLength());
+
+    OK(cudaMalloc(&X, sizeof(T) * rows * (this->q + this->p)));
+
+    this->AsMatrix(this->d_data_src + 1, this->d_data_differenced + 1, X,
+                   this->p, this->q, rows, this->DifferencedLength());
+
+    OK(cudaGetLastError());
+    OK(cudaDeviceSynchronize());
+    LeastSquaresSolver solver(rows, this->q + this->p);
+
+    solver.Solve(X, this->d_data_src);
+
+    if (this->p > 0) {
+      OK(cudaMemcpy(this->d_phi, this->d_data_src, sizeof(T) * this->p,
+                    cudaMemcpyDeviceToDevice));
+
+      OK(cudaMemcpy(this->phi, this->d_data_src, sizeof(T) * this->p,
+                    cudaMemcpyDeviceToHost));
+    }
+    OK(cudaDeviceSynchronize());
+    OK(cudaGetLastError());
+
+    OK(cudaMemcpy(this->d_theta, this->d_data_src + this->p,
+                  sizeof(T) * this->q, cudaMemcpyDeviceToDevice));
+
+    OK(cudaMemcpy(this->theta, this->d_data_src + this->p, sizeof(T) * this->q,
+                  cudaMemcpyDeviceToHost));
+
+    OK(cudaFree(X));
   }
   OK(cudaFree(this->d_data_src));
   OK(cudaFree(this->d_data_differenced));
 }
-
-template <class T>
-void ARIMAModel<T>::AR(T *X, T *residual) {
-  //   const rows = this->length - this->p + 1;
-}
-
-template <class T>
-void ARIMAModel<T>::MA(T *epsilon, T *residual) {}
 
 void arima_fit_float(int p, int d, int q, int n, float *data) {}
 
