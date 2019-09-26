@@ -94,9 +94,10 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	fi'
 
 # conda
+# openssl 1.1.1d has a bug on ppc64le https://github.com/openssl/openssl/issues/10015
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 PyYAML=3.13 conda-build six=1.11.0 && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 PyYAML=3.13 conda-build six=1.11.0 openssl=1.1.1c && \
     wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
