@@ -12,6 +12,70 @@ namespace h2o4gpu {
 
 #define BLOCK_SIZE 32
 
+inline cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                                    int m, int n, float *A,
+                                                    int lda, int *lwork) {
+  return cusolverDnSgeqrf_bufferSize(handle, m, n, A, lda, lwork);
+}
+
+inline cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                                    int m, int n, double *A,
+                                                    int lda, int *lwork) {
+  return cusolverDnDgeqrf_bufferSize(handle, m, n, A, lda, lwork);
+}
+
+inline cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m,
+                                         int n, float *A, int lda, float *TAU,
+                                         float *Workspace, int Lwork,
+                                         int *devInfo) {
+  return cusolverDnSgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork, devInfo);
+}
+
+inline cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m,
+                                         int n, double *A, int lda, double *TAU,
+                                         double *Workspace, int Lwork,
+                                         int *devInfo) {
+  return cusolverDnDgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork, devInfo);
+}
+
+inline cusolverStatus_t cusolverDnTormqr(cusolverDnHandle_t handle,
+                                         cublasSideMode_t side,
+                                         cublasOperation_t trans, int m, int n,
+                                         int k, const float *A, int lda,
+                                         const float *tau, float *C, int ldc,
+                                         float *work, int lwork, int *devInfo) {
+  return cusolverDnSormqr(handle, side, trans, m, n, k, A, lda, tau, C, ldc,
+                          work, lwork, devInfo);
+}
+
+inline cusolverStatus_t cusolverDnTormqr(
+    cusolverDnHandle_t handle, cublasSideMode_t side, cublasOperation_t trans,
+    int m, int n, int k, const double *A, int lda, const double *tau, double *C,
+    int ldc, double *work, int lwork, int *devInfo) {
+  return cusolverDnDormqr(handle, side, trans, m, n, k, A, lda, tau, C, ldc,
+                          work, lwork, devInfo);
+}
+
+inline cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
+                                  cublasFillMode_t uplo,
+                                  cublasOperation_t trans,
+                                  cublasDiagType_t diag, int m, int n,
+                                  const float *alpha, const float *A, int lda,
+                                  float *B, int ldb) {
+  return cublasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B,
+                     ldb);
+}
+
+inline cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
+                                  cublasFillMode_t uplo,
+                                  cublasOperation_t trans,
+                                  cublasDiagType_t diag, int m, int n,
+                                  const double *alpha, const double *A, int lda,
+                                  double *B, int ldb) {
+  return cublasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B,
+                     ldb);
+}
+
 template <class T>
 __global__ void copy_kernel(const T *__restrict d_in, T *__restrict d_out,
                             const int M, const int N) {
@@ -60,7 +124,8 @@ LeastSquaresSolver::~LeastSquaresSolver() {
   safe_cublas(cublasDestroy(this->cublas_handle));
 }
 
-void LeastSquaresSolver::Solve(float *A, float *B) {
+template <typename T>
+void LeastSquaresSolver::Solve(T *A, T *B) {
   int work_size = 0;
   int *devInfo;
 
@@ -71,19 +136,19 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
   /**********************************/
 
   // --- CUDA QR GEQRF preliminary operations
-  float *d_TAU;
-  OK(cudaMalloc(&d_TAU, min(rows, cols) * sizeof(float)));
-  safe_cusolver(cusolverDnSgeqrf_bufferSize(solver_handle, rows, cols, A, rows,
+  T *d_TAU;
+  OK(cudaMalloc(&d_TAU, min(rows, cols) * sizeof(T)));
+  safe_cusolver(cusolverDnTgeqrf_bufferSize(solver_handle, rows, cols, A, rows,
                                             &work_size));
-  float *work;
-  OK(cudaMalloc(&work, work_size * sizeof(float)));
+  T *work;
+  OK(cudaMalloc(&work, work_size * sizeof(T)));
 
   // CUDA GEQRF execution: The matrix R is overwritten in upper triangular
   // part of A, including diagonal
   // elements. The matrix Q is not formed explicitly, instead, a sequence of
   // householder vectors are stored in lower triangular part of A.
 
-  safe_cusolver(cusolverDnSgeqrf(solver_handle, rows, cols, A, rows, d_TAU,
+  safe_cusolver(cusolverDnTgeqrf(solver_handle, rows, cols, A, rows, d_TAU,
                                  work, work_size, devInfo));
   int devInfo_h = 0;
   OK(cudaMemcpy(&devInfo_h, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
@@ -95,7 +160,7 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
 
   // --- CUDA ORMQR execution: Computes the multiplication Q^T * C and stores it
   // in d_C
-  safe_cusolver(cusolverDnSormqr(solver_handle, CUBLAS_SIDE_LEFT, CUBLAS_OP_T,
+  safe_cusolver(cusolverDnTormqr(solver_handle, CUBLAS_SIDE_LEFT, CUBLAS_OP_T,
                                  rows, 1, min(rows, cols), A, rows, d_TAU, B,
                                  rows, work, work_size, devInfo));
 
@@ -106,8 +171,8 @@ void LeastSquaresSolver::Solve(float *A, float *B) {
 
   // --- Solving an upper triangular linear system R * x = Q^T * B
 
-  const float alpha = 1.;
-  safe_cublas(cublasStrsm(
+  const T alpha = 1.;
+  safe_cublas(cublasTtrsm(
       cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
       CUBLAS_DIAG_NON_UNIT, cols, 1, &alpha, A, rows, B, cols));
 
@@ -288,10 +353,15 @@ void ARIMAModel<T>::Fit(const T *data) {
   OK(cudaFree(this->d_data_differenced));
 }
 
-void arima_fit_float(int p, int d, int q, int n, float *data) {}
-
-void arima_fit_double(int p, int d, int q, int n, double *data) {}
-
 template class ARIMAModel<float>;
-// template class ARIMAModel<double>;
+template class ARIMAModel<double>;
 }  // namespace h2o4gpu
+
+void arima_fit_float(const int p, const int d, const int q,
+                     const float *ts_data, const int length, float *theta,
+                     float *phi) {
+  h2o4gpu::ARIMAModel<float> model(p, d, q, length);
+  model.Fit(ts_data);
+  if (p > 0) std::memcpy(phi, model.Phi(), sizeof(float) * p);
+  if (q > 0) std::memcpy(theta, model.Theta(), sizeof(float) * q);
+}

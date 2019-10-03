@@ -97,7 +97,8 @@ class LeastSquaresSolver {
  public:
   LeastSquaresSolver(int rows, int cols);
   ~LeastSquaresSolver();
-  void Solve(float* A, float* B);
+  template <class T>
+  void Solve(T* A, T* B);
   const int rows;
   const int cols;
 
