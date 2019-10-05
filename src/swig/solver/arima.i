@@ -35,5 +35,6 @@
 }
 
 %apply (float *IN_ARRAY1) {float* ts_data, float* theta, float* phi};
+%apply (double *IN_ARRAY1) {double* ts_data, double* theta, double* phi};
 
 %include "../../include/solver/arima.h"

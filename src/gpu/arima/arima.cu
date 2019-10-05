@@ -100,16 +100,25 @@ __global__ void ts_data_to_matrix_kernel(const T *__restrict data, T *X,
 }
 
 template <class T>
-__global__ void update_AR_kernel(const T *data, T *residual, const T *phi,
-                                 const int p, const int n) {
+__global__ void update_residual_kernel(T *residual, const T *data, const T *phi,
+                                       const int p, const T *last_residual,
+                                       const T *theta, const int q,
+                                       const int n) {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
   // TODO: optimize with shared memory(read data only once)
+  // at least cache phi and theta
   if (i < n) {
-    T AR_prediction = data[i];
+    T AR_prediction = 0;
     for (int j = 0; j < p; ++j) {
-      AR_prediction -= data[i + j + 1] * phi[j];
+      AR_prediction += data[i + j + 1] * phi[j];
     }
-    residual[i] = AR_prediction;
+
+    T MA_prediction = 0;
+    for (int j = 0; j < q; ++j) {
+      MA_prediction += last_residual[i + j + 1] * theta[j];
+    }
+
+    residual[i] = data[i] - AR_prediction - MA_prediction;
   }
 }
 
@@ -158,8 +167,8 @@ void LeastSquaresSolver::Solve(T *A, T *B) {
   /* SOLVING THE LINEAR SYSTEM */
   /*****************************/
 
-  // --- CUDA ORMQR execution: Computes the multiplication Q^T * C and stores it
-  // in d_C
+  // --- CUDA ORMQR execution: Computes the multiplication Q^T * B and stores it
+  // in B
   safe_cusolver(cusolverDnTormqr(solver_handle, CUBLAS_SIDE_LEFT, CUBLAS_OP_T,
                                  rows, 1, min(rows, cols), A, rows, d_TAU, B,
                                  rows, work, work_size, devInfo));
@@ -222,6 +231,8 @@ ARIMAModel<T>::ARIMAModel(int p, int d, int q, int length)
     OK(cudaMalloc(&this->d_phi, sizeof(T) * p));
     OK(cudaMemset(this->d_phi, 0, sizeof(T) * p));
   }
+
+  OK(cudaMalloc(&this->d_buffer, sizeof(T) * this->DifferencedLength()));
 };
 
 template <class T>
@@ -234,6 +245,7 @@ ARIMAModel<T>::~ARIMAModel() {
     OK(cudaFreeHost(this->phi));
     OK(cudaFree(this->d_phi));
   }
+  OK(cudaFree(this->d_buffer));
 }
 
 template <class T>
@@ -262,20 +274,23 @@ void ARIMAModel<T>::AsMatrix(const T *ts_a, const T *ts_b, T *A, int a_depth,
 }
 
 template <class T>
-void ARIMAModel<T>::ApplyAR(T *residual, const T *ts_data, const T *phi, int p,
-                            int length) {
+void ARIMAModel<T>::Apply(T *residual, const T *ts_data, const T *phi,
+                          const int p, const T *last_residual, const T *theta,
+                          const int q, int length) {
   int block_size, grid_size;
-  compute1DInvokeConfig(length - p, &grid_size, &block_size,
-                        update_AR_kernel<T>);
+  compute1DInvokeConfig(length - max(p, q), &grid_size, &block_size,
+                        update_residual_kernel<T>);
 
-  update_AR_kernel<T>
-      <<<grid_size, block_size>>>(ts_data, residual, phi, p, length - p);
+  update_residual_kernel<T><<<grid_size, block_size>>>(
+      residual, ts_data, phi, p, last_residual, theta, q, length - max(p, q));
 }
 
 template <class T>
-void ARIMAModel<T>::Fit(const T *data) {
+void ARIMAModel<T>::Fit(const T *data, const int maxiter) {
   OK(cudaMalloc(&this->d_data_src, sizeof(T) * this->length));
   OK(cudaMalloc(&this->d_data_differenced, sizeof(T) * this->length));
+  OK(cudaMalloc(&this->d_last_residual, sizeof(T) * this->length));
+  OK(cudaMemset(this->d_last_residual, 0, sizeof(T) * this->length));
 
   OK(cudaMemcpy(this->d_data_src, data, sizeof(T) * this->length,
                 cudaMemcpyHostToDevice));
@@ -289,6 +304,10 @@ void ARIMAModel<T>::Fit(const T *data) {
 
   OK(cudaMemcpy(this->d_data_differenced, this->d_data_src,
                 this->length * sizeof(T), cudaMemcpyDeviceToDevice));
+
+  OK(cudaMemcpy(this->d_buffer, this->d_data_src,
+                sizeof(T) * this->DifferencedLength(),
+                cudaMemcpyDeviceToDevice));
 
   if (this->p > 0) {
     T *X;
@@ -311,38 +330,49 @@ void ARIMAModel<T>::Fit(const T *data) {
   }
 
   if (this->q > 0) {
-    this->ApplyAR(this->d_data_differenced, this->d_data_src, this->d_phi,
-                  this->p, this->DifferencedLength());
-    OK(cudaGetLastError());
-    OK(cudaDeviceSynchronize());
-
     T *X;
     int rows = min(this->MALength() == 0 ? this->ARLength() : this->MALength(),
                    this->ARLength() == 0 ? this->MALength() : this->ARLength());
 
+    rows--;
+
     OK(cudaMalloc(&X, sizeof(T) * rows * (this->q + this->p)));
 
-    this->AsMatrix(this->d_data_src + 1, this->d_data_differenced + 1, X,
-                   this->p, this->q, rows, this->DifferencedLength());
-
-    OK(cudaGetLastError());
-    OK(cudaDeviceSynchronize());
-    LeastSquaresSolver solver(rows, this->q + this->p);
-
-    solver.Solve(X, this->d_data_src);
-
-    if (this->p > 0) {
-      OK(cudaMemcpy(this->d_phi, this->d_data_src, sizeof(T) * this->p,
+    for (int i = 0; i < maxiter; ++i) {
+      OK(cudaMemcpy(this->d_data_src, this->d_buffer,
+                    sizeof(T) * this->DifferencedLength(),
                     cudaMemcpyDeviceToDevice));
 
-      OK(cudaMemcpy(this->phi, this->d_data_src, sizeof(T) * this->p,
-                    cudaMemcpyDeviceToHost));
-    }
-    OK(cudaDeviceSynchronize());
-    OK(cudaGetLastError());
+      this->Apply(this->d_data_differenced, this->d_data_src, this->d_phi,
+                  this->p, this->d_last_residual, this->d_theta, this->q,
+                  this->DifferencedLength());
+      OK(cudaGetLastError());
+      OK(cudaDeviceSynchronize());
 
-    OK(cudaMemcpy(this->d_theta, this->d_data_src + this->p,
-                  sizeof(T) * this->q, cudaMemcpyDeviceToDevice));
+      this->AsMatrix(this->d_data_src + 1, this->d_data_differenced + 1, X,
+                     this->p, this->q, rows, this->DifferencedLength());
+
+      OK(cudaGetLastError());
+      OK(cudaDeviceSynchronize());
+      LeastSquaresSolver solver(rows, this->q + this->p);
+
+      solver.Solve(X, this->d_data_src);
+
+      if (this->p > 0) {
+        OK(cudaMemcpy(this->d_phi, this->d_data_src, sizeof(T) * this->p,
+                      cudaMemcpyDeviceToDevice));
+      }
+      OK(cudaDeviceSynchronize());
+      OK(cudaGetLastError());
+
+      OK(cudaMemcpy(this->d_theta, this->d_data_src + this->p,
+                    sizeof(T) * this->q, cudaMemcpyDeviceToDevice));
+
+      std::swap(this->d_last_residual, this->d_data_differenced);
+    }
+
+    OK(cudaMemcpy(this->phi, this->d_data_src, sizeof(T) * this->p,
+                  cudaMemcpyDeviceToHost));
 
     OK(cudaMemcpy(this->theta, this->d_data_src + this->p, sizeof(T) * this->q,
                   cudaMemcpyDeviceToHost));
@@ -351,17 +381,30 @@ void ARIMAModel<T>::Fit(const T *data) {
   }
   OK(cudaFree(this->d_data_src));
   OK(cudaFree(this->d_data_differenced));
+  OK(cudaFree(this->d_last_residual));
 }
 
 template class ARIMAModel<float>;
 template class ARIMAModel<double>;
 }  // namespace h2o4gpu
 
+template <typename T>
+void arima_fit(const int p, const int d, const int q, const T *ts_data,
+               const int length, T *theta, T *phi, const int maxiter) {
+  h2o4gpu::ARIMAModel<T> model(p, d, q, length);
+  model.Fit(ts_data, maxiter);
+  if (p > 0) std::memcpy(phi, model.Phi(), sizeof(T) * p);
+  if (q > 0) std::memcpy(theta, model.Theta(), sizeof(T) * q);
+}
+
 void arima_fit_float(const int p, const int d, const int q,
                      const float *ts_data, const int length, float *theta,
-                     float *phi) {
-  h2o4gpu::ARIMAModel<float> model(p, d, q, length);
-  model.Fit(ts_data);
-  if (p > 0) std::memcpy(phi, model.Phi(), sizeof(float) * p);
-  if (q > 0) std::memcpy(theta, model.Theta(), sizeof(float) * q);
+                     float *phi, const int maxiter) {
+  arima_fit<float>(p, d, q, ts_data, length, theta, phi, maxiter);
+}
+
+void arima_fit_double(const int p, const int d, const int q,
+                      const double *ts_data, const int length, double *theta,
+                      double *phi, const int maxiter) {
+  arima_fit<double>(p, d, q, ts_data, length, theta, phi, maxiter);
 }

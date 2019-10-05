@@ -60,7 +60,7 @@ class ARIMAModel {
   static void AsMatrix(const T* ts_a, const T* ts_b, T* A, int a_depth,
                        int b_depth, int lda, int length);
   /**
-   * @brief applies AR model and computes residuals
+   * @brief applies model and computes residuals
    *
    * @param residual
    * @param ts_data
@@ -68,15 +68,16 @@ class ARIMAModel {
    * @param p
    * @param length
    */
-  static void ApplyAR(T* residual, const T* ts_data, const T* phi, int p,
-                      int length);
+  static void Apply(T* residual, const T* ts_data, const T* phi, const int p,
+                    const T* last_residual, const T* theta, const int q,
+                    int length);
 
   /**
    * @brief fit ARIMA model
    *
    * @param data
    */
-  void Fit(const T* data);
+  void Fit(const T* data, const int maxiter = 1);
 
   inline int ARLength() { return this->DifferencedLength() - this->p; }
   inline int MALength() { return this->DifferencedLength() - this->q; }
@@ -87,6 +88,8 @@ class ARIMAModel {
  private:
   T* d_data_src;
   T* d_data_differenced;
+  T* d_last_residual;
+  T* d_buffer;
   T* d_theta;
   T* d_phi;
   T* theta;
@@ -107,9 +110,12 @@ class LeastSquaresSolver {
   cublasHandle_t cublas_handle;
 };
 
-void arima_fit_float(int p, int d, int q, int n, float* data);
-
-void arima_fit_double(int p, int d, int q, int n, double* data);
-
 }  // namespace h2o4gpu
+
+// void arima_fit_float(int p, int d, int q, int n, float* data,
+//                      const int maxiter);
+
+// void arima_fit_double(int p, int d, int q, int n, double* data,
+//                       const int maxiter);
+
 #endif

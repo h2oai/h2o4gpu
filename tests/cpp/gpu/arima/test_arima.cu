@@ -196,10 +196,10 @@ TEST(ARIMA, applyAR) {
 
   thrust::device_vector<float> res(length * p, 0);
 
-  h2o4gpu::ARIMAModel<float>::ApplyAR(thrust::raw_pointer_cast(res.data()),
-                                      thrust::raw_pointer_cast(ts_data.data()),
-                                      thrust::raw_pointer_cast(phi.data()), p,
-                                      length);
+  h2o4gpu::ARIMAModel<float>::Apply(thrust::raw_pointer_cast(res.data()),
+                                    thrust::raw_pointer_cast(ts_data.data()),
+                                    thrust::raw_pointer_cast(phi.data()), p,
+                                    nullptr, nullptr, 0, length);
 
   thrust::host_vector<float> h_res = res;
 
@@ -211,6 +211,89 @@ TEST(ARIMA, applyAR) {
   ASSERT_FLOAT_EQ(-4.5, h_res[5]);
   ASSERT_FLOAT_EQ(-5, h_res[6]);
   ASSERT_FLOAT_EQ(-5.5, h_res[7]);
+  ASSERT_FLOAT_EQ(0, h_res[8]);
+  ASSERT_FLOAT_EQ(0, h_res[9]);
+}
+
+TEST(ARIMA, applyMA) {
+  const int length = 10;
+  thrust::device_vector<float> last_residual(length);
+  thrust::device_vector<float> ts_data(length, 0);
+  for (auto i = 0; i < length; ++i) last_residual[i] = float(i % 3);
+
+  const int q = 3;
+  thrust::device_vector<float> theta(q);
+  theta[0] = 1.0;
+  theta[1] = -0.5;
+  theta[2] = 0.1;
+
+  thrust::device_vector<float> res(length, 0);
+
+  h2o4gpu::ARIMAModel<float>::Apply(
+      thrust::raw_pointer_cast(res.data()),
+      thrust::raw_pointer_cast(ts_data.data()), nullptr, 0,
+      thrust::raw_pointer_cast(last_residual.data()),
+      thrust::raw_pointer_cast(theta.data()), q, length);
+
+  OK(cudaGetLastError());
+  OK(cudaDeviceSynchronize());
+
+  thrust::host_vector<float> h_res = res;
+
+  ASSERT_FLOAT_EQ(0.0, h_res[0]);
+  ASSERT_FLOAT_EQ(-2.1, h_res[1]);
+  ASSERT_FLOAT_EQ(0.3, h_res[2]);
+  ASSERT_FLOAT_EQ(0.0, h_res[3]);
+  ASSERT_FLOAT_EQ(-2.1, h_res[4]);
+  ASSERT_FLOAT_EQ(0.3, h_res[5]);
+  ASSERT_FLOAT_EQ(0.0, h_res[6]);
+  ASSERT_FLOAT_EQ(0.0, h_res[7]);
+  ASSERT_FLOAT_EQ(0, h_res[8]);
+  ASSERT_FLOAT_EQ(0, h_res[9]);
+}
+
+TEST(ARIMA, applyARMA) {
+  const int length = 10;
+  thrust::device_vector<float> last_residual(length);
+  thrust::device_vector<float> ts_data(length, 0);
+  for (auto i = 0; i < length; ++i) {
+    ts_data[i] = float(i % 4);
+    last_residual[i] = float(i % 3);
+  }
+
+  const int p = 2;
+  thrust::device_vector<float> phi(p);
+  phi[0] = 0.8;
+  phi[1] = -0.1;
+
+  const int q = 3;
+  thrust::device_vector<float> theta(q);
+  theta[0] = 1.0;
+  theta[1] = -0.5;
+  theta[2] = 0.1;
+
+  thrust::device_vector<float> res(length, 0);
+
+  h2o4gpu::ARIMAModel<float>::Apply(
+      thrust::raw_pointer_cast(res.data()),
+      thrust::raw_pointer_cast(ts_data.data()),
+      thrust::raw_pointer_cast(phi.data()), p,
+      thrust::raw_pointer_cast(last_residual.data()),
+      thrust::raw_pointer_cast(theta.data()), q, length);
+
+  OK(cudaGetLastError());
+  OK(cudaDeviceSynchronize());
+
+  thrust::host_vector<float> h_res = res;
+
+  ASSERT_FLOAT_EQ(-0.6, h_res[0]);
+  ASSERT_FLOAT_EQ(-2.4, h_res[1]);
+  ASSERT_NEAR(-0.1, h_res[2], 1e-6);
+  ASSERT_FLOAT_EQ(3.1, h_res[3]);
+  ASSERT_FLOAT_EQ(-2.7, h_res[4]);
+  ASSERT_NEAR(0.0, h_res[5], 1e-7);
+  ASSERT_FLOAT_EQ(-0.4, h_res[6]);
+  ASSERT_NEAR(0.0, h_res[7], 1e-7);
   ASSERT_FLOAT_EQ(0, h_res[8]);
   ASSERT_FLOAT_EQ(0, h_res[9]);
 }
@@ -228,7 +311,7 @@ TEST(ARIMA, d_0_p_2_q_0) {
   ASSERT_FLOAT_EQ(0.13793102, model.Phi()[1]);
 }
 
-TEST(ARIMA, d_0_p_0_q_2) {
+TEST(ARIMA, d_0_p_0_q_2_iter_1) {
   const int length = 10;
   thrust::device_vector<float> ts_data(length);
   for (auto i = 0; i < length; ++i) ts_data[i] = float(i % 3);
@@ -241,7 +324,7 @@ TEST(ARIMA, d_0_p_0_q_2) {
   ASSERT_FLOAT_EQ(0.13793102f, model.Theta()[1]);
 }
 
-TEST(ARIMA, d_0_p_2_q_2) {
+TEST(ARIMA, d_0_p_2_q_2_iter_1) {
   const int length = 7;
   thrust::host_vector<float> h_ts_data(length);
   for (auto i = 0; i < length; ++i)
@@ -256,10 +339,28 @@ TEST(ARIMA, d_0_p_2_q_2) {
   ASSERT_FLOAT_EQ(-2.9589546f, model.Phi()[0]);
   ASSERT_FLOAT_EQ(2.8828485f, model.Phi()[1]);
   ASSERT_FLOAT_EQ(3.9598641f, model.Theta()[0]);
-  ASSERT_FLOAT_EQ(-0.61601603f, model.Theta()[1]);
+  ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
 }
 
-TEST(ARIMA, d_1_p_1_q_1) {
+TEST(ARIMA, d_0_p_2_q_2_iter_2) {
+  const int length = 7;
+  thrust::host_vector<float> h_ts_data(length);
+  for (auto i = 0; i < length; ++i)
+    h_ts_data[i] = float(i % 5) + 0.1 * float(i % 7 + 1);
+
+  thrust::host_vector<float> ts_data = h_ts_data;
+
+  h2o4gpu::ARIMAModel<float> model(2, 0, 2, length);
+
+  model.Fit(thrust::raw_pointer_cast(ts_data.data()), 2);
+
+  ASSERT_FLOAT_EQ(-2.9589546f, model.Phi()[0]);
+  ASSERT_FLOAT_EQ(2.8828485f, model.Phi()[1]);
+  ASSERT_FLOAT_EQ(3.9598641f, model.Theta()[0]);
+  ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
+}
+
+TEST(ARIMA, d_1_p_1_q_1_iter_1) {
   const int length = 10;
   thrust::device_vector<float> ts_data(length);
   for (auto i = 0; i < length; ++i) ts_data[i] = float(i + i % 3);

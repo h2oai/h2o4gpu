@@ -25,10 +25,16 @@ class ARIMA(object):
         gpu_lib = GPUlib().get(1)
         return gpu_lib
 
-    def fit(self, y):
+    def fit(self, y, maxiter=5):
         assert isinstance(y, np.ndarray)
         assert len(y.shape) == 1
         if self.dtype == np.float32:
             self._lib.arima_fit_float(self.p, self.d, self.q,
-                                      y, y.shape[0], self.theta_,
-                                      self.phi_)
+                                      np.flipud(y.astype(self.dtype)
+                                                ), y.shape[0], self.theta_,
+                                      self.phi_, maxiter)
+        else:
+            self._lib.arima_fit_double(self.p, self.d, self.q,
+                                       np.flipud(y.astype(self.dtype)
+                                                 ), y.shape[0], self.theta_,
+                                       self.phi_, maxiter)
