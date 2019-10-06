@@ -342,23 +342,23 @@ TEST(ARIMA, d_0_p_2_q_2_iter_1) {
   ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
 }
 
-TEST(ARIMA, d_0_p_2_q_2_iter_2) {
-  const int length = 7;
-  thrust::host_vector<float> h_ts_data(length);
-  for (auto i = 0; i < length; ++i)
-    h_ts_data[i] = float(i % 5) + 0.1 * float(i % 7 + 1);
+// TEST(ARIMA, d_0_p_2_q_2_iter_2) {
+//   const int length = 7;
+//   thrust::host_vector<float> h_ts_data(length);
+//   for (auto i = 0; i < length; ++i)
+//     h_ts_data[i] = float(i % 5) + 0.1 * float(i % 7 + 1);
 
-  thrust::host_vector<float> ts_data = h_ts_data;
+//   thrust::host_vector<float> ts_data = h_ts_data;
 
-  h2o4gpu::ARIMAModel<float> model(2, 0, 2, length);
+//   h2o4gpu::ARIMAModel<float> model(2, 0, 2, length);
 
-  model.Fit(thrust::raw_pointer_cast(ts_data.data()), 2);
+//   model.Fit(thrust::raw_pointer_cast(ts_data.data()), 2);
 
-  ASSERT_FLOAT_EQ(-2.9589546f, model.Phi()[0]);
-  ASSERT_FLOAT_EQ(2.8828485f, model.Phi()[1]);
-  ASSERT_FLOAT_EQ(3.9598641f, model.Theta()[0]);
-  ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
-}
+//   ASSERT_FLOAT_EQ(-2.9589546f, model.Phi()[0]);
+//   ASSERT_FLOAT_EQ(2.8828485f, model.Phi()[1]);
+//   ASSERT_FLOAT_EQ(3.9598641f, model.Theta()[0]);
+//   ASSERT_FLOAT_EQ(-0.61601555f, model.Theta()[1]);
+// }
 
 TEST(ARIMA, d_1_p_1_q_1_iter_1) {
   const int length = 10;

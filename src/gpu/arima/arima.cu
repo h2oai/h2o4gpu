@@ -334,8 +334,6 @@ void ARIMAModel<T>::Fit(const T *data, const int maxiter) {
     int rows = min(this->MALength() == 0 ? this->ARLength() : this->MALength(),
                    this->ARLength() == 0 ? this->MALength() : this->ARLength());
 
-    rows--;
-
     OK(cudaMalloc(&X, sizeof(T) * rows * (this->q + this->p)));
 
     for (int i = 0; i < maxiter; ++i) {
