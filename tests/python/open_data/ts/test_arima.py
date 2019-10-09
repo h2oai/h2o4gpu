@@ -1,8 +1,10 @@
+import pytest
 import numpy as np
-import pandas as pd
 import h2o4gpu
 from scipy import signal
-from pmdarima.arima import ARIMA
+import statsmodels as sm
+from statsmodels.tsa.arima_process import arma_generate_sample
+from statsmodels.tsa.arima_model import ARMA
 
 
 def predict(y, phi, theta):
@@ -10,42 +12,47 @@ def predict(y, phi, theta):
     b = np.ones((1 + phi.shape[0],), dtype=y.dtype)
     a[1:] = theta
     b[1:] = - phi
-    # print(b)
-    # lfilter
-    # a[0]*y[n] = b[0]*x[n] + b[1]*x[n-1] + ... + b[M]*x[n-M]
-    #                   - a[1]*y[n-1] - ... - a[N]*y[n-N]
 
     residual = signal.lfilter(b, a, y.copy())
     return residual
-    # return residual[max(phi.shape[0], theta.shape[0]):]
 
 
-def test_arima():
-    p = 10
-    d = 0
-    q = 8
-    model = h2o4gpu.solvers.ARIMA(p, d, q)
-    ts = pd.read_csv(
-        'open_data/ts/hourly-energy-consumption/PJME_hourly.csv')
-    y = ts['PJME_MW'].values.astype(np.float32)[0:1000]
-    y -= np.mean(y)
-    model.fit(y, maxiter=200)
+def score(y, phi, theta):
+    res = predict(y, phi, theta)
+    return np.sqrt(np.sum(res ** 2)) / y.shape[0]
+
+
+def validate_arima_generated(p, q, double, arparams, maparams):
+    np.random.seed(0)
+    ar = np.r_[1, -arparams]  # add zero-lag and negate
+    ma = np.r_[1, maparams]  # add zero-lag
+    y = arma_generate_sample(ar, ma, 5000)
+    model = sm.tsa.arima_model.ARMA(y, (p, q)).fit()
+    statsmodels_score = score(y, model.arparams, model.maparams)
+
+    print(model.arparams, model.maparams)
+
+    model = h2o4gpu.solvers.ARIMA(p, 0, q,  double_precision=double)
+    model.fit(y)
+
+    h2o_score = score(y, model.phi_, model.theta_)
     print(model.phi_, model.theta_)
-    # print(y)
+    print(statsmodels_score, h2o_score)
+    assert np.allclose(statsmodels_score, h2o_score, 1e-4, 1e-5)
 
-    r = predict(y, model.phi_, model.theta_)
-    # # print(r)
-    print(np.sqrt(np.sum(r ** 2)) / y.shape[0])
 
-    model2 = ARIMA((p, d, q))
-    model2.fit(y, maxiter=500)
-    print(model2.arparams())
-    print(model2.maparams())
+@pytest.mark.parametrize("double", [True, False])
+def test_arima_size_2(double):
+    validate_arima_generated(2, 2, double, np.array(
+        [.75, -.25]), np.array([.65, .35]))
 
-    r = predict(y, model2.arparams(), model2.maparams())
-    # print(r)
-    print(np.sqrt(np.sum(r ** 2)) / y.shape[0])
+
+@pytest.mark.parametrize("double", [True, False])
+def test_arima_size_3(double):
+    validate_arima_generated(3, 3, double, np.array(
+        [.75, -.25, -0.1]), np.array([.65, -.15, 0.4]))
 
 
 if __name__ == '__main__':
-    test_arima()
+    pass
+    # test_arima_size_3(True)

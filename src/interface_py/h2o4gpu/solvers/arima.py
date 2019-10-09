@@ -25,7 +25,7 @@ class ARIMA(object):
         gpu_lib = GPUlib().get(1)
         return gpu_lib
 
-    def fit(self, y, maxiter=5):
+    def fit(self, y, maxiter=20):
         assert isinstance(y, np.ndarray)
         assert len(y.shape) == 1
         if self.dtype == np.float32:
