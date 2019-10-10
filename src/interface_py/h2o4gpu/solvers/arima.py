@@ -10,6 +10,26 @@ import numpy as np
 
 
 class ARIMA(object):
+    """ Autoregressive integrated moving average
+
+    Parameters
+    ----------
+    p : int
+        AR size
+    d : int
+        differencing order
+    q : int
+        MA size
+    double_precision : bool, optional
+        use double precision, by default False
+    Attributes
+    ----------
+    phi_ {array-like} shape (p,)
+        AR coefficients
+    theta_ {array-like} shape (q,)
+        MA coefficients
+    """
+
     def __init__(self, p, d, q, double_precision=False):
         self.p = p
         self.d = d
@@ -26,15 +46,24 @@ class ARIMA(object):
         return gpu_lib
 
     def fit(self, y, maxiter=20):
+        """Fit ARIMA model
+
+        Parameters
+        ----------
+        y : array-like
+            data to fit into ARIMA model
+        maxiter : int, optional
+            number of iterations, by default 20
+        """
         assert isinstance(y, np.ndarray)
         assert len(y.shape) == 1
         if self.dtype == np.float32:
             self._lib.arima_fit_float(self.p, self.d, self.q,
-                                      np.flipud(y.astype(self.dtype)
-                                                ), y.shape[0], self.theta_,
+                                      np.flipud(y.astype(self.dtype)),
+                                      y.shape[0], self.theta_,
                                       self.phi_, maxiter)
         else:
             self._lib.arima_fit_double(self.p, self.d, self.q,
-                                       np.flipud(y.astype(self.dtype)
-                                                 ), y.shape[0], self.theta_,
+                                       np.flipud(y.astype(self.dtype)),
+                                       y.shape[0], self.theta_,
                                        self.phi_, maxiter)
