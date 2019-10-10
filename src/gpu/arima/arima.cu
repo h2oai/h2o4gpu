@@ -175,7 +175,8 @@ void LeastSquaresSolver::Solve(T *A, T *B) {
 
   OK(cudaMemcpy(&devInfo_h, devInfo, sizeof(int), cudaMemcpyDeviceToHost));
   OK(cudaFree(d_TAU));
-
+  OK(cudaFree(devInfo));
+  OK(cudaFree(work));
   assert(devInfo_h == 0);
 
   // --- Solving an upper triangular linear system R * x = Q^T * B
