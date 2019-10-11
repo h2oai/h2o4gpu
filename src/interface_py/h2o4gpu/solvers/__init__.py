@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -22,6 +22,7 @@ from ..solvers.xgboost import GradientBoostingRegressor
 from ..solvers.truncated_svd import TruncatedSVDH2O
 from ..solvers.truncated_svd import TruncatedSVD
 from ..solvers.factorization import FactorizationH2O
+from ..solvers.arima import ARIMA
 try:
     __import__('daal')
     from ..solvers.daal_solver.regression import LinearRegression as DLR

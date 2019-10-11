@@ -4,9 +4,8 @@ ipython==6.3.1
 ipython_genutils==0.2.0
 ipywidgets==6.0.0
 jupyter==1.0.0
-jupyter_client>=5.1.0
-jupyter_console==5.1.0
-jupyter_core==4.4.0
+jupyter_client==5.3.3
+jupyter_console==5.2.0
 # for some demos
 matplotlib==2.0.2
 seaborn==0.8.1

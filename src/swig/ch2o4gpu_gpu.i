@@ -16,5 +16,6 @@
 %include "solver/pogs.i"
 %include "solver/tsvd.i"
 %include "solver/factorization.i"
+%include "solver/arima.i"
 %include "matrix/matrix_dense.i"
 %include "util/gpu.i"
