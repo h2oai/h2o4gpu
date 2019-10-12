@@ -63,11 +63,11 @@ deps_fetch:
 
 .PHONY: deps_py
 deps_py:
-	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
+	cat src/interface_py/requirements_buildonly.txt > requirements.txt
 
 deps_install:
 	@echo "---- Install dependencies ----"
-	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
+	cat src/interface_py/requirements_buildonly.txt > requirements.txt
 	$(PYTHON) -m pip install -r requirements.txt
 	rm -rf requirements.txt
 	bash scripts/install_r_deps.sh
