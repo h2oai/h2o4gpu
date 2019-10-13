@@ -9,6 +9,7 @@ import sys
 import numpy as np
 from ..solvers.utils import _setter
 
+
 class TruncatedSVDH2O(object):
     """Dimensionality reduction using truncated SVD for GPUs
 
@@ -110,7 +111,8 @@ class TruncatedSVDH2O(object):
         explained_variance = np.empty(self.n_components, dtype=matrix_type)
         explained_variance_ratio = np.empty(self.n_components,
                                             dtype=matrix_type)
-        X_transformed = np.empty((U.shape[0], self.n_components), dtype=matrix_type)
+        X_transformed = np.empty(
+            (U.shape[0], self.n_components), dtype=matrix_type)
 
         lib = self._load_lib()
 
@@ -124,7 +126,7 @@ class TruncatedSVDH2O(object):
         param.random_state = self.random_state
         param.verbose = self.verbose
         param.gpu_id = self.gpu_id
-        param.whiten = False #Whitening is not exposed for tsvd yet
+        param.whiten = False  # Whitening is not exposed for tsvd yet
 
         if param.tol < 0.0:
             raise ValueError("The `tol` parameter must be >= 0.0 "
@@ -139,9 +141,11 @@ class TruncatedSVDH2O(object):
                              "but got`" + str(self.n_iter))
 
         if self.double_precision == 1:
-            lib.truncated_svd_double(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_double(
+                X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
         else:
-            lib.truncated_svd_float(X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
+            lib.truncated_svd_float(
+                X, Q, w, U, X_transformed, explained_variance, explained_variance_ratio, param)
 
         self._w = w
         self._X = X
@@ -215,7 +219,7 @@ class TruncatedSVDH2O(object):
 
         # introspect the constructor arguments to find the model parameters
         # to represent
-        from h2o4gpu.utils.fixes import signature
+        from inspect import signature
         init_signature = signature(init)
         # Consider the constructor parameters excluding 'self'
         parameters = [p for p in init_signature.parameters.values()
@@ -230,7 +234,6 @@ class TruncatedSVDH2O(object):
                                    % (cls, init_signature))
         # Extract and sort argument names excluding 'self'
         return sorted([p.name for p in parameters])
-
 
     def get_params(self, deep=True):
         """Get parameters for this estimator.
@@ -345,6 +348,7 @@ class TruncatedSVDH2O(object):
         gpu_lib = GPUlib().get()
 
         return gpu_lib
+
 
 class TruncatedSVD(object):
     """

@@ -36,3 +36,5 @@ awscli==1.16.192
 matplotlib==2.0.2
 llvmlite==0.23.0
 pyzmq==17.0.0
+# the same version as scikit-learn fork
+scikit-learn==0.21.2
