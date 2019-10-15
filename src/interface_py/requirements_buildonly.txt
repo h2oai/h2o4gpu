@@ -11,5 +11,6 @@ numba==0.38.0
 psutil==5.6.3
 llvmlite==0.23.0
 future==0.16.0
+tabulate==0.8.2
 # the same version as scikit-learn fork
 scikit-learn==0.21.2
