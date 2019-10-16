@@ -10,7 +10,8 @@ help:
 	$(call inform, " -------- Build and Install ---------")
 	$(call inform, "make clean           Clean all build files.")
 	$(call inform, "make                 fullinstall")
-	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
+	$(call inform, "make fullinstall     Clean everything then compile and install including all(build and runtime) dependencies.")
+	$(call inform, "make buildinstall    Compile and install including build dependencies only.")
 	$(call inform, "make build           Just Build the whole project.")
 	$(call inform, " -------- Test ---------")
 	$(call inform, "make test            Run tests.")
@@ -53,21 +54,27 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-alldeps-install: deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
 
-alldeps: deps_fetch alldeps-install
+deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
 
-deps_fetch:
-	@echo "---- Fetch dependencies ---- "
+submodule_update:
+	@echo "---- Fetch submudule dependencies ---- "
 	git submodule update --init --recursive
 
 .PHONY: deps_py
 deps_py:
 	cat src/interface_py/requirements_buildonly.txt > requirements.txt
 
-deps_install:
-	@echo "---- Install dependencies ----"
-	cat src/interface_py/requirements_buildonly.txt > requirements.txt
+build_deps_install:
+	@echo "---- Install build dependencies ----"
+	$(PYTHON) -m pip install -r src/interface_py/requirements_buildonly.txt
+	rm -rf requirements.txt
+	bash scripts/install_r_deps.sh
+
+all_deps_install:
+	@echo "---- Install build and runtime dependencies ----"
+	awk 1 src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
 	$(PYTHON) -m pip install -r requirements.txt
 	rm -rf requirements.txt
 	bash scripts/install_r_deps.sh
@@ -249,10 +256,10 @@ clean_nccl:
 # FULL BUILD AND INSTALL TARGETS
 #########################################
 
-fullinstall: clean alldeps build install
+fullinstall: clean update_submodule deps-install-with-all-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
-buildinstall: alldeps build install
+buildinstall: dep-install-with-build-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
 #########################################
