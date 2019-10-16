@@ -130,8 +130,7 @@ lightgbm_gpu:
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
-	cd python-package && rm -rf dist_gpu && mv dist dist_gpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
+	cd python-package && rm -rf dist_gpu && mv dist dist_gpu; \
 	fi
 
 .PHONY: lightgbm_cpu
@@ -162,8 +161,7 @@ lightgbm_cpu:
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
-	cd python-package && rm -rf dist_cpu && mv dist dist_cpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py 
+	cd python-package && rm -rf dist_cpu && mv dist dist_cpu ;
 
 fullinstall-lightgbm: lightgbm_gpu lightgbm_cpu install_lightgbm_gpu install_lightgbm_cpu
 
@@ -244,7 +242,7 @@ clean_deps:
 	@echo "----- Cleaning dependencies -----"
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
-	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt src/interface_py/requirements_runtime_demos.txt > requirements.txt
+	awk 1 src/interface_py/requirements_*.txt > requirements.txt
 	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) $(PYTHON) -m pip uninstall -y
 	rm -rf requirements_plain.txt requirements.txt
