@@ -259,7 +259,7 @@ clean_nccl:
 fullinstall: clean update_submodule deps-install-with-all-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
-buildinstall: dep-install-with-build-pkgs build install
+buildinstall: deps-install-with-build-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
 #########################################
