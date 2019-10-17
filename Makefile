@@ -10,7 +10,8 @@ help:
 	$(call inform, " -------- Build and Install ---------")
 	$(call inform, "make clean           Clean all build files.")
 	$(call inform, "make                 fullinstall")
-	$(call inform, "make fullinstall     Clean everything then compile and install everything (for cuda9 with nccl in xgboost).")
+	$(call inform, "make fullinstall     Clean everything then compile and install including all(build and runtime) dependencies.")
+	$(call inform, "make buildinstall    Compile and install including build dependencies only.")
 	$(call inform, "make build           Just Build the whole project.")
 	$(call inform, " -------- Test ---------")
 	$(call inform, "make test            Run tests.")
@@ -53,21 +54,27 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-alldeps-install: deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
 
-alldeps: deps_fetch alldeps-install
+deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
 
-deps_fetch:
-	@echo "---- Fetch dependencies ---- "
+submodule_update:
+	@echo "---- Fetch submudule dependencies ---- "
 	git submodule update --init --recursive
 
 .PHONY: deps_py
 deps_py:
 	cat src/interface_py/requirements_buildonly.txt > requirements.txt
 
-deps_install:
-	@echo "---- Install dependencies ----"
-	cat src/interface_py/requirements_buildonly.txt > requirements.txt
+build_deps_install:
+	@echo "---- Install build dependencies ----"
+	$(PYTHON) -m pip install -r src/interface_py/requirements_buildonly.txt
+	rm -rf requirements.txt
+	bash scripts/install_r_deps.sh
+
+all_deps_install:
+	@echo "---- Install build and runtime dependencies ----"
+	awk 1 src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
 	$(PYTHON) -m pip install -r requirements.txt
 	rm -rf requirements.txt
 	bash scripts/install_r_deps.sh
@@ -123,8 +130,7 @@ lightgbm_gpu:
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
-	cd python-package && rm -rf dist_gpu && mv dist dist_gpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py ; \
+	cd python-package && rm -rf dist_gpu && mv dist dist_gpu; \
 	fi
 
 .PHONY: lightgbm_cpu
@@ -155,8 +161,7 @@ lightgbm_cpu:
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
 	cd python-package && cd compile && (true || ln -fs ../../compute .) && cd ../../ && \
 	cd python-package && rm -rf dist && $(PYTHON) setup.py sdist bdist_wheel && cd .. && \
-	cd python-package && rm -rf dist_cpu && mv dist dist_cpu && \
-	$(PYTHON) -m pip install arff tqdm keras runipy h5py 
+	cd python-package && rm -rf dist_cpu && mv dist dist_cpu ;
 
 fullinstall-lightgbm: lightgbm_gpu lightgbm_cpu install_lightgbm_gpu install_lightgbm_cpu
 
@@ -237,7 +242,7 @@ clean_deps:
 	@echo "----- Cleaning dependencies -----"
 	rm -rf "$(DEPS_DIR)"
 	# sometimes --upgrade leaves extra packages around
-	cat src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt src/interface_py/requirements_runtime_demos.txt > requirements.txt
+	awk 1 src/interface_py/requirements_*.txt > requirements.txt
 	sed 's/==.*//g' requirements.txt|grep -v "#" > requirements_plain.txt
 	-xargs -a requirements_plain.txt -n 1 -P $(NUMPROCS) $(PYTHON) -m pip uninstall -y
 	rm -rf requirements_plain.txt requirements.txt
@@ -249,10 +254,10 @@ clean_nccl:
 # FULL BUILD AND INSTALL TARGETS
 #########################################
 
-fullinstall: clean alldeps build install
+fullinstall: clean update_submodule deps-install-with-all-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
-buildinstall: alldeps build install
+buildinstall: deps-install-with-build-pkgs build install
 	mkdir -p src/interface_py/$(DIST_DIR)/$(PLATFORM)/ && mv src/interface_py/dist/*.whl src/interface_py/$(DIST_DIR)/$(PLATFORM)/
 
 #########################################
