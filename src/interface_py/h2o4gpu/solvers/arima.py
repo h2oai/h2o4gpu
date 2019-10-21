@@ -1,7 +1,7 @@
 # - * - encoding : utf - 8 - * -
 # pylint: disable=fixme, line-too-long
 """
-ARIMA model.
+Autoregressive Integrated Moving Average (ARIMA) model.
 
 :copyright: 2017-2019 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -22,6 +22,7 @@ class ARIMA(object):
         MA size
     double_precision : bool, optional
         use double precision, by default False
+
     Attributes
     ----------
     phi_ {array-like} shape (p,)

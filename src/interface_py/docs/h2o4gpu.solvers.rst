@@ -73,3 +73,11 @@ h2o4gpu\.solvers\.factorization module
     :members:
     :undoc-members:
     :show-inheritance:
+
+h2o4gpu\.solvers\.arima module
+------------------------------
+
+.. automodule:: h2o4gpu.solvers.arima
+    :members:
+    :undoc-members:
+    :show-inheritance:
