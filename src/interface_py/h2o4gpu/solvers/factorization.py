@@ -54,16 +54,17 @@ class FactorizationH2O(object):
     max_iter int, default: 100
         number of training iterations
     double_precision bool, default: False
-        use double presition, not yet supported
+        use double precision, not yet supported
     thetaT {array-like} shape (n, f),  default: None
         initial theta matrix
     XT {array-like} shape (m, f), default: None
         initial XT matrix
+    random_state int, default: 1234
 
     Attributes
     ----------
     XT {array-like} shape (m, f)
-        XT matrix contains User's features
+        XT matrix contains user's features
     thetaT {array-like} shape (n, f)
         transposed theta matrix, item's features
 
@@ -72,12 +73,12 @@ class FactorizationH2O(object):
     Matrixes ``XT`` and ``thetaT`` may contain nan elements. This is because in some datasets,
     there are users or items with no ratings in training set. That results in solutions of
     a system of linear equations becomes nan. Such elements can be easily removed with numpy
-    functions like numpy.nan_to_num, but existence of them may be usefull for troubleshooting
-    perposes.
+    functions like numpy.nan_to_num, but existence of them may be useful for troubleshooting
+    purposes.
 
     '''
 
-    def __init__(self, f, lambda_, max_iter=100, double_precision=False, thetaT=None, XT=None):
+    def __init__(self, f, lambda_, max_iter=100, double_precision=False, thetaT=None, XT=None, random_state=1234):
         assert not double_precision, 'double precision is not yet supported'
         assert f % 10 == 0, 'f has to be a multiple of 10'
         self.f = f
@@ -87,6 +88,7 @@ class FactorizationH2O(object):
         self.thetaT = thetaT
         self.XT = XT
         self.max_iter = max_iter
+        self.random_state = random_state
 
     def _load_lib(self):
         from ..libs.lib_utils import GPUlib
@@ -162,13 +164,15 @@ class FactorizationH2O(object):
         else:
             nnz_test = coo_X_test.nnz
 
+        rs = np.random.RandomState(self.random_state)
+
         if self.thetaT is None:
-            self.thetaT = np.random.rand(n, self.f).astype(self.dtype)
+            self.thetaT = rs.rand(n, self.f).astype(self.dtype)
         else:
             assert self.thetaT.dtype == self.dtype
 
         if self.XT is None:
-            self.XT = np.random.rand(m, self.f).astype(self.dtype)
+            self.XT = rs.rand(m, self.f).astype(self.dtype)
         else:
             assert self.XT.dtype == self.dtype
 
