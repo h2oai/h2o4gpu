@@ -67,9 +67,7 @@ Download the Python wheel file (For Python 3.6):
     * [CUDA9.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
     * [CUDA10 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA9.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.2-cp36-cp36m-linux_x86_64.whl)
     * [CUDA10.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
     * [CUDA10.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
 
  Start a fresh pyenv or virtualenv session.
@@ -191,8 +189,7 @@ Requirements:
 Download the Docker file (for linux_x86_64):
 
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA9](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.0.10000-cuda9-runtime.tar.bz2)
-    * [CUDA10](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.1.10000-cuda10-runtime.tar.bz2)
+    * [CUDA10](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cuda10-runtime.tar.bz2)
     
 Load and run docker file (e.g. for bleeding-edge of cuda92):
 ```
