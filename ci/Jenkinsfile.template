@@ -92,7 +92,7 @@ pipeline {
 
         stage("Test - Multi GPU") {
             agent {
-                label "${labeltest-multi-gpu}"
+                label "${labeltest_multi_gpu}"
             }
             when {
                 expression {
@@ -126,7 +126,7 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
-                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype-multi-gpu}", "${data_dirs}")
+                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype_multi_gpu}", "${data_dirs}")
                 }
             }
         }

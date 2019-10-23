@@ -22,10 +22,10 @@ def cudart = "nvidia/cuda:9.2-cudnn7-devel-centos7"
 def extratag = "-cuda92"
 def linuxwheel = "x86_64-centos7-cuda92.whl"
 def testtype = "dotest-single-gpu"
-def testtype-multi-gpu = "dotest-multi-gpu"
+def testtype_multi_gpu = "dotest-multi-gpu"
 def labelbuild = "nvidia-docker"
 def labeltest = "gpu && nvidia-docker"
-def labeltest-multi-gpu = "2gpu & gpu && nvidia-docker"
+def labeltest_multi_gpu = "2gpu & gpu && nvidia-docker"
 def labelruntime = "nvidia-docker"
 def doingbenchmark = "0"
 def dobenchmark = "0"
@@ -126,7 +126,7 @@ pipeline {
 
         stage("Test - Multi GPU x86_64-cuda92") {
             agent {
-                label "${labeltest-multi-gpu}"
+                label "${labeltest_multi_gpu}"
             }
             when {
                 expression {
@@ -160,7 +160,7 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
-                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype-multi-gpu}", "${data_dirs}")
+                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype_multi_gpu}", "${data_dirs}")
                 }
             }
         }
