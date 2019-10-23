@@ -427,8 +427,23 @@ dotestdemos:
 	-$(PYTHON) -m pip install pytest-ipynb # can't put in requirements since problem with jenkins and runipy
 	py.test -v -s examples/py 2> ./tmp/h2o4gpu-examplespy.$(LOGEXT).log
 
+.PHONY: use-single-gpu
+use-single-gpu:
+	export CUDA_VISIBLE_DEVICES="0"
 
-dotest:
+.PHONY: use-all-gpu
+use-all-gpus:
+	unset CUDA_VISIBLE_DEVICES
+
+dotest-multi-gpu: use-all-gpus
+	rm -rf ./tmp/
+	mkdir -p ./tmp/
+  # can't do -n auto due to limits on GPU memory
+	pytest -s --verbose --timeout=1800 --durations=10 -m multi_gpu --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	# Test R package when appropriate
+	bash scripts/test_r_pkg.sh
+
+dotest-single-gpu: use-single-gpu
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory

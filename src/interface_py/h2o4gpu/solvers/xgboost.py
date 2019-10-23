@@ -282,19 +282,40 @@ class RandomForestClassifier(object):
             random_state = 0
 
         import xgboost as xgb
-        self.model_h2o4gpu = xgb.XGBClassifier(
-            n_estimators=n_estimators,  # h2o4gpu
-            max_depth=max_depth,  # h2o4gpu
-            n_jobs=n_jobs,  # h2o4gpu
-            random_state=random_state,  # h2o4gpu
-            num_parallel_tree=num_parallel_tree,
-            tree_method=tree_method,
-            n_gpus=n_gpus,
-            predictor=predictor,
-            silent=silent,
-            num_round=1,
-            subsample=subsample,
-            colsample_bytree=colsample_bytree)
+        from ..util.gpu import device_count
+        n_gpus, devices = device_count(n_gpus)
+        if n_gpus > 1:
+            from dask_cuda import LocalCUDACluster
+            from dask.distributed import Client
+            CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
+                n_estimators=n_estimators,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                n_jobs=n_jobs,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,
+                tree_method=tree_method,
+                n_gpus=n_gpus,
+                predictor=predictor,
+                silent=silent,
+                num_round=1,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree)
+            self.model_h2o4gpu.client = Client(cluster)
+        else:
+            self.model_h2o4gpu = xgb.XGBClassifier(
+                n_estimators=n_estimators,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                n_jobs=n_jobs,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,
+                tree_method=tree_method,
+                predictor=predictor,
+                silent=silent,
+                num_round=1,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
             if verbose > 0:
@@ -617,19 +638,40 @@ class RandomForestRegressor(object):
             random_state = 0
 
         import xgboost as xgb
-        self.model_h2o4gpu = xgb.XGBRegressor(
-            n_estimators=n_estimators,  # h2o4gpu
-            max_depth=max_depth,  # h2o4gpu
-            n_jobs=n_jobs,  # h2o4gpu
-            random_state=random_state,  # h2o4gpu
-            num_parallel_tree=num_parallel_tree,
-            tree_method=tree_method,
-            n_gpus=n_gpus,
-            predictor=predictor,
-            silent=silent,
-            num_round=1,
-            subsample=subsample,
-            colsample_bytree=colsample_bytree)
+        from ..util.gpu import device_count
+        n_gpus, devices = device_count(n_gpus)
+        if n_gpus > 1:
+            from dask_cuda import LocalCUDACluster
+            from dask.distributed import Client
+            CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
+                n_estimators=n_estimators,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                n_jobs=n_jobs,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,
+                tree_method=tree_method,
+                n_gpus=n_gpus,
+                predictor=predictor,
+                silent=silent,
+                num_round=1,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree)
+            self.model_h2o4gpu.client = Client(cluster)
+        else:
+            self.model_h2o4gpu = xgb.XGBRegressor(
+                n_estimators=n_estimators,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                n_jobs=n_jobs,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,
+                tree_method=tree_method,
+                predictor=predictor,
+                silent=silent,
+                num_round=1,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree)
 
         if self.do_sklearn:
             if verbose > 0:
@@ -1034,31 +1076,63 @@ class GradientBoostingClassifier(object):
             random_state = 0
 
         import xgboost as xgb
-        self.model_h2o4gpu = xgb.XGBClassifier(
-            learning_rate=learning_rate,  # h2o4gpu
-            n_estimators=n_estimators,  # h2o4gpu
-            subsample=subsample,  # h2o4gpu
-            max_depth=max_depth,  # h2o4gpu
-            random_state=random_state,  # h2o4gpu
-            silent=silent,  # h2o4gpu
-            colsample_bytree=colsample_bytree,  # h2o4gpu
-            num_parallel_tree=num_parallel_tree,  # h2o4gpu
-            tree_method=tree_method,  # h2o4gpu
-            n_gpus=n_gpus,  # h2o4gpu
-            predictor=predictor,  # h2o4gpu
-            objective=objective,
-            booster=booster,
-            n_jobs=n_jobs,
-            gamma=gamma,
-            min_child_weight=min_child_weight,
-            max_delta_step=max_delta_step,
-            colsample_bylevel=colsample_bylevel,
-            reg_alpha=reg_alpha,
-            reg_lambda=reg_lambda,
-            scale_pos_weight=scale_pos_weight,
-            base_score=base_score,
-            missing=missing,
-            **kwargs)  # h2o4gpu
+        from ..util.gpu import device_count
+        n_gpus, devices = device_count(n_gpus)
+        if n_gpus > 1:
+            from dask_cuda import LocalCUDACluster
+            from dask.distributed import Client
+            CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
+                learning_rate=learning_rate,  # h2o4gpu
+                n_estimators=n_estimators,  # h2o4gpu
+                subsample=subsample,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                silent=silent,  # h2o4gpu
+                colsample_bytree=colsample_bytree,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,  # h2o4gpu
+                tree_method=tree_method,  # h2o4gpu
+                predictor=predictor,  # h2o4gpu
+                objective=objective,
+                booster=booster,
+                n_jobs=n_jobs,
+                gamma=gamma,
+                min_child_weight=min_child_weight,
+                max_delta_step=max_delta_step,
+                colsample_bylevel=colsample_bylevel,
+                reg_alpha=reg_alpha,
+                reg_lambda=reg_lambda,
+                scale_pos_weight=scale_pos_weight,
+                base_score=base_score,
+                missing=missing,
+                **kwargs)
+            self.model_h2o4gpu.client = Client(cluster)
+        else:
+            self.model_h2o4gpu = xgb.XGBClassifier(
+                learning_rate=learning_rate,  # h2o4gpu
+                n_estimators=n_estimators,  # h2o4gpu
+                subsample=subsample,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                silent=silent,  # h2o4gpu
+                colsample_bytree=colsample_bytree,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,  # h2o4gpu
+                tree_method=tree_method,  # h2o4gpu
+                predictor=predictor,  # h2o4gpu
+                objective=objective,
+                booster=booster,
+                n_jobs=n_jobs,
+                gamma=gamma,
+                min_child_weight=min_child_weight,
+                max_delta_step=max_delta_step,
+                colsample_bylevel=colsample_bylevel,
+                reg_alpha=reg_alpha,
+                reg_lambda=reg_lambda,
+                scale_pos_weight=scale_pos_weight,
+                base_score=base_score,
+                missing=missing,
+                **kwargs)  # h2o4gpu
 
         if self.do_sklearn:
             if verbose > 0:
@@ -1498,31 +1572,63 @@ class GradientBoostingRegressor(object):
             random_state = 0
 
         import xgboost as xgb
-        self.model_h2o4gpu = xgb.XGBRegressor(
-            learning_rate=learning_rate,  # h2o4gpu
-            n_estimators=n_estimators,  # h2o4gpu
-            subsample=subsample,  # h2o4gpu
-            max_depth=max_depth,  # h2o4gpu
-            random_state=random_state,  # h2o4gpu
-            silent=silent,  # h2o4gpu
-            colsample_bytree=colsample_bytree,  # h2o4gpu
-            num_parallel_tree=num_parallel_tree,  # h2o4gpu
-            tree_method=tree_method,  # h2o4gpu
-            n_gpus=n_gpus,  # h2o4gpu
-            predictor=predictor,  # h2o4gpu
-            objective=objective,
-            booster=booster,
-            n_jobs=n_jobs,
-            gamma=gamma,
-            min_child_weight=min_child_weight,
-            max_delta_step=max_delta_step,
-            colsample_bylevel=colsample_bylevel,
-            reg_alpha=reg_alpha,
-            reg_lambda=reg_lambda,
-            scale_pos_weight=scale_pos_weight,
-            base_score=base_score,
-            missing=missing,
-            **kwargs)
+        from ..util.gpu import device_count
+        n_gpus, devices = device_count(n_gpus)
+        if n_gpus > 1:
+            from dask_cuda import LocalCUDACluster
+            from dask.distributed import Client
+            CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
+                learning_rate=learning_rate,  # h2o4gpu
+                n_estimators=n_estimators,  # h2o4gpu
+                subsample=subsample,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                silent=silent,  # h2o4gpu
+                colsample_bytree=colsample_bytree,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,  # h2o4gpu
+                tree_method=tree_method,  # h2o4gpu
+                predictor=predictor,  # h2o4gpu
+                objective=objective,
+                booster=booster,
+                n_jobs=n_jobs,
+                gamma=gamma,
+                min_child_weight=min_child_weight,
+                max_delta_step=max_delta_step,
+                colsample_bylevel=colsample_bylevel,
+                reg_alpha=reg_alpha,
+                reg_lambda=reg_lambda,
+                scale_pos_weight=scale_pos_weight,
+                base_score=base_score,
+                missing=missing,
+                **kwargs)
+            self.model_h2o4gpu.client = Client(cluster)
+        else:
+            self.model_h2o4gpu = xgb.XGBRegressor(
+                learning_rate=learning_rate,  # h2o4gpu
+                n_estimators=n_estimators,  # h2o4gpu
+                subsample=subsample,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpu
+                random_state=random_state,  # h2o4gpu
+                silent=silent,  # h2o4gpu
+                colsample_bytree=colsample_bytree,  # h2o4gpu
+                num_parallel_tree=num_parallel_tree,  # h2o4gpu
+                tree_method=tree_method,  # h2o4gpu
+                predictor=predictor,  # h2o4gpu
+                objective=objective,
+                booster=booster,
+                n_jobs=n_jobs,
+                gamma=gamma,
+                min_child_weight=min_child_weight,
+                max_delta_step=max_delta_step,
+                colsample_bylevel=colsample_bylevel,
+                reg_alpha=reg_alpha,
+                reg_lambda=reg_lambda,
+                scale_pos_weight=scale_pos_weight,
+                base_score=base_score,
+                missing=missing,
+                **kwargs)
 
         if self.do_sklearn:
             if verbose > 0:

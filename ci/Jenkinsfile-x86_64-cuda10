@@ -21,9 +21,11 @@ def cuda = "nvidia/cuda:10.0-cudnn7-devel-centos7"
 def cudart = "nvidia/cuda:10.0-cudnn7-devel-centos7"
 def extratag = "-cuda10"
 def linuxwheel = "x86_64-centos7-cuda10.whl"
-def testtype = "dotest"
+def testtype = "dotest-single-gpu"
+def testtype-multi-gpu = "dotest-multi-gpu"
 def labelbuild = "nvidia-docker"
 def labeltest = "gpu && nvidia-docker"
+def labeltest-multi-gpu = "2gpu & gpu && nvidia-docker"
 def labelruntime = "nvidia-docker"
 def doingbenchmark = "0"
 def dobenchmark = "0"
@@ -122,7 +124,48 @@ pipeline {
             }
         }
 
-        stage("Test | Lint | S3up on Centos7 x86_64-cuda10") {
+        stage("Test - Multi GPU x86_64-cuda10") {
+            agent {
+                label "${labeltest-multi-gpu}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 x86_64-cuda10"))
+                }
+            }
+            steps {
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    unstash 'version_info'
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                       """
+                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype-multi-gpu}", "${data_dirs}")
+                }
+            }
+        }
+
+        stage("Test - Single GPU | Lint | S3up on Centos7 x86_64-cuda10") {
             agent {
                 label "${labeltest}"
             }
@@ -163,7 +206,7 @@ pipeline {
                         echo "After Stashed py documentation file:"
                         ls -l src/interface_py/docs/_build  || true
                        """
-                    h2o4gpuUtils.runTests(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
+                    h2o4gpuUtils.runTestsSingleGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {

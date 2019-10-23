@@ -16,7 +16,7 @@ print(sys.path)
 
 logging.basicConfig(level=logging.DEBUG)
 
-
+@pytest.mark.multi_gpu
 @pytest.mark.parametrize("n_gpus", [-1, 1, None])
 def test_xgboost_covtype(n_gpus):
     import xgboost as xgb

@@ -10,3 +10,5 @@ psutil==5.6.3
 joblib==0.14.0
 # the same version as scikit-learn fork
 scikit-learn==0.21.2
+dask-cuda==0.6.0
+dask==2.6.0

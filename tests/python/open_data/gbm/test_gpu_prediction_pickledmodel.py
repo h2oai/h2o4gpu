@@ -185,7 +185,6 @@ class TestGPUPredict(object):
         kwargs = {}
         kwargs['tree_method'] = 'gpu_hist'
         kwargs['predictor'] = 'gpu_predictor'
-        kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
         kwargs = self.set_n_gpus(kwargs, n_gpus)
 
@@ -214,7 +213,6 @@ class TestGPUPredict(object):
         kwargs = {}
         kwargs['tree_method'] = 'gpu_hist'
         kwargs['predictor'] = 'gpu_predictor'
-        kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
         kwargs = self.set_n_gpus(kwargs, n_gpus)
 

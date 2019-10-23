@@ -47,7 +47,6 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
 
     param = {'objective': 'binary:logistic',
              'max_depth': 6,
-             'silent': 0,
              'n_gpus': 1,
              'gpu_id': 0,
              'eval_metric': 'error',

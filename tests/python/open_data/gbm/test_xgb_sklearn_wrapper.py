@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import pandas as pd
 import platform
+import pytest
 
 print(sys.path)
 
@@ -254,25 +255,25 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
         print(gbm_sk.train_score_)
         assert (gbm.train_score_ == gbm_sk.train_score_).all() == True
 
-
+@pytest.mark.multi_gpu
 def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 
 
 def test_sklearn_drf_regression_sklearn(
 ): test_drf_regressor_backupsklearn(backend='sklearn')
 
-
+@pytest.mark.multi_gpu
 def test_sklearn_drf_regression_h2o4gpu(
 ): test_drf_regressor_backupsklearn(backend='h2o4gpu')
 
-
+@pytest.mark.multi_gpu
 def test_sklearn_drf_classification(): test_drf_classifier_backupsklearn()
 
 
 def test_sklearn_drf_classification_sklearn(
 ): test_drf_classifier_backupsklearn(backend='sklearn')
 
-
+@pytest.mark.multi_gpu
 def test_sklearn_drf_regression_h2o4gpu(
 ): test_drf_classifier_backupsklearn(backend='h2o4gpu')
 
@@ -283,11 +284,12 @@ def test_sklearn_gbm_classification(): test_gbm_classifier_backupsklearn()
 def test_sklearn_gbm_classification_sklearn(
 ): test_gbm_classifier_backupsklearn(backend='sklearn')
 
-
+@pytest.mark.multi_gpu
 def test_sklearn_gbm_regression_h2o4gpu(
 ): test_gbm_classifier_backupsklearn(backend='h2o4gpu')
 
 
+@pytest.mark.multi_gpu
 def test_sklearn_gbm_regression(): test_gbm_regressor_backupsklearn()
 
 
@@ -295,5 +297,6 @@ def test_sklearn_gbm_regression_sklearn(
 ): test_gbm_regressor_backupsklearn(backend='sklearn')
 
 
+@pytest.mark.multi_gpu
 def test_sklearn_gbm_regression_h2o4gpu(
 ): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
