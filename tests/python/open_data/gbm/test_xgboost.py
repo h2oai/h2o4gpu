@@ -134,4 +134,5 @@ def test_xgboost_covtype_multi_gpu():
 
 
 if __name__ == "__main__":
-    test_xgboost_covtype_multi_gpu()
+    pass
+    # test_xgboost_covtype_multi_gpu()
