@@ -80,11 +80,14 @@ def test_xgboost_covtype_multi_gpu():
     from dask import array as da
     import xgboost as xgb
     from xgboost.dask import DaskDMatrix
+    from dask import array as da
 
     # Fetch dataset using sklearn
     cov = fetch_covtype()
     X = cov.data
     y = cov.target
+
+    print(X.shape, y.shape)
 
     # Create 0.75/0.25 train/test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, train_size=0.75,
@@ -105,14 +108,17 @@ def test_xgboost_covtype_multi_gpu():
     with LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1) as cluster:
         with Client(cluster) as client:
             # Convert input data from numpy to XGBoost format
-            dtrain = DaskDMatrix(client, X_train, y_train)
-            dtest = DaskDMatrix(client, X_test, y_test)
+            partition_size = 100000
+            dask_X_train = da.from_array(X_train, partition_size)
+            dask_y_label = da.from_array(y_train, partition_size)
+            dtrain = DaskDMatrix(client=client, data=dask_X_train, label=dask_y_label)
+            dtest = DaskDMatrix(client=client, data=da.from_array(X_test, partition_size), label=da.from_array(y_test, partition_size))
 
             gpu_res = {}  # Store accuracy result
             tmp = time.time()
             # Train model
-            xgb.dask.train(param, dtrain, num_round, evals=[
-                    (dtest, 'test')], evals_result=gpu_res)
+            xgb.dask.train(client, param, dtrain, num_boost_round = num_round, evals=[
+                    (dtest, 'test')])
             print("GPU Training Time: %s seconds" % (str(time.time() - tmp)))
 
             # TODO: https://github.com/dmlc/xgboost/issues/4518
@@ -125,3 +131,7 @@ def test_xgboost_covtype_multi_gpu():
             xgb.train(param, dtrain, num_round, evals=[
                     (dtest, 'test')], evals_result=cpu_res)
             print("CPU Training Time: %s seconds" % (str(time.time() - tmp)))
+
+
+if __name__ == "__main__":
+    test_xgboost_covtype_multi_gpu()
