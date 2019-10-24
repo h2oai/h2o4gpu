@@ -283,12 +283,12 @@ class RandomForestClassifier(object):
 
         import xgboost as xgb
         from ..util.gpu import device_count
-        n_gpus, devices = device_count(n_gpus)
+        n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
-            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES, n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
                 n_estimators=n_estimators,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpu
@@ -639,12 +639,12 @@ class RandomForestRegressor(object):
 
         import xgboost as xgb
         from ..util.gpu import device_count
-        n_gpus, devices = device_count(n_gpus)
+        n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
-            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES, n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
                 n_estimators=n_estimators,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpu
@@ -1077,12 +1077,12 @@ class GradientBoostingClassifier(object):
 
         import xgboost as xgb
         from ..util.gpu import device_count
-        n_gpus, devices = device_count(n_gpus)
+        n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
-            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES, n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
                 learning_rate=learning_rate,  # h2o4gpu
                 n_estimators=n_estimators,  # h2o4gpu
@@ -1573,17 +1573,17 @@ class GradientBoostingRegressor(object):
 
         import xgboost as xgb
         from ..util.gpu import device_count
-        n_gpus, devices = device_count(n_gpus)
+        n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             CUDA_VISIBLE_DEVICES = ','.join([str(i) for i in range(n_gpus)])
-            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES)
+            cluster = LocalCUDACluster(CUDA_VISIBLE_DEVICES=CUDA_VISIBLE_DEVICES, n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
                 learning_rate=learning_rate,  # h2o4gpu
                 n_estimators=n_estimators,  # h2o4gpu
                 subsample=subsample,  # h2o4gpu
-                max_depth=max_depth,  # h2o4gpu
+                max_depth=max_depth,  # h2o4gpun_workers=n_gpus, threads_per_worker=1
                 random_state=random_state,  # h2o4gpu
                 silent=silent,  # h2o4gpu
                 colsample_bytree=colsample_bytree,  # h2o4gpu
