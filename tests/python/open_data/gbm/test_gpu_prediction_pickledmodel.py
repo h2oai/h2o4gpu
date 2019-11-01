@@ -55,9 +55,9 @@ def makeXtest():
 
 
 # @attr('gpu')
-@pytest.mark.parametrize("n_gpus", [-1, 1, None])
+@pytest.mark.parametrize("n_gpus", [1, 0])
 class TestGPUPredict(object):
-    def test_predict_nopickle(self, n_gpus):
+    def test_predict_nopickle(self):
         X, y = makeXy()
 
         dm = xgb.DMatrix(X, label=y)
