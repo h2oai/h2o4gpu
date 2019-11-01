@@ -114,12 +114,27 @@ def test_xgboost_covtype_multi_gpu():
         with Client(cluster) as client:
             # Convert input data from numpy to XGBoost format
             partition_size = 100000
+
+            # remove when https://github.com/dmlc/xgboost/issues/4987 is fixed
             dask_X_train = da.from_array(X_train, partition_size)
-            dask_y_label = da.from_array(y_train, partition_size)
+            dask_X_train = dask_X_train.persist()
+            client.rebalance(dask_X_train)
+            dask_label_train = da.from_array(y_train, partition_size)
+            dask_label_train = dask_label_train.persist()
+            client.rebalance(dask_label_train)
+
             dtrain = DaskDMatrix(
-                client=client, data=dask_X_train, label=dask_y_label)
-            dtest = DaskDMatrix(client=client, data=da.from_array(
-                X_test, partition_size), label=da.from_array(y_test, partition_size))
+                client=client, data=dask_X_train, label=dask_label_train)
+
+            dask_X_test = da.from_array(X_test, partition_size)
+            dask_X_test = dask_X_test.persist()
+            client.rebalance(dask_X_test)
+            dask_label_test = da.from_array(y_test, partition_size)
+            dask_label_test = dask_label_test.persist()
+            client.rebalance(dask_label_test)
+
+            dtest = DaskDMatrix(
+                client=client, data=dask_X_test, label=dask_label_test)
 
             gpu_res = {}  # Store accuracy result
             tmp = time.time()
@@ -141,5 +156,5 @@ def test_xgboost_covtype_multi_gpu():
 
 
 if __name__ == "__main__":
-    pass
-    # test_xgboost_covtype_multi_gpu()
+    # pass
+    test_xgboost_covtype_multi_gpu()
