@@ -84,7 +84,7 @@ pip install h2o4gpu-0.3.0-cp36-cp36m-linux_x86_64.whl
 
 Ensure you meet the Requirements and have installed the Prerequisites.
 
-If not already done you need to [install conda package manager](https://conda.io/docs/user-guide/install/linux.html). Ensure you [test your conda installation](https://conda.io/docs/user-guide/install/test-installation.html)
+If not already done you need to [install conda package manager](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html). Ensure you [test your conda installation](https://docs.conda.io/projects/conda/en/latest/user-guide/install/test-installation.html)
 
 H204GPU packages for CUDA8, CUDA 9 and CUDA 9.2 are available from [h2oai channel in anaconda cloud](https://anaconda.org/h2oai). 
 
