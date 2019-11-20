@@ -277,8 +277,6 @@ def test_gbm_regressor_parameter_loss_alpha_issue_806():
     y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
     import h2o4gpu
 
-    print(X.shape, y.shape)
-
     Solver = h2o4gpu.GradientBoostingRegressor
 
     gbm = h2o4gpu.GradientBoostingRegressor(loss='ls', alpha=0.9)
@@ -340,4 +338,4 @@ def test_gbm_regressor_parameter_fallback_loss() : gbm_regressor_parameter_fallb
 def test_gbm_regressor_parameter_fallback_loss_alpha() : gbm_regressor_parameter_fallback(alpha=0.9, loss='quantile')
 
 if __name__ == '__main__':
-    test_gbm_regressor_parameter_loss_alpha()
+    test_gbm_regressor_parameter_loss_alpha_issue_806()
