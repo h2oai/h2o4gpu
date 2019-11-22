@@ -24,16 +24,12 @@ echo "init submodules ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo && make ${makeopts} submodule_update H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX}"
 
 echo "Docker devel - Copying nccl build artifacts"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'   
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'if [  $(git -C /nccl rev-parse HEAD) != $(git -C /root/repo rev-parse :nccl) ]; then echo "NCCL version mismatch in nccl submodule and docker file" && exit 1;  fi;'
 $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cp -r /nccl/build /root/repo/nccl'
 
-if [ `arch` != "ppc64le" ]; then
-    echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "export XGB_CXX=g++ && export XGB_CC=gcc && export XGB_PROLOGUE='scl enable devtoolset-6' && cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"
-else
-    echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "export XGB_CXX=g++-6.3 && export XGB_CC=gcc-6.3 && cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"
-fi
+echo "make buildinstall with ${H2O4GPU_BUILD} and ${H2O4GPU_SUFFIX}"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "export XGB_CXX=g++ && export XGB_CC=gcc && export XGB_PROLOGUE='scl enable devtoolset-7' && cd repo && make ${makeopts} buildinstall H2O4GPU_BUILD=${H2O4GPU_BUILD} H2O4GPU_SUFFIX=${H2O4GPU_SUFFIX} && make py_docs"
+
 
 echo "Docker devel - Clean local wheels and Copying wheel from docker"
 rm -rf src/interface_py/dist/
