@@ -73,7 +73,7 @@ RUN \
     cd nccl && \
     git checkout tags/v2.4.7-1;
 
-RUN scl enable devtoolset-7 '"'"'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build'"'"'
+RUN scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build'
 
 # conda
 # openssl 1.1.1d has a bug on ppc64le https://github.com/openssl/openssl/issues/10015
