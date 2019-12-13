@@ -194,7 +194,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     }
 }
 
-void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
+void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
     echo "Running tests"
 
    try {
@@ -204,7 +204,32 @@ void runTests(BuildInfo buildInfo, String dockerimage, String extratag, String p
             extratag=${extratag} \
             dockerimage=${dockerimage} \
             target=${target} \
-            platform=${platform} ./scripts/make-docker-runtests.sh
+            platform=${platform} ./scripts/make-docker-runtests-single-gpu.sh
+           """
+            currentBuild.result = "SUCCESS"
+    } catch (error) {
+            currentBuild.result = "FAILURE"
+            throw error
+    } finally {
+        sh "docker stop ${CONTAINER_NAME} || true"
+        // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
+        arch 'tmp/*.log'
+        arch 'results/*.dat'
+        junit testResults: 'build/test-reports/*.xml', keepLongStdio: true, allowEmptyResults: true
+    }
+}
+
+void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
+    echo "Running tests"
+
+   try {
+        sh """
+            DATA_DIRS="${data_dirs}" \
+            CONTAINER_NAME=${CONTAINER_NAME} \
+            extratag=${extratag} \
+            dockerimage=${dockerimage} \
+            target=${target} \
+            platform=${platform} ./scripts/make-docker-runtests-multi-gpu.sh
            """
             currentBuild.result = "SUCCESS"
     } catch (error) {

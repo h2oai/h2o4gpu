@@ -3,17 +3,13 @@ import numpy as np
 import logging
 import pandas as pd
 import platform
+import pytest
 
 print(sys.path)
 
 
 logging.basicConfig(level=logging.DEBUG)
 
-# TODO: remove when nccl works on ppc
-
-
-def n_gpus():
-    return -1
 
 # Function to check fall back to sklearn
 
@@ -27,7 +23,7 @@ def test_drf_regressor_backupsklearn(backend='auto'):
 
     # Run h2o4gpu version of RandomForest Regression
     drf = Solver(backend=backend, random_state=1234, oob_score=True,
-                 n_estimators=10, n_gpus=n_gpus(), n_jobs=-1)
+                 n_estimators=10, n_gpus=1, n_jobs=-1)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
@@ -85,7 +81,7 @@ def test_drf_classifier_backupsklearn(backend='auto'):
 
     # Run h2o4gpu version of RandomForest Regression
     drf = Solver(backend=backend, random_state=1234, oob_score=True,
-                 n_estimators=10, n_gpus=n_gpus(), n_jobs=-1)
+                 n_estimators=10, n_gpus=1, n_jobs=-1)
     print("h2o4gpu fit()")
     drf.fit(X, y)
 
@@ -153,7 +149,7 @@ def test_gbm_regressor_backupsklearn(backend='auto'):
 
     # Run h2o4gpu version of RandomForest Regression
     gbm = Solver(backend=backend, random_state=1234,
-                 n_gpus=n_gpus(), n_jobs=-1)
+                 n_gpus=1, n_jobs=-1)
     print("h2o4gpu fit()")
     gbm.fit(X, y)
 
@@ -206,7 +202,7 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
 
     # Run h2o4gpu version of RandomForest Regression
     gbm = Solver(backend=backend, random_state=1234,
-                 n_gpus=n_gpus(), n_jobs=-1)
+                 n_gpus=1, n_jobs=-1)
     print("h2o4gpu fit()")
     gbm.fit(X, y)
 
@@ -254,6 +250,29 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
         print(gbm_sk.train_score_)
         assert (gbm.train_score_ == gbm_sk.train_score_).all() == True
 
+@pytest.mark.skip()
+def test_multi_gpu_regression():
+    import h2o4gpu
+    from dask import array as da
+
+    df = pd.read_csv("./open_data/creditcard.csv")
+    X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+    print(X.shape, y.shape)
+    Solver = h2o4gpu.GradientBoostingClassifier
+
+    gbm = Solver(random_state=1234,
+                 n_gpus=0, n_jobs=-1)
+    gbm.fit(X, y)
+    print(X.shape, y.shape)
+
+    gbm_multi_gpu = Solver(random_state=1234,
+                 n_gpus=-1, n_jobs=-1)
+    partition_size = 1000
+    X = da.from_array(X, partition_size)
+    y = da.from_array(y, partition_size)
+    print(X.shape, y.shape)
+    gbm_multi_gpu.fit(X, y)
 
 def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 
@@ -261,17 +280,14 @@ def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 def test_sklearn_drf_regression_sklearn(
 ): test_drf_regressor_backupsklearn(backend='sklearn')
 
-
 def test_sklearn_drf_regression_h2o4gpu(
 ): test_drf_regressor_backupsklearn(backend='h2o4gpu')
-
 
 def test_sklearn_drf_classification(): test_drf_classifier_backupsklearn()
 
 
 def test_sklearn_drf_classification_sklearn(
 ): test_drf_classifier_backupsklearn(backend='sklearn')
-
 
 def test_sklearn_drf_regression_h2o4gpu(
 ): test_drf_classifier_backupsklearn(backend='h2o4gpu')
@@ -282,7 +298,6 @@ def test_sklearn_gbm_classification(): test_gbm_classifier_backupsklearn()
 
 def test_sklearn_gbm_classification_sklearn(
 ): test_gbm_classifier_backupsklearn(backend='sklearn')
-
 
 def test_sklearn_gbm_regression_h2o4gpu(
 ): test_gbm_classifier_backupsklearn(backend='h2o4gpu')
@@ -297,3 +312,6 @@ def test_sklearn_gbm_regression_sklearn(
 
 def test_sklearn_gbm_regression_h2o4gpu(
 ): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
+
+if __name__ == "__main__":
+    test_multi_gpu_regression()

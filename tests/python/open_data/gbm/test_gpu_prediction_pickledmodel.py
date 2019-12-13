@@ -16,10 +16,6 @@ except:
 # TODO: remove when nccl works on ppc
 
 
-def n_gpus():
-    return -1
-
-
 rng = np.random.RandomState(1994)
 
 
@@ -54,8 +50,7 @@ def makeXtest():
     return Xtest
 
 
-# @attr('gpu')
-@pytest.mark.parametrize("n_gpus", [-1, 1, None])
+@pytest.mark.parametrize("n_gpus", [1, 0, None])
 class TestGPUPredict(object):
     def test_predict_nopickle(self, n_gpus):
         X, y = makeXy()
@@ -145,8 +140,10 @@ class TestGPUPredict(object):
             "objective": "binary:logistic",
             "predictor": "gpu_predictor",
             'eval_metric': 'auc',
+            'gpu_id': 0,
         }
         param = self.set_n_gpus(param, n_gpus)
+
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         assert self.non_decreasing(res["train"]["auc"])
@@ -185,7 +182,6 @@ class TestGPUPredict(object):
         kwargs = {}
         kwargs['tree_method'] = 'gpu_hist'
         kwargs['predictor'] = 'gpu_predictor'
-        kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
         kwargs = self.set_n_gpus(kwargs, n_gpus)
 
@@ -214,7 +210,6 @@ class TestGPUPredict(object):
         kwargs = {}
         kwargs['tree_method'] = 'gpu_hist'
         kwargs['predictor'] = 'gpu_predictor'
-        kwargs['silent'] = 0
         kwargs['objective'] = 'binary:logistic'
         kwargs = self.set_n_gpus(kwargs, n_gpus)
 
