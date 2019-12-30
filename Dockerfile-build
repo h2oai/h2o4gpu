@@ -27,7 +27,7 @@ ENV VECLIB_MAXIMUM_THREADS=32
 #
 ENV MINICONDA_VERSION=4.4.10
 ENV SWIG_VERSION=3.0.12
-ENV PILLOW_VERSION=4.2.1
+ENV PILLOW_VERSION=6.2.1
 ENV GIT_VERSION=2.17.0
 
 #
@@ -157,7 +157,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 
 # Pillow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	wget https://files.pythonhosted.org/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-${PILLOW_VERSION}.tar.gz && \
+	wget https://files.pythonhosted.org/packages/5b/bb/cdc8086db1f15d0664dd22a62c69613cdc00f1dd430b5b19df1bea83f2a3/Pillow-${PILLOW_VERSION}.tar.gz && \
 	tar xvf Pillow-${PILLOW_VERSION}.tar.gz && \
 	cd $HOME/Pillow-${PILLOW_VERSION} && \
 	sed -i "s/'ppc64'/'ppc64le'/g" setup.py && \
