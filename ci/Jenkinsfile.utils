@@ -211,7 +211,7 @@ void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String extratag,
             currentBuild.result = "FAILURE"
             throw error
     } finally {
-        sh "ignore following error if any"
+        echo "ignore following error if any"
         sh "docker stop ${CONTAINER_NAME} || true"
         // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         arch 'tmp/*.log'
@@ -237,6 +237,7 @@ void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String extratag, 
             currentBuild.result = "FAILURE"
             throw error
     } finally {
+        echo "ignore following error if any"
         sh "docker stop ${CONTAINER_NAME} || true"
         // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         arch 'tmp/*.log'
@@ -272,7 +273,7 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
             currentBuild.result = "FAILURE"
             throw error
         } finally {
-            sh "ignore following error if any"
+            echo "ignore following error if any"
             sh "docker stop ${CONTAINER_NAME} || true"
             // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
@@ -304,7 +305,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String platform, Stri
             currentBuild.result = "FAILURE"
             throw error
         } finally {
-            sh "ignore following error if any"
+            echo "ignore following error if any"
             sh "docker stop ${CONTAINER_NAME} || true"
             // if snapshot and using buildID or hash in docker image, need to rm that container and image here.
         }
