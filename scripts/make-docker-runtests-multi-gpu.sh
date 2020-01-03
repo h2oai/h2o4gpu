@@ -51,7 +51,7 @@ $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export NCCL_DEBUG=WARN && export HOM
     echo "Docker devel test and pylint - copy any dat results"
     rm -rf results ; mkdir -p results/
     touch results/emptyresults.dat
-    $DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/results results/
+    $DOCKER_CLI cp -a ${CONTAINER_NAME}:/repo/results results/
 } || { # catch
    echo "No results dat files"
 }
