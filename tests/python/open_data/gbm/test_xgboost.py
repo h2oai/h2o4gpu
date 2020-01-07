@@ -113,7 +113,7 @@ def test_xgboost_covtype_multi_gpu():
     with LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1) as cluster:
         with Client(cluster) as client:
             # Convert input data from numpy to XGBoost format
-            partition_size = 100000
+            partition_size = 10000
 
             # remove when https://github.com/dmlc/xgboost/issues/4987 is fixed
             dask_X_train = da.from_array(X_train, partition_size)
