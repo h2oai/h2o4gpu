@@ -119,8 +119,11 @@ lightgbm_gpu:
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
-	cmake .. -DUSE_GPU=1 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. && \
+	cmake -DUSE_GPU=1 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON .. && \
+	make -j && \
+	make install && \
+	cd .. && \
+	rm lib_lightgbm.so && \
 	cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
 	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
 	cd python-package && rm -rf dist && ($(PYTHON) setup.py sdist bdist_wheel || true) && cd .. && \
@@ -142,8 +145,11 @@ lightgbm_cpu:
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
-	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make OPENCL_HEADERS=$(CUDA_HOME)/targets/x86_64-linux/include LIBOPENCL=$(CUDA_HOME)/targets/x86_64-linux/lib -j && cd .. ; \
+	cmake .. -DUSE_GPU=0 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
+	make -j && \
+	make install && \
+	cd .. && \
+	rm lib_lightgbm.so; \
 	fi
 	if [ `arch` == "ppc64le" ]; then \
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
