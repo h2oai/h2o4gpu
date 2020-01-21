@@ -148,8 +148,8 @@ lightgbm_cpu:
 	cmake .. -DUSE_GPU=0 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
 	make -j && \
 	make install && \
-	cd .. ; \
-	rm lib_lightgbm.so && \
+	cd .. && \
+	rm lib_lightgbm.so; \
 	fi
 	if [ `arch` == "ppc64le" ]; then \
 	cd LightGBM && (rm -rf build || true) && mkdir -p build && \
