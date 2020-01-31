@@ -96,7 +96,7 @@ cpp:
 	mkdir -p build && \
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
-	make -j && \
+	make -j`nproc` && \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
@@ -120,7 +120,7 @@ lightgbm_gpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake -DUSE_GPU=1 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON .. && \
-	make -j && \
+	make -j`nproc` && \
 	make install && \
 	cd .. && \
 	rm lib_lightgbm.so && \
@@ -146,7 +146,7 @@ lightgbm_cpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake .. -DUSE_GPU=0 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make -j && \
+	make -j`nproc` && \
 	make install && \
 	cd .. && \
 	rm lib_lightgbm.so; \
@@ -156,7 +156,7 @@ lightgbm_cpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=/lib64/libOpenCL.so.1 -DOpenCL_INCLUDE_DIR=/usr/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make -j && cd .. ; \
+	make -j`nproc` && cd .. ; \
 	fi 	
 	cd LightGBM && cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
 	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
@@ -192,7 +192,11 @@ build_py: update_submodule clean_py py # avoid cpp
 # INSTALL TARGETS
 #########################################
 
-install_xgboost:
+install_xgboost_prev:
+	@echo "----- pip install previous xgboost version -----"
+	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost==0.90 --constraint ../../../src/interface_py/requirements_buildonly.txt --target=../prev
+
+install_xgboost: install_xgboost_prev
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
 
@@ -489,7 +493,7 @@ testunit:
 	mkdir -p build && \
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
-	make h2o4gpu_test -j && \
+	make h2o4gpu_test -j$(nproc) && \
 	./h2o4gpu_test
 #########################################
 # BENCHMARKING TARGETS
