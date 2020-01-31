@@ -12,12 +12,19 @@ import sys
 import os
 import logging
 
-print(sys.path)
 
-logging.basicConfig(level=logging.DEBUG)
+def fetch():
+    import fcntl
+    with open('sklearn_download_lockfile', 'w') as fp:
+        fcntl.flock(fp, fcntl.LOCK_EX)
+        from sklearn.datasets import fetch_covtype
+        data = fetch_covtype()
+        fcntl.flock(fp, fcntl.LOCK_UN)
+        return data
 
 
 @pytest.mark.parametrize("n_gpus", [-1, 1, None])
+@pytest.mark.multi_gpu
 def test_xgboost_covtype(n_gpus):
     import xgboost as xgb
     import numpy as np
@@ -26,7 +33,7 @@ def test_xgboost_covtype(n_gpus):
     import time
 
     # Fetch dataset using sklearn
-    cov = fetch_covtype()
+    cov = fetch()
     X = cov.data
     y = cov.target
 
