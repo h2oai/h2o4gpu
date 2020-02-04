@@ -103,12 +103,19 @@ cpp:
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
+.PHONY: xgboost_prev
+xgboost_prev:
+	@echo "----- Building XGboost previous version target $(XGBOOST_TARGET) -----"
+	cd xgboost_prev ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
 	cd xgboost ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
+
+fullinstall-xgboost-prev: nccl xgboost_prev install_xgboost_prev
 
 .PHONY: lightgbm_gpu
 lightgbm_gpu:
@@ -192,9 +199,9 @@ build_py: update_submodule clean_py py # avoid cpp
 # INSTALL TARGETS
 #########################################
 
-install_xgboost_prev:
-	@echo "----- pip install previous xgboost version -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost==0.90 --constraint ../../../src/interface_py/requirements_buildonly.txt --target=../prev
+install_xgboost_prev: install_xgboost_prev
+	@echo "----- pip install xgboost previous version built locally -----"
+	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
 
 install_xgboost: install_xgboost_prev
 	@echo "----- pip install xgboost built locally -----"
@@ -219,7 +226,7 @@ install: install_py
 # CLEANING TARGETS
 #########################################
 
-clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
+clean: clean_py3nvml clean_xgboost clean_xgboost_prev clean_lightgbm clean_deps clean_py  clean_cpp
 	@echo "nccl is not cleaned as it takes too long to compile"
 	@echo "use 'make clean_nccl' to do it mannualy"
 	-rm -rf ./build
@@ -233,6 +240,12 @@ clean_cpp:
 clean_py:
 	-rm -rf src/interface_py/build/
 	$(MAKE) -j clean -C src/interface_py
+
+clean_xgboost_prev:
+	-rm -rf xgboost_prev/build/
+	-rm -rf xgboost_prev
+	git submodule init xgboost_prev
+	git submodule update xgboost_prev
 
 clean_xgboost:
 	-$(PYTHON) -m pip uninstall -y xgboost
