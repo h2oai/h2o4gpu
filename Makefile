@@ -54,9 +54,9 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
 
-deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
 
 submodule_update:
 	@echo "---- Fetch submudule dependencies ---- "
@@ -199,11 +199,11 @@ build_py: update_submodule clean_py py # avoid cpp
 # INSTALL TARGETS
 #########################################
 
-install_xgboost_prev: install_xgboost_prev
+install_xgboost_prev:
 	@echo "----- pip install xgboost previous version built locally -----"
 	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
 
-install_xgboost: install_xgboost_prev
+install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
 
