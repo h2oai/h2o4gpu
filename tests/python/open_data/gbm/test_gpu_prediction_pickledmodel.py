@@ -27,9 +27,8 @@ def save_obj(obj, name):
 
 
 def load_obj(name):
-    # print("Loading %s" % name)
-    with open(name, 'rb') as f:
-        return pickle.load(f)
+    from h2o4gpu.util.xgboost_migration import load_pkl
+    return load_pkl(name)
 
 
 num_rows = 5000
@@ -264,3 +263,8 @@ class TestGPUPredict(object):
         if n_gpus is not None:
             params['n_gpus'] = n_gpus
         return params
+
+
+if __name__ == "__main__":
+    pass
+    # TestGPUPredict().test_predict_sklearn_frompickle(1)
