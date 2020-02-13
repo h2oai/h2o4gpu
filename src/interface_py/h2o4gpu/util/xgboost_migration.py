@@ -2,7 +2,7 @@ def load_pkl(name):
     """Load xgboost model from pickle and perform conversion from version 0.90 if require.
 
     :return:
-        Total number of GPUs and total available memory
+        XGBoost model
     """
     import pickle
     import xgboost
