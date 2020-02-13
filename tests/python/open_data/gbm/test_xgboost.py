@@ -33,7 +33,6 @@ def fetch_data():
 def test_xgboost_covtype(n_gpus):
     import xgboost as xgb
     import numpy as np
-    from sklearn.datasets import fetch_covtype
     from sklearn.model_selection import train_test_split
     import time
 
@@ -84,7 +83,6 @@ def test_xgboost_covtype(n_gpus):
 def test_xgboost_covtype_multi_gpu():
     import xgboost as xgb
     import numpy as np
-    from sklearn.datasets import fetch_covtype
     from sklearn.model_selection import train_test_split
     import time
     from dask_cuda import LocalCUDACluster
@@ -95,7 +93,7 @@ def test_xgboost_covtype_multi_gpu():
     from dask import array as da
 
     # Fetch dataset using sklearn
-    cov = fetch_covtype()
+    cov = fetch_data()
     X = cov.data
     y = cov.target
 
