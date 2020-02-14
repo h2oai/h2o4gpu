@@ -15,6 +15,7 @@ import fcntl
 import os
 
 print(sys.path)
+print(sys.getdefaultencoding())
 
 logging.basicConfig(level=logging.DEBUG)
 

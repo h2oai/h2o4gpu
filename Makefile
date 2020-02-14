@@ -462,7 +462,7 @@ dotest-multi-gpu: use-all-gpus
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --timeout=1800 --durations=10 -m multi_gpu --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest --verbose --timeout=1800 --durations=10 -m multi_gpu --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package when appropriate
 	bash scripts/test_r_pkg.sh
 
@@ -470,7 +470,7 @@ dotest-single-gpu: use-single-gpu
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --timeout=1800 --durations=10 --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest --verbose --timeout=1800 --durations=10 --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package when appropriate
 	bash scripts/test_r_pkg.sh
 
@@ -478,29 +478,29 @@ dotestfast:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests/python/open_data/gbm/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests/python/open_data/gbm/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestfast_nonccl:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
 	# can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestsmall:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests/python/small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests/python/small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests/python/big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests/python/big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 
 testunit:
 	mkdir -p build && \
@@ -514,17 +514,17 @@ testunit:
 
 dotestperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh &> ./tmp/h2o4gpu-testperf-results.$(LOGEXT).log
 
 dotestsmallperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests/python/small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests/python/small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh &> ./tmp/h2o4gpu-testsmallperf-results.$(LOGEXT).log
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests/python/big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests/python/big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh  &> ./tmp/h2o4gpu-testbigperf-results.$(LOGEXT).log # still just references results directory in base path
 
 ######################### use python instead of pytest (required in some cases if pytest leads to hang)
