@@ -175,7 +175,6 @@ class TestGPUPredict(object):
         print("C2 CPU Time to predict = %g" % (time.time() - tmp))
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
-    @pytest.mark.skip(reason="disabled to test ascii decoder issue")
     def test_predict_sklearn_nopickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
