@@ -239,6 +239,7 @@ class TestGPUPredict(object):
 
     # only run the below after the above
 
+    @pytest.mark.skip(reason="disabled to test ascii decoder issue")
     def test_predict_sklearn_frompickle(self, n_gpus):
         Xtest = makeXtest()
 
