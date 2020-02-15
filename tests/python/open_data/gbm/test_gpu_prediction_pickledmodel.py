@@ -130,6 +130,7 @@ class TestGPUPredict(object):
 
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
+    @pytest.mark.skip(reason="disabled to test ascii decoder issue")
     def test_predict_pickle(self, n_gpus):
         X, y = makeXy()
 
@@ -174,6 +175,7 @@ class TestGPUPredict(object):
         print("C2 CPU Time to predict = %g" % (time.time() - tmp))
         np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
+    @pytest.mark.skip(reason="disabled to test ascii decoder issue")
     def test_predict_sklearn_nopickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
@@ -202,6 +204,7 @@ class TestGPUPredict(object):
         # ISSUE2: Also, no way to switch to cpu_predictor?
         # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
+    @pytest.mark.skip(reason="disabled to test ascii decoder issue")
     def test_predict_sklearn_pickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
