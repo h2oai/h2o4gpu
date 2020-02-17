@@ -128,9 +128,6 @@ RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdpart
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
     rm -rf llvm*
 
-RUN echo $LANG
-RUN echo $LC_CTYPE
-RUN python -c 'import sys;print(sys.getdefaultencoding())'
 
 ENV LLVM4=/opt/h2oai/h2o4gpu
 ENV PATH=$LLVM4/bin:$PATH
