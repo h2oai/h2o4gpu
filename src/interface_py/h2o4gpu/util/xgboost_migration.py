@@ -1,5 +1,13 @@
+# -*- encoding: utf-8 -*-
+"""
+:copyright: 2017-2020 H2O.ai, Inc.
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+
+
 def load_pkl(name):
-    """Load xgboost model from pickle and perform conversion from version 0.90 if require.
+    """Load xgboost model from pickle and perform conversion from version
+    0.90 if necessary.
 
     :return:
         XGBoost model
@@ -12,21 +20,23 @@ def load_pkl(name):
             return model
         except xgboost.core.XGBoostError as e:
             if "Check failed: header == serialisation_header_" in str(e):
+                #pylint: disable=unused-variable
                 import xgboost_prev
                 import tempfile
 
                 class Unpickler(pickle.Unpickler):
                     def find_class(self, module, name):
                         if module.startswith("xgboost"):
-                            return pickle.Unpickler.find_class(self, module.replace("xgboost", "xgboost_prev"), name)
-                        else:
-                            return pickle.Unpickler.find_class(self, module, name)
+                            return pickle.Unpickler.find_class(
+                                self, module.replace(
+                                    "xgboost", "xgboost_prev"),
+                                name)
+                        return pickle.Unpickler.find_class(self, module, name)
                 f.seek(0)
                 model = Unpickler(f).load()
                 temp_file = tempfile.NamedTemporaryFile(
                     prefix='xgboost_migration', suffix='.model')
                 model.save_model(temp_file.name)
-                import xgboost
                 migrated_model = xgboost.XGBModel()
                 migrated_model.load_model(temp_file.name)
                 return migrated_model
