@@ -130,6 +130,8 @@ RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdpart
 ENV LLVM4=/opt/h2oai/h2o4gpu
 ENV PATH=$LLVM4/bin:$PATH
 ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
+ENV LLVM_CONFIG=$LLVM4/llvm/bin/llvm-config
+
 
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT
