@@ -1,4 +1,6 @@
-# below for h2o4gpu
+# this file contains dependencies of h2o4gpu package
+# it should not use strict versions except some cases(like sklearn)
+# TODO: don't use strict versions
 pandas==0.24.2
 numpy==1.16.4
 python-dateutil==2.7.2

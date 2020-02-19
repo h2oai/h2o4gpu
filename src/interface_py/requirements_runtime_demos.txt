@@ -14,3 +14,21 @@ feather-format==0.4.0
 psutil==5.6.3
 # for jupiter notebooks
 pillow==6.2.1
+#below for h2o4gpu
+pandas==0.24.2
+numpy==1.16.4
+python-dateutil==2.7.2
+pytz==2018.4
+scipy==1.3.1
+tabulate==0.8.2
+future==0.16.0
+psutil==5.6.3
+joblib==0.14.0
+numba==0.35.0
+llvmlite==0.26.0
+# the same version as scikit-learn fork
+scikit-learn==0.21.2
+#xgboost dask
+dask-cuda==0.6.0
+dask==1.2.2
+distributed==1.28.1
