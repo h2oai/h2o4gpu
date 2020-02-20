@@ -92,7 +92,7 @@ ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 ENV PATH=/usr/local/bin:$PATH
 ENV PATH=$LLVM4/bin:$PATH
 ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
-ENV LLVM_CONFIG=$LLVM4/llvm/bin/llvm-config
+ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 
 #
 # Symlinks
