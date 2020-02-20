@@ -19,3 +19,6 @@
 [submodule "nccl"]
 	path = nccl
 	url = https://github.com/NVIDIA/nccl.git
+[submodule "xgboost_prev"]
+	path = xgboost_prev
+	url = https://github.com/h2oai/xgboost.git

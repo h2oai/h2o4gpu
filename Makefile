@@ -54,9 +54,9 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
 
-deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-lightgbm libsklearn
+deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
 
 submodule_update:
 	@echo "---- Fetch submudule dependencies ---- "
@@ -96,12 +96,17 @@ cpp:
 	mkdir -p build && \
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
-	make -j && \
+	make -j`nproc` && \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
 py: apply-sklearn_simple build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
+
+.PHONY: xgboost_prev
+xgboost_prev:
+	@echo "----- Building XGboost previous version target $(XGBOOST_TARGET) -----"
+	cd xgboost_prev ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 .PHONY: xgboost
 xgboost:
@@ -109,6 +114,8 @@ xgboost:
 	cd xgboost ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
+
+fullinstall-xgboost-prev: nccl xgboost_prev install_xgboost_prev
 
 .PHONY: lightgbm_gpu
 lightgbm_gpu:
@@ -120,7 +127,7 @@ lightgbm_gpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake -DUSE_GPU=1 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=$(CUDA_HOME)/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=$(CUDA_HOME)/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON .. && \
-	make -j && \
+	make -j`nproc` && \
 	make install && \
 	cd .. && \
 	rm lib_lightgbm.so && \
@@ -146,7 +153,7 @@ lightgbm_cpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake .. -DUSE_GPU=0 -DCMAKE_INSTALL_PREFIX=.. -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make -j && \
+	make -j`nproc` && \
 	make install && \
 	cd .. && \
 	rm lib_lightgbm.so; \
@@ -156,7 +163,7 @@ lightgbm_cpu:
 	sed -i 's/#define BOOST_COMPUTE_USE_OFFLINE_CACHE//g' src/treelearner/gpu_tree_learner.h && \
 	cd build && \
 	cmake .. -DUSE_GPU=0 -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DOpenCL_LIBRARY=/lib64/libOpenCL.so.1 -DOpenCL_INCLUDE_DIR=/usr/include/ -DBOOST_ROOT=/opt/boost -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON && \
-	make -j && cd .. ; \
+	make -j`nproc` && cd .. ; \
 	fi 	
 	cd LightGBM && cd python-package &&  sed -i 's/self\.gpu \= 0/self.gpu = 1/g' setup.py && cd .. && \
 	cd python-package &&  sed -i 's/self\.precompile \= 0/self.precompile = 1/g' setup.py && cd .. && \
@@ -192,6 +199,10 @@ build_py: update_submodule clean_py py # avoid cpp
 # INSTALL TARGETS
 #########################################
 
+install_xgboost_prev:
+	@echo "----- pip install xgboost previous version built locally -----"
+	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
+
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
 	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
@@ -215,7 +226,7 @@ install: install_py
 # CLEANING TARGETS
 #########################################
 
-clean: clean_py3nvml clean_xgboost clean_lightgbm clean_deps clean_py  clean_cpp
+clean: clean_py3nvml clean_xgboost clean_xgboost_prev clean_lightgbm clean_deps clean_py  clean_cpp
 	@echo "nccl is not cleaned as it takes too long to compile"
 	@echo "use 'make clean_nccl' to do it mannualy"
 	-rm -rf ./build
@@ -229,6 +240,12 @@ clean_cpp:
 clean_py:
 	-rm -rf src/interface_py/build/
 	$(MAKE) -j clean -C src/interface_py
+
+clean_xgboost_prev:
+	-rm -rf xgboost_prev/build/
+	-rm -rf xgboost_prev
+	git submodule init xgboost_prev
+	git submodule update xgboost_prev
 
 clean_xgboost:
 	-$(PYTHON) -m pip uninstall -y xgboost
@@ -445,7 +462,7 @@ dotest-multi-gpu: use-all-gpus
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --timeout=1800 --durations=10 -m multi_gpu --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest --verbose --timeout=1800 --durations=10 -m multi_gpu --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package when appropriate
 	bash scripts/test_r_pkg.sh
 
@@ -453,7 +470,7 @@ dotest-single-gpu: use-single-gpu
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
   # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --timeout=1800 --durations=10 --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
+	pytest --verbose --timeout=1800 --durations=10 --numprocesses 5 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-test.$(LOGEXT).log
 	# Test R package when appropriate
 	bash scripts/test_r_pkg.sh
 
@@ -461,35 +478,35 @@ dotestfast:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests/python/open_data/gbm/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast2.xml tests/python/open_data/gbm/test_xgb_sklearn_wrapper.py 2> ./tmp/h2o4gpu-testfast2.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestfast_nonccl:
 	rm -rf ./tmp/
 	mkdir -p ./tmp/
 	# can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast1.xml tests/python/open_data/glm/test_glm_simple.py 2> ./tmp/h2o4gpu-testfast1.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast3.xml tests/python/open_data/svd/test_tsvd.py 2> ./tmp/h2o4gpu-testfast3.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testfast4.xml tests/python/open_data/kmeans/test_kmeans.py 2> ./tmp/h2o4gpu-testfast4.$(LOGEXT).log
 
 dotestsmall:
 	rm -rf ./tmp/
 	rm -rf build/test-reports 2>/dev/null
 	mkdir -p ./tmp/
     # can't do -n auto due to limits on GPU memory
-	pytest -s --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests/python/small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 3 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmall.xml tests/python/small 2> ./tmp/h2o4gpu-testsmall.$(LOGEXT).log
 
 dotestbig:
 	mkdir -p ./tmp/
-	pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests/python/big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
+	pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbig.xml tests/python/big 2> ./tmp/h2o4gpu-testbig.$(LOGEXT).log
 
 testunit:
 	mkdir -p build && \
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
-	make h2o4gpu_test -j && \
+	make h2o4gpu_test -j$(nproc) && \
 	./h2o4gpu_test
 #########################################
 # BENCHMARKING TARGETS
@@ -497,17 +514,17 @@ testunit:
 
 dotestperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-test.xml tests/python/open_data 2> ./tmp/h2o4gpu-testperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh &> ./tmp/h2o4gpu-testperf-results.$(LOGEXT).log
 
 dotestsmallperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests/python/small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testsmallperf.xml tests/python/small 2> ./tmp/h2o4gpu-testsmallperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh &> ./tmp/h2o4gpu-testsmallperf-results.$(LOGEXT).log
 
 dotestbigperf:
 	mkdir -p ./tmp/
-	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest -s --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests/python/big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
+	-CHECKPERFORMANCE=1 DISABLEPYTEST=1 pytest --verbose --durations=10 -n 1 --fulltrace --full-trace --junit-xml=build/test-reports/h2o4gpu-testbigperf.xml tests/python/big 2> ./tmp/h2o4gpu-testbigperf.$(LOGEXT).log
 	bash tests/python/open_data/showresults.sh  &> ./tmp/h2o4gpu-testbigperf-results.$(LOGEXT).log # still just references results directory in base path
 
 ######################### use python instead of pytest (required in some cases if pytest leads to hang)

@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import pytest
+import os
 
 try:
     from nose.plugins.attrib import attr
@@ -27,9 +28,8 @@ def save_obj(obj, name):
 
 
 def load_obj(name):
-    # print("Loading %s" % name)
-    with open(name, 'rb') as f:
-        return pickle.load(f)
+    from h2o4gpu.util.xgboost_migration import load_pkl
+    return load_pkl(name)
 
 
 num_rows = 5000
@@ -149,12 +149,12 @@ class TestGPUPredict(object):
         assert self.non_decreasing(res["train"]["auc"])
 
         # pickle model
-        save_obj(bst, "bst.pkl")
+        save_obj(bst, "bst-{0}.pkl".format(os.getpid()))
         # delete model
         del bst
         # load model
-        bst = load_obj("bst.pkl")
-        os.remove("bst.pkl")
+        bst = load_obj("bst-{0}.pkl".format(os.getpid()))
+        os.remove("bst-{0}.pkl".format(os.getpid()))
 
         # continue as before
         print("Before model.predict on GPU")
@@ -264,3 +264,8 @@ class TestGPUPredict(object):
         if n_gpus is not None:
             params['n_gpus'] = n_gpus
         return params
+
+
+if __name__ == "__main__":
+    pass
+    # TestGPUPredict().test_predict_sklearn_frompickle(1)
