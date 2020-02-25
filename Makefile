@@ -74,9 +74,9 @@ build_deps_install:
 
 all_deps_install:
 	@echo "---- Install build and runtime dependencies ----"
-	awk 1 src/interface_py/requirements_buildonly.txt src/interface_py/requirements_runtime.txt > requirements.txt
-	$(PYTHON) -m pip install -r requirements.txt
-	rm -rf requirements.txt
+	$(PYTHON) -m pip install -r src/interface_py/requirements_buildonly.txt
+	$(PYTHON) -m pip install -r src/interface_py/requirements_test.txt
+	$(PYTHON) -m pip install -r src/interface_py/requirements_runtime_demos.txt
 	bash scripts/install_r_deps.sh
 
 #########################################
