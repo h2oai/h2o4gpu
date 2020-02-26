@@ -101,7 +101,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
     }
 
     if (isRelease()) {
-        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/${env.BRANCH_NAME}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
@@ -180,7 +180,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     // sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
 
     if (isRelease()) {
-        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
+        bucket = "s3://h2o-release/h2o4gpu/releases/stable/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/${env.BRANCH_NAME}/"
         sh "s3cmd put ${localArtifact} ${bucket}"
         sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
     }
