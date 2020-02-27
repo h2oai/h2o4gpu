@@ -87,7 +87,6 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
     def bucket = "s3://h2o-release/h2o4gpu/snapshots/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
     sh "s3cmd put ${localArtifact} ${bucket}"
     sh "s3cmd setacl --acl-public  ${bucket}${artifact}"
-    sh "s3cmd del ${bucket}${localArtifact}"
 
     if(publishDocs){
         bucket = "s3://h2o-release/h2o4gpu/stanpshot/ai/h2o4gpu-py-docs/${versionTag}-${env.BUILD_ID}/"
