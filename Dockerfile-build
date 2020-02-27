@@ -25,7 +25,7 @@ ENV VECLIB_MAXIMUM_THREADS=32
 #
 # Library versions
 #
-ENV MINICONDA_VERSION=4.4.10
+ENV MINICONDA_VERSION=4.7.12
 ENV SWIG_VERSION=3.0.12
 ENV GIT_VERSION=2.17.0
 
@@ -82,7 +82,9 @@ RUN \
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 conda-build && \
-    wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
+    /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
+
+RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
     rm -rf llvm*
@@ -92,6 +94,7 @@ ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 ENV PATH=/usr/local/bin:$PATH
 ENV PATH=$LLVM4/bin:$PATH
 ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
+ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 
 #
 # Symlinks

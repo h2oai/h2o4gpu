@@ -69,7 +69,7 @@ install:
 	find -name *__pycache__ | xargs rm -rf
 	# something wrong with below
 	#$(PYTHON) setup.py install
-	$(PYTHON) -m pip install dist/h2o4gpu*.whl --upgrade
+	$(PYTHON) -m pip install dist/h2o4gpu*.whl --upgrade --constraint requirements_buildonly.txt
 
 clean:
 	rm -f h2o4gpu/BUILD_INFO.txt
