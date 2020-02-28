@@ -42,17 +42,15 @@ $DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/src/interface_py/docs/_build/ src
 echo "Docker devel - Copying VERSION.txt"
 mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt build/
 
-if [ `arch` != "ppc64le" ]; then
-    echo "Docker devel - Creating conda package"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "mkdir -p repo/condapkgs"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py && cat requirements_runtime.txt > requirements_conda.txt"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && sed -i 's/condapkgname/${CONDA_PKG_NAME}/g' meta.yaml && popd"
-    $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && conda build --output-folder ../condapkgs  -c h2oai -c conda-forge -c rapidsai .&& popd"
+echo "Docker devel - Creating conda package"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "mkdir -p repo/condapkgs"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py && cat requirements_runtime.txt > requirements_conda.txt"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && sed -i 's/condapkgname/${CONDA_PKG_NAME}/g' meta.yaml && popd"
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c "pushd repo/conda-recipe && conda build --output-folder ../condapkgs  -c h2oai -c conda-forge -c rapidsai .&& popd"
 
-    echo "Docker devel - Copying conda package"
-    rm -rf condapkgs
-    $DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/condapkgs .
-fi
+echo "Docker devel - Copying conda package"
+rm -rf condapkgs
+$DOCKER_CLI cp -a ${CONTAINER_NAME}:/root/repo/condapkgs .
 
 echo "Docker devel - Stopping docker"
 $DOCKER_CLI stop ${CONTAINER_NAME}
