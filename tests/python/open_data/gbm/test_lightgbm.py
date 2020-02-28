@@ -285,6 +285,7 @@ def test_lightgbm_accuracy_gpu():
 
 
 if __name__ == '__main__':
+    # test_lightgbm_accuracy_cpu()
     pass
     # test_lightgbm_cpu()
     # test_lightgbm_gpu()
