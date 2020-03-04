@@ -24,34 +24,34 @@ class TestGlmSklearn(object):
     def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, validFraction=0.2, whichdata=0, double_precision=False):
         name = str(sys._getframe().f_code.co_name)
         t = time.time()
-    
+
         print("cwd: %s" % (os.getcwd()))
         sys.stdout.flush()
-    
+
         name = sys._getframe(1).f_code.co_name
         #    pipes = startfunnel(os.path.join(os.getcwd(), "tmp/"), name)
-    
+
         print("Getting Data")
         from h2o4gpu.datasets import fetch_20newsgroups, fetch_20newsgroups_vectorized, fetch_california_housing, \
             fetch_covtype, fetch_kddcup99, fetch_lfw_pairs, fetch_lfw_people, fetch_mldata, fetch_olivetti_faces, \
             fetch_rcv1, fetch_species_distributions
         from h2o4gpu.model_selection import train_test_split
-    
+
         # Fetch dataset
         if whichdata == 0:
-            data = fetch_20newsgroups() # runs
+            data = fetch_20newsgroups()  # runs
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 1:
-            data = fetch_20newsgroups_vectorized() # sparse
+            data = fetch_20newsgroups_vectorized()  # sparse
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 2:
-            data = fetch_california_housing() # runs
+            data = fetch_california_housing()  # runs
             sizetokeep = 1000
         elif whichdata == 3:
             data = fetch_covtype()
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 4:
-            data = fetch_kddcup99() # strings -> numeric
+            data = fetch_kddcup99()  # strings -> numeric
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 5:
             data = fetch_lfw_pairs()
@@ -63,26 +63,26 @@ class TestGlmSklearn(object):
             data = fetch_mldata('iris')
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 8:
-            data = fetch_mldata('leukemia') # runs
+            data = fetch_mldata('leukemia')  # runs
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 9:
             data = fetch_mldata('Whistler Daily Snowfall')
             sizetokeep = 1000  # 1k rows for now
         elif whichdata == 10:
-            data = fetch_olivetti_faces() # runs
+            data = fetch_olivetti_faces()  # runs
             sizetokeep = 100
         elif whichdata == 11:
             data = fetch_rcv1()
             sizetokeep = 1000  # 1k rows for now
-            #data = data.todense() # FIXME: glm and kmeans h2o4gpu currently only supports dense matrices
+            # data = data.todense() # FIXME: glm and kmeans h2o4gpu currently only supports dense matrices
         elif whichdata == 12:
             data = fetch_species_distributions()
             sizetokeep = 1000  # 1k rows for now
         else:
             ValueError("No such whichdata")
-    
+
         try:
-            sizetokeep = min(sizetokeep,len(data.data[:,0]))
+            sizetokeep = min(sizetokeep, len(data.data[:, 0]))
             X = data.data[0:sizetokeep, :]
         except:
             sizetokeep = min(sizetokeep, len(data.data[:]))
@@ -96,18 +96,18 @@ class TestGlmSklearn(object):
         print("Split Data")
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, train_size=0.8,
                                                             random_state=42)
-    
+
         print("Encode Data")
         # from h2o4gpu.preprocessing import Imputer
         # imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
         # imp.fit(X, y)
         # Xencoded = imp.transform(X)
         # yencoded = imp.transform(y)
-    
+
         import pandas as pd
         X_test_pd = pd.DataFrame(X_test)
         X_train_pd = pd.DataFrame(X_train)
-    
+
         # Importing LabelEncoder and initializing it
         from h2o4gpu.preprocessing import LabelEncoder
         le = LabelEncoder()
@@ -120,18 +120,18 @@ class TestGlmSklearn(object):
                 le.fit(data.values)
                 X_train_pd[col] = le.transform(X_train_pd[col])
                 X_test_pd[col] = le.transform(X_test_pd[col])
-    
+
         X_train_pd = pd.get_dummies(X_train_pd).fillna(0.0)
         X_test_pd = pd.get_dummies(X_test_pd).fillna(0.0)
         y_train_pd = pd.Series(y_train).fillna(0.0)
         y_test_pd = pd.Series(y_test).fillna(0.0)
-    
+
         # get back numpy
         X_test = X_test_pd.values
         X_train = X_train_pd.values
         y_test = y_test_pd.values
         y_train = y_train_pd.values
-    
+
         if double_precision:
             mynptype = np.float64
         else:
@@ -142,31 +142,31 @@ class TestGlmSklearn(object):
         y_train = y_train.astype(np.float64)
 
         # TODO: Should write this to file and avoid doing encoding if already exists
-    
+
         t1 = time.time()
         print("Start ElasticNetH2O")
         rmse_train, rmse_test = run_glm(X_train, y_train, X_test, y_test, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
                                         nalpha=nAlphas,
-                                        validFraction=validFraction, verbose=10, name=name, tolerance=0.2, tol=1E-2, tol_seek_factor=1.0)
+                                        validFraction=validFraction, verbose=0, name=name, tolerance=0.2, tol=1E-2, tol_seek_factor=1.0)
         print("End ElasticNetH2O")
-    
+
         # check rmse
         print(rmse_train[0, 0])
         print(rmse_train[0, 1])
         print(rmse_train[0, 2])
         print(rmse_test[0, 2])
         sys.stdout.flush()
-    
+
         print('/n Total execution time:%d' % (time.time() - t1))
-    
+
         print("TEST PASSED")
         sys.stdout.flush()
-    
+
         print("Time taken: {}".format(time.time() - t))
         #    endfunnel(pipes)
         print("DONE.")
         sys.stdout.flush()
-    
+
     def test_glm_sklearn_gpu_data0(self): TestGlmSklearn. fun(whichdata=0)
 
     @pytest.mark.skip("No direct handling of compressed data yet (can convert, but want to add this feature later)")
