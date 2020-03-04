@@ -15,7 +15,7 @@ tabulate==0.8.2
 joblib==0.14.0
 # the same version as scikit-learn fork
 scikit-learn==0.21.2
-dask-cuda==0.6.0
-dask==1.2.2
-distributed==1.28.1
+dask-cuda==0.12.0
+dask[dataframe]==2.11.0
+distributed==2.11.0
 msgpack==0.6.2

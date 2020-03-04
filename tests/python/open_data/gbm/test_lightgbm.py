@@ -77,6 +77,7 @@ def test_lightgbm_cpu(booster):
 
 @pytest.mark.skip(reason="Huge memory footprint")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
+@pytest.mark.timeout(3600)
 def test_lightgbm_cpu_airlines_full(booster):
     import numpy as np
     import pandas as pd
@@ -131,6 +132,7 @@ def test_lightgbm_cpu_airlines_full(booster):
                                    #                                    "1995", "1996", "1997", "1998", "1999", "2000", "2001",
                                    #                                    "2002", "2003", "2004", "2005", "2006", "2007"
                                    ])
+@pytest.mark.timeout(3600)
 def test_lightgbm_cpu_airlines_year(booster, year):
     import numpy as np
     import pandas as pd
@@ -186,6 +188,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                                    #                                    "1995", "1996", "1997", "1998", "1999", "2000", "2001",
                                    #                                    "2002", "2003", "2004", "2005", "2006", "2007"
                                    ])
+@pytest.mark.timeout(3600)
 def test_lightgbm_gpu_airlines_year(booster, year):
     import numpy as np
     import pandas as pd
