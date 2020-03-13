@@ -1144,7 +1144,7 @@ class GradientBoostingClassifier(object):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
-            res = self.model.apply(da.from_array(X), y, sample_weight)
+            res = self.model.fit(da.from_array(X), y, sample_weight)
         else:
             res = self.model.fit(X, y, sample_weight)
         self.set_attributes()
@@ -1658,7 +1658,7 @@ class GradientBoostingRegressor(object):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
-            res = self.model.apply(da.from_array(X), y, sample_weight)
+            res = self.model.fit(da.from_array(X), y, sample_weight)
         else:
             res = self.model.fit(X, y, sample_weight)
         self.set_attributes()
