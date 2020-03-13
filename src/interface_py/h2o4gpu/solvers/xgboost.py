@@ -5,6 +5,9 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
+from warnings import warn
+from dask import dd, da
+
 
 class RandomForestClassifier(object):
     """H2O RandomForestClassifier Solver
@@ -150,23 +153,27 @@ class RandomForestClassifier(object):
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
 
+    colsample_bylevel : float
+        Subsample ratio of columns for each level.
+
+    colsample_bynode : float
+        Subsample ratio of columns for each split.
+
     num_parallel_tree : int
-        Number of trees to grow per round
+        Deprecated parameter.
 
     tree_method : string [default=’auto’]
         The tree construction algorithm used in XGBoost
         Distributed and external memory version only support approximate algorithm.
-        Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’}
+        Choices: {‘auto’, ‘approx’, ‘hist’, ‘gpu_hist’}
             ‘auto’: Use heuristic to choose faster one.
                 - For small to medium dataset, exact greedy will be used.
                 - For very large-dataset, approximate algorithm will be chosen.
                 - Because old behavior is always use exact greedy in single machine,
                 - user will get a message when approximate algorithm is chosen to
                   notify this choice.
-            ‘exact’: Exact greedy algorithm.
             ‘approx’: Approximate greedy algorithm using sketching and histogram.
             ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching.
-            ‘gpu_exact’: GPU implementation of exact algorithm.
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
@@ -204,9 +211,11 @@ class RandomForestClassifier(object):
             warm_start=False,
             class_weight=None,
             # XGBoost specific params
-            subsample=1.0,  # h2o4gpu
-            colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=1,  # h2o4gpu
+            subsample=1.0,
+            colsample_bytree=0.8,
+            colsample_bylevel=1.0,
+            colsample_bynode=1.0,
+            num_parallel_tree=1,
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
@@ -216,11 +225,14 @@ class RandomForestClassifier(object):
         if _backend is not None:
             backend = _backend
 
+        if num_parallel_tree != 1:
+            warn("num_parallel_tree is not used by RandomForestClassifier" +
+                 " and will be removed in next version", PendingDeprecationWarning)
+
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
         self.do_sklearn = False
         if backend == 'auto':
-
             params_string = [
                 'criterion', 'min_samples_split', 'min_samples_leaf',
                 'min_weight_fraction_leaf', 'max_features', 'max_leaf_nodes',
@@ -242,8 +254,9 @@ class RandomForestClassifier(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print(
-                            "WARNING: The sklearn parameter " + params_string[i]
+                        warn(
+                            "WARNING: The sklearn parameter " +
+                            params_string[i]
                             + " has been changed from default to " + str(param)
                             + ". Will run Sklearn RandomForestsClassifier.")
                     self.do_sklearn = True
@@ -274,10 +287,6 @@ class RandomForestClassifier(object):
             warm_start=warm_start,
             class_weight=class_weight)
 
-        # Parameters for random forest
-        silent = True
-        if verbose != 0:
-            silent = False
         if random_state is None:
             random_state = 0
 
@@ -285,36 +294,19 @@ class RandomForestClassifier(object):
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
-            from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
-            cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
-            self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
-                n_estimators=n_estimators,  # h2o4gpu
-                max_depth=max_depth,  # h2o4gpu
-                n_jobs=n_jobs,  # h2o4gpu
-                random_state=random_state,  # h2o4gpu
-                num_parallel_tree=num_parallel_tree,
-                tree_method=tree_method,
-                n_gpus=n_gpus,
-                predictor=predictor,
-                silent=silent,
-                num_round=1,
-                subsample=subsample,
-                colsample_bytree=colsample_bytree)
-            self.model_h2o4gpu.client = Client(cluster)
-        else:
-            self.model_h2o4gpu = xgb.XGBClassifier(
-                n_estimators=n_estimators,  # h2o4gpu
-                max_depth=max_depth,  # h2o4gpu
-                n_jobs=n_jobs,  # h2o4gpu
-                random_state=random_state,  # h2o4gpu
-                num_parallel_tree=num_parallel_tree,
-                tree_method=tree_method,
-                predictor=predictor,
-                silent=silent,
-                num_round=1,
-                subsample=subsample,
-                colsample_bytree=colsample_bytree)
+            warn("Multiple GPUs is not supported, Single GPU will be used.")
+        self.model_h2o4gpu = xgb.XGBRFClassifier(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            tree_method=tree_method,
+            predictor=predictor,
+            subsample=subsample,
+            colsample_bytree=colsample_bytree,
+            colsample_bylevel=colsample_bylevel,
+            colsample_bynode=colsample_bynode,
+            verbose=verbose)
 
         if self.do_sklearn:
             if verbose > 0:
@@ -326,8 +318,7 @@ class RandomForestClassifier(object):
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
-        print("WARNING: apply() is using sklearn")
-        return self.model_sklearn.apply(X)
+        return self.model.apply(X)
 
     def decision_path(self, X):
         print("WARNING: decision_path() is using sklearn")
@@ -510,23 +501,27 @@ class RandomForestRegressor(object):
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
 
+    colsample_bylevel : float
+        Subsample ratio of columns for each level.
+
+    colsample_bynode : float
+        Subsample ratio of columns for each split.
+
     num_parallel_tree : int
-        Number of trees to grow per round
+        Deprecated parameter.
 
     tree_method : string [default=’auto’]
         The tree construction algorithm used in XGBoost
         Distributed and external memory version only support approximate algorithm.
-        Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’}
+        Choices: {‘auto’, ‘approx’, ‘hist’, ‘gpu_hist’}
             ‘auto’: Use heuristic to choose faster one.
                 - For small to medium dataset, exact greedy will be used.
                 - For very large-dataset, approximate algorithm will be chosen.
                 - Because old behavior is always use exact greedy in single machine,
                 - user will get a message when approximate algorithm is chosen to
                   notify this choice.
-            ‘exact’: Exact greedy algorithm.
             ‘approx’: Approximate greedy algorithm using sketching and histogram.
             ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching.
-            ‘gpu_exact’: GPU implementation of exact algorithm.
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
@@ -563,9 +558,11 @@ class RandomForestRegressor(object):
             verbose=0,  # h2o4gpu
             warm_start=False,
             # XGBoost specific params
-            subsample=1.0,  # h2o4gpu
-            colsample_bytree=1.0,  # h2o4gpu
-            num_parallel_tree=1,  # h2o4gpu
+            subsample=1.0,
+            colsample_bytree=0.8,
+            colsample_bylevel=1.0,
+            colsample_bynode=1.0,
+            num_parallel_tree=1,
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
             predictor='gpu_predictor',  # h2o4gpu
@@ -574,6 +571,10 @@ class RandomForestRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+
+        if num_parallel_tree != 1:
+            warn("num_parallel_tree is not used by RandomForestClassifier" +
+                 " and will be removed in next version", PendingDeprecationWarning)
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -598,8 +599,9 @@ class RandomForestRegressor(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print(
-                            "WARNING: The sklearn parameter " + params_string[i]
+                        warn(
+                            "The sklearn parameter " +
+                            params_string[i]
                             + " has been changed from default to " + str(param)
                             + ". Will run Sklearn RandomForestRegressor.")
                     self.do_sklearn = True
@@ -609,6 +611,7 @@ class RandomForestRegressor(object):
         elif backend == 'h2o4gpu':
             self.do_sklearn = False
         self.backend = backend
+        self.distributed = False
 
         from h2o4gpu.ensemble import RandomForestRegressorSklearn
         self.model_sklearn = RandomForestRegressorSklearn(
@@ -630,9 +633,6 @@ class RandomForestRegressor(object):
             warm_start=warm_start)
 
         # Parameters for random forest
-        silent = True
-        if verbose != 0:
-            silent = False
         if random_state is None:
             random_state = 0
 
@@ -640,36 +640,19 @@ class RandomForestRegressor(object):
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
-            from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
-            cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
-            self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
-                n_estimators=n_estimators,  # h2o4gpu
-                max_depth=max_depth,  # h2o4gpu
-                n_jobs=n_jobs,  # h2o4gpu
-                random_state=random_state,  # h2o4gpu
-                num_parallel_tree=num_parallel_tree,
-                tree_method=tree_method,
-                n_gpus=n_gpus,
-                predictor=predictor,
-                silent=silent,
-                num_round=1,
-                subsample=subsample,
-                colsample_bytree=colsample_bytree)
-            self.model_h2o4gpu.client = Client(cluster)
-        else:
-            self.model_h2o4gpu = xgb.XGBRegressor(
-                n_estimators=n_estimators,  # h2o4gpu
-                max_depth=max_depth,  # h2o4gpu
-                n_jobs=n_jobs,  # h2o4gpu
-                random_state=random_state,  # h2o4gpu
-                num_parallel_tree=num_parallel_tree,
+            warn("Multiple GPUs is not supported, Single GPU will be used.")
+            self.model_h2o4gpu = xgb.XGBRFRegressor(
+                n_estimators=n_estimators,
+                max_depth=max_depth,
+                n_jobs=n_jobs,
+                random_state=random_state,
                 tree_method=tree_method,
                 predictor=predictor,
-                silent=silent,
-                num_round=1,
                 subsample=subsample,
-                colsample_bytree=colsample_bytree)
+                colsample_bytree=colsample_bytree,
+                colsample_bylevel=colsample_bylevel,
+                colsample_bynode=colsample_bynode,
+                verbose=verbose)
 
         if self.do_sklearn:
             if verbose > 0:
@@ -681,11 +664,10 @@ class RandomForestRegressor(object):
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
-        print("WARNING: apply() is using sklearn")
-        return self.model_sklearn.apply(X)
+        return self.model.apply(X)
 
     def decision_path(self, X):
-        print("WARNING: decision_path() is using sklearn")
+        warn("WARNING: decision_path() is using sklearn")
         return self.model_sklearn.decision_path(X)
 
     def fit(self, X, y=None, sample_weight=None):
@@ -707,7 +689,7 @@ class RandomForestRegressor(object):
 
     def score(self, X, y, sample_weight=None):
         # TODO add for h2o4gpu
-        print("WARNING: score() is using sklearn")
+        warn("score() is using sklearn")
         if not self.do_sklearn:
             self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
@@ -875,23 +857,27 @@ class GradientBoostingClassifier(object):
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
 
+    colsample_bylevel : float
+        Subsample ratio of columns for each level.
+
+    colsample_bynode : float
+        Subsample ratio of columns for each split.
+
     num_parallel_tree : int
         Number of trees to grow per round
 
     tree_method : string [default=’auto’]
         The tree construction algorithm used in XGBoost
         Distributed and external memory version only support approximate algorithm.
-        Choices: {‘auto’, ‘exact’, ‘approx’, ‘hist’, ‘gpu_exact’, ‘gpu_hist’}
+        Choices: {‘auto’, ‘approx’, ‘hist’, ‘gpu_hist’}
             ‘auto’: Use heuristic to choose faster one.
                 - For small to medium dataset, exact greedy will be used.
                 - For very large-dataset, approximate algorithm will be chosen.
                 - Because old behavior is always use exact greedy in single machine,
                 - user will get a message when approximate algorithm is chosen to
                   notify this choice.
-            ‘exact’: Exact greedy algorithm.
             ‘approx’: Approximate greedy algorithm using sketching and histogram.
             ‘hist’: Fast histogram optimized approximate greedy algorithm. It uses some performance improvements such as bins caching.
-            ‘gpu_exact’: GPU implementation of exact algorithm.
             ‘gpu_hist’: GPU implementation of hist algorithm.
 
     n_gpus : int
@@ -983,7 +969,6 @@ class GradientBoostingClassifier(object):
             warm_start=False,
             presort='auto',
             # XGBoost specific params
-            colsample_bytree=1.0,  # h2o4gpu
             num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
@@ -994,7 +979,9 @@ class GradientBoostingClassifier(object):
             gamma=0,
             min_child_weight=1,
             max_delta_step=0,
-            colsample_bylevel=1,
+            colsample_bytree=0.8,
+            colsample_bylevel=1.0,
+            colsample_bynode=1.0,
             reg_alpha=0,
             reg_lambda=1,
             scale_pos_weight=1,
@@ -1034,7 +1021,8 @@ class GradientBoostingClassifier(object):
                     self.do_sklearn = True
                     if verbose > 0:
                         print(
-                            "WARNING: The sklearn parameter " + params_string[i]
+                            "WARNING: The sklearn parameter " +
+                            params_string[i]
                             + " has been changed from default to " + str(param)
                             + ". Will run Sklearn GradientBoostingClassifier.")
                     self.do_sklearn = True
@@ -1066,17 +1054,16 @@ class GradientBoostingClassifier(object):
             warm_start=warm_start,
             presort=presort)  # h2o4gpu)
 
-        # Parameters for gbm
-        silent = True
-        if verbose != 0:
-            silent = False
         if random_state is None:
             random_state = 0
+
+        self.distributed = False
 
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
+            self.distributed = True
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1086,8 +1073,10 @@ class GradientBoostingClassifier(object):
                 subsample=subsample,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpu
                 random_state=random_state,  # h2o4gpu
-                silent=silent,  # h2o4gpu
+                verbose=verbose,  # h2o4gpu
                 colsample_bytree=colsample_bytree,  # h2o4gpu
+                colsample_bylevel=colsample_bylevel,
+                colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
                 predictor=predictor,  # h2o4gpu
@@ -1097,7 +1086,6 @@ class GradientBoostingClassifier(object):
                 gamma=gamma,
                 min_child_weight=min_child_weight,
                 max_delta_step=max_delta_step,
-                colsample_bylevel=colsample_bylevel,
                 reg_alpha=reg_alpha,
                 reg_lambda=reg_lambda,
                 scale_pos_weight=scale_pos_weight,
@@ -1112,8 +1100,10 @@ class GradientBoostingClassifier(object):
                 subsample=subsample,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpu
                 random_state=random_state,  # h2o4gpu
-                silent=silent,  # h2o4gpu
+                verbose=verbose,  # h2o4gpu
                 colsample_bytree=colsample_bytree,  # h2o4gpu
+                colsample_bylevel=colsample_bylevel,
+                colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
                 predictor=predictor,  # h2o4gpu
@@ -1123,7 +1113,6 @@ class GradientBoostingClassifier(object):
                 gamma=gamma,
                 min_child_weight=min_child_weight,
                 max_delta_step=max_delta_step,
-                colsample_bylevel=colsample_bylevel,
                 reg_alpha=reg_alpha,
                 reg_lambda=reg_lambda,
                 scale_pos_weight=scale_pos_weight,
@@ -1141,15 +1130,22 @@ class GradientBoostingClassifier(object):
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
-        print("WARNING: apply() is using sklearn")
-        return self.model_sklearn.apply(X)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            return self.model.apply(da.from_array(X))
+        return self.model.apply(X)
 
     def decision_function(self, X):
         print("WARNING: decision_path() is using sklearn")
         return self.model_sklearn.decision_function(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        res = self.model.fit(X, y, sample_weight)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            y = da.from_array(y) if y is not None else None
+            sample_weight = da.from_array(
+                sample_weight) if sample_weight is not None else None
+            res = self.model.apply(da.from_array(X), y, sample_weight)
+        else:
+            res = self.model.fit(X, y, sample_weight)
         self.set_attributes()
         return res
 
@@ -1161,7 +1157,10 @@ class GradientBoostingClassifier(object):
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        res = self.model.predict(X)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            res = self.model.predict(da.from_array(X))
+        else:
+            res = self.model.predict(X)
         res[res < 0.5] = 0
         res[res > 0.5] = 1
         self.set_attributes()
@@ -1178,7 +1177,10 @@ class GradientBoostingClassifier(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        res = self.model.predict_proba(X)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            res = self.model.predict_proba(da.from_array(X))
+        else:
+            res = self.model.predict_proba(X)
         self.set_attributes()
         return res
 
@@ -1367,6 +1369,13 @@ class GradientBoostingRegressor(object):
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
 
+    colsample_bylevel : float
+        Subsample ratio of columns for each level.
+
+    colsample_bynode : float
+        Subsample ratio of columns for each split.
+
+
     num_parallel_tree : int
         Number of trees to grow per round
 
@@ -1476,7 +1485,6 @@ class GradientBoostingRegressor(object):
             warm_start=False,
             presort='auto',
             # XGBoost specific params
-            colsample_bytree=1.0,  # h2o4gpu
             num_parallel_tree=1,  # h2o4gpu
             tree_method='gpu_hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
@@ -1487,7 +1495,9 @@ class GradientBoostingRegressor(object):
             gamma=0,
             min_child_weight=1,
             max_delta_step=0,
-            colsample_bylevel=1,
+            colsample_bytree=0.8,
+            colsample_bylevel=1.0,
+            colsample_bynode=1.0,
             reg_alpha=0,
             reg_lambda=1,
             scale_pos_weight=1,
@@ -1499,6 +1509,8 @@ class GradientBoostingRegressor(object):
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
         if _backend is not None:
             backend = _backend
+
+        self.distributed = False
 
         # Fall back to Sklearn
         # Can remove if fully implement sklearn functionality
@@ -1527,8 +1539,9 @@ class GradientBoostingRegressor(object):
                 if param != params_default[i]:
                     self.do_sklearn = True
                     if verbose > 0:
-                        print(
-                            "WARNING: The sklearn parameter " + params_string[i]
+                        warn(
+                            "WARNING: The sklearn parameter " +
+                            params_string[i]
                             + " has been changed from default to " + str(param)
                             + ". Will run Sklearn GradientBoostingRegressor.")
                     self.do_sklearn = True
@@ -1561,10 +1574,6 @@ class GradientBoostingRegressor(object):
             warm_start=warm_start,
             presort=presort)  # h2o4gpu)
 
-        # Parameters for gbm
-        silent = True
-        if verbose != 0:
-            silent = False
         if random_state is None:
             random_state = 0
 
@@ -1572,6 +1581,7 @@ class GradientBoostingRegressor(object):
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
+            self.distributed = True
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1581,8 +1591,7 @@ class GradientBoostingRegressor(object):
                 subsample=subsample,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpun_workers=n_gpus, threads_per_worker=1
                 random_state=random_state,  # h2o4gpu
-                silent=silent,  # h2o4gpu
-                colsample_bytree=colsample_bytree,  # h2o4gpu
+                verbose=verbose,  # h2o4gpu
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
                 predictor=predictor,  # h2o4gpu
@@ -1593,6 +1602,8 @@ class GradientBoostingRegressor(object):
                 min_child_weight=min_child_weight,
                 max_delta_step=max_delta_step,
                 colsample_bylevel=colsample_bylevel,
+                colsample_bytree=colsample_bytree,
+                colsample_bynode=colsample_bynode,
                 reg_alpha=reg_alpha,
                 reg_lambda=reg_lambda,
                 scale_pos_weight=scale_pos_weight,
@@ -1607,8 +1618,10 @@ class GradientBoostingRegressor(object):
                 subsample=subsample,  # h2o4gpu
                 max_depth=max_depth,  # h2o4gpu
                 random_state=random_state,  # h2o4gpu
-                silent=silent,  # h2o4gpu
-                colsample_bytree=colsample_bytree,  # h2o4gpu
+                verbose=verbose,  # h2o4gpu
+                colsample_bylevel=colsample_bylevel,
+                colsample_bytree=colsample_bytree,
+                colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
                 predictor=predictor,  # h2o4gpu
@@ -1618,7 +1631,6 @@ class GradientBoostingRegressor(object):
                 gamma=gamma,
                 min_child_weight=min_child_weight,
                 max_delta_step=max_delta_step,
-                colsample_bylevel=colsample_bylevel,
                 reg_alpha=reg_alpha,
                 reg_lambda=reg_lambda,
                 scale_pos_weight=scale_pos_weight,
@@ -1628,19 +1640,26 @@ class GradientBoostingRegressor(object):
 
         if self.do_sklearn:
             if verbose > 0:
-                print("Running sklearn GradientBoostingRegressor")
+                warn("Running sklearn GradientBoostingRegressor")
             self.model = self.model_sklearn
         else:
             if verbose > 0:
-                print("Running h2o4gpu GradientBoostingRegressor")
+                warn("Running h2o4gpu GradientBoostingRegressor")
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
-        print("WARNING: apply() is using sklearn")
-        return self.model_sklearn.apply(X)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            return self.model.apply(da.from_array(X))
+        return self.model.apply(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        res = self.model.fit(X, y, sample_weight)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            y = da.from_array(y) if y is not None else None
+            sample_weight = da.from_array(
+                sample_weight) if sample_weight is not None else None
+            res = self.model.apply(da.from_array(X), y, sample_weight)
+        else:
+            res = self.model.fit(X, y, sample_weight)
         self.set_attributes()
         return res
 
@@ -1652,7 +1671,10 @@ class GradientBoostingRegressor(object):
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        res = self.model.predict(X)
+        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+            res = self.model.predict(da.from_array(X))
+        else:
+            res = self.model.predict(X)
         self.set_attributes()
         return res.squeeze()
 

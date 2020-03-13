@@ -250,7 +250,6 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
         assert (gbm.train_score_ == gbm_sk.train_score_).all() == True
 
 
-@pytest.mark.multi_gpu
 def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 
 
@@ -258,12 +257,10 @@ def test_sklearn_drf_regression_sklearn(
 ): test_drf_regressor_backupsklearn(backend='sklearn')
 
 
-@pytest.mark.multi_gpu
 def test_sklearn_drf_regression_h2o4gpu(
 ): test_drf_regressor_backupsklearn(backend='h2o4gpu')
 
 
-@pytest.mark.multi_gpu
 def test_sklearn_drf_classification(): test_drf_classifier_backupsklearn()
 
 
