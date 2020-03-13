@@ -1,12 +1,13 @@
 # - * - encoding : utf - 8 - * -
-# pylint: disable=fixme, line-too-long
+# pylint: disable=fixme, line-too-long, missing-docstring
 """
-:copyright: 2017-2018 H2O.ai, Inc.
+:copyright: 2017-2020 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 
 from warnings import warn
-from dask import dd, da
+from dask import dataframe as dd
+from dask import array as da
 
 
 class RandomForestClassifier(object):

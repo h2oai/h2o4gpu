@@ -294,10 +294,5 @@ def test_sklearn_gbm_regression_sklearn(
 ): test_gbm_regressor_backupsklearn(backend='sklearn')
 
 
-@pytest.mark.multi_gpu
-def test_sklearn_gbm_regression_h2o4gpu(
-): test_gbm_regressor_backupsklearn(backend='h2o4gpu')
-
-
 if __name__ == "__main__":
     pass
