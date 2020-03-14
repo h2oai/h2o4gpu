@@ -574,7 +574,7 @@ class RandomForestRegressor(object):
             backend = _backend
 
         if num_parallel_tree != 1:
-            warn("num_parallel_tree is not used by RandomForestClassifier" +
+            warn("num_parallel_tree is not used by RandomForestRegressor" +
                  " and will be removed in next version", PendingDeprecationWarning)
 
         # Fall back to Sklearn
