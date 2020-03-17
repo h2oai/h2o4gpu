@@ -1,3 +1,11 @@
+## Release 0.4.0
+* ARMA/ARIMA [#797](https://github.com/h2oai/h2o4gpu/pull/797)
+* Random state seed for matrix factorization [#803](https://github.com/h2oai/h2o4gpu/pull/803)
+* Update xgboost while keeping an old version(0.9) to allow convert old pickled model [#822](https://github.com/h2oai/h2o4gpu/pull/822)
+* Update lightgbm
+* Remove a lot dependencies and make them less strict [#826](https://github.com/h2oai/h2o4gpu/pull/826) [#800](https://github.com/h2oai/h2o4gpu/pull/800/files)
+* CUDA-10.1 support
+* Various bug fixes and dependencies update
 
 ## Release 0.3.2
 * Fix K-means demo for multi-GPU [#630](https://github.com/h2oai/h2o4gpu/issues/630)
@@ -12,7 +20,7 @@
 * Update arrow to 0.12.0
 * Update XGBoost
 * Update numpy, scipy and scikit-learn
-* Add experimental Matrix Factorization
+* Add experimental Matrix Factorization [#729](https://github.com/h2oai/h2o4gpu/pull/729)
 
 
 
