@@ -137,7 +137,12 @@ RUN \
     cd $HOME && \
     rm -rf swig-3*
 
-# TODO Install DAAL
+#
+# Install Python requirements
+#
+RUN pip install -U pip==19.3.1
+
+RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==45.0.0
 
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
@@ -156,13 +161,6 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	yum install -y libjpeg-devel;\
 	fi'
 
-
-#
-# Install Python requirements
-#
-RUN pip install -U pip==19.3.1
-
-RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==45.0.0
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 
