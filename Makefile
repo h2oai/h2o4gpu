@@ -201,21 +201,21 @@ build_py: update_submodule clean_py py # avoid cpp
 
 install_xgboost_prev:
 	@echo "----- pip install xgboost previous version built locally -----"
-	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
+	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --target ../
 
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target ../
+	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --target ../
 
 install_lightgbm_gpu:
 	@echo "----- pip install lightgbm_gpu built locally -----"
 	bash -c 'if [ `arch` != "ppc64le" ]; then \
-	cd LightGBM/python-package/dist_gpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target . ; \
+	cd LightGBM/python-package/dist_gpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target . ; \
 	fi'
 
 install_lightgbm_cpu:
 	@echo "----- pip install lightgbm (for CPU) built locally -----"
-	cd LightGBM/python-package/dist_cpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --constraint ../../../src/interface_py/requirements_buildonly.txt --target .
+	cd LightGBM/python-package/dist_cpu && $(PYTHON) -m pip install lightgbm*-py3-none-any.whl --target .
 
 install_py:
 	$(MAKE) -j install -C src/interface_py
