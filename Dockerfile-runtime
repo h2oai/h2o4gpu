@@ -47,7 +47,7 @@ RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.continuum.io/minicond
 
 ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 
-RUN pip install -U pip==19.3.1
+RUN pip install -U pip==20.0.2
 
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
