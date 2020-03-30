@@ -62,13 +62,11 @@ sudo apt-get -y install libcurl4-openssl-dev libssl-dev libxml2-dev
 Download the Python wheel file (For Python 3.6):
 
   * Stable:
-    * [CUDA9.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.2-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA10 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA9.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda9/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
-    * [CUDA10 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA10 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.4-cuda10/rel-0.4.0/h2o4gpu-0.4.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA10 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.4-cuda10/rel-0.4.0/h2o4gpu-0.4.0-cp36-cp36m-linux_ppc64le.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA10.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA10.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.3-cuda10/h2o4gpu-0.3.2-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA10.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.0-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA10.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.0-cp36-cp36m-linux_ppc64le.whl)
 
  Start a fresh pyenv or virtualenv session.
 
@@ -91,7 +89,7 @@ H204GPU packages for CUDA8, CUDA 9 and CUDA 9.2 are available from [h2oai channe
 Create a new conda environment with H2O4GPU based on CUDA 9.2 and all its dependencies using the following command. For other cuda versions substitute the package name as needed. Note the requirement for h2oai and conda-forge channels. 
 
 ```bash
-conda create -n h2o4gpuenv -c h2oai -c conda-forge h2o4gpu-cuda92
+conda create -n h2o4gpuenv -c h2oai -c conda-forge -c rapidsai h2o4gpu-cuda10
 ```
 
 Once the environment is created activate it `source activate h2o4gpuenv`. 
