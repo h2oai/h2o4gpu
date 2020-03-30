@@ -325,4 +325,4 @@ def test_sklearn_gbm_regression_sklearn(
 
 
 if __name__ == "__main__":
-    test_xgboost_classifier()
+    pass
