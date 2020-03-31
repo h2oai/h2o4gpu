@@ -250,6 +250,36 @@ def test_gbm_classifier_backupsklearn(backend='auto'):
         assert (gbm.train_score_ == gbm_sk.train_score_).all() == True
 
 
+@pytest.mark.parametrize('output_margin,', [True, False])
+def test_xgboost_classifier(output_margin):
+    import xgboost as xgb
+    df = pd.read_csv("./open_data/creditcard.csv")
+    X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+
+    gbm = xgb.sklearn.XGBClassifier()
+
+    gbm.fit(X, y)
+
+    gbm.predict(X, output_margin=output_margin)
+
+    gbm.predict_proba(X, output_margin=output_margin)
+
+
+@pytest.mark.parametrize('output_margin,', [True, False])
+def test_xgboost_regression(output_margin):
+    import xgboost as xgb
+    df = pd.read_csv("./open_data/creditcard.csv")
+    X = np.array(df.iloc[:, :df.shape[1] - 1], dtype='float32', order='C')
+    y = np.array(df.iloc[:, df.shape[1] - 1], dtype='float32', order='C')
+
+    gbm = xgb.sklearn.XGBRegressor()
+
+    gbm.fit(X, y)
+
+    gbm.predict(X, output_margin=output_margin)
+
+
 def test_sklearn_drf_regression(): test_drf_regressor_backupsklearn()
 
 
