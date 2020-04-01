@@ -1,3 +1,7 @@
+## Release 0.4.1
+* xgboost fix output_margin parameter [#834](https://github.com/h2oai/h2o4gpu/pull/834)
+* Downgrade LightGBM to last stable version(2.2.x)
+
 ## Release 0.4.0
 * ARMA/ARIMA [#797](https://github.com/h2oai/h2o4gpu/pull/797)
 * Random state seed for matrix factorization [#803](https://github.com/h2oai/h2o4gpu/pull/803)

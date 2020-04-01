@@ -1,2 +1,2 @@
 # Build version number
-BASE_VERSION = 0.4.0
+BASE_VERSION = 0.4.1
