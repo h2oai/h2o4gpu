@@ -46,10 +46,8 @@ all: prep
 	cd build/lib/xgboost/ ; ln -sf ../../../../../xgboost/python-package/xgboost/lib . ; cd ../../../
 
 	# update build with lightgbm shared library
-	if [ `arch` != "ppc64le" ]; then \
-	mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; \
-	fi
-	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../ 
+	mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../
+	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
