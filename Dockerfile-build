@@ -1,4 +1,5 @@
 ARG docker_name
+ARG python_version=3.6
 
 FROM $docker_name
 
@@ -81,7 +82,7 @@ RUN \
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=3.6 conda-build && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
 RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
@@ -110,8 +111,8 @@ RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 RUN \
     mkdir -p /usr/lib64/ && \
     ln -sf /opt/h2oai/h2o4gpu/python/lib/libpython* /usr/lib64/ && \
-    mkdir -p /usr/include/python3.6m && \
-    ln -s /opt/h2oai/h2o4gpu/python/include/python3.6m/* /usr/include/python3.6m
+    mkdir -p /usr/include/python${python_version}m && \
+    ln -s /opt/h2oai/h2o4gpu/python/include/python${python_version}m/* /usr/include/python${python_version}m
 
 # Yumming openblas puts some files in a not-so-standard locations
 RUN ln -s /usr/include/openblas/* /usr/local/include/
@@ -189,9 +190,9 @@ RUN \
     cd boost_1_72_0 && \
     export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
-    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python3.6m/ -fPIC" && \
-    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
-    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /opt/h2oai/h2o4gpu/python/include/python3.6m/" && \
+    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python${python_version}m/ -fPIC" && \
+    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}m/" && \
+    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /opt/h2oai/h2o4gpu/python/include/python${python_version}m/" && \
     cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
     cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
     cd / 
