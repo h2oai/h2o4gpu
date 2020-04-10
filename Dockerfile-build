@@ -1,5 +1,4 @@
 ARG docker_name
-ARG python_version=3.6
 
 FROM $docker_name
 
@@ -22,12 +21,6 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH_CUDA:$LD_LIBRARY_PATH_BUILD:$LD_LIBRARY_PAT
 ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
 ENV VECLIB_MAXIMUM_THREADS=32
-
-#
-# Library versions
-#
-ENV MINICONDA_VERSION=4.7.12
-ENV SWIG_VERSION=3.0.12
 ENV GIT_VERSION=2.17.0
 
 #
@@ -78,6 +71,14 @@ RUN \
     cd nccl && \
     git checkout tags/v2.4.7-1 && \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
+
+#
+# Library versions
+#
+ARG python_version=3.6
+ENV MINICONDA_VERSION=4.7.12
+ENV SWIG_VERSION=3.0.12
+
 
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
@@ -138,8 +139,6 @@ RUN \
     cd $HOME && \
     rm -rf swig-3*
 
-# TODO Install DAAL
-
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
 #
@@ -162,6 +161,8 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 # Install Python requirements
 #
+RUN echo ${python_version}
+
 RUN pip install -U pip==20.0.2
 
 RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==45.0.0
