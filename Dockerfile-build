@@ -75,15 +75,17 @@ RUN \
 #
 # Library versions
 #
-ARG python_version=3.6
+ARG python_version=3.7
 ENV MINICONDA_VERSION=4.7.12
 ENV SWIG_VERSION=3.0.12
+
+RUN python --version
 
 
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build pip && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
 RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
