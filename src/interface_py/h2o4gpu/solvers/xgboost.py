@@ -6,8 +6,6 @@
 """
 
 from warnings import warn
-from dask import dataframe as dd
-from dask import array as da
 
 
 class RandomForestClassifier(object):
@@ -1064,6 +1062,9 @@ class GradientBoostingClassifier(object):
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
+            from dask import dataframe as dd
+            from dask import array as da
+
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
@@ -1131,6 +1132,8 @@ class GradientBoostingClassifier(object):
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             return self.model.apply(da.from_array(X))
         return self.model.apply(X)
@@ -1140,6 +1143,8 @@ class GradientBoostingClassifier(object):
         return self.model_sklearn.decision_function(X)
 
     def fit(self, X, y=None, sample_weight=None):
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
@@ -1158,6 +1163,8 @@ class GradientBoostingClassifier(object):
             res = self.model.predict(X)
             self.set_attributes()
             return res
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
@@ -1178,6 +1185,8 @@ class GradientBoostingClassifier(object):
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict_proba(da.from_array(X))
         else:
@@ -1649,11 +1658,15 @@ class GradientBoostingRegressor(object):
             self.model = self.model_h2o4gpu
 
     def apply(self, X):
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             return self.model.apply(da.from_array(X))
         return self.model.apply(X)
 
     def fit(self, X, y=None, sample_weight=None):
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
@@ -1672,6 +1685,8 @@ class GradientBoostingRegressor(object):
             res = self.model.predict(X)
             self.set_attributes()
             return res
+        from dask import dataframe as dd
+        from dask import array as da
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
