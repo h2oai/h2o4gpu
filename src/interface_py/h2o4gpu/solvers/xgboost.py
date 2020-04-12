@@ -1062,9 +1062,6 @@ class GradientBoostingClassifier(object):
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
-            from dask import dataframe as dd
-            from dask import array as da
-
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             from dask.distributed import Client
