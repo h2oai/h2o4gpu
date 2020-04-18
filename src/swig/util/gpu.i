@@ -21,9 +21,6 @@ extern int cudaresetdevice_bare(void);
 %}
 
 %typemap(in) char** (char* tmp) {
-    if ((SWIG_ConvertPtr($input, (void **) &tmp, $*1_descriptor, $disown | 0)) == -1) {
-        tmp = NULL;
-    }
     $1 = &tmp;
 }
 
