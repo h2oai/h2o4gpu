@@ -8,7 +8,7 @@ SET_DEFAULT_CONFIGURATION_RELEASE()
 FIND_PACKAGE(OpenMP)
 FIND_PACKAGE(BLAS REQUIRED)
 FIND_PACKAGE(SWIG REQUIRED)
-FIND_PACKAGE(PythonLibs REQUIRED) # SWIG
+FIND_PACKAGE (Python COMPONENTS Interpreter Development)
 
 # SWIG behaviour was changed
 if (${CMAKE_VERSION} VERSION_GREATER "3.13")
@@ -28,8 +28,8 @@ SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
 
-# PythonLibs' PYTHON_INCLUDE_PATH doesn't take into account virtualenv etc.
-# Open to suggestions how to do this better.
+# FIND_PACKAGE Python can't properly find numpy.
+# TODO: use python from make/config.mk
 EXECUTE_PROCESS(COMMAND python -c "import numpy; print(numpy.get_include())"
         OUTPUT_VARIABLE PYTHON_INCLUDE_PATH_CUST
         OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -59,7 +59,7 @@ INCLUDE_DIRECTORIES(
         src/cpu/include
         # Here and not in target_include_directories b/c cmake < 3.7 which we use in Dockerfiles does not support it
         src/gpu/include
-        ${PYTHON_INCLUDE_PATH}
+        ${Python_INCLUDE_DIRS}
         ${PYTHON_INCLUDE_PATH_CUST}
 )
 
