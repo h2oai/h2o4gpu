@@ -74,7 +74,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 
 WORKDIR /
 
-RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-2/`arch`-centos7/llvm.tar.bz2 && \
+RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
     rm -rf llvm*
