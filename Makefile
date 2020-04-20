@@ -201,11 +201,11 @@ build_py: update_submodule clean_py py # avoid cpp
 
 install_xgboost_prev:
 	@echo "----- pip install xgboost previous version built locally -----"
-	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --no-deps --target ../
+	cd xgboost_prev/python-package/dist && $(PYTHON) -m pip install xgboost-*.whl --no-deps --target ../
 
 install_xgboost:
 	@echo "----- pip install xgboost built locally -----"
-	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*-py3-none-any.whl --no-deps --target ../
+	cd xgboost/python-package/dist && $(PYTHON) -m pip install xgboost-*.whl --no-deps --target ../
 
 install_lightgbm_gpu:
 	@echo "----- pip install lightgbm_gpu built locally -----"
