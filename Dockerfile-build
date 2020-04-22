@@ -148,7 +148,7 @@ RUN \
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.17.0 && \
+	git checkout tags/apache-arrow-0.16.0 && \
     yum install -y boost-devel && \
   	CFLAGS=-std=c99 pip install numpy==1.18.1 cython==0.29.14 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
