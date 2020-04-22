@@ -136,19 +136,13 @@ class LinearRegression:
 
         # Equivalent Linear Regression parameters for h2o4gpu
         n_threads = None
-        n_gpus = n_gpus
-        fit_intercept = fit_intercept
         lambda_min_ratio = 0.0
         n_lambdas = 1
         n_folds = 1
         n_alphas = 1
-        tol = tol
         tol_seek_factor = 1E-1
         lambda_stop_early = False
-        glm_stop_early = glm_stop_early
-        glm_stop_early_error_fraction = glm_stop_early_error_fraction
         max_iter = 5000
-        verbose = verbose
         family = 'elasticnet'
         lambda_max = 0.0
         alpha_max = 0.0

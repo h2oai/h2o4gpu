@@ -39,7 +39,7 @@ def _get_sparse_matrixes(X):
     return X_csc, X_csr, X_coo
 
 
-class FactorizationH2O(object):
+class FactorizationH2O:
     '''Matrix Factorization on GPU with Alternating Least Square (ALS) algorithm.
 
     Factors a sparse rating matrix X (m by n, with N_z non-zero elements)

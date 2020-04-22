@@ -14,7 +14,7 @@ import h2o4gpu.libs.lib_utils as lib_utils
 # TODO: catch Ctrl-C
 
 
-class Pogs(object):
+class Pogs:
     """POGS solver"""
 
     def __init__(self, A, **kwargs):
@@ -50,7 +50,7 @@ class Pogs(object):
         self.solver.finish()
 
 
-class BaseSolver(object):
+class BaseSolver:
     """Solver class calling underlying POGS implementation"""
 
     def __init__(self, A, lib, **kwargs):
@@ -129,7 +129,7 @@ class BaseSolver(object):
                 print("No viable H2O4GPU_work pointer to call solve()."
                       "Call Solver.init( args... ) first")
                 return
-            elif not self.double_precision:
+            if not self.double_precision:
                 self.lib.h2o4gpu_solve_single(self.work, self.settings,
                                               self.solution,
                                               self.info,

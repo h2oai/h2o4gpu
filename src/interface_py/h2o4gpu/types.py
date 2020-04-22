@@ -7,6 +7,7 @@ import h2o4gpu.libs.lib_utils as lib_utils
 
 lib = None
 
+
 def lazyLib():
     global lib
     if lib is None:
@@ -15,7 +16,8 @@ def lazyLib():
         lib = lib_utils.get_lib(n_gpus, devices)
     return lib
 
-class H2OSolverDefault(object):
+
+class H2OSolverDefault:
     """
     Constants representing defaults used in our solvers
     """
@@ -35,8 +37,10 @@ class H2OSolverDefault(object):
     N_DEV = 1  # number of cuda devices =1
     W_DEV = 0  # which cuda devices (0)
 
-#H2O4GPU types
-class Solution(object):
+# H2O4GPU types
+
+
+class Solution:
 
     def __init__(self, double_precision, m, n):
         T = np.float64 if double_precision else np.float32
@@ -46,6 +50,7 @@ class Solution(object):
         self.mu = zeros(n, dtype=T)
         self.nu = zeros(m, dtype=T)
 
+
 def change_settings(settings, **kwargs):
     """ Utility setting values from kwargs
     :param settings: settings object, should contain attributes
@@ -53,23 +58,33 @@ def change_settings(settings, **kwargs):
     :param kwargs: key-value pairs representing the settings
     :return:
     """
-    #all settings(except warm_start) are persistent and change only if called
-    if 'rho' in kwargs: settings.rho = kwargs['rho']
-    if 'abs_tol' in kwargs: settings.abs_tol = kwargs['abs_tol']
-    if 'rel_tol' in kwargs: settings.rel_tol = kwargs['rel_tol']
-    if 'max_iters' in kwargs: settings.max_iters = kwargs['max_iters']
-    if 'verbose' in kwargs: settings.verbose = kwargs['verbose']
-    if 'adaptive_rho' in kwargs: settings.adaptive_rho = kwargs['adaptive_rho']
-    if 'equil' in kwargs: settings.equil = kwargs['equil']
-    if 'gap_stop' in kwargs: settings.gap_stop = kwargs['gap_stop']
+    # all settings(except warm_start) are persistent and change only if called
+    if 'rho' in kwargs:
+        settings.rho = kwargs['rho']
+    if 'abs_tol' in kwargs:
+        settings.abs_tol = kwargs['abs_tol']
+    if 'rel_tol' in kwargs:
+        settings.rel_tol = kwargs['rel_tol']
+    if 'max_iters' in kwargs:
+        settings.max_iters = kwargs['max_iters']
+    if 'verbose' in kwargs:
+        settings.verbose = kwargs['verbose']
+    if 'adaptive_rho' in kwargs:
+        settings.adaptive_rho = kwargs['adaptive_rho']
+    if 'equil' in kwargs:
+        settings.equil = kwargs['equil']
+    if 'gap_stop' in kwargs:
+        settings.gap_stop = kwargs['gap_stop']
 
-    #warm_start must be specified each time it is desired
+    # warm_start must be specified each time it is desired
     if 'warm_start' in kwargs:
         settings.warm_start = kwargs['warm_start']
     else:
         settings.warm_start = 0
-    if 'nDev' in kwargs: settings.nDev = kwargs['nDev']
-    if 'wDev' in kwargs: settings.wDev = kwargs['wDev']
+    if 'nDev' in kwargs:
+        settings.nDev = kwargs['nDev']
+    if 'wDev' in kwargs:
+        settings.wDev = kwargs['wDev']
 
 
 def make_settings(double_precision=False, **kwargs):
@@ -105,10 +120,13 @@ def make_settings(double_precision=False, **kwargs):
         kwargs.keys()) else H2OSolverDefault.W_DEV
     return settings
 
+
 def change_solution(py_solution, **kwargs):
     try:
-        if 'x_init' in kwargs: py_solution.x[:] = kwargs['x_init'][:]
-        if 'nu_init' in kwargs: py_solution.nu[:] = kwargs['nu_init'][:]
+        if 'x_init' in kwargs:
+            py_solution.x[:] = kwargs['x_init'][:]
+        if 'nu_init' in kwargs:
+            py_solution.nu[:] = kwargs['nu_init'][:]
     except:
         raise RuntimeError("Failed to change solution.")
 
@@ -122,6 +140,7 @@ def make_solution(py_solution):
     solution.nu = py_solution.nu
     return solution
 
+
 def make_info(double_precision):
     info = lazyLib().H2O4GPUInfoD if double_precision \
         else lazyLib().H2O4GPUInfoS
@@ -132,7 +151,8 @@ def make_info(double_precision):
     info.solvetime = 0
     return info
 
-class FunctionVector(object):
+
+class FunctionVector:
     """Class representing a function"""
 
     def __init__(self, length, double_precision=False):

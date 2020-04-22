@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -11,12 +11,13 @@ import pandas as pd
 from daal.data_management import (AOSNumericTable, FileDataSource,
                                   DataSource, HomogenNumericTable)
 
-class IInput(object):
+
+class IInput:
     '''
     Abstract class for generic input data in daal library
     '''
 
-    #@abc.abstractclassmethod
+    # @abc.abstractclassmethod
     def getNumericTable(self, **kwargs):
         raise NotImplementedError()
 
@@ -62,18 +63,17 @@ class HomogenousDaalData(IInput):
     def getNumericTable(self, **kwargs):
         if self.informat == 'numpy':
             return HomogenNumericTable(self.indata)
-        elif self.informat == 'pandas':
+        if self.informat == 'pandas':
             array = self.indata.as_matrix()
             return HomogenNumericTable(array)
-        elif self.informat == 'csv':
+        if self.informat == 'csv':
             dataSource =  \
-            FileDataSource(self.indata,
-                           DataSource.doAllocateNumericTable,
-                           DataSource.doDictionaryFormContext)
+                FileDataSource(self.indata,
+                               DataSource.doAllocateNumericTable,
+                               DataSource.doDictionaryFormContext)
             dataSource.loadDataBlock()
             return dataSource.getNumericTable()
-        else:
-            raise ValueError("Cannot identify input type.")
+        raise ValueError("Cannot identify input type.")
 
 
 class HeterogenousDaalData(HomogenousDaalData):
@@ -106,12 +106,12 @@ class HeterogenousDaalData(HomogenousDaalData):
     def getNumericTable(self, **kwargs):
         if self.informat == 'numpy':
             return AOSNumericTable(self.indata)
-        elif self.informat == 'pandas':
+        if self.informat == 'pandas':
             array = self._getStructureArray(
                 self.indata,
                 dtypes=self.indata.dtypes)
             return AOSNumericTable(array)
-        elif self.informat == 'csv':
+        if self.informat == 'csv':
             dataSource = FileDataSource(
                 self.indata,
                 DataSource.notAllocateNumericTable,
@@ -125,5 +125,4 @@ class HeterogenousDaalData(HomogenousDaalData):
             array = np.empty([nRows,], dtype=dtype)
             nT = AOSNumericTable(array)
             return dataSource.loadDataBlock(nRows, nT)
-        else:
-            return None
+        return None

@@ -9,7 +9,8 @@ import numpy as np
 
 # Data utils
 
-class WrappedPointer(object):
+
+class WrappedPointer:
     '''Wraps a native pointer and release underlying resources
     when notified by GC
 
@@ -23,11 +24,13 @@ class WrappedPointer(object):
         self.p = p
         self.double_precision = double_precision
         self.lib = lib
+
     def __del__(self):
         if self.double_precision:
             self.lib.modelfree1_double(self.p)
         else:
             self.lib.modelfree1_float(self.p)
+
 
 def _get_order(data, fortran, order):
     """ Return the Unicode code point representing the
@@ -35,10 +38,6 @@ def _get_order(data, fortran, order):
     if data is not None:
         if order is None:
             order = 'c' if fortran else 'r'
-        elif order in ['c', 'r']:
-            order = order
-        elif order in ['c', 'r']:
-            order = order
         else:
             ValueError("Bad order")
     return order
@@ -86,7 +85,7 @@ def _to_np(data, ismatrix=False, dtype=None, order=None):
         dtype = outdata.dtype
 
     # force precision as 32-bit if not required types
-    if dtype != np.float32 and dtype != np.float64:
+    if dtype not in [np.float32, np.float64]:
         dtype = np.float32
 
     outdata = outdata.astype(dtype, copy=False, order=nporder)
@@ -196,6 +195,7 @@ def _data_info(data, verbose=0):
 
     return double_precision, m, n
 
+
 def _check_equal(iterator):
     """Check if all the values in an iterator are equal.
 
@@ -303,7 +303,7 @@ def upload_data(self,
     if self.double_precision1 >= 0 and self.double_precision2 >= 0:
         if self.double_precision1 != self.double_precision2:
             print('train_x and valid_x must be same precision')
-            exit(0)
+            sys.exit(0)
         else:
             self.double_precision = self.double_precision1  # either one
     elif self.double_precision1 >= 0:
@@ -316,21 +316,21 @@ def upload_data(self,
     if self.double_precision1 >= 0 and self.double_precision3 >= 0:
         if self.double_precision1 != self.double_precision3:
             print('train_x and train_y must be same precision')
-            exit(0)
+            sys.exit(0)
 
         # ##############
 
     if self.double_precision2 >= 0 and self.double_precision4 >= 0:
         if self.double_precision2 != self.double_precision4:
             print('valid_x and valid_y must be same precision')
-            exit(0)
+            sys.exit(0)
 
         # ##############
 
     if self.double_precision3 >= 0 and self.double_precision5 >= 0:
         if self.double_precision3 != self.double_precision5:
             print('train_y and weight must be same precision')
-            exit(0)
+            sys.exit(0)
 
         # ##############
 
@@ -338,7 +338,7 @@ def upload_data(self,
     if n1 >= 0 and n2 >= 0:
         if n1 != n2:
             print('train_x and valid_x must have same number of columns')
-            exit(0)
+            sys.exit(0)
         else:
             n = n1  # either one
     elif n1 >= 0:
@@ -412,10 +412,10 @@ def upload_data(self,
     # self.d = d
     # self.e = e
     return WrappedPointer(a, self.double_precision == 1, self.lib),\
-           WrappedPointer(b, self.double_precision == 1, self.lib),\
-           WrappedPointer(c, self.double_precision == 1, self.lib),\
-           WrappedPointer(d, self.double_precision == 1, self.lib),\
-           WrappedPointer(e, self.double_precision == 1, self.lib)
+        WrappedPointer(b, self.double_precision == 1, self.lib),\
+        WrappedPointer(c, self.double_precision == 1, self.lib),\
+        WrappedPointer(d, self.double_precision == 1, self.lib),\
+        WrappedPointer(e, self.double_precision == 1, self.lib)
 
 
 def free_sols(self):
@@ -439,6 +439,7 @@ def free_preds(self):
             self.lib.modelfree2_float(self.valid_pred_vs_alpha_lambda)
             self.lib.modelfree2_float(self.valid_pred_vs_alpha)
 
+
 def finish(self):
     import warnings
     warnings.warn("finish will be removed in a next version, please use 'del'",
@@ -446,9 +447,11 @@ def finish(self):
     free_sols(self)
     free_preds(self)
 
+
 def __del__(self):
     free_sols(self)
     free_preds(self)
+
 
 class _setter:
     """Setter

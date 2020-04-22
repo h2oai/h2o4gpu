@@ -10,7 +10,7 @@ from h2o4gpu.linear_model import ridge as sk
 from ..solvers.utils import _setter
 
 
-class Ridge(object):
+class Ridge:
     """H2O Ridge Regression Solver
 
     Parameters
@@ -119,17 +119,17 @@ class Ridge(object):
 
     def __init__(
             self,
-            alpha=1.0,  #h2o4gpu
-            fit_intercept=True,  #h2o4gpu
+            alpha=1.0,  # h2o4gpu
+            fit_intercept=True,  # h2o4gpu
             normalize=False,
             copy_X=True,
-            max_iter=5000,  #h2o4gpu
-            tol=1e-2,  #h2o4gpu
+            max_iter=5000,  # h2o4gpu
+            tol=1e-2,  # h2o4gpu
             solver='auto',
             random_state=None,
             n_gpus=-1,  # h2o4gpu
             glm_stop_early=True,  # h2o4gpu
-            glm_stop_early_error_fraction=1.0,  #h2o4gpu
+            glm_stop_early_error_fraction=1.0,  # h2o4gpu
             verbose=False,
             backend='auto',
             **kwargs):  # h2o4gpu
@@ -170,7 +170,7 @@ class Ridge(object):
             from h2o4gpu import DAAL_SUPPORTED
             if DAAL_SUPPORTED:
                 from h2o4gpu.solvers.daal_solver.regression \
-                        import RidgeRegression as DRR
+                    import RidgeRegression as DRR
                 self.do_daal = True
                 self.backend = 'daal'
 
@@ -269,7 +269,7 @@ class Ridge(object):
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y)  #Need to re-fit
+            self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

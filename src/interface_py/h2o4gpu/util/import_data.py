@@ -42,8 +42,6 @@ def import_data(data_path,
             family : string that would either be "logistic" if classification
             is set to True,otherwise "elasticnet"
     """
-    # Can import data using pandas or feather.
-    use_pandas = use_pandas
 
     data_file = data_path  # If importing using pandas
 
@@ -75,7 +73,6 @@ def import_data(data_path,
 
     # Do train / valid split
     if valid_fraction > 0:
-        valid_fraction = valid_fraction
         HO = int(valid_fraction * morig)
         H = morig - HO
         print("Size of Train rows=%d & valid rows=%d" % (H, HO))

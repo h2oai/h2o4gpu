@@ -10,7 +10,7 @@ import numpy as np
 from ..solvers.utils import _setter
 
 
-class TruncatedSVDH2O(object):
+class TruncatedSVDH2O:
     """Dimensionality reduction using truncated SVD for GPUs
 
     Perform linear dimensionality reduction by means of truncated singular value decomposition (SVD).
@@ -350,7 +350,7 @@ class TruncatedSVDH2O(object):
         return gpu_lib
 
 
-class TruncatedSVD(object):
+class TruncatedSVD:
     """
     Truncated SVD Wrapper
 

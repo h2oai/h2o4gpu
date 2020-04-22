@@ -11,7 +11,7 @@ from h2o4gpu.linear_model import logistic as sk
 from ..solvers.utils import _setter
 
 
-class LogisticRegression(object):
+class LogisticRegression:
     """H2O Logistic Regression Solver
 
     Parameters

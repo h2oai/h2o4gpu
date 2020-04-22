@@ -101,7 +101,7 @@ def cuda_vis_check(total_gpus):
             which_gpus = os.getenv("CUDA_VISIBLE_DEVICES").split(",")
             which_gpus = [int(x) for x in which_gpus]
     else:
-        which_gpus = [x for x in range(0, total_gpus)]
+        which_gpus = list(range(0, total_gpus))
 
     return total_gpus, which_gpus
 
@@ -127,17 +127,18 @@ def get_gpu_info_subprocess(return_usage=False):
 
         total_mem = \
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
-                py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total for i in
-                 range(total_gpus)])
+                py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(i)).total
+                 for i in range(total_gpus)])
 
-        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName \
-            (py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
+        gpu_type = py3nvml.py3nvml.nvmlDeviceGetName(
+            py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(0))
 
         if return_usage:
             for j in range(total_gpus_actual):
                 if j in which_gpus:
                     handle = py3nvml.py3nvml.nvmlDeviceGetHandleByIndex(j)
-                    util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(handle)
+                    util = py3nvml.py3nvml.nvmlDeviceGetUtilizationRates(
+                        handle)
                     usage.append(util.gpu)
     # pylint: disable=bare-except
     except:
@@ -230,7 +231,8 @@ def get_gpu_info_c(return_memory=False,
     if return_capability or return_all:
         if list(minors_tmp)[0] == -1:
             for j in which_gpus:
-                majors_tmp[j], minors_tmp[j], _ = get_compute_capability_orig(j)
+                majors_tmp[j], minors_tmp[j], _ = get_compute_capability_orig(
+                    j)
 
     total_mems_actual = np.resize(total_mems_tmp, total_gpus_actual)
     free_mems_actual = np.resize(free_mems_tmp, total_gpus_actual)
