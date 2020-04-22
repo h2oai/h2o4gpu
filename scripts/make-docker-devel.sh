@@ -12,7 +12,7 @@ CONDA_PKG_NAME="h2o4gpu${extratag}"
 
 #--build-arg http_proxy=http://172.16.2.142:3128/
 echo "Docker devel - BEGIN"
-$DOCKER_CLI build -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg docker_name=${dockerimage} .
+$DOCKER_CLI build -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-build --rm=false --build-arg docker_name=${dockerimage} --build-arg python_version=${python_version} .
 
 $DOCKER_CLI run --runtime=nvidia --init --rm --name ${CONTAINER_NAME} -d -t -u root -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
 

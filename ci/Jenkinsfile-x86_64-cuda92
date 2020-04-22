@@ -30,6 +30,7 @@ def labelruntime = "nvidia-docker"
 def doingbenchmark = "0"
 def dobenchmark = "0"
 def doruntime = "1"
+def python = "3.6"
 def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
 def publish_docs = false//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)
 def benchmark_commit_trigger
@@ -107,7 +108,7 @@ pipeline {
                 }
                 script {
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    h2o4gpuUtils.buildOnLinux("${cuda}", "${extratag}", "${platform}", "${linuxwheel}")
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${python}", "${extratag}", "${platform}", "${linuxwheel}")
 
                     buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
 
@@ -160,7 +161,7 @@ pipeline {
                         echo "After Stashed wheel file:"
                         ls -l src/interface_py/dist/${platform}/  || true
                        """
-                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype_multi_gpu}", "${data_dirs}")
+                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${python}", "${extratag}", "${platform}", "${testtype_multi_gpu}", "${data_dirs}")
                 }
             }
         }
@@ -206,7 +207,7 @@ pipeline {
                         echo "After Stashed py documentation file:"
                         ls -l src/interface_py/docs/_build  || true
                        """
-                    h2o4gpuUtils.runTestsSingleGpu(buildInfo.get(), "${cuda}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
+                    h2o4gpuUtils.runTestsSingleGpu(buildInfo.get(), "${cuda}", "${python}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -266,7 +267,7 @@ pipeline {
                        """
                 }
                 script {
-                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${platform}", "${extratag}", "${data_dirs}")
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${python}", "${platform}", "${extratag}", "${data_dirs}")
                 }
                 retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {

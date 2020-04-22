@@ -194,7 +194,7 @@ void publishRuntimeToS3(BuildInfo buildInfo,String extratag) {
     }
 }
 
-void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
+void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String python, String extratag, String platform, String target, String data_dirs) {
     echo "Running tests"
 
    try {
@@ -203,6 +203,7 @@ void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String extratag,
             CONTAINER_NAME=${CONTAINER_NAME} \
             extratag=${extratag} \
             dockerimage=${dockerimage} \
+            python_version=${python} \
             target=${target} \
             platform=${platform} ./scripts/make-docker-runtests-single-gpu.sh
            """
@@ -220,7 +221,7 @@ void runTestsSingleGpu(BuildInfo buildInfo, String dockerimage, String extratag,
     }
 }
 
-void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String extratag, String platform, String target, String data_dirs) {
+void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String python, String extratag, String platform, String target, String data_dirs) {
     echo "Running tests"
 
    try {
@@ -229,6 +230,7 @@ void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String extratag, 
             CONTAINER_NAME=${CONTAINER_NAME} \
             extratag=${extratag} \
             dockerimage=${dockerimage} \
+            python_version=${python} \
             target=${target} \
             platform=${platform} ./scripts/make-docker-runtests-multi-gpu.sh
            """
@@ -246,7 +248,7 @@ void runTestsMultiGpu(BuildInfo buildInfo, String dockerimage, String extratag, 
     }
 }
 
-void buildOnLinux(String dockerimage, String extratag, String platform, String stashName) {
+void buildOnLinux(String dockerimage, String python, String extratag, String platform, String stashName) {
     echo "Building on linux"
 
     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
@@ -256,6 +258,7 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
                 CONTAINER_NAME=${CONTAINER_NAME} \
                 extratag=${extratag} \
                 dockerimage=${dockerimage} \
+                python_version=${python} \
                 H2O4GPU_BUILD=${env.BUILD_ID} \
                 H2O4GPU_SUFFIX=${isRelease() ? "" : "+" + ciVersionSuffix()} \
                 makeopts=${env.MAKE_OPTS} \
@@ -280,7 +283,7 @@ void buildOnLinux(String dockerimage, String extratag, String platform, String s
     }
 }
 
-void buildRuntime(BuildInfo buildInfo, String dockerimage, String platform, String extratag, String data_dirs) {
+void buildRuntime(BuildInfo buildInfo, String dockerimage, String python, String platform, String extratag, String data_dirs) {
     echo "Building runtime"
 
     def buckettype = "snapshots"
@@ -298,6 +301,7 @@ void buildRuntime(BuildInfo buildInfo, String dockerimage, String platform, Stri
                 encodedFullVersionTag=${encodedFullVersionTag} \
                 fullVersionTag=${fullVersionTag} \
                 platform=${platform} \
+                python_version=${python} \
                 dockerimage=${dockerimage} ./scripts/make-docker-runtime.sh
                """
             currentBuild.result = "SUCCESS"
