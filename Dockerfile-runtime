@@ -61,7 +61,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
   ln -s /usr/bin/cmake3 /usr/bin/cmake && \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-    git checkout tags/apache-arrow-0.12.0 && \
+    git checkout tags/apache-arrow-0.17.0 && \
     CFLAGS=-std=c99 pip install numpy==1.18.1 cython==0.29.14 && \
     export ARROW_BUILD_TYPE=release && \
     export ARROW_HOME=/usr/local && \
