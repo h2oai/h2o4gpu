@@ -72,6 +72,8 @@ RUN \
     git checkout tags/v2.4.7-1 && \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
 
+RUN mkdir -p /opt/h2oai/h2o4gpu
+
 RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \

@@ -35,6 +35,8 @@ RUN yum install -y \
 # Arrow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then yum install -y git boost-devel cmake3  autoconf libjpeg-devel; fi'
 
+RUN mkdir -p /opt/h2oai/h2o4gpu
+
 RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
     tar xvf llvm.tar.bz2 && \
     cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
@@ -45,7 +47,7 @@ ENV PATH=$LLVM4/bin:$PATH
 ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
 ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 
-RUN mkdir -p /opt/h2oai/h2o4gpu
+
 
 ARG python_version
 
