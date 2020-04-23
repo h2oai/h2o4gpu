@@ -72,15 +72,22 @@ RUN \
     git checkout tags/v2.4.7-1 && \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
 
+RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
+    tar xvf llvm.tar.bz2 && \
+    cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
+    rm -rf llvm*
+
+ENV LLVM4=/opt/h2oai/h2o4gpu
+ENV PATH=$LLVM4/bin:$PATH
+ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
+ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
+
 #
 # Library versions
 #
-ARG python_version=3.7
+ARG python_version
 ENV MINICONDA_VERSION=4.7.12
 ENV SWIG_VERSION=3.0.12
-
-RUN python --version
-
 
 # conda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
@@ -88,17 +95,9 @@ RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Lin
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build pip && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
-RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
-    tar xvf llvm.tar.bz2 && \
-    cp -r llvm/* /opt/h2oai/h2o4gpu/ && \
-    rm -rf llvm*
 
-ENV LLVM4=/opt/h2oai/h2o4gpu
 ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 ENV PATH=/usr/local/bin:$PATH
-ENV PATH=$LLVM4/bin:$PATH
-ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
-ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 
 #
 # Symlinks
