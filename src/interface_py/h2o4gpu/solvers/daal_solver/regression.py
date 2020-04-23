@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -15,6 +15,7 @@ from h2o4gpu.solvers.daal_solver.daal_data import getNumpyArray
 from .utils import printNumericTable
 from .daal_data import IInput
 
+
 class Method(Enum):
     '''
     Method solver for IntelDAAL
@@ -27,7 +28,8 @@ class Method(Enum):
     qr_dense = linear_training.qrDense
     normal_equation = linear_training.normEqDense
 
-class LinearRegression(object):
+
+class LinearRegression:
     '''Linear Regression based on DAAL
     library
     '''
@@ -51,7 +53,6 @@ class LinearRegression(object):
         self.response_data_array = None
 
     def fit(self, X, y=None):
-
         '''
         masquerade function for train()
         '''
@@ -81,8 +82,8 @@ class LinearRegression(object):
         linear_training_algorithm.input.set(linear_training.dependentVariables,
                                             Responses)
         # check if intercept flag is set
-        linear_training_algorithm.parameter.interceptFlag = True \
-            if 'intercept' in self.parameters else False
+        linear_training_algorithm.parameter.interceptFlag = (
+            'intercept' in self.parameters)
         # calculate
         res = linear_training_algorithm.compute()
         # return trained model
@@ -90,7 +91,6 @@ class LinearRegression(object):
         return self.model
 
     def get_beta(self):
-
         '''
         :return: Linear Regression coefficients
         '''
@@ -118,7 +118,7 @@ class LinearRegression(object):
             linear_prediction.data, Data)
 
         # TODO
-        #if 'intercept' in self.parameters:
+        # if 'intercept' in self.parameters:
         #    linear_prediction_algorithm.parameter.interceptFlag = True
 
         res = linear_prediction_algorithm.compute()
@@ -153,7 +153,7 @@ class LinearRegression(object):
             self.parameters.append('intercept')
 
     def set_attributes(self):
-        warnings.warn("DAAL Linear Regression doesn't have any attributes",\
+        warnings.warn("DAAL Linear Regression doesn't have any attributes",
                       UserWarning)
 
     @staticmethod
@@ -170,12 +170,12 @@ class LinearRegression(object):
         '''
 
         assert isinstance(daal_table, NumericTable), \
-                        "requires a daal.data_management.NumericTable"
+            "requires a daal.data_management.NumericTable"
         printNumericTable(daal_table, message, num_printed_rows,
                           num_printed_cols, interval)
 
 
-class RidgeRegression(object):
+class RidgeRegression:
     '''Ridge Regression based on DAAL
     library
     '''
@@ -199,7 +199,6 @@ class RidgeRegression(object):
         self.response_data_array = None
 
     def fit(self, X, y=None):
-
         '''
         masquerade function for train()
         '''
@@ -236,7 +235,6 @@ class RidgeRegression(object):
         return self.model
 
     def get_beta(self):
-
         '''
         :return: Linear Regression coefficients
         '''
@@ -300,5 +298,5 @@ class RidgeRegression(object):
             self.parameters.append('intercept')
 
     def set_attributes(self):
-        warnings.warn("DAAL Linear Regression doesn't have any attributes",\
+        warnings.warn("DAAL Linear Regression doesn't have any attributes",
                       UserWarning)

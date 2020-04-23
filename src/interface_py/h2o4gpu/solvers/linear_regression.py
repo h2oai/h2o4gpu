@@ -10,7 +10,7 @@ from h2o4gpu.linear_model import base as sk
 from ..solvers.utils import _setter
 
 
-class LinearRegression(object):
+class LinearRegression:
     """H2O LinearRegression Regression Solver
 
     Parameters
@@ -62,7 +62,7 @@ class LinearRegression(object):
 
     def __init__(
             self,
-            fit_intercept=True,  #h2o4gpu
+            fit_intercept=True,  # h2o4gpu
             normalize=False,
             copy_X=True,
             n_jobs=1,
@@ -136,19 +136,13 @@ class LinearRegression(object):
 
         # Equivalent Linear Regression parameters for h2o4gpu
         n_threads = None
-        n_gpus = n_gpus
-        fit_intercept = fit_intercept
         lambda_min_ratio = 0.0
         n_lambdas = 1
         n_folds = 1
         n_alphas = 1
-        tol = tol
         tol_seek_factor = 1E-1
         lambda_stop_early = False
-        glm_stop_early = glm_stop_early
-        glm_stop_early_error_fraction = glm_stop_early_error_fraction
         max_iter = 5000
-        verbose = verbose
         family = 'elasticnet'
         lambda_max = 0.0
         alpha_max = 0.0
@@ -218,7 +212,7 @@ class LinearRegression(object):
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y)  #Need to re-fit
+            self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

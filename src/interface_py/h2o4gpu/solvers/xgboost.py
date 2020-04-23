@@ -10,7 +10,7 @@ from dask import dataframe as dd
 from dask import array as da
 
 
-class RandomForestClassifier(object):
+class RandomForestClassifier:
     """H2O RandomForestClassifier Solver
 
     This estimator selects between h2o4gpu.solvers.xgboost.RandomForestClassifier
@@ -383,7 +383,7 @@ class RandomForestClassifier(object):
         s('oself.oob_decision_function_ = oself.model.oob_decision_function_')
 
 
-class RandomForestRegressor(object):
+class RandomForestRegressor:
     """H2O RandomForestRegressor Solver
 
     This estimator selects between h2o4gpu.solvers.xgboost.RandomForestRegressor
@@ -712,7 +712,7 @@ class RandomForestRegressor(object):
         s('oself.oob_prediction_  = oself.model.oob_prediction_')
 
 
-class GradientBoostingClassifier(object):
+class GradientBoostingClassifier:
     """H2O GradientBoostingClassifier Solver
 
     Selects between h2o4gpu.solvers.xgboost.GradientBoostingClassifier
@@ -1221,7 +1221,7 @@ class GradientBoostingClassifier(object):
         s('oself.estimators_ = oself.model.estimators_')
 
 
-class GradientBoostingRegressor(object):
+class GradientBoostingRegressor:
     """H2O GradientBoostingRegressor Solver
 
     Selects between h2o4gpu.solvers.xgboost.GradientBoostingRegressor

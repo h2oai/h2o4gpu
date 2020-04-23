@@ -9,7 +9,7 @@ Autoregressive Integrated Moving Average (ARIMA) model.
 import numpy as np
 
 
-class ARIMA(object):
+class ARIMA:
     """ Autoregressive integrated moving average
 
     Parameters

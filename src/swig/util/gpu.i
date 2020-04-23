@@ -20,36 +20,37 @@ extern int get_gpu_info_c(int verbose,
 extern int cudaresetdevice_bare(void);
 %}
 
-// Original from http://www.swig.org/Doc1.3/Python.html#Python_nn59
-// UNICODE improvements by https://stackoverflow.com/questions/33306957/passing-numpy-string-array-to-c-using-swig
-// This tells SWIG to treat char ** as a special case
-%typemap(in) char ** {
-  /* Check if is a list */
-    if (PyList_Check($input)) {
-        int size = PyList_Size($input);
-        Py_ssize_t i = 0;
-        $1 = (char **) malloc((size+1)*sizeof(char *));
-        for (i = 0; i < size; i++) {
-            PyObject *o = PyList_GetItem($input,i);
-            if (PyUnicode_Check(o))
-                $1[i] = PyUnicode_AsUTF8(PyList_GetItem($input,i));
-            else {
-                //PyErr_SetString(PyExc_TypeError,"list must contain strings");
-                PyErr_Format(PyExc_TypeError, "list must contain strings. %d/%d element was not string.", i, size);
-                free($1);
-                return NULL;
-            }
-        }
-        $1[i] = 0;
-    } else {
-        PyErr_SetString(PyExc_TypeError,"not a list");
-        return NULL;
-    }
+%typemap(in) char** (char* tmp) {
+    $1 = &tmp;
 }
 
-// This cleans up the char ** array we malloc'd before the function call
-%typemap(freearg) char ** {
-  free((char *) $1);
+%typemap(argout) (char **strsplit) {
+   int ntokens;
+   PyObject *py_string_tmp;
+   int py_err;
+
+   for (ntokens = 0; $1[ntokens] != NULL; ntokens++) {
+   }
+
+   $result = PyList_New(ntokens);
+   if (! $result) return NULL;
+
+   for (int itoken = 0; itoken < ntokens; itoken++) {
+       if ($1[itoken] == NULL) break;
+
+       py_string_tmp = PyString_FromString( $1[itoken] );
+       if (! py_string_tmp) return NULL;
+
+       py_err = PyList_SetItem($result, itoken, py_string_tmp);
+       if (py_err == -1) return NULL;
+   }
+
+   for (int itoken = 0; itoken < ntokens; itoken++) {
+       free($1[itoken]);
+   }
+   free($1);
+
+   return $result;
 }
 
 %apply int *OUTPUT {int *major, int *minor, int *ratioperf};

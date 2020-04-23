@@ -10,7 +10,7 @@ from h2o4gpu.linear_model import coordinate_descent as sk
 from ..solvers.utils import _setter
 
 
-class Lasso(object):
+class Lasso:
     """H2O Lasso Regression Solver
 
     Parameters
@@ -97,20 +97,20 @@ class Lasso(object):
 
     def __init__(
             self,
-            alpha=1.0,  #h2o4gpu
-            fit_intercept=True,  #h2o4gpu
+            alpha=1.0,  # h2o4gpu
+            fit_intercept=True,  # h2o4gpu
             normalize=False,
             precompute=False,
             copy_X=True,
-            max_iter=5000,  #h2o4gpu
-            tol=1e-2,  #h2o4gpu
+            max_iter=5000,  # h2o4gpu
+            tol=1e-2,  # h2o4gpu
             warm_start=False,
             positive=False,
             random_state=None,
             selection='cyclic',
             n_gpus=-1,  # h2o4gpu
             glm_stop_early=True,  # h2o4gpu
-            glm_stop_early_error_fraction=1.0,  #h2o4gpu
+            glm_stop_early_error_fraction=1.0,  # h2o4gpu
             verbose=False,
             backend='auto'):  # h2o4gpu
 
@@ -160,7 +160,7 @@ class Lasso(object):
             random_state=random_state,
             selection=selection)
 
-        #Equivalent Lasso parameters for h2o4gpu
+        # Equivalent Lasso parameters for h2o4gpu
         n_threads = None
         n_alphas = 1
         n_lambdas = 1
@@ -237,7 +237,7 @@ class Lasso(object):
         if self.verbose:
             print("WARNING: score() is using sklearn")
         if not self.do_sklearn:
-            self.model_sklearn.fit(X, y)  #Need to re-fit
+            self.model_sklearn.fit(X, y)  # Need to re-fit
         res = self.model_sklearn.score(X, y, sample_weight)
         return res
 

@@ -1,4 +1,4 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -13,6 +13,7 @@ from .daal_data import IInput
 
 __all__ = ['SingularValueParameter', 'SVD']
 
+
 class SingularValueParameter(Enum):
     '''
     Algorithm Parameter: for leftSingularMatrix and
@@ -22,7 +23,8 @@ class SingularValueParameter(Enum):
     requiredInPackedForm = svd.requiredInPackedForm
     notRequired = svd.notRequired
 
-class SVD(object):
+
+class SVD:
     '''
     Computes result of the SVD algorithm
     '''
@@ -36,9 +38,9 @@ class SVD(object):
         self.components_ = None
         self.singular_values_ = None
         self.parameters = {'method': 'defaultDense',
-                           'leftSingularMatrix': \
+                           'leftSingularMatrix':
                            SingularValueParameter.requiredInPackedForm.value,
-                           'rightSingularMatrix': \
+                           'rightSingularMatrix':
                            SingularValueParameter.requiredInPackedForm.value}
 
     def fit(self, X, y=None):
@@ -62,29 +64,32 @@ class SVD(object):
         _ = y
         hdd = IInput.HomogenousDaalData(X)
         input_type = hdd.informat
-        column_lambda = lambda input_, components: input_[:, 0:components] if \
-            components <= input_.shape[1] else input_
+
+        def column_lambda(input_, components):
+            if components <= input_.shape[1]:
+                return input_[:, 0:components]
+            return input_
+
         if input_type == 'numpy':
             X = column_lambda(X, self.n_components)
         elif input_type == 'pandas':
             X = column_lambda(X.as_matrix(), self.n_components)
         else:
-            pass #CSV column size is not supported
+            pass  # CSV column size is not supported
 
         Input = hdd.getNumericTable()
 
-        algorithm = svd.Batch(method=svd.defaultDense,
-                              leftSingularMatrix=
-                              self.parameters['leftSingularMatrix'],
-                              rightSingularMatrix=
-                              self.parameters['rightSingularMatrix'])
+        algorithm = svd.Batch(
+            method=svd.defaultDense,
+            leftSingularMatrix=self.parameters['leftSingularMatrix'],
+            rightSingularMatrix=self.parameters['rightSingularMatrix'])
         algorithm.input.set(svd.data, Input)
 
         # compute SVD decomposition
         result = algorithm.compute()
         U, Sigma, VT = result.get(svd.leftSingularMatrix), \
-                        result.get(svd.singularValues), \
-                        result.get(svd.rightSingularMatrix)
+            result.get(svd.singularValues), \
+            result.get(svd.rightSingularMatrix)
 
         # transform result to numpy array
         self._U = IInput.getNumpyArray(nT=U)
@@ -97,7 +102,7 @@ class SVD(object):
         # Calculate explained variance & explained variance ratio
         X_transformed = self._U * self._w
         self.explained_variance = exp_var = np.var(X_transformed, axis=0)
-        #todo @Monika: support csr, crs
+        # todo @Monika: support csr, crs
         full_var = np.var(X, axis=0).sum()
         self.explained_variance_ratio_ = exp_var / full_var
         return X_transformed
@@ -136,7 +141,7 @@ class SVD(object):
         """
         return np.dot(X, self.components_)
 
-    def _check_double(self, data, convert=True): #@UnusedVariable
+    def _check_double(self, data, convert=True):  # @UnusedVariable
         '''
         No check is needed, PyDAAL works already with embedded validation
         :param data:
@@ -187,13 +192,13 @@ class SVD(object):
             return self
 
         valid_params = self.get_params().keys()
-        for key, value in params:
+        for key, value in params.items():
             if key not in valid_params:
                 raise ValueError('Invalid parameters {} for estimator {}. '
                                  'Check the list of available parameters '
                                  'with `estimator.get_params().keys()`.'.
                                  format(key, self.__class__.__name__))
-            elif key in valid_params:
+            if key in valid_params:
                 if key in ['leftSingularMatrix', 'rightSingularMatrix']:
                     valid_values = [x.value for x in SingularValueParameter]
                     if value.value not in valid_values:
@@ -201,11 +206,10 @@ class SVD(object):
                                          '{}. The valid values are: {}'.
                                          format(key, self.__class__.__name__,
                                                 ', '.join(valid_params)))
-                    else:
-                        self.parameters[key] = value.value
+                    self.parameters[key] = value.value
             elif key == 'method':
                 if value != 0:
-                    raise ValueError('Invalid parameter {} for estimator {}. ' \
+                    raise ValueError('Invalid parameter {} for estimator {}. '
                                      'The only valid method is: 0.'.
                                      format(key, self.__class__.__name__))
         return self

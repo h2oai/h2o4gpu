@@ -20,7 +20,7 @@ def load_pkl(name):
             return model
         except xgboost.core.XGBoostError as e:
             if "Check failed: header == serialisation_header_" in str(e):
-                #pylint: disable=unused-variable
+                # pylint: disable=unused-import
                 import xgboost_prev
                 import tempfile
 
@@ -40,5 +40,4 @@ def load_pkl(name):
                 migrated_model = xgboost.XGBModel()
                 migrated_model.load_model(temp_file.name)
                 return migrated_model
-            else:
-                raise
+            raise

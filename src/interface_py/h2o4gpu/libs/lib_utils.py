@@ -4,7 +4,9 @@
 """
 import warnings
 # pylint: disable=unused-variable
-class CPUlib(object):
+
+
+class CPUlib:
     """H2O4GPU CPU module"""
 
     def __init__(self):
@@ -29,7 +31,7 @@ class CPUlib(object):
 
 
 # pylint: disable=unused-variable
-class GPUlib(object):
+class GPUlib:
     """H2O4GPU GPU module"""
 
     def __init__(self):
@@ -63,9 +65,8 @@ def get_lib(n_gpus, devices, verbose=0):
         if verbose > 0:
             print("\nUsing CPU library\n")
         return cpu_lib
-    elif (n_gpus > 0) and (gpu_lib is not None) and (devices > 0):
+    if (n_gpus > 0) and (gpu_lib is not None) and (devices > 0):
         if verbose > 0:
             print("\nUsing GPU library with %d GPUs\n" % n_gpus)
         return gpu_lib
-    else:
-        return None
+    return None

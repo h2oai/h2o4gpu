@@ -15,7 +15,7 @@ from ..solvers.utils import _check_data_content, \
 from ..typecheck.typechecks import assert_satisfies
 
 
-class KMeansH2O(object):
+class KMeansH2O:
     """K-Means clustering
 
     Wrapper class calling an underlying (e.g. GPU or CPU)
@@ -539,12 +539,11 @@ class KMeansH2O(object):
         if (self.n_gpus == 0) or (gpu_lib is None) or (self.devices == 0):
             self._print_verbose(0, "H2O KMeans for CPU not yet supported.")
             return None
-        elif (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
+        if (self.n_gpus > 0) or (cpu_lib is None) or (self.devices == 0):
             self._print_verbose(
                 0, "\nUsing GPU KMeans solver with %d GPUs.\n" % self.n_gpus)
             return gpu_lib
-        else:
-            raise RuntimeError("Couldn't instantiate KMeans Solver")
+        raise RuntimeError("Couldn't instantiate KMeans Solver")
 
     def _validate_centroids(self, X):
         assert self.cluster_centers_ is not None, \
@@ -589,7 +588,7 @@ class KMeansH2O(object):
         self._max_iter = value
 
 
-class KMeans(object):
+class KMeans:
     """
      K-Means clustering Wrapper
 
