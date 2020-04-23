@@ -47,7 +47,7 @@ ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 
 RUN mkdir -p /opt/h2oai/h2o4gpu
 
-ARG python_version=3.7
+ARG python_version
 
 # ln -sf /usr/bin/python36 /usr/bin/python breaks yum
 RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
