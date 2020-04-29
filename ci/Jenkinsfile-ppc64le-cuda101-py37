@@ -30,7 +30,7 @@ def labelruntime = "ibm-power || ibm-power-gpu"
 def doingbenchmark = "0"
 def dobenchmark = "0"
 def doruntime = "1"
-def python = "3.6"
+def python = "3.7"
 def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
 def publish_docs = false//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)
 def benchmark_commit_trigger
@@ -54,7 +54,7 @@ pipeline {
     }
 
     stages {
-        stage("Git clone on Linux ppc64le-cuda101") {
+        stage("Git clone on Linux ppc64le-cuda101-py37") {
 
             agent {
                 label "${labelbuild}"
@@ -83,7 +83,7 @@ pipeline {
                 stash includes: "ci/Jenkinsfile*", name: "jenkinsfiles"
             }
         }
-        stage("Build on Centos7 ppc64le-cuda101") {
+        stage("Build on Centos7 ppc64le-cuda101-py37") {
             agent {
                 label "${labelbuild}"
             }
@@ -91,7 +91,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7 ppc64le-cuda101")
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7 ppc64le-cuda101-py37")
                 }
             }
             steps {
@@ -125,7 +125,7 @@ pipeline {
             }
         }
 
-        stage("Test - Multi GPU ppc64le-cuda101") {
+        stage("Test - Multi GPU ppc64le-cuda101-py37") {
             agent {
                 label "${labeltest_multi_gpu}"
             }
@@ -133,7 +133,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda101"))
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda101-py37"))
                 }
             }
             steps {
@@ -166,7 +166,7 @@ pipeline {
             }
         }
 
-        stage("Test - Single GPU | Lint | S3up on Centos7 ppc64le-cuda101") {
+        stage("Test - Single GPU | Lint | S3up on Centos7 ppc64le-cuda101-py37") {
             agent {
                 label "${labeltest}"
             }
@@ -174,7 +174,7 @@ pipeline {
                 expression {
                     unstash "jenkinsfiles"
                     h2o4gpuUtils = load "ci/Jenkinsfile.utils"
-                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda101"))
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda101-py37"))
                 }
             }
             steps {
@@ -218,7 +218,7 @@ pipeline {
                 }
             }
         }
-        stage("Build/Publish Runtime Docker Centos7 ppc64le-cuda101") {
+        stage("Build/Publish Runtime Docker Centos7 ppc64le-cuda101-py37") {
             agent {
                 label "${labelruntime}"
             }
@@ -279,7 +279,7 @@ pipeline {
             }
         }
 
-        stage("Benchmarking Linux ppc64le-cuda101") {
+        stage("Benchmarking Linux ppc64le-cuda101-py37") {
             agent {
                 label 'master'
             }
