@@ -226,7 +226,7 @@ class KMeansH2O:
 
         :returns dict params : Parameter names mapped to their values.
         """
-        out = dict()
+        out = {}
         for key in self._get_param_names():
             # We need deprecation warnings to always be on in order to
             # catch deprecated param values.
