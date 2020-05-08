@@ -16,7 +16,7 @@ def commitMessage = ''
 def h2o4gpuUtils = null
 
 def platform = "x86_64-centos7-cuda10.1"
-def BUILDTYPE = "cuda101"
+def BUILDTYPE = "cuda101-py36"
 def cuda = "nvidia/cuda:10.1-cudnn7-devel-centos7"
 def cudart = "nvidia/cuda:10.1-cudnn7-devel-centos7"
 def extratag = "-cuda10"

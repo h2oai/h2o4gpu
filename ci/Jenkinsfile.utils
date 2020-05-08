@@ -65,7 +65,7 @@ String changeId() {
     if (env.CHANGE_ID) {
         return "-${env.CHANGE_ID}".toString()
     }
-    return "-master"
+    return "-${env.BRANCH_NAME}".toString()
 }
 
 void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean publishDocs) {
