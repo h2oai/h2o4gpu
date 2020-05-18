@@ -57,7 +57,6 @@ RUN yum install -y \
     bzip2 \
     which \
     axel \
-    cmake3 \
     openssl-devel \
     libpng-devel \
     freetype-devel \
@@ -108,8 +107,8 @@ ENV PATH=/usr/local/bin:$PATH
 # AR for conda
 RUN ln /usr/bin/ar $LLVM4/bin/`arch`-conda_cos6-linux-gnu-ar
 
-# CentOS' yum install cmake has only 2.X so need to install cmake3 and make a symlink
-RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
+# cmake 3.17.1 looks incompatible with CUDA
+RUN pip install cmake==3.16.6
 
 # Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
 RUN \
