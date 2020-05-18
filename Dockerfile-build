@@ -71,6 +71,14 @@ RUN \
     git checkout tags/v2.4.7-1 && \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
 
+# cmake 3.17.1 looks incompatible with CUDA
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.6/cmake-3.16.6.tar.gz && \
+    tar -zxvf cmake-3.16.6.tar.gz && \
+    cd cmake-3.16.6 && \
+    ./bootstrap && \
+    make && \
+    make install
+
 RUN mkdir -p /opt/h2oai/h2o4gpu
 
 RUN wget https://s3.amazonaws.com/artifacts.h2o.ai/releases/ai/h2o/dai-thirdparty-deps/1.0-master-22/`arch`-centos7/llvm.tar.bz2 && \
@@ -106,9 +114,6 @@ ENV PATH=/usr/local/bin:$PATH
 
 # AR for conda
 RUN ln /usr/bin/ar $LLVM4/bin/`arch`-conda_cos6-linux-gnu-ar
-
-# cmake 3.17.1 looks incompatible with CUDA
-RUN pip install cmake==3.16.6
 
 # Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
 RUN \
