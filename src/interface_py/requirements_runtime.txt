@@ -12,6 +12,3 @@ joblib>=0.14.0
 numba>=0.38.0
 # the same version as scikit-learn fork
 scikit-learn==0.21.2
-dask-cuda>=0.6.0
-dask[dataframe]>=1.2.2
-distributed>=1.28.1

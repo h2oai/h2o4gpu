@@ -32,7 +32,7 @@ DATA_DIRS="${DATA_DIRS:-}"
 
 echo "Docker devel test(miniconda) and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
+$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime-single-gpu --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 $DOCKER_CLI run --runtime=nvidia --shm-size="512m" --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
