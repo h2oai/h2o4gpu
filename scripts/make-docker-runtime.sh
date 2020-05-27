@@ -17,7 +17,7 @@ echo "Runtime Docker - Run"
 $DOCKER_CLI run --runtime=nvidia --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
 
 echo "Docker runtime - pip install h2o4gpu and pip freeze"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` -c /dot/src/interface_py/requirements_runtime_demos.txt; pip freeze'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` -c /dot/src/interface_py/requirements_runtime_demos_multi_gpu.txt; pip freeze'
 
 { # try
     echo "Docker runtime - Getting Data"
