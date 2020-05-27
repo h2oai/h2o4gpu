@@ -8,25 +8,19 @@
 from warnings import warn
 # dask
 try:
-    import dask
-    from dask import delayed
-    from dask import dataframe as dd
-    from dask import array as da
-    from dask.distributed import Client, get_client
-    from dask.distributed import comm as distributed_comm
-    from dask.distributed import wait as distributed_wait
-    from distributed import get_worker as distributed_get_worker
+    import dask  # pylint: disable=unused-import
+    import dask_cuda  # pylint: disable=unused-import
+    from dask import delayed  # pylint: disable=unused-import
+    from dask import dataframe as dd  # pylint: disable=unused-import
+    from dask import array as da  # pylint: disable=unused-import
+    from dask.distributed import Client  # pylint: disable=unused-import
 
     CUDA_DASK_INSTALLED = True
 except ImportError:
+    dask_cuda = None
     dd = None
     da = None
     Client = None
-    delayed = None
-    get_client = None
-    distributed_comm = None
-    distributed_wait = None
-    distributed_get_worker = None
     dask = None
 
     CUDA_DASK_INSTALLED = False
@@ -1090,7 +1084,6 @@ class GradientBoostingClassifier:
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
             self.distributed = True
             from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
                 learning_rate=learning_rate,  # h2o4gpu
@@ -1611,7 +1604,6 @@ class GradientBoostingRegressor:
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
             self.distributed = True
             from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
                 learning_rate=learning_rate,  # h2o4gpu
