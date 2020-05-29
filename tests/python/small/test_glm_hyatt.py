@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+from h2o4gpu.util.testing_utils import find_file, run_glm
 """
 GLM solver tests using Kaggle datasets.
 
@@ -15,7 +16,6 @@ import logging
 
 print(sys.path)
 
-from h2o4gpu.util.testing_utils import find_file, run_glm, run_glm_ptr
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -49,40 +49,33 @@ def fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, use_se
 
         train = os.path.normpath(os.path.join(os.getcwd(), train))
         train_df = dt.fread(train).topandas()
-        train_df = train_df[pd.notnull(train_df[target])].reset_index(drop=True)  # drop rows with NA response
+        train_df = train_df[pd.notnull(train_df[target])].reset_index(
+            drop=True)  # drop rows with NA response
 
         test = os.path.normpath(os.path.join(os.getcwd(), test))
         test_df = dt.fread(test).topandas()
-        test_df = test_df[pd.notnull(test_df[target])].reset_index(drop=True)  # drop rows with NA response
+        test_df = test_df[pd.notnull(test_df[target])].reset_index(
+            drop=True)  # drop rows with NA response
 
         y = train_df[target]
 
         df_before = copy.deepcopy(train_df)
 
         classes = 1 if not classification else len(y.unique())
-        print("Testing GLM for " + ((str(classes) + "-class classification") if classes >= 2 else "regression"))
+        print("Testing GLM for " + ((str(classes) + "-class classification")
+                                    if classes >= 2 else "regression"))
     else:
-        if 1 == 0:  # avoid for now so get info
-            # should all be explicitly np.float32 or all np.float64
-            xtrain = np.loadtxt("./data/xtrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
-            ytrain = np.loadtxt("./data/ytrainhyatt_1k.csv", delimiter=',', dtype=np.float32)
-            xtest = np.loadtxt("./data/xtesthyatt_1k.csv", delimiter=',', dtype=np.float32)
-            ytest = np.loadtxt("./data/ytesthyatt_1k.csv", delimiter=',', dtype=np.float32)
-            wtrain = np.ones((xtrain.shape[0], 1), dtype=np.float32)
+        # should all be explicitly np.float32 or all np.float64
+        xfull = np.loadtxt("./data/xfullhyatt_2k.csv",
+                           delimiter=',', dtype=np.float32)
+        #xfull = np.asfortranarray(xfull0)
+        yfull = np.loadtxt("./data/yfullhyatt_2k.csv",
+                           delimiter=',', dtype=np.float32)
 
-            t1 = time.time()
-            pred_val, rmse_train, rmse_test = run_glm_ptr(nFolds, nAlphas, nLambdas, xtrain, ytrain, xtest, ytest, wtrain,
-                                                     write, display, use_gpu)
-        else:
-            # should all be explicitly np.float32 or all np.float64
-            xfull = np.loadtxt("./data/xfullhyatt_2k.csv", delimiter=',', dtype=np.float32)
-            #xfull = np.asfortranarray(xfull0)
-            yfull = np.loadtxt("./data/yfullhyatt_2k.csv", delimiter=',', dtype=np.float32)
-
-            t1 = time.time()
-            rmse_train, rmse_test = run_glm(xfull, yfull, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
-                                                nalpha=nAlphas,
-                                                validFraction=validFraction, verbose=0, name=name)
+        t1 = time.time()
+        rmse_train, rmse_test = run_glm(xfull, yfull, nGPUs=nGPUs, nlambda=nLambdas, nfolds=nFolds,
+                                        nalpha=nAlphas,
+                                        validFraction=validFraction, verbose=0, name=name)
         print("Testing GLM")
 
     # check rmse
@@ -113,9 +106,12 @@ def test_glm_hyatt_gpu_fold1_quick(): fun(nGPUs=1, nFolds=1, nLambdas=20, nAlpha
                                           validFraction=0.5)
 
 
-def test_glm_hyatt_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8, classification=False, validFraction=0.5)
+def test_glm_hyatt_gpu_fold1(): fun(nGPUs=1, nFolds=1, nLambdas=100, nAlphas=8,
+                                    classification=False, validFraction=0.5)
 
-def test_glm_hyatt_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=100, nAlphas=3, classification=False, validFraction=0.5)
+
+def test_glm_hyatt_gpu_fold5(): fun(nGPUs=1, nFolds=5, nLambdas=100, nAlphas=3,
+                                    classification=False, validFraction=0.5)
 
 
 # def test_glm_hyatt_cpu_fold1_quick(): fun(use_gpu=False, nFolds=1, nLambdas=20, nAlphas=3, classification=False)

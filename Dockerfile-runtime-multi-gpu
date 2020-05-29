@@ -87,11 +87,11 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 WORKDIR /
 
 # Add requirements
-COPY src/interface_py/requirements_runtime_demos.txt requirements_runtime_demos.txt
+COPY src/interface_py/requirements_runtime_demos_multi_gpu.txt requirements_runtime_demos_multi_gpu.txt
 COPY src/interface_py/requirements_test.txt requirements_test.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  python -m pip install --no-cache-dir -r requirements_runtime_demos.txt && \
+  python -m pip install --no-cache-dir -r requirements_runtime_demos_multi_gpu.txt && \
   python -m pip install --no-cache-dir -r requirements_test.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \

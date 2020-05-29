@@ -32,7 +32,7 @@ DATA_DIRS="${DATA_DIRS:-}"
 
 echo "Docker devel test(miniconda) and pylint - BEGIN"
 # --build-arg http_proxy=http://172.16.2.142:3128/
-$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
+$DOCKER_CLI build  -t opsh2oai/h2o4gpu-buildversion${extratag}-build -f Dockerfile-runtime-single-gpu --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
 
 #-u `id -u`:`id -g`  -w `pwd` -v `pwd`:`pwd`:rw
 $DOCKER_CLI run --runtime=nvidia --shm-size="512m" --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-buildversion${extratag}-build
@@ -45,7 +45,7 @@ echo "Docker devel test(miniconda) and pylint - pip install wheel from dist/${pl
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean dist/${platform}/*.whl before unstash in jenkins
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export CUDA_VISIBLE_DEVICES="0" && export NCCL_DEBUG=WARN && export HOME=`pwd` && cd repo && pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"` -c /dot/src/interface_py/requirements_runtime_demos.txt && pip freeze && make '${target}
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export CUDA_VISIBLE_DEVICES="0" && export NCCL_DEBUG=WARN && export HOME=`pwd` && cd repo && pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"` -c /dot/src/interface_py/requirements_runtime_demos_single_gpu.txt && pip freeze && make '${target}
 
 { # try
     echo "Docker devel test and pylint - copy any dat results"

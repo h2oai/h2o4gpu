@@ -10,14 +10,14 @@ echo "Docker runtime - BEGIN"
 echo "Docker runtime - Build"
 # wheel=${encodedFullVersionTag}${extratag}/h2o4gpu-${encodedFullVersionTag}-cp36-cp36m-linux_x86_64.whl # use this if want to pull from s3 in Dockerfile-runtime
 #  --build-arg http_proxy=http://172.16.2.142:3128/
-$DOCKER_CLI build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
+$DOCKER_CLI build -t opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest -f Dockerfile-runtime-multi-gpu --rm=false --build-arg docker_name=${dockerimage} --build-arg use_miniconda=1 --build-arg python_version=${python_version} .
 # -u `id -u`:`id -g` -d -t -w `pwd` -v `pwd`:`pwd`:rw
 
 echo "Runtime Docker - Run"
 $DOCKER_CLI run --runtime=nvidia --init --rm --name ${CONTAINER_NAME} -d -t -u root ${DATA_DIRS} -v `pwd`:/dot  --entrypoint=bash opsh2oai/h2o4gpu-${versionTag}${extratag}-runtime:latest
 
 echo "Docker runtime - pip install h2o4gpu and pip freeze"
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` -c /dot/src/interface_py/requirements_runtime_demos.txt; pip freeze'
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl" | xargs ls -tr | tail -1` -c /dot/src/interface_py/requirements_runtime_demos_multi_gpu.txt; pip freeze'
 
 { # try
     echo "Docker runtime - Getting Data"

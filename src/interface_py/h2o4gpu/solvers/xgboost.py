@@ -6,8 +6,26 @@
 """
 
 from warnings import warn
-from dask import dataframe as dd
-from dask import array as da
+# dask
+try:
+    import dask  # pylint: disable=unused-import
+    import dask_cuda  # pylint: disable=unused-import
+    from dask import delayed  # pylint: disable=unused-import
+    from dask import dataframe as dd  # pylint: disable=unused-import
+    from dask import array as da  # pylint: disable=unused-import
+    from dask.distributed import Client  # pylint: disable=unused-import
+
+    CUDA_DASK_INSTALLED = True
+except ImportError:
+    dask_cuda = None
+    dd = None
+    da = None
+    Client = None
+    dask = None
+
+    CUDA_DASK_INSTALLED = False
+# from dask import dataframe as dd
+# from dask import array as da
 
 
 class RandomForestClassifier:
@@ -1063,10 +1081,9 @@ class GradientBoostingClassifier:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
-        if n_gpus > 1:
+        if n_gpus > 1 and CUDA_DASK_INSTALLED:
             self.distributed = True
             from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBClassifier(
                 learning_rate=learning_rate,  # h2o4gpu
@@ -1095,6 +1112,9 @@ class GradientBoostingClassifier:
                 **kwargs)
             self.model_h2o4gpu.client = Client(cluster)
         else:
+            if n_gpus > 1:
+                warn(
+                    "Dependencies(dask, cuda-dask, etc) to support distributed gpu usage are not installed, Single GPU will be used.")
             self.model_h2o4gpu = xgb.XGBClassifier(
                 learning_rate=learning_rate,  # h2o4gpu
                 n_estimators=n_estimators,  # h2o4gpu
@@ -1140,7 +1160,7 @@ class GradientBoostingClassifier:
         return self.model_sklearn.decision_function(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
@@ -1158,7 +1178,7 @@ class GradientBoostingClassifier:
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
             res = self.model.predict(X)
@@ -1178,7 +1198,7 @@ class GradientBoostingClassifier:
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict_proba(da.from_array(X))
         else:
             res = self.model.predict_proba(X)
@@ -1581,10 +1601,9 @@ class GradientBoostingRegressor:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
-        if n_gpus > 1:
+        if n_gpus > 1 and CUDA_DASK_INSTALLED:
             self.distributed = True
             from dask_cuda import LocalCUDACluster
-            from dask.distributed import Client
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
             self.model_h2o4gpu = xgb.dask.DaskXGBRegressor(
                 learning_rate=learning_rate,  # h2o4gpu
@@ -1613,6 +1632,8 @@ class GradientBoostingRegressor:
                 **kwargs)
             self.model_h2o4gpu.client = Client(cluster)
         else:
+            if n_gpus > 1:
+                warn("Dependencies(dask, cuda-dask, etc) to support distributed gpu usage are not installed, Single GPU will be used.")
             self.model_h2o4gpu = xgb.XGBRegressor(
                 learning_rate=learning_rate,  # h2o4gpu
                 n_estimators=n_estimators,  # h2o4gpu
@@ -1654,7 +1675,7 @@ class GradientBoostingRegressor:
         return self.model.apply(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
@@ -1672,7 +1693,7 @@ class GradientBoostingRegressor:
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
             res = self.model.predict(X)
