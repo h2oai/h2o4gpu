@@ -253,6 +253,7 @@ class TestGPUPredict(object):
         print(gpu_pred)
         print("F non-zeroes: %d:" % (np.count_nonzero(gpu_pred)))
         print("F GPU Time to predict = %g" % (time.time() - tmp))
+        _ = model.get_booster().copy()
         # ISSUE1: Doesn't use gpu_predictor.
         # ISSUE2: Also, no way to switch to cpu_predictor?
         # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
