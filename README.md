@@ -65,8 +65,8 @@ Download the Python wheel file (For Python 3.6):
     * [CUDA10 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.4-cuda10/rel-0.4.0/h2o4gpu-0.4.0-cp36-cp36m-linux_x86_64.whl)
     * [CUDA10 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/stable/ai/h2o/h2o4gpu/0.4-cuda10/rel-0.4.0/h2o4gpu-0.4.0-cp36-cp36m-linux_ppc64le.whl)
   * Bleeding edge (changes with every successful master branch build):
-    * [CUDA10.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.0-cp36-cp36m-linux_x86_64.whl)
-    * [CUDA10.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.0-cp36-cp36m-linux_ppc64le.whl)
+    * [CUDA10.0 - linux_x86_64](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.1-cp36-cp36m-linux_x86_64.whl)
+    * [CUDA10.0 - linux_ppc64le](https://s3.amazonaws.com/h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/h2o4gpu/0.4-cuda10/h2o4gpu-0.4.1-cp36-cp36m-linux_ppc64le.whl)
 
  Start a fresh pyenv or virtualenv session.
 
