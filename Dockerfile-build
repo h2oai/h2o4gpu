@@ -63,7 +63,6 @@ RUN yum install -y \
     bzip2 \
     which \
     axel \
-    cmake3 \
     openssl-devel \
     libpng-devel \
     freetype-devel \
@@ -77,6 +76,14 @@ RUN \
     cd nccl && \
     git checkout tags/v2.4.7-1 && \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
+
+# cmake 3.17.1 looks incompatible with CUDA
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.6/cmake-3.16.6.tar.gz && \
+    tar -zxvf cmake-3.16.6.tar.gz && \
+    cd cmake-3.16.6 && \
+    ./bootstrap && \
+    make && \
+    make install
 
 # conda
 # openssl 1.1.1d has a bug on ppc64le https://github.com/openssl/openssl/issues/10015
@@ -100,9 +107,6 @@ ENV LD_LIBRARY_PATH=$LLVM4/lib:$LD_LIBRARY_PATH
 
 # AR for conda
 RUN ln /usr/bin/ar $LLVM4/bin/`arch`-conda_cos6-linux-gnu-ar
-
-# CentOS' yum install cmake has only 2.X so need to install cmake3 and make a symlink
-RUN ln -s /usr/bin/cmake3 /usr/bin/cmake
 
 # Symlinks for Python libs used by SWIG in CMake - it does not recognize Miniconda paths otherwise
 RUN \
