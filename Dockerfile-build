@@ -78,9 +78,9 @@ RUN \
     scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
 
 # cmake 3.17.1 looks incompatible with CUDA
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.6/cmake-3.16.6.tar.gz && \
-    tar -zxvf cmake-3.16.6.tar.gz && \
-    cd cmake-3.16.6 && \
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.8/cmake-3.16.8.tar.gz && \
+    tar -zxvf cmake-3.16.8.tar.gz && \
+    cd cmake-3.16.8 && \
     ./bootstrap && \
     make && \
     make install
