@@ -33,10 +33,8 @@ all: prep
 	# for incorporating xgboost and py3nvml and lightgbm builds
 	ln -sf ../../xgboost/python-package/xgboost .
 	rm -rf ../../xgboost/python-package/xgboost/src/
-	if [ `arch` != "ppc64le" ]; then \
-	ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu ; \
-	fi
-	ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu 
+	ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu
+	ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu
 	ln -sf ../../py3nvml/py3nvml .
 
 	$(PYTHON) setup.py sdist bdist_wheel
