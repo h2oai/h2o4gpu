@@ -76,7 +76,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.8/cmake-3.16.8
     tar -zxvf cmake-3.16.8.tar.gz && \
     cd cmake-3.16.8 && \
     ./bootstrap && \
-    make && \
+    make -j`nproc` && \
     make install
 
 RUN mkdir -p /opt/h2oai/h2o4gpu
