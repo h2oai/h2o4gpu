@@ -95,7 +95,7 @@ ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 # Library versions
 #
 ARG python_version
-ENV MINICONDA_VERSION=4.7.12.1
+ENV MINICONDA_VERSION=4.8.3
 ENV SWIG_VERSION=3.0.12
 
 # conda
