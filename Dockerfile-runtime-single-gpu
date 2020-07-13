@@ -12,7 +12,7 @@ ENV PATH=/usr/local/cuda/bin:$PATH
 ENV CUDADIR=/usr/local/cuda/include/
 ENV LD_LIBRARY_PATH=/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH
 
-ENV MINICONDA_VERSION=4.7.12
+ENV MINICONDA_VERSION=4.8.3
 
 # Setup gcc etc.
 RUN yum install -y epel-release
