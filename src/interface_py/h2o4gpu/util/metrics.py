@@ -414,7 +414,7 @@ def confusion_matrices(actual, predicted, sample_weight=None):
     :returns: pandas DataFrame
              Confusion matrices for each unique predicted value as threshold
     """
-    cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1']
+    cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1', 'f05', 'f2']
 
     res = np.zeros((actual.shape[0], len(cm_stats_cols)))
     from ..libs.lib_utils import CPUlib
