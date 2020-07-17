@@ -1,10 +1,11 @@
-#- * - encoding : utf - 8 - * -
+# - * - encoding : utf - 8 - * -
 """
 :copyright: 2017-2018 H2O.ai, Inc.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import numpy as np
 import pandas as pd
+
 
 def ll(actual, predicted):
     """
@@ -26,7 +27,8 @@ def ll(actual, predicted):
     for i in range(0, predicted.shape[0]):
         predicted[i] = min(max(1e-15, predicted[i]), 1 - 1e-15)
     err = np.seterr(all='ignore')
-    score = -(actual * np.log(predicted) + (1 - actual) * np.log(1 - predicted))
+    score = -(actual * np.log(predicted) +
+              (1 - actual) * np.log(1 - predicted))
     np.seterr(
         divide=err['divide'],
         over=err['over'],
@@ -397,6 +399,7 @@ def acc_opt(actual, predicted, sample_weight=None):
     return lib.acc_opt(actual.ravel(), predicted.ravel(),
                        sample_weight.ravel())
 
+
 def confusion_matrices(actual, predicted, sample_weight=None):
     """
     Computes confusion matrices for ROC analysis.
@@ -414,7 +417,8 @@ def confusion_matrices(actual, predicted, sample_weight=None):
     :returns: pandas DataFrame
              Confusion matrices for each unique predicted value as threshold
     """
-    cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1', 'f05', 'f2']
+    cm_stats_cols = ['p', 'tp', 'tn', 'fp', 'fn', 'fpr', 'tpr', 'mcc', 'f1',
+                     'f05', 'f2']
 
     res = np.zeros((actual.shape[0], len(cm_stats_cols)))
     from ..libs.lib_utils import CPUlib
