@@ -18,7 +18,7 @@ namespace h2o4gpu {
 
   typedef double(*CMMetricFunc)(double, double, double, double);
 
-  #define CM_STATS_COLS 9
+  #define CM_STATS_COLS 11
 
   double mcc(double tp, double tn, double fp, double fn) {
     auto n = tp + tn + fp + fn;
@@ -117,6 +117,8 @@ namespace h2o4gpu {
         cm[k][6] = tp / (tp + fn); // tpr
         cm[k][7] = mcc(tp, tn, fp, fn);
         cm[k][8] = f1(tp, tn, fp, fn);
+        cm[k][9] = f05(tp, tn, fp, fn);
+        cm[k][10] = f2(tp, tn, fp, fn);
         k += 1;
       }
       if (static_cast<int>(y_sorted[i]) == 1) {
