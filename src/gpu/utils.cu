@@ -104,13 +104,20 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
       nvmlUtilization_t utilization;
       rv = nvmlDeviceGetUtilizationRates(device, &utilization);
 
-      if (rv != NVML_SUCCESS) {
-        log_fatal(verbose, "Failed to get device %d utilization: %s", i,
-                  nvmlErrorString(rv));
-        return 1;
+      switch (rv) {
+        case NVML_SUCCESS:
+          gpu_percent_usage[i] = utilization.gpu;
+          break;
+        case NVML_ERROR_NOT_SUPPORTED:
+          log_warn(verbose, "Failed to get device %d utilization: %s", i,
+                   nvmlErrorString(rv));
+          gpu_percent_usage[i] = -1;
+          break;
+        default:
+          log_fatal(verbose, "Failed to get device %d utilization: %s", i,
+                    nvmlErrorString(rv));
+          return 1;
       }
-
-      gpu_percent_usage[i] = utilization.gpu;
 
       log_verbose(verbose, "i= %d usage= %d", i, gpu_percent_usage[i]);
     } else {
@@ -121,10 +128,21 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
       nvmlMemory_t memory;
       rv = nvmlDeviceGetMemoryInfo(device, &memory);
 
-      if (rv != NVML_SUCCESS) {
-        log_fatal(verbose, "Failed to get device %d memory info: %s", i,
-                  nvmlErrorString(rv));
-        return 1;
+      switch (rv) {
+        case NVML_SUCCESS:
+          gpu_total_memory[i] = memory.total;
+          gpu_free_memory[i] = memory.free;
+          break;
+        case NVML_ERROR_NOT_SUPPORTED:
+          log_warn(verbose, "Failed to get device %d memory info: %s", i,
+                   nvmlErrorString(rv));
+          gpu_total_memory[i] = 0;
+          gpu_free_memory[i] = 0;
+          break;
+        default:
+          log_fatal(verbose, "Failed to get device %d memory info: %s", i,
+                    nvmlErrorString(rv));
+          return 1;
       }
 
       log_verbose(verbose, "Device memory %i obtained.", i);
@@ -151,11 +169,21 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
 #if (CUDART_VERSION >= 9000)
       rv = nvmlDeviceGetCudaComputeCapability(device, &majors[i], &minors[i]);
 
-      if (rv != NVML_SUCCESS) {
-        log_fatal(verbose,
-                  "Failed to get device %d cuda compute capability: %s", i,
-                  nvmlErrorString(rv));
-        return 1;
+      switch (rv) {
+        case NVML_SUCCESS:
+          break;
+        case NVML_ERROR_NOT_SUPPORTED:
+          majors[i] = -1;
+          minors[i] = -1;
+          log_warn(verbose,
+                   "Failed to get device %d cuda compute capability: %s", i,
+                   nvmlErrorString(rv));
+          break;
+        default:
+          log_fatal(verbose,
+                    "Failed to get device %d cuda compute capability: %s", i,
+                    nvmlErrorString(rv));
+          return 1;
       }
 
 #else
@@ -181,24 +209,34 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
       num_pids[i] = infoCount;
       rv = nvmlDeviceGetComputeRunningProcesses(device, &num_pids[i], infos);
 
-      if (rv != NVML_SUCCESS) {
-        log_fatal(verbose, "Failed to get device %d running processes: %s", i,
-                  nvmlErrorString(rv));
-        return 1;
+      switch (rv) {
+        case NVML_SUCCESS:
+          for (unsigned int pidi = 0; pidi < num_pids[i]; pidi++) {
+            pids[pidi + i * max_pids] = infos[pidi].pid;
+            usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
+
+            log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi,
+                        pids[pidi + i * max_pids],
+                        usedGpuMemorys[pidi + i * max_pids]);
+          }
+          break;
+        case NVML_ERROR_NOT_SUPPORTED:
+          log_warn(verbose, "Failed to get device %d running processes: %s", i,
+                   nvmlErrorString(rv));
+          num_pids[i] = 0;
+          pids[i] = 0;
+          usedGpuMemorys[i] = 0;
+          break;
+        default:
+          log_fatal(verbose, "Failed to get device %d running processes: %s", i,
+                    nvmlErrorString(rv));
+          return 1;
       }
 
       if (num_pids[i] > max_pids) {
         log_debug(verbose, "Too many pids: %u. Increase max_pids: %u.",
                   num_pids[i], max_pids);
         return 1;
-      }
-      for (unsigned int pidi = 0; pidi < num_pids[i]; pidi++) {
-        pids[pidi + i * max_pids] = infos[pidi].pid;
-        usedGpuMemorys[pidi + i * max_pids] = infos[pidi].usedGpuMemory;
-
-        log_verbose(verbose, "i=%d pidi=%u pids=%u gpumemory=%llu", i, pidi,
-                    pids[pidi + i * max_pids],
-                    usedGpuMemorys[pidi + i * max_pids]);
       }
     } else {
       num_pids[i] = 0;
@@ -217,11 +255,32 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
                                            &num_pids_usage[i],
                                            lastSeenTimeStamp);
 
-      if (rv != NVML_SUCCESS) {
-        log_fatal(verbose,
-                  "Failed to get per-process device %d utilization: %s", i,
-                  nvmlErrorString(rv));
-        return 1;
+      switch (rv) {
+        case NVML_SUCCESS:
+          for (unsigned int pidi = 0; pidi < num_pids_usage[i]; pidi++) {
+            pids_usage[pidi + i * max_pids] = utilization_perprocess[pidi].pid;
+            usedGpuUsage[pidi + i * max_pids] =
+                utilization_perprocess[pidi].smUtil;
+
+            log_verbose(verbose, "i=%d pidi=%u pids=%u gpuusage=%llu", i, pidi,
+                        pids_usage[pidi + i * max_pids],
+                        usedGpuUsage[pidi + i * max_pids]);
+          }
+          break;
+        case NVML_ERROR_NOT_SUPPORTED:
+          num_pids_usage[i] = 0;
+          pids_usage[i] = 0;
+          usedGpuUsage[i] = 0;
+          log_warn(verbose,
+                   "Failed to get per-process device %d utilization: %s", i,
+                   nvmlErrorString(rv));
+          break;
+
+        default:
+          log_fatal(verbose,
+                    "Failed to get per-process device %d utilization: %s", i,
+                    nvmlErrorString(rv));
+          return 1;
       }
 
       if (num_pids_usage[i] > max_pids) {
@@ -230,14 +289,6 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
         return 1;
       }
 
-      for (unsigned int pidi = 0; pidi < num_pids_usage[i]; pidi++) {
-        pids_usage[pidi + i * max_pids] = utilization_perprocess[pidi].pid;
-        usedGpuUsage[pidi + i * max_pids] = utilization_perprocess[pidi].smUtil;
-
-        log_verbose(verbose, "i=%d pidi=%u pids=%u gpuusage=%llu", i, pidi,
-                    pids_usage[pidi + i * max_pids],
-                    usedGpuUsage[pidi + i * max_pids]);
-      }
 #else
       num_pids_usage[i] = 0;
       pids_usage[i] = 0;
