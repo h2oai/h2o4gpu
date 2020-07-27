@@ -111,7 +111,7 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
         case NVML_ERROR_NOT_SUPPORTED:
           log_warn(verbose, "Failed to get device %d utilization: %s", i,
                    nvmlErrorString(rv));
-          gpu_percent_usage[i] = -1;
+          gpu_percent_usage[i] = 0;
           break;
         default:
           log_fatal(verbose, "Failed to get device %d utilization: %s", i,
