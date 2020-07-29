@@ -78,7 +78,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
     def majorVersionTag = buildInfo.getMajorVersion()
     def sha = buildInfo.getGitSha()
     def artifactId = "h2o4gpu"
-    def artifact = "${artifactId}-${versionTag}-cp*-cp*m-linux_${buildArch}.whl"
+    def artifact = "${artifactId}-${versionTag}-*-linux_${buildArch}.whl"
     def localArtifact = "src/interface_py/dist/${platform}/${artifact}"
 
     sh 'echo "S3 defs: $versionTag $artifactId $artifact $localArtifact" '
@@ -120,7 +120,7 @@ void publishToS3(BuildInfo buildInfo, String extratag, String platform, boolean 
         bucket = "s3://h2o-release/h2o4gpu/releases/bleeding-edge/ai/h2o/${artifactId}/${majorVersionTag}${extratag}/"
 
         def nonLocalVersionTag = versionTag.split('\\+')[0]
-        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-cp*-cp*m-linux_${buildArch}.whl"
+        def bleedingEdgeArtifact = "${artifactId}-${nonLocalVersionTag}-*-linux_${buildArch}.whl"
 
         sh "s3cmd put ${localArtifact} ${bucket}${bleedingEdgeArtifact}"
         sh "s3cmd setacl --acl-public  ${bucket}${bleedingEdgeArtifact}"
