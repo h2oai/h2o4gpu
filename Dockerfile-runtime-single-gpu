@@ -41,7 +41,7 @@ RUN mkdir -p /opt/h2oai/h2o4gpu
 ARG python_version
 
 # ln -sf /usr/bin/python36 /usr/bin/python breaks yum
-RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
+RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.continuum.io/miniconda/Miniconda3-py38-${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} pip; else \
     yum install -y python36 python36-devel python36-pip && \
