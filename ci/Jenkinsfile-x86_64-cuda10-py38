@@ -276,12 +276,6 @@ pipeline {
                     }
                 }
                 }
-                // manually remove following block for ppc64le, until we fixed conda build
-                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
-                    script {
-                        h2o4gpuUtils.publishToPoboys("${platform}")
-                    }
-                }
             }
         }
 

@@ -46,7 +46,7 @@ mkdir -p build ; $DOCKER_CLI cp ${CONTAINER_NAME}:/root/repo/build/VERSION.txt b
 # The following specifications were found to be incompatible with your CUDA driver:
 # - feature:/linux-64::__cuda==10.1=0
 # - feature:|@/linux-64::__cuda==10.1=0
-if [ (`arch` != "ppc64le") && ("${python_version}" != "3.8") ]; then
+if [ `arch` != "ppc64le" && "${python_version}" != "3.8" ]; then
     echo "Docker devel - Creating conda package"
     $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "mkdir -p repo/condapkgs"
     $DOCKER_CLI exec ${CONTAINER_NAME} bash -c "cd repo/src/interface_py && cat requirements_runtime.txt > requirements_conda.txt"
