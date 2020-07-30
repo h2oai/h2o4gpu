@@ -101,7 +101,7 @@ ENV SWIG_VERSION=3.0.12
 # conda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh && \
     bash Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
-    /opt/h2oai/h2o4gpu/python/bin/conda install -c conda-forge -y python=${python_version} conda-build pip && \
+    /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build pip && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
 
