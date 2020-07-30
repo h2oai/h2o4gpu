@@ -91,8 +91,8 @@ COPY src/interface_py/requirements_runtime_demos_multi_gpu.txt requirements_runt
 COPY src/interface_py/requirements_test.txt requirements_test.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  python -m pip install --no-cache-dir -r requirements_runtime_demos_multi_gpu.txt && \
-  python -m pip install --no-cache-dir -r requirements_test.txt
+  python -m pip install -r requirements_runtime_demos_multi_gpu.txt && \
+  python -m pip install -r requirements_test.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
