@@ -181,6 +181,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                 verbose_eval=10)
 
 
+@pytest.mark.timeout(3600)
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
 @pytest.mark.parametrize('year,', ["1987",
