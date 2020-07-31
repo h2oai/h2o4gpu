@@ -1,0 +1,327 @@
+#!/usr/bin/groovy
+
+//################ FILE IS AUTO-GENERATED from .base files
+//################ DO NOT MODIFY
+//################ See scripts/make_jenkinsfiles.sh
+
+// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
+@Library('test-shared-library') _
+
+import ai.h2o.ci.Utils
+import static ai.h2o.ci.Utils.banner
+def utilsLib = new Utils()
+import ai.h2o.ci.BuildInfo
+
+def commitMessage = ''
+def h2o4gpuUtils = null
+
+def platform = "ppc64le-centos7-cuda10.0"
+def BUILDTYPE = "cuda10-py38"
+def cuda = "nvidia/cuda-ppc64le:10.0-cudnn7-devel-centos7"
+def cudart = "nvidia/cuda-ppc64le:10.0-cudnn7-devel-centos7"
+def extratag = "-cuda10"
+def linuxwheel = "ppc64le-centos7-cuda10.whl"
+def testtype = "dotest-single-gpu"
+def testtype_multi_gpu = "dotest-multi-gpu"
+def labelbuild = "ibm-power-gpu"
+def labeltest_multi_gpu = "ibm-power-gpu && !mr-0xp2"
+def labeltest = "ibm-power-gpu && !mr-0xp2"
+def labelruntime = "ibm-power-gpu"
+def doingbenchmark = "0"
+def dobenchmark = "0"
+def doruntime = "1"
+def python = "3.8"
+def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
+def publish_docs = false//################ BELOW IS COPY/PASTE of ci/Jenkinsfile.template (except stage names)
+def benchmark_commit_trigger
+
+pipeline {
+    agent none
+
+    // Setup job options
+    options {
+        ansiColor('xterm')
+        timestamps()
+        timeout(time: 300, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+
+    environment {
+        MAKE_OPTS = "-s CI=1" // -s: silent mode
+        BUILD_TYPE = "${BUILDTYPE}"
+    }
+
+    stages {
+        stage("Git clone on Linux ppc64le-cuda10-py38") {
+
+            agent {
+                label "${labelbuild}"
+            }
+            steps {
+                dumpInfo 'Linux Build Info'
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+                    commitMessage = sh(script: 'git log -1 --pretty=%B | tr "\n" " "', returnStdout: true).trim()
+                    echo "Commit Message: ${commitMessage}"
+                    benchmark_commit_trigger = ("${commitMessage}" ==~ /.*trigger_benchmark.*/)
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                }
+                stash includes: "ci/Jenkinsfile*", name: "jenkinsfiles"
+            }
+        }
+        stage("Build on Centos7 ppc64le-cuda10-py38") {
+            agent {
+                label "${labelbuild}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return "${doingbenchmark}" == "1" || h2o4gpuUtils.doBuild() || h2o4gpuUtils.doTests() || !h2o4gpuUtils.wasStageSuccessful("Build on Centos7 ppc64le-cuda10-py38")
+                }
+            }
+            steps {
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    h2o4gpuUtils.buildOnLinux("${cuda}", "${python}", "${extratag}", "${platform}", "${linuxwheel}")
+
+                    buildInfo("h2o4gpu", h2o4gpuUtils.isRelease())
+
+                    script {
+                        // Load the version file content
+                        buildInfo.get().setVersion(utilsLib.getCommandOutput("cat build/VERSION.txt"))
+                        utilsLib.setCurrentBuildName(buildInfo.get().getVersion())
+                        utilsLib.appendBuildDescription("""|Authors: ${buildInfo.get().getAuthorNames().join(" ")}
+                                |Git SHA: ${buildInfo.get().getGitSha().substring(0, 8)}
+                                |""".stripMargin("|"))
+                    }
+
+                }
+            }
+        }
+
+        stage("Test - Multi GPU ppc64le-cuda10-py38") {
+            agent {
+                label "${labeltest_multi_gpu}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda10-py38"))
+                }
+            }
+            steps {
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    unstash 'version_info'
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                       """
+                    h2o4gpuUtils.runTestsMultiGpu(buildInfo.get(), "${cuda}", "${python}", "${extratag}", "${platform}", "${testtype_multi_gpu}", "${data_dirs}")
+                }
+            }
+        }
+
+        stage("Test - Single GPU | Lint | S3up on Centos7 ppc64le-cuda10-py38") {
+            agent {
+                label "${labeltest}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 ppc64le-cuda10-py38"))
+                }
+            }
+            steps {
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    unstash 'version_info'
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                       """
+                    unstash "py_docs"
+                    sh """
+                        echo "After Stashed py documentation file:"
+                        ls -l src/interface_py/docs/_build  || true
+                       """
+                    h2o4gpuUtils.runTestsSingleGpu(buildInfo.get(), "${cuda}", "${python}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
+                }
+                retryWithTimeout(500 /* seconds */, 5 /* retries */) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                        script {
+                            h2o4gpuUtils.publishToS3(buildInfo.get(), extratag ,platform, publish_docs)
+                        }
+                    }
+                }
+            }
+        }
+        stage("Build/Publish Runtime Docker Centos7 ppc64le-cuda10-py38") {
+            agent {
+                label "${labelruntime}"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return "${doruntime}" == "1" && h2o4gpuUtils.doRuntime()
+                }
+            }
+            steps {
+                dumpInfo 'Linux Build Info'
+                // Do checkout
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}  || true
+                       """
+                    unstash 'version_info'
+                    sh 'echo "Stashed version file:" && ls -l build/'
+                    sh """
+                        echo "Before unstash condapkg:"
+                        ls -l condapkgs  || true
+                        rm -rf condapkgs || true
+                       """
+                    unstash "condapkg"
+                    sh """
+                        echo "After unstash condapkg:"
+                        ls -l condapkgs  || true
+                       """
+                }
+                script {
+                    h2o4gpuUtils.buildRuntime(buildInfo.get(), "${cudart}", "${python}", "${platform}", "${extratag}", "${data_dirs}")
+                }
+                retryWithTimeout(1000 /* seconds */, 5 /* retries */) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
+                    script {
+                        h2o4gpuUtils.publishRuntimeToS3(buildInfo.get(), "${extratag}")
+                    }
+                }
+                }
+            }
+        }
+
+        stage("Benchmarking Linux ppc64le-cuda10-py38") {
+            agent {
+                label 'master'
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    echo "benchmark_commit_trigger: ${benchmark_commit_trigger}"
+                    return "${doingbenchmark}" == "1" || (("${benchmark_commit_trigger}"=="true" || h2o4gpuUtils.doTriggerBenchmarksJob()) && "${dobenchmark}" == "1" && env.BRANCH_NAME == "master")
+                }
+            }
+            steps {
+                script {
+                    utilsLib.appendBuildDescription("BENCH \u2713")
+                }
+
+                echo banner("Triggering downstream jobs h2o4gpu${extratag}-benchmark : RUNTIME_ID=${buildInfo.get().getVersion()}")
+                build job: "/h2o4gpu${extratag}-benchmark/${env.BRANCH_NAME}", parameters: [[$class: 'StringParameterValue', name: 'RUNTIME_ID', value: buildInfo.get().getVersion()]], propagate: false, wait: false, quietPeriod: 60
+            }
+        }
+
+    } // end over stages
+    post {
+        failure {
+            node('linux') {
+                script {
+                    if(env.BRANCH_NAME == "master") {
+                        emailext(
+                                to: "mateusz@h2o.ai, jmckinney@h2o.ai",
+                                subject: "BUILD FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                                body: '''${JELLY_SCRIPT, template="html_gmail"}''',
+                                attachLog: true,
+                                compressLog: true,
+                                recipientProviders: [
+                                        [$class: 'DevelopersRecipientProvider'],
+                                ]
+                            )
+                    }
+                }
+            }
+        }
+    }
+}
+
+

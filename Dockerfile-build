@@ -95,12 +95,12 @@ ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 # Library versions
 #
 ARG python_version
-ENV MINICONDA_VERSION=4.7.12
+ENV MINICONDA_VERSION=4.8.3
 ENV SWIG_VERSION=3.0.12
 
 # conda
-RUN wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
-    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh && \
+    bash Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build pip && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
@@ -172,7 +172,7 @@ RUN echo ${python_version}
 
 RUN pip install -U pip==20.1.1
 
-RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==47.1.1
+RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==49.2.0
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 

@@ -12,7 +12,7 @@ ENV PATH=/usr/local/cuda/bin:$PATH
 ENV CUDADIR=/usr/local/cuda/include/
 ENV LD_LIBRARY_PATH=/usr/lib64:/usr/local/lib:$LD_LIBRARY_PATH
 
-ENV MINICONDA_VERSION=4.7.12
+ENV MINICONDA_VERSION=4.8.3
 
 # Setup gcc etc.
 RUN yum install -y epel-release
@@ -52,8 +52,8 @@ ENV LLVM_CONFIG=$LLVM4/bin/llvm-config
 ARG python_version
 
 # ln -sf /usr/bin/python36 /usr/bin/python breaks yum
-RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.continuum.io/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh && \
-    bash Miniconda3-${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
+RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.anaconda.com/miniconda/Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh && \
+    bash Miniconda3-py38_${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} pip; else \
     yum install -y python36 python36-devel python36-pip && \
     ln -sf /usr/bin/python36 /usr/bin/python && ln -s /usr/bin/pip3 /usr/bin/pip; \
@@ -91,8 +91,8 @@ COPY src/interface_py/requirements_runtime_demos_multi_gpu.txt requirements_runt
 COPY src/interface_py/requirements_test.txt requirements_test.txt
 RUN \
   chmod a+rwx requirements*.txt && \
-  python -m pip install --no-cache-dir -r requirements_runtime_demos_multi_gpu.txt && \
-  python -m pip install --no-cache-dir -r requirements_test.txt
+  python -m pip install -r requirements_runtime_demos_multi_gpu.txt && \
+  python -m pip install -r requirements_test.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
