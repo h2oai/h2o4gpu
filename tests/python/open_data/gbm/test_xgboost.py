@@ -91,7 +91,6 @@ def test_xgboost_covtype_multi_gpu():
     from dask import array as da
     import xgboost as xgb
     from xgboost.dask import DaskDMatrix
-    from dask import array as da
 
     # Fetch dataset using sklearn
     cov = fetch_data()
@@ -170,7 +169,7 @@ def test_xgboost_airlines():
     import time
     from dask_cuda import LocalCUDACluster
     from dask.distributed import Client
-    from dask import array as da
+    from dask import dataframe as dd
     import xgboost as xgb
     from xgboost.dask import DaskDMatrix
     from dask import array as da
@@ -219,14 +218,14 @@ def test_xgboost_airlines():
 
     with LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1) as cluster:
         with Client(cluster) as client:
-            dask_X_train = da.from_array(X_train)
-            dask_label_train = da.from_array(y_train)
+            dask_X_train = dd.from_pandas(X_train)
+            dask_label_train = dd.from_pandas(y_train)
 
             dtrain = DaskDMatrix(
                 client=client, data=dask_X_train, label=dask_label_train)
 
-            dask_X_test = da.from_array(X_test)
-            dask_label_test = da.from_array(y_test)
+            dask_X_test = dd.from_pandas(X_test)
+            dask_label_test = dd.from_pandas(y_test)
 
             dtest = DaskDMatrix(
                 client=client, data=dask_X_test, label=dask_label_test)
