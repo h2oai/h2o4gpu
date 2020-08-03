@@ -207,7 +207,7 @@ def test_xgboost_airlines():
     print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
 
     # Specify sufficient boosting iterations to reach a minimum
-    num_round = 1000
+    num_round = 100
 
     # Leave most parameters as default
     param = {'objective': 'reg:logistic',
