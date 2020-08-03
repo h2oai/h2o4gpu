@@ -161,6 +161,84 @@ def test_xgboost_covtype_multi_gpu():
             print("CPU Training Time: %s seconds" % (str(time.time() - tmp)))
 
 
+@pytest.mark.multi_gpu
+def test_xgboost_airlines():
+    import pandas as pd
+    import xgboost as xgb
+    import numpy as np
+    from sklearn.model_selection import train_test_split
+    import time
+    from dask_cuda import LocalCUDACluster
+    from dask.distributed import Client
+    from dask import array as da
+    import xgboost as xgb
+    from xgboost.dask import DaskDMatrix
+    from dask import array as da
+
+    X = pd.read_csv('./open_data/allyears.1987.2013.zip',
+                    dtype={'UniqueCarrier': 'category', 'Origin': 'category', 'Dest': 'category',
+                           'TailNum': 'category', 'CancellationCode': 'category',
+                           'IsArrDelayed': 'category', 'IsDepDelayed': 'category',
+                           'DepTime': np.float32, 'CRSDepTime': np.float32, 'ArrTime': np.float32,
+                           'CRSArrTime': np.float32, 'ActualElapsedTime': np.float32,
+                           'CRSElapsedTime': np.float32, 'AirTime': np.float32,
+                           'ArrDelay': np.float32, 'DepDelay': np.float32, 'Distance': np.float32,
+                           'TaxiIn': np.float32, 'TaxiOut': np.float32, 'Diverted': np.float32,
+                           'Year': np.int32, 'Month': np.int32, 'DayOfWeek': np.int32,
+                           'DayofMonth': np.int32, 'Cancelled': 'category',
+                           'CarrierDelay': np.float32, 'WeatherDelay': np.float32,
+                           'NASDelay': np.float32, 'SecurityDelay': np.float32,
+                           'LateAircraftDelay': np.float32})
+
+    y = X["IsArrDelayed"].cat.codes
+    X = X[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
+           'DayofMonth', 'DayOfWeek', 'DepTime', 'CRSDepTime',
+           'ArrTime', 'CRSArrTime', 'FlightNum', 'TailNum',
+           'ActualElapsedTime', 'CRSElapsedTime', 'AirTime', 'ArrDelay',
+           'DepDelay', 'Distance', 'TaxiIn', 'TaxiOut',
+           'Cancelled', 'CancellationCode', 'Diverted', 'CarrierDelay',
+           'WeatherDelay', 'NASDelay', 'SecurityDelay', 'LateAircraftDelay']]
+
+    print(X.shape, y.shape)
+
+    # Create 0.75/0.25 train/test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, train_size=0.75,
+                                                        random_state=42)
+    print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
+
+    # Specify sufficient boosting iterations to reach a minimum
+    num_round = 1000
+
+    # Leave most parameters as default
+    param = {'objective': 'reg:logistic',
+             'tree_method': 'gpu_hist',
+             }
+
+    from h2o4gpu.util.gpu import device_count
+    n_gpus, devices = device_count(-1)
+
+    with LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1) as cluster:
+        with Client(cluster) as client:
+            dask_X_train = da.from_array(X_train)
+            dask_label_train = da.from_array(y_train)
+
+            dtrain = DaskDMatrix(
+                client=client, data=dask_X_train, label=dask_label_train)
+
+            dask_X_test = da.from_array(X_test)
+            dask_label_test = da.from_array(y_test)
+
+            dtest = DaskDMatrix(
+                client=client, data=dask_X_test, label=dask_label_test)
+
+            gpu_res = {}  # Store accuracy result
+            tmp = time.time()
+            # Train model
+            xgb.dask.train(client, param, dtrain, num_boost_round=num_round, evals=[
+                (dtest, 'test')])
+            print("GPU Training Time: %s seconds" % (str(time.time() - tmp)))
+
+
 if __name__ == "__main__":
     pass
     # test_xgboost_covtype_multi_gpu()
