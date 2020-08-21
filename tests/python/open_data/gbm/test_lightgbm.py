@@ -258,13 +258,8 @@ def test_lightgbm_accuracy_cpu():
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
 
-
-<< << << < HEAD
-assert len(eval_loss) > 90
-== == == =
-assert len(eval_loss) > 150
->>>>>> > a7b45ba4... add lgbm accuracy tests
-assert eval_loss[-1] < 0.33
+    assert len(eval_loss) > 90
+    assert eval_loss[-1] < 0.32
 
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
@@ -308,8 +303,8 @@ def test_lightgbm_accuracy_cuda():
               eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=verbose_fit)
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
-    assert len(eval_loss) > 150
-    assert eval_loss[-1] < 0.33
+    assert len(eval_loss) > 90
+    assert eval_loss[-1] < 0.32
 
 
 if __name__ == '__main__':
