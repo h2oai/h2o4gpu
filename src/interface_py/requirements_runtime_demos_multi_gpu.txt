@@ -34,4 +34,3 @@ dask[dataframe]==2.11.0
 distributed==2.11.0
 msgpack==0.6.2
 pyarrow==0.16.0
-cffi==1.14.0
