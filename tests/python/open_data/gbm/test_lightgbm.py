@@ -5,6 +5,7 @@ import logging
 
 import pytest
 
+
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
 @pytest.mark.timeout(3600)
@@ -119,8 +120,7 @@ def test_lightgbm_cpu_airlines_full(booster):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
@@ -174,8 +174,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
@@ -232,8 +231,7 @@ def test_lightgbm_gpu_airlines_year(booster, year):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 def test_lightgbm_accuracy_cpu():

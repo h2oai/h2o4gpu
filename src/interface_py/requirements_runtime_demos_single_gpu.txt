@@ -25,5 +25,6 @@ tabulate==0.8.2
 future==0.16.0
 joblib==0.14.0
 pyarrow==0.16.0
+cffi==1.14.0
 # the same version as scikit-learn fork
 scikit-learn==0.21.2
