@@ -63,7 +63,8 @@ RUN yum install -y \
     blas-devel \
     epel-release \
     zeromq-devel \
-    openblas-devel
+    openblas-devel \
+    libffi-devel
 
 RUN \
     git clone https://github.com/NVIDIA/nccl.git && \

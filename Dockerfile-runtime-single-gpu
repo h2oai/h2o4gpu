@@ -30,7 +30,8 @@ RUN yum install -y \
     openblas-devel \
     libpng-devel \
     freetype-devel \
-	bzip2
+	bzip2 \
+    libffi-devel
 
 # Arrow
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then yum install -y git boost-devel cmake3  autoconf libjpeg-devel; fi'
