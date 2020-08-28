@@ -190,12 +190,13 @@ def test_xgboost_airlines():
                            'LateAircraftDelay': np.float32})
 
     y = X["IsArrDelayed"].cat.codes
-    X = X[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
+    # removed categories UniqueCarrier, Origin, Dest, IsDepDelayed, TailNum, Cancelled, CancellationCode
+    X = X[['Year', 'Month',
            'DayofMonth', 'DayOfWeek', 'DepTime', 'CRSDepTime',
-           'ArrTime', 'CRSArrTime', 'FlightNum', 'TailNum',
+           'ArrTime', 'CRSArrTime', 'FlightNum',
            'ActualElapsedTime', 'CRSElapsedTime', 'AirTime', 'ArrDelay',
            'DepDelay', 'Distance', 'TaxiIn', 'TaxiOut',
-           'Cancelled', 'CancellationCode', 'Diverted', 'CarrierDelay',
+           'Diverted', 'CarrierDelay',
            'WeatherDelay', 'NASDelay', 'SecurityDelay', 'LateAircraftDelay']]
 
     print(X.shape, y.shape)
