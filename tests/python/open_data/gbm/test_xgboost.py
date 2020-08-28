@@ -218,14 +218,14 @@ def test_xgboost_airlines():
 
     with LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1) as cluster:
         with Client(cluster) as client:
-            dask_X_train = dd.from_pandas(X_train)
-            dask_label_train = dd.from_pandas(y_train)
+            dask_X_train = dd.from_pandas(X_train, npartitions=n_gpus)
+            dask_label_train = dd.from_pandas(y_train, npartitions=n_gpus)
 
             dtrain = DaskDMatrix(
                 client=client, data=dask_X_train, label=dask_label_train)
 
-            dask_X_test = dd.from_pandas(X_test)
-            dask_label_test = dd.from_pandas(y_test)
+            dask_X_test = dd.from_pandas(X_test, npartitions=n_gpus)
+            dask_label_test = dd.from_pandas(y_test, npartitions=n_gpus)
 
             dtest = DaskDMatrix(
                 client=client, data=dask_X_test, label=dask_label_test)
