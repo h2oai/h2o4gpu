@@ -9,11 +9,11 @@ from warnings import warn
 # dask
 try:
     import dask  # pylint: disable=unused-import
-    import dask_cuda  # pylint: disable=unused-import
     from dask import delayed  # pylint: disable=unused-import
     from dask import dataframe as dd  # pylint: disable=unused-import
     from dask import array as da  # pylint: disable=unused-import
     from dask.distributed import Client  # pylint: disable=unused-import
+    import dask_cuda  # pylint: disable=unused-import
 
     CUDA_DASK_INSTALLED = True
 except ImportError:

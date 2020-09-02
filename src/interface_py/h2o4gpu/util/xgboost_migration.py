@@ -20,8 +20,7 @@ def load_pkl(name):
             return model
         except xgboost.core.XGBoostError as e:
             if "Check failed: header == serialisation_header_" in str(e):
-                # pylint: disable=unused-import
-                import xgboost_prev
+                import xgboost_prev  # pylint: disable=unused-import
                 import tempfile
 
                 class Unpickler(pickle.Unpickler):
