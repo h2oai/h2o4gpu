@@ -161,6 +161,7 @@ def test_xgboost_covtype_multi_gpu():
 
 
 @pytest.mark.multi_gpu
+@pytest.mark.timeout(3600)
 def test_xgboost_airlines():
     import pandas as pd
     import xgboost as xgb
