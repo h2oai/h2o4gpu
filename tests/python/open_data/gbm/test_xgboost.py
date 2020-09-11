@@ -188,7 +188,7 @@ def test_xgboost_airlines():
                            'DayofMonth': np.int32, 'Cancelled': 'category',
                            'CarrierDelay': np.float32, 'WeatherDelay': np.float32,
                            'NASDelay': np.float32, 'SecurityDelay': np.float32,
-                           'LateAircraftDelay': np.float32})
+                           'LateAircraftDelay': np.float32}, nrows=60000000)
 
     y = X["IsArrDelayed"].cat.codes
     # removed categories UniqueCarrier, Origin, Dest, IsDepDelayed, TailNum, Cancelled, CancellationCode
