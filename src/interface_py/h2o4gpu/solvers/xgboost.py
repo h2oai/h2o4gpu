@@ -6,26 +6,13 @@
 """
 
 from warnings import warn
-# dask
+
+import pkg_resources
 try:
-    import dask  # pylint: disable=unused-import
-    from dask import delayed  # pylint: disable=unused-import
-    from dask import dataframe as dd  # pylint: disable=unused-import
-    from dask import array as da  # pylint: disable=unused-import
-    from dask.distributed import Client  # pylint: disable=unused-import
-    import dask_cuda  # pylint: disable=unused-import
-
+    pkg_resources.get_distribution('dask_cuda')
     CUDA_DASK_INSTALLED = True
-except ImportError:
-    dask_cuda = None
-    dd = None
-    da = None
-    Client = None
-    dask = None
-
+except pkg_resources.DistributionNotFound:
     CUDA_DASK_INSTALLED = False
-# from dask import dataframe as dd
-# from dask import array as da
 
 
 class RandomForestClassifier:
@@ -1081,7 +1068,7 @@ class GradientBoostingClassifier:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
-        if n_gpus > 1 and CUDA_DASK_INSTALLED:
+        if n_gpus > 1 and CUDA_DASK_INSTALLED and self.__dask_loaded():
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1150,6 +1137,21 @@ class GradientBoostingClassifier:
                 print("Running h2o4gpu GradientBoostingClassifier")
             self.model = self.model_h2o4gpu
 
+    def __dask_loaded(self):
+        global dask  # pylint: disable=global-variable-not-assigned
+        import dask  # pylint: disable=unused-import
+        global delayed  # pylint: disable=global-variable-not-assigned
+        from dask import delayed  # pylint: disable=unused-import
+        global dd  # pylint: disable=global-variable-not-assigned
+        from dask import dataframe as dd  # pylint: disable=unused-import
+        global da  # pylint: disable=global-variable-not-assigned
+        from dask import array as da  # pylint: disable=unused-import
+        global Client  # pylint: disable=global-variable-not-assigned
+        from dask.distributed import Client  # pylint: disable=unused-import
+        global dask_cuda  # pylint: disable=global-variable-not-assigned
+        import dask_cuda  # pylint: disable=unused-import
+        return True
+
     def apply(self, X):
         if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
             return self.model.apply(da.from_array(X))
@@ -1160,7 +1162,7 @@ class GradientBoostingClassifier:
         return self.model_sklearn.decision_function(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
@@ -1178,7 +1180,7 @@ class GradientBoostingClassifier:
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
             res = self.model.predict(X)
@@ -1198,7 +1200,7 @@ class GradientBoostingClassifier:
             res = self.model.predict_proba(X)
             self.set_attributes()
             return res
-        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict_proba(da.from_array(X))
         else:
             res = self.model.predict_proba(X)
@@ -1601,7 +1603,7 @@ class GradientBoostingRegressor:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
-        if n_gpus > 1 and CUDA_DASK_INSTALLED:
+        if n_gpus > 1 and CUDA_DASK_INSTALLED and self.__dask_loaded():
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1669,13 +1671,28 @@ class GradientBoostingRegressor:
                 warn("Running h2o4gpu GradientBoostingRegressor")
             self.model = self.model_h2o4gpu
 
+    def __dask_loaded(self):
+        global dask  # pylint: disable=global-variable-not-assigned
+        import dask  # pylint: disable=unused-import
+        global delayed  # pylint: disable=global-variable-not-assigned
+        from dask import delayed  # pylint: disable=unused-import
+        global dd  # pylint: disable=global-variable-not-assigned
+        from dask import dataframe as dd  # pylint: disable=unused-import
+        global da  # pylint: disable=global-variable-not-assigned
+        from dask import array as da  # pylint: disable=unused-import
+        global Client  # pylint: disable=global-variable-not-assigned
+        from dask.distributed import Client  # pylint: disable=unused-import
+        global dask_cuda  # pylint: disable=global-variable-not-assigned
+        import dask_cuda  # pylint: disable=unused-import
+        return True
+
     def apply(self, X):
-        if self.distributed and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             return self.model.apply(da.from_array(X))
         return self.model.apply(X)
 
     def fit(self, X, y=None, sample_weight=None):
-        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             y = da.from_array(y) if y is not None else None
             sample_weight = da.from_array(
                 sample_weight) if sample_weight is not None else None
@@ -1693,7 +1710,7 @@ class GradientBoostingRegressor:
             res = self.model.predict(X)
             self.set_attributes()
             return res
-        if self.distributed and CUDA_DASK_INSTALLED and not isinstance(X, (dd.DataFrame, da.Array)):
+        if self.distributed and CUDA_DASK_INSTALLED and self.__dask_loaded() and not isinstance(X, (dd.DataFrame, da.Array)):
             res = self.model.predict(da.from_array(X))
         else:
             res = self.model.predict(X)
