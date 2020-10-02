@@ -1138,11 +1138,17 @@ class GradientBoostingClassifier:
             self.model = self.model_h2o4gpu
 
     def __dask_loaded(self):
+        global dask
         import dask  # pylint: disable=unused-import
+        global delayed
         from dask import delayed  # pylint: disable=unused-import
+        global dd
         from dask import dataframe as dd  # pylint: disable=unused-import
+        global da
         from dask import array as da  # pylint: disable=unused-import
+        global Client
         from dask.distributed import Client  # pylint: disable=unused-import
+        global dask_cuda
         import dask_cuda  # pylint: disable=unused-import
         return True
 
@@ -1666,11 +1672,17 @@ class GradientBoostingRegressor:
             self.model = self.model_h2o4gpu
 
     def __dask_loaded(self):
+        global dask
         import dask  # pylint: disable=unused-import
+        global delayed
         from dask import delayed  # pylint: disable=unused-import
+        global dd
         from dask import dataframe as dd  # pylint: disable=unused-import
+        global da
         from dask import array as da  # pylint: disable=unused-import
+        global Client
         from dask.distributed import Client  # pylint: disable=unused-import
+        global dask_cuda
         import dask_cuda  # pylint: disable=unused-import
         return True
 
