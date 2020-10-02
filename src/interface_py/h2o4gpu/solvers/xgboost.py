@@ -6,26 +6,22 @@
 """
 
 from warnings import warn
-# dask
+
+import pkg_resources
 try:
+    pkg_resources.get_distribution('dask_cuda')
+    CUDA_DASK_INSTALLED = True
+except pkg_resources.DistributionNotFound:
+    CUDA_DASK_INSTALLED = False
+
+
+def __load_dask():
     import dask  # pylint: disable=unused-import
     from dask import delayed  # pylint: disable=unused-import
     from dask import dataframe as dd  # pylint: disable=unused-import
     from dask import array as da  # pylint: disable=unused-import
     from dask.distributed import Client  # pylint: disable=unused-import
     import dask_cuda  # pylint: disable=unused-import
-
-    CUDA_DASK_INSTALLED = True
-except ImportError:
-    dask_cuda = None
-    dd = None
-    da = None
-    Client = None
-    dask = None
-
-    CUDA_DASK_INSTALLED = False
-# from dask import dataframe as dd
-# from dask import array as da
 
 
 class RandomForestClassifier:
@@ -1082,6 +1078,7 @@ class GradientBoostingClassifier:
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
+            __load_dask()
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1602,6 +1599,7 @@ class GradientBoostingRegressor:
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
+            __load_dask()
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
