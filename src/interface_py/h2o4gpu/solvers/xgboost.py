@@ -15,15 +15,6 @@ except pkg_resources.DistributionNotFound:
     CUDA_DASK_INSTALLED = False
 
 
-def __load_dask():
-    import dask  # pylint: disable=unused-import
-    from dask import delayed  # pylint: disable=unused-import
-    from dask import dataframe as dd  # pylint: disable=unused-import
-    from dask import array as da  # pylint: disable=unused-import
-    from dask.distributed import Client  # pylint: disable=unused-import
-    import dask_cuda  # pylint: disable=unused-import
-
-
 class RandomForestClassifier:
     """H2O RandomForestClassifier Solver
 
@@ -1078,7 +1069,12 @@ class GradientBoostingClassifier:
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
-            __load_dask()
+            import dask  # pylint: disable=unused-import
+            from dask import delayed  # pylint: disable=unused-import
+            from dask import dataframe as dd  # pylint: disable=unused-import
+            from dask import array as da  # pylint: disable=unused-import
+            from dask.distributed import Client  # pylint: disable=unused-import
+            import dask_cuda  # pylint: disable=unused-import
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
@@ -1599,7 +1595,12 @@ class GradientBoostingRegressor:
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED:
-            __load_dask()
+            import dask  # pylint: disable=unused-import
+            from dask import delayed  # pylint: disable=unused-import
+            from dask import dataframe as dd  # pylint: disable=unused-import
+            from dask import array as da  # pylint: disable=unused-import
+            from dask.distributed import Client  # pylint: disable=unused-import
+            import dask_cuda  # pylint: disable=unused-import
             self.distributed = True
             from dask_cuda import LocalCUDACluster
             cluster = LocalCUDACluster(n_workers=n_gpus, threads_per_worker=1)
