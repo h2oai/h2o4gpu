@@ -1138,17 +1138,17 @@ class GradientBoostingClassifier:
             self.model = self.model_h2o4gpu
 
     def __dask_loaded(self):
-        global dask
+        global dask  # pylint: disable=global-variable-not-assigned
         import dask  # pylint: disable=unused-import
-        global delayed
+        global delayed  # pylint: disable=global-variable-not-assigned
         from dask import delayed  # pylint: disable=unused-import
-        global dd
+        global dd  # pylint: disable=global-variable-not-assigned
         from dask import dataframe as dd  # pylint: disable=unused-import
-        global da
+        global da  # pylint: disable=global-variable-not-assigned
         from dask import array as da  # pylint: disable=unused-import
-        global Client
+        global Client  # pylint: disable=global-variable-not-assigned
         from dask.distributed import Client  # pylint: disable=unused-import
-        global dask_cuda
+        global dask_cuda  # pylint: disable=global-variable-not-assigned
         import dask_cuda  # pylint: disable=unused-import
         return True
 
@@ -1672,17 +1672,17 @@ class GradientBoostingRegressor:
             self.model = self.model_h2o4gpu
 
     def __dask_loaded(self):
-        global dask
+        global dask  # pylint: disable=global-variable-not-assigned
         import dask  # pylint: disable=unused-import
-        global delayed
+        global delayed  # pylint: disable=global-variable-not-assigned
         from dask import delayed  # pylint: disable=unused-import
-        global dd
+        global dd  # pylint: disable=global-variable-not-assigned
         from dask import dataframe as dd  # pylint: disable=unused-import
-        global da
+        global da  # pylint: disable=global-variable-not-assigned
         from dask import array as da  # pylint: disable=unused-import
-        global Client
+        global Client  # pylint: disable=global-variable-not-assigned
         from dask.distributed import Client  # pylint: disable=unused-import
-        global dask_cuda
+        global dask_cuda  # pylint: disable=global-variable-not-assigned
         import dask_cuda  # pylint: disable=unused-import
         return True
 
