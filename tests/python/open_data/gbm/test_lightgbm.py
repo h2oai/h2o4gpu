@@ -5,13 +5,10 @@ import logging
 
 import pytest
 
-print(sys.path)
-
-logging.basicConfig(level=logging.DEBUG)
-
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
+@pytest.mark.timeout(3600)
 def test_lightgbm_gpu(booster):
     import numpy as np
     import pandas as pd
@@ -44,6 +41,7 @@ def test_lightgbm_gpu(booster):
 
 
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
+@pytest.mark.timeout(3600)
 def test_lightgbm_cpu(booster):
     import numpy as np
     import pandas as pd
@@ -122,8 +120,7 @@ def test_lightgbm_cpu_airlines_full(booster):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
@@ -177,8 +174,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
@@ -235,8 +231,7 @@ def test_lightgbm_gpu_airlines_year(booster, year):
                 lgb_train,
                 num_boost_round=50,
                 early_stopping_rounds=5,
-                stratified=False,
-                verbose_eval=10)
+                stratified=False)
 
 
 def test_lightgbm_accuracy_cpu():
@@ -254,9 +249,10 @@ def test_lightgbm_accuracy_cpu():
     model.set_params(device_type='cpu')
     print(model.get_params()['device_type'])
     model.fit(X, y, sample_weight=sample_weight, init_score=init_score, eval_set=eval_set, eval_names=valid_X_features, eval_sample_weight=eval_sample_weight,
-              eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=verbose_fit)
+              eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=0)
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
+
     assert len(eval_loss) > 90
     assert eval_loss[-1] < 0.35
 
@@ -277,11 +273,39 @@ def test_lightgbm_accuracy_gpu():
     model.set_params(device_type='gpu')
     print(model.get_params()['device_type'])
     model.fit(X, y, sample_weight=sample_weight, init_score=init_score, eval_set=eval_set, eval_names=valid_X_features, eval_sample_weight=eval_sample_weight,
-              eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=verbose_fit)
+              eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=0)
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
     assert len(eval_loss) > 90
-    assert eval_loss[-1] < 0.35
+    assert eval_loss[-1] < 0.32
+
+
+def test_lightgbm_accuracy_cuda():
+    import pickle
+    import numpy as np
+    import pandas as pd
+    from h2o4gpu.util.lightgbm_dynamic import got_cpu_lgb, got_gpu_lgb
+    import lightgbm as lgb
+
+    (model, lightgbm_params, args_fit) = pickle.load(
+        open("./open_data/lgb_prefit_8c1a2d9f-4477-4abc-aec6-502ce335e551.pkl", "rb"))
+    X, y, sample_weight, init_score, eval_set, valid_X_features, eval_sample_weight, init_score, eval_metric, early_stopping_rounds, X_features, verbose_fit = args_fit
+    print(model.get_params().keys())
+    print(model.get_params()['device_type'])
+    model.set_params(device_type='cuda')
+    print(model.get_params()['device_type'])
+    model.fit(X, y, sample_weight=sample_weight, init_score=init_score, eval_set=eval_set, eval_names=valid_X_features, eval_sample_weight=eval_sample_weight,
+              eval_init_score=init_score, eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds, feature_name=X_features, verbose=0)
+
+    eval_loss = model.evals_result_['name0']['multi_logloss']
+    assert len(eval_loss) > 90
+
+
+<< << << < HEAD
+assert eval_loss[-1] < 0.32
+== == == =
+assert eval_loss[-1] < 0.35
+>>>>>> > master
 
 
 if __name__ == '__main__':
