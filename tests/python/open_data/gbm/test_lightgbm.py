@@ -299,13 +299,7 @@ def test_lightgbm_accuracy_cuda():
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
     assert len(eval_loss) > 90
-
-
-<< << << < HEAD
-assert eval_loss[-1] < 0.32
-== == == =
-assert eval_loss[-1] < 0.35
->>>>>> > master
+    assert eval_loss[-1] < 0.35
 
 
 if __name__ == '__main__':
