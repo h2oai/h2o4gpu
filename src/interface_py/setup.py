@@ -81,7 +81,7 @@ with open(requirements_file, "r") as fs:
 def get_packages(directory):
     paths = set()
     for (path, directories, filenames) in os.walk(directory, followlinks=True):
-        if './build' in path or './dist' in path or 'h2o4gpu.egg-info' in path or '__pycache__' in path or path == './' or path in paths:
+        if '.github' in path or './build' in path or './dist' in path or 'h2o4gpu.egg-info' in path or '__pycache__' in path or path == './' or path in paths:
             pass
         else:
             paths.add(path[2:])

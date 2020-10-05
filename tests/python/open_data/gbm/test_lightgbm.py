@@ -95,7 +95,7 @@ def test_lightgbm_cpu_airlines_full(booster):
                               'DayofMonth': np.int32, 'Cancelled': 'category',
                               'CarrierDelay': np.float32, 'WeatherDelay': np.float32,
                               'NASDelay': np.float32, 'SecurityDelay': np.float32,
-                              'LateAircraftDelay': np.float32})
+                              'LateAircraftDelay': np.float32}, nrows=100000000)
 
     y = data["IsArrDelayed"].cat.codes
     data = data[['UniqueCarrier', 'Origin', 'Dest', 'IsDepDelayed', 'Year', 'Month',
@@ -254,7 +254,7 @@ def test_lightgbm_accuracy_cpu():
     eval_loss = model.evals_result_['name0']['multi_logloss']
 
     assert len(eval_loss) > 90
-    assert eval_loss[-1] < 0.32
+    assert eval_loss[-1] < 0.35
 
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
@@ -299,7 +299,13 @@ def test_lightgbm_accuracy_cuda():
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
     assert len(eval_loss) > 90
-    assert eval_loss[-1] < 0.32
+
+
+<< << << < HEAD
+assert eval_loss[-1] < 0.32
+== == == =
+assert eval_loss[-1] < 0.35
+>>>>>> > master
 
 
 if __name__ == '__main__':
