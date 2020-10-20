@@ -4,9 +4,9 @@ sphinx_rtd_theme==0.4.3
 pillow==7.2.0
 wheel==0.33.4
 cython==0.29.14
-pandas==0.24.2
-numpy==1.18.5
-scipy==1.4.1
+pandas==1.1.3
+numpy==1.19.2
+scipy==1.5.2
 numba==0.46.0
 psutil==5.6.6
 llvmlite==0.30.0
