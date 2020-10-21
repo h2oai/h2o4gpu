@@ -11,7 +11,7 @@ jupyter_console==5.2.0
 matplotlib==2.0.2
 seaborn==0.8.1
 # for some demos/tests
-feather-format==0.4.0
+feather-format==0.4.1
 psutil==5.6.6
 # for jupiter notebooks
 pillow==7.2.0
