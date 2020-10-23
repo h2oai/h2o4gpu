@@ -42,7 +42,7 @@ pipeline {
     options {
         ansiColor('xterm')
         timestamps()
-        timeout(time: 300, unit: 'MINUTES')
+        timeout(time: 1440, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
         skipDefaultCheckout()
