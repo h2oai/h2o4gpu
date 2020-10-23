@@ -20,7 +20,7 @@ def test_not_labels():
         X, y, test_size=0.25, random_state=42)
 
     # sklearn
-    clf_sklearn = linear_model.LogisticRegression()
+    clf_sklearn = linear_model.LogisticRegression(solver='liblinear')
     clf_sklearn.fit(X_train, y_train)
     y_pred_sklearn = clf_sklearn.predict(X_test)
 

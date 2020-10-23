@@ -526,7 +526,7 @@ def run_glm(X,
                 store_full_path=enet.store_full_path))
 
     from ..solvers.utils import finish
-    finish(enet)
+    del enet
 
     duration_h2o4gpu = time() - start_h2o4gpu
 

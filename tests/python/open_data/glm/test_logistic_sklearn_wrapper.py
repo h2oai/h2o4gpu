@@ -47,7 +47,8 @@ def test_fit_credit_backupsklearn():
     print(enet.sparsify())
     
     from h2o4gpu.linear_model.logistic import  LogisticRegressionSklearn
-    enet_sk = LogisticRegressionSklearn(dual=True, max_iter=100, tol=1E-4, intercept_scaling=0.99, random_state=1234)
+    enet_sk = LogisticRegressionSklearn(dual=True, max_iter=100, tol=1E-4, intercept_scaling=0.99,
+                                        random_state=1234, solver='liblinear')
     print("Scikit fit()")
     enet_sk.fit(X, y)
     print("Scikit predict()")
