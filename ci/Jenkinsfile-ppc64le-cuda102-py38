@@ -16,10 +16,10 @@ def commitMessage = ''
 def h2o4gpuUtils = null
 
 def platform = "ppc64le-centos7-cuda10.0"
-def BUILDTYPE = "cuda10-py38"
+def BUILDTYPE = "cuda102-py38"
 def cuda = "nvidia/cuda-ppc64le:10.2-cudnn7-devel-centos7"
 def cudart = "nvidia/cuda-ppc64le:10.2-cudnn7-devel-centos7"
-def extratag = "-cuda10"
+def extratag = "-cuda102"
 def linuxwheel = "ppc64le-centos7-cuda10.whl"
 def testtype = "dotest-single-gpu"
 def testtype_multi_gpu = "dotest-multi-gpu"
