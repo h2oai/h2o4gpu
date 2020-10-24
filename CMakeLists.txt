@@ -154,8 +154,15 @@ if(USE_CUDA)
 
         if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
             find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a
-            PATHS   "/usr/lib64")  #cuda-10.1
+            PATHS   "/usr/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
             list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
+            find_library(LIBLAPACK_STATIC NAMES liblapack_static.a
+            PATHS   "/usr/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
+            list(APPEND STATIC_LIBS ${LIBLAPACK_STATIC})
         endif()
 
         SET(GENCODE_FLAGS "")
