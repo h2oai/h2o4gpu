@@ -156,9 +156,9 @@ RUN \
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	git clone https://github.com/apache/arrow.git && \
 	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.16.0 && \
+	git checkout tags/apache-arrow-0.17.1 && \
     yum install -y boost-devel && \
-  	CFLAGS=-std=c99 pip install numpy==1.18.1 cython==0.29.14 && \
+  	CFLAGS=-std=c99 pip install numpy==1.19.2 cython==0.29.14 scipy==1.5.2 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
@@ -173,7 +173,7 @@ RUN echo ${python_version}
 
 RUN pip install -U pip==20.1.1
 
-RUN pip install numpy==1.18.1 scipy==1.3.1 setuptools==49.2.0
+RUN pip install numpy==1.19.2 scipy==1.5.2 setuptools==49.2.0
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 
