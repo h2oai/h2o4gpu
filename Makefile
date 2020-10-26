@@ -106,12 +106,12 @@ py: apply-sklearn_simple build/VERSION.txt
 .PHONY: xgboost_prev
 xgboost_prev:
 	@echo "----- Building XGboost previous version target $(XGBOOST_TARGET) -----"
-	cd xgboost_prev ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+	cd xgboost_prev; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;60;61;70/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost ; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+	cd xgboost; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;60;61;70/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
 
