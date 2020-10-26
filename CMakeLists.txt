@@ -134,7 +134,7 @@ if(USE_CUDA)
             SET(CMAKE_BUILD_TYPE Debug)
         else()
             MESSAGE(STATUS "Building RELEASE compute capability version.")
-            SET(GPU_COMPUTE_VER 35;50;52;60;61)
+            SET(GPU_COMPUTE_VER 35;37;50;52;60;61)
         endif()
 
         if(DEV_SYNC)
