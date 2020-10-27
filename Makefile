@@ -424,7 +424,7 @@ run_in_docker-cpu:
 libsklearn:	# assume already submodule gets sklearn
 	@echo "----- Make sklearn wheel -----"
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
-	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && $(PYTHON) setup.py sdist bdist_wheel
+	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && $(PYTHON) setup.py sdist && $(PYTHON) setup.py bdist_wheel
 
 apply-sklearn: libsklearn apply-sklearn_simple
 

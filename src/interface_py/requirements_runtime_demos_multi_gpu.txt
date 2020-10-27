@@ -11,26 +11,26 @@ jupyter_console==5.2.0
 matplotlib==2.0.2
 seaborn==0.8.1
 # for some demos/tests
-feather-format==0.4.0
+feather-format==0.4.1
 psutil==5.6.6
 # for jupiter notebooks
 pillow==7.2.0
 #below for h2o4gpu
-pandas==0.24.2
-numpy==1.18.1
+pandas==1.1.3
+numpy==1.19.2
 python-dateutil==2.7.2
 pytz==2018.4
-scipy==1.3.1
+scipy==1.5.2
 tabulate==0.8.2
 future==0.16.0
 joblib==0.14.0
 numba==0.46.0
 llvmlite==0.30.0
 # the same version as scikit-learn fork
-scikit-learn==0.21.2
+scikit-learn==0.23.2
 #xgboost dask
 dask-cuda==0.12.0
 dask[dataframe]==2.11.0
 distributed==2.11.0
 msgpack==0.6.2
-pyarrow==0.16.0
+pyarrow==0.17.1

@@ -1,0 +1,29 @@
+// TOOD: rename to @Library('h2o-jenkins-pipeline-lib') _
+@Library('test-shared-library') _
+
+import ai.h2o.ci.Utils
+import static ai.h2o.ci.Utils.banner
+def utilsLib = new Utils()
+import ai.h2o.ci.BuildInfo
+
+def commitMessage = ''
+def h2o4gpuUtils = null
+
+def platform = "x86_64-centos7-cuda10.2"
+def BUILDTYPE = "cuda102-py38"
+def cuda = "nvidia/cuda:10.2-cudnn7-devel-centos7"
+def cudart = "nvidia/cuda:10.2-cudnn7-devel-centos7"
+def extratag = "-cuda102"
+def linuxwheel = "x86_64-centos7-cuda10.whl"
+def testtype = "dotest-single-gpu"
+def testtype_multi_gpu = "dotest-multi-gpu"
+def labelbuild = "nvidia-docker"
+def labeltest = "gpu && nvidia-docker"
+def labeltest_multi_gpu = "2gpu && nvidia-docker"
+def labelruntime = "nvidia-docker"
+def doingbenchmark = "0"
+def dobenchmark = "0"
+def doruntime = "1"
+def python = "3.8"
+def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
+def publish_docs = true
