@@ -82,8 +82,14 @@ def test_arima(order, double):
 
     print(model2.phi_, model2.theta_)
 
-    assert np.allclose(model1.phi_, model2.phi_, rtol=2e-4, atol=2e-7)
-    assert np.allclose(model1.theta_, model2.theta_, rtol=2e-4, atol=2e-7)
+    rtol=2e-4
+    atol=2e-7
+    if not double:
+        rtol=1e-3
+        atol=1e-5
+
+    assert np.allclose(model1.phi_, model2.phi_, rtol=rtol, atol=atol)
+    assert np.allclose(model1.theta_, model2.theta_, rtol=rtol, atol=atol)
 
 
 @pytest.mark.parametrize("order", [1, 2, 3, 4])
