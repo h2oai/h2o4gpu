@@ -46,7 +46,8 @@ def func(m=5000, n=10, k=9, algorithm="cusolver", convert_to_float32 = False):
     print("Sklearn Explained Variance Ratio")
     print(sklearn_tsvd.explained_variance_ratio_)
 
-    rtol = 1E-5
+    rtol = 1E-3
+    atol = 1E-5
 
     assert np.allclose(h2o4gpu_tsvd_sklearn_wrapper.singular_values_, sklearn_tsvd.singular_values_, rtol=rtol)
 
