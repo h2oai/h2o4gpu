@@ -277,7 +277,7 @@ def test_lightgbm_accuracy_gpu():
 
     eval_loss = model.evals_result_['name0']['multi_logloss']
     assert len(eval_loss) > 90
-    assert eval_loss[-1] < 0.35s
+    assert eval_loss[-1] < 0.35
 
 
 def test_lightgbm_accuracy_cuda():
