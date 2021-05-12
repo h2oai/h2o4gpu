@@ -2,3 +2,5 @@
 ^\.Rproj\.user$
 scripts/*
 ^cran-comments\.md$
+pkgdown/*
+docs/*
