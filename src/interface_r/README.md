@@ -47,7 +47,7 @@ model <- h2o4gpu.random_forest_classifier() %>% fit(x, y)
 pred <- model %>% predict(x)
 ```
 
-For examples of how to use all of the functions in the package, please visit the [package vignette](https://cran.r-project.org/web/packages/h2o4gpu/vignettes/getting_started.html).
+For examples of how to use all of the functions in the package, please visit the vignettes section [here](https://cran.r-project.org/package=h2o4gpu).
 
 
 ## Troubleshooting
