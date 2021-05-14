@@ -17,7 +17,6 @@ BugReports: https://github.com/h2oai/h2o4gpu/issues
 SystemRequirements: Python (>= 3.6) with header files and shared library;
     H2O4GPU (https://github.com/h2oai/h2o4gpu)
 Encoding: UTF-8
-LazyData: true
 Depends:
     R (>= 3.1)
 Imports:
@@ -29,5 +28,6 @@ RoxygenNote: 6.0.1
 Suggests:
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    Matrix
 VignetteBuilder: knitr
