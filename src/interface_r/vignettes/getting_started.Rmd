@@ -11,7 +11,7 @@ vignette: >
 
 
 
-**H2O4GPU** is a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python package.
+**H2O4GPU** is a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](https://scikit-learn.org/) API.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python package.
 
 The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reticulate/) package for facilitating access to Python libraries through R.  Reticulate embeds a Python session within your R session, enabling seamless, high-performance interoperability.
 
@@ -76,7 +76,7 @@ ce(actual = y, predicted = pred)
 
 **H2O4GPU** contains a collection of popular algorithms for supervised learning: Random Forest, Gradient Boosting Machine (GBM) and Generalized Linear Models (GLMs) with Elastic Net regularization.  There are methods for regression and classification for each of these algorithms.  Both Random Forest and GBM support multiclass clasification, however the GLM currently only supports binomial classification (a ticket for multinomial support is open [here](https://github.com/h2oai/h2o4gpu/issues/505)).
 
-The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](http://stanford.edu/%7Eboyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).  We have found that this method is not as fast as we'd like it to be, so we are working on implementing an entirely new GLM from scratch (follow progress [here](https://github.com/h2oai/h2o4gpu/issues/356)).
+The tree based models (Random Forest and GBM) are built on top of the very powerful [XGBoost](https://xgboost.readthedocs.io/en/latest/) library, and the Elastic Net GLM has been built upon the POGS solver.  [Proximal Graph Solver (POGS)](https://stanford.edu/~boyd/papers/pogs.html) is a solver for convex optimization problems in graph form using Alternating Direction Method of Multipliers (ADMM).  We have found that this method is not as fast as we'd like it to be, so we are working on implementing an entirely new GLM from scratch (follow progress [here](https://github.com/h2oai/h2o4gpu/issues/356)).
 
 The **h2o4gpu** R package does not include a suite of internal model metrics functions, therefore we encourage users to use a third-party model metrics package of their choice.  For all the examples below, we will use the [Metrics](https://CRAN.R-project.org/package=Metrics) R package.  This package has a large number of model metrics functions, all with a very simple, unified API.
 
