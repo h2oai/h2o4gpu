@@ -2,7 +2,7 @@
 
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/h2o4gpu)](https://cran.r-project.org/package=h2o4gpu)
 
-This directory contains the R package for **H2O4GPU**, a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](http://scikit-learn.org) API.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python module.  The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reticulate/) package for facilitating access to Python libraries through R.
+This directory contains the R package for **H2O4GPU**, a collection of GPU solvers by [H2O.ai](https://www.h2o.ai/) with APIs in Python and R.  The Python API builds upon the easy-to-use [scikit-learn](https://scikit-learn.org) API.  The **h2o4gpu** R package is a wrapper around the **h2o4gpu** Python module.  The R package makes use of RStudio's [reticulate](https://rstudio.github.io/reticulate/) package for facilitating access to Python libraries through R.
 
 ## Installation
 
