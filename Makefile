@@ -328,7 +328,7 @@ docker-build:
 	export CONTAINER_NAME="local-make-build-cuda$(DOCKER_CUDA_VERSION)" ;\
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-cuda$(DOCKER_CUDA_VERSION)" ;\
-	export dockerimage="nvidia/cuda${DOCKER_ARCH}:$(DOCKER_CUDA_VERSION)-cudnn$(DOCKER_CUDNN_VERSION)-devel-centos7" ;\
+	export dockerimage="nvidia/cuda:11.2.2-devel-ubi8" ;\
 	bash scripts/make-docker-devel.sh
 
 docker-runtime:

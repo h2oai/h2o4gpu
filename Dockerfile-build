@@ -21,64 +21,57 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH_CUDA:$LD_LIBRARY_PATH_BUILD:$LD_LIBRARY_PAT
 ENV OMP_NUM_THREADS=32
 ENV MKL_NUM_THREADS=32
 ENV VECLIB_MAXIMUM_THREADS=32
-ENV GIT_VERSION=2.17.0
+ENV AXEL_VERSION=2.17.11
+
+# Disable the error "Unable to read consumer identity"
+RUN sed -i 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/subscription-manager.conf
 
 #
 # Install necessary libraries and dependencies
 #
-RUN yum install -y epel-release
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 
-RUN yum update -y
+RUN dnf update -y
 
-RUN yum install centos-release-scl-rh -y
+# Enable RHSCL repository
+# RUN dnf install -y 'dnf-command(config-manager)' && \
+#     dnf config-manager --set-enabled powertools
+
 
 # Setup gcc etc.
-RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
+RUN dnf install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 
 # Git & gcc requirements
-RUN yum install -y libcurl-devel zlib-devel asciidoc xmlto wget make autoconf gettext gmp-devel mpfr-devel libmpc-devel
+RUN dnf install -y libcurl-devel zlib-devel wget make autoconf gettext gmp-devel mpfr-devel libmpc-devel
 
-RUN yum install -y devtoolset-7
 
-# Compile from source because yum's latest version is 1.8.3
-# --depth for submodule update which we use was added in 1.8.4
-RUN \
-    wget https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz && \
-    tar xf git-${GIT_VERSION}.tar.xz && \
-    cd git-${GIT_VERSION} && \
-    make configure && \
-    ./configure --prefix=/usr && \
-    make all && \
-    make install;
+# since we are using devel version, dev tools hould already be installed
+# RUN dnf install -y devtoolset-7
+
+# Install git
+RUN dnf install -y git
 
 #H2O4GPU requirements
-RUN yum install -y \
+RUN dnf install -y \
+    cmake \
     ncurses-devel \
     bzip2 \
     which \
-    axel \
     openssl-devel \
     libpng-devel \
     freetype-devel \
-    blas-devel \
-    epel-release \
     zeromq-devel \
-    openblas-devel \
+    openblas \
     libffi-devel
 
+# Compile from source because ubi8 does not have axel
 RUN \
-    git clone https://github.com/NVIDIA/nccl.git && \
-    cd nccl && \
-    git checkout tags/v2.4.7-1 && \
-    scl enable devtoolset-7 'make CUDA8_GENCODE="-gencode=arch=compute_35,code=sm_35 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61" -j src.build';
-
-# cmake 3.17.1 looks incompatible with CUDA
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.16.8/cmake-3.16.8.tar.gz && \
-    tar -zxvf cmake-3.16.8.tar.gz && \
-    cd cmake-3.16.8 && \
-    ./bootstrap && \
-    make -j`nproc` && \
-    make install
+    wget https://github.com/axel-download-accelerator/axel/releases/download/v${AXEL_VERSION}/axel-${AXEL_VERSION}.tar.gz && \
+    tar xf axel-${AXEL_VERSION}.tar.gz && \
+    cd axel-${AXEL_VERSION} && \
+    ./configure --prefix=/usr && \
+    make && \
+    make install;
 
 RUN mkdir -p /opt/h2oai/h2o4gpu
 
@@ -101,7 +94,7 @@ ENV SWIG_VERSION=3.0.12
 
 # conda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py310_${MINICONDA_VERSION}-Linux-`arch`.sh && \
-    bash Miniconda3-py310${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
+    bash Miniconda3-py310_${MINICONDA_VERSION}-Linux-`arch`.sh -b -p /opt/h2oai/h2o4gpu/python && \
     /opt/h2oai/h2o4gpu/python/bin/conda install -y python=${python_version} conda-build pip && \
     /opt/h2oai/h2o4gpu/python/bin/conda update conda-build
 
@@ -135,7 +128,7 @@ RUN \
 # Builds from source due to too old versions in yum
 #
 WORKDIR $HOME
-
+RUN dnf install -y pcre-devel 
 # SWIG
 RUN \
     wget https://0xdata-public.s3.amazonaws.com/swig/swig-${SWIG_VERSION}.tar.gz && \
@@ -158,7 +151,7 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 	cd $HOME/arrow/cpp && \
 	git checkout tags/apache-arrow-0.17.1 && \
     yum install -y boost-devel && \
-  	CFLAGS=-std=c99 pip install numpy==1.19.2 cython==0.29.14 scipy==1.5.2 && \
+  	CFLAGS=-std=c99 pip install numpy==1.22.0 cython==3.0.8  scipy==1.10.0 && \
 	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
 	cd $HOME/arrow/python && \
 	ARROW_HOME=/usr/local python setup.py install && \
@@ -171,9 +164,11 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 RUN echo ${python_version}
 
-RUN pip install -U pip==20.1.1
+RUN pip install -U pip==23.0.1
 
-RUN pip install numpy==1.19.2 scipy==1.5.2 setuptools==49.2.0
+RUN pip install Cython==3.0.8
+
+RUN pip install numpy==1.22.0 scipy==1.10.0 setuptools==49.6.0
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 
@@ -187,13 +182,15 @@ RUN (localedef -v -c -i en_US -f UTF-8 en_US.UTF-8 || true)
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 
+# RUN dnf install -y --enablerepo=epel boost169-devel
+
+RUN conda install -y conda-forge::icu conda-forge::python-devtools conda-forge::cuda-opencl-dev
 
 # See https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support for details
 # https://github.com/Microsoft/LightGBM/pull/929/files
 # Could compile with these as well: -DBOOST_COMPUTE_USE_OFFLINE_CACHE=OFF -DBOOST_COMPUTE_THREAD_SAFE=ON
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
     wget https://s3.amazonaws.com/0xdata-public/boost/boost_1_72_0.tar.bz2  && \
     tar xjf boost_1_72_0.tar.bz2 && \
     cd boost_1_72_0 && \
@@ -219,6 +216,8 @@ RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64/nvidia
 ENV CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+
+RUN git config --global --add safe.directory /root/repo
 
 WORKDIR $HOME
 
