@@ -337,7 +337,7 @@ docker-runtime:
 	export versionTag=$(BASE_VERSION) ;\
 	export extratag="-cuda$(DOCKER_CUDA_VERSION)" ;\
 	export fullVersionTag=$(BASE_VERSION) ;\
-	export dockerimage="nvidia/cuda${DOCKER_ARCH}:$(DOCKER_CUDA_VERSION)-cudnn$(DOCKER_CUDNN_VERSION)-runtime-centos7" ;\
+	export dockerimage="nvidia/cuda:11.2.2-devel-ubi8" ;\
 	bash scripts/make-docker-runtime.sh
 
 docker-runtime-run:
@@ -349,7 +349,7 @@ docker-runtests:
 	@echo "+-- Run tests in docker (-nccl-cuda9) --+"
 	export CONTAINER_NAME="localmake-runtests" ;\
 	export extratag="-cuda$(DOCKER_CUDA_VERSION)" ;\
-	export dockerimage="nvidia/cuda${DOCKER_ARCH}:$(DOCKER_CUDA_VERSION)-cudnn$(DOCKER_CUDNN_VERSION)-devel-centos7" ;\
+	export dockerimage="nvidia/cuda:11.2.2-devel-ubi8" ;\
 	export target="dotest" ;\
 	bash scripts/make-docker-runtests.sh
 
