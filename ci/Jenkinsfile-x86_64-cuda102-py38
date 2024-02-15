@@ -15,11 +15,11 @@ import ai.h2o.ci.BuildInfo
 def commitMessage = ''
 def h2o4gpuUtils = null
 
-def platform = "x86_64-centos7-cuda11.6"
-def BUILDTYPE = "cuda116-py38"
-def cuda = "nvidia/cuda:11.6.1-cudnn8-devel-centos7"
-def cudart = "nvidia/cuda:11.6.1-cudnn8-devel-centos7"
-def extratag = "-cuda116"
+def platform = "x86_64-centos7-cuda10.2"
+def BUILDTYPE = "cuda102-py38"
+def cuda = "nvcr.io/nvidia/cuda:10.2-cudnn7-devel-centos7"
+def cudart = "nvcr.io/nvidia/cuda:10.2-cudnn7-devel-centos7"
+def extratag = "-cuda102"
 def linuxwheel = "x86_64-centos7-cuda10.whl"
 def testtype = "dotest-single-gpu"
 def testtype_multi_gpu = "dotest-multi-gpu"
