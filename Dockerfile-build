@@ -28,7 +28,7 @@ ENV GIT_VERSION=2.17.0
 #
 RUN yum install -y epel-release
 
-RUN yum update -y
+# RUN yum update -y
 
 RUN yum install centos-release-scl-rh -y
 
