@@ -173,7 +173,7 @@ RUN echo ${python_version}
 
 RUN pip install -U pip==20.1.1
 
-RUN pip install numpy==1.19.2 scipy==1.5.2 setuptools==49.2.0
+RUN pip install numpy==1.19.2 scipy==1.5.2 setuptools==49.6.0
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 
