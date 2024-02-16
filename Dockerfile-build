@@ -154,16 +154,16 @@ RUN \
 # Arrow
 # Need to enable c99 manually https://github.com/numpy/numpy/issues/14147
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-	git clone https://github.com/apache/arrow.git && \
-	cd $HOME/arrow/cpp && \
-	git checkout tags/apache-arrow-0.17.1 && \
+    git clone https://github.com/apache/arrow.git && \
+    cd $HOME/arrow/cpp && \
+    git checkout tags/apache-arrow-0.17.1 && \
     yum install -y boost-devel && \
-  	CFLAGS=-std=c99 pip install numpy==1.19.2 cython==0.29.14 scipy==1.5.2 && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
-	cd $HOME/arrow/python && \
-	ARROW_HOME=/usr/local python setup.py install && \
-	yum install -y libjpeg-devel;\
-	fi'
+    CFLAGS=-std=c99 pip install numpy==1.19.2 cython==0.29.14 scipy==1.5.2 && \
+    cmake -DARROW_CXXFLAGS="-lutil" -DARROW_PYTHON=on && make -j && make install && \
+    cd $HOME/arrow/python && \
+    ARROW_HOME=/usr/local python setup.py install && \
+    yum install -y libjpeg-devel;\
+    fi'
 
 
 #
@@ -171,9 +171,9 @@ RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
 #
 RUN echo ${python_version}
 
-RUN pip install -U pip==20.1.1
+RUN pip install -U pip==23.3.2
 
-RUN pip install numpy==1.19.2 scipy==1.5.2 setuptools==49.6.0
+RUN pip install numpy==1.23.5 scipy==1.10.1 setuptools==58.5.3
 
 COPY src/interface_py/requirements_buildonly.txt requirements_buildonly.txt
 
@@ -193,17 +193,17 @@ ENV LANGUAGE en_US:en
 # Could compile with these as well: -DBOOST_COMPUTE_USE_OFFLINE_CACHE=OFF -DBOOST_COMPUTE_THREAD_SAFE=ON
 RUN \
     export CUDA_HOME=/usr/local/cuda/ && \
-	yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
-    wget https://s3.amazonaws.com/0xdata-public/boost/boost_1_72_0.tar.bz2  && \
-    tar xjf boost_1_72_0.tar.bz2 && \
-    cd boost_1_72_0 && \
+    yum install -y opencl-headers icu libicu-devel bzip2 bzip2-devel zlib-devel python-devel && \
+    wget https://github.com/boostorg/boost/releases/download/boost-1.82.0/boost-1.82.0.tar.gz  && \
+    tar -zxvf boost-1.82.0.tar.gz && \
+    cd boost-1.82.0 && \
     export PYTHONPATH=/opt/h2oai/h2o4gpu/python/ && \
     ./bootstrap.sh --prefix=/opt/boost/ --with-python=python3 && \
-    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python${python_version}m/ -fPIC" && \
-    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}m/" ; export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}m/" && \
-    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /opt/h2oai/h2o4gpu/python/include/python${python_version}m/" && \
-    cd /usr/include ; rm -rf boost ; ln -s /opt/boost/include/boost . && \
-    cd /usr/lib64/ ; rm -rf libboost* ; cp -a /opt/boost/lib/* . && \
+    export CPPFLAGS="-I/opt/h2oai/h2o4gpu/python/include/python${python_version}/ -fPIC" && \
+    export C_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}/" && export CPLUS_INCLUDE_PATH="/opt/h2oai/h2o4gpu/python/include/python${python_version}m/" && \
+    ./b2 link=static -a -d0 install --prefix=/opt/boost/ --with=all -j 20 cxxflags="-fPIC -I /opt/h2oai/h2o4gpu/python/include/python${python_version}/" && \
+    cd /usr/include && rm -rf boost && ln -s /opt/boost/include/boost . && \
+    cd /usr/lib64/ && rm -rf libboost* && cp -a /opt/boost/lib/* . && \
     cd / 
 
 #	yum install -y boost boost-devel boost-system boost-filesystem boost-thread
@@ -214,7 +214,7 @@ RUN chmod -R o+rwx /opt/h2oai/h2o4gpu/python
 RUN chmod -R o+rwx /root
 RUN yum install -y hdf5-devel
 RUN bash -c 'if [ `arch` == "ppc64le" ]; then \
-	yum install -y ocl-icd; \
+    yum install -y ocl-icd; \
     fi'
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64/nvidia
