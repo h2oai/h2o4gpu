@@ -102,7 +102,7 @@ class BinaryDistribution(Distribution):
 
 # Read version
 about_info = {}
-with open('__about__.py') as f:
+with open('__about__.py', 'r', encoding="utf-8") as f:
     exec(f.read(), about_info)
 
 lines = []
