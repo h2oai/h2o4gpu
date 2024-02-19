@@ -1,9 +1,9 @@
 import os
 import time
-from h2o4gpu.datasets import load_iris
+from sklearn.datasets import load_iris
 import numpy as np
-from h2o4gpu.datasets.samples_generator import make_blobs
-from h2o4gpu.metrics.cluster import v_measure_score
+from sklearn.datasets import make_blobs
+from sklearn.metrics.cluster import v_measure_score
 
 import h2o4gpu.util.metrics as daicx
 np.set_printoptions(precision=18)
