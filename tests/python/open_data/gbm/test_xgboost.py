@@ -81,7 +81,7 @@ def test_xgboost_covtype(n_gpus):
 
 
 @pytest.mark.multi_gpu
-@pytest.skip
+@pytest.mark.skip
 def test_xgboost_covtype_multi_gpu():
     import xgboost as xgb
     import numpy as np
@@ -163,7 +163,7 @@ def test_xgboost_covtype_multi_gpu():
 
 @pytest.mark.multi_gpu
 @pytest.mark.timeout(3600)
-@pytest.skip
+@pytest.mark.skip
 def test_xgboost_airlines():
     import pandas as pd
     import xgboost as xgb
