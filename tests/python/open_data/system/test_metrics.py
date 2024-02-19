@@ -1,6 +1,5 @@
 import os
 import time
-from h2o4gpu import KMeans
 from h2o4gpu.datasets import load_iris
 import numpy as np
 from h2o4gpu.datasets.samples_generator import make_blobs
