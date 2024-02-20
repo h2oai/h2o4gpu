@@ -24,6 +24,6 @@ def labelruntime = "nvidia-docker"
 def doingbenchmark = "0"
 def dobenchmark = "0"
 def doruntime = "1"
-def python = "3.8"
+def python = "3.11"
 def data_dirs = "-v /home/0xdiag/h2o4gpu/data:/data -v /home/0xdiag/h2o4gpu/open_data:/open_data"
 def publish_docs = true
