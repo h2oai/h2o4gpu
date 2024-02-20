@@ -33,4 +33,4 @@ dask-cuda==0.12.0
 dask[dataframe]==2.11.0
 distributed==2.11.0
 msgpack==0.6.2
-pyarrow==0.17.1
+# pyarrow==0.17.1
