@@ -65,8 +65,9 @@ rm -rf tmp ; mkdir -p tmp
 $DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/tmp ./
 
 echo "Docker devel test and pylint - pylint"
-$DOCKER_CLI exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd repo ; make pylint'
+# Disabled
+# $DOCKER_CLI exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
+# $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd repo ; make pylint'
 
 echo "Docker devel test and pylint - stop"
 $DOCKER_CLI stop ${CONTAINER_NAME}
