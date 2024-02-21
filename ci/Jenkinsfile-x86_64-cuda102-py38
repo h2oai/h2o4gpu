@@ -166,7 +166,7 @@ pipeline {
             }
         }
 
-        stage("Test - Single GPU | Lint | S3up on Centos7 x86_64-cuda102-py38") {
+        stage("Test - Single GPU | Lint") {
             agent {
                 label "${labeltest}"
             }
@@ -209,6 +209,51 @@ pipeline {
                        """
                     h2o4gpuUtils.runTestsSingleGpu(buildInfo.get(), "${cuda}", "${python}", "${extratag}", "${platform}", "${testtype}", "${data_dirs}")
                 }
+            }
+        }
+
+        stage("S3up on Centos7 x86_64-cuda102-py38") {
+            agent {
+                label "S3UP_NODE_LABEL"
+            }
+            when {
+                expression {
+                    unstash "jenkinsfiles"
+                    h2o4gpuUtils = load "ci/Jenkinsfile.utils"
+                    return  "${doingbenchmark}" == "1" || h2o4gpuUtils.doTests() && (h2o4gpuUtils.rerun_disabled(commitMessage) || !h2o4gpuUtils.wasStageSuccessful("Test | Lint | S3up on Centos7 x86_64-cuda102-py38"))
+                }
+            }
+            steps {
+                dumpInfo 'Linux Test Info'
+                // Get source code (should put tests into wheel, then wouldn't have to checkout)
+                retryWithTimeout(200 /* seconds */, 3 /* retries */) {
+                    deleteDir()
+                    checkout([
+                            $class                           : 'GitSCM',
+                            branches                         : scm.branches,
+                            doGenerateSubmoduleConfigurations: false,
+                            extensions                       : scm.extensions + [[$class: 'SubmoduleOption', disableSubmodules: true, recursiveSubmodules: false, reference: '', trackingSubmodules: false, shallow: true]],
+                            submoduleCfg                     : [],
+                            userRemoteConfigs                : scm.userRemoteConfigs])
+                }
+                script {
+                    unstash 'version_info'
+                    sh """
+                        echo "Before Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                        rm -rf src/interface_py/dist/${platform}/ || true
+                       """
+                    unstash "${linuxwheel}"
+                    sh """
+                        echo "After Stashed wheel file:"
+                        ls -l src/interface_py/dist/${platform}/  || true
+                       """
+                    unstash "py_docs"
+                    sh """
+                        echo "After Stashed py documentation file:"
+                        ls -l src/interface_py/docs/_build  || true
+                       """
+                }
                 retryWithTimeout(500 /* seconds */, 5 /* retries */) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "awsArtifactsUploader"]]) {
                         script {
@@ -218,6 +263,7 @@ pipeline {
                 }
             }
         }
+
         stage("Build/Publish Runtime Docker Centos7 x86_64-cuda102-py38") {
             agent {
                 label "${labelruntime}"
