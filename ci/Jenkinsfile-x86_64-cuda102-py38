@@ -214,7 +214,7 @@ pipeline {
 
         stage("S3up on Centos7 x86_64-cuda102-py38") {
             agent {
-                label "S3UP_NODE_LABEL"
+                label "docker"
             }
             when {
                 expression {
