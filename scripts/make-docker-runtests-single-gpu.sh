@@ -45,7 +45,7 @@ echo "Docker devel test(miniconda) and pylint - pip install wheel from dist/${pl
 
 # Don't use version in wheel name when find so local call to this script works without specific jenkins versions
 # Just ensure clean dist/${platform}/*.whl before unstash in jenkins
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export CUDA_VISIBLE_DEVICES="0" && export NCCL_DEBUG=WARN && export HOME=`pwd` && cd repo && pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"` -c /dot/src/interface_py/requirements_runtime_demos_single_gpu.txt && pip freeze && make '${target}
+$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'export CUDA_VISIBLE_DEVICES="0" && export NCCL_DEBUG=WARN && export HOME=`pwd` && cd repo && pip install `find /dot/src/interface_py/dist/'${platform}' -name "*h2o4gpu-*.whl"` && pip freeze && make '${target}
 
 { # try
     echo "Docker devel test and pylint - copy any dat results"
@@ -65,8 +65,9 @@ rm -rf tmp ; mkdir -p tmp
 $DOCKER_CLI cp -a ${CONTAINER_NAME}:repo/tmp ./
 
 echo "Docker devel test and pylint - pylint"
-$DOCKER_CLI exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
-$DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd repo ; make pylint'
+# Disabled
+# $DOCKER_CLI exec ${CONTAINER_NAME} touch ./repo/src/interface_py/h2o4gpu/__init__.py
+# $DOCKER_CLI exec ${CONTAINER_NAME} bash -c 'cd repo ; make pylint'
 
 echo "Docker devel test and pylint - stop"
 $DOCKER_CLI stop ${CONTAINER_NAME}

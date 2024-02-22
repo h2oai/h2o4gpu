@@ -19,9 +19,9 @@ build_info = {
     'cuda_nccl' : '',
 }
 
-import pkg_resources
-path = pkg_resources.resource_filename("h2o4gpu", "BUILD_INFO.txt")
-if pkg_resources.os.path.exists(path):
+import os
+path = os.path.join("h2o4gpu", "BUILD_INFO.txt")
+if os.path.exists(path):
     with open(path) as f: exec(f.read(), build_info)
 
 # Exported properties to make them available in __init__.py

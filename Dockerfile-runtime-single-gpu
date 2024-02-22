@@ -22,15 +22,15 @@ RUN yum install -y gcc gcc-c++ libgcc libstdc++ libgomp glibc
 RUN yum install -y \
     make \
     ncurses-devel \
-	zlib-devel \
+    zlib-devel \
     epel-release \
     zeromq-devel \
-	wget \
-	blas-devel \
+    wget \
+    blas-devel \
     openblas-devel \
     libpng-devel \
     freetype-devel \
-	bzip2 \
+    bzip2 \
     libffi-devel
 
 # Arrow
@@ -51,7 +51,7 @@ RUN if [ "$use_miniconda" = "1" ] ; then wget https://repo.anaconda.com/minicond
 
 ENV PATH=/opt/h2oai/h2o4gpu/python/bin:$PATH
 
-RUN pip install -U pip==20.1.1
+RUN pip install -U pip==23.3.2
 
 #
 # PPC64 specific - certain libs/whl don't support PPC64LE
@@ -62,17 +62,17 @@ WORKDIR $HOME
 # Arrow
 # Need to enable c99 manually https://github.com/numpy/numpy/issues/14147
 RUN bash -c 'if [ `arch` = "ppc64le" ]; then \
-  ln -s /usr/bin/cmake3 /usr/bin/cmake && \
-	git clone https://github.com/apache/arrow.git && \
-	cd $HOME/arrow/cpp && \
+    ln -s /usr/bin/cmake3 /usr/bin/cmake && \
+    git clone https://github.com/apache/arrow.git && \
+    cd $HOME/arrow/cpp && \
     git checkout tags/apache-arrow-0.17.1 && \
     CFLAGS=-std=c99 pip install numpy==1.19.2 cython==0.29.14 scipy==1.5.2 && \
     export ARROW_BUILD_TYPE=release && \
     export ARROW_HOME=/usr/local && \
-	cmake -DARROW_CXXFLAGS="-lutil" -DCMAKE_INSTALL_PREFIX=$ARROW_HOME -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=$ARROW_BUILD_TYPE -DARROW_BUILD_TESTS=OFF && make -j && make install && \
-	cd $HOME/arrow/python && \
-	python setup.py install; \
-	fi'
+    cmake -DARROW_CXXFLAGS="-lutil" -DCMAKE_INSTALL_PREFIX=$ARROW_HOME -DARROW_PYTHON=on -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=$ARROW_BUILD_TYPE -DARROW_BUILD_TESTS=OFF && make -j && make install && \
+    cd $HOME/arrow/python && \
+    python setup.py install; \
+    fi'
 
 WORKDIR /
 
@@ -80,9 +80,9 @@ WORKDIR /
 COPY src/interface_py/requirements_runtime_demos_single_gpu.txt requirements_runtime_demos_single_gpu.txt
 COPY src/interface_py/requirements_test.txt requirements_test.txt
 RUN \
-  chmod a+rwx requirements*.txt && \
-  python -m pip install -r requirements_runtime_demos_single_gpu.txt && \
-  python -m pip install -r requirements_test.txt
+    chmod a+rwx requirements*.txt && \
+    python -m pip install -r requirements_runtime_demos_single_gpu.txt && \
+    python -m pip install -r requirements_test.txt
 
 RUN mkdir -p /etc/OpenCL/vendors && \
     echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
@@ -96,7 +96,7 @@ ENV LD_LIBRARY_PATH_CUDA=$CUDA_HOME/lib64/:$CUDA_HOME/lib/:/usr/local/cuda/lib64
 
 # Add a canned jupyter notebook demo to the container
 RUN \
-  mkdir -p jupyter/demos
+    mkdir -p jupyter/demos
 COPY examples/py/demos/H2O4GPU_Ridge.ipynb /jupyter/demos/H2O4GPU_Ridge.ipynb
 COPY examples/py/demos/H2O4GPU_LinearRegression.ipynb /jupyter/demos/H2O4GPU_LinearRegression.ipynb
 COPY examples/py/demos/H2O4GPU_GBM.ipynb /jupyter/demos/H2O4GPU_GBM.ipynb
@@ -110,29 +110,29 @@ COPY examples/py/demos/H2O4GPU_PCA.ipynb /jupyter/demos/H2O4GPU_PCA.ipynb
 COPY examples/py/demos/H2O4GPU_Daal_LinearRegression.ipynb /jupyter/demos/H2O4GPU_Daal_LinearRegression.ipynb
 COPY examples/py/demos/figures /jupyter/demos/figures
 RUN \
-  cd /jupyter/demos && \
-  chmod -R a+rwx /jupyter && \
-  mkdir /scikit_learn_data && \
-  chmod -R a+rwx /scikit_learn_data && \
-  mkdir -p /jupyter/scikit_learn_data/covertype && \
-  chmod -R a+rwx /jupyter/scikit_learn_data/covertype && \
-  mkdir -p /jupyter/scikit_learn_data/lfw_home && \
-  chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
-  HOME=/jupyter jupyter notebook --generate-config && \
-  sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
-  chmod -R a+rwx /jupyter/.jupyter
+    cd /jupyter/demos && \
+    chmod -R a+rwx /jupyter && \
+    mkdir /scikit_learn_data && \
+    chmod -R a+rwx /scikit_learn_data && \
+    mkdir -p /jupyter/scikit_learn_data/covertype && \
+    chmod -R a+rwx /jupyter/scikit_learn_data/covertype && \
+    mkdir -p /jupyter/scikit_learn_data/lfw_home && \
+    chmod -R a+rwx /jupyter/scikit_learn_data/lfw_home && \
+    HOME=/jupyter jupyter notebook --generate-config && \
+    sed -i "s/#c.NotebookApp.token = '<generated>'/c.NotebookApp.token = 'h2o'/" /jupyter/.jupyter/jupyter_notebook_config.py && \
+    chmod -R a+rwx /jupyter/.jupyter
 
 # Add shell wrapper
 COPY scripts/run.sh /run.sh
 RUN \
-  chmod a+rwx run.sh
+    chmod a+rwx run.sh
 
 ARG h2o4gpu_VERSION
 ARG h2o4gpu_COMMIT
 ARG DOCKER_VERSION_TAG
 LABEL \
-h2o4gpu_commit="$h2o4gpu_COMMIT" \
-docker_version_tag="$DOCKER_VERSION_TAG"
+    h2o4gpu_commit="$h2o4gpu_COMMIT" \
+    docker_version_tag="$DOCKER_VERSION_TAG"
 
 ENTRYPOINT ["./run.sh"]
 EXPOSE 8888

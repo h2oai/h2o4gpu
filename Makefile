@@ -54,9 +54,9 @@ sync_open_data:
 # DEPENDENCY MANAGEMENT TARGETS
 #########################################
 
-deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
+deps-install-with-all-pkgs: all_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm
 
-deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm libsklearn
+deps-install-with-build-pkgs: build_deps_install fullinstall-xgboost fullinstall-xgboost-prev fullinstall-lightgbm
 
 submodule_update:
 	@echo "---- Fetch submudule dependencies ---- "
@@ -100,18 +100,18 @@ cpp:
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
-py: apply-sklearn_simple build/VERSION.txt
+py: build/VERSION.txt
 	$(MAKE) -j all -C src/interface_py
 
 .PHONY: xgboost_prev
 xgboost_prev:
 	@echo "----- Building XGboost previous version target $(XGBOOST_TARGET) -----"
-	cd xgboost_prev; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+	cd xgboost_prev; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70;75/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+	cd xgboost; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70;75/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
 

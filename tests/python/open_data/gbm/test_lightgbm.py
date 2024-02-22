@@ -130,6 +130,7 @@ def test_lightgbm_cpu_airlines_full(booster):
                                    #                                    "2002", "2003", "2004", "2005", "2006", "2007"
                                    ])
 @pytest.mark.timeout(3600)
+@pytest.mark.skip("Temporary skipped as data dir is not synced")
 def test_lightgbm_cpu_airlines_year(booster, year):
     import numpy as np
     import pandas as pd
@@ -176,7 +177,7 @@ def test_lightgbm_cpu_airlines_year(booster, year):
                 early_stopping_rounds=5,
                 stratified=False)
 
-
+@pytest.mark.skip("Temporary skipped as data dir is not synced")
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
 @pytest.mark.parametrize('booster,', ["dart", "gbdt"])
 @pytest.mark.parametrize('year,', ["1987",
@@ -233,7 +234,7 @@ def test_lightgbm_gpu_airlines_year(booster, year):
                 early_stopping_rounds=5,
                 stratified=False)
 
-
+@pytest.mark.skip("Temporary skipped as data dir is not synced")
 def test_lightgbm_accuracy_cpu():
     import pickle
     import numpy as np
@@ -258,6 +259,7 @@ def test_lightgbm_accuracy_cpu():
 
 
 @pytest.mark.skipif(platform.machine().startswith("ppc64le"), reason="lightgbm on gpu is not supported yet")
+@pytest.mark.skip("Temporary skipped as data dir is not synced")
 def test_lightgbm_accuracy_gpu():
     import pickle
     import numpy as np
@@ -280,6 +282,7 @@ def test_lightgbm_accuracy_gpu():
     assert eval_loss[-1] < 0.35
 
 
+@pytest.mark.skip("Temporary skipped as data dir is not synced")
 def test_lightgbm_accuracy_cuda():
     import pickle
     import numpy as np

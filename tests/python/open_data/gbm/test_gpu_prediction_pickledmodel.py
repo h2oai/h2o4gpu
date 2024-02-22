@@ -202,6 +202,7 @@ class TestGPUPredict(object):
         # ISSUE2: Also, no way to switch to cpu_predictor?
         # np.testing.assert_allclose(cpu_pred, gpu_pred, rtol=1e-5)
 
+    @pytest.mark.skip("Temporary skipped as data dir is not synced")
     def test_predict_sklearn_pickle(self, n_gpus):
         X, y = makeXy()
         Xtest = makeXtest()
@@ -239,6 +240,7 @@ class TestGPUPredict(object):
 
     # only run the below after the above
 
+    @pytest.mark.skip("Temporary skipped as data dir is not synced")
     def test_predict_sklearn_frompickle(self, n_gpus):
         Xtest = makeXtest()
 
