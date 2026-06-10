@@ -31,6 +31,33 @@ I ptr_len(const spmat<T, I, O> &mat) {
 
 namespace {
 
+// CUDA 12 removed the legacy cusparse<t>csr2csc routines. Port to the generic
+// cusparseCsr2cscEx2 API, which requires an explicit workspace buffer and takes
+// the CSC column-pointer / row-index arguments in swapped order vs. the legacy
+// call (cscColPtr before cscRowInd).
+template <typename T>
+cusparseStatus_t Csr2cscEx2Helper(cusparseHandle_t handle, int m, int n,
+                                  int nnz, const T *csr_val,
+                                  const int *csr_row_ptr,
+                                  const int *csr_col_ind, T *csc_val,
+                                  int *csc_row_ind, int *csc_col_ptr,
+                                  cudaDataType val_type) {
+  size_t buffer_size = 0;
+  cusparseStatus_t err = cusparseCsr2cscEx2_bufferSize(
+      handle, m, n, nnz, csr_val, csr_row_ptr, csr_col_ind, csc_val,
+      csc_col_ptr, csc_row_ind, val_type, CUSPARSE_ACTION_NUMERIC,
+      CUSPARSE_INDEX_BASE_ZERO, CUSPARSE_CSR2CSC_ALG1, &buffer_size);
+  if (err != CUSPARSE_STATUS_SUCCESS) return err;
+  void *buffer = nullptr;
+  CudaCheckError(cudaMalloc(&buffer, buffer_size));
+  err = cusparseCsr2cscEx2(handle, m, n, nnz, csr_val, csr_row_ptr, csr_col_ind,
+                           csc_val, csc_col_ptr, csc_row_ind, val_type,
+                           CUSPARSE_ACTION_NUMERIC, CUSPARSE_INDEX_BASE_ZERO,
+                           CUSPARSE_CSR2CSC_ALG1, buffer);
+  CudaCheckError(cudaFree(buffer));
+  return err;
+}
+
 template <CBLAS_ORDER O>
 cusparseStatus_t MatTransp(cusparseHandle_t handle, int m, int n, int nnz,
                            const float *val_n, const int *ptr_n,
@@ -38,16 +65,11 @@ cusparseStatus_t MatTransp(cusparseHandle_t handle, int m, int n, int nnz,
                            int *ptr_t) {
   cusparseStatus_t err;
   if (O == CblasRowMajor) {
-    err = cusparseScsr2csc(handle, m, n, nnz, val_n,
-        ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
-        CUSPARSE_INDEX_BASE_ZERO);
-    int tmp;
-    cudaMemcpy(&tmp, ptr_n + m, sizeof(int), cudaMemcpyDeviceToHost);
-    printf("__%d %d\n", nnz, tmp);
+    err = Csr2cscEx2Helper<float>(handle, m, n, nnz, val_n, ptr_n, ind_n, val_t,
+                                  ind_t, ptr_t, CUDA_R_32F);
   } else {
-    err = cusparseScsr2csc(handle, n, m, nnz, val_n,
-        ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
-        CUSPARSE_INDEX_BASE_ZERO);
+    err = Csr2cscEx2Helper<float>(handle, n, m, nnz, val_n, ptr_n, ind_n, val_t,
+                                  ind_t, ptr_t, CUDA_R_32F);
   }
   CusparseCheckError(err);
   return err;
@@ -60,13 +82,11 @@ cusparseStatus_t MatTransp(cusparseHandle_t handle, int m, int n, int nnz,
                            int *ptr_t) {
   cusparseStatus_t err;
   if (O == CblasRowMajor) {
-    err = cusparseDcsr2csc(handle, m, n, nnz, val_n,
-        ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
-        CUSPARSE_INDEX_BASE_ZERO);
+    err = Csr2cscEx2Helper<double>(handle, m, n, nnz, val_n, ptr_n, ind_n,
+                                   val_t, ind_t, ptr_t, CUDA_R_64F);
   } else {
-    err = cusparseDcsr2csc(handle, n, m, nnz, val_n,
-        ptr_n, ind_n, val_t, ind_t, ptr_t, CUSPARSE_ACTION_NUMERIC,
-        CUSPARSE_INDEX_BASE_ZERO);
+    err = Csr2cscEx2Helper<double>(handle, n, m, nnz, val_n, ptr_n, ind_n,
+                                   val_t, ind_t, ptr_t, CUDA_R_64F);
   }
   CusparseCheckError(err);
   return err;

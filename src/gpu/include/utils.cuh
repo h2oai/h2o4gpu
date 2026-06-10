@@ -4,6 +4,7 @@
 #include <cusolver_common.h>
 #include <cusparse.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/system/cuda/error.h>
 #include <thrust/transform.h>

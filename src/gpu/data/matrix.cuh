@@ -2,7 +2,7 @@
 #include "utils.cuh"
 #include "../device/device_context.cuh"
 #include "cusolverDn.h"
-#include <../../../cub/cub/cub.cuh>
+#include <cub/cub.cuh>
 
 namespace matrix
 {

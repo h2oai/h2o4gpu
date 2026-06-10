@@ -208,13 +208,49 @@ class Spmv : Gemv<T> {
   int operator()(char op, const T alpha, const T *x, const T beta, T *y) const;
 };
 
+// CUDA 12 removed the legacy cusparse<t>csrmv routines. This helper reproduces
+// y = alpha * op(A) * x + beta * y for an (m x n) CSR matrix via the generic
+// cusparseSpMV API. Vector lengths follow op: non-transpose => x is n, y is m;
+// (conjugate-)transpose => x is m, y is n.
+template <typename T>
+inline cusparseStatus_t CglsSpMv(cusparseHandle_t handle,
+                                 cusparseOperation_t op, int m, int n, int nnz,
+                                 const T *alpha, const T *val, const int *ptr,
+                                 const int *ind, const T *x, const T *beta, T *y,
+                                 cudaDataType val_type) {
+  int x_len = (op == CUSPARSE_OPERATION_NON_TRANSPOSE) ? n : m;
+  int y_len = (op == CUSPARSE_OPERATION_NON_TRANSPOSE) ? m : n;
+  cusparseSpMatDescr_t mat;
+  cusparseDnVecDescr_t vec_x, vec_y;
+  cusparseStatus_t err = cusparseCreateCsr(
+      &mat, m, n, nnz, const_cast<int *>(ptr), const_cast<int *>(ind),
+      const_cast<T *>(val), CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, val_type);
+  if (err != CUSPARSE_STATUS_SUCCESS) return err;
+  cusparseCreateDnVec(&vec_x, x_len, const_cast<T *>(x), val_type);
+  cusparseCreateDnVec(&vec_y, y_len, y, val_type);
+  size_t buffer_size = 0;
+  err = cusparseSpMV_bufferSize(handle, op, alpha, mat, vec_x, beta, vec_y,
+                                val_type, CUSPARSE_SPMV_ALG_DEFAULT,
+                                &buffer_size);
+  void *buffer = nullptr;
+  if (buffer_size > 0) cudaMalloc(&buffer, buffer_size);
+  err = cusparseSpMV(handle, op, alpha, mat, vec_x, beta, vec_y, val_type,
+                     CUSPARSE_SPMV_ALG_DEFAULT, buffer);
+  if (buffer) cudaFree(buffer);
+  cusparseDestroySpMat(mat);
+  cusparseDestroyDnVec(vec_x);
+  cusparseDestroyDnVec(vec_y);
+  return err;
+}
+
 // Double CSR and CSC.
 template <>
 inline int Spmv<double, CSR>::operator()(char op, const double alpha,
                                          const double *x, const double beta,
                                          double *y) const {
-  cusparseStatus_t err = cusparseDcsrmv(_handle, OpToCusparseOp(op), _m, _n,
-      _nnz, &alpha, _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<double>(_handle, OpToCusparseOp(op), _m, _n,
+      _nnz, &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_R_64F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -228,8 +264,8 @@ inline int Spmv<double, CSC>::operator()(char op, const double alpha,
     cu_op = CUSPARSE_OPERATION_NON_TRANSPOSE;
   else
     cu_op = CUSPARSE_OPERATION_TRANSPOSE;
-  cusparseStatus_t err = cusparseDcsrmv(_handle, cu_op, _n, _m, _nnz, &alpha,
-      _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<double>(_handle, cu_op, _n, _m, _nnz, &alpha,
+      _val, _ptr, _ind, x, &beta, y, CUDA_R_64F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -239,8 +275,8 @@ template <>
 inline int Spmv<float, CSR>::operator()(char op, const float alpha,
                                         const float *x, const float beta,
                                         float *y) const {
-  cusparseStatus_t err = cusparseScsrmv(_handle, OpToCusparseOp(op), _m, _n,
-      _nnz, &alpha, _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<float>(_handle, OpToCusparseOp(op), _m, _n,
+      _nnz, &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_R_32F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -254,8 +290,8 @@ inline int Spmv<float, CSC>::operator()(char op, const float alpha,
     cu_op = CUSPARSE_OPERATION_NON_TRANSPOSE;
   else
     cu_op = CUSPARSE_OPERATION_TRANSPOSE;
-  cusparseStatus_t err = cusparseScsrmv(_handle, cu_op, _n, _m, _nnz, &alpha,
-      _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<float>(_handle, cu_op, _n, _m, _nnz, &alpha,
+      _val, _ptr, _ind, x, &beta, y, CUDA_R_32F);
   CGLS_CUDA_CHECK_ERR();
   return err;
 }
@@ -265,8 +301,8 @@ template <>
 inline int Spmv<cuDoubleComplex, CSR>::
     operator()(char op, const cuDoubleComplex alpha, const cuDoubleComplex *x,
                const cuDoubleComplex beta, cuDoubleComplex *y) const {
-  cusparseStatus_t err = cusparseZcsrmv(_handle, OpToCusparseCxOp(op), _m, _n,
-      _nnz, &alpha, _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<cuDoubleComplex>(_handle, OpToCusparseCxOp(op),
+      _m, _n, _nnz, &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_C_64F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -280,8 +316,8 @@ inline int Spmv<cuDoubleComplex, CSC>::
     cu_op = CUSPARSE_OPERATION_NON_TRANSPOSE;
   else
     cu_op = CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE;
-  cusparseStatus_t err = cusparseZcsrmv(_handle, cu_op, _n, _m, _nnz, &alpha,
-      _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<cuDoubleComplex>(_handle, cu_op, _n, _m, _nnz,
+      &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_C_64F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -291,8 +327,8 @@ template <>
 inline int Spmv<cuFloatComplex, CSR>::
     operator()(char op, const cuFloatComplex alpha, const cuFloatComplex *x,
                const cuFloatComplex beta, cuFloatComplex *y) const {
-  cusparseStatus_t err = cusparseCcsrmv(_handle, OpToCusparseCxOp(op), _m, _n,
-      _nnz, &alpha, _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<cuFloatComplex>(_handle, OpToCusparseCxOp(op),
+      _m, _n, _nnz, &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_C_32F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
@@ -306,8 +342,8 @@ inline int Spmv<cuFloatComplex, CSC>::
     cu_op = CUSPARSE_OPERATION_NON_TRANSPOSE;
   else
     cu_op = CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE;
-  cusparseStatus_t err = cusparseCcsrmv(_handle, cu_op, _n, _m, _nnz, &alpha,
-      _descr, _val, _ptr, _ind, x, &beta, y);
+  cusparseStatus_t err = CglsSpMv<cuFloatComplex>(_handle, cu_op, _n, _m, _nnz,
+      &alpha, _val, _ptr, _ind, x, &beta, y, CUDA_C_32F);
   CGLS_CUDA_CHECK_ERR();
   return err != CUSPARSE_STATUS_SUCCESS;
 }
