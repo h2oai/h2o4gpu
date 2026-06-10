@@ -12,7 +12,7 @@ from ctypes import c_float, c_double, cast, POINTER
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
-from h2o4gpu.linear_model import coordinate_descent as sk
+from h2o4gpu.linear_model import _coordinate_descent as sk
 from ..solvers.utils import _setter
 
 from ..libs.lib_utils import get_lib

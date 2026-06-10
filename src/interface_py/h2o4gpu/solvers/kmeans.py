@@ -735,7 +735,7 @@ class KMeans:
         else:
             self.backend = 'h2o4gpu'
 
-        from h2o4gpu.cluster import k_means_
+        from h2o4gpu.cluster import _kmeans as k_means_
         self.model_sklearn = k_means_.KMeansSklearn(
             n_clusters=n_clusters,
             init=init,
