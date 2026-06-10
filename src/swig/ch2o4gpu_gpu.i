@@ -15,7 +15,10 @@
 %include "solver/pca.i"
 %include "solver/pogs.i"
 %include "solver/tsvd.i"
-%include "solver/factorization.i"
+// factorization (ALS) solver disabled on CUDA 12: it uses cuSPARSE csrmm2,
+// removed in CUDA 12, and is not consumed by DAI. Re-enable once the solver is
+// ported to the generic cusparseSpMM API. See CMakeLists.txt GPU_SOURCES filter.
+//%include "solver/factorization.i"
 %include "solver/arima.i"
 %include "matrix/matrix_dense.i"
 %include "util/gpu.i"

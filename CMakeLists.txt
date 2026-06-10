@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
 PROJECT(h2o4gpu)
 INCLUDE(cmake/Utils.cmake)
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -23,7 +23,7 @@ OPTION(DEV_BUILD  "Dev build" OFF)
 OPTION(DEV_SYNC  "call cudaDeviceSynchronize after each cuda call" OFF)
 
 # Compiler flags
-SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -w")
@@ -36,6 +36,13 @@ EXECUTE_PROCESS(COMMAND python -c "import numpy; print(numpy.get_include())"
 
 if(OpenMP_CXX_FOUND OR OPENMP_FOUND)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+# OpenBLAS ships cblas.h under an openblas/ subdir on RHEL/Rocky 8 rather than
+# directly on the default include path, but the sources do #include <cblas.h>.
+FIND_PATH(CBLAS_INCLUDE_DIR cblas.h PATHS /usr/include/openblas /usr/include)
+if(CBLAS_INCLUDE_DIR)
+        INCLUDE_DIRECTORIES(${CBLAS_INCLUDE_DIR})
 endif()
 #============= OPTIONS & SETTINGS
 
@@ -132,9 +139,29 @@ if(USE_CUDA)
             MESSAGE(STATUS "Building DEVELOPER compute capability version.")
             SET(GPU_COMPUTE_VER 61)
             SET(CMAKE_BUILD_TYPE Debug)
+        elseif(CUDA_VERSION_MAJOR GREATER_EQUAL 12)
+            # CUDA 12 removed Kepler (sm_35/sm_37); Maxwell (sm_5x) is deprecated.
+            # Baseline ladder: Pascal through Hopper.
+            MESSAGE(STATUS "Building RELEASE compute capability version (CUDA 12 baseline: Pascal..Hopper).")
+            SET(GPU_COMPUTE_VER 60;61;70;75;80;86;89;90)
+
+            # Blackwell SASS (sm_100 datacenter, sm_120 consumer) requires CUDA >= 12.8.
+            if(CUDA_VERSION VERSION_GREATER_EQUAL "12.8")
+                MESSAGE(STATUS "CUDA >= 12.8 detected, adding Blackwell compute capability (10.0, 12.0).")
+                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};100;120")
+            endif()
         else()
-            MESSAGE(STATUS "Building RELEASE compute capability version.")
+            MESSAGE(STATUS "Building RELEASE compute capability version (legacy CUDA baseline).")
             SET(GPU_COMPUTE_VER 35;37;50;52;53;60;61;62)
+
+            if(CUDA_VERSION_MAJOR GREATER_EQUAL 9)
+                MESSAGE(STATUS "CUDA >= 9.0 detected, adding Volta compute capability (7.0).")
+                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
+            endif()
+            if(CUDA_VERSION_MAJOR GREATER_EQUAL 10)
+                MESSAGE(STATUS "CUDA >= 10.0 detected, adding Turing compute capability (7.5).")
+                SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
+            endif()
         endif()
 
         if(DEV_SYNC)
@@ -142,33 +169,36 @@ if(USE_CUDA)
             add_compile_definitions(SYNC)
         endif()
 
-        if(((CUDA_VERSION_MAJOR EQUAL 9) OR (CUDA_VERSION_MAJOR GREATER 9)) AND NOT DEV_BUILD)
-            MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 9.0 detected, adding Volta compute capability (7.0).")
-            SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};70")
-        endif()
-
-        if(((CUDA_VERSION_MAJOR EQUAL 10) OR (CUDA_VERSION_MAJOR GREATER 10)) AND NOT DEV_BUILD)
-            MESSAGE(STATUS "CUDA GREATER OR EQUAL THAN 10.0 detected, adding Turing compute capability (7.5).")
-            SET(GPU_COMPUTE_VER "${GPU_COMPUTE_VER};75")
-        endif()
-
         if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
             find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a
             PATHS   "/usr/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
             list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
-            find_library(LIBLAPACK_STATIC NAMES liblapack_static.a
+            # CUDA 12 renamed the static LAPACK that cusolver needs from
+            # liblapack_static.a to libcusolver_lapack_static.a, and ships a
+            # matching metis static lib. Static cusolver requires both.
+            find_library(LIBLAPACK_STATIC NAMES libcusolver_lapack_static.a liblapack_static.a
             PATHS   "/usr/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
             list(APPEND STATIC_LIBS ${LIBLAPACK_STATIC})
+            find_library(LIBMETIS_STATIC NAMES libcusolver_metis_static.a libmetis_static.a
+            PATHS   "/usr/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
+                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
+            if(LIBMETIS_STATIC)
+                list(APPEND STATIC_LIBS ${LIBMETIS_STATIC})
+            endif()
         endif()
 
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
         MESSAGE(STATUS "cuda architecture flags: ${GENCODE_FLAGS}")
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -g; -std=c++11;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -g; -std=c++17;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu
@@ -176,6 +206,14 @@ if(USE_CUDA)
                 src/common/*.cpp
                 src/common/*.h
                 )
+
+        # DAI-minimal CUDA 12 build: the matrix-factorization / ALS solver uses
+        # cuSPARSE level-3 routines (csrmm2) that were removed in CUDA 12. DAI
+        # only consumes TruncatedSVD/KMeans from the GPU lib, so exclude this
+        # solver rather than porting it to the generic cusparseSpMM API.
+        # TODO(blackwell): port factorization to the generic cuSPARSE API to
+        # restore the matrix-factorization solver.
+        list(FILTER GPU_SOURCES EXCLUDE REGEX ".*/factorization/.*\\.cu$")
 
         CUDA_ADD_LIBRARY(gpuh2o4gpu ${GPU_SOURCES} $<TARGET_OBJECTS:commonh2o4gpu> STATIC)
         SET_TARGET_PROPERTIES(gpuh2o4gpu PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -224,6 +262,10 @@ if(USE_CUDA)
         tests/cpp/gpu/*.cuh
         tests/cpp/gpu/*.h
         )
+
+        # Exclude the ALS/factorization test: that solver is not built on CUDA 12
+        # (uses cuSPARSE csrmm2, removed in CUDA 12). See GPU_SOURCES filter above.
+        list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/factorization/.*")
 
         CUDA_ADD_EXECUTABLE(h2o4gpu_test tests/cpp/test_main.cu ${TEST_SOURCES})
         target_link_libraries(h2o4gpu_test
