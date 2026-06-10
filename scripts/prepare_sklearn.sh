@@ -1,7 +1,18 @@
 #!/bin/bash
+set -e
+# scikit-learn version to overlay into the h2o4gpu namespace. Keep in sync with
+# scikit-learn in src/interface_py/requirements_buildonly.txt and with DAI.
+SKLEARN_VERSION="${SKLEARN_VERSION:-1.5.2}"
+
 rm -rf scikit-learn
-git submodule init
-git submodule update
+# Prefer a registered submodule if present; otherwise fetch the pinned tag.
+git submodule init 2>/dev/null || true
+git submodule update 2>/dev/null || true
+if [ ! -d scikit-learn ]; then
+    echo "Cloning scikit-learn ${SKLEARN_VERSION}"
+    git clone --depth 1 --branch "${SKLEARN_VERSION}" \
+        https://github.com/scikit-learn/scikit-learn.git scikit-learn
+fi
 cd scikit-learn
 
 ########## DIRECTORIES and FILENAMES

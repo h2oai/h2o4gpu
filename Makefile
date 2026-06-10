@@ -431,7 +431,10 @@ run_in_docker-cpu:
 libsklearn:	# assume already submodule gets sklearn
 	@echo "----- Make sklearn wheel -----"
 	bash scripts/prepare_sklearn.sh # repeated calls don't hurt
-	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && $(PYTHON) setup.py sdist && $(PYTHON) setup.py bdist_wheel
+	# Only bdist_wheel is needed (apply_sklearn_pipinstall installs the wheel).
+	# Dropped the chained `setup.py sdist &&`: it shares build/ with bdist_wheel
+	# and races under modern setuptools, causing a spurious "[Errno 2]".
+	rm -rf sklearn && mkdir -p sklearn && cd scikit-learn && $(PYTHON) setup.py bdist_wheel
 
 apply-sklearn: libsklearn apply-sklearn_simple
 
