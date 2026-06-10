@@ -111,7 +111,10 @@ xgboost_prev:
 .PHONY: xgboost
 xgboost:
 	@echo "----- Building XGboost target $(XGBOOST_TARGET) -----"
-	cd xgboost; sed -i -e 's/35;50;52;60;61;70/35;37;50;52;53;60;61;62;70;75/g' cmake/Utils.cmake; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
+	# xgboost 2.1.4 fork: GPU archs (incl. Blackwell sm_100/sm_120) are set in
+	# the submodule's Makefile2 via -DGPU_COMPUTE_VER; the old cmake/Utils.cmake
+	# `set(flags ...)` sed no longer applies (2.x has no such line).
+	cd xgboost; $(XGB_PROLOGUE) 'make -f Makefile2 PYTHON=$(PYTHON) CXX=$(XGB_CXX) CC=$(XGB_CC) $(XGBOOST_TARGET)'
 
 fullinstall-xgboost: nccl xgboost install_xgboost
 
