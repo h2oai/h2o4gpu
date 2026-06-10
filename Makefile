@@ -20,6 +20,9 @@ help:
 	$(call inform, "make testbigperf     Run performance and accuracy tests for big data.")
 	$(call inform, "make testunit        Run c++/cuda tests.")
 	$(call inform, " -------- Docker ---------")
+	$(call inform, "make docker-build-cuda12  Build h2o4gpu in a cached CUDA 12.8 / Blackwell builder image (DOCKER_MAKE_TARGET=cpp).")
+	$(call inform, "make docker-build-image   Build/refresh just the cached CUDA 12.8 builder image.")
+	$(call inform, "make docker-build-shell   Interactive shell in the CUDA 12.8 builder image (tree mounted).")
 	$(call inform, "make docker-build    Build inside docker and save wheel to src/interface_py/dist?/ (for cuda9 with nccl in xgboost).")
 	$(call inform, "make docker-runtime  Build runtime docker and save to local path (for cuda9 with nccl in xgboost).")
 	$(call inform, "make get_docker      Download runtime docker (e.g. instead of building it)")
@@ -308,6 +311,61 @@ buildinstall: deps-install-with-build-pkgs build install
 #########################################
 # DOCKER TARGETS
 #########################################
+
+# ---- CUDA 12.8 / Blackwell containerized build ------------------------------
+# Build h2o4gpu inside a cached builder image (Rocky 8 + CUDA 12.8 + Python
+# 3.11). The image bakes all system/pip deps, so only the compile runs each
+# time. Override knobs:
+#   H2O4GPU_BUILD_IMAGE  image tag                (default h2o4gpu-build:cuda12.8)
+#   H2O4GPU_DOCKERFILE   dockerfile               (default Dockerfile.build-cuda12)
+#   CUDA_IMAGE           base CUDA image          (passed as build-arg)
+#   DOCKER_MAKE_TARGET   make target run inside   (default cpp)
+#   DOCKER_USER          container user           (default current uid:gid; so
+#                                                  build artifacts are owned by
+#                                                  you, not root. Set empty to
+#                                                  run as the image's root, e.g.
+#                                                  on rootless Docker.)
+#   DOCKER_RUN_FLAGS     extra `docker run` flags (e.g. --gpus all)
+H2O4GPU_BUILD_IMAGE ?= h2o4gpu-build:cuda12.8
+H2O4GPU_DOCKERFILE  ?= Dockerfile.build-cuda12
+CUDA_IMAGE          ?= nvidia/cuda:12.8.0-devel-rockylinux8
+DOCKER_MAKE_TARGET  ?= cpp
+DOCKER_USER         ?= $(shell id -u):$(shell id -g)
+DOCKER_RUN_FLAGS    ?=
+# Expand to "-u <uid>:<gid>" unless DOCKER_USER is empty.
+DOCKER_USER_FLAG     = $(if $(DOCKER_USER),-u $(DOCKER_USER),)
+
+.PHONY: docker-build-image docker-build-image-nocache docker-build-cuda12 docker-build-shell
+
+# Build (and cache) the builder image. Docker layer caching means the dnf/pip
+# setup is only redone when the Dockerfile or requirements_buildonly.txt change.
+docker-build-image:
+	docker build --build-arg CUDA_IMAGE=$(CUDA_IMAGE) \
+	    -t $(H2O4GPU_BUILD_IMAGE) -f $(H2O4GPU_DOCKERFILE) .
+
+# Force a rebuild of the builder image, ignoring the layer cache.
+docker-build-image-nocache:
+	docker build --no-cache --build-arg CUDA_IMAGE=$(CUDA_IMAGE) \
+	    -t $(H2O4GPU_BUILD_IMAGE) -f $(H2O4GPU_DOCKERFILE) .
+
+# Compile h2o4gpu inside the cached builder image (mounts the working tree).
+# Builds the image first only if it is missing. No GPU required to compile;
+# add DOCKER_RUN_FLAGS="--gpus all" to run GPU targets (e.g. tests).
+docker-build-cuda12:
+	@docker image inspect $(H2O4GPU_BUILD_IMAGE) >/dev/null 2>&1 \
+	    || $(MAKE) docker-build-image
+	docker run --rm -e HOME=/h2o4gpu $(DOCKER_USER_FLAG) $(DOCKER_RUN_FLAGS) \
+	    -v $(CURDIR):/h2o4gpu -w /h2o4gpu \
+	    $(H2O4GPU_BUILD_IMAGE) \
+	    bash -c 'make $(DOCKER_MAKE_TARGET) PYTHON=python3.11'
+
+# Drop into an interactive shell in the builder image (working tree mounted).
+docker-build-shell:
+	@docker image inspect $(H2O4GPU_BUILD_IMAGE) >/dev/null 2>&1 \
+	    || $(MAKE) docker-build-image
+	docker run --rm -it -e HOME=/h2o4gpu $(DOCKER_USER_FLAG) $(DOCKER_RUN_FLAGS) \
+	    -v $(CURDIR):/h2o4gpu -w /h2o4gpu $(H2O4GPU_BUILD_IMAGE) bash
+# -----------------------------------------------------------------------------
 
 DOCKER_CUDA_VERSION?=9.2
 
