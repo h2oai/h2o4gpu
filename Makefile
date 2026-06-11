@@ -334,37 +334,35 @@ DOCKER_USER         ?= $(shell id -u):$(shell id -g)
 DOCKER_RUN_FLAGS    ?=
 # Expand to "-u <uid>:<gid>" unless DOCKER_USER is empty.
 DOCKER_USER_FLAG     = $(if $(DOCKER_USER),-u $(DOCKER_USER),)
+# Shared `docker build` args and `docker run` options (kept DRY across targets).
+DOCKER_BUILD_ARGS    = --build-arg CUDA_IMAGE=$(CUDA_IMAGE) -t $(H2O4GPU_BUILD_IMAGE) -f $(H2O4GPU_DOCKERFILE) .
+DOCKER_RUN_OPTS      = -e HOME=/h2o4gpu $(DOCKER_USER_FLAG) $(DOCKER_RUN_FLAGS) -v $(CURDIR):/h2o4gpu -w /h2o4gpu
+# Build the image only if it is missing.
+ensure-docker-image  = docker image inspect $(H2O4GPU_BUILD_IMAGE) >/dev/null 2>&1 || $(MAKE) docker-build-image
 
 .PHONY: docker-build-image docker-build-image-nocache docker-build-cuda12 docker-build-shell
 
 # Build (and cache) the builder image. Docker layer caching means the dnf/pip
 # setup is only redone when the Dockerfile or requirements_buildonly.txt change.
 docker-build-image:
-	docker build --build-arg CUDA_IMAGE=$(CUDA_IMAGE) \
-	    -t $(H2O4GPU_BUILD_IMAGE) -f $(H2O4GPU_DOCKERFILE) .
+	docker build $(DOCKER_BUILD_ARGS)
 
 # Force a rebuild of the builder image, ignoring the layer cache.
 docker-build-image-nocache:
-	docker build --no-cache --build-arg CUDA_IMAGE=$(CUDA_IMAGE) \
-	    -t $(H2O4GPU_BUILD_IMAGE) -f $(H2O4GPU_DOCKERFILE) .
+	docker build --no-cache $(DOCKER_BUILD_ARGS)
 
 # Compile h2o4gpu inside the cached builder image (mounts the working tree).
 # Builds the image first only if it is missing. No GPU required to compile;
 # add DOCKER_RUN_FLAGS="--gpus all" to run GPU targets (e.g. tests).
 docker-build-cuda12:
-	@docker image inspect $(H2O4GPU_BUILD_IMAGE) >/dev/null 2>&1 \
-	    || $(MAKE) docker-build-image
-	docker run --rm -e HOME=/h2o4gpu $(DOCKER_USER_FLAG) $(DOCKER_RUN_FLAGS) \
-	    -v $(CURDIR):/h2o4gpu -w /h2o4gpu \
-	    $(H2O4GPU_BUILD_IMAGE) \
+	@$(ensure-docker-image)
+	docker run --rm $(DOCKER_RUN_OPTS) $(H2O4GPU_BUILD_IMAGE) \
 	    bash -c 'make $(DOCKER_MAKE_TARGET) PYTHON=python3.11'
 
 # Drop into an interactive shell in the builder image (working tree mounted).
 docker-build-shell:
-	@docker image inspect $(H2O4GPU_BUILD_IMAGE) >/dev/null 2>&1 \
-	    || $(MAKE) docker-build-image
-	docker run --rm -it -e HOME=/h2o4gpu $(DOCKER_USER_FLAG) $(DOCKER_RUN_FLAGS) \
-	    -v $(CURDIR):/h2o4gpu -w /h2o4gpu $(H2O4GPU_BUILD_IMAGE) bash
+	@$(ensure-docker-image)
+	docker run --rm -it $(DOCKER_RUN_OPTS) $(H2O4GPU_BUILD_IMAGE) bash
 # -----------------------------------------------------------------------------
 
 DOCKER_CUDA_VERSION?=9.2

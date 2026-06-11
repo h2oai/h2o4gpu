@@ -170,26 +170,19 @@ if(USE_CUDA)
         endif()
 
         if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
-            find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a
-            PATHS   "/usr/lib64"
+            set(CUDA_STATIC_LIB_PATHS
+                    "/usr/lib64"
                     "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
                     "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
+            find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
             list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
             # CUDA 12 renamed the static LAPACK that cusolver needs from
             # liblapack_static.a to libcusolver_lapack_static.a, and ships a
             # matching metis static lib. Static cusolver requires both.
-            find_library(LIBLAPACK_STATIC NAMES libcusolver_lapack_static.a liblapack_static.a
-            PATHS   "/usr/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
+            find_library(LIBLAPACK_STATIC NAMES libcusolver_lapack_static.a liblapack_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
             list(APPEND STATIC_LIBS ${LIBLAPACK_STATIC})
-            find_library(LIBMETIS_STATIC NAMES libcusolver_metis_static.a libmetis_static.a
-            PATHS   "/usr/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
+            find_library(LIBMETIS_STATIC NAMES libcusolver_metis_static.a libmetis_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
             if(LIBMETIS_STATIC)
                 list(APPEND STATIC_LIBS ${LIBMETIS_STATIC})
             endif()
