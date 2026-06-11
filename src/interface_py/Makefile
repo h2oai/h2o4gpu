@@ -30,6 +30,10 @@ prep:
 
 all: prep
 
+	# Start from a clean build/ so stale bundled-dep artifacts (e.g. a dangling
+	# lightgbm_*/lib_lightgbm.so symlink from a prior run) don't get packaged.
+	rm -rf build
+
 	# for incorporating xgboost and py3nvml and lightgbm builds
 	rm -rf ./xgboost
 	rm -rf ./xgboost_prev
@@ -37,15 +41,17 @@ all: prep
 	ln -sf ../../xgboost_prev/python-package/xgboost ./xgboost_prev
 	rm -rf ../../xgboost/python-package/xgboost/src/
 	rm -rf ../../xgboost_prev/python-package/xgboost/src/
-	ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu
-	ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu
+	# LightGBM is optional: only bundle it if its python-package was built.
+	rm -f lightgbm_gpu lightgbm_cpu
+	if [ -e ../../LightGBM/python-package/dist_gpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_gpu/lightgbm lightgbm_gpu; else echo "LightGBM (gpu) not built - omitting from wheel"; fi
+	if [ -e ../../LightGBM/python-package/dist_cpu/lightgbm ]; then ln -sf ../../LightGBM/python-package/dist_cpu/lightgbm lightgbm_cpu; else echo "LightGBM (cpu) not built - omitting from wheel"; fi
 	ln -sf ../../py3nvml/py3nvml .
 
 	$(PYTHON) setup.py sdist bdist_wheel
 
-	# update build with lightgbm shared library
-	mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../
-	mkdir -p build/lib/lightgbm/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../
+	# update build with lightgbm shared library (only if LightGBM was built)
+	if [ -e ../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_gpu/ ; cd build/lib/lightgbm_gpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_gpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
+	if [ -e ../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so ]; then mkdir -p build/lib/lightgbm_cpu/ ; cd build/lib/lightgbm_cpu/ ; ln -sf ../../../../../LightGBM/python-package/dist_cpu/lightgbm/lib_lightgbm.so . ; cd ../../../ ; fi
 
 	# Make wheel with other builds added
 	rm -rf dist/*.whl
