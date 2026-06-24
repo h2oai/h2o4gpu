@@ -119,14 +119,15 @@ with open('build_info.txt', 'w') as fp:
 
 # Make the .whl contain required python and OS as we are version and distro specific
 try:
+    # setuptools >= 70.1 vendors bdist_wheel; wheel >= 0.45 removed wheel.bdist_wheel
+    from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
+except ImportError:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
-    class bdist_wheel(_bdist_wheel):
-        def finalize_options(self):
-            _bdist_wheel.finalize_options(self)
-            self.root_is_pure = False
-except ImportError:
-    bdist_wheel = None
+class bdist_wheel(_bdist_wheel):
+    def finalize_options(self):
+        _bdist_wheel.finalize_options(self)
+        self.root_is_pure = False
 
 setup(
     name='h2o4gpu',
