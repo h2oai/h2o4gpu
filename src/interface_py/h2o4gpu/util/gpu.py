@@ -4,7 +4,176 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 import numpy as np
+
+
+# ---------------------------------------------------------------------------
+# GPU Slot model (Task A1 — physical-GPU projection; MIG expansion in A2)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ProcInfo:
+    """Per-process GPU resource usage for one device slot."""
+    pid: int
+    used_mem: int   # bytes
+    usage: int      # percent
+
+
+@dataclass(frozen=True)
+class GpuSlot:
+    """Unified, ordered descriptor for one GPU slot (physical GPU or MIG instance).
+
+    For Task A1 this is always a physical GPU: kind="physical", groupable=True,
+    cuda_token=str(physical_index).  MIG expansion (A2) will splice in kind="mig"
+    entries in place during the per-physical-GPU device loop.
+    """
+    slot_index: int                    # 0..N-1 — identity / AcquireGPUs lock key
+    cuda_token: str                    # CUDA_VISIBLE_DEVICES value: "i" (physical) or "MIG-<uuid>" (mig)
+    kind: str                          # "physical" | "mig"
+    groupable: bool                    # True=physical (combinable), False=mig (alone)
+    name: str
+    compute_capability: Tuple[int, int]
+    mem_total: int                     # bytes
+    mem_used: int                      # bytes  (mem_total - mem_free)
+    mem_free: int                      # bytes
+    utilization: int                   # percent (0 when with_usage=False)
+    physical_index: int                # owning physical GPU (self for physical; parent for mig)
+    procs: Optional[List[ProcInfo]]    # per-process info when with_procs=True, else None
+
+
+def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[GpuSlot]:
+    """Return one GpuSlot per visible GPU (physical devices only for Task A1).
+
+    Calls get_gpu_info_c with all needed flags set, then projects each device
+    index i into a GpuSlot.  Returns [] when NVML is unavailable or no GPUs
+    are present (get_gpu_info_c returns None or count==0).
+
+    Tuple shape from get_gpu_info_c when called with the flags below:
+        [0]  count                          (int)
+        [1]  total_mems  (return_memory=True)
+        [2]  gpu_types   (return_name=True)
+        [3]  usages      (return_usage=with_usage)
+        [4]  free_mems   (return_free_memory=True)
+        [5]  majors      (return_capability=True)
+        [6]  minors      (return_capability=True)
+     if with_procs:
+        [7]  num_pids         (return_memory_by_pid=True)
+        [8]  pids             shape (count, max_pids)
+        [9]  usedGpuMemorys   shape (count, max_pids)
+        [10] num_pids_usage   (return_usage_by_pid=True)
+        [11] pids_usage       shape (count, max_pids)
+        [12] usedGpuUsage     shape (count, max_pids)
+    """
+    raw = get_gpu_info_c(
+        return_memory=True,
+        return_name=True,
+        return_usage=with_usage,
+        return_free_memory=True,
+        return_capability=True,
+        return_memory_by_pid=with_procs,
+        return_usage_by_pid=with_procs,
+        return_all=False,
+    )
+
+    if raw is None:
+        return []
+
+    count = raw[0]
+    if count == 0:
+        return []
+
+    # Unpack positional tuple elements (indices depend on which flags were set).
+    # Flags always set: memory, name, usage (conditional), free_memory, capability.
+    # Index 0  = count (always)
+    # Index 1  = total_mems (return_memory=True, always)
+    # Index 2  = gpu_types  (return_name=True, always)
+    # Index 3  = usages     (return_usage=with_usage)
+    # Index 4  = free_mems  (return_free_memory=True, always)
+    # Index 5  = majors     (return_capability=True, always)
+    # Index 6  = minors     (return_capability=True, always)
+    # When with_usage=False, indices shift: [3]=free_mems, [4]=majors, [5]=minors
+    if with_usage:
+        total_mems = raw[1]
+        gpu_types  = raw[2]
+        usages     = raw[3]
+        free_mems  = raw[4]
+        majors     = raw[5]
+        minors     = raw[6]
+        pid_base   = 7
+    else:
+        total_mems = raw[1]
+        gpu_types  = raw[2]
+        usages     = None
+        free_mems  = raw[3]
+        majors     = raw[4]
+        minors     = raw[5]
+        pid_base   = 6
+
+    # Per-process arrays (only present when with_procs=True)
+    if with_procs:
+        num_pids_mem      = raw[pid_base]
+        pids_mem          = raw[pid_base + 1]   # shape (count, max_pids)
+        used_gpu_memorys  = raw[pid_base + 2]   # shape (count, max_pids)
+        num_pids_usage    = raw[pid_base + 3]
+        pids_usage_arr    = raw[pid_base + 4]   # shape (count, max_pids)
+        used_gpu_usage    = raw[pid_base + 5]   # shape (count, max_pids)
+    else:
+        num_pids_mem = num_pids_usage = None
+        pids_mem = used_gpu_memorys = pids_usage_arr = used_gpu_usage = None
+
+    slots: List[GpuSlot] = []
+    for i in range(count):
+        mem_total_i = int(total_mems[i])
+        mem_free_i  = int(free_mems[i])
+        mem_used_i  = mem_total_i - mem_free_i
+
+        util_i = int(usages[i]) if usages is not None else 0
+
+        name_i = str(gpu_types[i]) if gpu_types[i] is not None else ""
+
+        cap_i = (int(majors[i]), int(minors[i]))
+
+        if with_procs and num_pids_mem is not None:
+            n_mem = int(num_pids_mem[i])
+            n_use = int(num_pids_usage[i])
+            # Build a merged dict keyed by pid; usage defaults 0 if not in usage list
+            pid_mem_map = {}
+            for k in range(n_mem):
+                pid = int(pids_mem[i, k])
+                used = int(used_gpu_memorys[i, k])
+                pid_mem_map[pid] = [pid, used, 0]
+            for k in range(n_use):
+                pid = int(pids_usage_arr[i, k])
+                usage_val = int(used_gpu_usage[i, k])
+                if pid in pid_mem_map:
+                    pid_mem_map[pid][2] = usage_val
+                else:
+                    pid_mem_map[pid] = [pid, 0, usage_val]
+            procs_i: Optional[List[ProcInfo]] = [
+                ProcInfo(pid=p[0], used_mem=p[1], usage=p[2])
+                for p in pid_mem_map.values()
+            ]
+        else:
+            procs_i = None
+
+        slots.append(GpuSlot(
+            slot_index=i,
+            cuda_token=str(i),
+            kind="physical",
+            groupable=True,
+            name=name_i,
+            compute_capability=cap_i,
+            mem_total=mem_total_i,
+            mem_used=mem_used_i,
+            mem_free=mem_free_i,
+            utilization=util_i,
+            physical_index=i,
+            procs=procs_i,
+        ))
+
+    return slots
 
 
 #############################
