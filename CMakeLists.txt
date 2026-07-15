@@ -140,10 +140,11 @@ if(USE_CUDA)
             SET(GPU_COMPUTE_VER 61)
             SET(CMAKE_BUILD_TYPE Debug)
         elseif(CUDA_VERSION_MAJOR GREATER_EQUAL 12)
-            # CUDA 12 removed Kepler (sm_35/sm_37); Maxwell (sm_5x) is deprecated.
-            # Baseline ladder: Pascal through Hopper.
-            MESSAGE(STATUS "Building RELEASE compute capability version (CUDA 12 baseline: Pascal..Hopper).")
-            SET(GPU_COMPUTE_VER 60;61;70;75;80;86;89;90)
+            # DAI-aligned ladder (matches DAI's xgboost/lightgbm wheels): Volta
+            # through Blackwell. Pascal (sm_60/61) is dropped; sm_86/87/89 run on
+            # the sm_80 cubin (binary compatible), so only sm_80 is built.
+            MESSAGE(STATUS "Building RELEASE compute capability version (CUDA 12 baseline: Volta..Hopper).")
+            SET(GPU_COMPUTE_VER 70;75;80;90)
 
             # Blackwell SASS (sm_100 datacenter, sm_120 consumer) requires CUDA >= 12.8.
             if(CUDA_VERSION VERSION_GREATER_EQUAL "12.8")
