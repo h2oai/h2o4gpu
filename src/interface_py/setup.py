@@ -90,6 +90,14 @@ package_data = {}
 for package in packages:
     package_data[package] = ['*']
 
+# Drop build-time-only Cython/C sources (~80 MB from the scikit-learn overlay,
+# e.g. _loss/_loss.c). None are imported at runtime in a binary wheel; the
+# compiled .cpython-311-*.so is what loads. Data files (.csv.gz, .rst, .npz,
+# .arff, .json) and the .so are kept.
+exclude_package_data = {
+    package: ['*.c', '*.cpp', '*.pyx', '*.pxd', '*.pxi'] for package in packages
+}
+
 
 class BinaryDistribution(Distribution):
     def is_pure(self):
@@ -136,6 +144,7 @@ setup(
     # find -L -type d -printf '%d\t%P\n'| sort -r -nk1| cut -f2-|grep -v pycache
     packages=packages,
     package_data=package_data,
+    exclude_package_data=exclude_package_data,
     license='Apache v2.0',
     zip_safe=False,
     description='H2O.ai GPU Edition',
