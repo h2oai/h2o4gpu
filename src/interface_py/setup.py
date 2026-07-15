@@ -45,6 +45,21 @@ class H2O4GPUBuild(build):
         # package_data ships exactly one copy at the package-qualified path the
         # SWIG loader imports (h2o4gpu.libs._ch2o4gpu_gpu). Copying it into
         # build_lib as well produced a second ~1 GB top-of-purelib duplicate.
+        #
+        # Fail loudly if that .so is missing: package_data would otherwise glob
+        # nothing and build a valid-looking wheel with no extension, so the
+        # breakage would only surface as an ImportError in production. The .so
+        # is a `make cpp` artifact, so a missing one means `make cpp` did not run
+        # (or failed) before `make py`.
+        libs_dir = os.path.join(BASEPATH, 'h2o4gpu', 'libs')
+        required = [GPULIB, CPULIB] if NVCC else [CPULIB]
+        missing = [lib + '.so' for lib in required
+                   if not os.path.exists(os.path.join(libs_dir, lib + '.so'))]
+        if missing:
+            raise SystemExit(
+                "FATAL: compiled extension(s) missing from %s: %s. "
+                "Run `make cpp` before building the wheel." % (
+                    libs_dir, ', '.join(missing)))
 
 
 class H2O4GPUInstall(install):
