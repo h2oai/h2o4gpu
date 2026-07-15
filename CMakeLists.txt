@@ -112,28 +112,30 @@ if(USE_CUDA)
                 -DHAVECUDA
         )
 
-        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64" # cuda-9
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/" NO_DEFAULT_PATH) # cuda-10
-        find_library(CUBLAS_STATIC_LIB NAMES libcublas_static.a
-                PATHS   "/usr/lib64")  #cuda-10.1
-
-        message(${CUBLAS_STATIC_LIB})
-
+        # DAI provides the CUDA 12.8 runtime, so link the math libraries
+        # DYNAMICALLY. Static linking (libcublasLt_static.a et al.) baked ~950 MB
+        # of per-arch cubins into the extension; dynamic linking defers them to
+        # DAI's runtime (libcublas/libcublasLt/libcusolver/libcusparse .so.12)
+        # and keeps the wheel small. The explicit .so NAMES avoid picking up the
+        # static archives. cudart stays static (via CUDA_ADD_LIBRARY), which is
+        # why libculibos is still linked.
+        set(CUDA_MATH_LIB_PATHS
+                "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
+                "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
+                "/usr/lib64")
+        find_library(CUBLAS_LIB   NAMES libcublas.so   PATHS ${CUDA_MATH_LIB_PATHS})
+        find_library(CUBLASLT_LIB NAMES libcublasLt.so PATHS ${CUDA_MATH_LIB_PATHS})
+        find_library(CUSPARSE_LIB NAMES libcusparse.so PATHS ${CUDA_MATH_LIB_PATHS})
+        find_library(CUSOLVER_LIB NAMES libcusolver.so PATHS ${CUDA_MATH_LIB_PATHS})
         find_library(CULIBOS_STATIC_LIB NAMES libculibos.a
                 PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
                         "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
-        find_library(CUSPARSE_STATIC_LIB NAMES libcusparse_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
-        find_library(CUSOLVER_STATIC_LIB NAMES libcusolver_static.a
-                PATHS   "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                        "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/")
 
-        set(STATIC_LIBS ${CUBLAS_STATIC_LIB})
+        set(STATIC_LIBS ${CUBLAS_LIB})
+        list(APPEND STATIC_LIBS ${CUBLASLT_LIB})
+        list(APPEND STATIC_LIBS ${CUSPARSE_LIB})
+        list(APPEND STATIC_LIBS ${CUSOLVER_LIB})
         list(APPEND STATIC_LIBS ${CULIBOS_STATIC_LIB})
-        list(APPEND STATIC_LIBS ${CUSPARSE_STATIC_LIB})
-        list(APPEND STATIC_LIBS ${CUSOLVER_STATIC_LIB})
 
         if(DEV_BUILD)
             MESSAGE(STATUS "Building DEVELOPER compute capability version.")
@@ -170,24 +172,10 @@ if(USE_CUDA)
             add_compile_definitions(SYNC)
         endif()
 
-        if(CUDA_VERSION VERSION_GREATER "10.1" OR CUDA_VERSION VERSION_EQUAL "10.1")
-            set(CUDA_STATIC_LIB_PATHS
-                    "/usr/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/lib64"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib/"
-                    "${CUDA_TOOLKIT_ROOT_DIR}/targets/ppc64le-linux/lib/")
-            find_library(CUBLASLT_STATIC_LIB NAMES libcublasLt_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
-            list(APPEND STATIC_LIBS ${CUBLASLT_STATIC_LIB})
-            # CUDA 12 renamed the static LAPACK that cusolver needs from
-            # liblapack_static.a to libcusolver_lapack_static.a, and ships a
-            # matching metis static lib. Static cusolver requires both.
-            find_library(LIBLAPACK_STATIC NAMES libcusolver_lapack_static.a liblapack_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
-            list(APPEND STATIC_LIBS ${LIBLAPACK_STATIC})
-            find_library(LIBMETIS_STATIC NAMES libcusolver_metis_static.a libmetis_static.a PATHS ${CUDA_STATIC_LIB_PATHS})
-            if(LIBMETIS_STATIC)
-                list(APPEND STATIC_LIBS ${LIBMETIS_STATIC})
-            endif()
-        endif()
+        # cublasLt is now linked dynamically (with the other math libs above).
+        # The static-cusolver dependencies libcusolver_lapack_static.a and
+        # libcusolver_metis_static.a are only required when cusolver is linked
+        # statically, so they are no longer needed.
 
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
