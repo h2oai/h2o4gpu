@@ -192,7 +192,15 @@ if(USE_CUDA)
         SET(GENCODE_FLAGS "")
         FORMAT_GENCODE_FLAGS("${GPU_COMPUTE_VER}" GENCODE_FLAGS)
         MESSAGE(STATUS "cuda architecture flags: ${GENCODE_FLAGS}")
-        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -g; -std=c++17;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};-lineinfo; -w;")
+
+        # Debug symbols (-g host) and device line tables (-lineinfo) bloat the
+        # shipped .so with .debug_* sections; keep them only for DEV_BUILD.
+        if(DEV_BUILD)
+            SET(DEBUG_NVCC_FLAGS "-g;-lineinfo;")
+        else()
+            SET(DEBUG_NVCC_FLAGS "")
+        endif()
+        SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-Xcompiler -fPIC; -std=c++17;--expt-extended-lambda;--expt-relaxed-constexpr;${GENCODE_FLAGS};${DEBUG_NVCC_FLAGS} -w;")
 
         FILE(GLOB_RECURSE GPU_SOURCES
                 src/*.cu

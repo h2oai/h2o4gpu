@@ -100,6 +100,7 @@ cpp:
 	cd build && \
 	cmake -DDEV_BUILD=${DEV_BUILD} ../ && \
 	make -j`nproc` && \
+	if [ "${DEV_BUILD}" != "ON" ]; then strip --strip-unneeded _ch2o4gpu_*pu.so; fi && \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
