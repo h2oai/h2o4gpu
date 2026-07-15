@@ -102,6 +102,7 @@ cpp:
 	make -j`nproc` && \
 	if [ "${DEV_BUILD}" != "ON" ]; then strip --strip-unneeded _ch2o4gpu_*pu.so; fi && \
 	cp _ch2o4gpu_*pu.so ../src/interface_c/ && \
+	cp _ch2o4gpu_*pu.so ../src/interface_py/h2o4gpu/libs/ && \
 	cp ch2o4gpu_*pu.py ../src/interface_py/h2o4gpu/libs;
 
 py: build/VERSION.txt

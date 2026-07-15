@@ -21,7 +21,6 @@ class H2O4GPUBuild(build):
         NVCC = os.popen("which nvcc").read() != ""
         CPULIB = '_ch2o4gpu_cpu'
         GPULIB = '_ch2o4gpu_gpu'
-        EXT = ".dylib" if os.uname()[0] == "Darwin" else ".so"
 
         # run original build code
         build.run(self)
@@ -32,10 +31,6 @@ class H2O4GPUBuild(build):
         targets = [CPULIB, GPULIB] if NVCC else [CPULIB]
         cmd.extend(targets)
 
-        CPU_LIBPATH = os.path.join(H2O4GPUPATH, CPULIB + EXT)
-        GPU_LIBPATH = os.path.join(H2O4GPUPATH, GPULIB + EXT)
-
-        target_files = [CPU_LIBPATH, GPU_LIBPATH] if NVCC else [CPU_LIBPATH]
         message = 'Compiling H2O4GPU CPU and GPU' if NVCC \
             else 'Compiling H2O4GPU CPU only'
 
@@ -45,10 +40,11 @@ class H2O4GPUBuild(build):
 
         self.execute(compile_cpu, [], message)
 
-        # copy resulting tool to library build folder
-        self.mkpath(self.build_lib)
-        for target in target_files:
-            self.copy_file(target, self.build_lib)
+        # NB: the compiled _ch2o4gpu_*.so are NOT copied into build_lib here.
+        # `make cpp` copies the freshly-built .so into h2o4gpu/libs/, from where
+        # package_data ships exactly one copy at the package-qualified path the
+        # SWIG loader imports (h2o4gpu.libs._ch2o4gpu_gpu). Copying it into
+        # build_lib as well produced a second ~1 GB top-of-purelib duplicate.
 
 
 class H2O4GPUInstall(install):
