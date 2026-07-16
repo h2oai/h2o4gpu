@@ -1,12 +1,9 @@
-[submodule "cub"]
-	path = cub
-	url = https://github.com/h2oai/cub
 [submodule "xgboost"]
 	path = xgboost
 	url = https://github.com/h2oai/xgboost
 [submodule "py3nvml"]
 	path = py3nvml
-	url = https://github.com/h2oai/py3nvml
+	url = https://github.com/fbcotter/py3nvml.git
 [submodule "tests/googletest"]
 	path = tests/googletest
 	url = https://github.com/google/googletest.git
