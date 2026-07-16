@@ -498,7 +498,7 @@ class TruncatedSVD:
                 self.do_sklearn = True
                 self.backend = 'sklearn'
 
-        from h2o4gpu.decomposition.truncated_svd import TruncatedSVDSklearn
+        from h2o4gpu.decomposition._truncated_svd import TruncatedSVDSklearn
         self.model_sklearn = TruncatedSVDSklearn(
             n_components=self.n_components,
             algorithm=sklearn_algorithm,
