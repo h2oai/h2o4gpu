@@ -10,3 +10,9 @@ tabulate>=0.8.2
 future>=0.16.0
 psutil>=5.6.3
 joblib>=1.1.1
+# required by the scikit-learn 1.5.2 overlay (h2o4gpu.utils.parallel uses
+# ThreadpoolController, added in threadpoolctl 3.0). Floor matches DAI's current
+# pin (3.6.0); the API is stable across the whole 3.x series, so cap below 4.0 --
+# DAI can take any 3.x CVE upgrade without rebuilding h2o4gpu, and a breaking
+# 4.0 is excluded.
+threadpoolctl>=3.6.0,<4
