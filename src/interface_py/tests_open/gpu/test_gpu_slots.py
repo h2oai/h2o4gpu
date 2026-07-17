@@ -102,8 +102,11 @@ def test_physical_slots_shape_placeholder():
 def _gpu_count_safe() -> int:
     """Return GPU count from the C extension, or 0 on import failure."""
     try:
-        from h2o4gpu.util.gpu import get_gpu_info_c
-        raw = get_gpu_info_c()
+        # Count PHYSICAL devices — this test runs under the autouse fixture that forces
+        # the physical projection, so it must match _get_gpu_info_c_physical (not the
+        # slot-based public get_gpu_info_c, which counts MIG instances).
+        from h2o4gpu.util.gpu import _get_gpu_info_c_physical
+        raw = _get_gpu_info_c_physical()
         if raw is None:
             return 0
         return raw[0]
