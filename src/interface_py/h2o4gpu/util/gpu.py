@@ -62,7 +62,7 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
         [11] pids_usage       shape (count, max_pids)
         [12] usedGpuUsage     shape (count, max_pids)
     """
-    raw = get_gpu_info_c(
+    raw = _get_gpu_info_c_physical(
         return_memory=True,
         return_name=True,
         return_usage=with_usage,
@@ -517,7 +517,7 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
 
 def _physical_utilization() -> Dict[int, int]:
     """{physical_index: util%} for physical GPUs (NVML, via get_gpu_info_c)."""
-    raw = get_gpu_info_c(return_usage=True)
+    raw = _get_gpu_info_c_physical(return_usage=True)
     if not raw or raw[0] == 0:
         return {}
     usages = raw[1]
@@ -526,7 +526,7 @@ def _physical_utilization() -> Dict[int, int]:
 
 def _physical_utilization_by_pid() -> Dict[int, List[Tuple[int, int]]]:
     """{physical_index: [(pid, util%), ...]} for physical GPUs (via get_gpu_info_c)."""
-    raw = get_gpu_info_c(return_usage_by_pid=True)
+    raw = _get_gpu_info_c_physical(return_usage_by_pid=True)
     if not raw or raw[0] == 0:
         return {}
     count, num, pids, used = raw[0], raw[1], raw[2], raw[3]
@@ -618,7 +618,7 @@ def device_count(n_gpus=0):
     :return:
         Adjusted n_gpus and all available devices
     """
-    available_device_count = get_gpu_info_c()[0]
+    available_device_count = _get_gpu_info_c_physical()[0]
 
     if n_gpus < 0:
         if available_device_count >= 0:
@@ -778,7 +778,7 @@ def get_gpu_info_subprocess(return_usage=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def get_gpu_info_c(return_memory=False,
+def _get_gpu_info_c_physical(return_memory=False,
                    return_name=False,
                    return_usage=False,
                    return_free_memory=False,
@@ -933,6 +933,72 @@ def get_gpu_info_c(return_memory=False,
     return tuple(to_return)
 
 
+def get_gpu_info_c(return_memory=False, return_name=False, return_usage=False,
+                   return_free_memory=False, return_capability=False,
+                   return_memory_by_pid=False, return_usage_by_pid=False,
+                   return_all=False, verbose=0):
+    """Slot-based GPU info: the SAME positional tuple as the physical accessor,
+    but counting GPU **slots** (physical GPUs + MIG instances).
+
+    On non-MIG hosts this delegates to the physical accessor and is byte-for-byte
+    identical to the historical behaviour. When MIG is enabled, every array is per-slot
+    (length == num_gpu_slots()); MIG slots carry no per-process data (num_pids == 0).
+
+    Positional tuple (flags select which appear):
+        [0] count; return_memory->total_mems; return_name->names; return_usage->usages;
+        return_free_memory->free_mems; return_capability->majors, minors;
+        return_memory_by_pid->num_pids, pids, usedGpuMemorys;
+        return_usage_by_pid->num_pids_usage, pids_usage, usedGpuUsage.
+    """
+    # No MIG anywhere -> the physical tuple already IS the slot tuple (identical output,
+    # including per-pid arrays). This keeps non-MIG behaviour byte-for-byte unchanged.
+    if not _mig_instances_by_physical():
+        return _get_gpu_info_c_physical(
+            return_memory=return_memory, return_name=return_name, return_usage=return_usage,
+            return_free_memory=return_free_memory, return_capability=return_capability,
+            return_memory_by_pid=return_memory_by_pid, return_usage_by_pid=return_usage_by_pid,
+            return_all=return_all, verbose=verbose)
+
+    want_usage = return_usage or return_all
+    want_procs = return_memory_by_pid or return_usage_by_pid or return_all
+    slots = get_gpu_slots(with_usage=want_usage, with_procs=want_procs)
+    n = len(slots)
+    max_pids = 2000
+
+    def _pid_arrays(field):   # field: "used_mem" or "usage"
+        num = np.zeros(n, dtype=np.uint32)
+        pid = np.zeros((n, max_pids), dtype=np.uint32)
+        val = np.zeros((n, max_pids), dtype=np.uint64)
+        for i, s in enumerate(slots):
+            if not s.procs:
+                continue
+            capped = s.procs[:max_pids]
+            for k, p in enumerate(capped):
+                pid[i, k] = p.pid
+                val[i, k] = getattr(p, field)
+            num[i] = len(capped)
+        return num, pid, val
+
+    to_return = [n]
+    if return_all or return_memory:
+        to_return.append(np.array([s.mem_total for s in slots], dtype=np.uint64))
+    if return_all or return_name:
+        to_return.append(np.array([s.name for s in slots]))
+    if return_all or return_usage:
+        to_return.append(np.array([s.utilization for s in slots], dtype=np.int32))
+    if return_all or return_free_memory:
+        to_return.append(np.array([s.mem_free for s in slots], dtype=np.uint64))
+    if return_all or return_capability:
+        to_return.append(np.array([s.compute_capability[0] for s in slots], dtype=np.int32))
+        to_return.append(np.array([s.compute_capability[1] for s in slots], dtype=np.int32))
+    if return_all or return_memory_by_pid:
+        to_return.extend(_pid_arrays("used_mem"))
+    if return_all or return_usage_by_pid:
+        to_return.extend(_pid_arrays("usage"))
+
+    return tuple(to_return)
+
+
 def cudaresetdevice(gpu_id, n_gpus):
     """
     Resets the cuda device so any next cuda call will reset the cuda context.
@@ -970,7 +1036,7 @@ def get_compute_capability(gpu_id):
     """
     try:
         total_gpus, majors, minors =\
-            get_gpu_info_c(return_capability=True)
+            _get_gpu_info_c_physical(return_capability=True)
     # pylint: disable=bare-except
     except:
         total_gpus = 0

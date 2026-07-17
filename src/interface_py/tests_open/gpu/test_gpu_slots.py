@@ -156,7 +156,7 @@ def test_physical_slots_shape():
 def test_projection_count_and_types():
     """Projection: 2 synthetic devices → 2 GpuSlot objects."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert len(slots) == 2
@@ -167,7 +167,7 @@ def test_projection_count_and_types():
 def test_projection_slot_index_and_cuda_token():
     """Projection: slot_index and cuda_token are correct for each device."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].slot_index == 0
@@ -179,7 +179,7 @@ def test_projection_slot_index_and_cuda_token():
 def test_projection_kind_and_groupable():
     """Projection: physical devices → kind='physical', groupable=True."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     for slot in slots:
@@ -192,7 +192,7 @@ def test_projection_mem_used_equals_total_minus_free():
     raw = _make_synthetic_raw(n=2, with_usage=True)
     # total_mems[0]=8GiB, free_mems[0]=4GiB → used=4GiB
     # total_mems[1]=16GiB, free_mems[1]=10GiB → used=6GiB
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].mem_total == 8 * 2**30
@@ -207,7 +207,7 @@ def test_projection_utilization_with_usage_true():
     """Projection: utilization carries through when with_usage=True."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
     # usages = [42, 77]
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].utilization == 42
@@ -217,7 +217,7 @@ def test_projection_utilization_with_usage_true():
 def test_projection_utilization_zero_when_usage_false():
     """Projection: utilization is 0 when with_usage=False."""
     raw = _make_synthetic_raw(n=2, with_usage=False)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=False)
 
     assert slots[0].utilization == 0
@@ -228,7 +228,7 @@ def test_projection_compute_capability_tuple():
     """Projection: compute_capability is a (major, minor) tuple per device."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
     # majors=[8, 9], minors=[0, 0]
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].compute_capability == (8, 0)
@@ -238,7 +238,7 @@ def test_projection_compute_capability_tuple():
 def test_projection_name():
     """Projection: name field matches the synthetic gpu_type string."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].name == "Fake GPU A"
@@ -248,7 +248,7 @@ def test_projection_name():
 def test_projection_physical_index():
     """Projection: physical_index equals slot_index for physical GPUs."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert slots[0].physical_index == 0
@@ -258,7 +258,7 @@ def test_projection_physical_index():
 def test_projection_procs_none_when_not_requested():
     """Projection: procs is None when with_procs=False."""
     raw = _make_synthetic_raw(n=2, with_usage=True, with_procs=False)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True, with_procs=False)
 
     for slot in slots:
@@ -267,7 +267,7 @@ def test_projection_procs_none_when_not_requested():
 
 def test_projection_returns_empty_on_none():
     """Projection: get_gpu_slots returns [] when get_gpu_info_c returns None."""
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=None):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=None):
         slots = get_gpu_slots()
 
     assert slots == []
@@ -276,7 +276,7 @@ def test_projection_returns_empty_on_none():
 def test_projection_returns_empty_on_zero_count():
     """Projection: get_gpu_slots returns [] when count == 0."""
     raw = (0,)   # count only, no arrays
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots()
 
     assert slots == []
@@ -285,7 +285,7 @@ def test_projection_returns_empty_on_zero_count():
 def test_projection_slots_are_frozen():
     """GpuSlot is frozen=True — mutation must raise FrozenInstanceError."""
     raw = _make_synthetic_raw(n=1, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     with pytest.raises(Exception):  # dataclasses.FrozenInstanceError (subclass of AttributeError)
@@ -295,7 +295,7 @@ def test_projection_slots_are_frozen():
 def test_projection_contiguous_slot_index():
     """Projection: slot_index values are 0..N-1 for N=2 devices."""
     raw = _make_synthetic_raw(n=2, with_usage=True)
-    with patch("h2o4gpu.util.gpu.get_gpu_info_c", return_value=raw):
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", return_value=raw):
         slots = get_gpu_slots(with_usage=True)
 
     assert [s.slot_index for s in slots] == [0, 1]
