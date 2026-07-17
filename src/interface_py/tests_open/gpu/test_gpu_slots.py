@@ -76,6 +76,15 @@ def _make_synthetic_raw(n: int = 2, with_usage: bool = True, with_procs: bool = 
     return tuple(parts)
 
 
+@pytest.fixture(autouse=True)
+def _force_physical_projection():
+    """A1 covers the physical-GPU projection; force the non-MIG path so these tests are
+    hermetic on MIG hosts too (real MIG enumeration/util lives in test_mig_slots.py and
+    test_mig_utilization.py). On non-MIG/CPU hosts this patch is a no-op in effect."""
+    with patch("h2o4gpu.util.gpu._mig_instances_by_physical", return_value={}):
+        yield
+
+
 # ---------------------------------------------------------------------------
 # Group 1 — GPU-box-only integration test
 # ---------------------------------------------------------------------------
