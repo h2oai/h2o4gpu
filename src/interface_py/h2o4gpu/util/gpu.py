@@ -4,6 +4,8 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
+import ctypes as _ct
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from typing import Dict, List, Optional, Tuple
 import numpy as np
@@ -302,143 +304,305 @@ def _mig_utilization(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int]
     return _mig_utilization_dcgm(mig_by_phys)
 
 
-def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
-    import ctypes
+# ---------------------------------------------------------------------------
+# DCGM client for per-MIG utilization (GR_ENGINE_ACTIVE) — Ampere path.
+# Struct layouts / versions / enum values mirror the vendored headers in
+# third_party/dcgm (dcgm_structs.h, dcgm_fields.h, dcgm_agent.h).
+# ---------------------------------------------------------------------------
+
+_DCGM_ST_OK = 0
+_DCGM_FE_GPU_I = 4                        # dcgm_field_entity_group_t
+_DCGM_FI_PROF_GR_ENGINE_ACTIVE = 1001
+_DCGM_GROUP_DEFAULT_INSTANCES = 3         # dcgmGroupType_t: all GPU instances
+_DCGM_MAX_BLOB_LENGTH = 4096
+_DCGM_MAX_HIERARCHY_INFO = 32 * 14        # DCGM_MAX_NUM_DEVICES * DCGM_MAX_TOTAL_INSTANCES_PER_GPU
+
+
+def _dcgm_ver(struct_type, v):
+    return _ct.sizeof(struct_type) | (v << 24)   # MAKE_DCGM_VERSION
+
+
+class _DcgmConnectParams(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("persistAfterDisconnect", _ct.c_uint),
+                ("timeoutMs", _ct.c_uint), ("addressIsUnixSocket", _ct.c_uint)]
+
+
+class _DcgmEntityPair(_ct.Structure):
+    _fields_ = [("entityGroupId", _ct.c_int), ("entityId", _ct.c_uint)]
+
+
+class _DcgmFVUnion(_ct.Union):
+    _fields_ = [("i64", _ct.c_int64), ("dbl", _ct.c_double),
+                ("blob", _ct.c_char * _DCGM_MAX_BLOB_LENGTH)]
+
+
+class _DcgmFieldValue(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("entityGroupId", _ct.c_int),
+                ("entityId", _ct.c_uint), ("fieldId", _ct.c_ushort),
+                ("fieldType", _ct.c_ushort), ("status", _ct.c_int),
+                ("unused", _ct.c_uint), ("ts", _ct.c_int64), ("value", _DcgmFVUnion)]
+
+
+class _DcgmMigEntityInfo(_ct.Structure):
+    _fields_ = [("gpuUuid", _ct.c_char * 128), ("nvmlGpuIndex", _ct.c_uint),
+                ("nvmlInstanceId", _ct.c_uint), ("nvmlComputeInstanceId", _ct.c_uint),
+                ("nvmlMigProfileId", _ct.c_uint), ("nvmlProfileSlices", _ct.c_uint)]
+
+
+class _DcgmMigHierInfo(_ct.Structure):
+    _fields_ = [("entity", _DcgmEntityPair), ("parent", _DcgmEntityPair),
+                ("info", _DcgmMigEntityInfo)]
+
+
+class _DcgmMigHierarchy(_ct.Structure):
+    _fields_ = [("version", _ct.c_uint), ("count", _ct.c_uint),
+                ("entityList", _DcgmMigHierInfo * _DCGM_MAX_HIERARCHY_INFO)]
+
+
+def _load_dcgm():
+    """Load the bundled libdcgm.so.4.5.3 (host libdcgm.so.4 fallback); None if absent."""
     import glob
-    import time
-
-    DCGM_ST_OK = 0
-    DCGM_FE_GPU_I = 4                       # dcgm_field_entity_group_t
-    DCGM_FI_PROF_GR_ENGINE_ACTIVE = 1001
-    DCGM_GROUP_DEFAULT_INSTANCES = 3        # dcgmGroupType_t: all GPU instances
-    DCGM_MAX_BLOB_LENGTH = 4096
-    DCGM_MAX_HIERARCHY_INFO = 32 * 14       # DCGM_MAX_NUM_DEVICES * DCGM_MAX_TOTAL_INSTANCES_PER_GPU
-
-    def _ver(struct_type, v):
-        return ctypes.sizeof(struct_type) | (v << 24)   # MAKE_DCGM_VERSION
-
-    class _ConnectParams(ctypes.Structure):
-        _fields_ = [("version", ctypes.c_uint), ("persistAfterDisconnect", ctypes.c_uint),
-                    ("timeoutMs", ctypes.c_uint), ("addressIsUnixSocket", ctypes.c_uint)]
-
-    class _EntityPair(ctypes.Structure):
-        _fields_ = [("entityGroupId", ctypes.c_int), ("entityId", ctypes.c_uint)]
-
-    class _FVUnion(ctypes.Union):
-        _fields_ = [("i64", ctypes.c_int64), ("dbl", ctypes.c_double),
-                    ("blob", ctypes.c_char * DCGM_MAX_BLOB_LENGTH)]
-
-    class _FieldValue(ctypes.Structure):
-        _fields_ = [("version", ctypes.c_uint), ("entityGroupId", ctypes.c_int),
-                    ("entityId", ctypes.c_uint), ("fieldId", ctypes.c_ushort),
-                    ("fieldType", ctypes.c_ushort), ("status", ctypes.c_int),
-                    ("unused", ctypes.c_uint), ("ts", ctypes.c_int64), ("value", _FVUnion)]
-
-    class _MigEntityInfo(ctypes.Structure):
-        _fields_ = [("gpuUuid", ctypes.c_char * 128), ("nvmlGpuIndex", ctypes.c_uint),
-                    ("nvmlInstanceId", ctypes.c_uint), ("nvmlComputeInstanceId", ctypes.c_uint),
-                    ("nvmlMigProfileId", ctypes.c_uint), ("nvmlProfileSlices", ctypes.c_uint)]
-
-    class _MigHierInfo(ctypes.Structure):
-        _fields_ = [("entity", _EntityPair), ("parent", _EntityPair), ("info", _MigEntityInfo)]
-
-    class _MigHierarchy(ctypes.Structure):
-        _fields_ = [("version", ctypes.c_uint), ("count", ctypes.c_uint),
-                    ("entityList", _MigHierInfo * DCGM_MAX_HIERARCHY_INFO)]
-
     libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
-    candidates = sorted(glob.glob(os.path.join(libdir, "libdcgm.so*"))) + ["libdcgm.so.4"]
-    dcgm = None
-    for cand in candidates:
+    for cand in sorted(glob.glob(os.path.join(libdir, "libdcgm.so*"))) + ["libdcgm.so.4"]:
         try:
-            dcgm = ctypes.CDLL(cand)
-            break
+            return _ct.CDLL(cand)
         except OSError:
             continue
-    if dcgm is None:
-        return {}
+    return None
 
-    from ctypes import (c_int, c_uint, c_uint64, c_longlong, c_double, c_ushort,
-                        c_char_p, POINTER)
-    dcgm.dcgmConnect_v2.argtypes = [c_char_p, POINTER(_ConnectParams), POINTER(c_uint64)]
-    dcgm.dcgmGetGpuInstanceHierarchy.argtypes = [c_uint64, POINTER(_MigHierarchy)]
-    dcgm.dcgmFieldGroupCreate.argtypes = [c_uint64, c_int, POINTER(c_ushort), c_char_p,
-                                          POINTER(c_uint64)]
-    dcgm.dcgmGroupCreate.argtypes = [c_uint64, c_int, c_char_p, POINTER(c_uint64)]
-    dcgm.dcgmWatchFields.argtypes = [c_uint64, c_uint64, c_uint64, c_longlong, c_double, c_int]
-    dcgm.dcgmUpdateAllFields.argtypes = [c_uint64, c_int]
-    dcgm.dcgmEntitiesGetLatestValues.argtypes = [c_uint64, POINTER(_EntityPair), c_uint,
-                                                 POINTER(c_ushort), c_uint, c_uint,
-                                                 POINTER(_FieldValue)]
 
-    handle = ctypes.c_uint64(0)
-    address = os.environ.get("H2O4GPU_DCGM_DAEMON_ADDRESS", "127.0.0.1").encode("ascii")
+class _DcgmMigSession:
+    """
+    Persistent DCGM connection + GR_ENGINE_ACTIVE watch on the GPU-instances group.
 
-    if dcgm.dcgmInit() != DCGM_ST_OK:
-        return {}
-    try:
-        params = _ConnectParams(version=_ver(_ConnectParams, 2), persistAfterDisconnect=0,
-                                timeoutMs=5000, addressIsUnixSocket=0)
-        if dcgm.dcgmConnect_v2(address, ctypes.byref(params), ctypes.byref(handle)) != DCGM_ST_OK:
-            return {}
+    ``open()`` connects to the standalone nv-hostengine and starts the watch once;
+    ``sample()`` then updates+reads cheaply (no reconnect); ``close()`` tears it down.
+    """
+
+    def __init__(self):
+        self._dcgm = None
+        self._handle = _ct.c_uint64(0)
+        self._connected = False
+        self.entity_to_key = {}          # dcgm GPU_I entityId -> (physical_index, gi)
+
+    def open(self):
+        dcgm = _load_dcgm()
+        if dcgm is None:
+            return False
+        from ctypes import (c_int, c_uint, c_uint64, c_longlong, c_double, c_ushort,
+                            c_char_p, POINTER)
+        dcgm.dcgmConnect_v2.argtypes = [c_char_p, POINTER(_DcgmConnectParams), POINTER(c_uint64)]
+        dcgm.dcgmGetGpuInstanceHierarchy.argtypes = [c_uint64, POINTER(_DcgmMigHierarchy)]
+        dcgm.dcgmFieldGroupCreate.argtypes = [c_uint64, c_int, POINTER(c_ushort), c_char_p,
+                                              POINTER(c_uint64)]
+        dcgm.dcgmGroupCreate.argtypes = [c_uint64, c_int, c_char_p, POINTER(c_uint64)]
+        dcgm.dcgmWatchFields.argtypes = [c_uint64, c_uint64, c_uint64, c_longlong, c_double, c_int]
+        dcgm.dcgmUpdateAllFields.argtypes = [c_uint64, c_int]
+        dcgm.dcgmEntitiesGetLatestValues.argtypes = [c_uint64, POINTER(_DcgmEntityPair), c_uint,
+                                                     POINTER(c_ushort), c_uint, c_uint,
+                                                     POINTER(_DcgmFieldValue)]
+        self._dcgm = dcgm
+        if dcgm.dcgmInit() != _DCGM_ST_OK:
+            self._dcgm = None
+            return False
+        address = os.environ.get("H2O4GPU_DCGM_DAEMON_ADDRESS", "127.0.0.1").encode("ascii")
+        params = _DcgmConnectParams(version=_dcgm_ver(_DcgmConnectParams, 2),
+                                    persistAfterDisconnect=0, timeoutMs=5000,
+                                    addressIsUnixSocket=0)
+        if dcgm.dcgmConnect_v2(address, _ct.byref(params), _ct.byref(self._handle)) != _DCGM_ST_OK:
+            self.close()
+            return False
+        self._connected = True
         try:
-            hier = _MigHierarchy(version=_ver(_MigHierarchy, 2))
-            if dcgm.dcgmGetGpuInstanceHierarchy(handle, ctypes.byref(hier)) != DCGM_ST_OK:
-                return {}
-            entity_to_key: Dict[int, Tuple[int, int]] = {}
+            hier = _DcgmMigHierarchy(version=_dcgm_ver(_DcgmMigHierarchy, 2))
+            if dcgm.dcgmGetGpuInstanceHierarchy(self._handle, _ct.byref(hier)) != _DCGM_ST_OK:
+                self.close()
+                return False
             for k in range(hier.count):
                 e = hier.entityList[k]
-                if e.entity.entityGroupId == DCGM_FE_GPU_I:
-                    entity_to_key[int(e.entity.entityId)] = (int(e.info.nvmlGpuIndex),
-                                                             int(e.info.nvmlInstanceId))
-            if not entity_to_key:
-                return {}
+                if e.entity.entityGroupId == _DCGM_FE_GPU_I:
+                    self.entity_to_key[int(e.entity.entityId)] = (int(e.info.nvmlGpuIndex),
+                                                                  int(e.info.nvmlInstanceId))
+            if not self.entity_to_key:
+                self.close()
+                return False
+            fids = (c_ushort * 1)(_DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            field_group = c_uint64(0)
+            if dcgm.dcgmFieldGroupCreate(self._handle, 1, fids, b"h2o4gpu_mig_gract",
+                                         _ct.byref(field_group)) != _DCGM_ST_OK:
+                self.close()
+                return False
+            group = c_uint64(0)
+            if dcgm.dcgmGroupCreate(self._handle, _DCGM_GROUP_DEFAULT_INSTANCES, b"h2o4gpu_mig",
+                                    _ct.byref(group)) != _DCGM_ST_OK:
+                self.close()
+                return False
+            # 100ms updates; groups/watches auto-clean on dcgmDisconnect (persist=0).
+            if dcgm.dcgmWatchFields(self._handle, group, field_group,
+                                    100000, 5.0, 100) != _DCGM_ST_OK:
+                self.close()
+                return False
+            dcgm.dcgmUpdateAllFields(self._handle, 1)
+            return True
+        except Exception:
+            self.close()
+            return False
 
-            fids = (ctypes.c_ushort * 1)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)
-            field_group = ctypes.c_uint64(0)
-            if dcgm.dcgmFieldGroupCreate(handle, 1, fids, b"h2o4gpu_mig_gract",
-                                         ctypes.byref(field_group)) != DCGM_ST_OK:
-                return {}
-            group = ctypes.c_uint64(0)
-            if dcgm.dcgmGroupCreate(handle, DCGM_GROUP_DEFAULT_INSTANCES, b"h2o4gpu_mig",
-                                    ctypes.byref(group)) != DCGM_ST_OK:
-                return {}
-            # 100ms updates; keep a few seconds of samples. Watches/groups are cleaned
-            # up automatically on dcgmDisconnect (persistAfterDisconnect=0).
-            if dcgm.dcgmWatchFields(handle, group, field_group,
-                                    100000, 5.0, 100) != DCGM_ST_OK:
-                return {}
-            dcgm.dcgmUpdateAllFields(handle, 1)
-            time.sleep(0.3)                       # let the profiling module post a sample
-
-            ids = sorted(entity_to_key)
+    def sample(self):
+        """{(physical_index, gi): util%} from a fresh read of the watched GR_ENGINE_ACTIVE."""
+        if not self._connected or not self.entity_to_key:
+            return {}
+        from ctypes import c_ushort
+        dcgm = self._dcgm
+        try:
+            dcgm.dcgmUpdateAllFields(self._handle, 1)
+            ids = sorted(self.entity_to_key)
             n = len(ids)
-            entities = (_EntityPair * n)(*[_EntityPair(DCGM_FE_GPU_I, i) for i in ids])
-            fields = (ctypes.c_ushort * 1)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)
-            values = (_FieldValue * n)()
+            entities = (_DcgmEntityPair * n)(*[_DcgmEntityPair(_DCGM_FE_GPU_I, i) for i in ids])
+            fields = (c_ushort * 1)(_DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            values = (_DcgmFieldValue * n)()
             for v in values:
-                v.version = _ver(_FieldValue, 2)
-            rc = dcgm.dcgmEntitiesGetLatestValues(handle, entities, n, fields, 1, 0, values)
-            if rc != DCGM_ST_OK:
+                v.version = _dcgm_ver(_DcgmFieldValue, 2)
+            if dcgm.dcgmEntitiesGetLatestValues(self._handle, entities, n, fields,
+                                                1, 0, values) != _DCGM_ST_OK:
                 return {}
+        except Exception:
+            return {}
+        out = {}
+        for j in range(n):
+            v = values[j]
+            if v.status != _DCGM_ST_OK:
+                continue
+            key = self.entity_to_key.get(int(v.entityId))
+            if key is None:
+                continue
+            frac = v.value.dbl                    # GR_ENGINE_ACTIVE is a 0.0..1.0 ratio
+            if frac != frac or frac < 0:          # NaN / blank sample -> treat as 0
+                frac = 0.0
+            out[key] = int(round(min(1.0, frac) * 100))
+        return out
 
-            out: Dict[Tuple[int, int], int] = {}
-            for j in range(n):
-                v = values[j]
-                if v.status != DCGM_ST_OK:
-                    continue
-                key = entity_to_key.get(int(v.entityId))
-                if key is None:
-                    continue
-                frac = v.value.dbl                # GR_ENGINE_ACTIVE is a 0.0..1.0 ratio
-                if frac != frac or frac < 0:      # NaN / blank sample -> treat as 0
-                    frac = 0.0
-                out[key] = int(round(min(1.0, frac) * 100))
-            return out
-        finally:
-            dcgm.dcgmDisconnect(handle)
+    def close(self):
+        dcgm = self._dcgm
+        if dcgm is None:
+            return
+        if self._connected:
+            try:
+                dcgm.dcgmDisconnect(self._handle)
+            except Exception:
+                pass
+            self._connected = False
+        try:
+            dcgm.dcgmShutdown()
+        except Exception:
+            pass
+        self._dcgm = None
+
+
+def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
+    import time
+    session = _DcgmMigSession()
+    if not session.open():
+        return {}
+    try:
+        time.sleep(0.3)                           # let the profiling module post a sample
+        return session.sample()
     finally:
-        dcgm.dcgmShutdown()
+        session.close()
+
+
+# ---------------------------------------------------------------------------
+# gpu_utilization_watch() — persistent, low-overhead sampler
+# ---------------------------------------------------------------------------
+
+def _physical_utilization() -> Dict[int, int]:
+    """{physical_index: util%} for physical GPUs (NVML, via get_gpu_info_c)."""
+    raw = get_gpu_info_c(return_usage=True)
+    if not raw or raw[0] == 0:
+        return {}
+    usages = raw[1]
+    return {i: int(usages[i]) for i in range(raw[0])}
+
+
+def _physical_utilization_by_pid() -> Dict[int, List[Tuple[int, int]]]:
+    """{physical_index: [(pid, util%), ...]} for physical GPUs (via get_gpu_info_c)."""
+    raw = get_gpu_info_c(return_usage_by_pid=True)
+    if not raw or raw[0] == 0:
+        return {}
+    count, num, pids, used = raw[0], raw[1], raw[2], raw[3]
+    out: Dict[int, List[Tuple[int, int]]] = {}
+    for i in range(count):
+        m = int(num[i])
+        out[i] = [(int(pids[i, k]), int(used[i, k])) for k in range(m)]
+    return out
+
+
+class UtilSampler:
+    """
+    Repeated GPU-utilization sampler over the slot table.
+    """
+
+    def __init__(self, slots, requested, uuid_to_key, dcgm_session):
+        self._by_index = {s.slot_index: s for s in slots}
+        self._requested = [i for i in requested if i in self._by_index]
+        self._uuid_to_key = uuid_to_key           # MIG uuid -> (physical_index, gi)
+        self._dcgm = dcgm_session
+
+    def sample(self) -> Dict[int, int]:
+        """{slot_index: util%} for the requested slots."""
+        want = [self._by_index[i] for i in self._requested]
+        need_mig = any(s.kind == "mig" for s in want)
+        need_phys = any(s.kind == "physical" for s in want)
+        mig_util = self._dcgm.sample() if (need_mig and self._dcgm is not None) else {}
+        phys_util = _physical_utilization() if need_phys else {}
+        out: Dict[int, int] = {}
+        for s in want:
+            if s.kind == "mig":
+                key = self._uuid_to_key.get(s.cuda_token)
+                out[s.slot_index] = int(mig_util.get(key, 0)) if key is not None else 0
+            else:
+                out[s.slot_index] = int(phys_util.get(s.physical_index, 0))
+        return out
+
+    def sample_by_pid(self) -> Dict[int, List[Tuple[int, int]]]:
+        """{slot_index: [(pid, util%), ...]}.
+
+        Physical slots report per-process usage (via NVML). MIG slots report ``[]``:
+        GR_ENGINE_ACTIVE is per-GPU-instance, not per-process, so per-MIG per-pid
+        utilization needs DCGM process accounting (deferred).
+        """
+        want = [self._by_index[i] for i in self._requested]
+        phys_pid = (_physical_utilization_by_pid()
+                    if any(s.kind == "physical" for s in want) else {})
+        out: Dict[int, List[Tuple[int, int]]] = {}
+        for s in want:
+            out[s.slot_index] = (phys_pid.get(s.physical_index, [])
+                                 if s.kind == "physical" else [])
+        return out
+
+
+@contextmanager
+def gpu_utilization_watch(slot_indices=None):
+    """
+    Yield a :class:`UtilSampler` for repeated, low-overhead sampling.
+    """
+    slots = get_gpu_slots(with_usage=False)
+    by_index = {s.slot_index: s for s in slots}
+    requested = ([s.slot_index for s in slots] if slot_indices is None
+                 else [i for i in slot_indices if i in by_index])
+    uuid_to_key = {m["uuid"]: (phys, m["gi"])
+                   for phys, migs in _mig_instances_by_physical().items() for m in migs}
+    need_mig = any(by_index[i].kind == "mig" for i in requested)
+    session = None
+    if need_mig:
+        session = _DcgmMigSession()
+        if not session.open():
+            session = None
+    try:
+        yield UtilSampler(slots, requested, uuid_to_key, session)
+    finally:
+        if session is not None:
+            session.close()
 
 
 #############################
