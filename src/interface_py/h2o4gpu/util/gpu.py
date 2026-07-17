@@ -513,31 +513,62 @@ def get_gpu_info(return_usage=False, trials=2, timeout=30, print_trials=False):
     return (total_gpus, total_mem, gpu_type)
 
 
-def cuda_vis_check(total_gpus):
-    """Helper function to count GPUs by environment variable
+def _cuda_vis_check_physical(total_gpus):
+    """Physical-device visibility filter used by get_gpu_info_c (integer CVD tokens).
+
+    MIG-<uuid> tokens are ignored here (they are not physical device indices); if
+    CUDA_VISIBLE_DEVICES is all-MIG, every physical device stays visible so NVML can
+    still enumerate the parent(s) for MIG expansion.
     """
     cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
-    which_gpus = []
-    if cudavis is not None:
-        # prune away white-space, non-numerics,
-        # except commas for simple checking
-        cudavis = "".join(cudavis.split())
-        import re
-        cudavis = re.sub("[^0-9,]", "", cudavis)
+    if cudavis is None:
+        return total_gpus, list(range(total_gpus))
+    tokens = [t for t in "".join(cudavis.split()).split(",") if t]
+    if not tokens:                       # CUDA_VISIBLE_DEVICES="" -> nothing visible
+        return 0, []
+    int_tokens = [int(t) for t in tokens if t.lstrip("+-").isdigit()]
+    if not int_tokens:                   # all MIG-<uuid> tokens -> keep parents visible
+        return total_gpus, list(range(total_gpus))
+    return min(total_gpus, len(int_tokens)), int_tokens
 
-        lencudavis = len(cudavis)
-        if lencudavis == 0:
-            total_gpus = 0
-        else:
-            total_gpus = min(
-                total_gpus,
-                os.getenv("CUDA_VISIBLE_DEVICES").count(",") + 1)
-            which_gpus = os.getenv("CUDA_VISIBLE_DEVICES").split(",")
-            which_gpus = [int(x) for x in which_gpus]
-    else:
-        which_gpus = list(range(0, total_gpus))
 
-    return total_gpus, which_gpus
+# ---------------------------------------------------------------------------
+# slot count + cuda tokens + MIG-aware visibility (over the slot table)
+# ---------------------------------------------------------------------------
+
+def num_gpu_slots():
+    """Total GPU slots (physical GPUs + MIG instances) — DAI's ngpus_vis."""
+    return len(get_gpu_slots(with_usage=False))
+
+
+def cuda_token(slot_index):
+    """CUDA_VISIBLE_DEVICES token for one slot: "<i>" (physical) or "MIG-<uuid>" (mig)."""
+    return get_gpu_slots(with_usage=False)[slot_index].cuda_token
+
+
+def cuda_tokens(slot_indices):
+    """Comma-joined CUDA_VISIBLE_DEVICES string for the given slot indices."""
+    slots = get_gpu_slots(with_usage=False)
+    return ",".join(slots[i].cuda_token for i in slot_indices)
+
+
+def cuda_vis_check(total_slots=None):
+    """MIG-aware slot visibility per CUDA_VISIBLE_DEVICES.
+
+    Returns ``(count, [slot_index, ...])`` for the slots CVD exposes, honoring both
+    integer tokens (physical slots) and ``MIG-<uuid>`` tokens, matched against each
+    slot's ``cuda_token``.  When CVD is unset, all slots are visible.  ``total_slots``
+    is accepted for signature compatibility; the slot table is the source of truth.
+    """
+    slots = get_gpu_slots(with_usage=False)
+    token_to_index = {s.cuda_token: s.slot_index for s in slots}
+    cudavis = os.getenv("CUDA_VISIBLE_DEVICES")
+    if cudavis is None:
+        idxs = [s.slot_index for s in slots]
+        return len(idxs), idxs
+    tokens = [t for t in "".join(cudavis.split()).split(",") if t]
+    idxs = [token_to_index[t] for t in tokens if t in token_to_index]
+    return len(idxs), idxs
 
 
 def get_gpu_info_subprocess(return_usage=False):
@@ -557,7 +588,7 @@ def get_gpu_info_subprocess(return_usage=False):
         total_gpus_actual = py3nvml.py3nvml.nvmlDeviceGetCount()
 
         # the below restricts but doesn't select
-        total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
+        total_gpus, which_gpus = _cuda_vis_check_physical(total_gpus_actual)
 
         total_mem = \
             min([py3nvml.py3nvml.nvmlDeviceGetMemoryInfo(
@@ -649,7 +680,7 @@ def get_gpu_info_c(return_memory=False,
             return None
 
         # This will drop the GPU count, but the returned usage
-        total_gpus, which_gpus = cuda_vis_check(total_gpus_actual)
+        total_gpus, which_gpus = _cuda_vis_check_physical(total_gpus_actual)
 
         # Strip the trailing NULL and whitespaces from C backend
         gpu_types_tmp = [g_type.strip().replace("\x00", "")
