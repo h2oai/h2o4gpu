@@ -4,8 +4,8 @@
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 import os
-from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from dataclasses import dataclass, replace
+from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 
@@ -173,7 +173,139 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
             procs=procs_i,
         ))
 
-    return slots
+    # Task A2: expand any MIG-enabled physical GPU in place into its MIG instances.
+    return _expand_mig_slots(slots)
+
+
+def _expand_mig_slots(physical_slots: List[GpuSlot]) -> List[GpuSlot]:
+    """Splice MIG instances into the slot table (Task A2).
+
+    For each physical GPU with MIG enabled, replace its single physical slot with one
+    slot per MIG instance (ordered by ``(gpu_instance_id, compute_instance_id)``);
+    non-MIG GPUs pass through unchanged.  ``slot_index`` is re-numbered contiguously
+    over the whole (physical + MIG) table so it stays a valid lock key.
+
+    When NVML is unavailable or no GPU has MIG on, ``mig_by_phys`` is empty and the
+    original physical list is returned untouched — so non-MIG hosts (and the mocked
+    A1 projection tests) are unaffected.
+    """
+    mig_by_phys = _mig_instances_by_physical()
+    if not mig_by_phys:
+        return physical_slots
+
+    expanded: List[GpuSlot] = []
+    for slot in physical_slots:
+        migs = mig_by_phys.get(slot.physical_index)
+        if not migs:
+            expanded.append(slot)          # plain GPU — unchanged, still groupable
+            continue
+        for m in migs:                     # already sorted by (gi, ci)
+            expanded.append(GpuSlot(
+                slot_index=-1,             # re-numbered below
+                cuda_token=m["uuid"],      # "MIG-<uuid>"
+                kind="mig",
+                groupable=False,           # a MIG slice is granted alone
+                name=m["name"],
+                compute_capability=m["cc"],
+                mem_total=m["mem_total"],
+                mem_used=m["mem_total"] - m["mem_free"],
+                mem_free=m["mem_free"],
+                utilization=0,             # A3 fills per-MIG util (GPM on Hopper+, DCGM on Ampere)
+                physical_index=slot.physical_index,
+                procs=None,
+            ))
+
+    return [replace(s, slot_index=i) for i, s in enumerate(expanded)]
+
+
+def _mig_instances_by_physical() -> Dict[int, List[dict]]:
+    """Enumerate MIG instances per physical GPU via the driver's NVML (ctypes).
+
+    Returns ``{physical_index: [mig_dict, ...]}`` sorted by ``(gi, ci)``; empty dict
+    when NVML can't load, MIG is off everywhere, or anything goes wrong (fail soft).
+
+    Uses ``libnvidia-ml.so.1`` directly — it's always present with the driver and has
+    the MIG API — so this needs no Python NVML package (the bundled ``py3nvml`` predates
+    MIG).  Per-MIG utilization is NOT read here; A2 is enumeration only.
+    """
+    import ctypes
+
+    class _Mem(ctypes.Structure):
+        _fields_ = [("total", ctypes.c_ulonglong),
+                    ("free", ctypes.c_ulonglong),
+                    ("used", ctypes.c_ulonglong)]
+
+    NVML_SUCCESS = 0
+    NVML_ERROR_NOT_FOUND = 6
+    NVML_DEVICE_MIG_ENABLE = 1
+
+    try:
+        nvml = ctypes.CDLL("libnvidia-ml.so.1")
+    except OSError:
+        return {}
+
+    def _u32():
+        return ctypes.c_uint(0)
+
+    result: Dict[int, List[dict]] = {}
+    if nvml.nvmlInit_v2() != NVML_SUCCESS:
+        return {}
+    try:
+        n = _u32()
+        if nvml.nvmlDeviceGetCount_v2(ctypes.byref(n)) != NVML_SUCCESS:
+            return {}
+        for phys in range(n.value):
+            dev = ctypes.c_void_p()
+            if nvml.nvmlDeviceGetHandleByIndex_v2(phys, ctypes.byref(dev)) != NVML_SUCCESS:
+                continue
+            cur, pend = _u32(), _u32()
+            if nvml.nvmlDeviceGetMigMode(dev, ctypes.byref(cur), ctypes.byref(pend)) != NVML_SUCCESS:
+                continue
+            if cur.value != NVML_DEVICE_MIG_ENABLE:
+                continue
+
+            maj, minr = ctypes.c_int(0), ctypes.c_int(0)   # MIG instances inherit parent CC
+            nvml.nvmlDeviceGetCudaComputeCapability(dev, ctypes.byref(maj), ctypes.byref(minr))
+
+            maxc = _u32()
+            if nvml.nvmlDeviceGetMaxMigDeviceCount(dev, ctypes.byref(maxc)) != NVML_SUCCESS:
+                continue
+
+            migs: List[dict] = []
+            for idx in range(maxc.value):
+                mdev = ctypes.c_void_p()
+                rv = nvml.nvmlDeviceGetMigDeviceHandleByIndex(dev, idx, ctypes.byref(mdev))
+                if rv == NVML_ERROR_NOT_FOUND:
+                    continue                      # sparse index — no instance here
+                if rv != NVML_SUCCESS:
+                    continue
+
+                uuid_buf = ctypes.create_string_buffer(96)
+                nvml.nvmlDeviceGetUUID(mdev, uuid_buf, 96)      # "MIG-<uuid>"
+                name_buf = ctypes.create_string_buffer(96)
+                nvml.nvmlDeviceGetName(mdev, name_buf, 96)
+                mem = _Mem()
+                nvml.nvmlDeviceGetMemoryInfo(mdev, ctypes.byref(mem))
+                gi, ci = _u32(), _u32()
+                nvml.nvmlDeviceGetGpuInstanceId(mdev, ctypes.byref(gi))
+                nvml.nvmlDeviceGetComputeInstanceId(mdev, ctypes.byref(ci))
+
+                migs.append({
+                    "uuid": uuid_buf.value.decode("utf-8", "replace"),
+                    "name": name_buf.value.decode("utf-8", "replace"),
+                    "mem_total": int(mem.total),
+                    "mem_free": int(mem.free),
+                    "cc": (int(maj.value), int(minr.value)),
+                    "gi": int(gi.value),
+                    "ci": int(ci.value),
+                })
+
+            if migs:
+                migs.sort(key=lambda m: (m["gi"], m["ci"]))
+                result[phys] = migs
+    finally:
+        nvml.nvmlShutdown()
+    return result
 
 
 #############################
