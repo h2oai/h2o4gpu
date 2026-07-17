@@ -23,11 +23,8 @@ class ProcInfo:
 
 @dataclass(frozen=True)
 class GpuSlot:
-    """Unified, ordered descriptor for one GPU slot (physical GPU or MIG instance).
-
-    For Task A1 this is always a physical GPU: kind="physical", groupable=True,
-    cuda_token=str(physical_index).  MIG expansion (A2) will splice in kind="mig"
-    entries in place during the per-physical-GPU device loop.
+    """
+    Unified, ordered descriptor for one GPU slot (physical GPU or MIG instance).
     """
     slot_index: int                    # 0..N-1 — identity / AcquireGPUs lock key
     cuda_token: str                    # CUDA_VISIBLE_DEVICES value: "i" (physical) or "MIG-<uuid>" (mig)
@@ -44,11 +41,8 @@ class GpuSlot:
 
 
 def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[GpuSlot]:
-    """Return one GpuSlot per visible GPU (physical devices only for Task A1).
-
-    Calls get_gpu_info_c with all needed flags set, then projects each device
-    index i into a GpuSlot.  Returns [] when NVML is unavailable or no GPUs
-    are present (get_gpu_info_c returns None or count==0).
+    """
+    Return one GpuSlot per visible GPU.
 
     Tuple shape from get_gpu_info_c when called with the flags below:
         [0]  count                          (int)
@@ -173,44 +167,40 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
             procs=procs_i,
         ))
 
-    # Task A2: expand any MIG-enabled physical GPU in place into its MIG instances.
-    return _expand_mig_slots(slots)
+    # Task A2/A3: expand MIG-enabled GPUs into per-instance slots (util filled in A3).
+    return _expand_mig_slots(slots, with_usage=with_usage)
 
 
-def _expand_mig_slots(physical_slots: List[GpuSlot]) -> List[GpuSlot]:
-    """Splice MIG instances into the slot table (Task A2).
-
-    For each physical GPU with MIG enabled, replace its single physical slot with one
-    slot per MIG instance (ordered by ``(gpu_instance_id, compute_instance_id)``);
-    non-MIG GPUs pass through unchanged.  ``slot_index`` is re-numbered contiguously
-    over the whole (physical + MIG) table so it stays a valid lock key.
-
-    When NVML is unavailable or no GPU has MIG on, ``mig_by_phys`` is empty and the
-    original physical list is returned untouched — so non-MIG hosts (and the mocked
-    A1 projection tests) are unaffected.
+def _expand_mig_slots(physical_slots: List[GpuSlot],
+                      with_usage: bool = True) -> List[GpuSlot]:
+    """
+    Splice MIG instances into the slot table with per-MIG util.
     """
     mig_by_phys = _mig_instances_by_physical()
     if not mig_by_phys:
         return physical_slots
 
+    util_by_gi = _mig_utilization(mig_by_phys) if with_usage else {}
+
     expanded: List[GpuSlot] = []
     for slot in physical_slots:
         migs = mig_by_phys.get(slot.physical_index)
         if not migs:
-            expanded.append(slot)          # plain GPU — unchanged, still groupable
+            expanded.append(slot)          
             continue
-        for m in migs:                     # already sorted by (gi, ci)
+        for m in migs:                     
+            util = int(util_by_gi.get((slot.physical_index, m["gi"]), 0))
             expanded.append(GpuSlot(
-                slot_index=-1,             # re-numbered below
-                cuda_token=m["uuid"],      # "MIG-<uuid>"
+                slot_index=-1,             
+                cuda_token=m["uuid"],    
                 kind="mig",
-                groupable=False,           # a MIG slice is granted alone
+                groupable=False,          
                 name=m["name"],
                 compute_capability=m["cc"],
                 mem_total=m["mem_total"],
                 mem_used=m["mem_total"] - m["mem_free"],
                 mem_free=m["mem_free"],
-                utilization=0,             # A3 fills per-MIG util (GPM on Hopper+, DCGM on Ampere)
+                utilization=util,       
                 physical_index=slot.physical_index,
                 procs=None,
             ))
@@ -223,10 +213,6 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
 
     Returns ``{physical_index: [mig_dict, ...]}`` sorted by ``(gi, ci)``; empty dict
     when NVML can't load, MIG is off everywhere, or anything goes wrong (fail soft).
-
-    Uses ``libnvidia-ml.so.1`` directly — it's always present with the driver and has
-    the MIG API — so this needs no Python NVML package (the bundled ``py3nvml`` predates
-    MIG).  Per-MIG utilization is NOT read here; A2 is enumeration only.
     """
     import ctypes
 
@@ -306,6 +292,133 @@ def _mig_instances_by_physical() -> Dict[int, List[dict]]:
     finally:
         nvml.nvmlShutdown()
     return result
+
+
+def _mig_utilization(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
+    """
+    Per-MIG utilization keyed by ``(physical_index, gpu_instance_id)``.
+    """
+    # TODO(B200): if nvmlGpmQueryDeviceSupport() is True for a MIG parent, use NVML GPM
+    #             for that GPU instead of DCGM. Until B200 hardware is available we take
+    #             the DCGM (Ampere) branch for every MIG-enabled GPU.
+    return _mig_utilization_dcgm(mig_by_phys)
+
+
+def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
+    """
+    DCGM branch of A3: read ``DCGM_FI_PROF_GR_ENGINE_ACTIVE`` per MIG GPU-instance.
+    """
+    import ctypes
+    import glob
+
+    DCGM_ST_OK = 0
+    DCGM_FE_GPU_I = 4                       # dcgm_field_entity_group_t
+    DCGM_FI_PROF_GR_ENGINE_ACTIVE = 1001
+    DCGM_FV_FLAG_LIVE_DATA = 0x00000001
+    DCGM_MAX_BLOB_LENGTH = 4096
+    DCGM_MAX_HIERARCHY_INFO = 32 * 14       # DCGM_MAX_NUM_DEVICES * DCGM_MAX_TOTAL_INSTANCES_PER_GPU
+
+    def _ver(struct_type, v):
+        return ctypes.sizeof(struct_type) | (v << 24)   # MAKE_DCGM_VERSION
+
+    class _ConnectParams(ctypes.Structure):
+        _fields_ = [("version", ctypes.c_uint), ("persistAfterDisconnect", ctypes.c_uint),
+                    ("timeoutMs", ctypes.c_uint), ("addressIsUnixSocket", ctypes.c_uint)]
+
+    class _EntityPair(ctypes.Structure):
+        _fields_ = [("entityGroupId", ctypes.c_int), ("entityId", ctypes.c_uint)]
+
+    class _FVUnion(ctypes.Union):
+        _fields_ = [("i64", ctypes.c_int64), ("dbl", ctypes.c_double),
+                    ("blob", ctypes.c_char * DCGM_MAX_BLOB_LENGTH)]
+
+    class _FieldValue(ctypes.Structure):
+        _fields_ = [("version", ctypes.c_uint), ("entityGroupId", ctypes.c_int),
+                    ("entityId", ctypes.c_uint), ("fieldId", ctypes.c_ushort),
+                    ("fieldType", ctypes.c_ushort), ("status", ctypes.c_int),
+                    ("unused", ctypes.c_uint), ("ts", ctypes.c_int64), ("value", _FVUnion)]
+
+    class _MigEntityInfo(ctypes.Structure):
+        _fields_ = [("gpuUuid", ctypes.c_char * 128), ("nvmlGpuIndex", ctypes.c_uint),
+                    ("nvmlInstanceId", ctypes.c_uint), ("nvmlComputeInstanceId", ctypes.c_uint),
+                    ("nvmlMigProfileId", ctypes.c_uint), ("nvmlProfileSlices", ctypes.c_uint)]
+
+    class _MigHierInfo(ctypes.Structure):
+        _fields_ = [("entity", _EntityPair), ("parent", _EntityPair), ("info", _MigEntityInfo)]
+
+    class _MigHierarchy(ctypes.Structure):
+        _fields_ = [("version", ctypes.c_uint), ("count", ctypes.c_uint),
+                    ("entityList", _MigHierInfo * DCGM_MAX_HIERARCHY_INFO)]
+
+    # bundled libdcgm.so.4.5.3 first (design intent); fall back to a host libdcgm.so.4
+    libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
+    candidates = sorted(glob.glob(os.path.join(libdir, "libdcgm.so*"))) + ["libdcgm.so.4"]
+    dcgm = None
+    for cand in candidates:
+        try:
+            dcgm = ctypes.CDLL(cand)
+            break
+        except OSError:
+            continue
+    if dcgm is None:
+        return {}
+
+    # dcgmHandle_t is uintptr_t; keep it a 64-bit ctypes value so it is never truncated.
+    handle = ctypes.c_uint64(0)
+    address = os.environ.get("H2O4GPU_DCGM_DAEMON_ADDRESS", "127.0.0.1").encode("ascii")
+
+    if dcgm.dcgmInit() != DCGM_ST_OK:
+        return {}
+    try:
+        params = _ConnectParams(version=_ver(_ConnectParams, 2), persistAfterDisconnect=0,
+                                timeoutMs=5000, addressIsUnixSocket=0)
+        if dcgm.dcgmConnect_v2(address, ctypes.byref(params), ctypes.byref(handle)) != DCGM_ST_OK:
+            return {}
+        try:
+            # (1) map DCGM GPU_I entityId -> (nvmlGpuIndex, nvmlInstanceId=NVML GI id)
+            hier = _MigHierarchy(version=_ver(_MigHierarchy, 2))
+            if dcgm.dcgmGetGpuInstanceHierarchy(handle, ctypes.byref(hier)) != DCGM_ST_OK:
+                return {}
+            entity_to_key: Dict[int, Tuple[int, int]] = {}
+            for k in range(hier.count):
+                e = hier.entityList[k]
+                if e.entity.entityGroupId == DCGM_FE_GPU_I:
+                    entity_to_key[int(e.entity.entityId)] = (int(e.info.nvmlGpuIndex),
+                                                             int(e.info.nvmlInstanceId))
+            if not entity_to_key:
+                return {}
+
+            # (2) fetch GR_ENGINE_ACTIVE (live) for those GPU_I entities
+            ids = sorted(entity_to_key)
+            n = len(ids)
+            entities = (_EntityPair * n)(*[_EntityPair(DCGM_FE_GPU_I, i) for i in ids])
+            fields = (ctypes.c_ushort * 1)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            values = (_FieldValue * n)()
+            for v in values:
+                v.version = _ver(_FieldValue, 2)
+            rc = dcgm.dcgmEntitiesGetLatestValues(handle, entities, ctypes.c_uint(n),
+                                                  fields, ctypes.c_uint(1),
+                                                  ctypes.c_uint(DCGM_FV_FLAG_LIVE_DATA), values)
+            if rc != DCGM_ST_OK:
+                return {}
+
+            out: Dict[Tuple[int, int], int] = {}
+            for j in range(n):
+                v = values[j]
+                if v.status != DCGM_ST_OK:
+                    continue
+                key = entity_to_key.get(int(v.entityId))
+                if key is None:
+                    continue
+                frac = v.value.dbl                # GR_ENGINE_ACTIVE is a 0.0..1.0 ratio
+                if frac != frac or frac < 0:      # NaN / blank sample -> treat as 0
+                    frac = 0.0
+                out[key] = int(round(min(1.0, frac) * 100))
+            return out
+        finally:
+            dcgm.dcgmDisconnect(handle)
+    finally:
+        dcgm.dcgmShutdown()
 
 
 #############################
