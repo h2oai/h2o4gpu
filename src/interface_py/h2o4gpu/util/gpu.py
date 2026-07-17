@@ -10,7 +10,7 @@ import numpy as np
 
 
 # ---------------------------------------------------------------------------
-# GPU Slot model (Task A1 — physical-GPU projection; MIG expansion in A2)
+# GPU Slot model
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -132,7 +132,6 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
         if with_procs and num_pids_mem is not None:
             n_mem = int(num_pids_mem[i])
             n_use = int(num_pids_usage[i])
-            # Build a merged dict keyed by pid; usage defaults 0 if not in usage list
             pid_mem_map = {}
             for k in range(n_mem):
                 pid = int(pids_mem[i, k])
@@ -167,7 +166,6 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
             procs=procs_i,
         ))
 
-    # Task A2/A3: expand MIG-enabled GPUs into per-instance slots (util filled in A3).
     return _expand_mig_slots(slots, with_usage=with_usage)
 
 
@@ -305,16 +303,14 @@ def _mig_utilization(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int]
 
 
 def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int, int], int]:
-    """
-    DCGM branch of A3: read ``DCGM_FI_PROF_GR_ENGINE_ACTIVE`` per MIG GPU-instance.
-    """
     import ctypes
     import glob
+    import time
 
     DCGM_ST_OK = 0
     DCGM_FE_GPU_I = 4                       # dcgm_field_entity_group_t
     DCGM_FI_PROF_GR_ENGINE_ACTIVE = 1001
-    DCGM_FV_FLAG_LIVE_DATA = 0x00000001
+    DCGM_GROUP_DEFAULT_INSTANCES = 3        # dcgmGroupType_t: all GPU instances
     DCGM_MAX_BLOB_LENGTH = 4096
     DCGM_MAX_HIERARCHY_INFO = 32 * 14       # DCGM_MAX_NUM_DEVICES * DCGM_MAX_TOTAL_INSTANCES_PER_GPU
 
@@ -350,7 +346,6 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
         _fields_ = [("version", ctypes.c_uint), ("count", ctypes.c_uint),
                     ("entityList", _MigHierInfo * DCGM_MAX_HIERARCHY_INFO)]
 
-    # bundled libdcgm.so.4.5.3 first (design intent); fall back to a host libdcgm.so.4
     libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib")
     candidates = sorted(glob.glob(os.path.join(libdir, "libdcgm.so*"))) + ["libdcgm.so.4"]
     dcgm = None
@@ -363,7 +358,19 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
     if dcgm is None:
         return {}
 
-    # dcgmHandle_t is uintptr_t; keep it a 64-bit ctypes value so it is never truncated.
+    from ctypes import (c_int, c_uint, c_uint64, c_longlong, c_double, c_ushort,
+                        c_char_p, POINTER)
+    dcgm.dcgmConnect_v2.argtypes = [c_char_p, POINTER(_ConnectParams), POINTER(c_uint64)]
+    dcgm.dcgmGetGpuInstanceHierarchy.argtypes = [c_uint64, POINTER(_MigHierarchy)]
+    dcgm.dcgmFieldGroupCreate.argtypes = [c_uint64, c_int, POINTER(c_ushort), c_char_p,
+                                          POINTER(c_uint64)]
+    dcgm.dcgmGroupCreate.argtypes = [c_uint64, c_int, c_char_p, POINTER(c_uint64)]
+    dcgm.dcgmWatchFields.argtypes = [c_uint64, c_uint64, c_uint64, c_longlong, c_double, c_int]
+    dcgm.dcgmUpdateAllFields.argtypes = [c_uint64, c_int]
+    dcgm.dcgmEntitiesGetLatestValues.argtypes = [c_uint64, POINTER(_EntityPair), c_uint,
+                                                 POINTER(c_ushort), c_uint, c_uint,
+                                                 POINTER(_FieldValue)]
+
     handle = ctypes.c_uint64(0)
     address = os.environ.get("H2O4GPU_DCGM_DAEMON_ADDRESS", "127.0.0.1").encode("ascii")
 
@@ -375,7 +382,6 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
         if dcgm.dcgmConnect_v2(address, ctypes.byref(params), ctypes.byref(handle)) != DCGM_ST_OK:
             return {}
         try:
-            # (1) map DCGM GPU_I entityId -> (nvmlGpuIndex, nvmlInstanceId=NVML GI id)
             hier = _MigHierarchy(version=_ver(_MigHierarchy, 2))
             if dcgm.dcgmGetGpuInstanceHierarchy(handle, ctypes.byref(hier)) != DCGM_ST_OK:
                 return {}
@@ -388,7 +394,23 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
             if not entity_to_key:
                 return {}
 
-            # (2) fetch GR_ENGINE_ACTIVE (live) for those GPU_I entities
+            fids = (ctypes.c_ushort * 1)(DCGM_FI_PROF_GR_ENGINE_ACTIVE)
+            field_group = ctypes.c_uint64(0)
+            if dcgm.dcgmFieldGroupCreate(handle, 1, fids, b"h2o4gpu_mig_gract",
+                                         ctypes.byref(field_group)) != DCGM_ST_OK:
+                return {}
+            group = ctypes.c_uint64(0)
+            if dcgm.dcgmGroupCreate(handle, DCGM_GROUP_DEFAULT_INSTANCES, b"h2o4gpu_mig",
+                                    ctypes.byref(group)) != DCGM_ST_OK:
+                return {}
+            # 100ms updates; keep a few seconds of samples. Watches/groups are cleaned
+            # up automatically on dcgmDisconnect (persistAfterDisconnect=0).
+            if dcgm.dcgmWatchFields(handle, group, field_group,
+                                    100000, 5.0, 100) != DCGM_ST_OK:
+                return {}
+            dcgm.dcgmUpdateAllFields(handle, 1)
+            time.sleep(0.3)                       # let the profiling module post a sample
+
             ids = sorted(entity_to_key)
             n = len(ids)
             entities = (_EntityPair * n)(*[_EntityPair(DCGM_FE_GPU_I, i) for i in ids])
@@ -396,9 +418,7 @@ def _mig_utilization_dcgm(mig_by_phys: Dict[int, List[dict]]) -> Dict[Tuple[int,
             values = (_FieldValue * n)()
             for v in values:
                 v.version = _ver(_FieldValue, 2)
-            rc = dcgm.dcgmEntitiesGetLatestValues(handle, entities, ctypes.c_uint(n),
-                                                  fields, ctypes.c_uint(1),
-                                                  ctypes.c_uint(DCGM_FV_FLAG_LIVE_DATA), values)
+            rc = dcgm.dcgmEntitiesGetLatestValues(handle, entities, n, fields, 1, 0, values)
             if rc != DCGM_ST_OK:
                 return {}
 
