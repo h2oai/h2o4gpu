@@ -220,6 +220,7 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
                         usedGpuMemorys[pidi + i * max_pids]);
           }
           break;
+        case NVML_ERROR_NOT_FOUND:  // idle GPU: no running processes -> not fatal
         case NVML_ERROR_NOT_SUPPORTED:
           log_warn(verbose, "Failed to get device %d running processes: %s", i,
                    nvmlErrorString(rv));
@@ -267,6 +268,7 @@ int get_gpu_info_c(int verbose, int return_memory, int return_name,
                         usedGpuUsage[pidi + i * max_pids]);
           }
           break;
+        case NVML_ERROR_NOT_FOUND:  // idle GPU: no per-process samples -> not fatal
         case NVML_ERROR_NOT_SUPPORTED:
           num_pids_usage[i] = 0;
           pids_usage[i] = 0;

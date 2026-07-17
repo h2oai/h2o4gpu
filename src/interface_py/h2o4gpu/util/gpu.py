@@ -73,6 +73,19 @@ def get_gpu_slots(with_usage: bool = True, with_procs: bool = False) -> List[Gpu
         return_all=False,
     )
 
+    if raw is None and with_procs:
+        with_procs = False
+        raw = _get_gpu_info_c_physical(
+            return_memory=True,
+            return_name=True,
+            return_usage=with_usage,
+            return_free_memory=True,
+            return_capability=True,
+            return_memory_by_pid=False,
+            return_usage_by_pid=False,
+            return_all=False,
+        )
+
     if raw is None:
         return []
 

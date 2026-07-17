@@ -276,6 +276,24 @@ def test_projection_returns_empty_on_none():
     assert slots == []
 
 
+def test_projection_survives_procs_telemetry_failure():
+    """Enumeration must not depend on per-process telemetry: if the C call hard-fails
+    (returns None) when procs are requested — e.g. idle-GPU NVML_ERROR_NOT_FOUND from
+    nvmlDeviceGetProcessUtilization — get_gpu_slots retries without procs and still
+    returns the slots (procs=None) instead of collapsing to []."""
+    def _side_effect(**kw):
+        if kw.get("return_memory_by_pid") or kw.get("return_usage_by_pid"):
+            return None
+        return _make_synthetic_raw(n=2, with_usage=True, with_procs=False)
+
+    with patch("h2o4gpu.util.gpu._get_gpu_info_c_physical", side_effect=_side_effect):
+        slots = get_gpu_slots(with_usage=True, with_procs=True)
+
+    assert len(slots) == 2
+    assert all(s.kind == "physical" for s in slots)
+    assert all(s.procs is None for s in slots)   # degraded gracefully, still enumerated
+
+
 def test_projection_returns_empty_on_zero_count():
     """Projection: get_gpu_slots returns [] when count == 0."""
     raw = (0,)   # count only, no arrays
