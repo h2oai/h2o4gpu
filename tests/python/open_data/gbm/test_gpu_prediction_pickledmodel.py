@@ -60,10 +60,9 @@ class TestGPUPredict(object):
         res = {}
         param = {
             "objective": "binary:logistic",
-            "predictor": "gpu_predictor",
             'eval_metric': 'auc',
         }
-        param = self.set_n_gpus(param, n_gpus)
+        param = self.set_device(param, n_gpus)
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         assert self.non_decreasing(res["train"]["auc"])
@@ -77,7 +76,7 @@ class TestGPUPredict(object):
         print("A1 GPU Time to predict = %g" % (time.time() - tmp))
         print("A1 Before model.predict on CPU")
         sys.stdout.flush()
-        bst.set_param({"predictor": "cpu_predictor"})
+        bst.set_param({"device": "cpu"})
         tmp = time.time()
         cpu_pred = bst.predict(dm, output_margin=True)
         print(cpu_pred)
@@ -102,10 +101,9 @@ class TestGPUPredict(object):
         res = {}
         param = {
             "objective": "binary:logistic",
-            "predictor": "gpu_predictor",
             'eval_metric': 'auc',
         }
-        param = self.set_n_gpus(param, n_gpus)
+        param = self.set_device(param, n_gpus)
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
         print("Time to Train = %g" % (time.time() - tmp))
@@ -122,7 +120,7 @@ class TestGPUPredict(object):
         tmp = time.time()
         print("B1 Before model.predict on CPU")
         sys.stdout.flush()
-        bst.set_param({"predictor": "cpu_predictor"})
+        bst.set_param({"device": "cpu"})
         cpu_pred = bst.predict(dm_test, output_margin=True)
         print(cpu_pred)
         print("B2 non-zeroes: %d:" % (np.count_nonzero(cpu_pred)))
@@ -138,11 +136,9 @@ class TestGPUPredict(object):
         res = {}
         param = {
             "objective": "binary:logistic",
-            "predictor": "gpu_predictor",
             'eval_metric': 'auc',
-            'gpu_id': 0,
         }
-        param = self.set_n_gpus(param, n_gpus)
+        param = self.set_device(param, n_gpus)
 
         bst = xgb.train(param, dm, n_estimators,
                         evals=watchlist, evals_result=res)
@@ -166,7 +162,7 @@ class TestGPUPredict(object):
         print("C1 GPU Time to predict = %g" % (time.time() - tmp))
         print("C1 Before model.predict on CPU")
         sys.stdout.flush()
-        bst.set_param({"predictor": "cpu_predictor"})
+        bst.set_param({"device": "cpu"})
         tmp = time.time()
         cpu_pred = bst.predict(dm, output_margin=True)
         print(cpu_pred)
@@ -180,10 +176,9 @@ class TestGPUPredict(object):
 
         from xgboost import XGBClassifier
         kwargs = {}
-        kwargs['tree_method'] = 'gpu_hist'
-        kwargs['predictor'] = 'gpu_predictor'
+        kwargs['tree_method'] = 'hist'
         kwargs['objective'] = 'binary:logistic'
-        kwargs = self.set_n_gpus(kwargs, n_gpus)
+        kwargs = self.set_device(kwargs, n_gpus)
 
         model = XGBClassifier(n_estimators=n_estimators, **kwargs)
         model.fit(X, y)
@@ -209,10 +204,9 @@ class TestGPUPredict(object):
 
         from xgboost import XGBClassifier
         kwargs = {}
-        kwargs['tree_method'] = 'gpu_hist'
-        kwargs['predictor'] = 'gpu_predictor'
+        kwargs['tree_method'] = 'hist'
         kwargs['objective'] = 'binary:logistic'
-        kwargs = self.set_n_gpus(kwargs, n_gpus)
+        kwargs = self.set_device(kwargs, n_gpus)
 
         model = XGBClassifier(**kwargs)
         model.fit(X, y)
@@ -263,9 +257,10 @@ class TestGPUPredict(object):
     def non_decreasing(self, L):
         return all((x - y) < 0.001 for x, y in zip(L, L[1:]))
 
-    def set_n_gpus(self, params, n_gpus):
+    def set_device(self, params, n_gpus):
+        # XGBoost >= 2.0: n_gpus/gpu_id removed; select device instead.
         if n_gpus is not None:
-            params['n_gpus'] = n_gpus
+            params['device'] = 'cuda' if n_gpus else 'cpu'
         return params
 
 

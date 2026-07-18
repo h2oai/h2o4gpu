@@ -15,6 +15,26 @@ except pkg_resources.DistributionNotFound:
     CUDA_DASK_INSTALLED = False
 
 
+def _xgb_device_params(tree_method, predictor, device, n_gpus):
+    """Translate legacy XGBoost GPU params to the 2.x device API.
+
+    XGBoost >= 2.0 removed ``tree_method='gpu_hist'``/``'gpu_exact'`` and the
+    ``predictor`` parameter in favour of ``tree_method='hist'`` combined with
+    ``device='cuda'``/``'cpu'``. Passing the old ``gpu_hist`` value now selects
+    the GPU updater while leaving the device on CPU, which aborts at fit time
+    ("Must have at least one device"). Normalise here and return the
+    ``(tree_method, device)`` pair to forward to XGBoost.
+    """
+    if tree_method in ('gpu_hist', 'gpu_exact'):
+        tree_method = 'hist'
+    if device is None:
+        if predictor == 'cpu_predictor' or n_gpus < 1:
+            device = 'cpu'
+        else:
+            device = 'cuda'
+    return tree_method, device
+
+
 class RandomForestClassifier:
     """H2O RandomForestClassifier Solver
 
@@ -185,10 +205,14 @@ class RandomForestClassifier:
     n_gpus : int
         Number of gpu's to use in RandomForestClassifier solver. Default is -1.
 
-    predictor : string [default='gpu_predictor']
-        The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
-            - 'cpu_predictor': Multicore CPU prediction algorithm.
-            - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+    predictor : string, optional (deprecated)
+        Removed in XGBoost >= 2.0; retained for backward compatibility. Use
+        ``device`` instead. ``predictor='cpu_predictor'`` is honoured as
+        ``device='cpu'``.
+
+    device : string [default=None]
+        XGBoost compute device: 'cuda' or 'cpu'. When None it is auto-selected
+        ('cuda' when a GPU is available, else 'cpu').
 
     backend : string, (Default="auto")
         Which backend to use.
@@ -222,9 +246,10 @@ class RandomForestClassifier:
             colsample_bylevel=1.0,
             colsample_bynode=1.0,
             num_parallel_tree=1,
-            tree_method='gpu_hist',  # h2o4gpu
+            tree_method='hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
-            predictor='gpu_predictor',  # h2o4gpu
+            predictor=None,  # h2o4gpu (deprecated; superseded by device)
+            device=None,  # h2o4gpu ('cuda'/'cpu'; auto-selected from n_gpus)
             backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
@@ -301,13 +326,15 @@ class RandomForestClassifier:
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             warn("Multiple GPUs is not supported, Single GPU will be used.")
+        tree_method, device = _xgb_device_params(tree_method, predictor, device,
+                                                 n_gpus)
         self.model_h2o4gpu = xgb.XGBRFClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
             n_jobs=n_jobs,
             random_state=random_state,
             tree_method=tree_method,
-            predictor=predictor,
+            device=device,
             subsample=subsample,
             colsample_bytree=colsample_bytree,
             colsample_bylevel=colsample_bylevel,
@@ -533,10 +560,14 @@ class RandomForestRegressor:
     n_gpus : int
         Number of gpu's to use in RandomForestRegressor solver. Default is -1.
 
-    predictor : string [default='gpu_predictor']
-        The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
-            - 'cpu_predictor': Multicore CPU prediction algorithm.
-            - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+    predictor : string, optional (deprecated)
+        Removed in XGBoost >= 2.0; retained for backward compatibility. Use
+        ``device`` instead. ``predictor='cpu_predictor'`` is honoured as
+        ``device='cpu'``.
+
+    device : string [default=None]
+        XGBoost compute device: 'cuda' or 'cpu'. When None it is auto-selected
+        ('cuda' when a GPU is available, else 'cpu').
 
     backend : string, (Default="auto")
         Which backend to use.
@@ -569,9 +600,10 @@ class RandomForestRegressor:
             colsample_bylevel=1.0,
             colsample_bynode=1.0,
             num_parallel_tree=1,
-            tree_method='gpu_hist',  # h2o4gpu
+            tree_method='hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
-            predictor='gpu_predictor',  # h2o4gpu
+            predictor=None,  # h2o4gpu (deprecated; superseded by device)
+            device=None,  # h2o4gpu ('cuda'/'cpu'; auto-selected from n_gpus)
             backend='auto'):  # h2o4gpu
         import os
         _backend = os.environ.get('H2O4GPU_BACKEND', None)
@@ -647,18 +679,20 @@ class RandomForestRegressor:
         n_gpus, _ = device_count(n_gpus)
         if n_gpus > 1:
             warn("Multiple GPUs is not supported, Single GPU will be used.")
-            self.model_h2o4gpu = xgb.XGBRFRegressor(
-                n_estimators=n_estimators,
-                max_depth=max_depth,
-                n_jobs=n_jobs,
-                random_state=random_state,
-                tree_method=tree_method,
-                predictor=predictor,
-                subsample=subsample,
-                colsample_bytree=colsample_bytree,
-                colsample_bylevel=colsample_bylevel,
-                colsample_bynode=colsample_bynode,
-                verbose=verbose)
+        tree_method, device = _xgb_device_params(tree_method, predictor, device,
+                                                 n_gpus)
+        self.model_h2o4gpu = xgb.XGBRFRegressor(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            tree_method=tree_method,
+            device=device,
+            subsample=subsample,
+            colsample_bytree=colsample_bytree,
+            colsample_bylevel=colsample_bylevel,
+            colsample_bynode=colsample_bynode,
+            verbose=verbose)
 
         if self.do_sklearn:
             if verbose > 0:
@@ -889,10 +923,14 @@ class GradientBoostingClassifier:
     n_gpus : int
         Number of gpu's to use in GradientBoostingClassifier solver. Default is -1.
 
-    predictor : string [default='gpu_predictor']
-        The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
-            - 'cpu_predictor': Multicore CPU prediction algorithm.
-            - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+    predictor : string, optional (deprecated)
+        Removed in XGBoost >= 2.0; retained for backward compatibility. Use
+        ``device`` instead. ``predictor='cpu_predictor'`` is honoured as
+        ``device='cpu'``.
+
+    device : string [default=None]
+        XGBoost compute device: 'cuda' or 'cpu'. When None it is auto-selected
+        ('cuda' when a GPU is available, else 'cpu').
 
     objective : string or callable [default="binary:logistic"]
         Specify the learning task and the corresponding learning objective or a custom objective function to be used
@@ -976,9 +1014,10 @@ class GradientBoostingClassifier:
             presort='auto',
             # XGBoost specific params
             num_parallel_tree=1,  # h2o4gpu
-            tree_method='gpu_hist',  # h2o4gpu
+            tree_method='hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
-            predictor='gpu_predictor',  # h2o4gpu
+            predictor=None,  # h2o4gpu (deprecated; superseded by device)
+            device=None,  # h2o4gpu ('cuda'/'cpu'; auto-selected from n_gpus)
             objective="binary:logistic",
             booster='gbtree',
             n_jobs=1,
@@ -1068,6 +1107,8 @@ class GradientBoostingClassifier:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
+        tree_method, device = _xgb_device_params(tree_method, predictor, device,
+                                                 n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED and self.__dask_loaded():
             self.distributed = True
             from dask_cuda import LocalCUDACluster
@@ -1084,7 +1125,7 @@ class GradientBoostingClassifier:
                 colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
-                predictor=predictor,  # h2o4gpu
+                device=device,  # h2o4gpu
                 objective=objective,
                 booster=booster,
                 n_jobs=n_jobs,
@@ -1114,7 +1155,7 @@ class GradientBoostingClassifier:
                 colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
-                predictor=predictor,  # h2o4gpu
+                device=device,  # h2o4gpu
                 objective=objective,
                 booster=booster,
                 n_jobs=n_jobs,
@@ -1421,12 +1462,16 @@ class GradientBoostingRegressor:
     n_gpus : int
         Number of gpu's to use in GradientBoostingRegressor solver. Default is -1.
 
-    predictor : string [default='gpu_predictor']
-        The type of predictor algorithm to use. Provides the same results but allows the use of GPU or CPU.
-            - 'cpu_predictor': Multicore CPU prediction algorithm.
-            - 'gpu_predictor': Prediction using GPU. Default for 'gpu_exact' and 'gpu_hist' tree method.
+    predictor : string, optional (deprecated)
+        Removed in XGBoost >= 2.0; retained for backward compatibility. Use
+        ``device`` instead. ``predictor='cpu_predictor'`` is honoured as
+        ``device='cpu'``.
 
-    objective : string or callable [default="reg:linear"]
+    device : string [default=None]
+        XGBoost compute device: 'cuda' or 'cpu'. When None it is auto-selected
+        ('cuda' when a GPU is available, else 'cpu').
+
+    objective : string or callable [default="reg:squarederror"]
         Specify the learning task and the corresponding learning objective or a custom objective function to be used
         Note:
         A custom objective function can be provided for the objective parameter. In this case, it should have the signature objective(y_true, y_pred) -> grad, hess:
@@ -1509,10 +1554,11 @@ class GradientBoostingRegressor:
             presort='auto',
             # XGBoost specific params
             num_parallel_tree=1,  # h2o4gpu
-            tree_method='gpu_hist',  # h2o4gpu
+            tree_method='hist',  # h2o4gpu
             n_gpus=-1,  # h2o4gpu
-            predictor='gpu_predictor',  # h2o4gpu
-            objective="reg:linear",
+            predictor=None,  # h2o4gpu (deprecated; superseded by device)
+            device=None,  # h2o4gpu ('cuda'/'cpu'; auto-selected from n_gpus)
+            objective="reg:squarederror",
             booster='gbtree',
             n_jobs=1,
             gamma=0,
@@ -1603,6 +1649,8 @@ class GradientBoostingRegressor:
         import xgboost as xgb
         from ..util.gpu import device_count
         n_gpus, _ = device_count(n_gpus)
+        tree_method, device = _xgb_device_params(tree_method, predictor, device,
+                                                 n_gpus)
         if n_gpus > 1 and CUDA_DASK_INSTALLED and self.__dask_loaded():
             self.distributed = True
             from dask_cuda import LocalCUDACluster
@@ -1616,7 +1664,7 @@ class GradientBoostingRegressor:
                 verbose=verbose,  # h2o4gpu
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
-                predictor=predictor,  # h2o4gpu
+                device=device,  # h2o4gpu
                 objective=objective,
                 booster=booster,
                 n_jobs=n_jobs,
@@ -1648,7 +1696,7 @@ class GradientBoostingRegressor:
                 colsample_bynode=colsample_bynode,
                 num_parallel_tree=num_parallel_tree,  # h2o4gpu
                 tree_method=tree_method,  # h2o4gpu
-                predictor=predictor,  # h2o4gpu
+                device=device,  # h2o4gpu
                 objective=objective,
                 booster=booster,
                 n_jobs=n_jobs,

@@ -31,7 +31,7 @@ def assert_accuracy(res1, res2, tolerance=0.02):
     assert non_increasing(res1, tolerance)
     assert np.allclose(res1[-1], res2[-1], 1e-3, 1e-2)
 
-def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, test_size=0.25):
+def run_benchmark(algorithm='hist', device='cuda', rows=1000000, columns=50, iterations=5, test_size=0.25):
     
     print("Generating dataset: {} rows * {} columns".format(rows, columns))
     print("{}/{} test/train split".format(test_size, 1.0 - test_size))
@@ -47,8 +47,7 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
 
     param = {'objective': 'binary:logistic',
              'max_depth': 6,
-             'n_gpus': 1,
-             'gpu_id': 0,
+             'device': device,  # XGBoost >= 2.0: replaces n_gpus/gpu_id
              'eval_metric': 'error',
              'debug_verbose': 0,
              }
@@ -166,10 +165,10 @@ def run_benchmark(algorithm='gpu_hist', rows=1000000, columns=50, iterations=5, 
 
 
 def test_dt_integration_xgboost_hist():
-    run_benchmark(algorithm='hist')
+    run_benchmark(algorithm='hist', device='cpu')
 
-def test_dt_integration_xgboost_gpu_hist(): 
-    run_benchmark(algorithm='gpu_hist')
+def test_dt_integration_xgboost_gpu_hist():
+    run_benchmark(algorithm='hist', device='cuda')
 
 if __name__ == '__main__':
     test_dt_integration_xgboost_hist()

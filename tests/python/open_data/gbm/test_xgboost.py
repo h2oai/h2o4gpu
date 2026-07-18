@@ -52,10 +52,10 @@ def test_xgboost_covtype(n_gpus):
     # Leave most parameters as default
     param = {'objective': 'multi:softmax',  # Specify multiclass classification
              'num_class': 8,  # Number of possible output classes
-             'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
+             # XGBoost >= 2.0: 'gpu_hist' + 'n_gpus' replaced by hist + device.
+             'tree_method': 'hist',
+             'device': 'cuda' if n_gpus else 'cpu',
              }
-    if n_gpus is not None:
-        param['n_gpus'] = n_gpus
 
     # Convert input data from numpy to XGBoost format
     dtrain = xgb.DMatrix(X_train, label=y_train, nthread=-1)
@@ -73,7 +73,7 @@ def test_xgboost_covtype(n_gpus):
     dtest = xgb.DMatrix(X_test, label=y_test, nthread=-1)
     # Repeat for CPU algorithm
     tmp = time.time()
-    param['tree_method'] = 'hist'
+    param['device'] = 'cpu'  # tree_method is already 'hist'
     cpu_res = {}
     xgb.train(param, dtrain, num_round, evals=[
               (dtest, 'test')], evals_result=cpu_res)
@@ -110,7 +110,8 @@ def test_xgboost_covtype_multi_gpu():
     # Leave most parameters as default
     param = {'objective': 'multi:softmax',  # Specify multiclass classification
              'num_class': 8,  # Number of possible output classes
-             'tree_method': 'gpu_hist',  # Use GPU accelerated algorithm
+             'tree_method': 'hist',  # GPU selected via device ('gpu_hist' removed in 2.x)
+             'device': 'cuda',
              }
 
     from h2o4gpu.util.gpu import device_count
@@ -154,7 +155,7 @@ def test_xgboost_covtype_multi_gpu():
             dtest = xgb.DMatrix(X_test, label=y_test, nthread=-1)
             # Repeat for CPU algorithm
             tmp = time.time()
-            param['tree_method'] = 'hist'
+            param['device'] = 'cpu'  # tree_method is already 'hist'
             cpu_res = {}
             xgb.train(param, dtrain, num_round, evals=[
                 (dtest, 'test')], evals_result=cpu_res)
@@ -214,7 +215,8 @@ def test_xgboost_airlines():
 
     # Leave most parameters as default
     param = {'objective': 'reg:logistic',
-             'tree_method': 'gpu_hist',
+             'tree_method': 'hist',  # GPU selected via device ('gpu_hist' removed in 2.x)
+             'device': 'cuda',
              }
 
     from h2o4gpu.util.gpu import device_count
